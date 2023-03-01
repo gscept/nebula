@@ -22,7 +22,7 @@ namespace fbxsdk
 
 namespace ToolkitUtil
 {
-extern int JointCounter;
+
 class NFbxScene : public Scene
 {
 public:
@@ -38,9 +38,6 @@ public:
         , const Ptr<ModelAttributes>& attributes
         , float scale
     );
-
-    /// Extract skeleton roots
-    void ExtractSkeletons();
 
 private:
 

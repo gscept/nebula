@@ -41,7 +41,7 @@ struct Nsk3Joint
 {
     Util::String name;
     float bind[16];
-    float rotation[3];
+    float rotation[4];
     float translation[3];
     float scale[3];
     int parent;

@@ -10,6 +10,7 @@
 #include "nfbxjointnode.h"
 #include "nfbxtransformnode.h"
 #include "nfbxlightnode.h"
+#include "timing/timer.h"
 
 #include <fbxsdk.h>
 
@@ -44,9 +45,6 @@ NFbxScene::ParseNodeHierarchy(
 )
 {
     SceneNode& node = nodes.Emplace();
-    FbxTransform::EInheritType inherit;
-    //fbxNode->GetTransformationInheritType(inherit);
-    //n_assert(inherit == FbxTransform::EInheritType::eInheritRrs);
     lookup.Add(fbxNode, &node);
     const FbxNodeAttribute* attr = fbxNode->GetNodeAttribute();
     const FbxNodeAttribute::EType type = attr == nullptr ? FbxNodeAttribute::EType::eNull : attr->GetAttributeType();
@@ -95,44 +93,6 @@ NFbxScene::ParseNodeHierarchy(
 //------------------------------------------------------------------------------
 /**
 */
-void 
-ResetNodePivots(FbxNode* fbxNode)
-{
-    FbxVector4 lZero(0, 0, 0);
-
-    // Activate pivot converting
-    fbxNode->SetPivotState(FbxNode::eSourcePivot, FbxNode::ePivotActive);
-    fbxNode->SetPivotState(FbxNode::eDestinationPivot, FbxNode::ePivotActive);
-
-    // We want to set all these to 0 and bake them into the transforms.
-    fbxNode->SetPostRotation(FbxNode::eDestinationPivot, lZero);
-    fbxNode->SetPreRotation(FbxNode::eDestinationPivot, lZero);
-    fbxNode->SetRotationOffset(FbxNode::eDestinationPivot, lZero);
-    fbxNode->SetScalingOffset(FbxNode::eDestinationPivot, lZero);
-    fbxNode->SetRotationPivot(FbxNode::eDestinationPivot, lZero);
-    fbxNode->SetScalingPivot(FbxNode::eDestinationPivot, lZero);
-
-    // This is to import in a system that supports rotation order.
-    // If rotation order is not supported, do this instead:
-    // pNode->SetRotationOrder(FbxNode::eDESTINATION_SET , FbxNode::eEULER_XYZ);
-    FbxEuler::EOrder lRotationOrder(FbxEuler::eOrderXYZ);
-    fbxNode->GetRotationOrder(FbxNode::eSourcePivot, lRotationOrder);
-    fbxNode->SetRotationOrder(FbxNode::eDestinationPivot, lRotationOrder);
-
-    // Similarly, this is the case where geometric transforms are supported by the system.
-    // If geometric transforms are not supported, set them to zero instead of
-    // the source’s geometric transforms.
-    // Geometric transform = local transform, not inherited by children.
-    fbxNode->SetGeometricTranslation(FbxNode::eDestinationPivot, fbxNode->GetGeometricTranslation(FbxNode::eSourcePivot));
-    fbxNode->SetGeometricRotation(FbxNode::eDestinationPivot, fbxNode->GetGeometricRotation(FbxNode::eSourcePivot));
-    fbxNode->SetGeometricScaling(FbxNode::eDestinationPivot, fbxNode->GetGeometricScaling(FbxNode::eSourcePivot));
-
-    fbxNode->SetQuaternionInterpolation(FbxNode::eDestinationPivot, fbxNode->GetQuaternionInterpolation(FbxNode::eSourcePivot));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 NFbxScene::Setup(
     FbxScene* scene
@@ -150,7 +110,20 @@ NFbxScene::Setup(
     SceneScale = scale;
     AdjustedScale = SceneScale;
 
+    Timing::Timer timer;
+
     float fps = TimeModeToFPS(scene->GetGlobalSettings().GetTimeMode());
+
+    auto axisSystem = scene->GetGlobalSettings().GetAxisSystem();
+    FbxAxisSystem newSystem(FbxAxisSystem::eOpenGL);
+    if (axisSystem != newSystem)
+    {
+        timer.Start();
+        newSystem.DeepConvertScene(scene);
+        timer.Stop();
+        n_printf("  [FBX - Converting coordinate system (%.2f ms)]\n", timer.GetTime() * 1000);
+
+    }
 
     // handle special case for custom FPS
     if (fps == -1)
@@ -161,11 +134,16 @@ NFbxScene::Setup(
     AnimationFrameRate = fps;
 
     // split meshes based on material
+    timer.Reset();
+    timer.Start();
     FbxGeometryConverter* converter = new FbxGeometryConverter(sdkManager);
     bool triangulated = converter->Triangulate(scene, true);
     converter->RemoveBadPolygonsFromMeshes(scene);
     n_assert(triangulated);
     delete converter;
+    timer.Stop();
+    n_printf("  [FBX - Triangulation done (%.2f ms)]", timer.GetTime() * 1000);
+
 
     // Okay so we want to do this, we really do, but if we do, 
     // the GetSrcObjectCount will give us an INCORRECT amount of meshes, 
@@ -181,6 +159,9 @@ NFbxScene::Setup(
     Util::Dictionary<FbxNode*, SceneNode*> nodeLookup;
     ParseNodeHierarchy(scene->GetRootNode(), nullptr, nodeLookup, this->nodes);
 
+    // Setup skeleton hierarchy
+    this->SetupSkeletons();
+
     // Extract data from nodes
     for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
     {
@@ -192,6 +173,9 @@ NFbxScene::Setup(
                 break;
         }
     }
+
+    // Update the skeleton builder
+    this->ExtractSkeletons();
 
     // Extract animation curves
     int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
@@ -216,52 +200,6 @@ NFbxScene::Setup(
                 Scene::GenerateClip(node, anim, animStack->GetName());
             }
         }
-    }
-
-    // Extract skeletons
-    this->ExtractSkeletons();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-NFbxScene::ExtractSkeletons()
-{
-    Util::Array<SceneNode*> skeletonRoots;
-    for (IndexT i = 0; i < this->nodes.Size(); i++)
-    {
-        if (this->nodes[i].skeleton.isSkeletonRoot)
-        {
-            // Associate this node with the skeleton resource
-            this->nodes[i].skeleton.skeletonIndex = skeletonRoots.Size();
-            skeletonRoots.Append(&this->nodes[i]);
-        }
-    }
-
-    this->skeletons.Resize(skeletonRoots.Size());
-    for (IndexT i = 0; i < this->skeletons.Size(); i++)
-    {
-        SkeletonBuilder& builder = this->skeletons[i];
-        std::function<void(SceneNode* node, SkeletonBuilder&)> convertFunc = [&](SceneNode* node, SkeletonBuilder& builder)
-        {
-            if (node->base.parent != nullptr)
-                node->skeleton.parentIndex = node->base.parent->skeleton.jointIndex;
-
-            Joint joint;
-            joint.name = node->base.name;
-            joint.bind = node->skeleton.bindMatrix;
-            joint.translation = node->base.translation;
-            joint.rotation = node->base.rotation;
-            joint.scale = node->base.scale;
-            joint.index = node->skeleton.jointIndex;
-            joint.parent = node->skeleton.parentIndex;
-            builder.joints.Append(joint);
-
-            for (auto& child : node->base.children)
-                convertFunc(child, builder);
-        };
-        convertFunc(skeletonRoots[i], builder);
     }
 }
 

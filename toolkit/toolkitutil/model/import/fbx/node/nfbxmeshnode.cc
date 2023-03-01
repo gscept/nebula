@@ -330,14 +330,12 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
         int clusterCount = skin->GetClusterCount();
         node->base.isSkin = true;
 
-        FbxAMatrix rootNodeMatrix;
-        skin->GetCluster(0)->GetTransformMatrix(rootNodeMatrix);
-
         for (int clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++)
         {
             FbxCluster* cluster = skin->GetCluster(clusterIndex);
             FbxNode* joint = cluster->GetLink();
             SceneNode* jointNode = nodeLookup[joint];
+            n_assert(jointNode != nullptr);
             n_assert(jointNode->skeleton.bindMatrix == Math::mat4());
             n_assert(jointNode->type == SceneNode::NodeType::Joint);
 
@@ -345,17 +343,17 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             FbxAMatrix linkMatrix, transformMatrix;
             cluster->GetTransformLinkMatrix(linkMatrix);
             cluster->GetTransformMatrix(transformMatrix);
-            FbxAMatrix inversedPose = linkMatrix.Inverse() * transformMatrix * geometricTransform;
+            FbxAMatrix inversedPose = linkMatrix.Inverse();
+            inversedPose = inversedPose * transformMatrix * geometricTransform;
             jointNode->skeleton.bindMatrix = FbxToMath(inversedPose);
             jointNode->skeleton.bindMatrix.position *= AdjustedScale;
 
-            n_assert(jointNode != nullptr);
 
             int clusterVertexIndexCount = cluster->GetControlPointIndicesCount();
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
             {
                 int vertex = cluster->GetControlPointIndices()[vertexIndex];
-                float weight = TruncDouble(cluster->GetControlPointWeights()[vertexIndex]);
+                float weight = cluster->GetControlPointWeights()[vertexIndex];
                 if (weight > 0)
                     keyWeightPairs[vertex].Append(std::make_tuple(jointNode->skeleton.jointIndex, weight));
             }

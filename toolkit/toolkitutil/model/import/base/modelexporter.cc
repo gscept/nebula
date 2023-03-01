@@ -64,7 +64,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     this->file = localPath.ExtractFileName();
     this->file.StripFileExtension();
     this->category = localPath.ExtractLastDirName();
-    n_printf("Exporting assets:\n        %s\n", localPath.AsCharPtr());
+    n_printf("[[Exporting Asset: %s...]]\n", localPath.AsCharPtr());
 
     // Get animations from scene
     Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(this->category + "/" + this->file);
@@ -74,15 +74,22 @@ ModelExporter::ExportFile(const IO::URI& file)
     // we want to see if the model file exists, because that's the only way to know if ALL the resources are old or new...
     if (!this->NeedsConversion(localPath))
     {
-        n_printf("    [File has not changed, ignoring export]\n\n", localPath.AsCharPtr());
+        n_printf("  [File has not changed, ignoring export]\n\n", localPath.AsCharPtr());
         return;
     }
+    Timing::Timer timer;
+    Timing::Timer totalTime;
+    totalTime.Start();
+
+    timer.Start();
 
     // Run implementation specific scene parsing
     if (!this->ParseScene())
         return;
 
-    Timing::Timer timer;
+    n_printf("  [Parsed source] (%.2f ms)\n", timer.GetTime() * 1000.0f);
+    timer.Stop();
+
     timer.Reset();
     timer.Start();
 
@@ -112,7 +119,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     // save mesh to file
     if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Mesh], mergedMeshes, mergedGroups, this->platform))
     {
-        n_error("Failed to save NVX file: %s\n", destinationFiles[DestinationFile::Mesh].AsCharPtr());
+        n_error("   Failed to save NVX file: %s\n", destinationFiles[DestinationFile::Mesh].AsCharPtr());
     }
 
     // Delete merged meshes after export
@@ -122,7 +129,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     timer.Stop();
 
     // print info
-    n_printf("[Generated graphics mesh: %s] (%.2f ms)\n", destinationFiles[DestinationFile::Mesh].AsCharPtr(), timer.GetTime() * 1000.0f);
+    n_printf("  [Generated graphics mesh: %s] (%.2f ms)\n", destinationFiles[DestinationFile::Mesh].AsCharPtr(), timer.GetTime() * 1000.0f);
 
     // get physics mesh
     Util::Array<SceneNode*> physicsNodes;
@@ -135,20 +142,29 @@ ModelExporter::ExportFile(const IO::URI& file)
     {
         destinationFiles[DestinationFile::Physics] = String::Sprintf("msh:%s/%s_ph.nvx", this->category.AsCharPtr(), this->file.AsCharPtr());
 
+        timer.Reset();
+        timer.Start();
+
         // save mesh
         group.SetFirstTriangleIndex(0);
         group.SetNumTriangles(physicsMesh->GetNumTriangles());
         if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Physics], { physicsMesh }, { group }, this->platform))
         {
-            n_error("Failed to save physics NVX file: %s\n", destinationFiles[DestinationFile::Physics].AsCharPtr());
+            n_error("   Failed to save physics NVX file: %s\n", destinationFiles[DestinationFile::Physics].AsCharPtr());
         }
 
+        timer.Stop();
+
         // print info
-        n_printf("[Generated physics mesh: %s]\n", destinationFiles[DestinationFile::Physics].AsCharPtr());
+        n_printf("  [Generated physics mesh: %s] (%.2f ms)\n", destinationFiles[DestinationFile::Physics].AsCharPtr(), timer.GetTime() * 1000);
+
     }
 
     if (this->scene->animations.Size() > 0)
     {
+        timer.Reset();
+        timer.Start();
+
         // Cleanup animations
         for (auto& anim : this->scene->animations)
         {
@@ -158,21 +174,27 @@ ModelExporter::ExportFile(const IO::URI& file)
         // now save actual animation
         if (!AnimBuilderSaver::Save(destinationFiles[DestinationFile::Animation], this->scene->animations, this->platform))
         {
-            n_error("Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].AsCharPtr());
+            n_error("   Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].AsCharPtr());
         }
-        n_printf("[Generated animation: %s]\n", destinationFiles[DestinationFile::Animation].AsCharPtr());
+
+        timer.Stop();
+
+        n_printf("  [Generated animation: %s] (%.2f ms)\n", destinationFiles[DestinationFile::Animation].AsCharPtr(), timer.GetTime() * 1000);
     }
 
     if (this->scene->skeletons.Size() > 0)
     {
+        timer.Reset();
+        timer.Start();
+
         if (!SkeletonBuilderSaver::Save(destinationFiles[DestinationFile::Skeleton], this->scene->skeletons, this->platform))
         {
-            n_error("Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].AsCharPtr());
+            n_error("   Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].AsCharPtr());
         }
-        n_printf("[Generated skeleton: %s]\n", destinationFiles[DestinationFile::Skeleton].AsCharPtr());
-    }
 
-    n_printf("\n");
+        timer.Stop();
+        n_printf("  [Generated skeleton: %s] (%.2f ms)\n", destinationFiles[DestinationFile::Skeleton].AsCharPtr(), timer.GetTime() * 1000);
+    }
 
     // Finally, output model hierarchy to n3
     SceneWriter::GenerateModels(
@@ -185,6 +207,9 @@ ModelExporter::ExportFile(const IO::URI& file)
         , destinationFiles[DestinationFile::Physics]
         , this->exportFlags
     );
+
+    totalTime.Stop();
+    n_printf("[[... done (%.2f ms)]]\n\n", totalTime.GetTime() * 1000);
 
     delete this->scene;
     this->scene = nullptr;

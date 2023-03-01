@@ -85,7 +85,7 @@ SkeletonBuilderSaver::WriteJoints(const Ptr<IO::Stream>& stream, const Util::Arr
         IndexT jointIndex;
         for (jointIndex = 0; jointIndex < numJoints; jointIndex++)
         {
-            const ToolkitUtil::Joint joint = builder.joints[jointIndex];
+            const ToolkitUtil::Joint& joint = builder.joints[jointIndex];
             Nsk3Joint nsk3Joint;
             joint.name.CopyToBuffer(&(nsk3Joint.name[0]), sizeof(nsk3Joint.name));
             nsk3Joint.index = joint.index;

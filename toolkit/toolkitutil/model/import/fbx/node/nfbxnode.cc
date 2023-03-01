@@ -22,15 +22,6 @@ using namespace ToolkitUtil;
 //------------------------------------------------------------------------------
 /**
 */
-float 
-TruncDouble(const double d)
-{
-    return static_cast<float>(d);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Math::mat4
 FbxToMath(const fbxsdk::FbxMatrix& matrix)
 {

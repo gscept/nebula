@@ -277,4 +277,62 @@ Scene::GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::Strin
     animBuilder.AddClip(clip);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Scene::SetupSkeletons()
+{
+    Util::Array<SceneNode*> skeletonRoots;
+    for (IndexT i = 0; i < this->nodes.Size(); i++)
+    {
+        if (this->nodes[i].skeleton.isSkeletonRoot)
+        {
+            IndexT counter = 0;
+            std::function<void(SceneNode*, IndexT&)> convertFunc = [&](SceneNode* node, IndexT& counter)
+            {
+                node->skeleton.jointIndex = counter++;
+                if (node->base.parent != nullptr)
+                    node->skeleton.parentIndex = node->base.parent->skeleton.jointIndex;
+
+                for (auto& child : node->base.children)
+                    convertFunc(child, counter);
+            };
+            convertFunc(&this->nodes[i], counter);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Scene::ExtractSkeletons()
+{
+    for (IndexT i = 0; i < this->nodes.Size(); i++)
+    {
+        if (this->nodes[i].skeleton.isSkeletonRoot)
+        {
+            this->nodes[i].skeleton.skeletonIndex = this->skeletons.Size();
+            SkeletonBuilder& builder = this->skeletons.Emplace();
+            std::function<void(SceneNode*, SkeletonBuilder&)> convertFunc = [&](SceneNode* node, SkeletonBuilder& builder)
+            {
+                Joint joint;
+                joint.name = node->base.name;
+                joint.bind = node->skeleton.bindMatrix;
+                joint.translation = node->base.translation;
+                joint.rotation = node->base.rotation;
+                joint.scale = node->base.scale;
+                joint.index = node->skeleton.jointIndex;
+                joint.parent = node->skeleton.parentIndex;
+                builder.joints.Append(joint);
+
+                for (auto& child : node->base.children)
+                    convertFunc(child, builder);
+            };
+            convertFunc(&this->nodes[i], builder);
+        }
+    }
+}
+
 } // namespace ToolkitUtil

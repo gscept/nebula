@@ -25,8 +25,6 @@ Math::mat4 FbxToMath(const fbxsdk::FbxMatrix& matrix);
 Math::vec4 FbxToMath(const fbxsdk::FbxVector4& vec);
 /// Convert FbxVector2 to Math::vec2
 Math::vec2 FbxToMath(const fbxsdk::FbxVector2& vec);
-/// Truncate double to float
-float TruncDouble(const double d);
 
 class SceneNode;
 class NFbxScene;

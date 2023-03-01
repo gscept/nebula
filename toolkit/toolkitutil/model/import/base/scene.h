@@ -51,6 +51,10 @@ protected:
 
     /// Generate animation clips
     static void GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::String& name);
+    /// Setup skeleton hierarchies
+    void SetupSkeletons();
+    /// Extract skeleton roots
+    void ExtractSkeletons();
 
     Util::Array<MeshBuilder> meshes;
     Util::Array<SkeletonBuilder> skeletons;

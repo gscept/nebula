@@ -23,16 +23,6 @@ NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
     NFbxNode::Setup(node, parent, fbxNode);
     FbxSkeleton* joint = fbxNode->GetSkeleton();
     node->skeleton.isSkeletonRoot = joint->IsSkeletonRoot();
-    if (node->skeleton.isSkeletonRoot)
-    {
-        JointCounter = 0;
-        node->skeleton.jointIndex = JointCounter++;
-    }
-    else
-    {
-        node->skeleton.jointIndex = JointCounter++;
-        node->skeleton.parentIndex = parent->skeleton.jointIndex;
-    }
 }
 
 } // namespace ToolkitUtil
