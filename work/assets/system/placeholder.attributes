@@ -2,13 +2,6 @@
 <Nebula version="1">
     <Options exportFlags="4" scale="1.000000" />
     <States>
-        <ModelNode name="root/pCube1" material="sur:system/placeholder">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/nebulalogo" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-                <Texture name="ParameterMap" value="tex:system/default_material" />
-                <Texture name="AlbedoMap" value="tex:system/placeholder" />
-            </Textures>
-        </ModelNode>
+        <ModelNode name="root/pCube1" material="sur:system/placeholder" />
     </States>
 </Nebula>

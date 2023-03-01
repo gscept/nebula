@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/cube" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,1.000000,0.000000">
         <ShapeNodes>
-            <ShapeNode name="Cube" path="root/Cube" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="-0.707107,0.000000,0.000000,0.707107" scale="0.010000,0.010000,0.010000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/cube.nvx" mid="0" primitive="0" />
+            <ShapeNode name="Cube" path="root/Cube" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="-0.850906,0.000000,0.000000,0.525319" scale="0.010000,0.010000,0.010000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/cube.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

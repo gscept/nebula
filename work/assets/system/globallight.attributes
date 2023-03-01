@@ -2,19 +2,7 @@
 <Nebula version="1">
     <Options exportFlags="4" scale="1.000000" />
     <States>
-        <ModelNode name="root/Poly3" material="Static">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/white" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
-        <ModelNode name="root/directionalLight" material="Placeholder">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-                <Texture name="ParameterMap" value="tex:system/default_material" />
-                <Texture name="AlbedoMap" value="tex:system/placeholder" />
-            </Textures>
-        </ModelNode>
+        <ModelNode name="root/Poly3" material="Static" />
+        <ModelNode name="root/directionalLight" material="Placeholder" />
     </States>
 </Nebula>

@@ -8,6 +8,7 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 #include "lib/objects_shared.fxh"
+#include "lib/skinning.fxh"
 
 textureHandle AlbedoMap;
 
@@ -31,6 +32,25 @@ vsMain(
 */
 shader
 void
+vsMainSkinned(
+    [slot = 0] in vec3 position,
+    [slot = 1] in vec3 normal,
+    [slot = 2] in vec2 uv,
+    [slot = 7] in vec4 weights,
+    [slot = 8] in uvec4 indices,
+    out vec2 UV)
+{
+    vec4 skinnedPos = SkinnedPosition(position, weights, indices);
+
+    gl_Position = ViewProjection * Model * skinnedPos;
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
 psMain(in vec2 uv,
     [color0] out vec4 Color)
 {
@@ -43,4 +63,4 @@ psMain(in vec2 uv,
 StateLessTechnique(Static, "Static", vsMain(), psMain());
 
 // add a skinned variation since the Character system automatically appends the Skinned feature string when rendering characters
-StateLessTechnique(Skinned, "Skinned", vsMain(), psMain());
+StateLessTechnique(Skinned, "Skinned", vsMainSkinned(), psMain());

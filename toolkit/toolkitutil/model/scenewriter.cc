@@ -152,37 +152,6 @@ SetupDefaultState(
         state.material = "sur:system/placeholder";
     }
 
-    // search for diffuse map and set it to white if it isn't set
-    Texture diffTex;
-    diffTex.textureName = "AlbedoMap";
-    diffTex.textureResource = "tex:system/placeholder";
-
-    Texture normalTex;
-    normalTex.textureName = "NormalMap";
-    normalTex.textureResource = "tex:system/nobump";
-
-    Texture parameterTex;
-    parameterTex.textureName = "ParameterMap";
-    parameterTex.textureResource = "tex:system/default_material";
-
-    // if the diffuse map is not set, set it to white
-    if (state.textures.FindIndex(diffTex) == InvalidIndex)
-    {
-        state.textures.Append(diffTex);
-    }
-
-    // do the same for the normal map
-    if (state.textures.FindIndex(normalTex) == InvalidIndex)
-    {
-        state.textures.Append(normalTex);
-    }
-
-    // do the same for the normal map
-    if (state.textures.FindIndex(parameterTex) == InvalidIndex)
-    {
-        state.textures.Append(parameterTex);
-    }
-
     // set state for attributes
     attributes->SetState(nodePath, state);
 }

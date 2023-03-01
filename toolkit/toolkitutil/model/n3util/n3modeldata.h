@@ -99,14 +99,11 @@ struct Transform
 
 struct State
 {
-    Util::Array<Variable> variables;
-    Util::Array<Texture> textures;
     Util::String material;
 
     void Clear()
     {
-        this->variables.Clear();
-        this->textures.Clear();
+        this->material.Clear();
     }
 };
 }

@@ -2,26 +2,9 @@
 <Nebula version="1">
     <Options exportFlags="28" scale="1.000000" />
     <States>
-        <ModelNode name="pSphere3" material="PlaceholderSkinned">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
-        <ModelNode name="root/pSphere3" material="sur:system/placeholder">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
-        <ModelNode name="root/pSphere3/fragment_0" material="sur:system/placeholder">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-                <Texture name="ParameterMap" value="tex:system/default_material" />
-                <Texture name="AlbedoMap" value="tex:system/placeholder" />
-            </Textures>
-        </ModelNode>
+        <ModelNode name="pSphere3" material="PlaceholderSkinned" />
+        <ModelNode name="root/pSphere3" material="sur:system/placeholder" />
+        <ModelNode name="root/pSphere3/fragment_0" material="sur:system/placeholder" />
     </States>
     <Takes>
         <Take name="Take 001" />
