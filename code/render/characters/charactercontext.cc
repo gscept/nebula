@@ -711,7 +711,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
             const CoreAnimation::AnimSampleBuffer& sampleBuffer = sampleBuffers[i];
             if (supportsBlending[i])
             {
-                charCtx.tmpSampleIndices[i] = Jobs2::JobAlloc<uint>(sampleBuffer.GetNumSamples());
+                charCtx.tmpSampleIndices[i] = Jobs2::JobAlloc<uint>(jointPalette.Size() * 3);
                 charCtx.tmpSamples[i] = Jobs2::JobAlloc<float>(sampleBuffer.GetNumSamples());
             }
         }
