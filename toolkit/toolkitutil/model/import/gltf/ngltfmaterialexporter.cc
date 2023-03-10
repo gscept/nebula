@@ -44,7 +44,7 @@ NglTFMaterialExtractor::ExportAll()
         {
             // delete all previously generated surfaces
             if (!IO::IoServer::Instance()->DeleteDirectory(surfaceExportPath))
-                n_warning("Warning: NglTFMaterialExtractor: Could not delete old directory for gltf-specific surfaces.\n");
+                n_warning("    [glTF Warning - Could not delete old directory for gltf-specific surfaces]\n");
         }
 
         // Generate surfaces

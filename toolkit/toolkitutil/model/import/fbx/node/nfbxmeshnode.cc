@@ -44,7 +44,7 @@ NFbxMeshNode::ExtractMesh(
 {
     node->mesh.meshIndex = meshes.Size();
 
-   // Add a single mesh primitive for FBX nodes
+    // Add a single mesh primitive for FBX nodes
     MeshBuilder& mesh = meshes.Emplace();
 
     if (node->fbx.node->GetMaterialCount())
@@ -126,6 +126,9 @@ NFbxMeshNode::ExtractMesh(
     MeshBuilderVertex::ComponentMask componentMask = 0x0;
     Util::FixedArray<Math::vec4> controlPoints;
     controlPoints.Resize(fbxMesh->GetControlPointsCount());
+
+    mesh.NewMesh(controlPoints.Size(), controlPoints.Size() * 3);
+    mesh.SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
     for (IndexT i = 0; i < controlPoints.Size(); i++)
     {
         FbxVector4 v = fbxMesh->GetControlPointAt(i);

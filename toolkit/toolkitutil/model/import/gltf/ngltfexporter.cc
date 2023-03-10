@@ -48,7 +48,7 @@ NglTFExporter::~NglTFExporter()
 bool 
 NglTFExporter::ParseScene()
 {
-    bool res = this->gltfScene.Deserialize(this->file);
+    bool res = this->gltfScene.Deserialize(this->path.LocalPath().AsCharPtr());
 
     if (!res)
     {
@@ -62,7 +62,7 @@ NglTFExporter::ParseScene()
     scene->Setup(&this->gltfScene, this->exportFlags, this->sceneScale);
     this->scene = scene;
 
-    String fileExtension = this->file.GetFileExtension();
+    String fileExtension = this->path.LocalPath().GetFileExtension();
     String subDir = this->file + "_" + fileExtension;
     {
         // Extract materials into .sur files
@@ -83,7 +83,7 @@ NglTFExporter::ParseScene()
         {
             // delete all previously generated images
             if (!IO::IoServer::Instance()->DeleteDirectory(embeddedPath))
-                n_warning("Warning: NglTFExporter: Could not delete old directory for embedded gltf images.\n");
+                n_warning("    [glTF Warning - Could not delete old directory for embedded gltf images]\n");
         }
 
         for (IndexT i = 0; i < gltfScene.images.Size(); i++)
@@ -174,7 +174,7 @@ NglTFExporter::ParseScene()
                 writer->SetStream(IO::IoServer::Instance()->CreateStream(intermediateFile));
                 if (!writer->Open())
                 {
-                    n_warning("Warning: NglTFExporter: Could not open filestream to write intermediate image format.\n");
+                    n_warning("    [glTF Warning - Could not open filestream to write intermediate image format]\n");
                     return false;
                 }
                 writer->GetStream()->Write(data, dataSize);
@@ -184,12 +184,12 @@ NglTFExporter::ParseScene()
                 // content is base 64 encoded in uri
                 if (!this->texConverter->ConvertTexture(intermediateFile, tmpDir))
                 {
-                    n_error("ERROR: failed to convert texture\n");
+                    n_error("    [glTF Error - failed to convert texture]\n");
                 }
                 if (IO::IoServer::Instance()->DirectoryExists(tmpDir))
                 {
                     if (!IO::IoServer::Instance()->DeleteDirectory(tmpDir))
-                        n_warning("Warning: NglTFExporter: Could not delete temporary texconverter directory.\n");
+                        n_warning("    [glTF Warning - Could not delete temporary texconverter directory]\n");
                 }
             }
         }

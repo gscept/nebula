@@ -71,7 +71,7 @@ SurfaceBuilder::ExportBinary(Util::String const& dstFile)
     stream->SetAccessMode(Stream::AccessMode::ReadAccess);
 
     Logger logger;
-    logger.Print("Exporting surface material: '%s'\n", dstFile.AsCharPtr());
+    logger.Print("[[Exporting surface: %s]]\n", dstFile.AsCharPtr());
     BinaryXmlConverter converter;
     converter.ConvertStream(stream, dstFile, logger);
 }

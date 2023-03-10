@@ -48,7 +48,8 @@ public:
         Core28 = 0x10000000,
         Core29 = 0x20000000,
         Core30 = 0x40000000,
-        Core31 = 0x80000000  // << Threadripper gen 1 level
+        Core31 = 0x80000000,  // << Threadripper gen 1 level
+        All = (Core31 << 1) - 1
     };
 };
 

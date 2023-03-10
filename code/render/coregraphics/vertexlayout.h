@@ -57,7 +57,7 @@ enum class VertexLayoutType
 struct BaseVertex
 {
     float position[3];
-    ushort uv[2];
+    short uv[2];
 };
 
 struct NormalVertex

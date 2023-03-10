@@ -15,6 +15,7 @@ using namespace Math;
 /**
 */
 MeshBuilder::MeshBuilder()
+    : topology(CoreGraphics::PrimitiveTopology::InvalidPrimitiveTopology)
 {
     // empty
 }
@@ -26,7 +27,6 @@ void
 MeshBuilder::NewMesh(SizeT numVertices, SizeT numTriangles)
 {
     // Allocate base attributes (position and UVs)
-    this->topology = CoreGraphics::PrimitiveTopology::TriangleList;
     this->vertices.Reserve(numVertices);
     this->triangles.Reserve(numTriangles);
 }

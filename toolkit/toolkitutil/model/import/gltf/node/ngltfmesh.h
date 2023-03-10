@@ -17,6 +17,7 @@
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
 {
+
 //class NglTFJointNode;
 class NglTFMesh : public NglTFNode
 {
@@ -36,6 +37,9 @@ public:
         , const Gltf::Mesh* gltfMesh
         , const Gltf::Document* scene
         , const ToolkitUtil::ExportFlags flags
+        , const uint basePrimitive
+        , const uint meshIndex
+        , SceneNode** nodes
     );
 
     /// sets up node from assimp-node containing a mesh

@@ -79,7 +79,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
         // Sort nodes on material, this allows us to merge all meshes in sequence
         std::sort(nodes.begin(), nodes.end(), [](SceneNode* lhs, SceneNode* rhs)
         {
-            return lhs->mesh.material > rhs->mesh.material;
+            return lhs->mesh.material < rhs->mesh.material;
         });
 
         IndexT triangleOffset = 0, numTriangles = 0;
@@ -87,6 +87,8 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
         MeshBuilderGroup* group;
         for (IndexT j = 0; j < nodes.Size(); j++)
         {
+            auto meshToMerge = this->meshes[nodes[j]->mesh.meshIndex];
+
             // Whenever we hit another material, we need a new primitive group
             if (firstNodeInRange == nullptr
                 || nodes[j]->mesh.material != firstNodeInRange->mesh.material)
@@ -97,6 +99,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
                 // Set group ID within this mesh and the index into the whole mesh resource
                 firstNodeInRange->mesh.groupId = groupId++;
                 firstNodeInRange->mesh.meshIndex = outMeshes.Size();
+                firstNodeInRange->base.boundingBox.begin_extend();
 
                 // This is also the output node
                 outMeshNodes.Append(firstNodeInRange);
@@ -105,15 +108,19 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
                 group = &outGroups.Emplace();
 
                 // Add group and set first index
-                group->SetFirstTriangleIndex(triangleOffset);
                 triangleOffset += numTriangles;
+                group->SetFirstTriangleIndex(triangleOffset);
                 numTriangles = 0;
             }
             
-            // Merge the actual meshes and make sure the group contains the triangles merged
-            builder->Merge(this->meshes[nodes[j]->mesh.meshIndex]);
-            numTriangles += builder->GetNumTriangles();
+            // Calculate the new triangle count for our current group
+            numTriangles += meshToMerge.GetNumTriangles();
             group->SetNumTriangles(numTriangles);
+
+            firstNodeInRange->base.boundingBox.extend(meshToMerge.ComputeBoundingBox());
+
+            // Merge meshes
+            builder->Merge(meshToMerge);
         }
         outMeshes.Append(builder);
     }

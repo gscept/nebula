@@ -61,7 +61,7 @@ void
 vsGLTFStatic(
         [slot = 0] in vec3 position,
         [slot = 1] in vec3 normal,
-        [slot = 2] in vec2 uv,
+        [slot = 2] in ivec2 uv,
         [slot = 3] in vec4 tangent,
         out vec3 Tangent,
         out vec3 Normal,
@@ -72,7 +72,7 @@ vsGLTFStatic(
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
+    UV = UnpackUV(uv);
 
     Tangent     = (Model * vec4(tangent.xyz, 0)).xyz;
     Normal      = (Model * vec4(normal, 0)).xyz;

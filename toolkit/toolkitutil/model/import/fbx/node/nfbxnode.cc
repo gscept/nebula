@@ -10,6 +10,7 @@
 #include "model/modelutil/take.h"
 #include "model/modelutil/modelattributes.h"
 #include "util/set.h"
+#include "model/import/base/uniquestring.h"
 
 namespace ToolkitUtil
 {
@@ -87,7 +88,7 @@ FbxToMath(const fbxsdk::FbxVector2& vector)
 void 
 NFbxNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
 {
-    node->base.name = fbxNode->GetName();
+    node->base.name = UniqueString::New(fbxNode->GetName());
     if (node->base.name == "physics")
     {
         node->base.isPhysics = true;

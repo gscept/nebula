@@ -67,7 +67,7 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // check if we can skip conversion based on the file time stamps and force flag
     if (!this->NeedsConversion(srcPath, dstPath))
     {
-        n_printf("Up to date texture: %s\n", srcPath.AsCharPtr());
+        n_printf("    [No changes, skipping]\n");
         return true;
     }
 
@@ -157,7 +157,7 @@ TextureConversionJob::CopyResult()
     }
     else
     {
-        this->logger->Error("Texture copy failed because src file does not exist: %s -> %s \n", 
+        this->logger->Error("    [TexConv - Texture copy failed because src file does not exist: %s -> %s]\n", 
             this->tmpPath.AsCharPtr(), this->dstPath.AsCharPtr());
         retval = false;
     }

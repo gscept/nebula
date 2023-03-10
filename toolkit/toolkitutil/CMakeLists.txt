@@ -116,6 +116,8 @@ fips_begin_lib(toolkitutil)
                 scene.h
                 scenenode.cc
                 scenenode.h
+                uniquestring.cc
+                uniquestring.h
             )
 
         fips_dir(model/import/fbx)

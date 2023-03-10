@@ -35,7 +35,7 @@ void
 vsMainSkinned(
     [slot = 0] in vec3 position,
     [slot = 1] in vec3 normal,
-    [slot = 2] in vec2 uv,
+    [slot = 2] in ivec2 uv,
     [slot = 7] in vec4 weights,
     [slot = 8] in uvec4 indices,
     out vec2 UV)
@@ -43,7 +43,7 @@ vsMainSkinned(
     vec4 skinnedPos = SkinnedPosition(position, weights, indices);
 
     gl_Position = ViewProjection * Model * skinnedPos;
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------

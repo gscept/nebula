@@ -64,7 +64,7 @@ TextureConverter::Setup(Logger& logger)
         n_assert(this->texAttrTablePath.IsValid());
         if (!this->ownedTexAttrTable.Setup(this->texAttrTablePath))
         {
-            logger.Error("failed to open '%s'!", this->texAttrTablePath.AsCharPtr());
+            logger.Error("    [TexConv - Failed to open '%s']\n", this->texAttrTablePath.AsCharPtr());
             return false;
         }
         this->textureAttrTable = &this->ownedTexAttrTable;
@@ -173,7 +173,7 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& tmpDir)
     dstTexPath.Format("%s/%s/%s", this->dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
     dstTexPath.StripFileExtension();
 
-    n_printf("Converting texture: %s\n", URI(srcTexPath).LocalPath().AsCharPtr());
+    n_printf("[[Exporting texture: %s...]]\n", URI(srcTexPath).LocalPath().AsCharPtr());
 
     // select conversion method based on target platform
 

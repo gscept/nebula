@@ -283,12 +283,12 @@ shader
 void
 vsDepthStaticAlphaMask(
     [slot = 0] in vec3 position,
-    [slot = 2] in vec2 uv,
+    [slot = 2] in ivec2 uv,
     out vec2 UV)
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -320,7 +320,7 @@ shader
 void
 vsStatic(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     out vec3 Tangent,
@@ -337,7 +337,7 @@ vsStatic(
     Normal 		  = normalize((Model * vec4(normal, 0)).xyz);
     Sign          = tangent.w;
 
-    UV            = uv;
+    UV            = UnpackUV(uv);
     WorldSpacePos = modelSpace.xyz;
     ViewSpacePos  = View * modelSpace;
 }
@@ -349,7 +349,7 @@ shader
 void
 vsStaticInstanced(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     out vec3 Tangent,
@@ -366,7 +366,7 @@ vsStaticInstanced(
     Normal 		  = (Model * vec4(normal, 0)).xyz;
     Sign          = tangent.w;
 
-    UV            = uv;
+    UV            = UnpackUV(uv);
     WorldSpacePos = modelSpace.xyz;
     ViewSpacePos  = View * modelSpace;
 }
@@ -378,7 +378,7 @@ shader
 void
 vsStaticTessellated(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     out vec3 Tangent,
@@ -389,7 +389,7 @@ vsStaticTessellated(
     out float Distance)
 {
     Position = Model * vec4(position, 1);
-    UV = uv;
+    UV = UnpackUV(uv);
 
     Tangent     = (Model * vec4(tangent, 0)).xyz;
     Normal      = (Model * vec4(normal.xyz, 0)).xyz;
@@ -406,7 +406,7 @@ shader
 void
 vsStaticColored(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     [slot=5] in vec4 color,
@@ -419,7 +419,7 @@ vsStaticColored(
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
+    UV = UnpackUV(uv);
     Color = color;
 
     Tangent     = (Model * vec4(tangent, 0)).xyz;
@@ -457,7 +457,7 @@ shader
 void
 vsDepthSkinnedAlphaMask(
     [slot = 0] in vec3 position,
-    [slot = 2] in vec2 uv,
+    [slot = 2] in ivec2 uv,
     [slot = 7] in vec4 weights,
     [slot = 8] in uvec4 indices,
     out vec2 UV)
@@ -465,7 +465,7 @@ vsDepthSkinnedAlphaMask(
     vec4 skinnedPos = SkinnedPosition(position, weights, indices);
     vec4 modelSpace = Model * skinnedPos;
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -475,7 +475,7 @@ shader
 void
 vsSkinned(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     [slot=7] in vec4 weights,
@@ -498,7 +498,7 @@ vsSkinned(
     Normal 		  = (Model * skinnedNormal).xyz;
     Sign          = tangent.w;
 
-    UV            = uv;
+    UV            = UnpackUV(uv);
     WorldSpacePos = modelSpace.xyz;
     ViewSpacePos  = View * modelSpace;
 }
@@ -510,7 +510,7 @@ shader
 void
 vsSkinnedTessellated(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     [slot=7] in vec4 weights,
@@ -527,7 +527,7 @@ vsSkinnedTessellated(
     vec4 skinnedTangent  = SkinnedNormal(tangent, weights, indices);
 
     Position = Model * skinnedPos;
-    UV = uv;
+    UV = UnpackUV(uv);
 
     Tangent     = (Model * skinnedTangent).xyz;
     Normal      = (Model * skinnedNormal).xyz;
@@ -544,11 +544,11 @@ shader
 void
 vsBillboard(
     [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
+    [slot=2] in ivec2 uv,
     out vec2 UV)
 {
     gl_Position = ViewProjection * Model * vec4(position, 0);
-    UV = uv;
+    UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------

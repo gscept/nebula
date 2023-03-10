@@ -33,7 +33,7 @@ MeshLoader::MeshLoader()
     CoreGraphics::VertexLayoutCreateInfo vlCreateInfo;
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }  
-        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::UShort2N, 0 }
+        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
         , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }  
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 } 
     };
@@ -41,7 +41,7 @@ MeshLoader::MeshLoader()
 
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }  
-        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::UShort2N, 0 }
+        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
         , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }  
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord2, VertexComponent::UShort2N, 1 }
@@ -50,7 +50,7 @@ MeshLoader::MeshLoader()
 
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }
-        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::UShort2N, 0 }
+        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
         , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::Color, VertexComponent::Byte4N, 1 }
@@ -59,7 +59,7 @@ MeshLoader::MeshLoader()
 
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }
-        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::UShort2N, 0 }
+        , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
         , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::SkinWeights, VertexComponent::Float4, 1 }

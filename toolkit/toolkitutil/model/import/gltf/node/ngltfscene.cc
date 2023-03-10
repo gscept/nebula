@@ -7,6 +7,7 @@
 #include "model/modelutil/modeldatabase.h"
 #include "model/skeletonutil/skeletonbuilder.h"
 #include "model/n3util/n3modeldata.h"
+#include "timing/timer.h"
 #include <array>
 #include <functional>
 
@@ -48,9 +49,12 @@ NglTFScene::Setup(Gltf::Document* scene
 
     Util::Dictionary<int, IndexT> jointNodeToIndex;
 
+    Timing::Timer timer;
+
     // Extract all skeletons to the scene list
     if (!scene->skins.IsEmpty())
     {
+        timer.Start();
         for (auto const& skin : scene->skins)
         {
             // Build skeleton
@@ -98,11 +102,15 @@ NglTFScene::Setup(Gltf::Document* scene
                 }
             }
         }
+        timer.Stop();
+        n_printf("    [glTF - Skeletons read (%d, %d ms)]\n", scene->skins.Size(), timer.GetTime() * 1000);
     }
 
     // We need to load our animations and add them to the scene animation list
     if (!scene->animations.IsEmpty())
     {
+        timer.Reset();
+        timer.Start();
         AnimBuilder animBuilder;
         for (auto const& animation : scene->animations)
         {
@@ -119,38 +127,21 @@ NglTFScene::Setup(Gltf::Document* scene
                 //this->scene->accessors[sampler.output].count
             }
         }
+        timer.Stop();
+        n_printf("    [glTF - Animations read (%d, %d ms)]\n", scene->animations.Size(), timer.GetTime() * 1000);
     }
 
-    // Create a mapping between meshes and primitives
-    Util::Dictionary<IndexT, Util::Array<IndexT>> meshToPrimitiveMapping;
-
-    // Extract meshes
-    if (!scene->meshes.IsEmpty())
-    {
-        IndexT meshIndex = 0;
-        IndexT primitiveIndex = 0;
-        for (auto const& mesh : scene->meshes)
-        {
-            Util::Array<IndexT> primitives;
-            for (IndexT i = 0; i < mesh.primitives.Size(); i++)
-            {
-                primitives.Append(primitiveIndex++);
-            }
-            meshToPrimitiveMapping.Add(meshIndex++, primitives);
-            NglTFMesh::Setup(this->meshes, &mesh, scene, flags);
-        }
-    }
-    
     // Traverse node hierarchies and count how many SceneNodes we will need
     const int numRootNodes = scene->scenes[scene->scene].nodes.Size();
     int numNodes = numRootNodes;
+    int nodeCounter = 0;
     for (int i = 0; i < numRootNodes; i++)
     {
         Gltf::Node* node = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
 
         std::function<void(Gltf::Node*, int& count)> counter = [&](Gltf::Node* node, int& count)
         {
-            if (node->mesh)
+            if (node->mesh != -1)
             {
                 // glTF meshes can contain several primitives, which has to be a unique SceneNode each
                 // due to the fact they may vary in vertex layouts
@@ -166,27 +157,37 @@ NglTFScene::Setup(Gltf::Document* scene
             }
         };
 
-        counter(node, numNodes);
+        counter(node, nodeCounter);
     }
-    this->nodes.Reserve(numNodes);
+    this->nodes.Reserve(nodeCounter);
 
+    // Create a mapping between meshes and primitives
+    Util::Dictionary<IndexT, Util::Array<SceneNode*>> meshToNodeMapping;
+
+    IndexT basePrimitiveIndex = 0;
     std::function<void(Gltf::Node*)> nodeSetup = [&](Gltf::Node* gltfNode)
     {
         // If we encounter a mesh, we need to emit one SceneNode per mesh primitive
         if (gltfNode->mesh != -1)
         {
-            Util::Array<IndexT> primitives = meshToPrimitiveMapping[gltfNode->mesh];
-            for (IndexT j = 0; j < primitives.Size(); j++)
-            {
-                SceneNode& node = this->nodes.Emplace();
-                node.Setup(SceneNode::NodeType::Mesh);
-                NglTFNode::Setup(gltfNode, &node);
+            Util::Array<SceneNode*> primitiveNodes;
+            const Gltf::Mesh& mesh = scene->meshes[gltfNode->mesh];
+            primitiveNodes.Reserve(mesh.primitives.Size());
 
-                node.mesh.meshIndex = primitives[j];
+            for (IndexT i = 0; i < mesh.primitives.Size(); i++)
+            {
+                SceneNode* node = &this->nodes.Emplace();
+                node->Setup(SceneNode::NodeType::Mesh);
+                NglTFNode::Setup(gltfNode, node);
+                primitiveNodes.Append(node);
 
                 if (gltfNode->skin != -1)
-                    node.skeleton.skeletonIndex = gltfNode->skin;
+                    node->skeleton.skeletonIndex = gltfNode->skin;
+
             }
+            NglTFMesh::Setup(this->meshes, &scene->meshes[gltfNode->mesh], scene, flags, basePrimitiveIndex, gltfNode->mesh, primitiveNodes.Begin());
+            n_printf("    [glTF - Mesh primtives read (%d)]\n", mesh.primitives.Size());
+            basePrimitiveIndex += mesh.primitives.Size();
         }
         else
         {
@@ -194,6 +195,7 @@ NglTFScene::Setup(Gltf::Document* scene
             SceneNode& node = this->nodes.Emplace();
             node.Setup(SceneNode::NodeType::Transform);
             NglTFNode::Setup(gltfNode, &node);
+            node.base.name = gltfNode->name;
         }
 
         // TODO: Add support for the rest of the nodes we might want, like LOD
@@ -212,6 +214,7 @@ NglTFScene::Setup(Gltf::Document* scene
         Gltf::Node* gltfNode = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
         nodeSetup(gltfNode);
     }
+    n_printf("    [glTF - Parsing done (%d)]\n", scene->meshes.Size());
 }
 
 } // namespace ToolkitUtil

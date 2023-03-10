@@ -299,7 +299,6 @@ ModelAttributes::Save(const Ptr<IO::Stream>& stream)
 
                 // set material
                 writer->SetString("material", state.material);
-                IndexT j;
                 
                 // end model node
                 writer->EndNode();

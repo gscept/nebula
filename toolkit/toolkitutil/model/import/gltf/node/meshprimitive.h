@@ -17,6 +17,20 @@
 namespace ToolkitUtil
 {
 
+struct MeshPrimitiveJobContext
+{
+    const Gltf::Document* scene;
+    const Gltf::Mesh* mesh;
+
+    const Gltf::Primitive** primitives;
+    ExportFlags flags;
+
+    uint basePrimitive;
+    uint meshIndex;
+    MeshBuilder** outMeshes;
+    SceneNode** outSceneNodes;
+};
+
 struct MeshPrimitive
 {
     ToolkitUtil::MeshFlags meshFlags;
@@ -41,6 +55,7 @@ struct PrimitiveJobOutput
 };
 
 void SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context);
+void MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
 } // namespace ToolkitUtil
 //------------------------------------------------------------------------------

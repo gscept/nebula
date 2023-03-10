@@ -76,32 +76,29 @@ AttributeToComponentIndex(Gltf::Primitive::Attribute attribute, bool normalized)
 */
 template <typename TYPE, int n>
 Math::vec4
-ReadVertexData(void const* buffer, uint const count)
+ReadVertexData(void const* buffer, const uint i)
 {
     static_assert(n >= 1 && n <= 4, "You're doing it wrong!");
     TYPE const* const v = (TYPE*)(buffer);
     Math::vec4 ret(0.0f);
-    for (uint i = 0; i < count; i++)
+    if constexpr (n == 1)
     {
-        if constexpr (n == 1)
-        {
-            ret = Math::vec4((float)v[i], 0.0f, 0.0f, 0.0f);
-        }
-        else if constexpr (n == 2)
-        {
-            uint const offset = i * n;
-            ret = Math::vec4((float)v[offset], (float)v[offset + 1], 0.0f, 0.0f);
-        }
-        else if constexpr (n == 3)
-        {
-            uint const offset = i * n;
-            ret = Math::vec4((float)v[offset], (float)v[offset + 1], (float)v[offset + 2], 0.0f);
-        }
-        else if constexpr (n == 4)
-        {
-            uint const offset = i * n;
-            ret = Math::vec4((float)v[offset], (float)v[offset + 1], (float)v[offset + 2], (float)v[offset + 3]);
-        }
+        ret = Math::vec4((float)v[i], 0.0f, 0.0f, 0.0f);
+    }
+    else if constexpr (n == 2)
+    {
+        uint const offset = i * n;
+        ret = Math::vec4((float)v[offset], (float)v[offset + 1], 0.0f, 0.0f);
+    }
+    else if constexpr (n == 3)
+    {
+        uint const offset = i * n;
+        ret = Math::vec4((float)v[offset], (float)v[offset + 1], (float)v[offset + 2], 0.0f);
+    }
+    else if constexpr (n == 4)
+    {
+        uint const offset = i * n;
+        ret = Math::vec4((float)v[offset], (float)v[offset + 1], (float)v[offset + 2], (float)v[offset + 3]);
     }
     return ret;
 }
@@ -110,33 +107,39 @@ ReadVertexData(void const* buffer, uint const count)
 /**
 */
 void
-SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
+MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
 {
-    Gltf::Document const* const scene = (Gltf::Document const*)context.uniforms[0];
-    
-    for (uint slice = 0; slice < context.numSlices; slice++)
+    MeshPrimitiveJobContext* context = static_cast<MeshPrimitiveJobContext*>(ctx);
+    for (uint i = 0; i < groupSize; i++)
     {
-        PrimitiveJobInput const* input = (PrimitiveJobInput const*)context.inputs[0] + slice;
-    
-        Gltf::Mesh const* const mesh = (Gltf::Mesh const*)input->mesh;
-        Gltf::Primitive const* const primitive = (Gltf::Primitive const*)input->primitive;
-        ExportFlags const exportFlags = input->exportFlags;
-
-        PrimitiveJobOutput* output = (PrimitiveJobOutput*)context.outputs[0] + slice;
-        MeshBuilder* meshBuilder = output->mesh;
+        IndexT index = i + invocationOffset;
+        if (index >= totalJobs)
+            return;
 
         MeshBuilderVertex::ComponentMask components = 0x0;
-        
-        Gltf::Material const& material = scene->materials[primitive->material];
-        output->material = &scene->materials[primitive->material];
-        if (!mesh->name.IsEmpty())
+        MeshBuilder* meshBuilder = context->outMeshes[index];
+        const Gltf::Primitive* primitive = context->primitives[index];
+        SceneNode* node = context->outSceneNodes[index];
+
+        if (!context->mesh->name.IsEmpty())
         {
-            output->name = mesh->name;
+            node->base.name = context->mesh->name;
         }
         else
         {
-            output->name = "unnamed_" + Util::String::FromInt(slice);
+            node->base.name.Format("unnamed_%d:%d", context->meshIndex, index);
         }
+        
+        Gltf::Material& material = context->scene->materials[primitive->material];
+        if (!material.name.IsEmpty())
+        {
+            node->mesh.material = material.name;
+        }
+        else
+        {
+            node->mesh.material.Format("unnamed_%d", primitive->material);
+        }
+        node->mesh.meshIndex = context->basePrimitive + index;
 
         n_assert2(primitive->nebulaMode == CoreGraphics::PrimitiveTopology::Code::TriangleList, "Only triangle lists are supported currently!");
 
@@ -152,8 +155,14 @@ SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
         using namespace Base;
 
         // Find how many vertices and triangle we need
-        uint const vertCount = scene->accessors[primitive->attributes[Gltf::Primitive::Attribute::Position]].count;
-        uint const triCount = scene->accessors[primitive->indices].count / 3;
+        uint const vertCount = context->scene->accessors[primitive->attributes[Gltf::Primitive::Attribute::Position]].count;
+        uint const triCount = context->scene->accessors[primitive->indices].count / 3;
+
+        context->outMeshes[index]->NewMesh(vertCount, triCount);
+        for (uint i = 0; i < vertCount; i++)
+        {
+            context->outMeshes[index]->AddVertex(MeshBuilderVertex());
+        }
 
         // Extract vertex data
         for (auto const& attribute : primitive->attributes)
@@ -161,11 +170,11 @@ SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
             attributeFlags.SetBit((IndexT)attribute.Key());
 
             auto const& accessorIndex = attribute.Value();
-            Gltf::Accessor const& vertexBufferAccessor = scene->accessors[accessorIndex];
+            Gltf::Accessor const& vertexBufferAccessor = context->scene->accessors[accessorIndex];
             const uint count = vertexBufferAccessor.count;
 
-            Gltf::BufferView const& vertexBufferView = scene->bufferViews[vertexBufferAccessor.bufferView];
-            Gltf::Buffer const& buffer = scene->buffers[vertexBufferView.buffer];
+            Gltf::BufferView const& vertexBufferView = context->scene->bufferViews[vertexBufferAccessor.bufferView];
+            Gltf::Buffer const& buffer = context->scene->buffers[vertexBufferView.buffer];
             const uint bufferOffset = vertexBufferAccessor.byteOffset + vertexBufferView.byteOffset;
 
             // TODO: sparse accessors
@@ -181,11 +190,11 @@ SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
                 Math::vec4 data;
                 switch (vertexBufferAccessor.format)
                 {
-                    case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(vb, count); break;
-                    case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(vb, count); break;
-                    case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(vb, count); break;
-                    case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(vb, count); break;
-                    case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(vb, count); break;
+                    case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(vb, i); break;
+                    case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(vb, i); break;
+                    case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(vb, i); break;
+                    case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(vb, i); break;
+                    case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(vb, i); break;
                     default:
                         n_error("ERROR: Invalid vertex component type!");
                         break;
@@ -227,12 +236,12 @@ SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
         meshBuilder->SetComponents(components);
 
         // Compute bounding box
-        meshBuilder->ComputeBoundingBox();
+        node->base.boundingBox = meshBuilder->ComputeBoundingBox();
 
         // Setup triangles
-        Gltf::Accessor const& indexBufferAccessor = scene->accessors[primitive->indices];
-        Gltf::BufferView const& indexBufferView = scene->bufferViews[indexBufferAccessor.bufferView];
-        Gltf::Buffer const& buffer = scene->buffers[indexBufferView.buffer];
+        Gltf::Accessor const& indexBufferAccessor = context->scene->accessors[primitive->indices];
+        Gltf::BufferView const& indexBufferView = context->scene->bufferViews[indexBufferAccessor.bufferView];
+        Gltf::Buffer const& buffer = context->scene->buffers[indexBufferView.buffer];
         Util::Blob const& indexBuffer = buffer.data;
         const uint bufferOffset = indexBufferAccessor.byteOffset + indexBufferView.byteOffset;
 
@@ -241,31 +250,32 @@ SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
 
         switch (indexBufferAccessor.componentType)
         {
-        case Gltf::Accessor::ComponentType::UnsignedShort: SetupIndexBuffer<ushort>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-        case Gltf::Accessor::ComponentType::UnsignedInt: SetupIndexBuffer<uint>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-        case Gltf::Accessor::ComponentType::UnsignedByte: SetupIndexBuffer<uchar>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-        default:
-            n_error("ERROR: Invalid vertex index type!");
-            break;
+            case Gltf::Accessor::ComponentType::UnsignedShort: SetupIndexBuffer<ushort>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
+            case Gltf::Accessor::ComponentType::UnsignedInt: SetupIndexBuffer<uint>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
+            case Gltf::Accessor::ComponentType::UnsignedByte: SetupIndexBuffer<uchar>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
+            default:
+                n_error("ERROR: Invalid vertex index type!");
+                break;
         }
 
         if (!(attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Normal>() &&
-            attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Tangent>()))
+              attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Tangent>()))
         {
-            if (exportFlags & ExportFlags::CalcNormals)
+            if (context->flags & ExportFlags::CalcNormals)
             {
                 meshBuilder->CalculateNormals();
             }
-            if (exportFlags & ExportFlags::CalcTangents)
+            if (context->flags & ExportFlags::CalcTangents)
             {
                 meshBuilder->CalculateTangents();
             }
         }
 
-        if (exportFlags & ToolkitUtil::FlipUVs)
+        if (context->flags & ToolkitUtil::FlipUVs)
         {
             meshBuilder->FlipUvs();
         }
     }
 }
+
 } // namespace ToolkitUtil

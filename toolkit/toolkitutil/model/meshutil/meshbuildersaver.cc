@@ -157,8 +157,8 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             outVtx.position[0] = vtx.base.position.x;
             outVtx.position[1] = vtx.base.position.y;
             outVtx.position[2] = vtx.base.position.z;
-            outVtx.uv[0] = vtx.base.uv.x * 65535.0f;
-            outVtx.uv[1] = vtx.base.uv.y * 65535.0f;
+            outVtx.uv[0] = vtx.base.uv.x * 1000.0f;
+            outVtx.uv[1] = vtx.base.uv.y * 1000.0f;
         }
         stream->Write(baseBuffer, sizeof(CoreGraphics::BaseVertex) * mesh->vertices.Size());
         n_delete_array(baseBuffer);

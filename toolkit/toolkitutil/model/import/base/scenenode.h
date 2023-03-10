@@ -17,6 +17,7 @@
 #include "jobs/jobs.h"
 #include "util/set.h"
 #include <fbxsdk.h>
+
 namespace ToolkitUtil
 {
 
@@ -69,7 +70,7 @@ private:
     friend class Scene;
     
     friend class ModelExporter;
-    friend void SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context);
+    friend void MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
     NodeType type;
     struct
