@@ -54,6 +54,9 @@ public:
     /// Setup 
     void Setup(const NodeType type);
 
+    /// Calculate global transforms recursively
+    void CalculateGlobalTransforms();
+
 private:
     friend class NFbxNode;
     friend class NFbxJointNode;
@@ -82,6 +85,8 @@ private:
         Math::vec3                      scale;
         Math::point                     pivot;
         Math::bbox                      boundingBox;
+
+        Math::mat4                      globalTransform;
 
         bool                            isPhysics = false;
         bool                            isAnimated = false;

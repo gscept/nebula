@@ -93,6 +93,12 @@ ModelExporter::ExportFile(const IO::URI& file)
     timer.Reset();
     timer.Start();
 
+    for (auto& node : this->scene->nodes)
+    {
+        if (node.base.parent == nullptr)
+            node.CalculateGlobalTransforms();
+    }
+
     // Merge meshes based on vertex component and material
     Util::Array<SceneNode*> mergedMeshNodes;
     Util::Array<SceneNode*> mergedCharacterNodes;
