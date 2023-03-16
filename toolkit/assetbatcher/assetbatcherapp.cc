@@ -124,6 +124,7 @@ AssetBatcherApp::DoWork()
     systemInit.numThreads = 8;
     systemInit.scratchMemorySize = 16_MB;
     systemInit.affinity = System::Cpu::All;
+    systemInit.enableIo = true;
     Jobs2::JobSystemInit(systemInit);
 
     // override dests with settings from projectinfo
