@@ -134,7 +134,9 @@ SceneWriter::GenerateModels(
 void 
 SetupDefaultState(
     const Util::String& nodePath
+    , const Util::String& nodeMaterial
     , const Ptr<ModelAttributes>& attributes    
+    , bool skinned = false
 )
 {
     // get state from attributes
@@ -146,10 +148,19 @@ SetupDefaultState(
         state = attributes->GetState(nodePath);
     }
 
-    // set material of state
-    if (!state.material.IsValid())
+    // If the node has a material that is already a surface, use that instead of creating a default one
+    auto surfacePath = Util::String::Sprintf("sur:%s.sur", nodeMaterial.AsCharPtr());
+    if (IO::IoServer::Instance()->FileExists(surfacePath))
     {
-        state.material = "sur:system/placeholder";
+        state.material = surfacePath;
+    }
+    else if (!state.material.IsValid())
+    {
+        state.material = skinned ? "sur:system/placeholder_skinned.sur" : "sur:system/placeholder.sur";
+    }
+    else if (!state.material.EndsWithString(".sur")) // Temporary to fix all bad material assignments
+    {
+        state.material = Util::String::Sprintf("%s.sur", state.material.AsCharPtr());
     }
 
     // set state for attributes
@@ -230,7 +241,7 @@ SceneWriter::CreateModel(
 
                 skinSetNode.skinFragments.Append(skinNode);
 
-                SetupDefaultState(skinNode.path, attributes);
+                SetupDefaultState(skinNode.path, Util::String::Sprintf("%s/%s/%s", category.AsCharPtr(), file.AsCharPtr(), mesh->mesh.material.AsCharPtr()), attributes, true);
             }
 
             constants->AddSkinSetNode(skinSetNode);
@@ -257,7 +268,7 @@ SceneWriter::CreateModel(
             // add to constants
             constants->AddShapeNode(shapeNode);
 
-            SetupDefaultState(shapeNode.path, attributes);
+            SetupDefaultState(shapeNode.path, Util::String::Sprintf("%s/%s/%s", category.AsCharPtr(), file.AsCharPtr(), mesh->mesh.material.AsCharPtr()), attributes);
         }
     }
 

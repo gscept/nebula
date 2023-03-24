@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/torus" bboxcenter="-0.000000,-0.000000,-0.000000,1.000000" bboxextents="1.500000,0.500000,1.500001,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pTorus1" path="root/pTorus1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="-0.000000,-0.000000,-0.000000,1.000000" bboxextents="1.500000,0.500000,1.500001,0.000000" mesh="msh:system/torus.nvx" mid="0" primitive="0" />
+            <ShapeNode name="pTorus1_0" path="root/pTorus1_0" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="-0.000000,-0.000000,-0.000000,1.000000" bboxextents="1.500000,0.500000,1.500001,0.000000" mesh="msh:system/torus.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

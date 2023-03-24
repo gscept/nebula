@@ -3,5 +3,7 @@
     <Options exportFlags="4" scale="1.000000" />
     <States>
         <ModelNode name="root/pCube1" material="sur:system/error" />
+        <ModelNode name="root/pCube1_13" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pCube1_4" material="sur:system/placeholder.sur" />
     </States>
 </Nebula>

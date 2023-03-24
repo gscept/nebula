@@ -61,24 +61,22 @@ NglTFMesh::Setup(Util::Array<MeshBuilder>& meshes
     jobContext.outMeshes = Jobs2::JobAlloc<MeshBuilder*>(gltfMesh->primitives.Size());
     jobContext.outSceneNodes = nodes;
     jobContext.primitives = Jobs2::JobAlloc<const Gltf::Primitive*>(gltfMesh->primitives.Size());
-    jobContext.basePrimitive = basePrimitive;
     jobContext.meshIndex = meshIndex;
 
-    meshes.Resize(gltfMesh->primitives.Size());
-
-    SizeT meshIterator = 0;
-    for (auto const& primitive : gltfMesh->primitives)
+    for (int i = 0; i < gltfMesh->primitives.Size(); i++)
     {
-        jobContext.primitives[meshIterator] = &primitive;
-        jobContext.outMeshes[meshIterator] = &meshes[meshIterator];
-
-        ++meshIterator;
+        jobContext.primitives[i] = &gltfMesh->primitives[i];
+        jobContext.outMeshes[i] = &meshes[basePrimitive + i];
+        jobContext.outSceneNodes[i]->mesh.meshIndex = basePrimitive + i;
     }
 
     Threading::Event event;
     Jobs2::JobDispatch(MeshPrimitiveFunc, gltfMesh->primitives.Size(), 1, jobContext, nullptr, nullptr, &event);
 
     event.Wait();
+
+    // Free up scratch memory
+    Jobs2::JobNewFrame();
 }
 
 } // namespace ToolkitUtil

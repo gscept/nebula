@@ -141,7 +141,9 @@ MeshBuilderVertex::Transform(const mat4& m)
     if (AllBits(this->componentMask, Components::Normals))
     {
         this->attributes.normal.normal = m * Math::vector(this->attributes.normal.normal);
+        this->attributes.normal.normal = normalize(this->attributes.normal.normal);
         this->attributes.normal.tangent = m * Math::vector(this->attributes.normal.tangent);
+        this->attributes.normal.tangent = normalize(this->attributes.normal.tangent);
     }
 }
 

@@ -25,7 +25,6 @@ struct MeshPrimitiveJobContext
     const Gltf::Primitive** primitives;
     ExportFlags flags;
 
-    uint basePrimitive;
     uint meshIndex;
     MeshBuilder** outMeshes;
     SceneNode** outSceneNodes;

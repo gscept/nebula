@@ -39,11 +39,17 @@ NglTFNode::~NglTFNode()
 /**
 */
 void 
-NglTFNode::Setup(const Gltf::Node* gltfNode, SceneNode* node)
+NglTFNode::Setup(const Gltf::Node* gltfNode, SceneNode* node, SceneNode* parent)
 {
     if (node->base.name == "physics")
     {
         node->base.isPhysics = true;
+    }
+
+    if (parent != nullptr)
+    {
+        node->base.parent = parent;
+        parent->base.children.Append(node);
     }
 
     // construct nebula matrix
@@ -57,16 +63,8 @@ NglTFNode::Setup(const Gltf::Node* gltfNode, SceneNode* node)
     }
     else
     {
-        Math::quat rotation;
-        Math::vec3 translation;
-        Math::vec3 scale;
-        double sign;
-
-        decompose(gltfNode->matrix, scale, rotation, translation);
-        sign = determinant(gltfNode->matrix);
-        node->base.rotation = rotation;
-        node->base.translation = vec3(translation[0] * scaleFactor, translation[1] * scaleFactor, translation[2] * scaleFactor);
-        node->base.scale = vec3(scale[0], scale[1], scale[2]);
+        decompose(gltfNode->matrix, node->base.scale, node->base.rotation, node->base.translation);
+        node->base.translation *= scaleFactor;
     }
     
 }

@@ -29,8 +29,7 @@ TextureConverter::TextureConverter() :
     force(false),
     quiet(false),
     valid(false),
-    maxParallelJobs(1),
-    textureAttrTable(0)
+    maxParallelJobs(1)
 {
     // empty
 }
@@ -56,24 +55,6 @@ TextureConverter::Setup(Logger& logger)
     n_assert(0 == this->logger);
 
     this->logger = &logger;
-
-    // setup texture attribute pointer (use external table, or owned table)
-    if (0 == this->textureAttrTable)
-    {
-        // setup our own texture attributes table
-        n_assert(this->texAttrTablePath.IsValid());
-        if (!this->ownedTexAttrTable.Setup(this->texAttrTablePath))
-        {
-            logger.Error("    [TexConv - Failed to open '%s']\n", this->texAttrTablePath.AsCharPtr());
-            return false;
-        }
-        this->textureAttrTable = &this->ownedTexAttrTable;
-    }
-    else
-    {
-        // use externally provided texture attribute table
-        n_assert(this->textureAttrTable != nullptr);
-    }
     this->valid = true;
 
     // create a temporary directory
@@ -91,13 +72,6 @@ TextureConverter::Discard()
     n_assert(this->IsValid());
     this->valid = false;
     this->logger = 0;
-
-    // if no external texture attribute table provided, discard our own
-    if (&this->ownedTexAttrTable ==  this->textureAttrTable)
-    {
-        this->ownedTexAttrTable.Discard();
-        this->textureAttrTable = 0;
-    }
 
     // deletes the temporary directory
     if (IoServer::Instance()->DirectoryExists("temp:textureconverter"))
@@ -133,7 +107,7 @@ TextureConverter::ConvertFiles(const Util::Array<Util::String>& files)
             files[index].CheckFileExtension("exr") ||
             files[index].CheckFileExtension("jpg"))
         {
-            success = this->ConvertTexture(files[index], tmpDir);
+            success = this->ConvertTexture(files[index], "tex:", tmpDir);
         }
     }
     // remove created temp directory of this job
@@ -152,12 +126,11 @@ TextureConverter::ConvertFiles(const Util::Array<Util::String>& files)
     different platform-specific jobs based on the selected target platform.
 */
 bool
-TextureConverter::ConvertTexture(const String& srcTexPath, const String& tmpDir)
+TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir, const String& tmpDir)
 {
     n_assert(this->IsValid());
     n_assert(srcTexPath.IsValid());
     n_assert(tmpDir.IsValid());
-    n_assert(this->dstDir.IsValid());
     n_assert(0 != this->logger);
 
     // extract texture category and filename from path (last 2 components)
@@ -170,19 +143,18 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& tmpDir)
     String texCategory = tokens[tokens.Size() - 2];
     String texFilename = tokens[tokens.Size() - 1];
     String dstTexPath;
-    dstTexPath.Format("%s/%s/%s", this->dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
+    dstTexPath.Format("%s/%s/%s", dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
     dstTexPath.StripFileExtension();
 
-    n_printf("[[Exporting texture: %s...]]\n", URI(srcTexPath).LocalPath().AsCharPtr());
+    this->logger->Print("[[Exporting texture: %s...]]\n", URI(srcTexPath).LocalPath().AsCharPtr());
 
     // select conversion method based on target platform
-
     DirectXTexConversionJob job;
     job.SetLogger(this->logger);
     job.SetSrcPath(srcTexPath);
     job.SetDstPath(dstTexPath);
     job.SetTmpDir(tmpDir);
-    job.SetTexAttrTable(this->textureAttrTable);
+    job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
     job.Convert();
@@ -197,12 +169,11 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& tmpDir)
     
 */
 bool
-TextureConverter::ConvertCubemap(const String& srcTexPath, const String& tmpDir)
+TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstDir, const String& tmpDir)
 {
     n_assert(this->IsValid());
     n_assert(srcTexPath.IsValid());
     n_assert(tmpDir.IsValid());
-    n_assert(this->dstDir.IsValid());
     n_assert(0 != this->logger);
 
     // extract texture category and filename from path (last 2 components)
@@ -215,7 +186,7 @@ TextureConverter::ConvertCubemap(const String& srcTexPath, const String& tmpDir)
     String texCategory = tokens[tokens.Size() - 2];
     String texFilename = tokens[tokens.Size() - 1];
     String dstTexPath;
-    dstTexPath.Format("%s/%s/%s", this->dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
+    dstTexPath.Format("%s/%s/%s", dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
     dstTexPath.StripFileExtension();
 
     n_printf("Converting texture: %s\n", URI(srcTexPath).LocalPath().AsCharPtr());
@@ -227,13 +198,22 @@ TextureConverter::ConvertCubemap(const String& srcTexPath, const String& tmpDir)
     job.SetSrcPath(srcTexPath);
     job.SetDstPath(dstTexPath);
     job.SetTmpDir(tmpDir);
-    job.SetTexAttrTable(this->textureAttrTable);
+    job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
     job.ConvertCube();
 
     if (this->platform != Platform::Win32 && this->platform != Platform::Linux) return false;
     else return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TextureConverter::AddAttributeEntry(const Util::String& file, const TextureAttrs& attrs)
+{
+    this->textureAttrTable.SetEntry(file, attrs);
 }
 
 } // namespace ToolkitUtil

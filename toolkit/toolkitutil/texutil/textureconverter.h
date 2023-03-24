@@ -47,12 +47,15 @@ public:
     /// set quiet flag
     void SetQuietFlag(bool b);
     /// set optional external texture attribute table (so it doesn't need to be loaded during setup)
-    void SetExternalTextureAttrTable(const TextureAttrTable* extTexAttrTable);
+    void SetTextureAttrTable(TextureAttrTable&& extTexAttrTable);
 
     /// set max parallel job count
     void SetMaxParallelJobs(int count);
     /// get max parallel job count
     int GetMaxParallelJobs();
+
+    /// Add entry
+    void AddAttributeEntry(const Util::String& file, const TextureAttrs& attrs);
 
     /// setup the texture converter, read the texture attributes table
     bool Setup(Logger& logger);
@@ -63,22 +66,19 @@ public:
     /// convert all textures from given file list
     bool ConvertFiles(const Util::Array<Util::String>& files);
     /// convert a texture from a given path
-    bool ConvertTexture(const Util::String& texture, const Util::String& tmpDir);
+    bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstDir, const Util::String& tmpDir);
     /// convert a cubemap folder from a given path
-    bool ConvertCubemap(const Util::String& cubemap, const Util::String& tmpDir);
+    bool ConvertCubemap(const Util::String& srcTexPath, const Util::String& dstDir, const Util::String& tmpDir);
 
 private:
     Logger* logger;
     Platform::Code platform;
     Util::String texAttrTablePath;
-    Util::String srcDir;
-    Util::String dstDir;
     Util::String toolPath;
     bool force;
     bool quiet;
     bool valid;
-    const TextureAttrTable* textureAttrTable;
-    TextureAttrTable ownedTexAttrTable;
+    TextureAttrTable textureAttrTable;
     int maxParallelJobs;
 };
 
@@ -86,9 +86,8 @@ private:
 /**
 */
 inline void
-TextureConverter::SetExternalTextureAttrTable(const TextureAttrTable* extTexAttrTable)
+TextureConverter::SetTextureAttrTable(TextureAttrTable&& extTexAttrTable)
 {
-    n_assert(0 != extTexAttrTable);
     this->textureAttrTable = extTexAttrTable;
 }
 
@@ -117,51 +116,6 @@ inline void
 TextureConverter::SetTexAttrTablePath(const Util::String& path)
 {
     this->texAttrTablePath = path;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetSrcDir(const Util::String& d)
-{
-    this->srcDir = d;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::String&
-TextureConverter::GetSrcDir() const
-{
-    return this->srcDir;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-TextureConverter::SetDstDir(const Util::String& d)
-{
-    this->dstDir = d;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::String&
-TextureConverter::GetDstDir() const
-{
-    return this->dstDir;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Util::String&
-TextureConverter::GetDstDir()
-{
-    return this->dstDir;
 }
 
 //------------------------------------------------------------------------------

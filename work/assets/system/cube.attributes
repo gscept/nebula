@@ -4,5 +4,7 @@
     <States>
         <ModelNode name="root/" material="sur:system/placeholder" />
         <ModelNode name="root/Cube" material="Material" />
+        <ModelNode name="root/Cube_0" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/Cube_2" material="sur:system/placeholder.sur" />
     </States>
 </Nebula>

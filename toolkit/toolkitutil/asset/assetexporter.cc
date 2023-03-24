@@ -41,7 +41,6 @@ AssetExporter::Open()
     this->surfaceExporter = ToolkitUtil::SurfaceExporter::Create();
     this->surfaceExporter->Open();
     this->modelBuilder = ToolkitUtil::ModelBuilder::Create();
-    this->textureExporter.SetExternalTextureAttrTable(&this->textureAttrTable);
     this->textureExporter.Setup(this->logger);
 }
 
@@ -65,8 +64,10 @@ AssetExporter::Close()
 void
 AssetExporter::UpdateSource()
 {
-    if (this->textureAttrTable.IsValid()) this->textureAttrTable.Discard();
+    if (this->textureAttrTable.IsValid()) 
+        this->textureAttrTable.Discard();
     this->textureAttrTable.Setup("src:assets/");
+    this->textureExporter.SetTextureAttrTable(std::move(this->textureAttrTable));
 }
 
 //------------------------------------------------------------------------------
@@ -168,7 +169,6 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
 
     if (this->mode & ExportModes::Textures)
     {
-        this->textureExporter.SetExternalTextureAttrTable(&this->textureAttrTable);
         // export textures
         Array<String> files = ioServer->ListFiles(assetPath, "*.tga");
         files.AppendArray(ioServer->ListFiles(assetPath, "*.bmp"));
@@ -181,8 +181,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
         {
             console->Clear();
-            this->textureExporter.SetDstDir("tex:");
-            this->textureExporter.ConvertTexture(assetPath + files[fileIndex], "temp:textureconverter");
+            this->textureExporter.ConvertTexture(assetPath + files[fileIndex], "tex:", "temp:textureconverter");
             log.AddEntry(console, "Texture", files[fileIndex]);
         }
         // export cubemaps
@@ -190,8 +189,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         for (fileIndex = 0; fileIndex < Cubes.Size(); fileIndex++)
         {
             console->Clear();
-            this->textureExporter.SetDstDir("tex:");
-            this->textureExporter.ConvertCubemap(assetPath + Cubes[fileIndex], "temp:textureconverter");
+            this->textureExporter.ConvertCubemap(assetPath + Cubes[fileIndex], "tex:", "temp:textureconverter");
             log.AddEntry(console, "Texture", Cubes[fileIndex]);
         }
     }

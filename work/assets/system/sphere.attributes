@@ -4,5 +4,7 @@
     <States>
         <ModelNode name="root/pCube1" material="Static" />
         <ModelNode name="root/pSphere1" material="Static" />
+        <ModelNode name="root/pSphere1_1" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pSphere1_5" material="sur:system/placeholder.sur" />
     </States>
 </Nebula>

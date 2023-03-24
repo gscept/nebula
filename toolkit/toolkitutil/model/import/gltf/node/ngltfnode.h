@@ -36,7 +36,7 @@ public:
     /// destructor
     virtual ~NglTFNode();
 
-    static void Setup(const Gltf::Node* gltfNode, SceneNode* node);
+    static void Setup(const Gltf::Node* gltfNode, SceneNode* node, SceneNode* parent);
 };
 
 } // namespace ToolkitUtil

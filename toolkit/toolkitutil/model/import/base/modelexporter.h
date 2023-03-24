@@ -68,5 +68,4 @@ ModelExporter::SetTextureConverter(TextureConverter* texConv)
     this->texConverter = texConv;
 }
 
-
 } // namespace ToolkitUtil

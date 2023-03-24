@@ -2,6 +2,7 @@
 <Nebula version="1">
     <Options exportFlags="4" scale="1.000000" />
     <States>
-        <ModelNode name="root/pCone1" material="Static" />
+        <ModelNode name="root/pCone1" material="Static.sur" />
+        <ModelNode name="root/pCone1_0" material="sur:system/placeholder.sur" />
     </States>
 </Nebula>

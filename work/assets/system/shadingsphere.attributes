@@ -4,7 +4,10 @@
     <States>
         <ModelNode name="pSphere3" material="PlaceholderSkinned" />
         <ModelNode name="root/pSphere3" material="sur:system/placeholder" />
-        <ModelNode name="root/pSphere3/fragment_0" material="sur:system/placeholder" />
+        <ModelNode name="root/pSphere3/fragment_0" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pSphere3_0/fragment_0" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pSphere4" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pSphere4_1" material="sur:system/placeholder.sur" />
     </States>
     <Takes>
         <Take name="Take 001" />

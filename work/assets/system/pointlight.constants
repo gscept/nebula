@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/pointlight" bboxcenter="0.000002,-0.000002,0.000000,1.000000" bboxextents="5.005000,5.005000,5.005002,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pTorus13" path="root/pTorus13" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000002,-0.000002,0.000000,1.000000" bboxextents="5.005000,5.005000,5.005002,0.000000" mesh="msh:system/pointlight.nvx" mid="0" primitive="0" />
+            <ShapeNode name="pTorus13_1" path="root/pTorus13_1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000002,-0.000002,0.000000,1.000000" bboxextents="5.005000,5.005000,5.005002,0.000000" mesh="msh:system/pointlight.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

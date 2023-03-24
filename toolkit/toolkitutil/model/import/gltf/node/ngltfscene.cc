@@ -8,6 +8,7 @@
 #include "model/skeletonutil/skeletonbuilder.h"
 #include "model/n3util/n3modeldata.h"
 #include "timing/timer.h"
+#include "model/import/base/uniquestring.h"
 #include <array>
 #include <functional>
 
@@ -135,6 +136,7 @@ NglTFScene::Setup(Gltf::Document* scene
     const int numRootNodes = scene->scenes[scene->scene].nodes.Size();
     int numNodes = numRootNodes;
     int nodeCounter = 0;
+    int meshCounter = 0;
     for (int i = 0; i < numRootNodes; i++)
     {
         Gltf::Node* node = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
@@ -146,7 +148,8 @@ NglTFScene::Setup(Gltf::Document* scene
                 // glTF meshes can contain several primitives, which has to be a unique SceneNode each
                 // due to the fact they may vary in vertex layouts
                 Gltf::Mesh* mesh = &scene->meshes[node->mesh];
-                count += mesh->primitives.Size();
+                meshCounter += mesh->primitives.Size();
+                count += mesh->primitives.Size() + 1;
             }
             else
                 count++;
@@ -160,42 +163,59 @@ NglTFScene::Setup(Gltf::Document* scene
         counter(node, nodeCounter);
     }
     this->nodes.Reserve(nodeCounter);
+    this->meshes.Resize(meshCounter);
 
     // Create a mapping between meshes and primitives
     Util::Dictionary<IndexT, Util::Array<SceneNode*>> meshToNodeMapping;
 
     IndexT basePrimitiveIndex = 0;
-    std::function<void(Gltf::Node*)> nodeSetup = [&](Gltf::Node* gltfNode)
+    std::function<void(Gltf::Node*, SceneNode*)> nodeSetup = [&](Gltf::Node* gltfNode, SceneNode* parent)
     {
         // If we encounter a mesh, we need to emit one SceneNode per mesh primitive
+        SceneNode* node = nullptr;
         if (gltfNode->mesh != -1)
         {
+            // Create one transform node to only extract transforms
+            node = &this->nodes.Emplace();
+            node->Setup(SceneNode::NodeType::Transform);
+            NglTFNode::Setup(gltfNode, node, parent);
+            node->base.name = gltfNode->name;
+            if (node->base.name.IsEmpty())
+            {
+                node->base.name = UniqueString::New("unnamed");
+            }
+
             Util::Array<SceneNode*> primitiveNodes;
             const Gltf::Mesh& mesh = scene->meshes[gltfNode->mesh];
             primitiveNodes.Reserve(mesh.primitives.Size());
 
+            // Create one mesh node per primitive node, and parent them to the transform node above
             for (IndexT i = 0; i < mesh.primitives.Size(); i++)
             {
-                SceneNode* node = &this->nodes.Emplace();
-                node->Setup(SceneNode::NodeType::Mesh);
-                NglTFNode::Setup(gltfNode, node);
-                primitiveNodes.Append(node);
+                SceneNode* primitiveNode = &this->nodes.Emplace();
+                primitiveNode->Setup(SceneNode::NodeType::Mesh);
+                NglTFNode::Setup(gltfNode, primitiveNode, node);
+                primitiveNode->base.name = Util::String::Sprintf("%s:%d", node->base.name.AsCharPtr(), i);
+
+                // Kill transforms on primitive as it's owned by the parent transform
+                primitiveNode->base.rotation = Math::quat();
+                primitiveNode->base.scale = Math::vec3(1);
+                primitiveNode->base.translation = Math::vec3(0);
+                primitiveNodes.Append(primitiveNode);
 
                 if (gltfNode->skin != -1)
-                    node->skeleton.skeletonIndex = gltfNode->skin;
-
+                    primitiveNode->skeleton.skeletonIndex = gltfNode->skin;
             }
             NglTFMesh::Setup(this->meshes, &scene->meshes[gltfNode->mesh], scene, flags, basePrimitiveIndex, gltfNode->mesh, primitiveNodes.Begin());
-            n_printf("    [glTF - Mesh primtives read (%d)]\n", mesh.primitives.Size());
             basePrimitiveIndex += mesh.primitives.Size();
         }
         else
         {
             // If just a transform, the glTF node maps to SceneNodes 1:1
-            SceneNode& node = this->nodes.Emplace();
-            node.Setup(SceneNode::NodeType::Transform);
-            NglTFNode::Setup(gltfNode, &node);
-            node.base.name = gltfNode->name;
+            node = &this->nodes.Emplace();
+            node->Setup(SceneNode::NodeType::Transform);
+            NglTFNode::Setup(gltfNode, node, parent);
+            node->base.name = gltfNode->name;
         }
 
         // TODO: Add support for the rest of the nodes we might want, like LOD
@@ -204,7 +224,7 @@ NglTFScene::Setup(Gltf::Document* scene
         // Recurse down to children
         for (int i = 0; i < gltfNode->children.Size(); i++)
         {
-            nodeSetup(&scene->nodes[gltfNode->children[i]]);
+            nodeSetup(&scene->nodes[gltfNode->children[i]], node);
         }
     };
 
@@ -212,7 +232,7 @@ NglTFScene::Setup(Gltf::Document* scene
     for (int i = 0; i < numRootNodes; i++)
     {
         Gltf::Node* gltfNode = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
-        nodeSetup(gltfNode);
+        nodeSetup(gltfNode, nullptr);
     }
     n_printf("    [glTF - Parsing done (%d)]\n", scene->meshes.Size());
 }

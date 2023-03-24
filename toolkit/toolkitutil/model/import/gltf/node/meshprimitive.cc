@@ -121,15 +121,6 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         const Gltf::Primitive* primitive = context->primitives[index];
         SceneNode* node = context->outSceneNodes[index];
 
-        if (!context->mesh->name.IsEmpty())
-        {
-            node->base.name = context->mesh->name;
-        }
-        else
-        {
-            node->base.name.Format("unnamed_%d:%d", context->meshIndex, index);
-        }
-        
         Gltf::Material& material = context->scene->materials[primitive->material];
         if (!material.name.IsEmpty())
         {
@@ -139,7 +130,6 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         {
             node->mesh.material.Format("unnamed_%d", primitive->material);
         }
-        node->mesh.meshIndex = context->basePrimitive + index;
 
         n_assert2(primitive->nebulaMode == CoreGraphics::PrimitiveTopology::Code::TriangleList, "Only triangle lists are supported currently!");
 
@@ -159,7 +149,7 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         uint const triCount = context->scene->accessors[primitive->indices].count / 3;
 
         context->outMeshes[index]->NewMesh(vertCount, triCount);
-        for (uint i = 0; i < vertCount; i++)
+        for (uint j = 0; j < vertCount; j++)
         {
             context->outMeshes[index]->AddVertex(MeshBuilderVertex());
         }
@@ -185,22 +175,22 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
             components |= component;
             void* vb = (byte*)buffer.data.GetPtr() + bufferOffset;
 
-            for (uint i = 0; i < count; i++)
+            for (uint j = 0; j < count; j++)
             {
                 Math::vec4 data;
                 switch (vertexBufferAccessor.format)
                 {
-                    case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(vb, i); break;
-                    case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(vb, i); break;
-                    case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(vb, i); break;
-                    case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(vb, i); break;
-                    case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(vb, i); break;
+                    case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(vb, j); break;
+                    case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(vb, j); break;
+                    case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(vb, j); break;
+                    case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(vb, j); break;
+                    case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(vb, j); break;
                     default:
                         n_error("ERROR: Invalid vertex component type!");
                         break;
                 }
 
-                MeshBuilderVertex& vtx = meshBuilder->VertexAt(i);
+                MeshBuilderVertex& vtx = meshBuilder->VertexAt(j);
                 switch (component)
                 {
                     case MeshBuilderVertex::Components::Position:
