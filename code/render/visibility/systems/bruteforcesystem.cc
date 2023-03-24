@@ -97,7 +97,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompl
 
                 uint32 objectId = context->ids[index];
 
-                if (AllBits(context->flags[index], (uint32_t)Models::NodeInstanceFlags::NodeInstance_AlwaysVisible))
+                if (AllBits(context->flags[objectId], (uint32_t)Models::NodeInstanceFlags::NodeInstance_AlwaysVisible))
                 {
                     context->clipStatuses[index] = Math::ClipStatus::Inside;
                     continue;
