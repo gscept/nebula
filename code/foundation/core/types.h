@@ -122,6 +122,16 @@ AnyBits(const FLAGS flags, const BITS bits)
     return (flags & bits) != 0;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template <class FLAGS, class BITS>
+constexpr bool
+OnlyBits(const FLAGS flags, const BITS bits)
+{
+    return (flags & bits) == flags;
+}
+
 // byte bit calc
 #define BITS_TO_BYTES(x) (((x)+7)>>3)
 #define BYTES_TO_BITS(x) ((x)<<3)
