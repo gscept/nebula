@@ -3,6 +3,7 @@
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "PxConfig.h"
 #include "PxPhysicsAPI.h"
 #include "physicsinterface.h"
 #include "physics/utils.h"

@@ -3,6 +3,7 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "PxConfig.h"
 #include "physics/actorcontext.h"
 #include "physics/physxstate.h"
 #include "physics/utils.h"

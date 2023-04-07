@@ -1,7 +1,6 @@
 """build physx binaries
 
-build [win-vs15,win-vs16]
-deploy [config]
+build [vc17,vc16,vc15] [debug,checked,release]
 """
 
 from mod import log, util, settings, config
@@ -70,33 +69,6 @@ def run(fips_dir, proj_dir, args) :
                 subprocess.run([proj_dir+"/../physx/physx/generate_projects.sh", "linux"], cwd=proj_dir + "/../physx/physx/")
                 subprocess.run(["make", "-j", "10"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
                 subprocess.run(["make", "install"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
-        if noun == 'deploy' :
-            if sys.platform == "win32" : 
-                if len(args) != 3 :
-                    log.error("expected compiler and config [vc15, vc16, vc17] [debug, checked, release]")
-                
-                physxconfig = args[2]
-                
-                cur_cfg = settings.get(proj_dir, 'config')
-                
-                vcmapping = {"vc15":"win.x86_64.vc141.mt", "vc16":"win.x86_64.vc142.mt", "vc17":"win.x86_64.vc143.mt"}
-                if args[1] not in vcmapping :
-                    log.error("unknown compiler target, should be [vc15,vc16,vc17]")
-                px_target = vcmapping[args[1]]
-
-                ps_deploy = util.get_workspace_dir(fips_dir) + "/fips-deploy/physx/bin/"
-                cfg = config.load(fips_dir, proj_dir, cur_cfg)[0]
-                target_dir = util.get_deploy_dir(fips_dir, util.get_project_name_from_dir(proj_dir), cur_cfg)
-                
-                dllFiles = glob.glob(ps_deploy + px_target + "/" + physxconfig + "/*.dll")
-                log.info("Looking for PhysX dlls in '{}/'".format(ps_deploy + px_target))
-                if not dllFiles:
-                    log.error("PhysX dlls not found! Have you built them? (fips physx build [compiler target] [config])")
-                else:
-                    for dll in dllFiles :
-                        shutil.copy2(dll, target_dir)
-                    log.colored(log.GREEN, "Deployed PhysX binaries to '{}'".format(target_dir))
-                
     else:
         def run(fips_dir,proj_dir,args):
             log.error("Not supported") 
@@ -106,5 +78,4 @@ def help():
     log.info(log.YELLOW +
              "fips physx build [linux, vc15, vc16, vc17] [debug, checked, release]\n"
              "  builds PhysX dlls with the given toolchain\n"
-             "fips physx deploy [vc15, vc16, vc17] [debug, checked, release]\n"
-             "  copies PhysX dlls to the project's deploy dir")
+             )

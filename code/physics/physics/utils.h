@@ -7,6 +7,7 @@
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 
+#include "PxConfig.h"
 #include "foundation/PxVec3.h"
 #include "math/vector.h"
 #include "foundation/PxVec4.h"

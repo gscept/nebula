@@ -67,25 +67,24 @@ MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY
 
 if(FIPS_WINDOWS)
     
-if(NOT PX_TARGET)
+    if(NOT PX_TARGET)
         MESSAGE(WARNING "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
     endif()
+        
     SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
     SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
-
-    SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic_static PhysXExtensions_static PhysXPvdSDK_static  PhysXTask_static PhysXVehicle_static)
-    SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
-
+    
+    SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK  PhysXVehicle PhysXVehicle2)
+    
     SET(PX_DEBUG_LIBRARIES)
     SET(PX_RELEASE_LIBRARIES)
-
+    
     foreach(CUR_LIB ${PX_LIBRARY_NAMES})
-        find_library(PX_DBG_${CUR_LIB} ${CUR_LIB}_64 PATHS ${PX_DIR_DEBUG})
+        find_library(PX_DBG_${CUR_LIB} ${CUR_LIB}_static_64 PATHS ${PX_DIR_DEBUG})
         LIST(APPEND PX_DEBUG_LIBRARIES ${PX_DBG_${CUR_LIB}})
-        find_library(PX_REL_${CUR_LIB} ${CUR_LIB}_64 PATHS ${PX_DIR_RELEASE})
+        find_library(PX_REL_${CUR_LIB} ${CUR_LIB}_static_64 PATHS ${PX_DIR_RELEASE})
         LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
     endforeach()
-
     add_library(PxLibs INTERFACE)
     target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
 else()
