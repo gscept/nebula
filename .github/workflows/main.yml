@@ -66,13 +66,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build libxcursor-dev libxrandr-dev libxrandr-dev libxinerama-dev libxi-dev uuid-dev libcurl4-gnutls-dev libbsd-dev libxxf86vm-dev
+
+      - name: Check PhysX version
+        id: physx-rev
+        run: |
+          pushd ../physx
+          echo "::set-output name=gitrev::$(git rev-parse HEAD)"
+          popd  
         
       - name: Cache PhysX
         id: cache-physx
         uses: actions/cache@v1.1.2
         with:
           path: ../fips-deploy/physx
-          key: ${{ runner.os }}-physx-deploy-${{ matrix.physxkey }}
+          key: ${{ runner.os }}-physx-deploy-${{ steps.physx-rev.outputs.gitrev }}
 
       - name: Build PhysX
         if: steps.cache-physx.outputs.cache-hit != 'true'
