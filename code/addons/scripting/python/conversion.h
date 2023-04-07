@@ -23,7 +23,7 @@ namespace Python
 //------------------------------------------------------------------------------
 /**
 */
-pybind11::handle VariantToPyType(Util::Variant src, pybind11::return_value_policy policy = pybind11::return_value_policy::automatic, pybind11::handle parent = NULL);
+pybind11::handle VariantToPyType(Util::Variant src, pybind11::return_value_policy policy = pybind11::return_value_policy::automatic, pybind11::handle parent = nullptr);
 
 } // namespace Python
 

@@ -46,7 +46,7 @@ jobs:
       - name: Set up Python 3.x
         uses: actions/setup-python@v3
         with:
-          python-version: '3.10' # Semantic version range syntax or exact version of a Python version
+          python-version: '3.x' # Semantic version range syntax or exact version of a Python version
           architecture: 'x64' # Optional - x64 or x86, defaults to x64
       
       - name: Clone dependencies
