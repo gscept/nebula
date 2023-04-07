@@ -9,7 +9,7 @@ Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 1. OS: Windows and Linux(WIP)
 2. Compiler with support for C++17.
 3. GPU and drivers supporting Vulkan 1.2+
-4. [CMake 3.13+](https://cmake.org/download/)
+4. [CMake 3.21+](https://cmake.org/download/)
 5. [Python 3.5+](https://www.python.org/downloads)
     * Python requirements (Windows):
         1. Matching architecture (64-bit if you're building for 64-bit systems)
@@ -21,7 +21,7 @@ Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 
 #### Setup config
 
-1. `./fips set config vulkan-win64-vs2019-debug` in your project directory
+1. `./fips set config vulkan-win64-vs2022-debug` in your project directory, alternatively vs2019 or vs2017, depending on your version
 
 #### Set environment variables
 
@@ -35,10 +35,11 @@ Run `fips nebula` verb to set work and toolkit directory registry variables:
 In your project directory:
   
   1. `fips fetch`
-  2. `fips physx build win-vs16` (if you are running VS 2017, use `win-vs15` instead)
+  2. `fips physx build vc17 debug` (if you are running VS 2022, use `vc16` or `vc15` for vs 2019/2017 instead)
   2. `fips anyfx setup`
-  3. `fips build`
-  4. `fips physx deploy`
+  3. `fips ultralight`
+  4. `fips build`
+  5. `fips physx deploy vc17 debug`
 
 ## Features
 Nebula is being developed continuously, which means that features keep getting added all the time. Currently, we support this:
