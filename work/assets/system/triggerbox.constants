@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/triggerbox" bboxcenter="-0.001120,-0.000363,-0.000363,1.000000" bboxextents="0.501120,0.503000,0.503000,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pCube13_0" path="root/pCube13_0" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="-0.001120,-0.000363,-0.000363,1.000000" bboxextents="0.501120,0.503000,0.503000,0.000000" mesh="msh:system/triggerbox.nvx" mid="0" primitive="0" />
+            <ShapeNode name="pCube13" path="root/pCube13" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="-0.001120,-0.000363,-0.000363,1.000000" bboxextents="0.501120,0.503000,0.503000,0.000000" mesh="msh:system/triggerbox.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

@@ -3,7 +3,7 @@
     <Options exportFlags="28" scale="1.000000" />
     <States>
         <ModelNode name="pSphere3" material="PlaceholderSkinned" />
-        <ModelNode name="root/pSphere3" material="sur:system/placeholder" />
+        <ModelNode name="root/pSphere3" material="sur:system/placeholder.sur" />
         <ModelNode name="root/pSphere3/fragment_0" material="sur:system/placeholder.sur" />
         <ModelNode name="root/pSphere3_0/fragment_0" material="sur:system/placeholder.sur" />
         <ModelNode name="root/pSphere4" material="sur:system/placeholder.sur" />

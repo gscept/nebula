@@ -15,10 +15,12 @@
 #include "model/meshutil/meshbuildersaver.h"
 #include "model/import/fbx/node/nfbxscene.h"
 #include "model/import/gltf/node/ngltfscene.h"
+#include "model/import/base/uniquestring.h"
 
 #include "model/modelutil/modeldatabase.h"
 
 #include "model/scenewriter.h"
+
 
 using namespace Util;
 namespace ToolkitUtil
@@ -58,6 +60,9 @@ void
 ModelExporter::ExportFile(const IO::URI& file)
 {
     IO::IoServer* ioServer = IO::IoServer::Instance();
+
+    // Reset all unique strings
+    UniqueString::Reset();
 
     this->path = file;
     String localPath = file.GetHostAndLocalPath();

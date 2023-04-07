@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/cone" bboxcenter="-0.000000,0.223499,0.112018,1.000000" bboxextents="0.500000,0.447536,0.559017,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pCone1_0" path="root/pCone1_0" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="-0.850904,0.000000,0.000000,0.525322" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="-0.000000,0.223499,0.112018,1.000000" bboxextents="0.500000,0.447536,0.559017,0.000000" mesh="msh:system/cone.nvx" mid="0" primitive="0" />
+            <ShapeNode name="pCone1" path="root/pCone1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="-0.000000,0.223499,0.112018,1.000000" bboxextents="0.500000,0.447536,0.559017,0.000000" mesh="msh:system/cone.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

@@ -6,7 +6,7 @@
         <ModelNode name="root/pSphere4" material="sur:system/placeholder" />
         <ModelNode name="root/pSphere4_0" material="sur:system/placeholder.sur" />
         <ModelNode name="root/pSphere4_2" material="sur:system/placeholder.sur" />
-        <ModelNode name="root/pTorus13" material="sur:system/placeholder" />
+        <ModelNode name="root/pTorus13" material="sur:system/placeholder.sur" />
         <ModelNode name="root/pTorus13_0" material="sur:system/placeholder.sur" />
         <ModelNode name="root/pTorus13_2" material="sur:system/placeholder.sur" />
     </States>

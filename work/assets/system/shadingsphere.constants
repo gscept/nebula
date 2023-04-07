@@ -1,15 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Nebula version="4">
-    <Model name="system/shadingsphere" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,1.000000,0.000000">
+    <Model name="system/shadingsphere" bboxcenter="0.000000,0.000000,-0.000000,1.000000" bboxextents="1.000000,0.999655,0.999655,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pSphere4_1" path="root/pSphere4_1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/shadingsphere.nvx" mid="0" primitive="0" />
+            <ShapeNode name="pSphere3" path="root/pSphere3" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,-0.000000,1.000000" bboxextents="1.000000,0.999655,0.999655,0.000000" mesh="msh:system/shadingsphere.nvx" mid="0" primitive="0" />
         </ShapeNodes>
-        <SkinSetNodes>
-            <SkinSetNode name="pSphere3_0" path="root/pSphere3_0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="0.000000,0.000000,0.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="0.500000,0.500000,0.500000,0.000000">
-                <SkinNode name="pSphere3_0" path="root/pSphere3_0/fragment_0" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,0.999999,0.000000" mesh="msh:system/shadingsphere.nvx" mid="1" primitive="2">
-                    <Joints>0</Joints>
-                </SkinNode>
-            </SkinSetNode>
-        </SkinSetNodes>
     </Model>
 </Nebula>

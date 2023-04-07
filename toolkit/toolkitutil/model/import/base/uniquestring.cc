@@ -50,4 +50,13 @@ UniqueString::New(const char* str)
     return UniqueString::New(Util::String(str));
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+UniqueString::Reset()
+{
+    Lookup.Clear();
+}
+
 } // namespace ToolkitUtil

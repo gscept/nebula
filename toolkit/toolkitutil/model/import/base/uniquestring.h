@@ -22,6 +22,9 @@ public:
     /// Uniqueify string
     static Util::String New(const char* str);
 
+    /// Reset strings
+    static void Reset();
+
 private:
     static Util::Dictionary<IndexT, SizeT> Lookup;
 };
