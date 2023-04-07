@@ -1,7 +1,6 @@
 nebula_begin_module(audiofeature)
 fips_deps(audio application)
 fips_ide_group(features)
-fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
 		audiofeatureunit.h
 		audiofeatureunit.cc

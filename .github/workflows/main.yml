@@ -25,11 +25,11 @@ jobs:
           - name: windows-latest
             os: windows-latest
             config: vulkan-win64-vs2022-debug
-            physx: win-vs17
-            physxkey: vs17
+            physx: vc17
+            physxkey: vc17
             anyfx: anyfxcompiler-windows
-          - name: ubuntu-18.04
-            os: ubuntu-18.04
+          - name: ubuntu-20.04
+            os: ubuntu-20.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
@@ -58,8 +58,8 @@ jobs:
       - name: Fix clang version
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          echo "CC=clang-9" >> $GITHUB_ENV
-          echo "CXX=clang++-9" >> $GITHUB_ENV
+          echo "CC=clang-14" >> $GITHUB_ENV
+          echo "CXX=clang++-14" >> $GITHUB_ENV
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
@@ -77,7 +77,7 @@ jobs:
       - name: Build PhysX
         if: steps.cache-physx.outputs.cache-hit != 'true'
         run: |
-          python fips physx build ${{ matrix.physx }}
+          python fips physx build ${{ matrix.physx }} debug
 
       - name: Check Anyfx version
         id: anyfx-rev

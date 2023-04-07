@@ -1,6 +1,5 @@
-fips_begin_module(editor)
-fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-fips_include_directories(${CODE_ROOT}/foundation)
+fips_begin_lib(editor)
+target_include_directories(editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 fips_dir(.)
 
     file(GLOB_RECURSE py_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/scripts/" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.py" )
@@ -97,4 +96,4 @@ fips_dir(editor)
             selectiontool.h
         )
 fips_deps(foundation application graphicsfeature physicsfeature audio)
-fips_end_module()
+fips_end_lib()

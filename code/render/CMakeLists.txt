@@ -12,9 +12,10 @@ FIND_PROGRAM(SHADERC
 nebula_begin_module(render)
     add_nebula_shaders()
     set(target_has_shaders 1)
-    fips_vs_warning_level(3)
-    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons)
+    target_include_directories(render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons ${CODE_ROOT}/render)
     fips_deps(foundation input resource anyfx DevIL imgui)
+
+    target_precompile_headers(render PRIVATE "render/stdneb.h" "coregraphics/shaderserver.h" "../foundation/core/rtti.h" "graphics/graphicsserver.h" )
 
     if(N_USE_VULKAN)
         fips_deps(glfw3)
@@ -615,7 +616,5 @@ ENDIF()
             )
 
 nebula_end_module()
-target_include_directories(render PUBLIC ${CODE_ROOT}/render)
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(render PRIVATE "render/stdneb.h" "coregraphics/shaderserver.h" "../foundation/core/rtti.h" "graphics/graphicsserver.h" )
-endif()
+
+

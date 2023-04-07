@@ -32,8 +32,8 @@ imports:
         git: https://github.com/gscept/nebula-libs
         group: misc
     physx:
-        git: https://github.com/EmbarkStudios/PhysX.git
-        branch: 4.1
+        git: https://github.com/gscept/PhysX.git
+        branch: nebula
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
     gliml:

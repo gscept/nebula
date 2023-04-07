@@ -2,7 +2,6 @@ nebula_begin_module(graphicsfeature)
 nebula_flatc(SYSTEM graphicsfeature/graphicsfeatureschema.fbs)
 fips_deps(render application dynui staticui nflatbuffer)
 fips_ide_group(features)
-fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
 	graphicsfeatureunit.h
 	graphicsfeatureunit.cc

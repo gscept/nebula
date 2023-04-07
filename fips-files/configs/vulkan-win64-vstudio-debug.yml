@@ -7,4 +7,4 @@ defines:
     N_USE_VULKAN: ON
     __X64__: ON
     N_DEBUG_SYMBOLS: ON
-    PX_TARGET: win.x86_64.vc142.mt
+    PX_TARGET: win.x86_64.vc143.mt

@@ -1,7 +1,6 @@
 nebula_begin_module(physicsfeature)
 fips_deps(physics application)
 fips_ide_group(features)
-fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
 		physicsfeatureunit.h
 		physicsfeatureunit.cc

@@ -4,7 +4,6 @@
 
 fips_begin_lib(db)
 fips_ide_group(addons)
-fips_include_directories(${CODE_ROOT}/foundation ${CODE_ROOT}/addons/attr)
 fips_dir(.)
     fips_files(
         column.cc

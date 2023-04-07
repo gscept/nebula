@@ -112,8 +112,6 @@ Math::vec4 Px2Colour(PxU32 col)
 void RenderScene(PxScene* scene)
 {
     const PxRenderBuffer& rb = scene->getRenderBuffer();
-    // there seem to be no text buffers ever, lets assert to be sure
-    n_assert(rb.getNbTexts() == 0);
     for (PxU32 i = 0, j = rb.getNbLines(); i < j; i++)
     {
         const PxDebugLine& line = rb.getLines()[i];

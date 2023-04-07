@@ -4,9 +4,12 @@
 
 find_package(FBX REQUIRED)
 
-fips_begin_module(toolkitutil)
+fips_begin_lib(toolkitutil)
     fips_vs_warning_level(3)
-    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
+    target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED)
+    target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
+    target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
+
     fips_deps(foundation render gltf physics)
     fips_libs_debug(${FBX_LIBRARY_DEBUG})
     fips_libs_release(${FBX_LIBRARY})
@@ -228,10 +231,8 @@ ENDIF()
                 surfacebuilder.h
                 surfacebuilder.cc
             )
-fips_end_module()
+fips_end_lib()
 
-target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED)
-target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
 IF(FIPS_WINDOWS)
     FILE(COPY ${FBX_DLL} DESTINATION ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/)
 ENDIF()

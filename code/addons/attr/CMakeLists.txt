@@ -1,6 +1,6 @@
 fips_begin_lib(attr)
 fips_ide_group(addons)
-fips_include_directories(${CODE_ROOT}/foundation)
+target_include_directories(attr PUBLIC ${CODE_ROOT}/foundation)
 fips_files(
     attrexithandler.cc
     attrexithandler.h

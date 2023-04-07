@@ -2,9 +2,8 @@
 # Toolkit-common
 #-------------------------------------------------------------------------------
 
-fips_begin_module(toolkit-common)
-    fips_vs_warning_level(3)
-    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+fips_begin_lib(toolkit-common)
+    target_include_directories(toolkit-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(foundation)
         fips_files(
             applauncher.cc
@@ -82,5 +81,4 @@ fips_begin_module(toolkit-common)
                     distributedjob.cc
                     distributedjob.h
                 )
-fips_end_module()
-target_include_directories(toolkit-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+fips_end_lib()

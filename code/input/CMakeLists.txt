@@ -1,7 +1,7 @@
 nebula_begin_module(input)
 
 #get_filename_component(PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ ABSOLUTE)
-fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)
+target_include_directories(input PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 fips_deps(foundation)
 
 fips_dir(input)
@@ -42,5 +42,3 @@ fips_dir(input/glfw GROUP "input/glfw")
 	)
 	
 nebula_end_module()
-
-target_include_directories(input PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

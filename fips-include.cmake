@@ -149,7 +149,6 @@ macro(nebula_flatc root)
         set(abs_output_folder "${CMAKE_BINARY_DIR}/generated/flat/${foldername}")
         set(fbs ${datadir}${fb})
         set(output ${abs_output_folder}/${out_header})
-
         add_custom_command(OUTPUT ${output}
                 PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
                 PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --schema ${fbs}
@@ -159,11 +158,11 @@ macro(nebula_flatc root)
                 COMMENT "Compiling ${fb} flatbuffer"
                 VERBATIM
                 )
-        list(APPEND CurSources ${fbs})
+        target_sources(${CurTargetName} PRIVATE ${fbs})
+        target_sources(${CurTargetName} PRIVATE ${output})
 
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${output}")
         source_group("res\\flatbuffer" FILES ${fbs})
-        list(APPEND CurSources "${output}")
     endforeach()
 endmacro()
 
@@ -237,7 +236,8 @@ macro(nebula_add_nidl)
             VERBATIM PRE_BUILD)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
-        list(APPEND CurSources "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
+        #target_sources(${target} PRIVATE "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
+        target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
         endforeach()
     include_directories("${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
 endmacro()
@@ -439,7 +439,7 @@ macro(nebula_end_app)
 endmacro()
 
 macro(nebula_begin_module name)
-    fips_begin_module(${name})
+    fips_begin_lib(${name})
     set(target_has_nidl 0)
     set(target_has_shaders 0)
     set(target_has_flatc 0)
@@ -447,7 +447,7 @@ endmacro()
 
 macro(nebula_end_module)
     set(curtarget ${CurTargetName})
-    fips_end_module()
+    fips_end_lib()
     if(target_has_nidl)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
 		target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/nidl/")

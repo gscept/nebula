@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(audio)
-    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/resource)
+    target_include_directories(audio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(foundation resource soloud)
     
     fips_dir(audio)
@@ -20,4 +20,4 @@ nebula_end_module()
 if(FIPS_WINDOWS)
     target_link_options(audio PUBLIC "/WHOLEARCHIVE:audio")
 endif()
-target_include_directories(audio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+

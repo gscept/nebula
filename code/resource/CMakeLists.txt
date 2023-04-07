@@ -3,8 +3,7 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(resource)
-    fips_vs_warning_level(3)
-    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation)
+    target_include_directories(resource PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/resource)
     fips_deps(foundation)
         fips_dir(resources)
             fips_files(
@@ -21,4 +20,3 @@ nebula_begin_module(resource)
                 resourceloader.h
             )
 nebula_end_module()
-target_include_directories(resource PUBLIC ${CODE_ROOT}/resource)

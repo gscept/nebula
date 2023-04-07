@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 fips_ide_group(benchmarks)
-fips_include_directories(.)
-fips_add_subdirectory(benchmarkbase)
-fips_add_subdirectory(benchmarkfoundation)
-fips_add_subdirectory(benchmarkmemdb)
+include_directories(.)
+add_subdirectory(benchmarkbase)
+add_subdirectory(benchmarkfoundation)
+add_subdirectory(benchmarkmemdb)

@@ -1,8 +1,7 @@
 # gltf module
 
-fips_begin_module(gltf)
+fips_begin_lib(gltf)
 fips_ide_group(addons)
-fips_include_directories(${CODE_ROOT}/foundation ${CODE_ROOT}/render)
-fips_deps(foundation)
+fips_deps(foundation render)
 fips_files_ex(. *.* GROUP "gltf")
-fips_end_module()
+fips_end_lib()
