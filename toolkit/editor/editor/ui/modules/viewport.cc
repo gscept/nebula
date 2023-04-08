@@ -161,13 +161,13 @@ Viewport::Render()
     textureInfo.layer = 0;
 
     ImVec2 imageSize = {(float)dims.width, (float)dims.height};
-    imageSize.x = ImGui::GetWindowContentRegionWidth();
+    imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
     float ratio = (float)dims.height / (float)dims.width;
     imageSize.y = imageSize.x * ratio;
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImGui::ImageButton((void*)& textureInfo, imageSize, ImVec2(0,0), ImVec2(1,1), 0);
+    ImGui::ImageButton("textureinfo", (void*)&textureInfo, imageSize, ImVec2(0, 0), ImVec2(1, 1));
     
     this->hovered = ImGui::IsItemHovered();
 }

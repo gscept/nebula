@@ -124,7 +124,7 @@ BaseWindow::GetPosition() const
     else
     {
         // check if we've got any settings for this window.
-        ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettings(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
+        ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
         if (imWindowSettings != nullptr)
         {
             pos.x = imWindowSettings->Pos.x;
@@ -156,7 +156,7 @@ BaseWindow::GetSize() const
     else
     {
         // check if we've got any settings for this window.
-        ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettings(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
+        ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
         if (imWindowSettings != nullptr)
         {
             size = imWindowSettings->Size;
@@ -186,7 +186,7 @@ BaseWindow::SetPosition(const Math::vec2 & pos)
     }
 
     // check if we've got any settings for this window.
-    ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettings(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
+    ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
     if (imWindowSettings != nullptr)
     {
         imWindowSettings->Pos = ImVec2ih(pos.x, pos.y);
@@ -212,7 +212,7 @@ BaseWindow::SetSize(const Math::vec2 & size)
     }
 
     // check if we've got any settings for this window.
-    ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettings(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
+    ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
     if (imWindowSettings != nullptr)
     {
         imWindowSettings->Size = ImVec2ih(size.x, size.y);

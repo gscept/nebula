@@ -2113,7 +2113,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                 textureInfo.mip = 0;
                 textureInfo.layer = 0;
 
-                imageSize.x = ImGui::GetWindowContentRegionWidth();
+                imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
                 float ratio = (float)dims.height / (float)dims.width;
                 imageSize.y = imageSize.x * ratio;
 
@@ -2138,7 +2138,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                 textureInfo.layer = 0;
 
 
-                imageSize.x = ImGui::GetWindowContentRegionWidth();
+                imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
                 float ratio = (float)dims.height / (float)dims.width;
                 imageSize.y = imageSize.x * ratio;
 

@@ -57,7 +57,7 @@ Console::Update()
 {
     // This should be moved to some centralized location for all keyboard shortcuts.
     ImGuiIO& io = ImGui::GetIO();
-    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F8) || io.KeysDownDuration[Input::Key::F8] == 0.0f)
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F8) || io.KeysData[Input::Key::F8].DownDuration == 0.0f)
     {
         // Toggle window
         this->open = !open;

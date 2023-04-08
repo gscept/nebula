@@ -227,7 +227,7 @@ ImguiContext::RecoverImGuiContextErrors()
 #ifdef IMGUI_HAS_TABLE
         while (g.CurrentTable && (g.CurrentTable->OuterWindow == g.CurrentWindow || g.CurrentTable->InnerWindow == g.CurrentWindow))
         {
-            if (verbose) LogWarning("Recovered from missing EndTable() call.");
+            n_warning("Recovered from missing EndTable() call.");
             ImGui::EndTable();
         }
 #endif

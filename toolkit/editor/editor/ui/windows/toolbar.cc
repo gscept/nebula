@@ -92,11 +92,11 @@ Toolbar::Run()
     
     IMGUI_VERTICAL_SEPARATOR;
     
-    if (ImGui::ImageButton(&UIManager::Icons::play, buttonSize, {0,0}, {1,1}, 0)) { PlayGame(); }
+    if (ImGui::ImageButton("playimage", &UIManager::Icons::play, buttonSize, {0,0}, {1,1})) { PlayGame(); }
     ImGui::SameLine();
-    if (ImGui::ImageButton(&UIManager::Icons::pause, buttonSize, {0,0}, {1,1}, 0)) { PauseGame(); }
+    if (ImGui::ImageButton("pauseimage", &UIManager::Icons::pause, buttonSize, {0,0}, {1,1})) { PauseGame(); }
     ImGui::SameLine();
-    if (ImGui::ImageButton(&UIManager::Icons::stop, buttonSize, {0,0}, {1,1}, 0)) { StopGame(); }
+    if (ImGui::ImageButton("stopimage", &UIManager::Icons::stop, buttonSize, {0,0}, {1,1})) { StopGame(); }
 }
 
 } // namespace Presentation

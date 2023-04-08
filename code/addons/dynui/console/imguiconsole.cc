@@ -349,7 +349,7 @@ void
 ImguiConsole::Render()
 {
     ImGuiIO& io = ImGui::GetIO();
-    if (io.KeysDownDuration[Key::F9] == 0.0f)
+    if (io.KeysData[Key::F9].DownDuration == 0.0f)
     {
         this->visible = !this->visible;
     }   
@@ -511,7 +511,7 @@ ImguiConsole::RenderContent()
             if (open_autocomplete)
             {
                 ImGui::OpenPopup("autocomplete");
-                auto pos = ImGui::GetCurrentContext()->PlatformImePos;
+                auto pos = ImGui::GetCurrentContext()->PlatformImeData.InputPos;
                 pos.y += 20;
                 ImGui::SetNextWindowPos(pos);
                 this->selectedSuggestion = 0;
