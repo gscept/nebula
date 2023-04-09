@@ -119,7 +119,7 @@ template <class FLAGS, class BITS>
 constexpr bool
 AnyBits(const FLAGS flags, const BITS bits)
 {
-    return (flags & bits) != 0;
+    return (flags & bits) != (FLAGS)0;
 }
 
 //------------------------------------------------------------------------------

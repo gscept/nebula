@@ -223,10 +223,12 @@ DestroyCmdBuffer(const CmdBufferId id)
     n_assert(id.id8 == CommandBufferIdType);
 #endif
 
-#if NEBULA_ENABLE_PROFILING
-    QueryBundle& queryBundles = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
 
-    CmdBufferMarkerBundle& markers = commandBuffers.GetUnsafe<CmdBuffer_ProfilingMarkers>(id.id24);
+#if NEBULA_ENABLE_PROFILING
+    QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id.id24);
+
+    CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
     markers.markerStack.Clear();
     markers.finishedMarkers.Clear();
 #endif
