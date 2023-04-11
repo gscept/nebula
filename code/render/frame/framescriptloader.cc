@@ -164,7 +164,7 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
             // create texture
             TextureCreateInfo info;
             info.name = name->string_value;
-            info.usage = TextureUsageFromString(usage->string_value);
+            info.usage = TextureUsageFromString(usage->string_value) | DeviceExclusive;
             info.tag = "frame_script"_atm;
             info.type = TextureTypeFromString(type->string_value);
             info.format = fmt;
@@ -781,6 +781,11 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         };
 
         bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
+
+        if (isDepth)
+        {
+            viewCreate.bits = CoreGraphics::ImageBits::DepthBits;
+        }
 
         pass.attachments.Append(CreateTextureView(viewCreate));
         attachmentNames.Append(name->string_value);

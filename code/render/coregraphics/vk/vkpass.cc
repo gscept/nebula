@@ -705,9 +705,7 @@ PassWindowResizeCallback(const PassId id)
 
     // update attachments because their underlying textures might have changed
     for (IndexT i = 0; i < loadInfo.attachments.Size(); i++)
-    {
         CoreGraphics::TextureViewReload(loadInfo.attachments[i]);
-    }
 
     // setup pass again
     SetupPass(id);

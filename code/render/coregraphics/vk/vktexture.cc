@@ -321,6 +321,7 @@ SetupTexture(const TextureId id)
         // if we have a sparse texture, don't allocate any memory or load any pixels
         if (loadInfo.sparse)
         {
+            n_assert(loadInfo.buffer == nullptr);
             loadInfo.sparseExtension = textureSparseExtensionAllocator.Alloc();
 
             // setup sparse and commit the initial page updates
@@ -451,7 +452,8 @@ SetupTexture(const TextureId id)
             , viewRange.baseArrayLayer
             , viewRange.layerCount);
 
-        if (loadInfo.clear || loadInfo.usage & TextureUsage::RenderTexture)
+        // If render target or texture has clear, transition to write and clear it
+        if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::RenderTexture))
         {
             // The first barrier is to transition from the initial layout to transfer for clear
             CoreGraphics::CmdBarrier(cmdBuf,
@@ -507,9 +509,9 @@ SetupTexture(const TextureId id)
                     });
             }
         }
-        else if (loadInfo.usage & TextureUsage::ReadWriteTexture)
+        else if (AnyBits(loadInfo.usage, DeviceExclusive | ReadWriteTexture))
         {
-            // Transition read-write texture 
+            // Transition device-only textures to read state
             CoreGraphics::CmdBarrier(cmdBuf,
                 CoreGraphics::PipelineStage::ImageInitial,
                 CoreGraphics::PipelineStage::AllShadersRead,
