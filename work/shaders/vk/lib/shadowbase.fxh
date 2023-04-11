@@ -43,14 +43,14 @@ shader
 void
 vsStatic(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos)
 {
 	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ shader
 void
 vsSkinned(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	[slot=7] in vec4 weights,
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
@@ -70,7 +70,7 @@ vsSkinned(
 	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ shader
 void
 vsStaticInst(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos)
 {
@@ -88,7 +88,7 @@ vsStaticInst(
 	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);;
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -98,14 +98,14 @@ shader
 void
 vsStaticCSM(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos)
 {
 	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -115,7 +115,7 @@ shader
 void
 vsSkinnedCSM(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	[slot=7] in vec4 weights,
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
@@ -125,7 +125,7 @@ vsSkinnedCSM(
 	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * skinnedPos;
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ shader
 void
 vsStaticInstCSM(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos)
 {
@@ -143,7 +143,7 @@ vsStaticInstCSM(
 	ProjPos = CSMViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -153,14 +153,14 @@ shader
 void
 vsStaticPoint(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos)
 {
 	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ shader
 void
 vsSkinnedPoint(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	[slot=7] in vec4 weights,
 	[slot=8] in uvec4 indices,
 	out vec2 UV,
@@ -180,7 +180,7 @@ vsSkinnedPoint(
 	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ shader
 void
 vsStaticInstPoint(
 	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
+	[slot=2] in ivec2 uv,
 	out vec2 UV,
 	out vec4 ProjPos)
 {
@@ -198,7 +198,7 @@ vsStaticInstPoint(
 	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
-	UV = uv;
+	UV = UnpackUV(uv);
 }
 
 //------------------------------------------------------------------------------
@@ -207,15 +207,20 @@ vsStaticInstPoint(
 [earlydepth]
 shader
 void
-psShadow() {}
+psShadow(
+    in vec2 UV,
+    in vec4 ProjPos
+) {}
 
 //------------------------------------------------------------------------------
 /**
 */
 shader
 void
-psShadowAlpha(in vec2 UV,
-	in vec4 ProjPos)
+psShadowAlpha(
+    in vec2 UV,
+	in vec4 ProjPos
+)
 {
 	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
 	if (alpha < AlphaSensitivity) 
