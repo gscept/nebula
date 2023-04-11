@@ -75,9 +75,12 @@ CharacterSkinNode::OnFinishedLoading()
 {
     PrimitiveNode::OnFinishedLoading();
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
-    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, ObjectsShared::Table_DynamicOffset::JointBlock::SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
-    CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+    SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
+    for (IndexT i = 0; i < numFrames; i++)
+    {
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetGraphicsConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock::SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
+        CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
+    }
 }
 
 //------------------------------------------------------------------------------

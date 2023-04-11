@@ -76,7 +76,7 @@ protected:
     uint8_t instancingTransformsIndex;
     uint8_t skinningTransformsIndex;
 
-    CoreGraphics::ResourceTableId resourceTable;
+    Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 };
 
 } // namespace Models

@@ -354,7 +354,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 Models::ShaderStateNode::DrawPacket* packet = reinterpret_cast<Models::ShaderStateNode::DrawPacket*>(mem);
                 packet->numOffsets[0] = context->renderables->nodeStates[index].resourceTableOffsets.Size();
                 packet->numTables = 1;
-                packet->tables[0] = context->renderables->nodeStates[index].resourceTable;
+                packet->tables[0] = context->renderables->nodeStates[index].resourceTables[CoreGraphics::GetBufferedFrameIndex()];
                 packet->materialInstance = context->renderables->nodeStates[index].materialInstance;
 #ifndef PUBLIC_BUILD
                 packet->boundingBox = context->renderables->nodeBoundingBoxes[index];

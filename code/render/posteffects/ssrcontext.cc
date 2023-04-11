@@ -29,8 +29,6 @@ struct
     CoreGraphics::ShaderProgramId traceProgram;
     CoreGraphics::ShaderProgramId resolveProgram;
 
-    CoreGraphics::BufferId constants;
-
     CoreGraphics::TextureId traceBuffer;
     CoreGraphics::TextureId reflectionBuffer;
 } ssrState;
@@ -121,7 +119,6 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     // create trace shader
     ssrState.traceShader = ShaderGet("shd:ssr_cs.fxb");
-    ssrState.constants = CoreGraphics::GetGraphicsConstantBuffer();
 
     ssrState.ssrTraceTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
@@ -180,7 +177,7 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { ssrState.constants, SsrCs::Table_Batch::SSRBlock::SLOT, 0, SsrCs::Table_Batch::SSRBlock::SIZE, (SizeT)ssrOffset });
+    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex), SsrCs::Table_Batch::SSRBlock::SLOT, 0, SsrCs::Table_Batch::SSRBlock::SIZE, (SizeT)ssrOffset });
     ResourceTableCommitChanges(ssrState.ssrTraceTables[bufferIndex]);
 }
 

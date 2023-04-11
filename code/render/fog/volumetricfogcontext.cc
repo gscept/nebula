@@ -125,12 +125,12 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 
         ResourceTableSetRWBuffer(computeTable, { fogState.clusterFogIndexLists, Shared::Table_Frame::FogIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(computeTable, { fogState.clusterFogLists, Shared::Table_Frame::FogLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
         ResourceTableCommitChanges(computeTable);
 
         ResourceTableSetRWBuffer(graphicsTable, { fogState.clusterFogIndexLists, Shared::Table_Frame::FogIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(graphicsTable, { fogState.clusterFogLists, Shared::Table_Frame::FogLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
         ResourceTableCommitChanges(graphicsTable);
     }
 
@@ -473,9 +473,9 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     CoreGraphics::ResourceTableId viewTablesGraphics = Graphics::GetFrameResourceTableGraphics(bufferIndex);
 
     uint offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(viewTablesCompute, { GetComputeConstantBuffer(), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(viewTablesCompute, { GetComputeConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(viewTablesCompute);
-    ResourceTableSetConstantBuffer(viewTablesGraphics, { GetGraphicsConstantBuffer(), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(viewTablesGraphics, { GetGraphicsConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(viewTablesGraphics);
 
     // setup blur tables

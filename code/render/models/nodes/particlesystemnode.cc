@@ -95,14 +95,18 @@ ParticleSystemNode::OnFinishedLoading()
     this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
     ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-    BufferId cbo = GetGraphicsConstantBuffer();
     this->objectTransformsIndex = ::Particle::Table_DynamicOffset::ObjectBlock::SLOT;
     this->instancingTransformsIndex = ::Particle::Table_DynamicOffset::InstancingBlock::SLOT;
     this->skinningTransformsIndex = ::Particle::Table_DynamicOffset::JointBlock::SLOT;
     this->particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT;
-    this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-    ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
-    ResourceTableCommitChanges(this->resourceTable);
+    SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
+    this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < numFrames; i++)
+    {
+        this->resourceTables[i] = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetGraphicsConstantBuffer(i), this->particleConstantsIndex, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
+        CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
+    }
 }
 
 //------------------------------------------------------------------------------

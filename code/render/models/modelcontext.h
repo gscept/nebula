@@ -92,7 +92,7 @@ public:
      
     struct NodeInstanceState
     {
-        CoreGraphics::ResourceTableId resourceTable;
+        Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
         Materials::MaterialInstanceId materialInstance;
         Util::FixedArray<uint32_t> resourceTableOffsets;
         IndexT objectConstantsIndex;
