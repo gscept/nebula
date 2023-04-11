@@ -140,6 +140,12 @@ CreateMaterial(const MaterialCreateInfo& info)
                         break;
                     }
                 }
+
+                // Make sure to also update the buffer with the default value
+                if (baseConstant.def.GetType() == MaterialVariant::Type::TextureHandle)
+                    CoreGraphics::BufferUpdate(surConst.buffer, baseConstant.def.Get<MaterialVariant::TextureHandleTuple>().handle, surConst.binding);
+                else
+                    CoreGraphics::BufferUpdate(surConst.buffer, baseConstant.def.Get(), MaterialVariant::TypeToSize(baseConstant.def.type), surConst.binding);
             }
             else if (constant.group == NEBULA_INSTANCE_GROUP)
             {

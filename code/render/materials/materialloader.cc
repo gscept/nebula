@@ -39,7 +39,7 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
         // make sure it's a valid frame shader file
         if (!reader->HasNode("/Nebula/Surface"))
         {
-            n_error("StreamSurfaceMaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
+            n_error("MaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
             return Failed;
         }
 
