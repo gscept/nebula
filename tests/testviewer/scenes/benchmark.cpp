@@ -45,8 +45,8 @@ void OpenScene()
 
     //const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
     const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
-    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
-    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
+    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk",  "ske:Units/Unit_Footman.nsk",  "ske:Units/Unit_Spearman.nsk" };
+    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax",  "ani:Units/Unit_Footman.nax",  "ani:Units/Unit_Spearman.nax" };
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();

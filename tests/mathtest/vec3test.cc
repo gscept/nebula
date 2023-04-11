@@ -119,6 +119,7 @@ Vec3Test::Run()
     v2.storeu(fUnalignedStore);
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f));
 
+
 /*
     // load_ubyte4n_signed
     NEBULA_ALIGN16 const uchar ucArrAligned[8] = {0, 0, 128, 255, 0xEE, 0xDD, 0xBB, 0xAA };

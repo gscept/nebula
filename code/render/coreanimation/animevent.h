@@ -39,27 +39,8 @@ public:
     friend bool operator<=(const AnimEvent& a, const AnimEvent& b);
     /// greather-or-equal operator (time only)
     friend bool operator>=(const AnimEvent& a, const AnimEvent& b);
-            
-    /// set the name of the event
-    void SetName(const Util::StringAtom& name);
-    /// get the name of the event
-    const Util::StringAtom& GetName() const;
 
-    /// set the name of the category
-    void SetCategory(const Util::StringAtom& str);
-    /// get the name of the category
-    const Util::StringAtom& GetCategory() const;
-    /// check if has category
-    bool HasCategory() const;
-    
-    /// set the point-in-time when the event should trigger in seconds
-    void SetTime(Timing::Tick t);
-    /// get the time when the event should trigger
-    Timing::Tick GetTime() const;
-
-private:
-    Util::StringAtom name;
-    Util::StringAtom category;
+    Util::StringAtom name, category;
     Timing::Tick time;
 };
 
@@ -96,69 +77,6 @@ AnimEvent::AnimEvent(const Util::StringAtom& n, const Util::StringAtom& c, Timin
     time(t)
 {
     // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-AnimEvent::SetName(const Util::StringAtom& n)
-{
-    this->name = n;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::StringAtom&
-AnimEvent::GetName() const
-{
-    return this->name;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-AnimEvent::SetCategory(const Util::StringAtom& str)
-{
-    this->category = str;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::StringAtom&
-AnimEvent::GetCategory() const
-{
-    return this->category;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-AnimEvent::HasCategory() const
-{
-    return this->category.IsValid();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-AnimEvent::SetTime(Timing::Tick t)
-{
-    this->time = t;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Timing::Tick
-AnimEvent::GetTime() const
-{
-    return this->time;
 }
 
 //------------------------------------------------------------------------------

@@ -10,7 +10,6 @@ group(BATCH_GROUP) shared constant UnitBlock
 {
     textureHandle TeamColorMask;
     textureHandle SpecularMap;
-    textureHandle RoughnessMap;
 };
 
 group(INSTANCE_GROUP) shared constant UnitInstanceBlock
@@ -36,7 +35,7 @@ void
 psNotaUnit(
     in vec3 Tangent,
     in vec3 Normal,
-    in vec3 Binormal,
+    in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
     in vec4 ViewSpacePos,
@@ -45,14 +44,14 @@ psNotaUnit(
     [color2] out vec4 OutSpecular)
 {
     vec4 diffColor = sample2D(AlbedoMap, TeamSampler, UV) * vec4(MatAlbedoIntensity.rgb, 1);
-    float roughness = sample2D(RoughnessMap, TeamSampler, UV).r * MatRoughnessIntensity;
+    float roughness = sample2D(ParameterMap, TeamSampler, UV).r * MatRoughnessIntensity;
     vec4 specColor = sample2D(SpecularMap, TeamSampler, UV) * MatSpecularIntensity;
     float cavity = 1.0f;
     float teamMask = sample2D(TeamColorMask, TeamSampler, UV).r;
     vec4 maskColor = TeamColor * teamMask;
 
     vec4 normals = sample2D(NormalMap, NormalSampler, UV);
-    vec3 N = normalize(calcBump(Tangent, Binormal, Normal, normals));
+    vec3 N = normalize(calcBump(Tangent, Normal, Sign, normals));
 
     vec4 material = vec4(specColor.r, roughness, cavity, 0);
     vec4 albedo = diffColor + vec4(Overlay(diffColor.rgb, maskColor.rgb), 0);

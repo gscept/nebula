@@ -31,8 +31,8 @@ DrawFullScreenQuad::Setup()
     {
         // setup vertex components
         Array<VertexComponent> vertexComponents;
-        vertexComponents.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3));
-        vertexComponents.Append(VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2));
+        vertexComponents.Append(VertexComponent(VertexComponent::IndexName::Position, VertexComponent::Float3));
+        vertexComponents.Append(VertexComponent(VertexComponent::IndexName::TexCoord1, VertexComponent::Float2));
 
         // create corners and uvs
         float left = -1.0f;

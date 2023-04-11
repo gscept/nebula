@@ -6,6 +6,7 @@
 #include "system/appentry.h"
 #include "core/coreserver.h"
 #include "testbase/testrunner.h"
+#include "animtest.h"
 #include "rendertest.h"
 
 using namespace Core;
@@ -26,6 +27,7 @@ NebulaMain(const Util::CommandLineArgs& args)
 
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
+    testRunner->AttachTestCase(AnimTest::Create());
     testRunner->AttachTestCase(RenderTest::Create());
     testRunner->Run();
     //testRunner->AttachTestCase(BXmlReaderTest::Create());

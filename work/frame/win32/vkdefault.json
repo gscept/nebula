@@ -728,6 +728,11 @@
                                     "ops": [
                                         {
                                             "subgraph": {
+                                                "name": "Debug Shapes"
+                                            }
+                                        },
+                                        {
+                                            "subgraph": {
                                                 "name": "ImGUI"
                                             }
                                         },

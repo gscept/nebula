@@ -76,6 +76,9 @@ public:
 
     /// Signal new work available
     void SignalWorkAvailable();
+    
+    bool enableIo;
+    bool enableProfiling;
 protected:
 
     /// override this method if your thread loop needs a wakeup call before stopping
@@ -97,12 +100,17 @@ struct JobSystemInitInfo
     SizeT scratchMemorySize;
     SizeT numBuffers;
 
+    bool enableIo;
+    bool enableProfiling;
+
     JobSystemInitInfo()
         : numThreads(1)
         , affinity(0xFFFFFFFF)
         , priority(UINT_MAX)
         , scratchMemorySize(1_MB)
         , numBuffers(1)
+        , enableIo(false)
+        , enableProfiling(true)
     {};
 };
 

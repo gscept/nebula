@@ -26,8 +26,6 @@ public:
     /// destructor
     virtual ~CharacterNode();
 
-    /// called once when all pending resource have been loaded
-    void OnFinishedLoading();
     /// called when resources have loaded
     void OnResourcesLoaded();
     /// parse data tag (called by loader code)
@@ -53,19 +51,10 @@ private:
 
 protected:
 
-    struct SkinList
-    {
-        Util::StringAtom name;
-        Util::FixedArray<Util::StringAtom> skinNames;
-        Util::FixedArray<Models::ModelNode*> skinNodes;
-    };
-
-    Util::FixedArray<SkinList> skinLists;
-    IndexT skinListIndex;
-
-    Util::HashTable<Util::StringAtom, IndexT, 8> skinNodes;
     Resources::ResourceName animResId;
+    IndexT animIndex;
     Resources::ResourceName skeletonResId;
+    IndexT skeletonIndex;
     Resources::ResourceName variationResId;
     Util::StringAtom tag;
     Resources::ResourceId managedAnimResource;

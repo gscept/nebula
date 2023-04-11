@@ -20,7 +20,7 @@
 					{
 					   "name": "metallicRoughnessTexture",
 					   "type": "textureHandle",
-					   "defaultValue": "tex:system/white"
+					   "defaultValue": "tex:system/default_material"
 					},
 					{
 					   "name": "emissiveTexture",

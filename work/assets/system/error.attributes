@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Nebula version="1">
-    <Options exportFlags="4" exportMode="0" scale="1.000000" />
+    <Options exportFlags="4" scale="1.000000" />
     <States>
-        <ModelNode name="root/pCube1" material="sur:system/error">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
+        <ModelNode name="root/pCube1" material="sur:system/error.sur" />
+        <ModelNode name="root/pCube1_13" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pCube1_4" material="sur:system/placeholder.sur" />
     </States>
 </Nebula>

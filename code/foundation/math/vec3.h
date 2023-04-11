@@ -87,13 +87,13 @@ public:
 
     union
     {
-        __m128 vec;
-        float v[3];
         struct
         {
             // we can access __w to check it, but we don't actually use it
             float x, y, z, __w;
         };
+        __m128 vec;
+        float v[3];
     };
 };
 

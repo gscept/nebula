@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coreanimation/animationloader.h"
-#include "coreanimation/animresource.h"
+#include "coreanimation/animationresource.h"
 #include "system/byteorder.h"
 #include "coreanimation/naxfileformatstructs.h"
 
@@ -24,8 +24,6 @@ using namespace Math;
 Resources::ResourceUnknownId
 AnimationLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-    Util::FixedArray<AnimClip> clips;
-    Util::HashTable<Util::StringAtom, IndexT, 32> clipIndices;
     Ptr<AnimKeyBuffer> keyBuffer = nullptr;
     
     // map buffer
@@ -43,91 +41,103 @@ AnimationLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& t
     }
 
     // load animation if it has clips in it
-    if (naxHeader->numClips > 0)
+    Util::FixedArray<CoreAnimation::AnimationId> animations(naxHeader->numAnimations);
+    animations.Fill(InvalidAnimationId);
+    for (IndexT animationIndex = 0; animationIndex < naxHeader->numAnimations; animationIndex++)
     {
-        // setup animation clips
-        clips.SetSize(naxHeader->numClips);
-        IndexT clipIndex;
-        SizeT numClips = (SizeT)naxHeader->numClips;
-        for (clipIndex = 0; clipIndex < numClips; clipIndex++)
+        Nax3Anim* anim = (Nax3Anim*)ptr;
+        ptr += sizeof(Nax3Anim);
+
+        Util::HashTable<Util::StringAtom, IndexT, 32> clipIndices;
+        Util::FixedArray<AnimCurve> curves;
+        if (anim->numCurves > 0)
         {
-            Nax3Clip* naxClip = (Nax3Clip*)ptr;
-            ptr += sizeof(Nax3Clip);
-
-            // setup anim clip object
-            AnimClip& clip = clips[clipIndex];
-            clip.SetNumCurves(naxClip->numCurves);
-            clip.SetStartKeyIndex(naxClip->startKeyIndex);
-            clip.SetNumKeys(naxClip->numKeys);
-            clip.SetKeyStride(naxClip->keyStride);
-            clip.SetKeyDuration(naxClip->keyDuration);
-            clip.SetPreInfinityType((InfinityType::Code)naxClip->preInfinityType);
-            clip.SetPostInfinityType((InfinityType::Code)naxClip->postInfinityType);
-            clip.SetName(naxClip->name);
-
-            // add anim events
-            clip.BeginEvents(naxClip->numEvents);
-            IndexT eventIndex;
-            for (eventIndex = 0; eventIndex < naxClip->numEvents; eventIndex++)
-            {
-                Nax3AnimEvent* naxEvent = (Nax3AnimEvent*)ptr;
-                ptr += sizeof(Nax3AnimEvent);
-                AnimEvent animEvent(naxEvent->name, naxEvent->category, naxEvent->keyIndex * clip.GetKeyDuration());
-                clip.AddEvent(animEvent);
-            }
-            clip.EndEvents();
-
-            // setup anim curves
-            IndexT curveIndex;
-            for (curveIndex = 0; curveIndex < naxClip->numCurves; curveIndex++)
+            curves.SetSize(anim->numCurves);
+            for (IndexT curveIndex = 0; curveIndex < anim->numCurves; curveIndex++)
             {
                 Nax3Curve* naxCurve = (Nax3Curve*)ptr;
                 ptr += sizeof(Nax3Curve);
 
-                AnimCurve& animCurve = clip.CurveByIndex(curveIndex);
-                animCurve.SetFirstKeyIndex(naxCurve->firstKeyIndex);
-                animCurve.SetActive(naxCurve->isActive != 0);
-                animCurve.SetStatic(naxCurve->isStatic != 0);
-                animCurve.SetCurveType((CurveType::Code)naxCurve->curveType);
-                animCurve.SetStaticKey(vec4(naxCurve->staticKeyX, naxCurve->staticKeyY, naxCurve->staticKeyZ, naxCurve->staticKeyW));
+                AnimCurve& curve = curves[curveIndex];
+                curve.firstIntervalOffset = naxCurve->firstIntervalOffset;
+                curve.numIntervals = naxCurve->numIntervals;
+                curve.preInfinityType = (CoreAnimation::InfinityType::Code)naxCurve->preInfinityType;
+                curve.postInfinityType = (CoreAnimation::InfinityType::Code)naxCurve->postInfinityType;
+                curve.curveType = (CoreAnimation::CurveType::Code)naxCurve->curveType;
             }
         }
 
-        clipIndices.Clear();
-        clipIndices.BeginBulkAdd();
-        for (clipIndex = 0; clipIndex < clips.Size(); clipIndex++)
+        Util::FixedArray<AnimEvent> events;
+        if (anim->numEvents > 0)
         {
-            const AnimClip& curClip = clips[clipIndex];
-            n_assert(curClip.GetName().IsValid());
-            n_assert(curClip.GetNumCurves() > 0);
-            clipIndices.Add(curClip.GetName(), clipIndex);
-        }
-        clipIndices.EndBulkAdd();
+            events.SetSize(anim->numEvents);
+            for (IndexT eventIndex = 0; eventIndex < anim->numEvents; eventIndex++)
+            {
+                Nax3AnimEvent* naxEvent = (Nax3AnimEvent*)ptr;
+                ptr += sizeof(Nax3AnimEvent);
 
-        // precompute the key-slice values in the clips
-        for (clipIndex = 0; clipIndex < clips.Size(); clipIndex++)
+                AnimEvent& event = events[eventIndex];
+                event.name = naxEvent->name;
+                event.category = naxEvent->category;
+                event.time = naxEvent->keyIndex;
+            }
+        }
+
+        Util::FixedArray<AnimClip> clips;
+        if (anim->numClips > 0)
         {
-            clips[clipIndex].PrecomputeKeySliceValues();
+            // setup animation clips
+            clips.SetSize(anim->numClips);
+            for (IndexT clipIndex = 0; clipIndex < anim->numClips; clipIndex++)
+            {
+                Nax3Clip* naxClip = (Nax3Clip*)ptr;
+                ptr += sizeof(Nax3Clip);
+
+                // setup anim clip object
+                AnimClip& clip = clips[clipIndex];
+                clip.SetName(naxClip->name);
+                clip.firstCurve = naxClip->firstCurve;
+                clip.numCurves = naxClip->numCurves;
+                clip.firstEvent = naxClip->firstEvent;
+                clip.numEvents = naxClip->numEvents;
+                clip.firstVelocityCurve = naxClip->firstVelocityCurve;
+                clip.numVelocityCurves = naxClip->numVelocityCurves;
+                clip.duration = naxClip->duration;
+                clip.SetName(naxClip->name);
+
+                for (IndexT i = 0; i < naxClip->numEvents; i++)
+                    clip.eventIndexMap.Add(events[naxClip->firstEvent + i].name, naxClip->firstEvent + i);
+                clipIndices.Add(naxClip->name, clipIndex);
+            }
         }
 
-        // load keys
+        // Load keys
         keyBuffer = AnimKeyBuffer::Create();
-        keyBuffer->Setup(naxHeader->numKeys);
-        void* keyPtr = keyBuffer->Map();
-        Memory::Copy(ptr, keyPtr, keyBuffer->GetByteSize());
-        keyBuffer->Unmap();
+        keyBuffer->Setup(anim->numIntervals, anim->numKeys, ptr, ptr + sizeof(Nax3Interval) * anim->numIntervals);
+
+        // Advance pointer by keys and timings
+        ptr += anim->numKeys * sizeof(float) + anim->numIntervals * sizeof(AnimKeyBuffer::Interval);
+
+        // Create animation
+        AnimationCreateInfo info;
+        info.clips = clips;
+        info.curves = curves;
+        info.events = events;
+        info.indices = clipIndices;
+        info.keyBuffer = keyBuffer;
+        AnimationId animid = CreateAnimation(info);
+        animations[animationIndex] = animid;
     }
 
     // unmap memory
     stream->Unmap();
 
-    // Create animation
-    AnimationCreateInfo info;
-    info.clips = clips;
-    info.indices = clipIndices;
-    info.keyBuffer = keyBuffer;
-    AnimResourceId anim = CreateAnimation(info);
-    return anim;
+    auto id = animationResourceAllocator.Alloc();
+    animationResourceAllocator.Set<0>(id, animations);
+    AnimationResourceId ret;
+    ret.resourceId = id;
+    ret.resourceType = CoreGraphics::AnimResourceIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -136,8 +146,7 @@ AnimationLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& t
 void
 AnimationLoader::Unload(const Resources::ResourceId id)
 {
-    AnimResourceId anim = id;
-    DestroyAnimation(anim);
+    DestroyAnimationResource(id);
 }
 
 } // namespace CoreAnimation

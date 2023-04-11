@@ -200,6 +200,8 @@ void FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::Qu
 
 /// Allocate vertices from the global vertex pool
 uint AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
+/// Allocate vertices from the global vertex pool by bytes
+uint AllocateVertices(const SizeT bytes);
 /// Deallocate vertices
 void DeallocateVertices(uint offset);
 /// Get vertex buffer 
@@ -207,6 +209,8 @@ const CoreGraphics::BufferId GetVertexBuffer();
 
 /// Allocate indices from the global index pool
 uint AllocateIndices(const SizeT numIndices, const IndexType::Code indexType);
+/// Allocate indices from the global index pool by bytes
+uint AllocateIndices(const SizeT bytes);
 /// Deallocate indices
 void DeallocateIndices(uint offset);
 /// Get index buffer

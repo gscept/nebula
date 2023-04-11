@@ -230,12 +230,17 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         ShaderConfigConstant constant;
                         constant.def.SetType(MaterialVariant::Type::TextureHandle);
                         constant.def = this->AllocateVariantMemory(constant.def.type);
-                        auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+                        auto resourceName = reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION;
+                        auto res = Resources::CreateResource(resourceName, "material types", nullptr, nullptr, true);
                         constant.def.Set(res.HashCode64());
 
                         constant.system = system;
                         constant.name = name;
-                        type->constantLookup.Add(name, type->constants.Size());
+                        IndexT previousIndex = type->constantLookup.FindIndex(name);
+                        if (previousIndex == InvalidIndex)
+                            type->constantLookup.Add(name, type->constants.Size());
+                        else
+                            type->constantLookup.ValueAtIndex(previousIndex) = type->constants.Size();
                         type->constants.Append(constant);
                     }
                     else if (ptype.BeginsWithString("texture"))
@@ -252,11 +257,17 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         {
                             n_error("Invalid texture type %s\n", ptype.AsCharPtr());
                         }
-                        auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+                        auto resourceName = reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION;
+                        auto res = Resources::CreateResource(resourceName, "material types", nullptr, nullptr, true);
                         texture.defaultValue = res;
                         texture.system = system;
                         texture.name = name;
-                        type->textureLookup.Add(name, type->textures.Size());
+
+                        IndexT previousIndex = type->textureLookup.FindIndex(name);
+                        if (previousIndex == InvalidIndex)
+                            type->textureLookup.Add(name, type->textures.Size());
+                        else
+                            type->textureLookup.ValueAtIndex(previousIndex) = type->textures.Size();
                         type->textures.Append(texture);
                     }
                     else

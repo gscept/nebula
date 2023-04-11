@@ -26,21 +26,37 @@ namespace CoreAnimation
 struct Nax3Header
 {
     uint magic;
-    uint numClips;
+    ushort numAnimations;
+};
+
+struct Nax3Anim
+{
+    ushort numClips;
+    ushort numCurves;
+    ushort numEvents;
     uint numKeys;
+    uint numIntervals;
+};
+
+struct Nax3Interval
+{
+    uint start, end;
+    uint key0, key1;
+    float duration;
 };
 
 struct Nax3Clip
 {
     ushort numCurves;
-    ushort startKeyIndex;
-    ushort numKeys;
-    ushort keyStride;
-    ushort keyDuration; 
-    uchar preInfinityType;          // CoreAnimation::InfinityType::Code
-    uchar postInfinityType;         // CoreAnimation::InfinityType::Code
+    ushort firstCurve;
     ushort numEvents;
-    char name[50];                  // add up to 64 bytes size for Nax3Clip
+    ushort firstEvent;
+    ushort numVelocityCurves;
+    ushort firstVelocityCurve;
+
+    uint duration;
+
+    char name[48];                  // add up to 64 bytes size for Nax3Clip
 };
 
 struct Nax3AnimEvent
@@ -52,15 +68,11 @@ struct Nax3AnimEvent
 
 struct Nax3Curve
 {
-    uint firstKeyIndex;
-    uchar isActive;                 // 0 or 1
-    uchar isStatic;                 // 0 or 1
+    uint firstIntervalOffset;
+    uint numIntervals;
+    uchar preInfinityType;          // CoreAnimation::InfinityType::Code
+    uchar postInfinityType;         // CoreAnimation::InfinityType::Code
     uchar curveType;                // CoreAnimation::CurveType::Code
-    uchar _padding;                 // padding byte
-    float staticKeyX;
-    float staticKeyY;
-    float staticKeyZ;
-    float staticKeyW;
 };
 
 //------------------------------------------------------------------------------

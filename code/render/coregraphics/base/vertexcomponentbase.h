@@ -27,23 +27,6 @@ namespace Base
 class VertexComponentBase
 {
 public:
-    /// component semantic
-    enum SemanticName
-    {
-        Position = 0,
-        Normal = 1,
-        TexCoord1 = 2,        
-        Tangent = 3,
-        Binormal = 4,
-        Color = 5,
-        TexCoord2 = 6,
-        SkinWeights = 7,
-        SkinJIndices = 8,
-        TexCoord3 = 9,
-        TexCoord4 = 10,
-
-        Invalid,
-    };
 
     /// component format
     enum Format
@@ -52,6 +35,10 @@ public:
         Float2,     //> two-component float
         Float3,     //> three-component float
         Float4,     //> four-component float
+        Half,       //> one-component 16-bit float
+        Half2,      //> two-component 16-bit float
+        Half3,      //> three-component 16-bit float
+        Half4,      //> four-component 16-bit float
         UInt,       //> one-component unsigned integer
         UInt2,      //> two-component unsigned integer
         UInt3,      //> three-component unsigned integer
@@ -82,16 +69,7 @@ public:
 
         InvalidFormat,
     };
-    
-    /// access type hint, this is only relevant on the Wii
-    enum AccessType
-    {
-        None,
-        Direct,     //> component has direct value (non-indexed)
-        Index8,     //> component is indexed with 8-bit indices           
-        Index16,    //> component is indexed with 16-bit indices
-        Index32,    //> component is indexed with 32-bit indices
-    };
+
 
     /// stride type tells if the compoent should be per-instance or per-vertex
     enum StrideType
@@ -103,11 +81,10 @@ public:
     /// default constructor
     VertexComponentBase();
     /// constructor
-    VertexComponentBase(SemanticName semName, IndexT semIndex, Format format, IndexT streamIndex=0, StrideType strideType=PerVertex, SizeT stride=0);
-    /// get semantic name
-    SemanticName GetSemanticName() const;
+    VertexComponentBase(IndexT slot, Format format, IndexT streamIndex=0, StrideType strideType=PerVertex, SizeT stride=0);
+
     /// get semantic index
-    IndexT GetSemanticIndex() const;
+    IndexT GetIndex() const;
     /// get vertex component format
     Format GetFormat() const;
     /// get stream index
@@ -116,16 +93,10 @@ public:
     SizeT GetByteSize() const;
     /// get a unique signature of the vertex component
     Util::String GetSignature() const;
-    /// get access type
-    AccessType GetAccessType() const;
     /// get stride type
     StrideType GetStrideType() const;
     /// get stride between instances
     SizeT GetStride() const;
-    /// convert string to semantic name
-    static SemanticName StringToSemanticName(const Util::String& str);
-    /// convert semantic name to string
-    static Util::String SemanticNameToString(SemanticName n);
     /// convert string to format
     static Format StringToFormat(const Util::String& str);
     /// convert format to string
@@ -142,10 +113,8 @@ protected:
     /// set the vertex byte offset (called from VertexLayoutBase::Setup())
     void SetByteOffset(IndexT offset);
 
-    SemanticName semName;
-    IndexT semIndex;
+    IndexT index;
     Format format;
-    AccessType accessType;
     StrideType strideType;
     SizeT stride;
     IndexT streamIndex;
@@ -157,10 +126,8 @@ protected:
 */
 inline
 VertexComponentBase::VertexComponentBase() :
-    semName(Invalid),
-    semIndex(0),
+    index(0),
     format(Float),
-    accessType(Index16),
     streamIndex(0),
     byteOffset(0),
     strideType(PerVertex),
@@ -173,11 +140,9 @@ VertexComponentBase::VertexComponentBase() :
 /**
 */
 inline
-VertexComponentBase::VertexComponentBase(SemanticName semName_, IndexT semIndex_, Format format_, IndexT streamIndex_, StrideType strideType_, SizeT stride_) :
-    semName(semName_),
-    semIndex(semIndex_),
+VertexComponentBase::VertexComponentBase(IndexT semIndex_, Format format_, IndexT streamIndex_, StrideType strideType_, SizeT stride_) :
+    index(semIndex_),
     format(format_),
-    accessType(Index16),
     streamIndex(streamIndex_),
     byteOffset(0),
     strideType(strideType_),
@@ -189,28 +154,10 @@ VertexComponentBase::VertexComponentBase(SemanticName semName_, IndexT semIndex_
 //------------------------------------------------------------------------------
 /**
 */
-inline VertexComponentBase::SemanticName
-VertexComponentBase::GetSemanticName() const
-{
-    return this->semName;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline VertexComponentBase::AccessType
-VertexComponentBase::GetAccessType() const
-{
-    return this->accessType;     
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline IndexT
-VertexComponentBase::GetSemanticIndex() const
+VertexComponentBase::GetIndex() const
 {
-    return this->semIndex;
+    return this->index;
 }
 
 //------------------------------------------------------------------------------
@@ -261,6 +208,10 @@ VertexComponentBase::GetByteSize() const
         case Float2:    return 8;
         case Float3:    return 12;
         case Float4:    return 16;
+        case Half:      return 2;
+        case Half2:     return 4;
+        case Half3:     return 6;
+        case Half4:     return 8;
         case UInt:      return 4;
         case UInt2:     return 8;
         case UInt3:     return 12;
@@ -295,49 +246,6 @@ VertexComponentBase::GetByteSize() const
 /**
 */
 inline Util::String
-VertexComponentBase::SemanticNameToString(SemanticName n)
-{
-    switch (n)
-    {
-        case Position:      return "Position";
-        case Normal:        return "Normal";
-        case Tangent:       return "Tangent";
-        case Binormal:      return "Binormal";
-        case TexCoord1:     return "TexCoord";
-        case Color:         return "Color";
-        case SkinWeights:   return "SkinWeights";
-        case SkinJIndices:  return "SkinJIndices";
-        default:
-            n_error("VertexComponent::SemanticNameToString(): invalid SemanticName code!");
-            return "";
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline VertexComponentBase::SemanticName
-VertexComponentBase::StringToSemanticName(const Util::String& str)
-{
-    if (str == "Position") return Position;
-    else if (str == "Normal") return Normal;
-    else if (str == "Tangent") return Tangent;
-    else if (str == "Binormal") return Binormal;
-    else if (str == "TexCoord") return TexCoord1;
-    else if (str == "Color") return Color;
-    else if (str == "SkinWeights") return SkinWeights;
-    else if (str == "SkinJIndices") return SkinJIndices;
-    else
-    {
-        n_error("VertexComponent::StringToSemanticName(): invalid string '%s'!", str.AsCharPtr());
-        return Invalid;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Util::String
 VertexComponentBase::FormatToString(Format f)
 {
     switch (f)
@@ -346,6 +254,10 @@ VertexComponentBase::FormatToString(Format f)
         case Float2:    return "Float2";
         case Float3:    return "Float3";
         case Float4:    return "Float4";
+        case Half:      return "Half";
+        case Half2:     return "Half2";
+        case Half3:     return "Half3";
+        case Half4:     return "Half4";
         case UInt:      return "UInt";
         case UInt2:     return "UInt2";
         case UInt3:     return "UInt3";
@@ -390,6 +302,10 @@ VertexComponentBase::FormatToSignature(Format f)
     case Float2:    return "f2";
     case Float3:    return "f3";
     case Float4:    return "f4";
+    case Half:      return "h";
+    case Half2:     return "h2";
+    case Half3:     return "h3";
+    case Half4:     return "h4";
     case UInt:      return "ui";
     case UInt2:     return "ui2";
     case UInt3:     return "ui3";
@@ -433,6 +349,10 @@ VertexComponentBase::StringToFormat(const Util::String& str)
     else if (str == "Float2") return Float2;
     else if (str == "Float3") return Float3;
     else if (str == "Float4") return Float4;
+    else if (str == "Half") return Half;
+    else if (str == "Half2") return Half2;
+    else if (str == "Half3") return Half3;
+    else if (str == "Half4") return Half4;
     else if (str == "UInt") return UInt;
     else if (str == "UInt2") return UInt2;
     else if (str == "UInt3") return UInt3;
@@ -473,7 +393,6 @@ inline Util::String
 VertexComponentBase::GetSignature() const
 {
     Util::String str;
-    str.AppendInt(this->semName);    
     str.AppendInt(this->streamIndex);
     str.Append(FormatToSignature(this->format));
     return str;

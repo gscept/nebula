@@ -1751,6 +1751,20 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 //------------------------------------------------------------------------------
 /**
 */
+uint
+AllocateVertices(const SizeT bytes)
+{
+    Threading::CriticalScope scope(&vertexAllocationMutex);
+    IndexT ret;
+    state.vertexAllocator.Alloc(bytes, 1, ret);
+    n_assert(ret != InvalidIndex);
+    N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, bytes);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 DeallocateVertices(uint offset)
 {
@@ -1779,6 +1793,20 @@ AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
     state.indexAllocator.Alloc(numIndices * IndexType::SizeOf(indexType), 1, ret);
     n_assert(ret != InvalidIndex);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+AllocateIndices(const SizeT bytes)
+{
+    Threading::CriticalScope scope(&vertexAllocationMutex);
+    IndexT ret;
+    state.indexAllocator.Alloc(bytes, 1, ret);
+    n_assert(ret != InvalidIndex);
+    N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, bytes);
     return ret;
 }
 

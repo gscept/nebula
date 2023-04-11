@@ -104,7 +104,7 @@ void OpenScene()
 
             // load textures
             Resources::ResourceId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
-            Resources::ResourceId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId normal = Resources::CreateResource("tex:system/nobump.dds", "decal"_atm, nullptr, nullptr, true);
             Resources::ResourceId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
 
             // setup decal
@@ -180,8 +180,8 @@ void OpenScene()
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
-    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3", "ske:Units/Unit_Rifleman.nsk3" };
-    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3", "ani:Units/Unit_Rifleman.nax3" };
+    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk",  "ske:Units/Unit_Footman.nsk",  "ske:Units/Unit_Spearman.nsk", "ske:Units/Unit_Rifleman.nsk" };
+    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax",  "ani:Units/Unit_Footman.nax",  "ani:Units/Unit_Spearman.nax", "ani:Units/Unit_Rifleman.nax" };
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();
@@ -212,8 +212,8 @@ void OpenScene()
                     uint materialIndex = i + (j + NumModels) * (NumModels * 2);
                     entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, code);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
-                    Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
-                    Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
+                    Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], 0, animationRes[modelIndex], 0, "Viewer");
+                    //Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
                 });
             
             modelIndex = (modelIndex + 1) % 4;

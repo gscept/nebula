@@ -275,7 +275,7 @@ ResourceLoader::LoadImmediate(_PendingResourceLoad& res)
         this->resources[res.entry] = ret.id;
         this->asyncSection.Leave();
         ret.status = Failed;
-        n_printf("Failed to load resource %s\n", this->names[res.entry].Value());
+        n_printf("[RESOURCE LOADER] Failed to load resource %s\n", this->names[res.entry].Value());
     }
 
     // free metadata
@@ -332,7 +332,7 @@ ResourceLoader::LoadDeferred(_PendingResourceLoad& res)
                 this->states[res.entry] = Resource::Loaded;
             else if (status == Failed)
             {
-                n_printf("Failed to load resource %s\n", this->names[res.entry].Value());
+                n_printf("[RESOURCE LOADER] Failed to load resource %s\n", this->names[res.entry].Value());
                 this->states[res.entry] = Resource::Failed;
             }
             this->RunCallbacks(status, resource);
@@ -346,7 +346,7 @@ ResourceLoader::LoadDeferred(_PendingResourceLoad& res)
             this->asyncSection.Enter();
             this->RunCallbacks(Failed, resource);
             this->states[res.entry] = Resource::Failed;
-            n_printf("Failed to load resource %s\n", this->names[res.entry].Value());
+            n_printf("[RESOURCE LOADER] Failed to load resource %s\n", this->names[res.entry].Value());
             this->asyncSection.Leave();
         }
 

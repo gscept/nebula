@@ -6,9 +6,19 @@
 #ifndef UTIL_FXH
 #define UTIL_FXH
 #include "lib/std.fxh"
-//#include "lib/shared.fxh"
 
 const float depthScale = 100.0f;
+
+
+//------------------------------------------------------------------------------
+/**
+    Unpack signed short UVs to float
+*/
+vec2
+UnpackUV(ivec2 packedUv)
+{
+    return packedUv * (1.0f / 1000.0f);
+}
 
 //------------------------------------------------------------------------------
 /**

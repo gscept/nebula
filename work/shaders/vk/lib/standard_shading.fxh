@@ -46,7 +46,7 @@ void
 psStandard(
     in vec3 Tangent,
     in vec3 Normal,
-    in vec3 Binormal,
+    in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
     in vec4 ViewSpacePos,
@@ -64,7 +64,7 @@ psStandard(
 
     vec4 albedo   = calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
     vec4 material = calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
-    vec3 N        = normalize(calcBump(Tangent, Binormal, Normal, sample2D(NormalMap, NormalSampler, UV)));
+    vec3 N        = normalize(calcBump(Tangent, Normal, Sign, sample2D(NormalMap, NormalSampler, UV)));
     
     //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, albedo, N, material);
     

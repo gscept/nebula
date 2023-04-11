@@ -164,8 +164,8 @@ QuaternionTest::Run()
 	VERIFY(quaternionequal(q0, quat(-0.259035f, 0.738460f, -0.403423f, -0.474160f)));
 
 	// rotationyawpitchroll
-	q0 = rotationquatyawpitchroll(-7.0f, 3.0f, -2.0f);
-	VERIFY(quaternionequal(q0, quat(0.525582f, 0.772620f, 0.133313f, 0.330225f)));
+	q0 = quatyawpitchroll(-7.0f, 3.0f, -2.0f);
+	VERIFY(quaternionequal(q0, quat(-0.483822435, 0.799433947, -0.133313209, -0.330225378)));
 
 	// 2 quaternions with the same numbers, but swapped signs represent the same rotation/orientation,
 	// thus the result-matrix must be the same

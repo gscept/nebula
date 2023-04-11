@@ -1,0 +1,11 @@
+<!--
+	Surface material for the placeholder material
+-->
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula>
+	<Surface template="Skinned">
+		<Param name="AlbedoMap" value="tex:system/white"/>
+		<Param name="NormalMap" value="tex:system/nobump"/>
+		<Param name="ParameterMap" value="tex:system/default_material" />
+	</Surface>
+</Nebula>

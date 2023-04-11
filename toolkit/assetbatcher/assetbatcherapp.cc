@@ -3,7 +3,7 @@
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "toolkitutil/fbx/nfbxexporter.h"
+#include "toolkitutil/model/import/fbx/nfbxexporter.h"
 #include "assetbatcherapp.h"
 #include "io/assignregistry.h"
 #include "core/coreserver.h"
@@ -13,6 +13,8 @@
 #include "profiling/profiling.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "flat/physics/material.h"
+#include "jobs2/jobs2.h"
+
 #ifdef WIN32
 #include "io/win32/win32consolehandler.h"
 #else
@@ -117,6 +119,14 @@ AssetBatcherApp::DoWork()
     ExporterBase::ExportFlag exportFlag = ExporterBase::All;
     Dictionary<String, String> sources;
 
+    Jobs2::JobSystemInitInfo systemInit;
+    systemInit.name = "JobSystem";
+    systemInit.numThreads = 8;
+    systemInit.scratchMemorySize = 16_MB;
+    systemInit.affinity = System::Cpu::All;
+    systemInit.enableIo = true;
+    Jobs2::JobSystemInit(systemInit);
+
     // override dests with settings from projectinfo
     AssignRegistry::Instance()->SetAssign(Assign("tex", this->projectInfo.GetAttr("TextureDestDir")));
 
@@ -217,6 +227,8 @@ AssetBatcherApp::DoWork()
     }
     
     exporter->Close();
+
+    Jobs2::JobSystemUninit();
 
 #if 0
     // output to stderr for parsing of tools

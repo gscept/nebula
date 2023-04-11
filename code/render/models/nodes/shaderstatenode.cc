@@ -54,7 +54,7 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
     }
     else if (FourCC('MATE') == fourcc)
     {
-        this->materialName = reader->ReadString() + NEBULA_SURFACE_EXTENSION;
+        this->materialName = reader->ReadString();
     }
     else if (FourCC('STXT') == fourcc)
     {

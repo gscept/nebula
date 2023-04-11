@@ -53,24 +53,24 @@ UltralightRenderer::UltralightRenderer()
     CoreGraphics::VertexLayoutCreateInfo vloInfo;
     vloInfo.comps =
     {
-        CoreGraphics::VertexComponent{ 0, 0, CoreGraphics::VertexComponent::Format::Float2 },
-        CoreGraphics::VertexComponent{ 1, 0, CoreGraphics::VertexComponent::Format::UByte4 },
-        CoreGraphics::VertexComponent{ 2, 0, CoreGraphics::VertexComponent::Format::Float2 },
+        CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Format::Float2 },
+        CoreGraphics::VertexComponent{ 1, CoreGraphics::VertexComponent::Format::UByte4 },
+        CoreGraphics::VertexComponent{ 2, CoreGraphics::VertexComponent::Format::Float2 },
     };
     ultralightState.vloSmall = CoreGraphics::CreateVertexLayout(vloInfo);
     vloInfo.comps =
     {
-        CoreGraphics::VertexComponent{ 0, 0, CoreGraphics::VertexComponent::Format::Float2 },
-        CoreGraphics::VertexComponent{ 1, 0, CoreGraphics::VertexComponent::Format::UByte4 },
-        CoreGraphics::VertexComponent{ 2, 0, CoreGraphics::VertexComponent::Format::Float2 },
-        CoreGraphics::VertexComponent{ 3, 0, CoreGraphics::VertexComponent::Format::Float2 },
-        CoreGraphics::VertexComponent{ 4, 0, CoreGraphics::VertexComponent::Format::Float4 },
-        CoreGraphics::VertexComponent{ 5, 0, CoreGraphics::VertexComponent::Format::Float4 },
-        CoreGraphics::VertexComponent{ 6, 0, CoreGraphics::VertexComponent::Format::Float4 },
-        CoreGraphics::VertexComponent{ 7, 0, CoreGraphics::VertexComponent::Format::Float4 },
-        CoreGraphics::VertexComponent{ 8, 0, CoreGraphics::VertexComponent::Format::Float4 },
-        CoreGraphics::VertexComponent{ 9, 0, CoreGraphics::VertexComponent::Format::Float4 },
-        CoreGraphics::VertexComponent{ 10, 0, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Format::Float2 },
+        CoreGraphics::VertexComponent{ 1, CoreGraphics::VertexComponent::Format::UByte4 },
+        CoreGraphics::VertexComponent{ 2, CoreGraphics::VertexComponent::Format::Float2 },
+        CoreGraphics::VertexComponent{ 3, CoreGraphics::VertexComponent::Format::Float2 },
+        CoreGraphics::VertexComponent{ 4, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 5, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 6, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 7, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 8, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 9, CoreGraphics::VertexComponent::Format::Float4 },
+        CoreGraphics::VertexComponent{ 10, CoreGraphics::VertexComponent::Format::Float4 },
     };
     ultralightState.vloBig = CoreGraphics::CreateVertexLayout(vloInfo);
     vloInfo.comps = {};
@@ -607,7 +607,7 @@ UltralightRenderer::Render(const CoreGraphics::CmdBufferId& cmds, IndexT bufferI
 
             if (currentIbo != geo.ibo)
             {
-                CoreGraphics::CmdSetIndexBuffer(cmds, geo.ibo, 0);
+                CoreGraphics::CmdSetIndexBuffer(cmds, CoreGraphics::IndexType::Index16, geo.ibo, 0);
                 currentIbo = geo.ibo;
             }
 

@@ -223,10 +223,12 @@ DestroyCmdBuffer(const CmdBufferId id)
     n_assert(id.id8 == CommandBufferIdType);
 #endif
 
-#if NEBULA_ENABLE_PROFILING
-    QueryBundle& queryBundles = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
 
-    CmdBufferMarkerBundle& markers = commandBuffers.GetUnsafe<CmdBuffer_ProfilingMarkers>(id.id24);
+#if NEBULA_ENABLE_PROFILING
+    QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id.id24);
+
+    CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
     markers.markerStack.Clear();
     markers.finishedMarkers.Clear();
 #endif
@@ -336,7 +338,7 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
 /**
 */
 void
-CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
+CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
 {
 #if _DEBUG
     CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
@@ -345,8 +347,7 @@ CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, Si
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
     VkDeviceSize offset = bufferOffset;
-    IndexType::Code idxType = IndexType::ToIndexType(BufferGetElementSize(buffer));
-    VkIndexType vkIdxType = idxType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+    VkIndexType vkIdxType = indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
     vkCmdBindIndexBuffer(cmdBuf, buf, offset, vkIdxType);
 }
 

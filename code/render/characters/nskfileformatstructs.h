@@ -29,15 +29,21 @@ namespace Characters
 struct Nsk3Header
 {
     uint magic;
+    uint numSkeletons;
+};
+
+struct Nsk3Skeleton
+{
     uint numJoints;
 };
 
 struct Nsk3Joint
 {
     Util::String name;
-    Math::vec4 translation;
-    Math::quat rotation;
-    Math::vec4 scale;
+    float bind[16];
+    float rotation[4];
+    float translation[3];
+    float scale[3];
     int parent;
     int index;
 };

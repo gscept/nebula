@@ -21,8 +21,8 @@ CreateSkeleton(const SkeletonCreateInfo& info)
     skeletonAllocator.Set<Skeleton_IdleSamples>(id, info.idleSamples);
 
     SkeletonId ret;
-    ret.resourceId = id;
-    ret.resourceType = CoreGraphics::SkeletonIdType;
+    ret.id24 = id;
+    ret.id8 = CoreGraphics::SkeletonIdType;
     return ret;
 }
 
@@ -32,7 +32,7 @@ CreateSkeleton(const SkeletonCreateInfo& info)
 void 
 DestroySkeleton(const SkeletonId id)
 {
-    skeletonAllocator.Dealloc(id.resourceId);
+    skeletonAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ DestroySkeleton(const SkeletonId id)
 const SizeT 
 SkeletonGetNumJoints(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_Joints>(id.resourceId).Size();
+    return skeletonAllocator.Get<Skeleton_Joints>(id.id24).Size();
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ SkeletonGetNumJoints(const SkeletonId id)
 const Util::FixedArray<CharacterJoint>& 
 SkeletonGetJoints(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_Joints>(id.resourceId);
+    return skeletonAllocator.Get<Skeleton_Joints>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ SkeletonGetJoints(const SkeletonId id)
 const Util::FixedArray<Math::mat4>&
 SkeletonGetBindPose(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_BindPose>(id.resourceId);
+    return skeletonAllocator.Get<Skeleton_BindPose>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,16 @@ SkeletonGetBindPose(const SkeletonId id)
 const IndexT 
 SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name)
 {
-    return skeletonAllocator.Get<Skeleton_JointNameMap>(id.resourceId)[name];
+    return skeletonAllocator.Get<Skeleton_JointNameMap>(id.id24)[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::FixedArray<Math::vec4>&
+SkeletonGetIdleSamples(const SkeletonId id)
+{
+    return skeletonAllocator.Get<Skeleton_IdleSamples>(id.id24);
 }
 
 } // namespace Characters

@@ -35,8 +35,10 @@ static const __m128i maskW = _mm_setr_epi32( 0,0,0,-1 );
 mat4 rotationquat(const quat& q);
 mat4 reflect(const vec4& p);
 void decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslation);
+mat4 affine(const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation);
+mat4 affine(const vec3& scale, const quat& rotation, const vec3& translation);
+mat4 affine(const vec3& scale, const vec3& rotation, const vec3& translation);
 mat4 affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation);
-mat4 rotationquat(const quat& q);
 mat4 transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& trans);
 bool ispointinside(const vec4& p, const mat4& m);
 mat4 skewsymmetric(const vec3& v);
@@ -104,6 +106,14 @@ public:
     /// we use aliasing to represent the matrix in may different ways
     union
     {
+        struct /// as a cube
+        {
+            vec4 x_axis;
+            vec4 y_axis;
+            vec4 z_axis;
+            vec4 position;
+        };
+
         /// float accessors
         struct /// individual values
         {
@@ -116,13 +126,6 @@ public:
 
         /// SIMD accessors
         vec4 r[4]; /// array accessible rows 
-        struct /// as a cube
-        {
-            vec4 x_axis;
-            vec4 y_axis;
-            vec4 z_axis;
-            vec4 position;
-        };
         struct /// as numbered rows
         {
             vec4 row0;
@@ -1045,7 +1048,7 @@ rotationz(scalar angle)
 __forceinline mat4
 rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 {
-    quat q = rotationquatyawpitchroll(yaw,pitch,roll);
+    quat q = quatyawpitchroll(yaw, pitch, roll);
     return rotationquat(q);
 }
 
@@ -1137,12 +1140,12 @@ transpose(const mat4& m)
 __forceinline mat4
 skewsymmetric(const vec3& v)
 {
-	return {
-		0,   -v.z,   v.y,   0,
-		v.z,  0,    -v.x,   0,
-	   -v.y,  v.x,   0,     0,
-		0,    0,     0,     0,
-	};
+    return {
+        0,   -v.z,   v.y,   0,
+        v.z,  0,    -v.x,   0,
+       -v.y,  v.x,   0,     0,
+        0,    0,     0,     0,
+    };
 }
 
 } // namespace Math

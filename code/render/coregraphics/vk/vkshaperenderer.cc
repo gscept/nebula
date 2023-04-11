@@ -10,6 +10,7 @@
 #include "coregraphics/vertexcomponent.h"
 #include "threading/thread.h"
 #include "coregraphics/shaderserver.h"
+#include "coregraphics/meshresource.h"
 #include "resources/resourceid.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/shadersemantics.h"
@@ -65,14 +66,37 @@ VkShapeRenderer::Open()
     // create shape shader instance
     CoreGraphics::ShaderId shapesShader = ShaderServer::Instance()->GetShader("shd:shapes.fxb"_atm);
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
+    this->meshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
-    // create default shapes (basically load them from the models)
-    this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
-    this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
-    this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
-    this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
-    this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
-    this->shapeMeshResources[RenderShape::Arrow] = CreateResource("msh:system/arrow.nvx2", "render_system", nullptr, nullptr, true);
+    /*
+            Box,
+        Sphere,
+        Cylinder,
+        Torus,
+        Cone,
+        Arrow,
+    */
+    const Util::String meshResourceNames[] = {
+        "msh:system/box.nvx"
+        , "msh:system/sphere.nvx"
+        , "msh:system/cylinder.nvx"
+        , "msh:system/torus.nvx"
+        , "msh:system/cone.nvx"
+    };
+
+    const RenderShape::Type types[] = {
+        RenderShape::Box
+        , RenderShape::Sphere
+        , RenderShape::Cylinder
+        , RenderShape::Torus
+        , RenderShape::Cone
+    };
+
+    for (IndexT i = 0; i < RenderShape::Primitives - 1; i++)
+    {
+        this->shapeMeshResources[types[i]] = CreateResource(meshResourceNames[i], "render_system", nullptr, nullptr, true);
+        this->meshes[types[i]] = MeshResourceGetMesh(this->shapeMeshResources[i], 0);
+    }
 
     // lookup ModelViewProjection shader variable
     this->model = ShaderGetConstantBinding(shapesShader, "ShapeModel");
@@ -87,8 +111,8 @@ VkShapeRenderer::Open()
     this->programs[ShaderTypes::MeshNoDepth] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|NoDepth"));
     this->programs[ShaderTypes::MeshWireframe] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|Wireframe|Triangles"));
 
-    this->comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
-    this->comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
+    this->comps.Append(VertexComponent(VertexComponent::Position, VertexComponent::Float3));
+    this->comps.Append(VertexComponent(VertexComponent::Color, VertexComponent::UByte4N));
 
     // also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
     this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ comps });
@@ -119,7 +143,7 @@ VkShapeRenderer::Close()
     DiscardResource(this->shapeMeshResources[RenderShape::Cylinder]);
     DiscardResource(this->shapeMeshResources[RenderShape::Torus]);
     DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
-    DiscardResource(this->shapeMeshResources[RenderShape::Arrow]);
+    //DiscardResource(this->shapeMeshResources[RenderShape::Arrow]);
     this->shapeMeshResources.Clear();
 
     // unload dynamic buffers
@@ -247,13 +271,17 @@ VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const M
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
-    const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(this->shapeMeshResources[shapeType]);
+
+    const MeshId mesh = this->meshes[shapeType];
+    CoreGraphics::CmdSetIndexBuffer(cmdBuf, MeshGetIndexType(mesh), MeshGetIndexBuffer(mesh), MeshGetIndexOffset(mesh));
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, MeshGetVertexBuffer(mesh, 0), MeshGetVertexOffset(mesh, 0));
+    const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
+
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
     {
         // set resources
-        CoreGraphics::CmdSetIndexBuffer(cmdBuf, MeshGetIndexBuffer(this->shapeMeshResources[shapeType]), 0);
-        CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, MeshGetVertexBuffer(this->shapeMeshResources[shapeType], 0), 0);
+        
 
         // draw
         CoreGraphics::CmdDraw(cmdBuf, groups[i]);
@@ -274,12 +302,14 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
+
+    // set resources
+    CoreGraphics::CmdSetIndexBuffer(cmdBuf, MeshGetIndexType(mesh), MeshGetIndexBuffer(mesh), MeshGetIndexOffset(mesh));
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, MeshGetVertexBuffer(mesh, 0), MeshGetVertexOffset(mesh, 0));
+
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
     {
-        // set resources
-        CoreGraphics::CmdSetIndexBuffer(cmdBuf, MeshGetIndexBuffer(mesh), 0);
-        CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, MeshGetVertexBuffer(mesh, 0), 0);
 
         // draw
         CoreGraphics::CmdDraw(cmdBuf, groups[i]);
@@ -421,7 +451,7 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
-            CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->ibos[this->indexBufferActiveIndex], this->indexed[j].indexType[i], indexOffset);
+            CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->indexed[j].indexType[i], this->ibos[this->indexBufferActiveIndex], indexOffset);
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
 
             CoreGraphics::CmdDraw(cmdBuf, group);

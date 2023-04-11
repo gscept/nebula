@@ -70,10 +70,10 @@ public:
 
     /// load 3 floats into x,y,z from unaligned memory
     void load_float3(const void* ptr, float w);
-    /// load from UByte4N packed vector, move range to -1..+1
-    void load_ubyte4n_signed(const void* ptr, float w);
+    /// load from UByte4N packed vector
+    void load_ubyte4n(const void* ptr);
     /// load from Byte4N packed vector
-    void load_byte4n(const void* ptr, float w);
+    void load_byte4n(const void* ptr);
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
 
@@ -88,12 +88,12 @@ public:
 
     union
     {
-        __m128 vec;
-        float v[4];
         struct
         {
             float x, y, z, w;
         };
+        __m128 vec;
+        float v[4];
     };
 };
 
@@ -246,6 +246,7 @@ vec4::load_float3(const void* ptr, float w)
     this->vec = _mm_load_ps(source);
     this->w = w;
 }
+
 
 //------------------------------------------------------------------------------
 /**
@@ -1033,6 +1034,14 @@ splat_w(const vec4& v)
     return _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(3, 3, 3, 3));
 }
 
+static const unsigned int PERMUTE_0X = 0;
+static const unsigned int PERMUTE_0Y = 1;
+static const unsigned int PERMUTE_0Z = 2;
+static const unsigned int PERMUTE_0W = 3;
+static const unsigned int PERMUTE_1X = 4;
+static const unsigned int PERMUTE_1Y = 5;
+static const unsigned int PERMUTE_1Z = 6;
+static const unsigned int PERMUTE_1W = 7;
 //------------------------------------------------------------------------------
 /**
 */

@@ -254,7 +254,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 Math::ClipStatus::Type clipStatus = clipStatuses[i];
 
                 // If not visible nor active, erase item from index list
-                if (!AllBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active | Models::NodeInstanceFlags::NodeInstance_LodActive)
+                if (!AllBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active)
                     || clipStatus == Math::ClipStatus::Outside)
                 {
                     indexBuffer.EraseIndexSwap(i);

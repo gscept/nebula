@@ -53,10 +53,9 @@ shader
 void
 vsMesh(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec3 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     out vec4 Color) 
 {
     gl_Position = ViewProjection * ShapeConstants.ShapeModel * vec4(position, 1);

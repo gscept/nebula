@@ -6,6 +6,7 @@
 #include "threading/criticalsection.h"
 #include "memory/arenaallocator.h"
 #include "profiling/profiling.h"
+#include "io/ioserver.h"
 #include "jobs2.h"
 namespace Jobs2
 {
@@ -57,7 +58,10 @@ JobThread::EmitWakeupSignal()
 void
 JobThread::DoWork()
 {
-    Profiling::ProfilingRegisterThread();
+    if (this->enableIo)
+        IO::IoServer::Create();
+    if (this->enableProfiling)
+        Profiling::ProfilingRegisterThread();
     while (true)
     {
 wait:
@@ -205,6 +209,8 @@ JobSystemInit(const JobSystemInitInfo& info)
     for (IndexT i = 0; i < info.numThreads; i++)
     {
         Ptr<JobThread> thread = JobThread::Create();
+        thread->enableIo = info.enableIo;
+        thread->enableProfiling = info.enableProfiling;
         thread->SetName(Util::String::Sprintf("%s #%d", info.name.Value(), i));
         thread->SetThreadAffinity(info.affinity);
         thread->Start();

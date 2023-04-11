@@ -104,7 +104,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
     // setup input buffers
     CoreGraphics::CmdSetResourceTable(cmdBuf, state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, state.vbos[currentBuffer], 0);
-    CoreGraphics::CmdSetIndexBuffer(cmdBuf, state.ibos[currentBuffer], 0);
+    CoreGraphics::CmdSetIndexBuffer(cmdBuf, IndexType::Index16, state.ibos[currentBuffer], 0);
 
     // set projection
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
@@ -337,9 +337,9 @@ ImguiContext::Create()
 
     // create vertex buffer
     Util::Array<CoreGraphics::VertexComponent> components;
-    components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float2, 0));
-    components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
-    components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
+    components.Append(VertexComponent(0, VertexComponent::Float2, 0));
+    components.Append(VertexComponent(1, VertexComponent::Float2, 0));
+    components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ components });
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();

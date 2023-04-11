@@ -429,11 +429,9 @@ vsDrawMeshVColor(
     , [slot = 1] in vec3 normal
     , [slot = 2] in vec2 uv
     , [slot = 3] in vec3 tangent
-    , [slot = 4] in vec3 binormal
     , [slot = 5] in vec4 color
     , out vec3 Normal
     , out vec3 Tangent
-    , out vec3 Binormal
     , out vec2 UV
     , out flat uint InstanceTexture
     , out vec3 WorldSpacePos
@@ -452,7 +450,6 @@ vsDrawMeshVColor(
     UV.y = 1.0f - UV.y;
     Normal = rotation * normal;
     Tangent = rotation * tangent;
-    Binormal = rotation * binormal;
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
     if (!instanceUniforms.lodIsBillboard)
@@ -470,13 +467,11 @@ shader
 void
 vsDrawMesh(
     [slot = 0] in vec3 position
-    , [slot = 1] in vec3 normal
     , [slot = 2] in vec2 uv
+    , [slot = 1] in vec3 normal
     , [slot = 3] in vec3 tangent
-    , [slot = 4] in vec3 binormal
     , out vec3 Normal
     , out vec3 Tangent
-    , out vec3 Binormal
     , out vec2 UV
     , out flat uint InstanceTexture
     , out vec3 WorldSpacePos
@@ -499,7 +494,6 @@ vsDrawMesh(
     UV.y = 1.0f - UV.y;
     Normal = rotation * normal;
     Tangent = rotation * tangent;
-    Binormal = rotation * binormal;
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.025f;
     if (!instanceUniforms.lodIsBillboard)
@@ -521,7 +515,6 @@ void
 psDrawMeshZ(
     in vec3 normal
     , in vec3 tangent
-    , in vec3 binormal
     , in vec2 uv
     , in flat uint instanceTexture
     , in vec3 worldSpacePos
@@ -542,7 +535,6 @@ void
 psDrawMesh(
     in vec3 normal
     , in vec3 tangent
-    , in vec3 binormal
     , in vec2 uv
     , in flat uint instanceTexture
     , in vec3 worldSpacePos
@@ -574,6 +566,7 @@ psDrawMesh(
     if (!gl_FrontFacing)
         geometryNormal *= -1.0f;
 
+    vec3 binormal = cross(geometryNormal, tangent);
     mat3 tbn = mat3(tangent, binormal, geometryNormal);
     vec4 normalSample = sampleNormal(instanceTexture, TextureSampler, uv);
 

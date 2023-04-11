@@ -45,10 +45,9 @@ shader
 void
 vsMain(
     [slot=0] in vec3 position,
+    [slot=2] in ivec2 uv,
     [slot=1] in vec3 normal,
-    [slot=2] in vec2 uv,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     out vec3 UV,
     out vec3 Direction)
 {

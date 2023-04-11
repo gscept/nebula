@@ -1,24 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Nebula version="1">
-    <Options exportFlags="4" exportMode="0" scale="1.000000" />
+    <Options exportFlags="4" scale="1.000000" />
     <States>
-        <ModelNode name="root/pSphere4" material="sur:system/placeholder">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
-        <ModelNode name="root/pTorus13" material="sur:system/placeholder">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/placeholder" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
-        <ModelNode name="root/pasted__polySurface2" material="Static">
-            <Textures>
-                <Texture name="DiffuseMap" value="tex:system/white" />
-                <Texture name="NormalMap" value="tex:system/nobump" />
-            </Textures>
-        </ModelNode>
+        <ModelNode name="root/pSphere4" material="sur:system/placeholder" />
+        <ModelNode name="root/pTorus13" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pTorus13_1" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pasted__polySurface2" material="Static" />
     </States>
 </Nebula>

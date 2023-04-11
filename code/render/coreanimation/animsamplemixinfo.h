@@ -20,7 +20,6 @@ namespace CoreAnimation
 struct NEBULA_ALIGN16 AnimSampleMixInfo
 {
     SampleType::Code sampleType;
-    float sampleWeight;
     float mixWeight;
     Math::vec4 velocityScale;
 };

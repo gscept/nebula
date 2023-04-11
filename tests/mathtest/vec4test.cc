@@ -13,10 +13,9 @@
 
 using namespace Math;
 
-static const scalar E = 0.00001;
-static const vec4 E4(E, E, E, E);
-static const scalar EL = 0.001;
-static const vec4 E2(EL, EL, EL, EL);
+static const vec4 E4(0.00001);
+static const vec4 E2(0.001);
+static const vec4 E1(0.1);
 
 namespace Test
 {
@@ -123,6 +122,16 @@ Vec4Test::Run()
     VERIFY(v2 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     v2.storeu(fUnalignedStore);
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f) && (fUnalignedStore[3] == 4.0f));
+
+    // 255, 127, 0, 0 -> 1, 0.5, 0, 0
+    const uint ubyte4 = 0xFF7F0000;
+    v2.load_ubyte4n(&ubyte4);
+    VERIFY(nearequal(v2, vec4(0.0f, 0.0f, 0.5f, 1.0f), E1));
+
+    // 255, 127, 0, 0 -> 1, 0, -1, -1
+    v2.load_byte4n(&ubyte4);
+    VERIFY(nearequal(v2, vec4(-1.0f, -1.0f, 0.0f, 1.0f), E1));
+
 
 /*
     // load_ubyte4n_signed

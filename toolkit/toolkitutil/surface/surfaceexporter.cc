@@ -53,7 +53,7 @@ SurfaceExporter::ExportFile(const IO::URI& file)
 
     // simply convert xml to binary
     Logger logger;
-    logger.Print("Exporting surface material: '%s/%s'\n", catName.AsCharPtr(), fileName.AsCharPtr());
+    logger.Print("Exporting surface material: 'sur:%s/%s.sur'\n", catName.AsCharPtr(), fileName.AsCharPtr());
     BinaryXmlConverter converter;
     converter.ConvertFile(localPath, dst, logger);
 }

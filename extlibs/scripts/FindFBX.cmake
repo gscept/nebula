@@ -53,31 +53,31 @@ elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 endif()
 
 function(_fbx_find_library _name _lib _suffix)
-  if (MSVC14 OR MSVC15)
-	set(VS_PREFIX vs2017)
-  endif()
-  if (MSVC13)
-	set(VS_PREFIX vs2015)
-  endif()
+    if (MSVC_VERSION GREATER_EQUAL 1920)
+        set(VS_PREFIX vs2019)
+    elseif (MSVC_VERSION GREATER_EQUAL 1910)
+        set(VS_PREFIX vs2017)
+    elseif (MSVC_VERSION GREATER_EQUAL 1900)
+        set(VS_PREFIX vs2015)
+    endif()
 
+    find_library(${_name}
+        NAMES ${_lib}
+        HINTS ${FBX_SEARCH_LOCATIONS}
+        PATH_SUFFIXES lib/${fbx_compiler}/${_suffix} lib/${fbx_compiler}/ub/${_suffix} lib/${VS_PREFIX}/x64/${_suffix}
+    )
 
-  find_library(${_name}
-    NAMES ${_lib}
-    HINTS ${FBX_SEARCH_LOCATIONS}
-    PATH_SUFFIXES lib/${fbx_compiler}/${_suffix} lib/${fbx_compiler}/ub/${_suffix} lib/${VS_PREFIX}/x64/${_suffix}
-  )
-
-  mark_as_advanced(${_name})
+    mark_as_advanced(${_name})
 endfunction()
 
 function(_fbx_find_dll _name _lib _suffix)
-	if (MSVC14 OR MSVC15)
-		set(VS_PREFIX vs2017)
-	endif()
-	if (MSVC13)
-		set(VS_PREFIX vs2015)
-	endif()
-
+    if (MSVC_VERSION GREATER_EQUAL 1920)
+        set(VS_PREFIX vs2019)
+    elseif (MSVC_VERSION GREATER_EQUAL 1910)
+        set(VS_PREFIX vs2017)
+    elseif (MSVC_VERSION GREATER_EQUAL 1900)
+        set(VS_PREFIX vs2015)
+    endif()
 
 	find_file(${_name}
 		NAMES ${_lib}.dll

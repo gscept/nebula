@@ -31,7 +31,7 @@
 #include "coreanimation/animclip.h"
 #include "coreanimation/animsamplemask.h"
 #include "characters/skeleton.h"
-#include "coreanimation/animresource.h"
+#include "coreanimation/animation.h"
 #include "coreanimation/animsamplebuffer.h"
 #include "characters/skeletonjoint.h"
 #include "jobs/jobs.h"
@@ -68,7 +68,15 @@ public:
     static void Create();
 
     /// setup character context, assumes there is already a model attached, by loading a skeleton and animation resource
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& skeleton, const Resources::ResourceName& animation, const Util::StringAtom& tag, bool supportBlending = true);
+    static void Setup(
+        const Graphics::GraphicsEntityId id
+        , const Resources::ResourceName& skeletonResource
+        , const IndexT skeletonIndex
+        , const Resources::ResourceName& animationResource
+        , const IndexT animationIndex
+        , const Util::StringAtom& tag
+        , bool supportBlending = true
+    );
 
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
@@ -145,6 +153,7 @@ private:
         Timing::Tick evalTime, prevEvalTime;
         Timing::Tick sampleTime, prevSampleTime;
         Timing::Tick timeOffset;
+        Util::Array<uint> curveSampleIndices;
         const CoreAnimation::AnimSampleMask* mask;
         float timeFactor;
         float blend;
@@ -168,8 +177,8 @@ private:
 
     enum
     {
-        SkeletonId,
-        AnimationId,
+        Skeleton,
+        Animation,
         Loaded,
         TrackController,
         AnimTime,
@@ -184,8 +193,8 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        Resources::ResourceId,
-        Resources::ResourceId,
+        SkeletonId,
+        CoreAnimation::AnimationId,
         LoadState,
         AnimationTracks,
         Timing::Time,

@@ -1,22 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Nebula version="4">
-    <Model name="test/shadingsphere" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,0.999999,0.000000">
-        <CharacterNodes>
-            <CharacterNode name="shadingsphere_ch" animation="ani:system/shadingsphere.nax3" skeleton="ske:system/shadingsphere.nsk3">
-                <Skinlist name="shadingsphere">
-                    <Skin name="pSphere3" />
-                </Skinlist>
-            </CharacterNode>
-        </CharacterNodes>
-        <PhysicsNodes>
-            <PhysicsNode name="pSphere4" path="root/pSphere4" mesh="phymsh:system/shadingsphere_ph.nvx2" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" />
-        </PhysicsNodes>
-        <Skins>
-            <Skin name="pSphere3" type="skeletal|vertexcolors|secondaryuvs" path="pSphere3" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="1.000000,1.000000,0.999999,0.000000" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/shadingsphere.nvx2">
-                <Fragment name="pSphere3_0" path="pSphere3/pSphere3_0" primitive="0">
-                    <Joints>0</Joints>
-                </Fragment>
-            </Skin>
-        </Skins>
+    <Model name="system/shadingsphere" bboxcenter="0.000000,0.000000,-0.000000,1.000000" bboxextents="1.000000,0.999655,0.999655,0.000000">
+        <ShapeNodes>
+            <ShapeNode name="pSphere3" path="root/pSphere3" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,-0.000000,1.000000" bboxextents="1.000000,0.999655,0.999655,0.000000" mesh="msh:system/shadingsphere.nvx" mid="0" primitive="0" />
+        </ShapeNodes>
     </Model>
 </Nebula>

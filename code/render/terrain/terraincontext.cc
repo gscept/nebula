@@ -258,9 +258,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     // create vertex buffer
     Util::Array<VertexComponent> vertexComponents = 
     {
-        VertexComponent{ (VertexComponent::SemanticName)0, 0, VertexComponent::Format::Float3 },
-        VertexComponent{ (VertexComponent::SemanticName)1, 0, VertexComponent::Format::Float2 },
-        VertexComponent{ (VertexComponent::SemanticName)2, 0, VertexComponent::Format::Float2 },
+        VertexComponent{ 0, VertexComponent::Format::Float3 },
+        VertexComponent{ 1, VertexComponent::Format::Float2 },
+        VertexComponent{ 2, VertexComponent::Format::Float2 },
     };
     terrainState.vlo = CreateVertexLayout({ vertexComponents });
 
@@ -838,7 +838,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 if (rt.sectorVisible[j])
                 {
                     CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
-                    CmdSetIndexBuffer(cmdBuf, rt.ibo, 0);
+                    CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
                     CmdSetResourceTable(cmdBuf, rt.patchTable, NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, &rt.sectorUniformOffsets[j][0]);
                     CmdDraw(cmdBuf, rt.sectorPrimGroups[j]);
                 }

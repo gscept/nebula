@@ -9,9 +9,11 @@
 //------------------------------------------------------------------------------
 #include "resources/resourceloader.h"
 #include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/meshresource.h"
 #include "coregraphics/mesh.h"
 namespace CoreGraphics
 {
+
 class MeshLoader : public Resources::ResourceLoader
 {
     __DeclareClass(MeshLoader);
@@ -33,20 +35,9 @@ private:
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
 
-#if NEBULA_LEGACY_SUPPORT
-    /// setup mesh from nvx2 file in memory
-    MeshId SetupMeshFromNvx2(const Ptr<IO::Stream>& stream, const Ids::Id32 entry);
-#endif
     /// setup mesh from nvx3 file in memory
-    MeshId SetupMeshFromNvx3(const Ptr<IO::Stream>& stream, const Ids::Id32 entry);
-    /// setup mesh from n3d3 file in memory
-    MeshId SetupMeshFromN3d3(const Ptr<IO::Stream>& stream, const Ids::Id32 entry);
+    void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId entry);
 
-protected:
-    GpuBufferTypes::Usage usage;
-    GpuBufferTypes::Access access;
-
-    Resources::ResourceId activeMesh;
 };
 
 } // namespace CoreGraphics

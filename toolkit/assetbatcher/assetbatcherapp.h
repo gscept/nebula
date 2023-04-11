@@ -8,12 +8,16 @@
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 #include "toolkit-common/distributedtools/distributedtoolkitapp.h"
-#include "modelutil/modeldatabase.h"
 #include "toolkit-common/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------
+namespace ToolkitUtil
+{
+class ModelDatabase;
+}
 namespace Toolkit
 {
+
 class AssetBatcherApp : public DistributedTools::DistributedToolkitApp
 {
 

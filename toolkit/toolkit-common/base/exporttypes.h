@@ -10,20 +10,11 @@ namespace ToolkitUtil
 enum MeshFlags
 {
     NoMeshFlags = 0,
-    HasSkin = 1 << 0,
-    HasMultipleUVs = 1 << 1,
-    HasVertexColors = 1 << 2,
-    HasBinormals = 1 << 3,
-    HasTangents = 1 << 4,
-    IsDynamic = 1 << 5
-};
-
-enum ExportMode
-{
-    Static,
-    Skeletal,
-
-    NumImportModes
+    HasNormals = 0x1,
+    HasSkin = 0x2,
+    HasMultipleUVs = 0x4,
+    HasVertexColors = 0x8,
+    HasTangents = 0x10
 };
 
 enum ExportFlags
@@ -34,8 +25,9 @@ enum ExportFlags
     FlipUVs = 1 << 2,
     ImportColors = 1 << 3,
     ImportSecondaryUVs = 1 << 4,
-    CalcBinormalsAndTangents = 1 << 5,
-    All = (1 << 6) - 1,
+    CalcTangents = 1 << 5,
+    CalcRigidSkin = 1 << 6,
+    All = (1 << 7) - 1,
 
     NumMeshFlags
 };

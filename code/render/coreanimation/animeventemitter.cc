@@ -13,32 +13,30 @@ namespace CoreAnimation
     collects all animevents from given clip
 */
 Util::Array<AnimEvent> 
-CoreAnimation::AnimEventEmitter::EmitAnimEvents(const AnimClip& clip, Timing::Tick start, Timing::Tick end, bool isInfinite)
+CoreAnimation::AnimEventEmitter::EmitAnimEvents(const AnimClip& clip, const Util::FixedArray<AnimEvent>& events, Timing::Tick start, Timing::Tick end, bool isInfinite)
 {
-    Util::Array<AnimEvent> events;
+    Util::Array<AnimEvent> ret;
 
     if (start <= end)
     {
-        IndexT startIdx = 0;
-        SizeT numEvents = clip.GetEventsInRange(start, end, startIdx);
-        IndexT i;
-        IndexT endIndex = startIdx + numEvents;
-        for (i = startIdx; startIdx != InvalidIndex && i < endIndex; ++i)
+        for (int i = 0; i < clip.numEvents; i++)
         {
-            events.Append(clip.GetEventByIndex(i));
+            const AnimEvent& event = events[clip.firstEvent + i];
+            if (start <= event.time && end >= event.time)
+                ret.Append(event);
         }
     }
     else
     {
         // from startCheckTime till end of clip
-        Timing::Tick duration = clip.GetClipDuration();
-        events.AppendArray(AnimEventEmitter::EmitAnimEvents(clip, start, duration, false));
+        Timing::Tick duration = clip.duration;
+        ret.AppendArray(AnimEventEmitter::EmitAnimEvents(clip, events, start, duration, false));
         if (isInfinite)
         {
             // from start of clip till endCheckTime
-            events.AppendArray(AnimEventEmitter::EmitAnimEvents(clip, 0, end, false));
+            ret.AppendArray(AnimEventEmitter::EmitAnimEvents(clip, events, 0, end, false));
         }
     }
-    return events;
+    return ret;
 }
 }

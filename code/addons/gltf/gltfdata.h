@@ -99,7 +99,7 @@ struct Accessor : GltfBase
     ComponentType componentType{ ComponentType::None };
     Type type{ Type::None };
 
-    Base::VertexComponentBase::Format format{ Base::VertexComponentBase::Format::InvalidFormat };
+    CoreGraphics::VertexComponent::Format format{ CoreGraphics::VertexComponent::Format::InvalidFormat };
     Sparse sparse;
 
     Util::String name;
@@ -317,7 +317,7 @@ struct Primitive : GltfBase
 
     // dictionary with attribute to accessor index mapping
     Util::Dictionary<Attribute,uint32_t> attributes;
-    Util::Dictionary<Base::VertexComponentBase::SemanticName, uint32_t> nebulaAttributes;
+    Util::Dictionary<CoreGraphics::VertexComponent::IndexName, uint32_t> nebulaAttributes;
     Util::Array<Util::Dictionary<Attribute, uint32_t>> targets;
 };
 

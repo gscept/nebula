@@ -14,14 +14,14 @@ using namespace Util;
 /**
 */
 TextureAttrs::TextureAttrs() :
-    maxWidth(0),
-    maxHeight(0),
-    genMipMaps(false),
+    maxWidth(2048),
+    maxHeight(2048),
+    genMipMaps(true),
     pixelFormat(BC7),
     mipMapFilter(Point),
     scaleFilter(Point),
     quality(Low),
-    colorSpace(sRGB),
+    colorSpace(Linear),
     flipNormalY(false)
 {
     // empty

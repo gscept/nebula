@@ -378,8 +378,8 @@ TextureAttrTable::GetDefaultEntry() const
 //------------------------------------------------------------------------------
 /**
 */
-void 
-TextureAttrTable::SetEntry( const Util::String& texName, const TextureAttrs& attrs )
+void
+TextureAttrTable::SetEntry(const Util::String& texName, const TextureAttrs& attrs)
 {
     n_assert(this->IsValid());
     IndexT i = this->indexMap.FindIndex(texName);

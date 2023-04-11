@@ -11,6 +11,7 @@
 #include "core/types.h"
 #include "math/scalar.h"
 #include "math/vec4.h"
+#include "math/sse.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -20,7 +21,8 @@ struct quat;
 quat slerp(const quat& q1, const quat& q2, scalar t);
 
 quat rotationmatrix(const mat4& m);
-void to_euler(const quat& q, vec4& outangles);
+vec3 to_euler(const quat& q);
+quat quatyawpitchroll(scalar y, scalar x, scalar z);
 
 struct NEBULA_ALIGN16 quat
 {
@@ -62,11 +64,11 @@ public:
     friend struct mat4;
     union
     {
-        __m128 vec;
         struct
         {
             float x, y, z, w;
         };
+        __m128 vec;
     };
 };
 
@@ -358,21 +360,32 @@ ln(const quat& q)
 /**
 */
 __forceinline quat
-operator*(const quat& q1, const quat& q0)
+operator*(const quat& q0, const quat& q1)
 {
-    //FIXME untested
-    __m128 rev = _mm_shuffle_ps(q0.vec, q0.vec, _MM_SHUFFLE(0, 1, 2, 3));
-    __m128 lo = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(0, 1, 0, 1));
-    __m128 hi = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(2, 3, 2, 3));
+    static const __m128 controlWZYX = _mm_setr_ps(1, -1, 1, -1);
+    static const __m128 controlZWXY = _mm_setr_ps(1, 1, -1, -1);
+    static const __m128 controlYXWZ = _mm_setr_ps(-1, 1, 1, -1);
+    __m128 res = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(3, 3, 3, 3));
+    __m128 q1x = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    __m128 q1y = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    __m128 q1z = _mm_shuffle_ps(q1.vec, q1.vec, _MM_SHUFFLE(2, 2, 2, 2));
 
-    __m128 tmp1 = _mm_hsub_ps(_mm_mul_ps(q0.vec, lo), _mm_mul_ps(rev, hi));
+    res = _mm_mul_ps(res, q0.vec);
+    __m128 q0shuffle = q0.vec;
+    q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(0, 1, 2, 3));
 
-    __m128 tmp2 = _mm_hadd_ps(_mm_mul_ps(q0.vec, hi), _mm_mul_ps(rev, lo));
+    q1x = _mm_mul_ps(q1x, q0shuffle);
+    q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(2, 3, 0, 1));
+    res = fmadd(q1x, controlWZYX, res);
 
-    __m128 tmp3 = _mm_addsub_ps(_mm_shuffle_ps(tmp2, tmp1, _MM_SHUFFLE(3, 2, 1, 0)),
-        _mm_shuffle_ps(tmp1, tmp2, _MM_SHUFFLE(2, 3, 0, 1)));
+    q1y = _mm_mul_ps(q1y, q0shuffle);
+    q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(0, 1, 2, 3));
+    q1y = _mm_mul_ps(q1y, controlZWXY);
 
-    return _mm_shuffle_ps(tmp3, tmp3, _MM_SHUFFLE(2, 1, 3, 0));
+    q1z = _mm_mul_ps(q1z, q0shuffle);
+
+    q1y = fmadd(q1z, controlYXWZ, q1y);
+    return _mm_add_ps(res, q1y);
 }
 
 //------------------------------------------------------------------------------
@@ -400,30 +413,6 @@ rotationquataxis(const vec3& axis, scalar angle)
     __m128 b = _mm_and_ps(axis.vec, _mask_xyz);
     b = _mm_or_ps(b, _id_w);
     return _mm_mul_ps(b, _mm_set_ps(cosangle, sinangle, sinangle, sinangle));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline quat
-rotationquatyawpitchroll(scalar yaw, scalar pitch, scalar roll)
-{
-    scalar halfYaw = 0.5f * yaw;
-    scalar halfPitch = 0.5f * pitch;
-    scalar halfRoll = 0.5f * roll;
-    scalar cosYaw = Math::cos(halfYaw);
-    scalar sinYaw = Math::sin(halfYaw);
-    scalar cosPitch = Math::cos(halfPitch);
-    scalar sinPitch = Math::sin(halfPitch);
-    scalar cosRoll = Math::cos(halfRoll);
-    scalar sinRoll = Math::sin(halfRoll);
-    quat q(-(cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw),
-        -(cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw),
-        -(sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw),
-        -(cosRoll * cosPitch * cosYaw + sinRoll * sinPitch * sinYaw));
-
-
-    return q;
 }
 
 //------------------------------------------------------------------------------

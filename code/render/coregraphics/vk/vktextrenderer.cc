@@ -61,9 +61,9 @@ VkTextRenderer::Open()
 
     // setup vbo
     Util::Array<VertexComponent> comps;
-    comps.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float2, 0));
-    comps.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponent::Float2, 0));
-    comps.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponent::Float4, 0));
+    comps.Append(VertexComponent(0, VertexComponent::Float2, 0));
+    comps.Append(VertexComponent(1, VertexComponent::Float2, 0));
+    comps.Append(VertexComponent(2, VertexComponent::Float4, 0));
 
     this->layout = CreateVertexLayout({ comps });
 

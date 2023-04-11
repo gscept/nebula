@@ -1161,7 +1161,7 @@ LightContext::OnRenderDebug(uint32_t flags)
         {
         case PointLightType:
         {
-            Math::mat4 const& trans = pointTrans[ids[i]];
+            Math::mat4 trans = Math::affine(Math::vec3(ranges[ids[i]]), Math::vec3(0), Math::quat(), xyz(pointTrans[ids[i]].position));
             Math::vec4 col = Math::vec4(colors[i], 1.0f);
             CoreGraphics::RenderShape shape;
             shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth|RenderShape::Wireframe), col, trans);

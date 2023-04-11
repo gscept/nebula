@@ -24,13 +24,14 @@ CreateMesh(const MeshCreateInfo& info)
     meshAllocator.SetUnsafe<Mesh_Streams>(id, info.streams);
     meshAllocator.SetUnsafe<Mesh_IndexBufferOffset>(id, info.indexBufferOffset);
     meshAllocator.SetUnsafe<Mesh_IndexBuffer>(id, info.indexBuffer);
+    meshAllocator.SetUnsafe<Mesh_IndexType>(id, info.indexType);
     meshAllocator.SetUnsafe<Mesh_VertexLayout>(id, info.vertexLayout);
     meshAllocator.SetUnsafe<Mesh_Topology>(id, info.topology);
     meshAllocator.SetUnsafe<Mesh_PrimitiveGroups>(id, info.primitiveGroups);
 
     MeshId ret;
-    ret.resourceId = id;
-    ret.resourceType = MeshIdType;
+    ret.id24 = id;
+    ret.id8 = MeshIdType;
     return ret;
 }
 
@@ -40,7 +41,7 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
-    meshAllocator.Dealloc(id.resourceId);
+    meshAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -49,7 +50,7 @@ DestroyMesh(const MeshId id)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_PrimitiveGroups>(id.resourceId);
+    return meshAllocator.GetUnsafe<Mesh_PrimitiveGroups>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -58,7 +59,7 @@ MeshGetPrimitiveGroups(const MeshId id)
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-    return meshAllocator.GetUnsafe<Mesh_Streams>(id.resourceId)[stream].vertexBuffer;
+    return meshAllocator.GetUnsafe<Mesh_Streams>(id.id24)[stream].vertexBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 const uint
 MeshGetVertexOffset(const MeshId id, const IndexT stream)
 {
-    return meshAllocator.GetUnsafe<Mesh_Streams>(id.resourceId)[stream].offset;
+    return meshAllocator.GetUnsafe<Mesh_Streams>(id.id24)[stream].offset;
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ MeshGetVertexOffset(const MeshId id, const IndexT stream)
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_IndexBuffer>(id.resourceId);
+    return meshAllocator.GetUnsafe<Mesh_IndexBuffer>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +86,13 @@ MeshGetIndexBuffer(const MeshId id)
 const uint
 MeshGetIndexOffset(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_IndexBufferOffset>(id.resourceId);
+    return meshAllocator.GetUnsafe<Mesh_IndexBufferOffset>(id.id24);
+}
+
+const IndexType::Code
+MeshGetIndexType(const MeshId id)
+{
+    return meshAllocator.GetUnsafe<Mesh_IndexType>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -94,7 +101,16 @@ MeshGetIndexOffset(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Topology>(id.resourceId);
+    return meshAllocator.GetUnsafe<Mesh_Topology>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::VertexLayoutId
+MeshGetVertexLayout(const MeshId id)
+{
+    return meshAllocator.GetUnsafe<Mesh_VertexLayout>(id.id24);
 }
 
 } // Base

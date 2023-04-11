@@ -29,9 +29,12 @@ float Greyscale(in vec4 color)
     return dot(color.rgb, vec3(0.299, 0.587, 0.114));
 }
 
-subroutine(CalculateBump) vec3 GLTFNormalMapFunctor(in vec3 tangent, in vec3 binormal, in vec3 normal, in vec4 bumpData)
+subroutine(CalculateBump) vec3 GLTFNormalMapFunctor(in vec3 tangent, in vec3 normal, in float sign, in vec4 bumpData)
 {
-    mat3 tangentViewMatrix = mat3(normalize(tangent.xyz), normalize(binormal.xyz), normalize(normal.xyz));
+    vec3 tan = normalize(tangent);
+    vec3 norm = normalize(normal);
+    vec3 bin = cross(norm, tan) * sign;
+    mat3 tangentViewMatrix = mat3(tan, bin, norm);
     vec3 tNormal = vec3(0, 0, 0);
     tNormal.xy = (bumpData.xy * 2.0f) - 1.0f;
     tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
@@ -58,23 +61,22 @@ void
 vsGLTFStatic(
         [slot = 0] in vec3 position,
         [slot = 1] in vec3 normal,
-        [slot = 2] in vec2 uv,
-        [slot = 3] in vec3 tangent,
-        [slot = 4] in vec3 binormal,
+        [slot = 2] in ivec2 uv,
+        [slot = 3] in vec4 tangent,
         out vec3 Tangent,
         out vec3 Normal,
-        out vec3 Binormal,
+        out flat float Sign,
         out vec2 UV,
         out vec3 WorldSpacePos,
         out vec4 ViewSpacePos)
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
+    UV = UnpackUV(uv);
 
-    Tangent = (Model * vec4(tangent, 0)).xyz;
-    Normal = (Model * vec4(normal, 0)).xyz;
-    Binormal = (Model * vec4(binormal, 0)).xyz;
+    Tangent     = (Model * vec4(tangent.xyz, 0)).xyz;
+    Normal      = (Model * vec4(normal, 0)).xyz;
+    Sign        = tangent.w;
     WorldSpacePos = modelSpace.xyz;
     ViewSpacePos = View * modelSpace;
 }
@@ -88,7 +90,7 @@ void
 psGLTF(
     in vec3 Tangent,
     in vec3 Normal,
-    in vec3 Binormal,
+    in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
     in vec4 ViewSpacePos,
@@ -114,7 +116,7 @@ psGLTF(
     material[MAT_ROUGHNESS] = metallicRoughness.g;
     material[MAT_CAVITY] = Greyscale(occlusion);
     material[MAT_EMISSIVE] = 0.0f;
-    vec3 N = normalize(calcBump(Tangent, Binormal, Normal, normals));
+    vec3 N = normalize(calcBump(Tangent, Normal, Sign, normals));
     
     //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, baseColor, N, material);
     

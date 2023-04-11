@@ -119,7 +119,17 @@ template <class FLAGS, class BITS>
 constexpr bool
 AnyBits(const FLAGS flags, const BITS bits)
 {
-    return (flags & bits) != 0;
+    return (flags & bits) != (FLAGS)0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class FLAGS, class BITS>
+constexpr bool
+OnlyBits(const FLAGS flags, const BITS bits)
+{
+    return (flags & bits) == flags;
 }
 
 // byte bit calc

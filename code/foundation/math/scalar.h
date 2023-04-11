@@ -135,6 +135,23 @@ struct uint4
     };
 };
 
+struct byte4u
+{
+    union
+    {
+        struct { ubyte x, y, z, w; };
+        unsigned int v;
+    };
+};
+
+struct byte4
+{
+    union
+    {
+        struct { byte x, y, z, w; };
+        unsigned int v;
+    };
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -334,7 +351,6 @@ fequal(scalar f0, scalar f1, scalar tol)
     return ((f > (-tol)) && (f < tol));
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -343,6 +359,16 @@ __forceinline TYPE
 max(TYPE a, TYPE b)
 {
     return (a > b) ? a : b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE0, typename ...TYPEN>
+__forceinline TYPE0
+max(TYPE0 first, TYPE0 second, TYPEN... rest)
+{
+    return first > second ? max(first, std::forward<TYPEN>(rest)...) : max(second, std::forward<TYPEN>(rest)...);
 }
 
 //------------------------------------------------------------------------------
@@ -375,6 +401,16 @@ __forceinline unsigned int
 min(unsigned int a, unsigned int b)
 {
     return b ^ ((a ^ b) & -(a < b));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE0, typename ...TYPEN>
+__forceinline TYPE0
+min(TYPE0 first, TYPE0 second, TYPEN... rest)
+{
+    return first < second ? min(first, std::forward<TYPEN>(rest)...) : min(second, std::forward<TYPEN>(rest)...);
 }
 
 //------------------------------------------------------------------------------
@@ -434,7 +470,7 @@ rad2deg(scalar r)
 
 //------------------------------------------------------------------------------
 /**
-    Integer clamping.
+    Float clamping.
 */
 __forceinline float
 clamp(float val, float minVal, float maxVal)

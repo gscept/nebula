@@ -14,7 +14,7 @@
           {
             "name": "ParameterMap",
             "type": "textureHandle",
-            "defaultValue": "tex:system/white"
+            "defaultValue": "tex:system/default_material"
           },
           {
             "name": "NormalMap",
@@ -384,12 +384,12 @@
           {
             "name": "ParameterMap2",
             "type": "textureHandle",
-            "defaultValue": "tex:system/black"
+            "defaultValue": "tex:system/default_material"
           },
           {
             "name": "ParameterMap3",
             "type": "textureHandle",
-            "defaultValue": "tex:system/black"
+            "defaultValue": "tex:system/default_material"
           },
           {
             "name": "EmissiveMap2",
@@ -800,7 +800,7 @@
           {
             "name": "NormalMap",
             "type": "textureHandle",
-            "defaultValue": "tex:test/normalbox_normal"
+            "defaultValue": "tex:system/nobump"
           },
           {
             "name": "ParameterMap",

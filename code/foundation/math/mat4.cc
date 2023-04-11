@@ -113,11 +113,10 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
 /**
 */
 mat4
-affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
+affine(const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
 {
     // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
-    vec3 scalev(scale);
-    mat4 scalem = scaling(scalev);
+    mat4 scalem = scaling(scale);
     mat4 rot = rotationquat(rotation);
     vec4 rotc = vec4(rotationCenter, 0.0f);
     vec4 trans = vec4(translation, 0.0f);
@@ -127,6 +126,47 @@ affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotat
     m = rot * m;
     m.r[3] = _mm_add_ps(_mm_add_ps(m.r[3].vec, rotc.vec), trans.vec);
     return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+affine(const vec3& scale, const quat& rotation, const vec3& translation)
+{
+    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    mat4 m = rotationquat(rotation);
+    m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
+    m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
+    m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);
+    m.position = vec4(translation, 1);
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+affine(const vec3& scale, const vec3& rotation, const vec3& translation)
+{
+    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    mat4 m = rotationyawpitchroll(rotation.y, rotation.x, rotation.z);
+    m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
+    m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
+    m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);
+    m.position = vec4(translation, 1);
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
+{
+    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    vec3 scalev(scale);
+    return affine(scalev, rotationCenter, rotation, translation);
 }
 
 //------------------------------------------------------------------------------

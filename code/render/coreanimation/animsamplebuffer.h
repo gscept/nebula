@@ -13,7 +13,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "core/refcounted.h"
-#include "animresource.h"
+#include "animation.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation
@@ -36,24 +36,27 @@ public:
     void operator=(const AnimSampleBuffer& rhs);
     
     /// setup the object from an animation resource
-    void Setup(const AnimResourceId& animResource);
+    void Setup(const AnimationId& animResource);
     /// discard the object
     void Discard();
     /// return true if the object has been setup
     bool IsValid() const;
+
+    /// Reset the sample buffer
+    void Reset();
     
     /// get the number of samples in the buffer
     SizeT GetNumSamples() const;
     
     /// get direct pointer to samples
-    Math::vec4* GetSamplesPointer() const;
+    float* GetSamplesPointer() const;
     /// get direct pointer to sample counts
     uchar* GetSampleCountsPointer() const;
 
 private:
-    AnimResourceId animResource;
+    AnimationId animResource;
     SizeT numSamples;
-    Math::vec4* samples;
+    float* samples;
     uchar* sampleCounts;
 };
 
@@ -63,7 +66,7 @@ private:
 inline bool
 AnimSampleBuffer::IsValid() const
 {
-    return this->animResource != AnimResourceId::Invalid();
+    return this->animResource != InvalidAnimationId;
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +81,7 @@ AnimSampleBuffer::GetNumSamples() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::vec4*
+inline float*
 AnimSampleBuffer::GetSamplesPointer() const
 {
     return this->samples;

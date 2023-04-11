@@ -97,13 +97,13 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     loadInfo.comps = info.comps;
     vertexLayoutAllocator.Set<VertexSignature_LayoutInfo>(id, loadInfo);
 
-
     Util::HashTable<uint64_t, DerivativeLayout>& hashTable = vertexLayoutAllocator.Get<VertexSignature_ProgramLayoutMapping>(id);
     VkPipelineVertexInputStateCreateInfo& vertexInfo = vertexLayoutAllocator.Get<VertexSignature_VkPipelineInfo>(id);
     BindInfo& bindInfo = vertexLayoutAllocator.Get<VertexSignature_BindInfo>(id);
 
     // create binds
     bindInfo.binds.Resize(CoreGraphics::MaxNumVertexStreams);
+    bindInfo.binds.Fill(VkVertexInputBindingDescription{});
     bindInfo.attrs.Resize(loadInfo.comps.Size());
 
     SizeT strides[CoreGraphics::MaxNumVertexStreams] = { 0 };
@@ -120,7 +120,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         const CoreGraphics::VertexComponent& component = loadInfo.comps[compIndex];
         VkVertexInputAttributeDescription* attr = &bindInfo.attrs[compIndex];
 
-        attr->location = component.GetSemanticName();
+        attr->location = component.GetIndex();
         attr->binding = component.GetStreamIndex();
         attr->format = VkTypes::AsVkVertexType(component.GetFormat());
         attr->offset = curOffset[component.GetStreamIndex()];

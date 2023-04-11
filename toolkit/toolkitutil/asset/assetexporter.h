@@ -11,13 +11,13 @@
 */
 //------------------------------------------------------------------------------
 #include "toolkit-common/base/exporterbase.h"
-#include "toolkitutil/fbx/nfbxexporter.h"
+#include "model/import/fbx/nfbxexporter.h"
 #include "texutil/textureconverter.h"
-#include "modelutil/modelbuilder.h"
-#include "modelutil/modeldatabase.h"
+#include "model/modelutil/modelbuilder.h"
+#include "model/modelutil/modeldatabase.h"
 #include "surface/surfaceexporter.h"
 #include "toolkit-common/toolkitconsolehandler.h"
-#include "toolkitutil/gltf/ngltfexporter.h"
+#include "model/import/gltf/ngltfexporter.h"
 
 namespace ToolkitUtil
 {

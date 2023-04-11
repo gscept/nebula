@@ -190,8 +190,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 #endif
 
             // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-            assert(sNode->GetSortCode() < 0xFFF0000000000000);
-            assert(sNode->HashCode() < 0x000FFFFF00000000);
+            assert(sNode->GetSortCode() <   0xFFF0000000000000);
+            assert(sNode->HashCode() <      0x000FFFFF00000000);
             uint64 sortId = ((uint64)sNode->GetSortCode() << 52) | ((uint64)sNode->HashCode() << 32);
             nodeInstances.renderable.nodeSortId.Append(sortId);
         }
@@ -557,12 +557,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 Models::NodeInstanceFlags nodeFlag = nodeInstances.renderable.nodeFlags[j];
 
                 // Calculate if object should be culled due to LOD
-                const Util::Tuple<float, float>& lodDistances = nodeInstances.renderable.nodeLodDistances[j];
+                const auto& [min, max] = nodeInstances.renderable.nodeLodDistances[j];
                 float lodFactor = 0.0f;
-                if (Util::Get<0>(lodDistances) < FLT_MAX || Util::Get<1>(lodDistances) < FLT_MAX)
+                if (min < FLT_MAX || max < FLT_MAX)
                 {
-                    lodFactor = (viewDistance - (Util::Get<0>(lodDistances) + 1.5f)) / (Util::Get<1>(lodDistances) - (Util::Get<0>(lodDistances) + 1.5f));
-                    if (viewDistance >= Util::Get<0>(lodDistances) && viewDistance < Util::Get<1>(lodDistances))
+                    lodFactor = (viewDistance - (min + 1.5f)) / (max - (min + 1.5f));
+                    if (viewDistance >= min && viewDistance < max)
                         nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
                     else
                         nodeFlag = UnsetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
