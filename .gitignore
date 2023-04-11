@@ -33,3 +33,4 @@ code/application/basegamefeature/loader/level_generated.h
 *.ps1
 test.fxb
 export_old
+/CMakeUserPresets.json
