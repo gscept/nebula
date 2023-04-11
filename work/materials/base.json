@@ -800,7 +800,7 @@
           {
             "name": "NormalMap",
             "type": "textureHandle",
-            "defaultValue": "tex:test/normalbox_normal"
+            "defaultValue": "tex:system/nobump"
           },
           {
             "name": "ParameterMap",
