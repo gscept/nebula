@@ -622,7 +622,7 @@ CmdBarrier(
         vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
 
         const TextureSubresourceInfo& subres = nebBar.subres;
-        bool isDepth = (subres.bits & CoreGraphics::ImageBits::DepthBits) == 1;
+        bool isDepth = AnyBits(subres.bits, CoreGraphics::ImageBits::DepthBits);
         vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
         vkBar.subresourceRange.baseMipLevel = subres.mip;
         vkBar.subresourceRange.levelCount = subres.mipCount;
