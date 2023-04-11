@@ -11,6 +11,7 @@
 #include "core/types.h"
 #include "math/scalar.h"
 #include "math/vec4.h"
+#include "math/sse.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -375,7 +376,7 @@ operator*(const quat& q0, const quat& q1)
 
     q1x = _mm_mul_ps(q1x, q0shuffle);
     q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(2, 3, 0, 1));
-    res = _mm_fmadd_ps(q1x, controlWZYX, res);
+    res = fmadd(q1x, controlWZYX, res);
 
     q1y = _mm_mul_ps(q1y, q0shuffle);
     q0shuffle = _mm_shuffle_ps(q0shuffle, q0shuffle, _MM_SHUFFLE(0, 1, 2, 3));
@@ -383,7 +384,7 @@ operator*(const quat& q0, const quat& q1)
 
     q1z = _mm_mul_ps(q1z, q0shuffle);
 
-    q1y = _mm_fmadd_ps(q1z, controlYXWZ, q1y);
+    q1y = fmadd(q1z, controlYXWZ, q1y);
     return _mm_add_ps(res, q1y);
 }
 
