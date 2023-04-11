@@ -50,9 +50,7 @@ psStandard(
     in vec2 UV,
     in vec3 WorldSpacePos,
     in vec4 ViewSpacePos,
-    [color0] out vec4 OutColor,
-    [color1] out vec4 OutNormal,
-    [color2] out vec4 OutSpecular)
+    [color0] out vec4 OutColor)
 {
     vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
     float dither = hash12(seed);
@@ -79,8 +77,8 @@ psStandard(
     light += albedo.rgb * material[MAT_EMISSIVE];
     
     OutColor = finalizeColor(light.rgb, albedo.a);
-    OutNormal = vec4(N, 0);
-    OutSpecular = vec4(F0, material[MAT_ROUGHNESS]);
+    //OutNormal = vec4(N, 0);
+    //OutSpecular = vec4(F0, material[MAT_ROUGHNESS]);
 }
 
 #endif
