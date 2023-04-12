@@ -87,9 +87,8 @@ struct GraphicsDeviceState
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
     uint globalConstantBufferMaxValue;
-    Util::FixedArray<CoreGraphics::BufferId> globalConstantStagingBuffer;
-    CoreGraphics::BufferId globalGraphicsConstantBuffer;
-    CoreGraphics::BufferId globalComputeConstantBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> globalGraphicsConstantBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> globalComputeConstantBuffer;
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
@@ -192,9 +191,9 @@ void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT s
 ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 
 /// return id to global graphics constant buffer
-CoreGraphics::BufferId GetGraphicsConstantBuffer();
+CoreGraphics::BufferId GetGraphicsConstantBuffer(IndexT i);
 /// Return buffer used for compute constants
-CoreGraphics::BufferId GetComputeConstantBuffer();
+CoreGraphics::BufferId GetComputeConstantBuffer(IndexT i);
 /// Flush constants for queue type, do this before recording any commands doing draw or dispatch
 void FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue);
 

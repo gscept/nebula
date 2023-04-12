@@ -699,6 +699,16 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
 //------------------------------------------------------------------------------
 /**
 */
+const bool
+ShaderHasResourceTable(const ShaderId id, const IndexT group)
+{
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    return info.descriptorSetLayoutMap.FindIndex(group) != InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphics::BufferId
 ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode)
 {

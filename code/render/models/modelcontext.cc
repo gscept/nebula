@@ -145,7 +145,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             state.objectConstantsIndex = sNode->objectTransformsIndex;
             state.skinningConstantsIndex = sNode->skinningTransformsIndex;
             state.particleConstantsIndex = InvalidIndex;
-            state.resourceTable = sNode->resourceTable;
+            state.resourceTables = sNode->resourceTables;
 
             // Okay, so how this basically has to work is that there are 4 different dynamic offset constant indices in the entire engine.
             // Any change of this will break this code, so consider improving this in the future by providing a way to overload the binding point

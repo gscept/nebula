@@ -152,7 +152,7 @@ struct
 
     CoreGraphics::ResourceTableId                                   virtualTerrainSystemResourceTable;
     CoreGraphics::ResourceTableId                                   virtualTerrainRuntimeResourceTable;
-    CoreGraphics::ResourceTableId                                   virtualTerrainDynamicResourceTable;
+    Util::FixedArray<CoreGraphics::ResourceTableId>                 virtualTerrainDynamicResourceTable;
 
     SizeT                                                           numPageBufferUpdateEntries;
 
@@ -326,7 +326,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
     terrainVirtualTileState.virtualTerrainSystemResourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
     terrainVirtualTileState.virtualTerrainRuntimeResourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_BATCH_GROUP);
-    terrainVirtualTileState.virtualTerrainDynamicResourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
+    terrainVirtualTileState.virtualTerrainDynamicResourceTable.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (auto& table : terrainVirtualTileState.virtualTerrainDynamicResourceTable)
+        table = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
 
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.name = "VirtualRuntimeBuffer"_atm;
@@ -568,16 +570,20 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         });
     ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainRuntimeResourceTable);
 
-    ResourceTableSetConstantBuffer(terrainVirtualTileState.virtualTerrainDynamicResourceTable,
+    IndexT bufferIndex = 0;
+    for (const auto table : terrainVirtualTileState.virtualTerrainDynamicResourceTable)
+    {
+        ResourceTableSetConstantBuffer(table,
         {
-            CoreGraphics::GetGraphicsConstantBuffer(),
+            CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++),
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SLOT,
             0,
             sizeof(Terrain::TerrainTileUpdateUniforms),
             0,
             false, true
         });
-    ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainDynamicResourceTable);
+        ResourceTableCommitChanges(table);
+    }
 
     // create pass for updating the physical cache tiles
     CoreGraphics::PassCreateInfo tileUpdatePassCreate;
@@ -839,7 +845,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 {
                     CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
                     CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
-                    CmdSetResourceTable(cmdBuf, rt.patchTable, NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, &rt.sectorUniformOffsets[j][0]);
+                    CmdSetResourceTable(cmdBuf, rt.patchTables[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, &rt.sectorUniformOffsets[j][0]);
                     CmdDraw(cmdBuf, rt.sectorPrimGroups[j]);
                 }
             }
@@ -972,7 +978,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 for (int j = 0; j < terrainVirtualTileState.pageUpdatesThisFrame.Size(); j++)
                 {
                     PhysicalTileUpdate& pageUpdate = terrainVirtualTileState.pageUpdatesThisFrame[j];
-                    CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable, NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, pageUpdate.constantBufferOffsets);
+                    CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, pageUpdate.constantBufferOffsets);
 
                     // update viewport rectangle
                     Math::rectangle<int> rect;
@@ -1099,10 +1105,15 @@ TerrainContext::SetupTerrain(
     SizeT vertDistanceY = terrainState.settings.tileHeight / terrainState.settings.quadsPerTileY;
     SizeT numBufferedFrame = CoreGraphics::GetNumBufferedFrames();
 
-    // setup resource tables, one for the per-chunk draw arguments, and one for the whole terrain 
-    runtimeInfo.patchTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
-    ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { CoreGraphics::GetGraphicsConstantBuffer(), Terrain::Table_DynamicOffset::PatchUniforms::SLOT, 0, Terrain::Table_DynamicOffset::PatchUniforms::SIZE, 0, false, true });
-    ResourceTableCommitChanges(runtimeInfo.patchTable);
+    // setup resource tables, one for the per-chunk draw arguments, and one for the whole terrain
+    runtimeInfo.patchTables.Resize(CoreGraphics::GetNumBufferedFrames());
+    IndexT bufferIndex = 0;
+    for (auto& table : runtimeInfo.patchTables)
+    {
+        table = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
+        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++), Terrain::Table_DynamicOffset::PatchUniforms::SLOT, 0, Terrain::Table_DynamicOffset::PatchUniforms::SIZE, 0, false, true });
+        ResourceTableCommitChanges(table);
+    }
 
     // allocate a tile vertex buffer
     Util::FixedArray<TerrainVert> verts(numVertsX * numVertsY);

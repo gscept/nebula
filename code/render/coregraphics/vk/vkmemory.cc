@@ -231,7 +231,7 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
         flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
         break;
     case MemoryPool_DeviceAndHost:
-        flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         // Memory needs to be aligned to non coherent atom size for flushing
         req.size = Math::align(req.size, props.limits.nonCoherentAtomSize);
         req.alignment = Math::align(req.alignment, props.limits.nonCoherentAtomSize);

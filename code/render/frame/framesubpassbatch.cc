@@ -63,9 +63,9 @@ FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id)
+FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
-        // now do usual render stuff
+    // now do usual render stuff
     ShaderServer* shaderServer = ShaderServer::Instance();
     ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
@@ -142,7 +142,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         // Apply draw packet constants and draw
                         if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
                         {
-                            instance->Apply(cmdBuf, batchIndex, shaderConfig);
+                            instance->Apply(cmdBuf, batchIndex, shaderConfig, bufferIndex);
                             CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
                         }
                     }
@@ -156,7 +156,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
 /**
 */
 void
-FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance)
+FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
     // now do usual render stuff
     ShaderServer* shaderServer = ShaderServer::Instance();
@@ -229,7 +229,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, batchIndex, shaderConfig);
+                        instance->Apply(cmdBuf, batchIndex, shaderConfig, bufferIndex);
                         CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }
@@ -245,7 +245,7 @@ void
 FrameSubpassBatch::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
-    FrameSubpassBatch::DrawBatch(cmdBuf, this->batch, view->GetCamera());
+    FrameSubpassBatch::DrawBatch(cmdBuf, this->batch, view->GetCamera(), bufferIndex);
 }
 
 } // namespace Frame2

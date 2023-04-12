@@ -82,7 +82,7 @@ enum MaterialMembers
     Material_MinLOD,
     Material_LODTextures,
     Material_Table,
-    Material_InstanceTable,
+    Material_InstanceTables,
     Material_Buffers,
     Material_InstanceBuffers,
     Material_Textures,
@@ -95,7 +95,7 @@ typedef Ids::IdAllocator<
     float,
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
-    Util::FixedArray<CoreGraphics::ResourceTableId>,                                // instance level resource table, mapped batch -> table
+    Util::FixedArray<Util::FixedArray<CoreGraphics::ResourceTableId>>,              // instance level resource table, mapped batch -> table
     Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
     Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
@@ -111,7 +111,7 @@ void DestroyMaterialInstance(const MaterialInstanceId materialInstance);
 /// Allocate instance constants, call per frame when instance constants are needed
 CoreGraphics::ConstantBufferOffset MaterialInstanceAllocate(const MaterialInstanceId mat, const BatchIndex batch);
 /// Apply material instance
-void MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBufferId buf, IndexT index);
+void MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBufferId buf, IndexT index, IndexT bufferIndex);
 
 
 /// Get material instance buffer size for batch

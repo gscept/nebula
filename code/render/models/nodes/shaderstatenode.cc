@@ -128,7 +128,8 @@ ShaderStateNode::Unload()
     Resources::DiscardResource(this->materialRes);
 
     // destroy table and constant buffer
-    CoreGraphics::DestroyResourceTable(this->resourceTable);
+    for (auto table : this->resourceTables)
+        CoreGraphics::DestroyResourceTable(table);
 }
 
 //------------------------------------------------------------------------------
@@ -144,25 +145,29 @@ ShaderStateNode::OnFinishedLoading()
     this->material = this->materialRes;
     this->sortCode = MaterialGetSortCode(this->material);
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
     this->objectTransformsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
     this->instancingTransformsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
     this->skinningTransformsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
 
-    this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
-    CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+    SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
+    this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < numFrames; i++)
+    {
+        this->resourceTables[i] = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetGraphicsConstantBuffer(i), this->objectTransformsIndex, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
+        CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type)
+ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type, IndexT bufferIndex)
 {
     // Apply per-draw surface parameters
     if (this->materialInstance != Materials::MaterialInstanceId::Invalid())
-        MaterialInstanceApply(this->materialInstance, cmdBuf, batchIndex);
+        MaterialInstanceApply(this->materialInstance, cmdBuf, batchIndex, bufferIndex);
 
     // Set per-draw resource tables
     IndexT prevOffset = 0;

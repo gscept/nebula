@@ -46,7 +46,7 @@ public:
 #endif
 
         /// Apply the resource table
-        void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type);
+        void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type, IndexT bufferIndex);
     };
 
     /// get surface
@@ -76,7 +76,7 @@ protected:
     uint8_t instancingTransformsIndex;
     uint8_t skinningTransformsIndex;
 
-    CoreGraphics::ResourceTableId resourceTable;
+    Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 };
 
 } // namespace Models

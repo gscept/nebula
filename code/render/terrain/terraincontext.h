@@ -155,7 +155,7 @@ private:
         Resources::ResourceId normalMap;
         Resources::ResourceId decisionMap;
 
-        CoreGraphics::ResourceTableId patchTable;
+        Util::FixedArray<CoreGraphics::ResourceTableId> patchTables;
 
         CoreGraphics::BufferId vbo;
         CoreGraphics::BufferId ibo;

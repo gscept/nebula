@@ -917,26 +917,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     cboInfo.name = "Global Staging Constant Buffer";
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
-    cboInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
-    cboInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    state.globalConstantStagingBuffer.Resize(info.numBufferedFrames);
-    for (IndexT i = 0; i < state.globalConstantStagingBuffer.Size(); i++)
+    cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
+    cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
+    state.globalGraphicsConstantBuffer.Resize(info.numBufferedFrames);
+    state.globalComputeConstantBuffer.Resize(info.numBufferedFrames);
+    for (IndexT i = 0; i < info.numBufferedFrames; i++)
     {
-        state.globalConstantStagingBuffer[i] = CreateBuffer(cboInfo);
+        auto gfxCboInfo = cboInfo;
+        gfxCboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+        state.globalGraphicsConstantBuffer[i] = CreateBuffer(gfxCboInfo);
+
+        auto cmpCboInfo = cboInfo;
+        cmpCboInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+        state.globalComputeConstantBuffer[i] = CreateBuffer(cmpCboInfo);
     }
-
-    cboInfo.byteSize = info.globalConstantBufferMemorySize;
-    cboInfo.name = "Global Graphics Constant Buffer";
-    cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    cboInfo.usageFlags = CoreGraphics::TransferBufferDestination | CoreGraphics::ConstantBuffer;
-    cboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
-    state.globalGraphicsConstantBuffer = CreateBuffer(cboInfo);
-
-    cboInfo.name = "Global Compute Constant Buffer";
-    cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    cboInfo.usageFlags = CoreGraphics::TransferBufferDestination | CoreGraphics::ConstantBuffer;
-    cboInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
-    state.globalComputeConstantBuffer = CreateBuffer(cboInfo);
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
 
@@ -1145,14 +1139,12 @@ DestroyGraphicsDevice()
 
     if (state.globalConstantBufferMaxValue > 0)
     {
-        DestroyBuffer(state.globalGraphicsConstantBuffer);
-        DestroyBuffer(state.globalComputeConstantBuffer);
         for (IndexT i = 0; i < state.maxNumBufferedFrames; i++)
-            DestroyBuffer(state.globalConstantStagingBuffer[i]);
+        {
+            DestroyBuffer(state.globalGraphicsConstantBuffer[i]);
+            DestroyBuffer(state.globalComputeConstantBuffer[i]);
+        }
     }
-    state.globalGraphicsConstantBuffer = InvalidBufferId;
-    state.globalComputeConstantBuffer = InvalidBufferId;
-    state.globalConstantStagingBuffer.Clear();
 
     state.database.Discard();
 
@@ -1435,7 +1427,8 @@ LockConstantUpdates()
 void
 SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
 {
-    BufferUpdate(state.globalConstantStagingBuffer[state.currentBufferedFrameIndex], data, size, offset);
+    BufferUpdate(state.globalGraphicsConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
+    BufferUpdate(state.globalComputeConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1469,18 +1462,18 @@ AllocateConstantBufferMemory(uint size)
 /**
 */
 CoreGraphics::BufferId
-GetGraphicsConstantBuffer()
+GetGraphicsConstantBuffer(IndexT i)
 {
-    return state.globalGraphicsConstantBuffer;
+    return state.globalGraphicsConstantBuffer[i];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 CoreGraphics::BufferId
-GetComputeConstantBuffer()
+GetComputeConstantBuffer(IndexT i)
 {
-    return state.globalComputeConstantBuffer;
+    return state.globalComputeConstantBuffer[i];
 }
 
 //------------------------------------------------------------------------------
@@ -1489,6 +1482,7 @@ GetComputeConstantBuffer()
 void
 FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue)
 {
+    /*
     // Flush constants, should be the first command on the queue
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     CoreGraphics::BufferId buf = queue == CoreGraphics::GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
@@ -1527,6 +1521,7 @@ FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueTy
         );
     }
     ranges.flushedStart = sub.endAddress;
+    */
 }
 
 //------------------------------------------------------------------------------
