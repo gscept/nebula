@@ -118,6 +118,7 @@ public:
             Util::Array<Math::bbox> nodeBoundingBoxes;
             Util::Array<Util::Tuple<float, float>> nodeLodDistances;
             Util::Array<float> nodeLods;
+            Util::Array<float> textureLods;
             Util::Array<uint32> nodeTransformIndex;
             Util::Array<uint64> nodeSortId;
             Util::Array<NodeInstanceFlags> nodeFlags;

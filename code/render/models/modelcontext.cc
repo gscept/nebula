@@ -175,6 +175,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.origBoundingBoxes.Append(sNode->boundingBox);
             nodeInstances.renderable.nodeLodDistances.Append(sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX));
             nodeInstances.renderable.nodeLods.Append(0.0f);
+            nodeInstances.renderable.textureLods.Append(FLT_MAX);
             nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
             nodeInstances.renderable.nodeMaterials.Append(sNode->material);
             nodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(sNode->material));
@@ -554,6 +555,13 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 float viewDistance = length(viewVector);
                 float textureLod = viewDistance - 38.5f;
 
+                if (textureLod < nodeInstances.renderable.textureLods[j])
+                {
+                    // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
+                    Materials::MaterialSetHighestLod(nodeInstances.renderable.nodeMaterials[j], textureLod);
+                    nodeInstances.renderable.textureLods[j] = textureLod;
+                }
+
                 Models::NodeInstanceFlags nodeFlag = nodeInstances.renderable.nodeFlags[j];
 
                 // Calculate if object should be culled due to LOD
@@ -577,8 +585,6 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 // Set LOD factor for dithering and other shader effects
                 nodeInstances.renderable.nodeLods[j] = lodFactor;
 
-                // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                Materials::MaterialSetHighestLod(nodeInstances.renderable.nodeMaterials[j], textureLod);
             }
         }
     }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);
