@@ -93,6 +93,8 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
+/// Returns true if there is a resource table for the given group in the shader
+const bool ShaderHasResourceTable(const ShaderId id, const IndexT group);
 /// create constant buffer from shader using name (don't use too frequently)
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode = BufferAccessMode::HostCached);
 /// create constant buffer from index

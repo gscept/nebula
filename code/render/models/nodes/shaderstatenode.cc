@@ -163,11 +163,11 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type)
+ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type, IndexT bufferIndex)
 {
     // Apply per-draw surface parameters
     if (this->materialInstance != Materials::MaterialInstanceId::Invalid())
-        MaterialInstanceApply(this->materialInstance, cmdBuf, batchIndex);
+        MaterialInstanceApply(this->materialInstance, cmdBuf, batchIndex, bufferIndex);
 
     // Set per-draw resource tables
     IndexT prevOffset = 0;

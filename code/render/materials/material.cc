@@ -26,7 +26,7 @@ CreateMaterial(const MaterialCreateInfo& info)
 
     // Resize all arrays to fit the number of batches
     materialAllocator.Get<Material_Table>(id).Resize(info.config->batchToIndexMap.Size()); // surface tables
-    materialAllocator.Get<Material_InstanceTable>(id).Resize(info.config->batchToIndexMap.Size()); // instance tables
+    materialAllocator.Get<Material_InstanceTables>(id).Resize(info.config->batchToIndexMap.Size()); // instance tables
     materialAllocator.Get<Material_Buffers>(id).Resize(info.config->batchToIndexMap.Size()); // surface buffers
     materialAllocator.Get<Material_InstanceBuffers>(id).Resize(info.config->batchToIndexMap.Size()); // instance buffers
     materialAllocator.Get<Material_Textures>(id).Resize(info.config->batchToIndexMap.Size()); // textures
@@ -48,10 +48,17 @@ CreateMaterial(const MaterialCreateInfo& info)
             CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' batch table", info.config->name.AsCharPtr()).AsCharPtr());
         materialAllocator.Get<Material_Table>(id)[*batchIt.val] = surfaceTable;
 
-        CoreGraphics::ResourceTableId instanceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_INSTANCE_GROUP, 256);
-        if (instanceTable != CoreGraphics::InvalidResourceTableId)
-            CoreGraphics::ObjectSetName(instanceTable, Util::String::Sprintf("Material '%s' instance table", info.config->name.AsCharPtr()).AsCharPtr());
-        materialAllocator.Get<Material_InstanceTable>(id)[*batchIt.val] = instanceTable;
+        auto& instanceTables = materialAllocator.Get<Material_InstanceTables>(id)[*batchIt.val];
+        if (ShaderHasResourceTable(shd, NEBULA_INSTANCE_GROUP))
+        {
+            instanceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+            for (auto& table : instanceTables)
+            {
+                table = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_INSTANCE_GROUP, 256);
+                if (table != CoreGraphics::InvalidResourceTableId)
+                    CoreGraphics::ObjectSetName(table, Util::String::Sprintf("Material '%s' instance table", info.config->name.AsCharPtr()).AsCharPtr());
+            }
+        }
 
         // get constant buffer count
         SizeT numBuffers = CoreGraphics::ShaderGetConstantBufferCount(shd);
@@ -78,18 +85,16 @@ CreateMaterial(const MaterialCreateInfo& info)
                     surfaceBuffers.Append(Util::MakeTuple(slot, buf));
                 }
             }
-            else if (group == NEBULA_INSTANCE_GROUP && instanceTable != CoreGraphics::InvalidResourceTableId)
+            else if (group == NEBULA_INSTANCE_GROUP && !instanceTables.IsEmpty())
             {
                 n_assert2(Util::Get<0>(instanceBuffer) == InvalidIndex, "Only one per-instance constant buffer can be present");
-                CoreGraphics::BufferId buf = CoreGraphics::GetGraphicsConstantBuffer();
-                if (buf != CoreGraphics::InvalidBufferId)
-                {
-                    SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
-                    CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, bufSize, 0, false, true });
+                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
+                IndexT bufferIndex = 0;
+                for (const auto& table : instanceTables)
+                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
 
-                    // add to surface
-                    instanceBuffer = Util::MakeTuple(slot, bufSize);
-                }
+                // add to surface
+                instanceBuffer = Util::MakeTuple(slot, bufSize);
             }
         }
 
@@ -112,8 +117,8 @@ CreateMaterial(const MaterialCreateInfo& info)
         if (surfaceTable != CoreGraphics::InvalidResourceTableId)
             CoreGraphics::ResourceTableCommitChanges(surfaceTable);
 
-        if (instanceTable != CoreGraphics::InvalidResourceTableId)
-            CoreGraphics::ResourceTableCommitChanges(instanceTable);
+        for (const auto& table : instanceTables)
+            CoreGraphics::ResourceTableCommitChanges(table);
 
         const Util::Array<ShaderConfigBatchConstant>& constants = info.config->constantsByBatch[*batchIt.val];
         for (j = 0; j < constants.Size(); j++)
@@ -152,7 +157,7 @@ CreateMaterial(const MaterialCreateInfo& info)
                 surConst.defaultValue = nullptr;
                 surConst.instanceConstant = true;
                 surConst.bufferIndex = 0;
-                surConst.buffer = CoreGraphics::GetGraphicsConstantBuffer();
+                surConst.buffer = CoreGraphics::InvalidBufferId;
             }
 
             materialAllocator.Get<Material_Constants>(id)[*batchIt.val].Append(surConst);
@@ -325,11 +330,14 @@ MaterialInstanceAllocate(const MaterialInstanceId mat, const BatchIndex batch)
 /**
 */
 void
-MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBufferId buf, IndexT index)
+MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBufferId buf, IndexT index, IndexT bufferIndex)
 {
-    const CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_InstanceTable>(id.materialId)[index];
-    if (table != CoreGraphics::InvalidResourceTableId)
+    const auto& tables = materialAllocator.Get<Material_InstanceTables>(id.materialId)[index];
+    if (!tables.IsEmpty())
     {
+        const CoreGraphics::ResourceTableId table = tables[bufferIndex];
+        n_assert(table != CoreGraphics::InvalidResourceTableId);
+
         // Set instance table
         CoreGraphics::ConstantBufferOffset offset = materialInstanceAllocator.Get<MaterialInstance_Offsets>(id.instance);
         CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, { offset });

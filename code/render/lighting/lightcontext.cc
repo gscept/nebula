@@ -242,7 +242,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         {
             // draw it!
             int slice = shadowCasterSliceMap[lightServerState.shadowcastingLocalLights[i]];
-            Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, slice);
+            Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, slice, bufferIndex);
         }
     };
     Frame::AddSubgraph("Spotlight Shadows", { spotlightShadowsRender });
@@ -270,7 +270,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
             for (IndexT i = 0; i < observers.Size(); i++)
             {
                 // draw it!
-                Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.globalLightsBatchCode, observers[i], 1, i);
+                Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.globalLightsBatchCode, observers[i], 1, i, bufferIndex);
             }
         }
     };

@@ -918,7 +918,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     cboInfo.name = "Global Staging Constant Buffer";
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
     cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
-    cboInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
     state.globalGraphicsConstantBuffer.Resize(info.numBufferedFrames);
     state.globalComputeConstantBuffer.Resize(info.numBufferedFrames);
     for (IndexT i = 0; i < info.numBufferedFrames; i++)
