@@ -227,29 +227,31 @@ JsonReader::SetToFirstChild(const Util::String& name)
 {
     n_assert(this->IsOpen());
     n_assert(0 != this->curNode);
-    const value_variant* child = 0;
+    const value_variant* child = nullptr;
     IndexT cIdx = 0;
-    if (name.IsEmpty())
+    if (this->curNode->has_children())
     {
-        child = &this->curNode->get_value_at_index(0);
+        if (name.IsEmpty())
+        {
+            child = &this->curNode->get_value_at_index(0);
+        }
+        else
+        {
+            child = this->curNode->find_value_variant(name.AsCharPtr());
+            cIdx = this->curNode->find_key(name.AsCharPtr());
+        }
+
+        if (child)
+        {
+            this->parents.Push(this->curNode);
+            this->parentIdx.Push(this->childIdx);
+            this->curNode = child;
+            this->childIdx = cIdx;
+            return true;
+        }
     }
-    else
-    {
-        child = this->curNode->find_value_variant(name.AsCharPtr());
-        cIdx = this->curNode->find_key(name.AsCharPtr());
-    }
-    if (child)
-    {
-        this->parents.Push(this->curNode);
-        this->parentIdx.Push(this->childIdx);
-        this->curNode = child;
-        this->childIdx = cIdx;
-        return true;
-    }
-    else
-    {                
-        return false;
-    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
