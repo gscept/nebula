@@ -16,6 +16,7 @@
 
 #include "particle.h"
 
+static CoreGraphics::ShaderId baseShader = CoreGraphics::InvalidShaderId;
 namespace Models
 {
 using namespace Particles;
@@ -95,43 +96,31 @@ ParticleSystemNode::OnFinishedLoading()
     this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
     ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-    this->objectTransformsIndex = ::Particle::Table_DynamicOffset::ObjectBlock::SLOT;
-    this->instancingTransformsIndex = ::Particle::Table_DynamicOffset::InstancingBlock::SLOT;
-    this->skinningTransformsIndex = ::Particle::Table_DynamicOffset::JointBlock::SLOT;
-    this->particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT;
-    SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
-    this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-    for (IndexT i = 0; i < numFrames; i++)
+
+    this->resourceTables = std::move(ParticleSystemNode::CreateResourceTables());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FixedArray<CoreGraphics::ResourceTableId>
+ParticleSystemNode::CreateResourceTables()
+{
+    if (baseShader == CoreGraphics::InvalidShaderId)
+        baseShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
+
+    Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
+
+    for (IndexT i = 0; i < ret.Size(); i++)
     {
-        this->resourceTables[i] = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetGraphicsConstantBuffer(i), this->particleConstantsIndex, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
-        CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
+        BufferId cbo = GetGraphicsConstantBuffer(i);
+        CoreGraphics::ResourceTableId table = ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
+        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
+        ResourceTableCommitChanges(table);
+        ret[i] = table;
     }
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-std::function<void(const CoreGraphics::CmdBufferId)>
-ParticleSystemNode::GetApplyFunction()
-{
-    return [](const CoreGraphics::CmdBufferId)
-    {
-        n_error("Invalid function '%s' called, it should be set in ParticleContext", __FUNCTION__);
-        // This function is provided in ParticleContext
-    };
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-std::function<const CoreGraphics::PrimitiveGroup()>
-ParticleSystemNode::GetPrimitiveGroupFunction()
-{
-    return []()
-    {
-        return ParticleContext::ParticleContext::GetParticlePrimitiveGroup();
-    };
+    return ret;
 }
 
 //------------------------------------------------------------------------------

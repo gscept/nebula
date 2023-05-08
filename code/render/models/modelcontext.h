@@ -15,6 +15,7 @@
 #include "materials/shaderconfigserver.h"
 #include "model.h"
 #include "nodes/modelnode.h"
+#include "materials/material.h"
 
 namespace Jobs
 {
@@ -51,6 +52,18 @@ public:
 
     /// setup
     static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
+    /// Setup without a model resource
+    static void Setup(
+        const Graphics::GraphicsEntityId id
+        , const Math::mat4 transform
+        , const Math::bbox& boundingBox
+        , const Materials::MaterialId material
+        , const CoreGraphics::MeshId mesh
+        , const IndexT primitiveGroup
+#if NEBULA_GRAPHICS_DEBUG
+        , const Util::String debugName = ""
+#endif
+    );
 
     /// change model for existing entity
     static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
@@ -125,9 +138,10 @@ public:
             Util::Array<Materials::MaterialId> nodeMaterials;
             Util::Array<Materials::ShaderConfig*> nodeShaderConfigs;
             Util::Array<NodeInstanceState> nodeStates;
+            Util::Array<Models::NodeType> nodeTypes;
             Util::Array<Models::ModelNode*> nodes;
-            Util::Array<std::function<void(const CoreGraphics::CmdBufferId)>> nodeModelApplyCallbacks;
-            Util::Array<std::function<const CoreGraphics::PrimitiveGroup()>> modelNodeGetPrimitiveGroup;
+            Util::Array<CoreGraphics::MeshId> nodeMeshes;
+            Util::Array<IndexT> nodePrimitiveGroupIndex;
             Util::Array<Util::Tuple<uint32, uint32>> nodeDrawModifiers;
 
             Util::Array<void*> nodeSpecialData;

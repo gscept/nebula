@@ -95,6 +95,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                     uint32 numInstances = 0;
                     uint32 baseInstance = 0;
                     CoreGraphics::PrimitiveGroup primGroup;
+                    CoreGraphics::MeshId mesh = InvalidMeshId;
 
                     Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
@@ -108,14 +109,18 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                             CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            primGroup = visModelCmd->primitiveNodeApplyCallback();
+                            primGroup = visModelCmd->primitiveGroup;
 
                             if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
                             {
-                                visModelCmd->modelApplyCallback(cmdBuf);
+                                if (visModelCmd != nullptr && mesh != visModelCmd->mesh)
+                                {
+                                    CoreGraphics::MeshBind(visModelCmd->mesh, cmdBuf);
+                                    mesh = visModelCmd->mesh;
 
-                                // Bind graphics pipeline
-                                CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+                                    // Bind graphics pipeline
+                                    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+                                }
 
                                 // Apply material
                                 MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
@@ -188,6 +193,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                     uint32 baseNumInstances = 0;
                     uint32 baseBaseInstance = 0;
                     CoreGraphics::PrimitiveGroup primGroup;
+                    CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
 
                     Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
@@ -201,14 +207,22 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                             CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            visModelCmd->modelApplyCallback(cmdBuf);
-                            primGroup = visModelCmd->primitiveNodeApplyCallback();
+                            primGroup = visModelCmd->primitiveGroup;
 
-                            // Bind graphics pipeline
-                            CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+                            if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
+                            {
+                                if (mesh != visModelCmd->mesh)
+                                {
+                                    CoreGraphics::MeshBind(visModelCmd->mesh, cmdBuf);
+                                    mesh = visModelCmd->mesh;
 
-                            // Apply material
-                            MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
+                                    // Bind graphics pipeline
+                                    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+                                }
+
+                                // Apply material
+                                MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
+                            }
 
                             // Progress to next model command
                             visModelCmd++;

@@ -113,6 +113,9 @@ private:
         SizeT outputCapacity;
         ParticleJobSliceOutputData outputData;
 
+        Util::FixedArray<CoreGraphics::MeshId> meshPerFrame;
+        CoreGraphics::MeshId mesh;
+
         uint32 baseVertex, numParticles;
     };
 

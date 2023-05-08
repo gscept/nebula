@@ -35,39 +35,6 @@ PrimitiveNode::~PrimitiveNode()
 //------------------------------------------------------------------------------
 /**
 */
-std::function<void(const CoreGraphics::CmdBufferId)>
-PrimitiveNode::GetApplyFunction()
-{
-    return [this](const CoreGraphics::CmdBufferId id)
-    {
-        // setup pipeline (a bit ugly)
-        CoreGraphics::CmdSetPrimitiveTopology(id, this->topology);
-        CoreGraphics::CmdSetVertexLayout(id, this->vertexLayout);
-
-        // bind vertex buffers
-        CoreGraphics::CmdSetVertexBuffer(id, 0, this->vbo, this->baseVboOffset);
-        CoreGraphics::CmdSetVertexBuffer(id, 1, this->vbo, this->attributesVboOffset);
-
-        if (this->ibo != CoreGraphics::InvalidBufferId)
-            CoreGraphics::CmdSetIndexBuffer(id, this->indexType, this->ibo, this->iboOffset);
-    };
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-std::function<const CoreGraphics::PrimitiveGroup()>
-PrimitiveNode::GetPrimitiveGroupFunction()
-{
-    return [this]()
-    {
-        return this->primGroup;
-    };
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
 PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {         

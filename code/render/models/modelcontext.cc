@@ -7,6 +7,7 @@
 #include "resources/resourceserver.h"
 #include "nodes/modelnode.h"
 #include "models/nodes/particlesystemnode.h"
+#include "models/nodes/primitivenode.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
@@ -15,6 +16,7 @@
 #include "materials/material.h"
 
 #include "objects_shared.h"
+#include "particle.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -138,13 +140,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         stateRange.end = nodeInstances.renderable.nodeStates.Size() + renderNodes.Size();
         for (SizeT i = 0; i < renderNodes.Size(); i++)
         {
-            Models::ShaderStateNode* sNode = reinterpret_cast<Models::ShaderStateNode*>(renderNodes[i]);
+            Models::PrimitiveNode* sNode = reinterpret_cast<Models::PrimitiveNode*>(renderNodes[i]);
             NodeInstanceState state;
             state.materialInstance = CreateMaterialInstance(sNode->material);
-            state.instancingConstantsIndex = sNode->instancingTransformsIndex;
-            state.objectConstantsIndex = sNode->objectTransformsIndex;
-            state.skinningConstantsIndex = sNode->skinningTransformsIndex;
-            state.particleConstantsIndex = InvalidIndex;
             state.resourceTables = sNode->resourceTables;
 
             // Okay, so how this basically has to work is that there are 4 different dynamic offset constant indices in the entire engine.
@@ -152,7 +150,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
             if (sNode->GetType() == Models::ParticleSystemNodeType)
             {
-                state.particleConstantsIndex = reinterpret_cast<Models::ParticleSystemNode*>(sNode)->particleConstantsIndex;
+                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock::SLOT;
+                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock::SLOT;
+                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock::SLOT;
+                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT;
 
                 state.resourceTableOffsets.Resize(4);
                 state.resourceTableOffsets[state.objectConstantsIndex] = 0;
@@ -163,11 +164,17 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             }
             else
             {
+                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
+                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
+                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
+                state.particleConstantsIndex = InvalidIndex;
+
                 state.resourceTableOffsets.Resize(3);
                 state.resourceTableOffsets[state.objectConstantsIndex] = 0;
                 state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
                 state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
             }
+
             nodeInstances.renderable.nodeStates.Append(state);
 
             nodeInstances.renderable.nodeTransformIndex.Append(nodeLookup[renderNodes[i]]);
@@ -179,9 +186,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
             nodeInstances.renderable.nodeMaterials.Append(sNode->material);
             nodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(sNode->material));
+            nodeInstances.renderable.nodeTypes.Append(sNode->GetType());
             nodeInstances.renderable.nodes.Append(sNode);
-            nodeInstances.renderable.nodeModelApplyCallbacks.Append(sNode->GetApplyFunction());
-            nodeInstances.renderable.modelNodeGetPrimitiveGroup.Append(sNode->GetPrimitiveGroupFunction());
+            nodeInstances.renderable.nodeMeshes.Append(sNode->GetMesh());
+            nodeInstances.renderable.nodePrimitiveGroupIndex.Append(sNode->GetPrimitiveGroupIndex());
             nodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
 
             modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(sNode->GetName(), i);
@@ -191,9 +199,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 #endif
 
             // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-            assert(sNode->GetSortCode() <   0xFFF0000000000000);
+            auto sortCode = MaterialGetSortCode(sNode->material);
+            assert(sortCode <   0xFFF0000000000000);
             assert(sNode->HashCode() <      0x000FFFFF00000000);
-            uint64 sortId = ((uint64)sNode->GetSortCode() << 52) | ((uint64)sNode->HashCode() << 32);
+            uint64 sortId = ((uint64)sortCode << 52) | ((uint64)sNode->HashCode() << 32);
             nodeInstances.renderable.nodeSortId.Append(sortId);
         }
 
@@ -206,6 +215,83 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
     };
 
     Resources::CreateResource(name, tag, successCallback, successCallback, false);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::Setup(
+    const Graphics::GraphicsEntityId id
+    , const Math::mat4 transform
+    , const Math::bbox& boundingBox
+    , const Materials::MaterialId material
+    , const CoreGraphics::MeshId mesh
+    , const IndexT primitiveGroup
+#if NEBULA_GRAPHICS_DEBUG
+    , const Util::String debugName
+#endif
+)
+{
+    const ContextEntityId cid = GetContextId(id);
+    Util::Array<uint32>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
+    NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+
+    // Setup transforms
+    transformRange.begin = nodeInstances.transformable.nodeTransforms.Size();
+    transformRange.end = nodeInstances.transformable.nodeTransforms.Size() + 1;
+
+    nodeInstances.transformable.origTransforms.Append(Math::mat4());
+    nodeInstances.transformable.nodeTransforms.Append(transform);
+
+    nodeInstances.transformable.nodeParents.Append(UINT32_MAX);
+    roots.Append(0);
+
+     // Setup node states
+    stateRange.begin = nodeInstances.renderable.nodeStates.Size();
+    stateRange.end = nodeInstances.renderable.nodeStates.Size() + 1;
+
+    NodeInstanceState state;
+    state.materialInstance = CreateMaterialInstance(material);
+    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
+    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
+    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
+    state.particleConstantsIndex = InvalidIndex;
+    state.resourceTables = std::move(Models::ShaderStateNode::CreateResourceTables());
+
+    state.resourceTableOffsets.Resize(3);
+    state.resourceTableOffsets[state.objectConstantsIndex] = 0;
+    state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
+    state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+    nodeInstances.renderable.nodeStates.Append(state);
+
+    nodeInstances.renderable.nodeTransformIndex.Append(0);
+    nodeInstances.renderable.nodeBoundingBoxes.Append(Math::bbox());
+    nodeInstances.renderable.origBoundingBoxes.Append(boundingBox);
+    nodeInstances.renderable.nodeLodDistances.Append(Util::MakeTuple(FLT_MAX, FLT_MAX));
+    nodeInstances.renderable.nodeLods.Append(0.0f);
+    nodeInstances.renderable.textureLods.Append(0.0f);
+    nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
+    nodeInstances.renderable.nodeMaterials.Append(material);
+    nodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(material));
+    nodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
+    nodeInstances.renderable.nodes.Append(nullptr);
+    nodeInstances.renderable.nodeMeshes.Append(mesh);
+    nodeInstances.renderable.nodePrimitiveGroupIndex.Append(primitiveGroup);
+    nodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
+
+    modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, 0);
+
+#if NEBULA_GRAPHICS_DEBUG
+    nodeInstances.renderable.nodeNames.Append(debugName);
+#endif
+
+    // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
+    auto sortCode = Materials::MaterialGetSortCode(material);
+    assert(sortCode < 0xFFF0000000000000);
+    uint64 sortId = ((uint64)sortCode << 52);
+    nodeInstances.renderable.nodeSortId.Append(sortId);
 }
 
 //------------------------------------------------------------------------------
