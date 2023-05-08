@@ -79,6 +79,10 @@ public:
 
     /// Get element (same as operator[] but as a function)
     TYPE& Get(IndexT index) const;
+
+    /// Append multiple elements to the end of the array
+    template <typename ...ELEM_TYPE>
+    void Append(const TYPE& first, const ELEM_TYPE&... elements);
     /// append element to end of array
     void Append(const TYPE& elm);
     /// append an element which is being forwarded
@@ -1211,6 +1215,19 @@ Array<TYPE>::FindIndex(const TYPE& elm, const IndexT start) const
         }
     }
     return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+template<typename ...ELEM_TYPE>
+inline void 
+Array<TYPE>::Append(const TYPE& first, const ELEM_TYPE&... elements)
+{
+    this->Reserve(sizeof...(elements) + 1);
+    this->Append(first);
+    this->Append(std::forward<const ELEM_TYPE&>(elements)...);
 }
 
 //------------------------------------------------------------------------------
