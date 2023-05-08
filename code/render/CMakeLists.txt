@@ -534,6 +534,8 @@ ENDIF()
             drawfullscreenquad.h
             freecamerautil.cc
             freecamerautil.h
+            geometryhelpers.cc
+            geometryhelpers.h
             mayacamerautil.cc
             mayacamerautil.h
             mouserayutil.cc

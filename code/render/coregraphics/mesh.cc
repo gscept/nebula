@@ -9,6 +9,9 @@
 namespace CoreGraphics
 {
 
+MeshId RectangleMesh;
+MeshId DiskMesh;
+
 MeshAllocator meshAllocator;
 using namespace Ids;
 //------------------------------------------------------------------------------

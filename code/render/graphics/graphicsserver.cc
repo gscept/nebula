@@ -15,6 +15,7 @@
 #include "characters/skeletonloader.h"
 #include "models/modelloader.h"
 #include "renderutil/drawfullscreenquad.h"
+#include "renderutil/geometryhelpers.h"
 
 #include "bindlessregistry.h"
 #include "globalconstants.h"
@@ -158,6 +159,9 @@ GraphicsServer::Open()
         texInfo.name = "Blue2D";
         texInfo.buffer = &blue;
         CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
+
+        CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
+        CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
 
         // Setup shader server
         this->shaderServer = CoreGraphics::ShaderServer::Create();

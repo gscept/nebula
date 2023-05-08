@@ -92,4 +92,8 @@ typedef Ids::IdAllocatorSafe<
 > MeshAllocator;
 extern MeshAllocator meshAllocator;
 
+
+extern MeshId RectangleMesh;
+extern MeshId DiskMesh;
+
 } // CoreGraphics
