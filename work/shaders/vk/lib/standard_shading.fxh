@@ -14,7 +14,7 @@
 #include "lib/geometrybase.fxh"
 #include "lib/materialparams.fxh"
 #include "lib/clustering.fxh"
-#include "lib/lights_clustered.fxh"
+#include "lib/lighting_functions.fxh"
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											FINALIZE COLOR

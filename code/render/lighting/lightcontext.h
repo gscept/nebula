@@ -25,12 +25,19 @@ class LightContext : public Graphics::GraphicsContext
     __DeclareContext();
 public:
 
-    enum LightType
+    enum class LightType
     {
-        GlobalLightType,
+        DirectionalLightType,
         PointLightType,
         SpotLightType,
         AreaLightType
+    };
+
+    enum class AreaLightShape
+    {
+        Disk,
+        Rectangle,
+        Tube
     };
 
     /// constructor
@@ -45,17 +52,20 @@ public:
 
     /// setup entity as global light
     static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows = false);
-    /// setup entity as point light source
-    static void SetupPointLight(const Graphics::GraphicsEntityId id, 
+    /// Setup entity as point light source
+    static void SetupPointLight(
+        const Graphics::GraphicsEntityId id, 
         const Math::vec3& color,
         const float intensity, 
         const Math::mat4& transform,
         const float range, 
         bool castShadows = false, 
-        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId);
+        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
+    );
 
-    /// setup entity as spot light
-    static void SetupSpotLight(const Graphics::GraphicsEntityId id, 
+    /// Setup entity as spot light
+    static void SetupSpotLight(
+        const Graphics::GraphicsEntityId id, 
         const Math::vec3& color,
         const float intensity, 
         const float innerConeAngle,
@@ -63,7 +73,21 @@ public:
         const Math::mat4& transform,
         const float range,
         bool castShadows = false, 
-        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId);
+        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
+    );
+
+    /// Setup entity as area light
+    static void SetupAreaLight(
+        const Graphics::GraphicsEntityId id,
+        const AreaLightShape shape,
+        const Math::vec3& color,
+        const float intensity,
+        const float innerConeAngle,
+        const float outerConeAngle,
+        const Math::mat4& transform,
+        const float range,
+        bool castShadows = false
+    );
 
     /// set color of light
     static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);
@@ -113,13 +137,15 @@ public:
     static const CoreGraphics::BufferId GetLightsBuffer();
 private:
 
-    /// set transform, type must match the type the entity was created with
+    /// Set spot light transform, type must match the type the entity was created with
     static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-    /// set transform, type must match the type the entity was created with
+    /// Set rea light transform
+    static void SetAreaLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
+    /// Set point light transform, type must match the type the entity was created with
     static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-    /// set global light transform
+    /// Set global light transform
     static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
-    /// set global light shadow transform
+    /// Set global light shadow transform
     static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 
     /// update global shadows
@@ -197,6 +223,30 @@ private:
         Graphics::GraphicsEntityId  // graphics entity used for observer stuff
     > SpotLightAllocator;
     static SpotLightAllocator spotLightAllocator;
+
+    enum
+    {
+        AreaLight_Transform,
+        AreaLight_Shape,
+        AreaLight_ConstantBufferSet,
+        AreaLight_ShadowConstantBufferSet,
+        AreaLight_DynamicOffsets,
+        AreaLight_ConeAngles,
+        AreaLight_Projection,
+        AreaLight_Observer
+    };
+
+    typedef Ids::IdAllocator<
+        Math::mat4,                 // transform
+        AreaLightShape,             // shape of area light
+        ConstantBufferSet,          // constant buffer binding for light
+        ConstantBufferSet,          // constant buffer binding for shadows
+        Util::FixedArray<uint>,     // dynamic offsets
+        std::array<float, 2>,       // cone angle
+        Math::mat4,                 // projection
+        Graphics::GraphicsEntityId  // graphics entity used for observer stuff
+    > AreaLightAllocator;
+    static AreaLightAllocator areaLightAllocator;
 
     enum
     {

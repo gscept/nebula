@@ -490,6 +490,11 @@
                                             "batch": {
                                                 "name": "FlatGeometryLit"
                                             }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "LightMeshes"
+                                            }
                                         }
                                     ]
                                 },
@@ -734,6 +739,11 @@
                                         {
                                             "subgraph": {
                                                 "name": "ImGUI"
+                                            }
+                                        },
+                                        {
+                                            "subgraph": {
+                                                "name": "Im3D"
                                             }
                                         },
                                         {

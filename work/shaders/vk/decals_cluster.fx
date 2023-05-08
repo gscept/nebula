@@ -106,7 +106,7 @@ shader
 void csDebug()
 {
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-    float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
+    float depth = fetch2D(DepthBuffer, PointSampler, coord, 0).r;
 
     // convert screen coord to view-space position
     vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
@@ -266,8 +266,8 @@ void psRenderEmissive(
     [color0] out vec4 emissive)
 {
     ivec2 coord = ivec2(UV.xy * FramebufferDimensions);
-    float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
-    vec4 material = fetch2D(SpecularBuffer, PosteffectSampler, coord, 0).rgba;
+    float depth = fetch2D(DepthBuffer, PointSampler, coord, 0).r;
+    vec4 material = fetch2D(SpecularBuffer, PointSampler, coord, 0).rgba;
 
     // convert screen coord to view-space position
     vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);

@@ -132,11 +132,6 @@ group(SYSTEM_GROUP) sampler_state TextureSampler
     Filter = Linear;
 };
 
-group(SYSTEM_GROUP) sampler_state PointSampler
-{
-    Filter = Point;
-};
-
 //------------------------------------------------------------------------------
 /**
 */

@@ -28,6 +28,7 @@ Util::Array<Util::String> entityNames;
 Util::Array<Models::ModelContext::MaterialInstanceContext*> materialContexts;
 Util::Array<Graphics::GraphicsEntityId> pointLights;
 Util::Array<Graphics::GraphicsEntityId> spotLights;
+Util::Array<Graphics::GraphicsEntityId> areaLights;
 Util::Array<Graphics::GraphicsEntityId> decals;
 Util::Array<Graphics::GraphicsEntityId> fogVolumes;
 Util::Array<CoreGraphics::TextureId> decalTextures;
@@ -86,6 +87,35 @@ void OpenScene()
             Lighting::LightContext::RegisterEntity(id);
             Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 2500.0f, Math::deg2rad(45.0f), Math::deg2rad(60.0f), spotLightMatrix, 50.0f, true);
             spotLights.Append(id);
+        }
+    }
+
+    static const int NumRectLights = 1;
+    for (int i = -NumRectLights; i < NumRectLights; i++)
+    {
+        for (int j = -NumRectLights; j < NumRectLights; j++)
+        {
+            auto id = Graphics::CreateEntity();
+            entities.Append({ id, nullptr });
+            int index = (i + NumRectLights) + (j + NumRectLights) * NumRectLights * 2;
+            entityNames.Append(Util::String::Sprintf("AreaLight%d", index));
+            const float red = Math::rand();
+            const float green = Math::rand();
+            const float blue = Math::rand();
+
+            Math::mat4 areaLightScale = Math::scaling(2.0f, 0.5f, 0.0f);
+
+            Math::mat4 areaLightMatrix = Math::rotationyawpitchroll(Math::deg2rad(120), Math::deg2rad(25), 0) * areaLightScale;
+            areaLightMatrix.position = Math::vec4(i * 4, 2.5, i * 4, 1);
+
+            Lighting::LightContext::AreaLightShape shapes[] = {
+                Lighting::LightContext::AreaLightShape::Disk,
+                Lighting::LightContext::AreaLightShape::Rectangle
+            };
+
+            Lighting::LightContext::RegisterEntity(id);
+            Lighting::LightContext::SetupAreaLight(id, shapes[index % 2], Math::vec3(red, green, blue), 25.0f, Math::deg2rad(89.0f), Math::deg2rad(89.0f), areaLightMatrix, 50.0f, false);
+            areaLights.Append(id);
         }
     }
 
@@ -372,7 +402,7 @@ void RenderUI()
             ModelContext::SetTransform(id, trans);
         }
     }
-    else if (Lighting::LightContext::IsEntityRegistered(id))
+    if (Lighting::LightContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))
@@ -380,7 +410,7 @@ void RenderUI()
             Lighting::LightContext::SetTransform(id, trans);
         }
     }
-    else if (Fog::VolumetricFogContext::IsEntityRegistered(id))
+    if (Fog::VolumetricFogContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = Fog::VolumetricFogContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))
@@ -388,7 +418,7 @@ void RenderUI()
             Fog::VolumetricFogContext::SetTransform(id, trans);
         }
     }
-    else if (Decals::DecalContext::IsEntityRegistered(id))
+    if (Decals::DecalContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = Decals::DecalContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))

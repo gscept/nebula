@@ -6,7 +6,7 @@
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
-#include "lib/lights_clustered.fxh"
+#include "lib/lighting_functions.fxh"
 #include "lib/mie-rayleigh.fxh"
 
 const uint VOLUME_FOG_STEPS = 32;
@@ -229,7 +229,7 @@ void csRender()
 {
     vec2 coord = vec2(gl_GlobalInvocationID.xy);
     ivec2 upscaleCoord = ivec2(gl_GlobalInvocationID.xy * DownscaleFog);
-    float depth = fetch2D(DepthBuffer, PosteffectUpscaleSampler, upscaleCoord, 0).r;
+    float depth = fetch2D(DepthBuffer, LinearSampler, upscaleCoord, 0).r;
     vec2 seed = coord * (InvFramebufferDimensions);
 
     if (depth == 1)

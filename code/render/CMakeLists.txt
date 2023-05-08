@@ -436,6 +436,7 @@ ENDIF()
             lightcontext.h
             lightprobecontext.cc
             lightprobecontext.h
+            ltc.h
         )
 IF(FALSE)
 

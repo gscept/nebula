@@ -11,7 +11,7 @@
 #include "lib/techniques.fxh"
 #include "lib/defaultsamplers.fxh"
 #include "lib/clustering.fxh"
-#include "lib/lights_clustered.fxh"
+#include "lib/lighting_functions.fxh"
 
 group(BATCH_GROUP) shared constant Particle[string Visibility = "PS"; ]
 {
