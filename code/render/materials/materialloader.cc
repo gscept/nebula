@@ -53,11 +53,12 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
         Resources::ResourceName shaderConfig = reader->GetString("template");
         Materials::ShaderConfigServer* server = Materials::ShaderConfigServer::Instance();
 
-        if (!server->shaderConfigsByName.Contains(shaderConfig))
+        IndexT i = server->shaderConfigsByName.FindIndex(shaderConfig);
+        if (i == InvalidIndex)
         {
             n_error("Material '%s', referenced in '%s' could not be found!", shaderConfig.AsString().AsCharPtr(), stream->GetURI().AsString().AsCharPtr());
         }
-        ShaderConfig* config = server->shaderConfigsByName[shaderConfig];
+        ShaderConfig* config = server->shaderConfigsByName.ValueAtIndex(i);
 
         // Create material, copying the defaults from the material table
         MaterialId id = CreateMaterial({ config });
