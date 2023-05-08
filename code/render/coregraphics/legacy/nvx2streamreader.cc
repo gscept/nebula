@@ -265,7 +265,6 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
             p.set(curVertexPtr[0], curVertexPtr[1], curVertexPtr[2]);
             box.extend(p);
         }
-        group.SetBoundingBox(box);
     }
 }
 

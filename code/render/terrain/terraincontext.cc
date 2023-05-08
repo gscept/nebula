@@ -1148,7 +1148,6 @@ TerrainContext::SetupTerrain(
             CoreGraphics::PrimitiveGroup group;
             group.SetBaseIndex(0);
             group.SetBaseVertex(0);
-            group.SetBoundingBox(box);
             group.SetNumIndices(numTris * 4);
             group.SetNumVertices(0);
             runtimeInfo.sectorPrimGroups.Append(group);

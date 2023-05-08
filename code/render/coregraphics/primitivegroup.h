@@ -39,10 +39,6 @@ public:
     void SetNumIndices(SizeT n);
     /// get number of indices
     SizeT GetNumIndices() const;
-    /// set the primitive group's local bounding box
-    void SetBoundingBox(const Math::bbox& b);
-    /// get the primitive group's local bounding box
-    const Math::bbox& GetBoundingBox() const;
     /// get computed number of primitives
     SizeT GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& topo) const;
 
@@ -51,7 +47,6 @@ private:
     SizeT numVertices;
     IndexT baseIndex;
     SizeT numIndices;
-    Math::bbox boundingBox;
 };
 
 //------------------------------------------------------------------------------
@@ -137,24 +132,6 @@ inline SizeT
 PrimitiveGroup::GetNumIndices() const
 {
     return this->numIndices;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-PrimitiveGroup::SetBoundingBox(const Math::bbox& b)
-{
-    this->boundingBox = b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::bbox&
-PrimitiveGroup::GetBoundingBox() const
-{
-    return this->boundingBox;
 }
 
 //------------------------------------------------------------------------------
