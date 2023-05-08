@@ -91,7 +91,7 @@ CharacterContext::Setup(
 
     for (SizeT i = nodeRange.begin; i < nodeRange.end; i++)
     {
-        if (renderables.nodes[i]->GetType() == Models::CharacterSkinNodeType)
+        if (renderables.nodeTypes[i] == Models::CharacterSkinNodeType)
         {
             // Save offset to the character node in the model
             characterContextAllocator.Set<CharacterSkinNodeIndexOffset>(cid.id, i - nodeRange.begin);
@@ -752,7 +752,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 
                 const Util::FixedArray<Math::mat4>& jointPalette = jobCtx->jointPalettes->Get(index);
                 IndexT node = range.begin + jobCtx->characterNodeIndices->Get(index);
-                n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterSkinNodeType);
+                n_assert(renderables.nodeTypes[node] == Models::NodeType::CharacterSkinNodeType);
                 Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
                 const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
                 Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
