@@ -28,6 +28,7 @@ namespace Visibility
 enum
 {
     Observer_Matrix,
+    Observer_IsOrtho,
     Observer_EntityId,
     Observer_EntityType,
     Observer_ResultArray,
@@ -65,7 +66,7 @@ class ObserverContext : public Graphics::GraphicsContext
 public:
 
     /// setup entity
-    static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType);
+    static void Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, bool isOrtho = false);
     /// setup a dependency between observers
     static void MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode);
 
@@ -103,8 +104,8 @@ public:
     struct VisibilityModelCommand
     {
         uint32 offset;
-        std::function<void(const CoreGraphics::CmdBufferId)> modelApplyCallback;
-        std::function<const CoreGraphics::PrimitiveGroup()> primitiveNodeApplyCallback;
+        CoreGraphics::MeshId mesh;
+        CoreGraphics::PrimitiveGroup primitiveGroup;
         Materials::MaterialId material;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -150,6 +151,7 @@ private:
 
     typedef Ids::IdAllocator<
         Math::mat4                                 // transform of observer camera
+        , bool                                     // observer is an orthogonal camera
         , Graphics::GraphicsEntityId               // entity id
         , VisibilityEntityType                     // type of object so we know how to get the transform
         , VisibilityResultArray                    // visibility lookup table

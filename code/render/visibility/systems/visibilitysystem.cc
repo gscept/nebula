@@ -18,12 +18,13 @@ VisibilitySystem::VisibilitySystem()
 /**
 */
 void
-VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
+VisibilitySystem::PrepareObservers(const Math::mat4* transforms, bool* orthoFlags, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
     this->obs.completionCounters.Reserve(count);
     for (IndexT i = 0; i < count; i++)
         this->obs.completionCounters.Append(new Threading::AtomicCounter(0));
     this->obs.transforms = transforms;
+    this->obs.isOrtho = orthoFlags;
     this->obs.results = results;
     this->obs.count = count;
 }

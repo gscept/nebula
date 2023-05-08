@@ -88,7 +88,7 @@ public:
     VisibilitySystem();
 
     /// setup observers
-    virtual void PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
+    virtual void PrepareObservers(const Math::mat4* transforms, bool* orthoFlags, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
     /// prepare system with entities to insert into the structure
     virtual void PrepareEntities(const Math::bbox* transforms, const uint32* ranges, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
@@ -107,6 +107,7 @@ protected:
     struct Observer
     {
         const Math::mat4* transforms;
+        const bool* isOrtho;
         Util::Array<Math::ClipStatus::Type>* results;
         SizeT count;
         Util::Array<Threading::AtomicCounter*> completionCounters;
