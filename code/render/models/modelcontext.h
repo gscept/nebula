@@ -15,12 +15,21 @@
 #include "materials/shaderconfigserver.h"
 #include "model.h"
 #include "nodes/modelnode.h"
-#include "materials/material.h"
 
 namespace Jobs
 {
-struct JobFuncContext;
-struct JobSyncId;
+    struct JobFuncContext;
+    struct JobSyncId;
+};
+
+namespace Materials
+{
+    struct MaterialId;
+};
+
+namespace CoreGraphics
+{
+    struct MeshId;
 };
 
 namespace Models

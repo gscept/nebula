@@ -16,6 +16,7 @@
 #include "materials/shaderconfig.h"
 #include "memory/arenaallocator.h"
 #include "math/clipstatus.h"
+#include "coregraphics/mesh.h"
 
 namespace Models
 {

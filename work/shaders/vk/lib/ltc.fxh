@@ -207,7 +207,7 @@ LtcSolveCubic(vec4 Coefficient)
 
     vec2 xmc = vec2(C * F - B * G, -B * F + C * E);
 
-    vec3 Root = vec3(xsc.x / xsc.y, xmc.x / xmc.y, xlc.x / xlc.y);
+    vec3 Root = vec3(xsc.x / max(xsc.y, 0.0001f), xmc.x / max(xmc.y, 0.0001f), xlc.x / max(xlc.y, 0.0001f));
 
     if (Root.x < Root.y && Root.x < Root.z)
         Root.xyz = Root.yxz;
@@ -244,7 +244,7 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
         v2 = minv * v2;
     }
 
-    if (!twoSided && dot(cross(v1, v2), c) < 0.0f)
+    if (!twoSided && dot(cross(v1, v2), c) < 0.0001f)
         return 0.0f;
 
     // Compute ellipsis eigen vectors
@@ -253,7 +253,7 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
     float d22 = dot(v2, v2);
     float d12 = dot(v1, v2);
 
-    if (abs(d12) / sqrt(d11 * d22) > 0.0001)
+    if (abs(d12) / sqrt(d11 * d22) > 0.0f)
     {
         float tr = d11 + d22;
         float det = -d12 * d12 + d11 * d22;
