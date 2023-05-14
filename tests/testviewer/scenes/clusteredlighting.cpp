@@ -394,7 +394,15 @@ void RenderUI()
     }
     ImGui::End();
     auto id = entities[selected].entity;
-    if (ModelContext::IsEntityRegistered(id))
+    if (Lighting::LightContext::IsEntityRegistered(id))
+    {
+        Im3d::Vec3 pos = Lighting::LightContext::GetPosition(id);
+        if (Im3d::GizmoTranslation("GizmoEntity", pos))
+        {
+            Lighting::LightContext::SetPosition(id, pos);
+        }
+    }
+    else if (ModelContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = ModelContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))
@@ -402,15 +410,7 @@ void RenderUI()
             ModelContext::SetTransform(id, trans);
         }
     }
-    if (Lighting::LightContext::IsEntityRegistered(id))
-    {
-        Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
-        {
-            Lighting::LightContext::SetTransform(id, trans);
-        }
-    }
-    if (Fog::VolumetricFogContext::IsEntityRegistered(id))
+    else if (Fog::VolumetricFogContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = Fog::VolumetricFogContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))
@@ -418,7 +418,7 @@ void RenderUI()
             Fog::VolumetricFogContext::SetTransform(id, trans);
         }
     }
-    if (Decals::DecalContext::IsEntityRegistered(id))
+    else if (Decals::DecalContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = Decals::DecalContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))
