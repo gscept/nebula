@@ -20,10 +20,11 @@ using namespace Ids;
 const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Write);
     Ids::Id32 id = meshAllocator.Alloc();
 
     // Thing is, we just allocated this index so we own it right now
-    meshAllocator.SetUnsafe<Mesh_Name>(id, info.name);
+    meshAllocator.Set<Mesh_Name>(id, info.name);
     __Mesh internals{
         info.streams,
         info.indexBufferOffset,
@@ -33,7 +34,7 @@ CreateMesh(const MeshCreateInfo& info)
         info.topology,
         info.primitiveGroups
     };
-    meshAllocator.SetUnsafe<Mesh_Internals>(id, internals);
+    meshAllocator.Set<Mesh_Internals>(id, internals);
 
     MeshId ret;
     ret.id24 = id;
@@ -47,6 +48,7 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Write);
     meshAllocator.Dealloc(id.id24);
 }
 
@@ -56,7 +58,10 @@ DestroyMesh(const MeshId id)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).primitiveGroups;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).primitiveGroups;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -73,7 +78,8 @@ MeshGetPrimitiveGroup(const MeshId id, const IndexT group)
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).streams[stream].vertexBuffer;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).streams[stream].vertexBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -82,7 +88,8 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 const void
 MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream)
 {
-    meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).streams[stream].vertexBuffer = buffer;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    meshAllocator.Get<Mesh_Internals>(id.id24).streams[stream].vertexBuffer = buffer;
 }
 
 //------------------------------------------------------------------------------
@@ -91,7 +98,8 @@ MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream)
 const uint
 MeshGetVertexOffset(const MeshId id, const IndexT stream)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).streams[stream].offset;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).streams[stream].offset;
 }
 
 //------------------------------------------------------------------------------
@@ -100,7 +108,8 @@ MeshGetVertexOffset(const MeshId id, const IndexT stream)
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).indexBuffer;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).indexBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +118,8 @@ MeshGetIndexBuffer(const MeshId id)
 const uint
 MeshGetIndexOffset(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).indexBufferOffset;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).indexBufferOffset;
 }
 
 //------------------------------------------------------------------------------
@@ -118,7 +128,8 @@ MeshGetIndexOffset(const MeshId id)
 const IndexType::Code
 MeshGetIndexType(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).indexType;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).indexType;
 }
 
 //------------------------------------------------------------------------------
@@ -127,7 +138,8 @@ MeshGetIndexType(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).primitiveTopology;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).primitiveTopology;
 }
 
 //------------------------------------------------------------------------------
@@ -136,7 +148,8 @@ MeshGetTopology(const MeshId id)
 const CoreGraphics::VertexLayoutId
 MeshGetVertexLayout(const MeshId id)
 {
-    return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).vertexLayout;
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).vertexLayout;
 }
 
 //------------------------------------------------------------------------------
@@ -145,7 +158,8 @@ MeshGetVertexLayout(const MeshId id)
 const void
 MeshBind(const MeshId id, const CoreGraphics::CmdBufferId cmd)
 {
-    const auto& internals = meshAllocator.GetUnsafe<Mesh_Internals>(id.id24);
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    const auto& internals = meshAllocator.Get<Mesh_Internals>(id.id24);
 
     CoreGraphics::CmdSetPrimitiveTopology(cmd, internals.primitiveTopology);
     CoreGraphics::CmdSetVertexLayout(cmd, internals.vertexLayout);
