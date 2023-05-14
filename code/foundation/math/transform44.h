@@ -32,7 +32,7 @@ public:
     /// set position
     void setposition(const point& p);
     /// get position
-    const vec3& getposition() const;
+    const point& getposition() const;
     /// set rotate
     void setrotate(const quat& r);
     /// get rotate
@@ -42,13 +42,13 @@ public:
     /// get scale
     const vec3& getscale() const;
     /// set optional rotate pivot
-    void setrotatepivot(const vec3& p);
+    void setrotatepivot(const point& p);
     /// get optional rotate pivot
-    const vec3& getrotatepivot() const;
+    const point& getrotatepivot() const;
     /// set optional scale pivot
-    void setscalepivot(const vec3& p);
+    void setscalepivot(const point& p);
     /// get optional scale pivot
-    const vec3& getscalepivot() const;
+    const point& getscalepivot() const;
     /// set optional offset matrix
     void setoffset(const mat4& m);
     /// get optional offset matrix
@@ -59,11 +59,11 @@ public:
     bool isdirty() const;
 
 private:
-    vec3 position;
+    point position;
     quat rotate;
     vec3 scale;
-    vec3 rotatePivot;
-    vec3 scalePivot;
+    point rotatePivot;
+    point scalePivot;
     mat4 offset;
     mat4 matrix;
     bool isDirty;
@@ -147,7 +147,7 @@ transform44::setposition(const point& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const vec3&
+inline const point&
 transform44::getposition() const
 {
     return this->position;
@@ -195,7 +195,7 @@ transform44::getscale() const
 /**
 */
 inline void
-transform44::setrotatepivot(const vec3& p)
+transform44::setrotatepivot(const point& p)
 {
     this->rotatePivot = p;
     this->isDirty = true;
@@ -204,7 +204,7 @@ transform44::setrotatepivot(const vec3& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const vec3&
+inline const point&
 transform44::getrotatepivot() const
 {
     return this->rotatePivot;
@@ -214,7 +214,7 @@ transform44::getrotatepivot() const
 /**
 */
 inline void
-transform44::setscalepivot(const vec3& p)
+transform44::setscalepivot(const point& p)
 {
     this->scalePivot = p;
     this->isDirty = true;
@@ -223,7 +223,7 @@ transform44::setscalepivot(const vec3& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const vec3&
+inline const point&
 transform44::getscalepivot() const
 {
     return this->scalePivot;
@@ -258,7 +258,7 @@ transform44::getmatrix()
     if (this->isDirty)
     {
         quat ident;
-        this->matrix = transformation(this->scalePivot, ident, this->scale, this->rotatePivot, this->rotate, this->position);
+        this->matrix = transformation(xyz(this->scalePivot), ident, this->scale, xyz(this->rotatePivot), this->rotate, xyz(this->position));
         if (this->offsetValid)
         {
             this->matrix = this->offset * this->matrix;
