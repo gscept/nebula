@@ -57,6 +57,14 @@ const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
     return meshAllocator.GetUnsafe<Mesh_Internals>(id.id24).primitiveGroups;
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::PrimitiveGroup
+MeshGetPrimitiveGroup(const MeshId id, const IndexT group)
+{
+    Util::AllocatorLock lock(&meshAllocator, Util::ArrayAllocatorAccess::Read);
+    return meshAllocator.Get<Mesh_Internals>(id.id24).primitiveGroups[group];
 }
 
 //------------------------------------------------------------------------------

@@ -49,6 +49,8 @@ void DestroyMesh(const MeshId id);
 
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
+/// get primitive group
+const CoreGraphics::PrimitiveGroup MeshGetPrimitiveGroup(const MeshId id, const IndexT group);
 /// get vertex buffer
 const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// Set vertex buffer
