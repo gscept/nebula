@@ -244,14 +244,15 @@ const uint MAX_LIGHTS_PER_CLUSTER = 128;
 
 struct SpotLight
 {
-    vec4 position;				// view space position of light, w is range
+    vec3 position;				// view space position of light
+    float range;
     vec4 forward;				// forward vector of light (spotlight and arealights)
 
     vec2 angleSinCos;			// angle cutoffs
-
-    vec3 color;					// light color
     int projectionExtension;	// projection extension index
     int shadowExtension;		// projection extension index
+
+    vec3 color;					// light color
     uint flags;					// feature flags (shadows, projection texture, etc)
 };
 
@@ -271,7 +272,8 @@ struct SpotLightShadowExtension
 
 struct PointLight
 {
-    vec4 position;				// view space position of light, w is range
+    vec3 position;				// view space position of light, w is range
+    float range;
 
     vec3 color;					// light color
     uint flags;					// feature flags (shadows, projection texture, etc)
@@ -285,12 +287,20 @@ struct PointLightShadowExtension
 
 struct AreaLight
 {
-    mat4 view;                  // Frustum transform
-    mat4 transform;             // World space transform and scale
+    vec3 bboxMin;               // Bounding box min point
+    float range;
+    vec3 bboxMax;               // Bounding box max point
+    float radius;
+
+    vec3 xAxis;
+    float width;
+    vec3 yAxis;
+    float height;
+    vec3 position;
+    uint flags;
 
     vec3 color;					// light color
     int shadowExtension;		// projection extension index
-    uint flags;
 };
 
 struct AreaLightShadowExtension

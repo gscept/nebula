@@ -41,7 +41,8 @@ void OpenScene()
     
     light = Graphics::CreateEntity();
     Graphics::RegisterEntity<Lighting::LightContext>(light);
-    Lighting::LightContext::SetupPointLight(light, Math::vec3(1, 1, 1), 10.0f, Math::translation(0, 1, 0), 10.0f, false);
+    Lighting::LightContext::SetupPointLight(light, Math::vec3(1, 1, 1), 10.0f, 10.0f, false);
+    Lighting::LightContext::SetPosition(light, Math::point(0, 1, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +71,7 @@ void StepFrame()
     
     if (moveLight)
     {
-        Lighting::LightContext::SetTransform(light, Math::translation(Math::sin(x) * scale, 0.5f, Math::cos(y) * scale));
+        Lighting::LightContext::SetPosition(light, Math::point(Math::sin(x) * scale, 0.5f, Math::cos(y) * scale));
         x += speed;
         y += speed;
     }

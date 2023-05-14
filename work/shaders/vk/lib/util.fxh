@@ -134,7 +134,8 @@ DecodeHDR4(in vec4 rgba)
 //------------------------------------------------------------------------------
 /**
 */
-vec3 RGBToXYZ(vec3 rgb)
+vec3
+RGBToXYZ(vec3 rgb)
 {
     const mat3 RGB_2_XYZ = mat3(
         0.4124564, 0.2126729, 0.0193339,
@@ -147,7 +148,8 @@ vec3 RGBToXYZ(vec3 rgb)
 //------------------------------------------------------------------------------
 /**
 */
-vec3 XYZToRGB(vec3 xyz)
+vec3
+XYZToRGB(vec3 xyz)
 {
     const mat3 XYZ_2_RGB = mat3(
         3.2404542, -0.9692660, 0.0556434,
@@ -160,7 +162,8 @@ vec3 XYZToRGB(vec3 xyz)
 //------------------------------------------------------------------------------
 /**
 */
-vec3 RGBToXYY(vec3 rgb)
+vec3
+RGBToXYY(vec3 rgb)
 {
     vec3 xyz = RGBToXYZ(rgb);
     float Y = xyz.y;
@@ -172,7 +175,8 @@ vec3 RGBToXYY(vec3 rgb)
 //------------------------------------------------------------------------------
 /**
 */
-vec3 XYYToRGB(vec3 xyY)
+vec3
+XYYToRGB(vec3 xyY)
 {
     float y = xyY.z;
     float x = y * xyY.x / xyY.y;
@@ -213,9 +217,19 @@ ToneMap(vec4 color, float lumAvg, float maxLum)
 /**
     From GPUGems3: "Don't know why this isn't in the standard library..."
 */
-float linstep(float min, float max, float v)
+float
+linstep(float min, float max, float v)
 {
     return clamp((v - min) / (max - min), 0.0f, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+sqr(float f)
+{
+    return f * f;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -227,7 +241,8 @@ float linstep(float min, float max, float v)
         0 <= byte_a < 1.0f
         0 <= byte_b < 1.0f
 */
-void pack_u16(in float depth, out float byte_a, out float byte_b)
+void
+pack_u16(in float depth, out float byte_a, out float byte_b)
 {
     float tmp = depth / 256.0f;
     byte_a = floor(tmp) / 256.0f;
@@ -239,7 +254,8 @@ void pack_u16(in float depth, out float byte_a, out float byte_b)
 /**
     loot at pack_u16 for details
 */
-float unpack_u16(in float byte_a, in float byte_b)
+float
+unpack_u16(in float byte_a, in float byte_b)
 {
     return ((byte_a * 256.0f) * 256.0f) + (byte_b * 256.0f);
 }
@@ -251,7 +267,8 @@ float unpack_u16(in float byte_a, in float byte_b)
     Normal.x -> AR 16 bit
     Normal.y -> GB 16 bit
 */
-void pack_16bit_normal_component(in float n, out float byte_a, out float byte_b)
+void
+pack_16bit_normal_component(in float n, out float byte_a, out float byte_b)
 {
     n = ((n * 0.5f) + 0.5f) * 65535.0f;
 
@@ -262,7 +279,8 @@ void pack_16bit_normal_component(in float n, out float byte_a, out float byte_b)
 /**
     loot at pack_16bit_normal_component for details
 */
-float unpack_16bit_normal_component(in float byte_a, in float byte_b)
+float
+unpack_16bit_normal_component(in float byte_a, in float byte_b)
 {
     return ((unpack_u16(byte_a, byte_b) / 65535.0f) - 0.5f) * 2.0f;
 }
@@ -271,7 +289,8 @@ float unpack_16bit_normal_component(in float byte_a, in float byte_b)
 /**
     loot at pack_16bit_normal_component for details
 */
-vec4 pack_normalxy_into_rgba8(in float normal_x, in float normal_y)
+vec4
+pack_normalxy_into_rgba8(in float normal_x, in float normal_y)
 {
     vec4 ret;
     pack_16bit_normal_component(normal_x, ret.x, ret.y);
@@ -283,7 +302,8 @@ vec4 pack_normalxy_into_rgba8(in float normal_x, in float normal_y)
 /**
     loot at pack_16bit_normal_component for details
 */
-vec4 unpack_normalxy_from_rgba8(in vec4 packedData)
+vec4
+unpack_normalxy_from_rgba8(in vec4 packedData)
 {
     return vec4(  unpack_16bit_normal_component(packedData.x, packedData.y),
                     unpack_16bit_normal_component(packedData.z, packedData.w),
@@ -297,7 +317,8 @@ vec4 unpack_normalxy_from_rgba8(in vec4 packedData)
 
     out vec4 normal -> a view space normal into 16 bit's for x (normal.x & normal.y) and y-component (normal.z & normal.w), preserve sign of z-component.
 */
-vec4 PackViewSpaceNormal(in vec3 viewSpaceNormal)
+vec4
+PackViewSpaceNormal(in vec3 viewSpaceNormal)
 {
     // make sure normal is actually normalized
     viewSpaceNormal = normalize(viewSpaceNormal);

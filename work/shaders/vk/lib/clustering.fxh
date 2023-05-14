@@ -132,16 +132,58 @@ TestAABBPerspectiveProjection(ClusterAABB aabb, mat4 viewProjection)
         , vec4(aabb.maxPoint.xyz, 1.0f)                                        // far top right
     };
 
-    for (int i = 0; i < 8; i++)
+    uint mask = 0xffff;
+    for (int i = 0; i < 2; i++)
     {
         // Transform cluster AABB points to clip space
-        points[i] = viewProjection * points[i];
+        points[i * 4] = viewProjection * points[i * 4];
+        points[i * 4 + 1] = viewProjection * points[i * 4 + 1];
+        points[i * 4 + 2] = viewProjection * points[i * 4 + 2];
+        points[i * 4 + 3] = viewProjection * points[i * 4 + 3];
 
+
+        vec4 xs = vec4(points[i].x, points[i * 4 + 1].x, points[i * 4 + 2].x, points[i * 4 + 3].x);
+        vec4 ys = vec4(points[i].y, points[i * 4 + 1].y, points[i * 4 + 2].y, points[i * 4 + 3].y);
+        vec4 zs = vec4(points[i].z, points[i * 4 + 1].z, points[i * 4 + 2].z, points[i * 4 + 3].z);
+        vec4 ws = vec4(points[i].w, points[i * 4 + 1].w, points[i * 4 + 2].w, points[i * 4 + 3].w);
+
+        uvec4 flags =
+            uvec4(lessThan(xs, -ws)) * uvec4(0x1)
+            + uvec4(greaterThan(xs, ws)) * uvec4(0x2)
+            + uvec4(lessThan(ys, -ws)) * uvec4(0x4)
+            + uvec4(greaterThan(ys, ws)) * uvec4(0x8)
+            + uvec4(lessThan(zs, -ws)) * uvec4(0x10)
+            + uvec4(greaterThan(zs, ws)) * uvec4(0x20)
+            ;
+
+        mask &= flags.x;
+        mask &= flags.y;
+        mask &= flags.z;
+        mask &= flags.w;
+
+
+        /*
+        vec3 lt = lessThan(points[i].xyz, vec3(-points[i].w));
+        vec3 gt = greaterThan(points[i].xyz, vec3(points[i].w));
+        mask &= any(lt);
+        mask &= any(gt);
         // Without doing 1/w, simply check if intervals going from max to min overlaps with the range of w
-        if (all(equal(greaterThan(points[i].xyz, vec3(-points[i].w)), lessThan(points[i].xyz, vec3(points[i].w)))))
-            return true;
+        if (points[i].x < -points[i].w)
+            mask &= 1 << 0;
+        if (points[i].x > points[i].w)
+            mask &= 1 << 1;
+        if (points[i].y < -points[i].w)
+            mask &= 1 << 2;
+        if (points[i].y > points[i].w)
+            mask &= 1 << 3;
+        if (points[i].z < -points[i].w)
+            mask &= 1 << 4;
+        if (points[i].z > points[i].w)
+            mask &= 1 << 5;
+        */
+
     }
-    return false;
+    return mask == 0;
 }
 
 #endif

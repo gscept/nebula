@@ -3,56 +3,9 @@
 //  @copyright (C) 2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-const float LUT_SIZE = 64.0;
+const float LUT_SIZE = 64.0f;
 const float LUT_SCALE = (LUT_SIZE - 1.0f) / LUT_SIZE;
 const float LUT_BIAS = 0.5f / LUT_SIZE;
-
-//------------------------------------------------------------------------------
-/**
-    Integration of p0 with distance
-*/
-float Fp0(float d, float l)
-{
-    return l / (d * (d * d + l * l)) + atan(1 / d) / (d * d);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Integration of tangent with distance
-*/
-float Fwt(float d, float l)
-{
-    return l * l / (d * (d * d + l * l));
-}
-
-//------------------------------------------------------------------------------
-/**
-    Calculate linearly transformed cosines for a line going from points p1 to p2
-*/
-float LtcLineIntegrate(vec3 p1, vec3 p2)
-{
-    vec3 wt = normalize(p2 - p1);
-
-    // Clamp to line ends
-    if (p1.z <= 0.0f && p2.z <= 0.0f) return 0.0f;
-    if (p1.z < 0.0f) p1 = (+p1 * p2.z - p2 * p1.z) / (+p2.z - p1.z);
-    if (p2.z < 0.0f) p2 = (-p1 * p2.z + p2 * p1.z) / (-p2.z + p1.z);
-
-    float l1 = dot(p1, wt);
-    float l2 = dot(p2, wt);
-
-    // Project point on surface
-    vec3 p0 = p1 - l1 * wt;
-
-    // The distance from surface to the line is then
-    float d = length(p0);
-
-    // Now integrate diffuse over the hemisphere
-    float I = (Fp0(d, l2) - Fp0(d, l1)) * p0.z +
-        (Fwt(d, l2) - Fwt(d, l1)) * wt.z;
-
-    return I / PI;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -82,6 +35,8 @@ LtcRectIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[4], bool specul
     t1 = normalize(v - n * dot(v, n));
     t2 = cross(n, t1);
 
+    mat3 r = transpose(mat3(t1, t2, n));
+
     vec3 L[4];
     L[0] = corners[0] - p;
     L[1] = corners[1] - p;
@@ -89,11 +44,18 @@ LtcRectIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[4], bool specul
     L[3] = corners[3] - p;
     if (specular)
     {
-        minv = minv * transpose(mat3(t1, t2, n));
+        minv = minv * r;
         L[0] = minv * L[0];
         L[1] = minv * L[1];
         L[2] = minv * L[2];
         L[3] = minv * L[3];
+    }
+    else
+    {
+        L[0] = r * L[0];
+        L[1] = r * L[1];
+        L[2] = r * L[2];
+        L[3] = r * L[3];
     }
 
     float sum = 0.0f;
@@ -138,13 +100,13 @@ LtcSolveCubic(vec4 Coefficient)
     // Normalize the polynomial
     Coefficient.xyz /= Coefficient.w;
     // Divide middle coefficients by three
-    Coefficient.yz /= 3.0;
+    Coefficient.yz /= 3.0f;
 
     float A = Coefficient.w;
     float B = Coefficient.z;
     float C = Coefficient.y;
     float D = Coefficient.x;
-    const float pi = 3.14159265;
+    const float pi = 3.14159265f;
 
     // Compute the Hessian and the discriminant
     vec3 Delta = vec3(
@@ -153,7 +115,7 @@ LtcSolveCubic(vec4 Coefficient)
         dot(vec2(Coefficient.z, -Coefficient.y), Coefficient.xy)
     );
 
-    float Discriminant = dot(vec2(4.0 * Delta.x, -Delta.y), Delta.zy);
+    float Discriminant = dot(vec2(4.0f * Delta.x, -Delta.y), Delta.zy);
 
     vec3 RootsA, RootsD;
 
@@ -166,13 +128,13 @@ LtcSolveCubic(vec4 Coefficient)
         float D_a = -2.0 * B * Delta.x + Delta.y;
 
         // Take the cubic root of a normalized complex number
-        float Theta = atan(sqrt(Discriminant), -D_a) / 3.0;
+        float Theta = atan(sqrt(Discriminant), -D_a) / 3.0f;
 
         float x_1a = 2.0 * sqrt(-C_a) * cos(Theta);
-        float x_3a = 2.0 * sqrt(-C_a) * cos(Theta + (2.0 / 3.0) * pi);
+        float x_3a = 2.0 * sqrt(-C_a) * cos(Theta + (2.0f / 3.0f) * pi);
 
         float xl;
-        if ((x_1a + x_3a) > 2.0 * B)
+        if ((x_1a + x_3a) > 2.0f * B)
             xl = x_1a;
         else
             xl = x_3a;
@@ -184,16 +146,16 @@ LtcSolveCubic(vec4 Coefficient)
     {
         float A_d = D;
         float C_d = Delta.z;
-        float D_d = -D * Delta.y + 2.0 * C * Delta.z;
+        float D_d = -D * Delta.y + 2.0f * C * Delta.z;
 
         // Take the cubic root of a normalized complex number
-        float Theta = atan(D * sqrt(Discriminant), -D_d) / 3.0;
+        float Theta = atan(D * sqrt(Discriminant), -D_d) / 3.0f;
 
-        float x_1d = 2.0 * sqrt(-C_d) * cos(Theta);
-        float x_3d = 2.0 * sqrt(-C_d) * cos(Theta + (2.0 / 3.0) * pi);
+        float x_1d = 2.0f * sqrt(-C_d) * cos(Theta);
+        float x_3d = 2.0f * sqrt(-C_d) * cos(Theta + (2.0f / 3.0f) * pi);
 
         float xs;
-        if (x_1d + x_3d < 2.0 * C)
+        if (x_1d + x_3d < 2.0f * C)
             xs = x_1d;
         else
             xs = x_3d;
@@ -207,7 +169,7 @@ LtcSolveCubic(vec4 Coefficient)
 
     vec2 xmc = vec2(C * F - B * G, -B * F + C * E);
 
-    vec3 Root = vec3(xsc.x / max(xsc.y, 0.0001f), xmc.x / max(xmc.y, 0.0001f), xlc.x / max(xlc.y, 0.0001f));
+    vec3 Root = vec3(xsc.x / xsc.y, xmc.x / xmc.y, xlc.x / xlc.y);
 
     if (Root.x < Root.y && Root.x < Root.z)
         Root.xyz = Root.yxz;
@@ -244,7 +206,7 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
         v2 = minv * v2;
     }
 
-    if (!twoSided && dot(cross(v1, v2), c) < 0.0001f)
+    if (!twoSided && dot(cross(v1, v2), c) < 0.0f)
         return 0.0f;
 
     // Compute ellipsis eigen vectors
@@ -253,7 +215,7 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
     float d22 = dot(v2, v2);
     float d12 = dot(v1, v2);
 
-    if (abs(d12) / sqrt(d11 * d22) > 0.0f)
+    if (abs(d12) / sqrt(d11 * d22) > 0.0001f)
     {
         float tr = d11 + d22;
         float det = -d12 * d12 + d11 * d22;
@@ -262,8 +224,8 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
         float u = 0.5f * sqrt(tr - 2.0f * det);
         float v = 0.5f * sqrt(tr + 2.0f * det);
 
-        float e_max = pow(u + v, 2);
-        float e_min = pow(u - v, 2);
+        float e_max = sqr(u + v);
+        float e_min = sqr(u - v);
 
         vec3 _v1, _v2;
 
@@ -325,4 +287,65 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
     float scale = sample2D(ltcLUT1, LinearSampler, uv).w;
 
     return formFactor * scale;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Integration of p0 with distance
+*/
+float
+Fp0(float d, float l)
+{
+    return l / (d * (d * d + l * l)) + atan(l / d) / (d * d);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Integration of tangent with distance
+*/
+float 
+Fwt(float d, float l)
+{
+    return l * l / (d * (d * d + l * l));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+LtcLineIntegrate(vec3 n, vec3 v, vec3 p, float radius, mat3 minv, vec3 points[2])
+{
+    vec3 t1, t2;
+    t1 = normalize(v - n * dot(v, n));
+    t2 = cross(n, t1);
+
+    mat3 r = transpose(mat3(t1, t2, n));
+
+    vec3 p1 = r * (points[0] - p);
+    vec3 p2 = r * (points[1] - p);
+
+    vec3 p1o = minv * p1;
+    vec3 p2o = minv * p2;
+
+    vec3 tangent = normalize(p2o - p1o);
+
+    vec3 p1d = p1o, p2d = p2o;
+    if (p1o.z <= 0.0 && p2o.z <= 0.0) return 0.0;
+    if (p1o.z < 0.0) p1d = (+p1o * p2o.z - p2o * p1o.z) / (+p2o.z - p1o.z);
+    if (p2o.z < 0.0) p2d = (-p1o * p2o.z + p2o * p1o.z) / (-p2o.z + p1o.z);
+
+    float l1 = dot(p1d, tangent);
+    float l2 = dot(p2d, tangent);
+
+    vec3 po = p1d - l1 * tangent;
+
+    float d = length(po);
+
+    float diffuse = ((Fp0(d, l2) - Fp0(d, l1)) * po.z + (Fwt(d, l2) - Fwt(d, l1)) * tangent.z) / PI;
+
+    vec3 ortho = normalize(cross(p1, p2));
+    float w = 1.0f / length(inverse(transpose(minv)) * ortho);
+    diffuse = w * diffuse;
+
+    return min(1.0f, diffuse * radius);
 }

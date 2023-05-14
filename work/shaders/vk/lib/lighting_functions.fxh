@@ -13,12 +13,35 @@ const uint USE_PROJECTION_TEX_BITFLAG = 0x2;
 const uint AREA_LIGHT_SHAPE_RECT = 0x4;
 const uint AREA_LIGHT_SHAPE_DISK = 0x8;
 const uint AREA_LIGHT_SHAPE_TUBE = 0x10;
+const uint AREA_LIGHT_TWOSIDED = 0x20;
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 
 
 #define SPECULAR_SCALE 13
 #define ROUGHNESS_TO_SPECPOWER(x) exp2(SPECULAR_SCALE * x + 1)
+
+//------------------------------------------------------------------------------
+/**
+*/
+float 
+InvSquareFalloff(float radius, vec3 lightDir)
+{
+    float dist2 = dot(lightDir, lightDir);
+    float factor = dist2 / sqr(radius);
+    float falloff = saturate(1.0f - sqr(factor));
+    return sqr(falloff) / max(dist2, 0.0001f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+FalloffWindow(float radius, vec3 lightDir)
+{
+    float dist2 = dot(lightDir, lightDir);
+    return saturate(1.0f - dist2 / sqr(radius));
+}
 
 //---------------------------------------------------------------------------------------------------------------------------
 /**
@@ -80,7 +103,7 @@ CalculatePointLight(
     float lightDirLen = length(lightDir);
 
     float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
+    float factor = d2 / (light.range * light.range);
     float sf = saturate(1.0 - factor * factor);
     float att = (sf * sf) / max(d2, 0.0001);
 
@@ -161,15 +184,10 @@ CalculateSpotLight(
     in vec3 diffuseColor,
     in vec3 F0)
 {
-    vec3 lightDir = (light.position.xyz - viewPos);
-
+    vec3 lightDir = (light.position - viewPos);
     float lightDirLen = length(lightDir);
 
-    float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
-    float sf = saturate(1.0 - factor * factor);
-
-    float att = (sf * sf) / max(d2, 0.0001);
+    float att = InvSquareFalloff(light.range, lightDir);
 
     float oneDivLightDirLen = 1.0f / lightDirLen;
     lightDir = lightDir * oneDivLightDirLen;
@@ -205,11 +223,17 @@ CalculateRectLight(
     , in vec3 viewVec
     , in vec3 viewSpaceNormal
     , in vec4 material
+    , in bool twoSided
 )
 {
+    vec3 lightDir = (li.position.xyz - viewPos);
+    float attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001f)
+        return vec3(0);
+
     // Calculate LTC LUT uv
     float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    vec2 uv = vec2(max(0.0001f, 1.0f - material[MAT_ROUGHNESS]), sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
@@ -218,10 +242,13 @@ CalculateRectLight(
 
     // Transform 4 rect points to light
     vec3 points[4];
-    points[0] = (li.transform * vec4(-0.5, -0.5, 0, 1)).xyz;
-    points[1] = (li.transform * vec4(-0.5, 0.5, 0, 1)).xyz;
-    points[2] = (li.transform * vec4(0.5, 0.5, 0, 1)).xyz;
-    points[3] = (li.transform * vec4(0.5, -0.5, 0, 1)).xyz;
+    vec3 dx = li.xAxis * li.width;
+    vec3 dy = li.yAxis * li.height;
+
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx - dy;
+    points[2] = li.position + dx + dy;
+    points[3] = li.position - dx + dy;
 
     // Construct linear cosine transform
     mat3 minv = mat3
@@ -232,13 +259,12 @@ CalculateRectLight(
     );
 
     // Integrate specular
-    vec3 spec = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, false));
-    spec *= li.color * t2.x + (1.0f - li.color) * t2.y;
+    vec3 spec = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, twoSided)) * t2.x;
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, false));
+    vec3 diff = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, twoSided));
 
-    return li.color * (spec + diff);
+    return li.color * (spec + diff) * attenuation;
 }
 
 //------------------------------------------------------------------------------
@@ -251,11 +277,17 @@ CalculateDiskLight(
     , in vec3 viewVec
     , in vec3 viewSpaceNormal
     , in vec4 material
+    , in bool twoSided
 )
 {
+    vec3 lightDir = (li.position.xyz - viewPos);
+    float attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001f)
+        return vec3(0);
+
      // Calculate LTC LUT uv
     float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    vec2 uv = vec2(max(0.0001f, 1.0f - material[MAT_ROUGHNESS]), sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
@@ -264,9 +296,13 @@ CalculateDiskLight(
 
     // Transform 4 rect points to light
     vec3 points[3];
-    points[0] = (li.transform * vec4(-0.5, -0.5, 0, 1)).xyz;
-    points[1] = (li.transform * vec4(-0.5, 0.5, 0, 1)).xyz;
-    points[2] = (li.transform * vec4(0.5, 0.5, 0, 1)).xyz;
+    
+    // Because of some numerical instability, we have to slightly increase the size in Y for the disk
+    vec3 dx = li.xAxis * li.width;
+    vec3 dy = li.yAxis * li.height * 1.01f;
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx - dy;
+    points[2] = li.position + dx + dy;
 
     // Construct linear cosine transform
     mat3 minv = mat3
@@ -277,21 +313,62 @@ CalculateDiskLight(
     );
 
     // Integrate specular
-    vec3 spec = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, false));
-    spec *= li.color * t2.x + (1.0f - li.color) * t2.y;
+    vec3 spec = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, twoSided)) * t2.x;
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, false));
+    vec3 diff = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, twoSided));
 
-    return li.color * (spec + diff);
+    return li.color * (diff + spec) * attenuation;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-vec3 CalculateTubeLight()
+vec3 
+CalculateTubeLight(
+    in AreaLight li
+    , in vec3 viewPos
+    , in vec3 viewVec
+    , in vec3 viewSpaceNormal
+    , in vec4 material
+    , in bool twoSided
+)
 {
-    return vec3(0.0f);
+    vec3 lightDir = (li.position.xyz - viewPos);
+    float attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001f)
+        return vec3(0);
+
+    // Calculate LTC LUT uv
+    float NV = saturate(dot(viewSpaceNormal, viewVec));
+    vec2 uv = vec2(max(0.0001f, 1.0f - material[MAT_ROUGHNESS]), sqrt(1.0f - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
+    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
+
+    vec3 points[2];
+    vec3 dx = li.xAxis * li.width;
+    vec3 dy = li.yAxis * li.height;
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx + dy;
+
+    // Construct linear cosine transform
+    mat3 minv = mat3
+    (
+        vec3(t1.x, 0, t1.y)
+        , vec3(0, 1, 0)
+        , vec3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    vec3 spec = vec3(LtcLineIntegrate(viewSpaceNormal, viewVec, viewPos, li.radius, minv, points)) * t2.x;
+
+    // Integrate diffuse
+    vec3 diff = vec3(LtcLineIntegrate(viewSpaceNormal, viewVec, viewPos, li.radius, mat3(1), points));
+
+    return li.color * (spec + diff) * (1.0f / 2 * PI) * attenuation;
 }
 
 //------------------------------------------------------------------------------
@@ -430,12 +507,14 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
 
             if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_RECT))
             {
+                //light += li.color;
                 light += CalculateRectLight(
                     li
                     , viewPos.xyz
                     , viewVec
                     , viewSpaceNormal
                     , material
+                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
             else if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_DISK))
@@ -446,12 +525,18 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
                     , viewVec
                     , viewSpaceNormal
                     , material
+                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
             else if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_TUBE))
             {
                 light += CalculateTubeLight(
-
+                    li
+                    , viewPos.xyz
+                    , viewVec
+                    , viewSpaceNormal
+                    , material
+                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
         }
@@ -478,7 +563,7 @@ CalculatePointLightAmbientTransmission(
     float lightDirLen = length(lightDir);
 
     float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
+    float factor = d2 / (light.range * light.range);
     float sf = saturate(1.0 - factor * factor);
     float att = (sf * sf) / max(d2, 0.0001);
     lightDir = lightDir / lightDirLen;
@@ -515,14 +600,8 @@ CalculateSpotLightAmbientTransmission(
     in float transmission)
 {
     vec3 lightDir = (light.position.xyz - viewPos);
-
     float lightDirLen = length(lightDir);
-
-    float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
-    float sf = saturate(1.0 - factor * factor);
-
-    float att = (sf * sf) / max(d2, 0.0001);
+    float att = InvSquareFalloff(light.range, lightDir);
     lightDir = lightDir / lightDirLen;
 
     float theta = dot(light.forward.xyz, lightDir);
