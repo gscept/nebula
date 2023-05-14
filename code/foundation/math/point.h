@@ -520,4 +520,15 @@ equal(const point& v0, const point& v1)
     return _mm_min_ps(_mm_cmpeq_ps(v0.vec, v1.vec), _plus1);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec3
+xyz(const point& v)
+{
+    vec3 res;
+    res.vec = _mm_and_ps(v.vec, _mask_xyz);
+    return res;
+}
+
 } // namespace Math
