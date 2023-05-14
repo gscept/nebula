@@ -25,12 +25,12 @@ public:
     /// clip codes
     enum 
     {
-        ClipLeft   = N_BIT(1),
-        ClipRight  = N_BIT(2),
-        ClipBottom = N_BIT(3),
-        ClipTop    = N_BIT(4),
-        ClipNear   = N_BIT(5),
-        ClipFar    = N_BIT(6),
+        ClipLeft   = N_BIT(0),
+        ClipRight  = N_BIT(1),
+        ClipBottom = N_BIT(2),
+        ClipTop    = N_BIT(3),
+        ClipNear   = N_BIT(4),
+        ClipFar    = N_BIT(5),
     };
 
     /// constructor 1
