@@ -104,8 +104,9 @@ void OpenScene()
             const float blue = Math::rand();
 
             Lighting::LightContext::AreaLightShape shapes[] = {
+                Lighting::LightContext::AreaLightShape::Rectangle,
                 Lighting::LightContext::AreaLightShape::Disk,
-                Lighting::LightContext::AreaLightShape::Rectangle
+                Lighting::LightContext::AreaLightShape::Tube
             };
 
             auto shape = shapes[index % 3];
