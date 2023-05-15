@@ -41,6 +41,7 @@ FinalizeColor finalizeColor;
 /**
     Standard shader for conductors (metals) and dielectic materials (non-metal)
 */
+[earlydepth]
 shader
 void
 psStandard(
@@ -52,11 +53,6 @@ psStandard(
     in vec4 ViewSpacePos,
     [color0] out vec4 OutColor)
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
-    float dither = hash12(seed);
-    if (dither < DitherFactor)
-        discard;
-
     uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
@@ -65,18 +61,14 @@ psStandard(
     vec3 N        = normalize(calcBump(Tangent, Normal, Sign, sample2D(NormalMap, NormalSampler, UV)));
     
     //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, albedo, N, material);
-    
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
-    vec3 viewNormal = (View * vec4(N.xyz, 0)).xyz;
-    
+
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, N.xyz, ViewSpacePos, vec4(WorldSpacePos, 1));
-    light += LocalLights(idx, albedo.rgb, material, F0, ViewSpacePos, viewNormal, gl_FragCoord.z);
+    light += CalculateLight(WorldSpacePos.xyz, gl_FragCoord.xyz, ViewSpacePos.xyz, albedo.rgb, material, N);
     light += calcEnv(albedo, F0, N, viewVec, material);
-    light += albedo.rgb * material[MAT_EMISSIVE];
     
-    OutColor = finalizeColor(light.rgb, albedo.a);
+    OutColor = finalizeColor((min(vec3(60000.0f), light.rgb), albedo.a);
     //OutNormal = vec4(N, 0);
     //OutSpecular = vec4(F0, material[MAT_ROUGHNESS]);
 }

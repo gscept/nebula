@@ -98,11 +98,6 @@ psGLTF(
     [color1] out vec4 OutNormal,
     [color2] out vec4 OutSpecular)
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
-	float dither = hash12(seed);
-	if (dither < DitherFactor)
-		discard;
-
     uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 

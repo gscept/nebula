@@ -298,7 +298,10 @@ shader
 void
 psDepthOnly()
 {
-    // empty
+    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    float dither = hash12(seed);
+    if (dither < DitherFactor)
+        discard;
 }
 
 //------------------------------------------------------------------------------
@@ -308,6 +311,11 @@ shader
 void
 psDepthOnlyAlphaMask(in vec2 UV)
 {
+    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    float dither = hash12(seed);
+    if (dither < DitherFactor)
+        discard;
+
     vec4 baseColor = sample2D(AlbedoMap, MaterialSampler, UV);
     if (baseColor.a <= AlphaSensitivity)
         discard;
@@ -567,11 +575,6 @@ psUber(
     [color1] out vec3 Normals,
     [color2] out vec4 Material)
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
-    float dither = hash12(seed);
-    if (dither < DitherFactor)
-        discard;
-
     vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
     vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
     vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
