@@ -68,7 +68,7 @@ psStandard(
     light += CalculateLight(WorldSpacePos.xyz, gl_FragCoord.xyz, ViewSpacePos.xyz, albedo.rgb, material, N);
     light += calcEnv(albedo, F0, N, viewVec, material);
     
-    OutColor = finalizeColor((min(vec3(60000.0f), light.rgb), albedo.a);
+    OutColor = finalizeColor(min(vec3(60000.0f), light.rgb), albedo.a);
     //OutNormal = vec4(N, 0);
     //OutSpecular = vec4(F0, material[MAT_ROUGHNESS]);
 }
