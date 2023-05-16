@@ -233,7 +233,7 @@ CalculateRectLight(
 
     // Calculate LTC LUT uv
     float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(max(0.0001f, 1.0f - material[MAT_ROUGHNESS]), sqrt(1.0f - NV));
+    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
@@ -287,7 +287,7 @@ CalculateDiskLight(
 
      // Calculate LTC LUT uv
     float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(max(0.0001f, 1.0f - material[MAT_ROUGHNESS]), sqrt(1.0f - NV));
+    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
@@ -299,7 +299,7 @@ CalculateDiskLight(
     
     // Because of some numerical instability, we have to slightly increase the size in Y for the disk
     vec3 dx = li.xAxis * li.width;
-    vec3 dy = li.yAxis * li.height * 1.01f;
+    vec3 dy = li.yAxis * li.height;
     points[0] = li.position - dx - dy;
     points[1] = li.position + dx - dy;
     points[2] = li.position + dx + dy;
@@ -341,7 +341,7 @@ CalculateTubeLight(
 
     // Calculate LTC LUT uv
     float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(max(0.0001f, 1.0f - material[MAT_ROUGHNESS]), sqrt(1.0f - NV));
+    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
