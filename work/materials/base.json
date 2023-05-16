@@ -888,8 +888,28 @@
             "name": "SkyRotationFactor",
             "type": "float",
             "defaultValue": 0.03
-          },
+          }
+        ]
+      },
+      {
+        "name": "AreaLight",
+        "vertexType": "special",
+        "desc": "Emissive material used by area lights",
+        "group": "System",
+        "passes": [
+          {
+            "batch": "LightMeshes",
+            "shader": "emissive",
+            "variation": "Static"
+          }
         ],
+        "variables": [
+          {
+            "name": "EmissiveColor",
+            "type": "vec4",
+            "defaultValue": [1.0, 1.0, 1.0, 1.0]
+          }
+        ]
       },
       {
         "name": "Placeholder",

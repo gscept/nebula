@@ -42,10 +42,8 @@ public:
     /// get emitter sample buffer
     const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
 
-    /// get function for applying node state
-    std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
-    /// Get function to fetch primitive group
-    std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
+    /// Create resource table
+    static Util::FixedArray<CoreGraphics::ResourceTableId> CreateResourceTables();
 
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
@@ -64,8 +62,6 @@ protected:
     Particles::EmitterAttrs emitterAttrs;
     Particles::EmitterMesh emitterMesh;
     Resources::ResourceName meshResId;
-
-    IndexT particleConstantsIndex;
 
     Util::StringAtom tag;
     IndexT primGroupIndex;

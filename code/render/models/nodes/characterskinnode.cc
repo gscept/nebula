@@ -86,18 +86,6 @@ CharacterSkinNode::OnFinishedLoading()
 //------------------------------------------------------------------------------
 /**
 */
-std::function<const CoreGraphics::PrimitiveGroup()>
-CharacterSkinNode::GetPrimitiveGroupFunction()
-{
-    return [this]()
-    {
-        return this->primGroup;
-    };
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 CharacterSkinNode::ReserveFragments(SizeT numFragments)
 {

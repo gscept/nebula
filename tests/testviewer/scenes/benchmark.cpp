@@ -102,9 +102,8 @@ void StepFrame()
     for (i = 0; i < spotLights.Size(); i++)
     {
         Math::mat4 spotLightTransform;
-        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::deg2rad(-55), 0);
-        spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
-        Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
+        Math::quat rotation = Math::quatyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::deg2rad(-55), 0);
+        Lighting::LightContext::SetRotation(spotLights[i], rotation);
     }
 
     /*
@@ -192,10 +191,10 @@ void RenderUI()
     }
     else if (Lighting::LightContext::IsEntityRegistered(id))
     {
-        Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
+        Im3d::Vec3 pos = Lighting::LightContext::GetPosition(id);
+        if (Im3d::Gizmo("GizmoEntity", pos))
         {
-            Lighting::LightContext::SetTransform(id, trans);
+            Lighting::LightContext::SetPosition(id, pos);
         }
     }
 }

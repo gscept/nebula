@@ -26,12 +26,8 @@ public:
     /// get the nodes primitive group index
     uint32_t GetPrimitiveGroupIndex() const { return this->primitiveGroupIndex; }
     /// get primitives mesh id
-    CoreGraphics::MeshId GetMeshId() const { return this->mesh; }
+    CoreGraphics::MeshId GetMesh() const { return this->mesh; }
 
-    /// Get function to apply node 
-    std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
-    /// Get function to fetch primitive group
-    std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
 
 protected:
     friend class ModelLoader;

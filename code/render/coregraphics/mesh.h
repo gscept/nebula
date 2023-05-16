@@ -33,7 +33,7 @@ struct VertexStream
 struct MeshCreateInfo
 {
     Resources::ResourceName name;
-    Util::ArrayStack<VertexStream, 16> streams;
+    Util::ArrayStack<VertexStream, 4> streams;
     SizeT indexBufferOffset;
     BufferId indexBuffer;
     IndexType::Code indexType;
@@ -49,8 +49,12 @@ void DestroyMesh(const MeshId id);
 
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
+/// get primitive group
+const CoreGraphics::PrimitiveGroup MeshGetPrimitiveGroup(const MeshId id, const IndexT group);
 /// get vertex buffer
 const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
+/// Set vertex buffer
+const void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
 /// Get mesh vertex offset
 const uint MeshGetVertexOffset(const MeshId id, const IndexT stream);
 /// get index buffer
@@ -64,27 +68,34 @@ const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 /// Get vertex layout
 const CoreGraphics::VertexLayoutId MeshGetVertexLayout(const MeshId id);
 
+/// Bind mesh on command buffer
+const void MeshBind(const MeshId id, const CoreGraphics::CmdBufferId cmd);
+
 enum
 {
     Mesh_Name,
-    Mesh_Streams,
-    Mesh_IndexBufferOffset,
-    Mesh_IndexBuffer,
-    Mesh_IndexType,
-    Mesh_VertexLayout,
-    Mesh_Topology,
-    Mesh_PrimitiveGroups
+    Mesh_Internals,
 };
+
+struct __Mesh
+{
+    Util::ArrayStack<VertexStream, 4> streams;
+    SizeT indexBufferOffset;
+    BufferId indexBuffer;
+    IndexType::Code indexType;
+    VertexLayoutId vertexLayout;
+    CoreGraphics::PrimitiveTopology::Code primitiveTopology;
+    Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+};
+
 typedef Ids::IdAllocatorSafe<
     Resources::ResourceName,
-    Util::ArrayStack<VertexStream, 16>,
-    SizeT,
-    BufferId,
-    IndexType::Code,
-    VertexLayoutId,
-    CoreGraphics::PrimitiveTopology::Code,
-    Util::Array<CoreGraphics::PrimitiveGroup>
+    __Mesh
 > MeshAllocator;
 extern MeshAllocator meshAllocator;
+
+
+extern MeshId RectangleMesh;
+extern MeshId DiskMesh;
 
 } // CoreGraphics

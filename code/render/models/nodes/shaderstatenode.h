@@ -51,10 +51,11 @@ public:
 
     /// get surface
     const Materials::MaterialId GetMaterial() const { return this->material; };
-    /// Get sort code
-    const uint64_t GetSortCode() const { return this->sortCode; };
     /// trigger an LOD update
     void SetMaxLOD(const float lod);
+
+    /// Create resource table
+    static Util::FixedArray<CoreGraphics::ResourceTableId> CreateResourceTables();
 
 protected:
     friend class ModelContext;
@@ -69,12 +70,7 @@ protected:
     
     Resources::ResourceId materialRes;
     Materials::MaterialId material;
-    uint64_t sortCode;
     Resources::ResourceName materialName;
-
-    uint8_t objectTransformsIndex;
-    uint8_t instancingTransformsIndex;
-    uint8_t skinningTransformsIndex;
 
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 };

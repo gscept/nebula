@@ -704,11 +704,11 @@ inline void
 String::SetTransform44(const Math::transform44& t)
 {
     this->Format("%s|%s|%s|%s|%s|%s",
-        this->FromVec3(t.getposition()).AsCharPtr(),
+        this->FromVec3(xyz(t.getposition())).AsCharPtr(),
         this->FromQuat(t.getrotate()).AsCharPtr(),
         this->FromVec3(t.getscale()).AsCharPtr(),
-        this->FromVec3(t.getrotatepivot()).AsCharPtr(),
-        this->FromVec3(t.getscalepivot()).AsCharPtr(),
+        this->FromVec3(xyz(t.getrotatepivot())).AsCharPtr(),
+        this->FromVec3(xyz(t.getscalepivot())).AsCharPtr(),
         this->FromMat4(t.getoffset()).AsCharPtr());
 }
 #endif // __OSX__

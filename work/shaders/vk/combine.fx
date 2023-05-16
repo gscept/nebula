@@ -25,9 +25,9 @@ void csCombine()
 {
     vec2 coord = vec2(gl_GlobalInvocationID.xy) * LowresResolution;
     ivec2 fullscaleCoord = ivec2(gl_GlobalInvocationID.xy);
-    vec4 fog = texture(sampler2D(Fog, PosteffectUpscaleSampler), coord);
-    vec4 reflections = texture(sampler2D(Reflections, PosteffectUpscaleSampler), coord);
-    float ao = texture(sampler2D(AO, PosteffectUpscaleSampler), coord).r;
+    vec4 fog = texture(sampler2D(Fog, LinearSampler), coord);
+    vec4 reflections = texture(sampler2D(Reflections, LinearSampler), coord);
+    float ao = texture(sampler2D(AO, LinearSampler), coord).r;
     vec4 light = imageLoad(Lighting, fullscaleCoord);
 
     vec3 res = light.rgb * (1 - (ao)) * fog.a

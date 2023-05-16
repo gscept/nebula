@@ -436,6 +436,7 @@ ENDIF()
             lightcontext.h
             lightprobecontext.cc
             lightprobecontext.h
+            ltc.h
         )
 IF(FALSE)
 
@@ -534,6 +535,8 @@ ENDIF()
             drawfullscreenquad.h
             freecamerautil.cc
             freecamerautil.h
+            geometryhelpers.cc
+            geometryhelpers.h
             mayacamerautil.cc
             mayacamerautil.h
             mouserayutil.cc

@@ -18,8 +18,8 @@ group(TICK_GROUP) binding(0) textureCube		TexturesCube[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture3D			Textures3D[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2DArray	    Textures2DArray[MAX_TEXTURES];
 group(TICK_GROUP) sampler_state		Basic2DSampler {};
-group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
-group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
+group(TICK_GROUP) sampler_state		PointSampler { Filter = Point; };
+group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; };
 
 #define sample2D(handle, sampler, uv)						    texture(sampler2D(Textures2D[handle], sampler), uv)
 #define sample2DLod(handle, sampler, uv, lod)				    textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
@@ -145,6 +145,9 @@ group(TICK_GROUP) shared constant PerTickParams
     textureHandle SpecularBuffer;
     textureHandle IrradianceMap;
     textureHandle DepthBufferCopy;
+
+    textureHandle ltcLUT0;
+    textureHandle ltcLUT1;
 };
 
 // contains the render_state of the camera (and time)
@@ -241,14 +244,15 @@ const uint MAX_LIGHTS_PER_CLUSTER = 128;
 
 struct SpotLight
 {
-    vec4 position;				// view space position of light, w is range
+    vec3 position;				// view space position of light
+    float range;
     vec4 forward;				// forward vector of light (spotlight and arealights)
 
     vec2 angleSinCos;			// angle cutoffs
-
-    vec3 color;					// light color
     int projectionExtension;	// projection extension index
     int shadowExtension;		// projection extension index
+
+    vec3 color;					// light color
     uint flags;					// feature flags (shadows, projection texture, etc)
 };
 
@@ -268,7 +272,8 @@ struct SpotLightShadowExtension
 
 struct PointLight
 {
-    vec4 position;				// view space position of light, w is range
+    vec3 position;				// view space position of light, w is range
+    float range;
 
     vec3 color;					// light color
     uint flags;					// feature flags (shadows, projection texture, etc)
@@ -280,11 +285,38 @@ struct PointLightShadowExtension
     uint shadowMap;				// shadow map
 };
 
+struct AreaLight
+{
+    vec3 bboxMin;               // Bounding box min point
+    float range;
+    vec3 bboxMax;               // Bounding box max point
+    float radius;
+
+    vec3 xAxis;
+    float width;
+    vec3 yAxis;
+    float height;
+    vec3 position;
+    uint flags;
+
+    vec3 color;					// light color
+    int shadowExtension;		// projection extension index
+};
+
+struct AreaLightShadowExtension
+{
+    mat4 projection;
+    float shadowIntensity;				// intensity of shadows
+    uint shadowSlice;
+    textureHandle shadowMap;			// shadow map
+};
+
 group(FRAME_GROUP) shared constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
 {
     textureHandle SSAOBuffer;
     uint NumPointLights;
     uint NumSpotLights;
+    uint NumAreaLights;
     uint NumLightClusters;
 };
 
@@ -295,6 +327,8 @@ group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS";]
     uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
     uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
     uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+    uint AreaLightCountList[NUM_CLUSTER_ENTRIES];
+    uint AreaLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
 };
 
 group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS";]
@@ -303,6 +337,9 @@ group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS";]
     SpotLightProjectionExtension SpotLightProjection[256];
     SpotLightShadowExtension SpotLightShadow[16];
     PointLight PointLights[1024];
+    PointLightShadowExtension PointLightShadow[16];
+    AreaLight AreaLights[1024];
+    AreaLightShadowExtension AreaLightShadow[16];
 };
 
 //------------------------------------------------------------------------------
@@ -415,8 +452,6 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
     FogSphere FogSpheres[128];
     FogBox FogBoxes[128];
 };
-
-
 
 const int SHADOW_CASTER_COUNT = 16;
 

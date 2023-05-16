@@ -255,14 +255,27 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
             system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
             system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
 
-            // Setup model callback (actually identical for ALL particles...)
-            renderables.nodeModelApplyCallbacks[i] = [](const CoreGraphics::CmdBufferId id)
+            // Setup one mesh per runtime, remember this is only a container
+            system.meshPerFrame.Resize(CoreGraphics::GetNumBufferedFrames());
+            for (IndexT i = 0; i < system.meshPerFrame.Size(); i++)
             {
-                CoreGraphics::CmdSetVertexLayout(id, ParticleContext::GetParticleVertexLayout());
-                CoreGraphics::CmdSetIndexBuffer(id, CoreGraphics::IndexType::Index16, ParticleContext::GetParticleIndexBuffer(), 0);
-                CoreGraphics::CmdSetVertexBuffer(id, 0, ParticleContext::GetParticleVertexBuffer(), 0);
-                CoreGraphics::CmdSetVertexBuffer(id, 1, state.vbos[CoreGraphics::GetBufferedFrameIndex()], 0);
-            };
+                CoreGraphics::MeshCreateInfo meshInfo;
+                meshInfo.indexBuffer = ParticleContext::GetParticleIndexBuffer();
+                meshInfo.indexType = CoreGraphics::IndexType::Index16;
+                meshInfo.vertexLayout = ParticleContext::GetParticleVertexLayout();
+                CoreGraphics::VertexStream cornerStream, pointStream;
+                cornerStream.index = 0;
+                cornerStream.offset = 0;
+                cornerStream.vertexBuffer = ParticleContext::GetParticleVertexBuffer();
+                pointStream.index = 0;
+                pointStream.offset = 0;
+                pointStream.vertexBuffer = state.vbos[i];
+
+                meshInfo.streams.Append(cornerStream);
+                meshInfo.streams.Append(pointStream);
+                meshInfo.primitiveGroups.Append(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
+                system.meshPerFrame[i] = CoreGraphics::CreateMesh(meshInfo);
+            }
         }
     }
 }
@@ -591,8 +604,11 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                 }
             }
 
-            // Setup draw modifiers
-            renderables.nodeDrawModifiers[stateRange.begin + system.renderableIndex] = Util::MakeTuple(numParticles, baseVertex);
+            // Update mesh to make sure we're using the right VBO
+            const IndexT nodeIndex = stateRange.begin + system.renderableIndex;
+            CoreGraphics::MeshSetVertexBuffer(system.meshPerFrame[frame], state.vbos[frame], 1);
+            renderables.nodeMeshes[nodeIndex] = system.meshPerFrame[frame];
+            renderables.nodeDrawModifiers[nodeIndex] = Util::MakeTuple(numParticles, baseVertex);
             system.baseVertex = baseVertex;
 
             // Bump base vertex with number of particles from this system

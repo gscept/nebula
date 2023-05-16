@@ -30,6 +30,7 @@ public:
         LineStripAdjacency,
         TriangleList,
         TriangleStrip,
+        TriangleFan,
         TriangleListAdjacency,
         TriangleStripAdjacency,
         PatchList,

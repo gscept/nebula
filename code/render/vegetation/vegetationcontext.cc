@@ -903,7 +903,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         {
             auto pnode = static_cast<Models::PrimitiveNode*>(node);
             if (mesh == CoreGraphics::InvalidMeshId)
-                mesh = pnode->GetMeshId();
+                mesh = pnode->GetMesh();
 
             float minDist, maxDist;
             pnode->GetLODDistances(minDist, maxDist);

@@ -25,12 +25,19 @@ class LightContext : public Graphics::GraphicsContext
     __DeclareContext();
 public:
 
-    enum LightType
+    enum class LightType
     {
-        GlobalLightType,
+        DirectionalLightType,
         PointLightType,
         SpotLightType,
         AreaLightType
+    };
+
+    enum class AreaLightShape
+    {
+        Disk,
+        Rectangle,
+        Tube
     };
 
     /// constructor
@@ -45,25 +52,38 @@ public:
 
     /// setup entity as global light
     static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows = false);
-    /// setup entity as point light source
-    static void SetupPointLight(const Graphics::GraphicsEntityId id, 
-        const Math::vec3& color,
-        const float intensity, 
-        const Math::mat4& transform,
-        const float range, 
-        bool castShadows = false, 
-        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId);
+    /// Setup entity as point light source
+    static void SetupPointLight(
+        const Graphics::GraphicsEntityId id
+        , const Math::vec3& color
+        , const float intensity
+        , const float range
+        , bool castShadows = false
+        , const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
+    );
 
-    /// setup entity as spot light
-    static void SetupSpotLight(const Graphics::GraphicsEntityId id, 
-        const Math::vec3& color,
-        const float intensity, 
-        const float innerConeAngle,
-        const float outerConeAngle,
-        const Math::mat4& transform,
-        const float range,
-        bool castShadows = false, 
-        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId);
+    /// Setup entity as spot light
+    static void SetupSpotLight(
+        const Graphics::GraphicsEntityId id
+        , const Math::vec3& color
+        , const float intensity
+        , const float innerConeAngle
+        , const float outerConeAngle
+        , const float range
+        , bool castShadows = false
+        , const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId
+    );
+
+    /// Setup entity as area light
+    static void SetupAreaLight(
+        const Graphics::GraphicsEntityId id
+        , const AreaLightShape shape
+        , const Math::vec3& color
+        , const float intensity
+        , const float range
+        , bool twoSided = false
+        , bool castShadows = false
+    );
 
     /// set color of light
     static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);
@@ -75,10 +95,21 @@ public:
     static void SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith);
     /// get transform
     static const Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
-    /// set transform depending on type
-    static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform);
     /// get the view transform including projections
     static const Math::mat4 GetObserverTransform(const Graphics::GraphicsEntityId id);
+
+    /// Set light position
+    static const void SetPosition(const Graphics::GraphicsEntityId id, const Math::point& position);
+    /// Get light position
+    static const Math::point& GetPosition(const Graphics::GraphicsEntityId id);
+    /// Set light rotation
+    static const void SetRotation(const Graphics::GraphicsEntityId id, const Math::quat& rotation);
+    /// Get light rotation
+    static const Math::quat& GetRotation(const Graphics::GraphicsEntityId id);
+    /// Set light scale
+    static const void SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale);
+    /// Get light scale
+    static const Math::vec3& GetScale(const Graphics::GraphicsEntityId id);
 
     /// get the light type
     static LightType GetType(const Graphics::GraphicsEntityId id);
@@ -113,21 +144,10 @@ public:
     static const CoreGraphics::BufferId GetLightsBuffer();
 private:
 
-    /// set transform, type must match the type the entity was created with
-    static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-    /// set transform, type must match the type the entity was created with
-    static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-    /// set global light transform
+    /// Set global light transform
     static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
-    /// set global light shadow transform
+    /// Set global light shadow transform
     static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-
-    /// update global shadows
-    static void UpdateGlobalShadowMap();
-    /// update spotlight shadows
-    static void UpdateSpotShadows();
-    /// update pointligt shadows
-    static void UpdatePointShadows();
 
     enum
     {
@@ -165,7 +185,7 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        Math::mat4,                 // transform
+        Math::transform44,          // transform
         ConstantBufferSet,          // constant buffer binding for light
         ConstantBufferSet,          // constant buffer binding for shadows
         Util::FixedArray<uint>,     // dynamic offsets
@@ -187,7 +207,7 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        Math::mat4,                 // transform
+        Math::transform44,          // transform
         ConstantBufferSet,          // constant buffer binding for light
         ConstantBufferSet,          // constant buffer binding for shadows
         Util::FixedArray<uint>,     // dynamic offsets
@@ -200,13 +220,35 @@ private:
 
     enum
     {
-        GlobalLight_Direction,
-        GlobalLight_Backlight,
-        GlobalLight_BacklightOffset,
-        GlobalLight_Ambient,
-        GlobalLight_Transform,
-        GlobalLight_ViewProjTransform,
-        GlobalLight_CascadeObservers
+        AreaLight_Transform,
+        AreaLight_Shape,
+        AreaLight_ConstantBufferSet,
+        AreaLight_ShadowConstantBufferSet,
+        AreaLight_DynamicOffsets,
+        AreaLight_TwoSided,
+        AreaLight_Observer
+    };
+
+    typedef Ids::IdAllocator<
+        Math::transform44,          // transform
+        AreaLightShape,             // shape of area light
+        ConstantBufferSet,          // constant buffer binding for light
+        ConstantBufferSet,          // constant buffer binding for shadows
+        Util::FixedArray<uint>,     // dynamic offsets
+        bool,                       // two sides
+        Graphics::GraphicsEntityId  // graphics entity used for observer stuff
+    > AreaLightAllocator;
+    static AreaLightAllocator areaLightAllocator;
+
+    enum
+    {
+        DirectionalLight_Direction,
+        DirectionalLight_Backlight,
+        DirectionalLight_BacklightOffset,
+        DirectionalLight_Ambient,
+        DirectionalLight_Transform,
+        DirectionalLight_ViewProjTransform,
+        DirectionalLight_CascadeObservers
     };
     typedef Ids::IdAllocator<
         Math::vector,                               // direction
@@ -216,8 +258,8 @@ private:
         Math::mat4,                                 // transform (basically just a rotation in the direction)
         Math::mat4,                                 // transform for visibility and such
         Util::Array<Graphics::GraphicsEntityId>     // view ids for cascades
-    > GlobalLightAllocator;
-    static GlobalLightAllocator globalLightAllocator;
+    > DirectionalLightAllocator;
+    static DirectionalLightAllocator directionalLightAllocator;
 
 
     enum

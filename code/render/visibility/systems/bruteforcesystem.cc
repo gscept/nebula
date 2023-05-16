@@ -30,6 +30,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompl
     struct Context
     {
         Math::vec4 colX[4], colY[4], colZ[4], colW[4];
+        bool isOrtho;
         uint32 objectCount;
         const uint32* ids;
         const Math::bbox* boundingBoxes;
@@ -49,6 +50,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompl
         ctx.ids = this->ent.ids;
         ctx.boundingBoxes = this->ent.boxes;
         ctx.flags = this->ent.entityFlags;
+        ctx.isOrtho = this->obs.isOrtho[i];
 
         // Setup counters
         Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters == nullptr ? 0 : 1));
@@ -105,7 +107,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompl
 
                 // Run bounding box check and store output in clip statuses, if clip status is still outside
                 if (context->clipStatuses[index] == Math::ClipStatus::Outside)
-                    context->clipStatuses[index] = context->boundingBoxes[objectId].clipstatus(context->colX, context->colY, context->colZ, context->colW);
+                    context->clipStatuses[index] = context->boundingBoxes[objectId].clipstatus(context->colX, context->colY, context->colZ, context->colW, context->isOrtho);
             }
         }
         , this->ent.count

@@ -8,7 +8,7 @@
 #include "lib/techniques.fxh"
 #include "lib/pbr.fxh"
 #include "lib/clustering.fxh"
-#include "lib/lights_clustered.fxh"
+#include "lib/lighting_functions.fxh"
 
 const int MAX_MATERIAL_TEXTURES = 16;
 const int MAX_BIOMES = 16;
@@ -149,11 +149,6 @@ group(DYNAMIC_OFFSET_GROUP) constant PatchUniforms [ string Visibility = "VS|PS"
 group(SYSTEM_GROUP) sampler_state TextureSampler
 {
     Filter = Linear;
-};
-
-group(SYSTEM_GROUP) sampler_state PointSampler
-{
-    Filter = Point;
 };
 
 group(SYSTEM_GROUP) sampler_state AnisoSampler

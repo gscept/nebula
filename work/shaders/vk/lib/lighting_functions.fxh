@@ -1,20 +1,47 @@
 //------------------------------------------------------------------------------
-//  lights_clustered.fxh
+//  lighting_functions.fxh
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
 #include "shadowbase.fxh"
 #include "pbr.fxh"
+#include "ltc.fxh"
 #include "CSM.fxh"
 
 // match these in lightcontext.cc
-const uint USE_SHADOW_BITFLAG = 1;
-const uint USE_PROJECTION_TEX_BITFLAG = 2;
+const uint USE_SHADOW_BITFLAG = 0x1;
+const uint USE_PROJECTION_TEX_BITFLAG = 0x2;
+const uint AREA_LIGHT_SHAPE_RECT = 0x4;
+const uint AREA_LIGHT_SHAPE_DISK = 0x8;
+const uint AREA_LIGHT_SHAPE_TUBE = 0x10;
+const uint AREA_LIGHT_TWOSIDED = 0x20;
 
 #define FlagSet(x, flags) ((x & flags) == flags)
 
 
 #define SPECULAR_SCALE 13
 #define ROUGHNESS_TO_SPECPOWER(x) exp2(SPECULAR_SCALE * x + 1)
+
+//------------------------------------------------------------------------------
+/**
+*/
+float 
+InvSquareFalloff(float radius, vec3 lightDir)
+{
+    float dist2 = dot(lightDir, lightDir);
+    float factor = dist2 / sqr(radius);
+    float falloff = saturate(1.0f - sqr(factor));
+    return sqr(falloff) / max(dist2, 0.0001f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+FalloffWindow(float radius, vec3 lightDir)
+{
+    float dist2 = dot(lightDir, lightDir);
+    return saturate(1.0f - dist2 / sqr(radius));
+}
 
 //---------------------------------------------------------------------------------------------------------------------------
 /**
@@ -35,7 +62,6 @@ GetInvertedOcclusionSpotLight(float receiverDepthInLightSpace,
     // get pixel size of shadow projection texture
     return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.000001f);
 }
-
 
 //---------------------------------------------------------------------------------------------------------------------------
 /**
@@ -77,7 +103,7 @@ CalculatePointLight(
     float lightDirLen = length(lightDir);
 
     float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
+    float factor = d2 / (light.range * light.range);
     float sf = saturate(1.0 - factor * factor);
     float att = (sf * sf) / max(d2, 0.0001);
 
@@ -109,11 +135,47 @@ CalculatePointLight(
 //------------------------------------------------------------------------------
 /**
 */
+vec4
+CalculateSpotLightProjection(
+    in SpotLight light
+    , in SpotLightProjectionExtension projExt
+    , in vec3 viewPos
+
+)
+{
+    vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
+    projLightPos.xy /= projLightPos.ww;
+    vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
+    return sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+CalculateSpotLightShadow(
+    in SpotLight light
+    , in SpotLightShadowExtension shadowExt
+    , in vec3 viewPos
+)
+{
+    vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
+    shadowProjLightPos.xyz /= shadowProjLightPos.www;
+    vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
+    shadowLookup.y = 1 - shadowLookup.y;
+    float receiverDepth = shadowProjLightPos.z;
+    float shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
+    return saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 vec3
 CalculateSpotLight(
     in SpotLight light, 
-    in SpotLightProjectionExtension projExt, 
-    in SpotLightShadowExtension shadowExt, 
+    in vec4 projection,
+    in float shadow,    
     in vec3 viewPos,
     in vec3 viewVec, 
     in vec3 viewSpaceNormal, 
@@ -122,15 +184,10 @@ CalculateSpotLight(
     in vec3 diffuseColor,
     in vec3 F0)
 {
-    vec3 lightDir = (light.position.xyz - viewPos);
-
+    vec3 lightDir = (light.position - viewPos);
     float lightDirLen = length(lightDir);
 
-    float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
-    float sf = saturate(1.0 - factor * factor);
-
-    float att = (sf * sf) / max(d2, 0.0001);
+    float att = InvSquareFalloff(light.range, lightDir);
 
     float oneDivLightDirLen = 1.0f / lightDirLen;
     lightDir = lightDir * oneDivLightDirLen;
@@ -139,40 +196,7 @@ CalculateSpotLight(
     float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
 
     vec4 lightModColor = intensity.xxxx * att;
-    float shadowFactor = 1.0f;
-
-    // if we have both projection and shadow extensions, transform only the projected position for one of them
-    if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) && (FlagSet(light.flags, USE_SHADOW_BITFLAG)))
-    {
-        vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
-        projLightPos.xyz /= projLightPos.www;
-        vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
-        lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
-
-        vec2 shadowLookup = projLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
-        shadowLookup.y = 1 - shadowLookup.y;
-        float receiverDepth = projLightPos.z;
-        shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, shadowExt.shadowSlice, shadowExt.shadowMap);
-        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
-    }
-    else if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
-    {
-        vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
-        projLightPos.xy /= projLightPos.ww;
-        vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
-        lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
-    }		
-    else if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
-    {
-        // shadows
-        vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
-        shadowProjLightPos.xyz /= shadowProjLightPos.www;
-        vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
-        shadowLookup.y = 1 - shadowLookup.y;
-        float receiverDepth = shadowProjLightPos.z;
-        shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
-        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
-    }
+    lightModColor *= projection;
 
     vec3 H = normalize(lightDir.xyz + viewVec);
     float NL = saturate(dot(lightDir, viewSpaceNormal));
@@ -185,7 +209,166 @@ CalculateSpotLight(
     vec3 radiance = light.color;
     vec3 irradiance = (brdf * radiance) * saturate(NL);
 
-    return irradiance * shadowFactor * lightModColor.rgb;
+    return irradiance * shadow * lightModColor.rgb;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+CalculateRectLight(
+    in AreaLight li
+    , in vec3 viewPos
+    , in vec3 viewVec
+    , in vec3 viewSpaceNormal
+    , in vec4 material
+    , in bool twoSided
+)
+{
+    vec3 lightDir = (li.position.xyz - viewPos);
+    float attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001f)
+        return vec3(0);
+
+    // Calculate LTC LUT uv
+    float NV = saturate(dot(viewSpaceNormal, viewVec));
+    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
+    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
+
+    // Transform 4 rect points to light
+    vec3 points[4];
+    vec3 dx = li.xAxis * li.width;
+    vec3 dy = li.yAxis * li.height;
+
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx - dy;
+    points[2] = li.position + dx + dy;
+    points[3] = li.position - dx + dy;
+
+    // Construct linear cosine transform
+    mat3 minv = mat3
+    (
+        vec3(t1.x, 0, t1.y)
+        , vec3(0, 1, 0)
+        , vec3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    vec3 spec = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, twoSided)) * t2.x;
+
+    // Integrate diffuse
+    vec3 diff = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, twoSided));
+
+    return li.color * (spec + diff) * attenuation;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+CalculateDiskLight(
+    in AreaLight li
+    , in vec3 viewPos
+    , in vec3 viewVec
+    , in vec3 viewSpaceNormal
+    , in vec4 material
+    , in bool twoSided
+)
+{
+    vec3 lightDir = (li.position.xyz - viewPos);
+    float attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001f)
+        return vec3(0);
+
+     // Calculate LTC LUT uv
+    float NV = saturate(dot(viewSpaceNormal, viewVec));
+    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
+    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
+
+    // Transform 4 rect points to light
+    vec3 points[3];
+    
+    // Because of some numerical instability, we have to slightly increase the size in Y for the disk
+    vec3 dx = li.xAxis * li.width;
+    vec3 dy = li.yAxis * li.height;
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx - dy;
+    points[2] = li.position + dx + dy;
+
+    // Construct linear cosine transform
+    mat3 minv = mat3
+    (
+        vec3(t1.x, 0, t1.y)
+        , vec3(0, 1, 0)
+        , vec3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    vec3 spec = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, twoSided)) * t2.x;
+
+    // Integrate diffuse
+    vec3 diff = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, twoSided));
+
+    return li.color * (diff + spec) * attenuation;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 
+CalculateTubeLight(
+    in AreaLight li
+    , in vec3 viewPos
+    , in vec3 viewVec
+    , in vec3 viewSpaceNormal
+    , in vec4 material
+    , in bool twoSided
+)
+{
+    vec3 lightDir = (li.position.xyz - viewPos);
+    float attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001f)
+        return vec3(0);
+
+    // Calculate LTC LUT uv
+    float NV = saturate(dot(viewSpaceNormal, viewVec));
+    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
+    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
+
+    vec3 points[2];
+    vec3 dx = li.xAxis * li.width;
+    vec3 dy = li.yAxis * li.height;
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx + dy;
+
+    // Construct linear cosine transform
+    mat3 minv = mat3
+    (
+        vec3(t1.x, 0, t1.y)
+        , vec3(0, 1, 0)
+        , vec3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    vec3 spec = vec3(LtcLineIntegrate(viewSpaceNormal, viewVec, viewPos, li.radius, minv, points)) * t2.x;
+
+    // Integrate diffuse
+    vec3 diff = vec3(LtcLineIntegrate(viewSpaceNormal, viewVec, viewPos, li.radius, mat3(1), points));
+
+    return li.color * (spec + diff) * (1.0f / 2 * PI) * attenuation;
 }
 
 //------------------------------------------------------------------------------
@@ -222,7 +405,6 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
 
         shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
     }
-
 
     vec3 H = normalize(GlobalLightDirWorldspace.xyz + viewVec);
     float NV = saturate(dot(worldSpaceNormal, viewVec));
@@ -287,17 +469,19 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
         {
             uint lidx = SpotLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
             SpotLight li = SpotLights[lidx];
+            vec4 projection = vec4(1.0f);
+            float shadow = 1.0f;
 
             // if we have extensions, load them from their respective buffers
             if (li.shadowExtension != -1)
-                shadowExt = SpotLightShadow[li.shadowExtension];
+                shadow = CalculateSpotLightShadow(li, SpotLightShadow[li.shadowExtension], viewPos.xyz);
             if (li.projectionExtension != -1)
-                projExt = SpotLightProjection[li.projectionExtension];
+                projection = CalculateSpotLightProjection(li, SpotLightProjection[li.projectionExtension], viewPos.xyz);
 
             light += CalculateSpotLight(
                 li,
-                projExt,
-                shadowExt,
+                projection,
+                shadow,
                 viewPos.xyz,
                 viewVec,
                 viewSpaceNormal,
@@ -306,6 +490,55 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
                 diffuseColor,
                 F0
             );
+        }
+    }
+
+    if (CHECK_FLAG(flag, CLUSTER_AREALIGHT_BIT))
+    {
+        uint count = AreaLightCountList[clusterIndex];
+        AreaLightShadowExtension shadowExt;
+        for (int i = 0; i < count; i++)
+        {
+            uint lidx = AreaLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
+            AreaLight li = AreaLights[lidx];
+
+            if (li.shadowExtension != -1)
+                shadowExt = AreaLightShadow[li.shadowExtension];
+
+            if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_RECT))
+            {
+                //light += li.color;
+                light += CalculateRectLight(
+                    li
+                    , viewPos.xyz
+                    , viewVec
+                    , viewSpaceNormal
+                    , material
+                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
+                );
+            }
+            else if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_DISK))
+            {
+                light += CalculateDiskLight(
+                    li
+                    , viewPos.xyz
+                    , viewVec
+                    , viewSpaceNormal
+                    , material
+                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
+                );
+            }
+            else if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_TUBE))
+            {
+                light += CalculateTubeLight(
+                    li
+                    , viewPos.xyz
+                    , viewVec
+                    , viewSpaceNormal
+                    , material
+                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
+                );
+            }
         }
     }
     return light;
@@ -330,7 +563,7 @@ CalculatePointLightAmbientTransmission(
     float lightDirLen = length(lightDir);
 
     float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
+    float factor = d2 / (light.range * light.range);
     float sf = saturate(1.0 - factor * factor);
     float att = (sf * sf) / max(d2, 0.0001);
     lightDir = lightDir / lightDirLen;
@@ -356,8 +589,8 @@ CalculatePointLightAmbientTransmission(
 vec3
 CalculateSpotLightAmbientTransmission(
     in SpotLight light,
-    in SpotLightProjectionExtension projExt,
-    in SpotLightShadowExtension shadowExt,
+    in vec4 projection,
+    in float shadow,
     in vec3 viewPos,
     in vec3 viewVec,
     in vec3 normal,
@@ -367,60 +600,20 @@ CalculateSpotLightAmbientTransmission(
     in float transmission)
 {
     vec3 lightDir = (light.position.xyz - viewPos);
-
     float lightDirLen = length(lightDir);
-
-    float d2 = lightDirLen * lightDirLen;
-    float factor = d2 / (light.position.w * light.position.w);
-    float sf = saturate(1.0 - factor * factor);
-
-    float att = (sf * sf) / max(d2, 0.0001);
+    float att = InvSquareFalloff(light.range, lightDir);
     lightDir = lightDir / lightDirLen;
 
     float theta = dot(light.forward.xyz, lightDir);
     float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
 
-    vec4 lightModColor = intensity.xxxx * att;
-    float shadowFactor = 1.0f;
-
-    // if we have both projection and shadow extensions, transform only the projected position for one of them
-    if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG) && (FlagSet(light.flags, USE_SHADOW_BITFLAG)))
-    {
-        vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
-        projLightPos.xyz /= projLightPos.www;
-        vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
-        lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
-
-        vec2 shadowLookup = projLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
-        shadowLookup.y = 1 - shadowLookup.y;
-        float receiverDepth = projLightPos.z;
-        shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, shadowExt.shadowSlice, shadowExt.shadowMap);
-        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
-    }
-    else if (FlagSet(light.flags, USE_PROJECTION_TEX_BITFLAG))
-    {
-        vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
-        projLightPos.xy /= projLightPos.ww;
-        vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
-        lightModColor *= sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
-    }
-    else if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
-    {
-        // shadows
-        vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
-        shadowProjLightPos.xyz /= shadowProjLightPos.www;
-        vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
-        shadowLookup.y = 1 - shadowLookup.y;
-        float receiverDepth = shadowProjLightPos.z;
-        shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
-        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
-    }
+    vec4 lightModColor = intensity.xxxx * att * projection;
 
     float NL = saturate(dot(lightDir, normal));
     float TNL = saturate(dot(-lightDir, normal)) * transmission;
     vec3 radiance = light.color * saturate(NL + TNL) * albedo.rgb;
 
-    return radiance * shadowFactor * lightModColor.rgb;
+    return radiance * shadow * lightModColor.rgb;
 }
 
 //------------------------------------------------------------------------------
@@ -508,15 +701,19 @@ LocalLightsAmbientTransmission(
             SpotLight li = SpotLights[lidx];
 
             // if we have extensions, load them from their respective buffers
+            vec4 projection = vec4(1.0f);
+            float shadow = 1.0f;
+
+            // if we have extensions, load them from their respective buffers
             if (li.shadowExtension != -1)
-                shadowExt = SpotLightShadow[li.shadowExtension];
+                shadow = CalculateSpotLightShadow(li, SpotLightShadow[li.shadowExtension], viewPos.xyz);
             if (li.projectionExtension != -1)
-                projExt = SpotLightProjection[li.projectionExtension];
+                projection = CalculateSpotLightProjection(li, SpotLightProjection[li.projectionExtension], viewPos.xyz);
 
             light += CalculateSpotLightAmbientTransmission(
                 li,
-                projExt,
-                shadowExt,
+                projection,
+                shadow,
                 viewPos.xyz,
                 viewVec,
                 normal,

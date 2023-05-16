@@ -50,11 +50,11 @@ main()
     if (uv.x >= width)
         return;
 #if METHOD == METHOD_ZERO_SAMPLE
-    imageStore(resolve, uv, fetch2DMS(resolveSource, PosteffectSampler, uv, 0));
+    imageStore(resolve, uv, fetch2DMS(resolveSource, PointSampler, uv, 0));
 #else
         for (int i = 0; i < SAMPLES; i++)
         {
-            TYPE samp = fetch2DMS(resolveSource, PosteffectSampler, uv, i);
+            TYPE samp = fetch2DMS(resolveSource, PointSampler, uv, i);
     #if METHOD == METHOD_MAX_SAMPLE
             result = max(result, samp);
     #elif METHOD == METHOD_MIN_SAMPLE 

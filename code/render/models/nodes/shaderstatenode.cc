@@ -12,6 +12,8 @@
 
 using namespace Util;
 using namespace Math;
+
+static CoreGraphics::ShaderId baseShader = CoreGraphics::InvalidShaderId;
 namespace Models
 {
 //------------------------------------------------------------------------------
@@ -38,6 +40,29 @@ void
 ShaderStateNode::SetMaxLOD(const float lod)
 {
     Materials::MaterialSetHighestLod(this->material, lod);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FixedArray<CoreGraphics::ResourceTableId>
+ShaderStateNode::CreateResourceTables()
+{
+    if (baseShader == CoreGraphics::InvalidShaderId)
+        baseShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
+
+    Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
+
+    for (IndexT i = 0; i < ret.Size(); i++)
+    {
+        CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(i);
+        CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
+        CoreGraphics::ResourceTableSetConstantBuffer(table, { cbo, ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
+        CoreGraphics::ResourceTableCommitChanges(table);
+        ret[i] = table;
+    }
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -143,20 +168,9 @@ ShaderStateNode::OnFinishedLoading()
     // load surface immediately, however it will load textures async
     this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
     this->material = this->materialRes;
-    this->sortCode = MaterialGetSortCode(this->material);
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-    this->objectTransformsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
-    this->instancingTransformsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
-    this->skinningTransformsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
 
-    SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
-    this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-    for (IndexT i = 0; i < numFrames; i++)
-    {
-        this->resourceTables[i] = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetGraphicsConstantBuffer(i), this->objectTransformsIndex, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
-        CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
-    }
+    this->resourceTables = std::move(ShaderStateNode::CreateResourceTables());
 }
 
 //------------------------------------------------------------------------------

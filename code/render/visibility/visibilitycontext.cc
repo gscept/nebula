@@ -49,11 +49,12 @@ __ImplementContext(ObserverContext, ObserverContext::observerAllocator);
 /**
 */
 void
-ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType)
+ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType entityType, bool isOrtho)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
-    observerAllocator.Get<Observer_EntityType>(cid.id) = entityType;
-    observerAllocator.Get<Observer_EntityId>(cid.id) = id;
+    observerAllocator.Set<Observer_EntityType>(cid.id, entityType);
+    observerAllocator.Set<Observer_EntityId>(cid.id, id);
+    observerAllocator.Set<Observer_IsOrtho>(cid.id, isOrtho);
 }
 
 //------------------------------------------------------------------------------
@@ -63,8 +64,8 @@ void
 ObserverContext::MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode)
 {
     const Graphics::ContextEntityId cid = GetContextId(b);
-    observerAllocator.Get<Observer_Dependency>(cid.id) = a;
-    observerAllocator.Get<Observer_DependencyMode>(cid.id) = mode;
+    observerAllocator.Set<Observer_Dependency>(cid.id, a);
+    observerAllocator.Set<Observer_DependencyMode>(cid.id, mode);
 }
 
 //------------------------------------------------------------------------------
@@ -78,6 +79,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     const Models::ModelContext::ModelInstance::Renderable& nodeInstances = Models::ModelContext::GetModelRenderables();
 
     Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
+    const Util::Array<bool>& observerIsOrthogonal = observerAllocator.GetArray<Observer_IsOrtho>();
     const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
     const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
     Util::Array<VisibilityResultArray>& observerResults = observerAllocator.GetArray<Observer_ResultArray>();
@@ -120,7 +122,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->PrepareObservers(observerTransforms.Begin(), observerResults.Begin(), observerTransforms.Size());
+            sys->PrepareObservers(observerTransforms.Begin(), observerIsOrthogonal.Begin(), observerResults.Begin(), observerTransforms.Size());
         }
     }
 
@@ -291,7 +293,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
             // Allocate single command which we can 
             ObserverContext::VisibilityBatchCommand* cmd = nullptr;
-            Models::ModelNode* node = nullptr;
+            CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
+            Materials::MaterialId mat = Materials::InvalidMaterialId;
             static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
             Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
             Materials::ShaderConfig* currentMaterialType = nullptr;
@@ -311,28 +314,29 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     cmd->packetOffset = numDraws;
                     cmd->numDrawPackets = 0;
 
-                    node = nullptr;
+                    mesh = CoreGraphics::InvalidMeshId;
                     drawModifiers = NullDrawModifiers;
                     currentMaterialType = otherMaterialType;
                 }
                 n_assert(cmd != nullptr);
 
                 // If a new node (resource), add a model apply command
-                auto otherNode = context->renderables->nodes[index];
-                if (node != otherNode)
+                auto otherMesh = context->renderables->nodeMeshes[index];
+                auto otherMat = context->renderables->nodeMaterials[index];
+                if (mesh != otherMesh || mat != otherMat)
                 {
                     ObserverContext::VisibilityModelCommand& batchCmd = cmd->models.Emplace();
 
                     // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
                     batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                    batchCmd.modelApplyCallback = context->renderables->nodeModelApplyCallbacks[index];
-                    batchCmd.primitiveNodeApplyCallback = context->renderables->modelNodeGetPrimitiveGroup[index];
-                    batchCmd.material = context->renderables->nodeMaterials[index];
+                    batchCmd.mesh = otherMesh;
+                    batchCmd.primitiveGroup = CoreGraphics::MeshGetPrimitiveGroup(otherMesh, context->renderables->nodePrimitiveGroupIndex[index]);
+                    batchCmd.material = otherMat;
 
 #if NEBULA_GRAPHICS_DEBUG
                     batchCmd.nodeName = context->renderables->nodeNames[index];
 #endif
-                    node = otherNode;
+                    mesh = otherMesh;
                 }
 
                 // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command

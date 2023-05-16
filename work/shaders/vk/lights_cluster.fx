@@ -6,7 +6,7 @@
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
-#include "lib/lights_clustered.fxh"
+#include "lib/lighting_functions.fxh"
 #include "lib/preetham.fxh"
 #include "lib/mie-rayleigh.fxh" 
 
@@ -34,7 +34,7 @@ void csCull()
     for (uint i = 0; i < NumPointLights; i++)
     {
         const PointLight light = PointLights[i];
-        if (TestAABBSphere(aabb, light.position.xyz, light.position.w))
+        if (TestAABBSphere(aabb, light.position.xyz, light.range))
         {
             PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
@@ -52,10 +52,10 @@ void csCull()
     {
         const SpotLight light = SpotLights[i];
         // first do fast discard sphere test
-        if (TestAABBSphere(aabb, light.position.xyz, light.position.w))
+        if (TestAABBSphere(aabb, light.position.xyz, light.range))
         {
             // then do more refined cone test, if previous test passed
-            if (TestAABBCone(aabb, light.position.xyz, light.forward.xyz, light.position.w, light.angleSinCos))
+            if (TestAABBCone(aabb, light.position.xyz, light.forward.xyz, light.range, light.angleSinCos))
             {
                 SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
                 numLights++;
@@ -68,6 +68,41 @@ void csCull()
     if (numLights > 0)
         flags |= CLUSTER_SPOTLIGHT_BIT;
 
+    numLights = 0;
+    for (uint i = 0; i < NumAreaLights; i++)
+    {
+        const AreaLight light = AreaLights[i];
+
+        if (TestAABBAABB(aabb, light.bboxMin, light.bboxMax))
+        {
+            AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+            numLights++;
+        }
+
+        /*
+        if (CHECK_FLAG(light.flags, AREA_LIGHT_SHAPE_TUBE))
+        {
+            if (TestAABBOrthoProjection(aabb, light.view))
+            {
+                AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+                numLights++;
+            }
+        }
+        else
+        {
+            if (TestAABBPerspectiveProjection(aabb, light.view))
+            {
+                AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+                numLights++;
+            }
+        }
+        */
+    }
+    AreaLightCountList[index1D] = numLights;
+
+    if (numLights > 0)
+        flags |= CLUSTER_AREALIGHT_BIT;
+
     atomicOr(AABBs[index1D].featureFlags, flags);
 }
 
@@ -79,7 +114,7 @@ shader
 void csDebug()
 {
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-    float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
+    float depth = fetch2D(DepthBuffer, PointSampler, coord, 0).r;
 
     // convert screen coord to view-space position
     vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
@@ -98,6 +133,11 @@ void csDebug()
     {
         uint count = SpotLightCountList[idx];
         color.g = count / float(NumSpotLights);
+    }
+    if (CHECK_FLAG(flag, CLUSTER_AREALIGHT_BIT))
+    {
+        uint count = AreaLightCountList[idx];
+        color.b = count / float(NumAreaLights);
     }
     
     imageStore(DebugOutput, int2(coord), color); 

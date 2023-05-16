@@ -28,6 +28,7 @@ Util::Array<Util::String> entityNames;
 Util::Array<Models::ModelContext::MaterialInstanceContext*> materialContexts;
 Util::Array<Graphics::GraphicsEntityId> pointLights;
 Util::Array<Graphics::GraphicsEntityId> spotLights;
+Util::Array<Graphics::GraphicsEntityId> areaLights;
 Util::Array<Graphics::GraphicsEntityId> decals;
 Util::Array<Graphics::GraphicsEntityId> fogVolumes;
 Util::Array<CoreGraphics::TextureId> decalTextures;
@@ -62,7 +63,8 @@ void OpenScene()
             const float green = Math::rand();
             const float blue = Math::rand();
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 2500.0f, Math::translation(i * 4, 5, j * 4), 10.0f, false);
+            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 2500.0f, 10.0f, false);
+            Lighting::LightContext::SetPosition(id, Math::point(i * 4, 5, j * 4));
             pointLights.Append(id);
         }
     }
@@ -80,12 +82,41 @@ void OpenScene()
             const float green = Math::rand();
             const float blue = Math::rand();
 
-            Math::mat4 spotLightMatrix = Math::rotationyawpitchroll(Math::deg2rad(120), Math::deg2rad(25), 0);
-            spotLightMatrix.position = Math::vec4(i * 4, 2.5, j * 4, 1);
+            Lighting::LightContext::RegisterEntity(id);
+            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 2500.0f, 45.0_rad, 60.0_rad, 50.0f, true);
+            Lighting::LightContext::SetRotation(id, Math::quatyawpitchroll(0, 0, 0));
+            Lighting::LightContext::SetPosition(id, Math::point(i * 4, 2.5, j * 4));
+            spotLights.Append(id);
+        }
+    }
+
+    static const int NumRectLights = 1;
+    for (int i = -NumRectLights; i < NumRectLights; i++)
+    {
+        for (int j = -NumRectLights; j < NumRectLights; j++)
+        {
+            auto id = Graphics::CreateEntity();
+            entities.Append({ id, nullptr });
+            int index = (i + NumRectLights) + (j + NumRectLights) * NumRectLights * 2;
+            entityNames.Append(Util::String::Sprintf("AreaLight%d", index));
+            const float red = Math::rand();
+            const float green = Math::rand();
+            const float blue = Math::rand();
+
+            Lighting::LightContext::AreaLightShape shapes[] = {
+                Lighting::LightContext::AreaLightShape::Rectangle,
+                Lighting::LightContext::AreaLightShape::Disk,
+                Lighting::LightContext::AreaLightShape::Tube
+            };
+
+            auto shape = shapes[index % 3];
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 2500.0f, Math::deg2rad(45.0f), Math::deg2rad(60.0f), spotLightMatrix, 50.0f, true);
-            spotLights.Append(id);
+            Lighting::LightContext::SetupAreaLight(id, shape, Math::vec3(red, green, blue), 250.0f, 15, true);
+            Lighting::LightContext::SetPosition(id, Math::point(i * 4, 2.5, j * 4));
+            Lighting::LightContext::SetRotation(id, Math::quatyawpitchroll(0, 0, 0));
+            Lighting::LightContext::SetScale(id, Math::vector(shape == Lighting::LightContext::AreaLightShape::Disk ? 3.0f : 2.0f, 3.0f, 1.0f));
+            areaLights.Append(id);
         }
     }
 
@@ -364,20 +395,20 @@ void RenderUI()
     }
     ImGui::End();
     auto id = entities[selected].entity;
-    if (ModelContext::IsEntityRegistered(id))
+    if (Lighting::LightContext::IsEntityRegistered(id))
+    {
+        Im3d::Vec3 pos = Lighting::LightContext::GetPosition(id);
+        if (Im3d::GizmoTranslation("GizmoEntity", pos))
+        {
+            Lighting::LightContext::SetPosition(id, pos);
+        }
+    }
+    else if (ModelContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = ModelContext::GetTransform(id);
         if (Im3d::Gizmo("GizmoEntity", trans))
         {
             ModelContext::SetTransform(id, trans);
-        }
-    }
-    else if (Lighting::LightContext::IsEntityRegistered(id))
-    {
-        Im3d::Mat4 trans = Lighting::LightContext::GetTransform(id);
-        if (Im3d::Gizmo("GizmoEntity", trans))
-        {
-            Lighting::LightContext::SetTransform(id, trans);
         }
     }
     else if (Fog::VolumetricFogContext::IsEntityRegistered(id))

@@ -52,6 +52,9 @@ public:
     /// convert to "anything"
     template<typename T> T As() const;
 
+    /// Append multiple elements to the end of the array
+    template <typename ...ELEM_TYPE>
+    void Append(const TYPE& first, const ELEM_TYPE&... elements);
     /// append element to end of array
     void Append(const TYPE& elm);
     /// append an element which is being forwarded
@@ -1002,6 +1005,19 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(const TYPE& elm) const
         }
     }
     return InvalidIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE>
+template<typename ...ELEM_TYPE>
+inline void 
+ArrayStack<TYPE, STACK_SIZE>::Append(const TYPE& first, const ELEM_TYPE&... elements)
+{
+    this->Reserve(sizeof...(elements) + 1);
+    this->Append(first);
+    this->Append(std::forward<const ELEM_TYPE&>(elements)...);
 }
 
 //------------------------------------------------------------------------------
