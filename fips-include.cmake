@@ -166,53 +166,57 @@ macro(nebula_flatc root)
 endmacro()
 
 macro(add_shaders_intern)
+    set(shd ${ARGV0})
+    set(nebula_shader ${ARGV1})
     if(SHADERC)
         if(N_NEBULA_DEBUG_SHADERS)
             set(shader_debug "-debug")
         endif()
 
-        foreach(shd ${ARGN})
-            get_filename_component(basename ${shd} NAME_WE)
-            get_filename_component(foldername ${shd} DIRECTORY)
+        get_filename_component(basename ${shd} NAME_WE)
+        get_filename_component(foldername ${shd} DIRECTORY)
 
-            # first calculate dependencies
-            set(depoutput ${CMAKE_BINARY_DIR}/shaders/${basename}.dep)
-            # create it the first time by force, after that with dependencies
-            # since custom command does not want to play ball atm, we just generate it every time
-            if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-                execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
-            endif()
+        # first calculate dependencies
+        set(depoutput ${CMAKE_BINARY_DIR}/shaders/${basename}.dep)
+        # create it the first time by force, after that with dependencies
+        # since custom command does not want to play ball atm, we just generate it every time
+        if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
+        endif()
 
-            # sadly this doesnt work for some reason
-            #add_custom_command(OUTPUT ${depoutput}
-            #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
-            #DEPENDS ${SHADERC} ${shd}
-            #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-            #COMMENT ""
-            #VERBATIM
-            #)
-            if(EXISTS ${depoutput})
-                file(READ ${depoutput} deps)
-            endif()
+        # sadly this doesnt work for some reason
+        #add_custom_command(OUTPUT ${depoutput}
+        #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
+        #DEPENDS ${SHADERC} ${shd}
+        #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+        #COMMENT ""
+        #VERBATIM
+        #)
+        if(EXISTS ${depoutput})
+            file(READ ${depoutput} deps)
+        endif()
 
-            set(output ${EXPORT_DIR}/shaders/${basename}.fxb)
-            add_custom_command(OUTPUT ${output}
-                COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
-                MAIN_DEPENDENCY ${shd}
-                DEPENDS ${SHADERC} ${deps}
-                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT ""
-                VERBATIM
-                )
-            fips_files(${shd})
-            SOURCE_GROUP("res\\shaders" FILES ${shd})
+        set(output ${EXPORT_DIR}/shaders/${basename}.fxb)
+        add_custom_command(OUTPUT ${output}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
+            MAIN_DEPENDENCY ${shd}
+            DEPENDS ${SHADERC} ${deps}
+            WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+            COMMENT ""
+            VERBATIM
+            )
+        fips_files(${shd})
+        if (nebula_shader)
+            SOURCE_GROUP(TREE "work\\shaders\\vk" PREFIX "res\\shaders" FILES ${shd})
+        else()
+            SOURCE_GROUP(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "res\\shaders" FILES ${shd})
+        endif()
 
-            if(N_ENABLE_SHADER_COMMAND_GENERATION)
-                # create compile flags file for live shader compile
-                # MESSAGE(WARNING "fooo   " ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
-                file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
-            endif()
-        endforeach()
+        if(N_ENABLE_SHADER_COMMAND_GENERATION)
+            # create compile flags file for live shader compile
+            # MESSAGE(WARNING "fooo   " ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
+        endif()
     endif()
 endmacro()
 
@@ -370,7 +374,7 @@ macro(add_nebula_shaders)
         fips_files(${FXH})
         file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")
         foreach(shd ${FX})
-        add_shaders_intern(${shd})
+            add_shaders_intern(${shd} true)
         endforeach()
         
         # add configurations for the .vscode anyfx linter
@@ -399,7 +403,7 @@ macro(add_shaders)
     else()
         set_nebula_export_dir()
         foreach(shd ${ARGN})
-            add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
+            add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd} false)
         endforeach()
 
         # add configurations for the .vscode anyfx linter
