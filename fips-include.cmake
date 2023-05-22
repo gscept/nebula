@@ -173,15 +173,23 @@ macro(add_shaders_intern)
             set(shader_debug "-debug")
         endif()
 
-        get_filename_component(basename ${shd} NAME_WE)
-        get_filename_component(foldername ${shd} DIRECTORY)
+        if (nebula_shader)
+            set(base_path ${NROOT}/work/shaders/vk)
+        else()
+            set(base_path ${CMAKE_CURRENT_SOURCE_DIR})
+        endif()
+
+        cmake_path(SET shd_path "${shd}")
+        cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
+        cmake_path(GET rel_path STEM basename)
+        cmake_path(GET rel_path PARENT_PATH foldername)
 
         # first calculate dependencies
-        set(depoutput ${CMAKE_BINARY_DIR}/shaders/${basename}.dep)
+        set(depoutput ${CMAKE_BINARY_DIR}/shaders/${foldername}/${basename}.dep)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -r ${base_path} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
         endif()
 
         # sadly this doesnt work for some reason
@@ -196,15 +204,9 @@ macro(add_shaders_intern)
             file(READ ${depoutput} deps)
         endif()
 
-        if (nebula_shader)
-            set(shader_root ${NROOT}/work/shaders/vk)
-        else()
-            set(shader_root ${CMAKE_CURRENT_SOURCE_DIR})
-        endif()
-
-        set(output ${EXPORT_DIR}/shaders/${basename}.fxb)
+        set(output ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
         add_custom_command(OUTPUT ${output}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -r ${shader_root} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -r ${base_path} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${SHADERC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -212,12 +214,8 @@ macro(add_shaders_intern)
             VERBATIM
             )
         fips_files(${shd})
-        if (nebula_shader)
-            SOURCE_GROUP(TREE "work\\shaders\\vk" PREFIX "res\\shaders" FILES ${shd})
-        else()
-            SOURCE_GROUP(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "res\\shaders" FILES ${shd})
-        endif()
 
+        SOURCE_GROUP(TREE "${base_path}" PREFIX "res\\shaders" FILES ${shd})
         if(N_ENABLE_SHADER_COMMAND_GENERATION)
             # create compile flags file for live shader compile
             # MESSAGE(WARNING "fooo   " ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
