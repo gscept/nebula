@@ -196,9 +196,15 @@ macro(add_shaders_intern)
             file(READ ${depoutput} deps)
         endif()
 
+        if (nebula_shader)
+            set(shader_root ${NROOT}/work/shaders/vk)
+        else()
+            set(shader_root ${CMAKE_CURRENT_SOURCE_DIR})
+        endif()
+
         set(output ${EXPORT_DIR}/shaders/${basename}.fxb)
         add_custom_command(OUTPUT ${output}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -r ${shader_root} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${SHADERC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
