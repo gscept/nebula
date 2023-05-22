@@ -23,7 +23,7 @@
 #include "resources/resourceserver.h"
 #include "gliml.h"
 
-#include "terrain.h"
+#include "terrain/terrain.h"
 
 N_DECLARE_COUNTER(N_TERRAIN_TOTAL_AVAILABLE_DATA, Terrain Total Data Size);
 
@@ -264,7 +264,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     };
     terrainState.vlo = CreateVertexLayout({ vertexComponents });
 
-    terrainState.terrainShader = ShaderGet("shd:terrain.fxb");
+    terrainState.terrainShader = ShaderGet("shd:terrain/terrain.fxb");
     terrainState.resourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
     terrainState.terrainShadowProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainShadows"));
 
