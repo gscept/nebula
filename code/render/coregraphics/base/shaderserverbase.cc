@@ -52,47 +52,36 @@ ShaderServerBase::~ShaderServerBase()
 //------------------------------------------------------------------------------
 /**
 */
+void
+RecursiveLoadShaders(ShaderServerBase* shaderServer, const Util::String& path)
+{
+    Util::Array<Util::String> files = IoServer::Instance()->ListFiles(path, "*.fxb");
+
+    for (IndexT i = 0; i < files.Size(); i++)
+    {
+        ResourceName resId = path + files[i];
+
+        // load shader
+        shaderServer->LoadShader(resId);
+    }
+
+    Util::Array<Util::String> directories = IoServer::Instance()->ListDirectories(path, "*");
+    for (IndexT i = 0; i < directories.Size(); i++)
+    {
+        RecursiveLoadShaders(shaderServer, path + directories[i] + "/");
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 ShaderServerBase::Open()
 {
     n_assert(!this->isOpen);
     n_assert(this->shaders.IsEmpty());
 
-#ifdef USE_SHADER_DICTIONARY
-    // open the shaders dictionary file
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream("shd:shaders.dic");
-    Ptr<TextReader> textReader = TextReader::Create();
-    textReader->SetStream(stream);
-    if (textReader->Open())
-    {
-        Array<String> shaderPaths = textReader->ReadAllLines();
-        textReader->Close();
-        textReader = nullptr;
-        
-        IndexT i;
-        for (i = 0; i < shaderPaths.Size(); i++)
-        {
-            const Util::String& path = shaderPaths[i];
-            ResourceName resId = shaderPaths[i];
-
-            // load
-            this->LoadShader(resId);
-        }
-    }
-    else
-    {
-        n_error("ShaderServerBase: Failed to open shader dictionary!\n");
-    }
-#else
-    Util::Array<Util::String> files = IoServer::Instance()->ListFiles("shd:", "*.fxb");
-    for (IndexT i = 0; i < files.Size(); i++)
-    {
-        ResourceName resId = "shd:" + files[i];
-        
-        // load shader
-        this->LoadShader(resId);
-    }
-#endif
+    RecursiveLoadShaders(this, "shd:");
 
 #ifndef __linux__
     auto reloadFileFunc = [this](IO::WatchEvent const& event)
