@@ -11,11 +11,9 @@ fips_begin_lib(toolkitutil)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
 
     fips_deps(foundation render gltf physics)
-    fips_libs_debug(${FBX_LIBRARY_DEBUG})
-    fips_libs_release(${FBX_LIBRARY})
+    fips_libs(${FBX_LIBRARY})
     if(FIPS_WINDOWS)
-        fips_libs_debug(CMP_Core_MTd CMP_Framework_MTd)
-        fips_libs_release(CMP_Core_MT CMP_Framework_MT)
+        fips_libs(CMP_Core_MT CMP_Framework_MT)
     endif()
         fips_files(
             assetfile.cc
