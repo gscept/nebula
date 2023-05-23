@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  downsample_cs.fx
+//  downsample_cs.fxh
 //  Parallel reduction downsample shader, based on https://github.com/GPUOpen-Effects/FidelityFX-SPD/blob/master/ffx-spd/ffx_spd.h
 //  (C) 2021 Gustav Sterbrant
 //------------------------------------------------------------------------------
@@ -9,9 +9,11 @@
 
 #define KERNEL_SIZE 256
 #define SHARED_MEMORY_SIZE 16
-#if !defined FORMAT || !defined IMAGE_DATA_TYPE
+#if !defined FORMAT || !defined IMAGE_DATA_TYPE || !defined IMAGE_DATA_SWIZZLE
 #define FORMAT rgba16f
 #define IMAGE_DATA_TYPE vec4
+#define IMAGE_DATA_SWIZZLE xyzw
+#define IMAGE_DATA_EXPAND xyzw
 #endif
 
 #if ARRAY_TEXTURE
@@ -64,15 +66,15 @@ Sample2x2(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Output[0], ivec3(texel, slice));
-    samples[1] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 0, 0));
-    samples[2] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(0, 1, 0));
-    samples[3] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 1, 0));
+    samples[0] = imageLoad(Output[0], ivec3(texel, slice)).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 0, 0)).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(0, 1, 0)).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 1, 0)).IMAGE_DATA_SWIZZLE;
 #else
-    samples[0] = imageLoad(Output[0], texel);
-    samples[1] = imageLoad(Output[0], texel + ivec2(1, 0));
-    samples[2] = imageLoad(Output[0], texel + ivec2(0, 1));
-    samples[3] = imageLoad(Output[0], texel + ivec2(1, 1));
+    samples[0] = imageLoad(Output[0], texel).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Output[0], texel + ivec2(1, 0)).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Output[0], texel + ivec2(0, 1)).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Output[0], texel + ivec2(1, 1)).IMAGE_DATA_SWIZZLE;
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);   
 }
@@ -86,15 +88,15 @@ Sample2x2Output(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Output6, ivec3(texel, slice));
-    samples[1] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 0, 0));
-    samples[2] = imageLoad(Output6, ivec3(texel, slice) + ivec3(0, 1, 0));
-    samples[3] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 1, 0));
+    samples[0] = imageLoad(Output6, ivec3(texel, slice)).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 0, 0)).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Output6, ivec3(texel, slice) + ivec3(0, 1, 0)).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 1, 0)).IMAGE_DATA_SWIZZLE;
 #else
-    samples[0] = imageLoad(Output6, texel);
-    samples[1] = imageLoad(Output6, texel + ivec2(1, 0));
-    samples[2] = imageLoad(Output6, texel + ivec2(0, 1));
-    samples[3] = imageLoad(Output6, texel + ivec2(1, 1));
+    samples[0] = imageLoad(Output6, texel).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Output6, texel + ivec2(1, 0)).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Output6, texel + ivec2(0, 1)).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Output6, texel + ivec2(1, 1)).IMAGE_DATA_SWIZZLE;
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);
 }
@@ -107,14 +109,14 @@ Save(ivec2 texel, IMAGE_DATA_TYPE value, uint mip, uint slice)
 {
 #if ARRAY_TEXTURE
     if (mip == 5)
-        imageStore(Output6, ivec3(texel, slice), value);
+        imageStore(Output6, ivec3(texel, slice), value.IMAGE_DATA_EXPAND);
     else
-        imageStore(Output[mip + 1], ivec3(texel, slice), value);
+        imageStore(Output[mip + 1], ivec3(texel, slice), value.IMAGE_DATA_EXPAND);
 #else
     if (mip == 5)
-        imageStore(Output6, texel, value);
+        imageStore(Output6, texel, value.IMAGE_DATA_EXPAND);
     else
-        imageStore(Output[mip + 1], texel, value);
+        imageStore(Output[mip + 1], texel, value.IMAGE_DATA_EXPAND);
 #endif
 }
 

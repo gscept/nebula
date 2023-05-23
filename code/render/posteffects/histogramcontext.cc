@@ -30,12 +30,6 @@ struct
     CoreGraphics::ResourceTableId histogramResourceTable;
     Util::FixedArray<CoreGraphics::BufferId> histogramReadback;
 
-    CoreGraphics::ShaderId downsampleShader;
-    CoreGraphics::ShaderProgramId downsampleProgram;
-    CoreGraphics::BufferId downsampleCounter;
-    CoreGraphics::BufferId downsampleConstants;
-    CoreGraphics::ResourceTableId downsampleResourceTable;
-
     CoreGraphics::TextureDimensions sourceTextureDimensions;
     CoreGraphics::TextureId sourceTexture;
     IndexT sourceTextureBinding;
@@ -132,45 +126,6 @@ HistogramContext::Create()
         0
     });
     CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
-
-    histogramState.downsampleShader = CoreGraphics::ShaderGet("shd:downsample_cs_avg.fxb");
-    histogramState.downsampleProgram = CoreGraphics::ShaderGetProgram(histogramState.downsampleShader, CoreGraphics::ShaderFeatureFromString("Downsample"));
-
-    // create counter for downsample shader
-    bufInfo.elementSize = sizeof(uint);
-    bufInfo.size = 6;
-    bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
-    bufInfo.mode = CoreGraphics::DeviceLocal;
-    bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
-    uint initData[6] = { 0 };
-    bufInfo.data = &initData;
-    bufInfo.dataSize = sizeof(initData);
-    histogramState.downsampleCounter = CoreGraphics::CreateBuffer(bufInfo);
-
-    bufInfo.elementSize = sizeof(DownsampleCsMin::DownsampleUniforms);
-    bufInfo.mode = CoreGraphics::HostCached;
-    bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
-    bufInfo.data = nullptr;
-    bufInfo.dataSize = 0;
-    histogramState.downsampleConstants = CoreGraphics::CreateBuffer(bufInfo);
-
-    histogramState.downsampleResourceTable = CoreGraphics::ShaderCreateResourceTable(histogramState.downsampleShader, NEBULA_BATCH_GROUP);
-
-    CoreGraphics::ResourceTableSetRWBuffer(histogramState.downsampleResourceTable, {
-        histogramState.downsampleCounter,
-        DownsampleCsMin::Table_Batch::AtomicCounter::SLOT,
-        0,
-        CoreGraphics::BufferGetByteSize(histogramState.downsampleCounter),
-        0
-    });
-    CoreGraphics::ResourceTableSetConstantBuffer(histogramState.downsampleResourceTable, {
-        histogramState.downsampleConstants,
-        DownsampleCsMin::Table_Batch::DownsampleUniforms::SLOT,
-        0,
-        CoreGraphics::BufferGetByteSize(histogramState.downsampleConstants),
-        0
-    });
-    CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -204,50 +159,8 @@ void
 HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
     histogramState.sourceTexture = script->GetTexture("LightBuffer");
-    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
-
-    // setup views for output and bind
-    SizeT numMips = CoreGraphics::TextureGetNumMips(histogramState.sourceTexture);
-    histogramState.downsampledColorBufferViews.Resize(numMips);
-    for (IndexT i = 0; i < numMips; i++)
-    {
-        CoreGraphics::TextureViewCreateInfo info;
-        info.name = Util::String::Sprintf("Histogram Downsample %d", i);
-        info.tex = histogramState.sourceTexture;
-        info.startMip = i;
-        info.numMips = 1;
-        info.startLayer = 0;
-        info.numLayers = 1;
-        info.format = CoreGraphics::TextureGetPixelFormat(histogramState.sourceTexture);
-        histogramState.downsampledColorBufferViews[i] = CoreGraphics::CreateTextureView(info);
-
-        if (i == 6)
-        {
-            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
-            {
-                    histogramState.downsampledColorBufferViews[i],
-                    DownsampleCsMin::Table_Batch::Output6_SLOT,
-                    0,
-                    CoreGraphics::InvalidSamplerId,
-                    false,
-                    false
-            });
-        }
-        else
-        {
-            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
-            {
-                    histogramState.downsampledColorBufferViews[i],
-                    DownsampleCsMin::Table_Batch::Output_SLOT,
-                    i,
-                    CoreGraphics::InvalidSamplerId,
-                    false,
-                    false
-            });
-        }
-    }
-    CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
-
+    auto dims = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
+    auto numMips = CoreGraphics::TextureGetNumMips(histogramState.sourceTexture);
     histogramState.sourceTextureBinding = HistogramCs::Table_Batch::ColorSource_SLOT;
     histogramState.sourceTextureDimensions = dims;
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
@@ -267,34 +180,10 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     histogramState.logLuminanceRange = Math::log2(65000.0f); // R11G11B10 maxes out around 65k (https://www.khronos.org/opengl/wiki/Small_Float_Formats)
     //histogramState.logMinLuminance = Math::log2(10.0f);
 
-    DownsampleCsMin::DownsampleUniforms constants;
-    constants.Mips = numMips-1;
-    constants.NumGroups = (dispatchX + 1) * (dispatchY + 1);
-    BufferUpdate(histogramState.downsampleConstants, constants, 0);
-
     histogramState.offset.x = 0;
     histogramState.offset.y = 0;
     histogramState.size.x = 1.0f;
     histogramState.size.y = 1.0f;
-
-    // Construct subgraph
-    Frame::FrameCode* downsample = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    downsample->SetName("Histogram Downsample");
-    downsample->textureDeps.Add(histogramState.sourceTexture,
-                                {
-                                    "Histogram Downsample"
-                                    , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                                });
-
-    downsample->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, histogramState.downsampleProgram, false);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, histogramState.downsampleResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        uint dispatchX = (histogramState.sourceTextureDimensions.width - 1) / 64;
-        uint dispatchY = (histogramState.sourceTextureDimensions.height - 1) / 64;
-        CoreGraphics::CmdDispatch(cmdBuf, dispatchX + 1, dispatchY + 1, 1);
-    };
 
     Frame::FrameCode* bucket = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
     bucket->SetName("Histogram Bucket");
@@ -363,7 +252,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     };
 
     // Add subgraph
-    Frame::AddSubgraph("Histogram", { downsample, bucket, copy, clear });
+    Frame::AddSubgraph("Histogram", { bucket, copy, clear });
 }
 
 //------------------------------------------------------------------------------
@@ -434,38 +323,6 @@ void
 HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
     histogramState.sourceTextureDimensions = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
-
-    // setup views for output and bind
-    SizeT numMips = CoreGraphics::TextureGetNumMips(histogramState.sourceTexture);
-    for (IndexT i = 0; i < numMips; i++)
-    {
-        CoreGraphics::TextureViewReload(histogramState.downsampledColorBufferViews[i]);
-        if (i == 5)
-        {
-            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
-            {
-                histogramState.downsampledColorBufferViews[i],
-                DownsampleCsMin::Table_Batch::Output6_SLOT,
-                0,
-                CoreGraphics::InvalidSamplerId,
-                false,
-                false
-            });
-        }
-        else
-        {
-            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
-            {
-                histogramState.downsampledColorBufferViews[i],
-                DownsampleCsMin::Table_Batch::Output_SLOT,
-                i,
-                CoreGraphics::InvalidSamplerId,
-                false,
-                false
-            });
-        }
-    }
-    CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
 
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
