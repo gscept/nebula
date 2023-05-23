@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  lights_cluster_cull.fxh
-//  (C) 2019 Gustav Sterbrant
+//  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #include "lib/std.fxh"

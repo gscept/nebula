@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  downsample_cs_depth.fx
 //  Downsample compute shader for light buffer
-//  (C) 2021 Gustav Sterbrant
+//  (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #define FORMAT r32f

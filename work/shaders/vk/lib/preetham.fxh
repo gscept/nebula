@@ -5,7 +5,7 @@
 //
 //	Source: http://www.cs.utah.edu/~shirley/papers/sunsky/sunsky.pdf
 //
-//  (C) 2016 Gustav Sterbrant
+//  (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #define TINY (0.0001f)

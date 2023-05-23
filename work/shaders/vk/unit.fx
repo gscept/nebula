@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  unit.fx
-//  (C) 2012 Gustav Sterbrant
+//  (C) 2012 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "lib/techniques.fxh"
 #include "lib/colorblending.fxh"

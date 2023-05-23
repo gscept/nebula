@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  animationparams.fxh
-//  (C) 2016 Gustav Sterbrant
+//  (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef ANIMATIONPARAMS

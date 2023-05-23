@@ -4,7 +4,7 @@
 //	Contains the photoshop blending modes at: 
 //	http://www.deepskycolors.com/archive/2010/04/21/formulas-for-Photoshop-blending-modes.html
 //
-//  (C) 2014 Gustav Sterbrant
+//  (C) 2014 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef COLORBLENDING_FXH

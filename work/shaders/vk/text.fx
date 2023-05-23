@@ -3,7 +3,7 @@
 //
 //  Basic text shader
 //
-//  (C) 2013 Gustav Sterbrant
+//  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #include "lib/std.fxh"

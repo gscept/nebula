@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  terrain.fx
-//  (C) 2020 Gustav Sterbrant
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "lib/std.fxh"
 #include "lib/util.fxh"

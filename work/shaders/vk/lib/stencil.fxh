@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  stencil.fxh
-//  (C) 2020 Gustav Sterbrant
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 const uint STENCIL_BIT_SKIN = 0x1;			// for subsurface pixels

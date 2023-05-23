@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  lighting_functions.fxh
-//  (C) 2019 Gustav Sterbrant
+//  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "shadowbase.fxh"
 #include "pbr.fxh"

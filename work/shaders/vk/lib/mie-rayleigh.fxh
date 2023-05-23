@@ -5,7 +5,7 @@
 //
 //	Source: https://github.com/Tw1ddle/Sky-Shader
 //
-//  (C) 2020 Gustav Sterbrant
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #define PI 3.141592653589793238462643383279502884197169

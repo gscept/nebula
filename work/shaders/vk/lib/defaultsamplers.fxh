@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  defaultsamplers.fxh
-//  (C) 2013 Gustav Sterbrant
+//  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef DEFAULTSAMPLERS_FXH

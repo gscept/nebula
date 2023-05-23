@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  clustering.fxh
-//  (C) 2019 Gustav Sterbrant
+//  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef CLUSTERING_FXH

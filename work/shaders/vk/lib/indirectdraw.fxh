@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  indirectdraw.fxh
-//  (C) 2020 Gustav Sterbrant
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef INDIRECT_DRAW_FXH

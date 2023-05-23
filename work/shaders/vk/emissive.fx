@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  emissive.fx
-//  (C) 2023 Gustav Sterbrant
+//  (C) 2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "lib/std.fxh"
 #include "lib/geometrybase.fxh"

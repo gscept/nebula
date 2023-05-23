@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  lightmapbase.fxh
-//  (C) 2015 Gustav Sterbrant
+//  (C) 2015 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef LIGHTMAPBASE_FXH

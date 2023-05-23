@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  lights_cluster.fx
-//  (C) 2019 Gustav Sterbrant
+//  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "lib/std.fxh"
 #include "lib/util.fxh"

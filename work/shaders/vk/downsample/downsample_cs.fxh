@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  downsample_cs.fxh
 //  Parallel reduction downsample shader, based on https://github.com/GPUOpen-Effects/FidelityFX-SPD/blob/master/ffx-spd/ffx_spd.h
-//  (C) 2021 Gustav Sterbrant
+//  (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "lib/std.fxh"
 #include "lib/util.fxh"

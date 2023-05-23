@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  volumefog.fx
-//  (C) 2020 Gustav Sterbrant
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "lib/std.fxh"
 #include "lib/util.fxh"
@@ -71,7 +71,7 @@ void
 LocalFogVolumes(
     uint idx
     , vec3 viewPos
-    , inout float turbidity
+    , inout float particleDensity
     , inout vec3 absorption)
 {
     uint flag = AABBs[idx].featureFlags;
@@ -90,7 +90,7 @@ LocalFogVolumes(
 
             if (falloff > fog.falloff)
             {
-                turbidity += fog.turbidity;
+                particleDensity += fog.turbidity;
                 absorption *= fog.absorption;
             }
         }
@@ -116,7 +116,7 @@ LocalFogVolumes(
                 // todo, calculate distance field
                 if (falloff > fog.falloff)
                 {
-                    turbidity += fog.turbidity;
+                    particleDensity += fog.turbidity;
                     absorption *= fog.absorption;
                 }
             }
@@ -248,8 +248,8 @@ void csRender()
 
     // calculate global fog, which should be a factor of the distance and the global turbidity
     float fogModulate = ((FocalLengthNearFar.w + 0.001f) - length(viewVec)) / FocalLengthNearFar.w;
-    float globalTurbidity = GlobalTurbidity * (1.0f - fogModulate);
-    float totalTurbidity = 0.0f;
+    float globalParticleDensity = GlobalTurbidity * (1.0f - fogModulate);
+    float totalParticleDensity = 0.0f;
 
     /*
         Single scattering equation as presented here:
@@ -264,7 +264,7 @@ void csRender()
         - xt is the sample point when ray marching (at samplePos)
         - w0 is the incident angle at the surface point
         - wi is the incident angle for the sample point
-        - ot(x) is the turbidity function at point x
+        - ot(x) is the particle density function at point x
 
         Li(x, wi) = Tr(x, xs) * Ls(xs, w0) + integral[0..S]{ Tr(x, xt) * ot(x) * Lscat(xt, wi) dt
 
@@ -293,24 +293,24 @@ void csRender()
         uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
         // sample local fog volumes
-        float localTurbidity = 0.0f;
+        float localParticleDensity = 0.0f;
         vec3 localAbsorption = GlobalAbsorption;
-        LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
+        LocalFogVolumes(idx, samplePos, localParticleDensity, localAbsorption);
 
-        // local turbidity is the result of our volumes + global turbidity increment
-        localTurbidity = (localTurbidity + globalTurbidity) * oneDivFogSteps;
+        // local particle density is the result of our volumes + global particle density increment
+        localParticleDensity = (localParticleDensity + globalParticleDensity) * oneDivFogSteps;
 
-        // calculate the total turbidity, required for Tr(x, xt)
-        totalTurbidity += localTurbidity;
+        // calculate the total particle density, required for Tr(x, xt)
+        totalParticleDensity += localParticleDensity;
 
         // equation tells us Tr(x, xt) * ot(x) is the weight used for each scattered light sample
-        float weight = exp(-totalTurbidity) * localTurbidity;
+        float weight = exp(-totalParticleDensity) * localParticleDensity;
 
         // this is the Lscat calculation
         light += GlobalLightFog(samplePos) * weight * localAbsorption;
         light += LocalLightsFog(idx, samplePos, rayDirection) * weight * localAbsorption;
     }
-    float weight = (exp(-totalTurbidity));
+    float weight = (exp(-totalParticleDensity));
 
     // pass weight to combine pass so we can handle the Tr(x, xs) * Ls(xs, w0) 
     // part of the equation (how much of the surface is visible)

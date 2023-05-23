@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  ssr_cs.fx
-//  (C) 2015 - 2019 Fredrik Lindahl & Gustav Sterbrant
+//  (C) 2015 - 2019 Fredrik Lindahl & Individual contributors, see AUTHORS file
 //
 // TraceScreenSpaceRay is inspired by the work by
 // Morgan McGuire and Michael Mara, Efficient GPU Screen-Space Ray Tracing, Journal of Computer Graphics Techniques (JCGT), vol. 3, no. 4, 73-85, 2014

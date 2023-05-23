@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  msaaresolvedepth4.fx
-//  (C) 2022 Gustav Sterbrant
+//  (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #define IMAGE_TYPE_R32F

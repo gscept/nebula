@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  geometrybase.fxh
-//  (C) 2012 Gustav Sterbrant
+//  (C) 2012 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #ifndef GEOMETRYBASE_FXH
