@@ -34,35 +34,41 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
     this->device = dev;
 
     // get all queues related to their respective family (we can have more draw queues than 1, for example)
-    this->drawQueues.Resize(indexMap[families[CoreGraphics::GraphicsQueueType]]);
-    this->computeQueues.Resize(indexMap[families[CoreGraphics::ComputeQueueType]]);
-    this->transferQueues.Resize(indexMap[families[CoreGraphics::TransferQueueType]]);
-    this->sparseQueues.Resize(indexMap[families[CoreGraphics::SparseQueueType]]);
+    this->drawQueues.Resize(1);
+    this->computeQueues.Resize(1);
+    this->transferQueues.Resize(1);
+    this->sparseQueues.Resize(1);
 
     this->queueFamilies[CoreGraphics::GraphicsQueueType] = families[CoreGraphics::GraphicsQueueType];
     this->queueFamilies[CoreGraphics::ComputeQueueType] = families[CoreGraphics::ComputeQueueType];
     this->queueFamilies[CoreGraphics::TransferQueueType] = families[CoreGraphics::TransferQueueType];
     this->queueFamilies[CoreGraphics::SparseQueueType] = families[CoreGraphics::SparseQueueType];
 
+    Util::FixedArray<IndexT> queueUses(CoreGraphics::QueueType::NumQueueTypes, 0);
+
     uint i;
-    for (i = 0; i < indexMap[families[CoreGraphics::GraphicsQueueType]]; i++)
+    for (i = 0; i < this->drawQueues.Size(); i++)
     {
-        vkGetDeviceQueue(dev, families[CoreGraphics::GraphicsQueueType], i, &this->drawQueues[i]);
+        IndexT& queueIndex = queueUses[families[CoreGraphics::GraphicsQueueType]];
+        vkGetDeviceQueue(dev, families[CoreGraphics::GraphicsQueueType], queueIndex++, &this->drawQueues[i]);
     }
 
-    for (i = 0; i < indexMap[families[CoreGraphics::ComputeQueueType]]; i++)
+    for (i = 0; i < this->computeQueues.Size(); i++)
     {
-        vkGetDeviceQueue(dev, families[CoreGraphics::ComputeQueueType], i, &this->computeQueues[i]);
+        IndexT& queueIndex = queueUses[families[CoreGraphics::ComputeQueueType]];
+        vkGetDeviceQueue(dev, families[CoreGraphics::ComputeQueueType], queueIndex++, &this->computeQueues[i]);
     }
 
-    for (i = 0; i < indexMap[families[CoreGraphics::TransferQueueType]]; i++)
+    for (i = 0; i < this->transferQueues.Size(); i++)
     {
-        vkGetDeviceQueue(dev, families[CoreGraphics::TransferQueueType], i, &this->transferQueues[i]);
+        IndexT& queueIndex = queueUses[families[CoreGraphics::TransferQueueType]];
+        vkGetDeviceQueue(dev, families[CoreGraphics::TransferQueueType], queueIndex++, &this->transferQueues[i]);
     }
 
-    for (i = 0; i < indexMap[families[CoreGraphics::SparseQueueType]]; i++)
+    for (i = 0; i < this->sparseQueues.Size(); i++)
     {
-        vkGetDeviceQueue(dev, families[CoreGraphics::SparseQueueType], i, &this->sparseQueues[i]);
+        IndexT& queueIndex = queueUses[families[CoreGraphics::SparseQueueType]];
+        vkGetDeviceQueue(dev, families[CoreGraphics::SparseQueueType], queueIndex++, &this->sparseQueues[i]);
     }
 
     // setup timeline semaphores
