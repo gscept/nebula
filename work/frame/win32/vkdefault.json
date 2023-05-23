@@ -129,6 +129,7 @@
             {
                 "name": "Depth",
                 "format": "D32S8",
+                "mips": "auto",
                 "relative": true,
                 "usage": "TransferDestination|Sample",
                 "width": 1.0,
@@ -423,6 +424,12 @@
                                 "bits": "Depth|Stencil"
                             }
                         }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Depth Downsample"
+                        }
                     }
                 ]
             },
@@ -527,19 +534,22 @@
                                     ]
                                 }
                             ]
-                        }                       
+                        }
                     },
+
 
                     {
                         "subgraph": {
                             "name": "Vegetation Copy Indirect"
                         }
                     },
+
                     {
                         "subgraph": {
                             "name": "HBAO"
                         }
                     },
+
                     {
                         "subgraph": {
                             "name": "Fog Compute"
@@ -549,6 +559,12 @@
                     {
                         "subgraph": {
                             "name": "Lights Combine"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Color Downsample"
                         }
                     },
 
