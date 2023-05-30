@@ -12,29 +12,24 @@
 #include "renderutil/drawfullscreenquad.h"
 #include "bloomcontext.h"
 
-#include "brightpass.h"
-#include "blur_bloom.h"
+#include "bloom.h"
 namespace PostEffects
 {
 
 __ImplementPluginContext(PostEffects::BloomContext);
 struct
 {
-    CoreGraphics::TextureId internalTargets[1];
-    CoreGraphics::ShaderProgramId brightPassProgram;
-    CoreGraphics::ShaderProgramId blurX, blurY;
-    CoreGraphics::ShaderId brightPassShader, blurShader;
+    CoreGraphics::ShaderProgramId bloomProgram;
+    CoreGraphics::ShaderProgramId downscaleProgram;
+    CoreGraphics::ShaderId bloom;
 
-    CoreGraphics::ResourceTableId brightPassTable, blurTable;
+    CoreGraphics::ResourceTableId bloomTable;
+    CoreGraphics::BufferId constants;
 
     CoreGraphics::TextureId bloomBuffer;
-    CoreGraphics::TextureId blurredBloom;
     CoreGraphics::TextureId lightBuffer;
 
-    CoreGraphics::TextureViewId bloomBufferView;
-    CoreGraphics::PassId bloomPass;
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 3 + sizeof(Frame::FrameBlit) + sizeof(Frame::FramePass) + sizeof(Frame::FrameSubpass)> frameOpAllocator;
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 1> frameOpAllocator;
 
 } bloomState;
 
@@ -61,202 +56,67 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     using namespace CoreGraphics;
 
     // setup shaders
-    bloomState.brightPassShader = ShaderGet("shd:brightpass.fxb");
-    bloomState.blurShader = ShaderGet("shd:blur_bloom.fxb");
-    bloomState.brightPassTable = ShaderCreateResourceTable(bloomState.brightPassShader, NEBULA_BATCH_GROUP);
-    bloomState.blurTable = ShaderCreateResourceTable(bloomState.blurShader, NEBULA_BATCH_GROUP);
+    bloomState.bloom = ShaderGet("shd:bloom.fxb");
+    bloomState.bloomTable = ShaderCreateResourceTable(bloomState.bloom, NEBULA_BATCH_GROUP);
 
     bloomState.bloomBuffer = script->GetTexture("BloomBuffer");
-    bloomState.blurredBloom = script->GetTexture("BloomBufferBlurred");
     bloomState.lightBuffer = script->GetTexture("LightBuffer");
-    CoreGraphics::TextureRelativeDimensions relDims = CoreGraphics::TextureGetRelativeDimensions(bloomState.blurredBloom);
+    TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
 
-    TextureCreateInfo tinfo;
-    tinfo.name = "Bloom-Internal0";
-    tinfo.type = Texture2D;
-    tinfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
-    tinfo.width = relDims.width;
-    tinfo.height = relDims.height;
-    tinfo.usage = TextureUsage::ReadWriteTexture;
-    tinfo.windowRelative = true;
-    bloomState.internalTargets[0] = CreateTexture(tinfo);
+    bloomState.bloomProgram = ShaderGetProgram(bloomState.bloom, ShaderFeatureFromString("Bloom"));
+    bloomState.downscaleProgram = ShaderGetProgram(bloomState.bloom, ShaderFeatureFromString("Downscale"));
 
-    ResourceTableSetTexture(bloomState.brightPassTable, { bloomState.lightBuffer, Brightpass::Table_Batch::ColorSource_SLOT, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableCommitChanges(bloomState.brightPassTable);
+    BufferCreateInfo bufInfo;
+    bufInfo.byteSize = Bloom::Table_Batch::BloomUniforms::SIZE;
+    bufInfo.usageFlags = ConstantBuffer;
+    bufInfo.mode = DeviceAndHost;
+    bufInfo.queueSupport = ComputeQueueSupport;
+    bloomState.constants = CreateBuffer(bufInfo);
 
-    // bloom buffer goes in, internal target goes out
-    ResourceTableSetTexture(bloomState.blurTable, { bloomState.blurredBloom, BlurBloom::Table_Batch::InputImageX_SLOT, 0, CoreGraphics::InvalidSamplerId , false });
-    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.internalTargets[0], BlurBloom::Table_Batch::BlurImageX_SLOT, 0, CoreGraphics::InvalidSamplerId });
+    uint mips = TextureGetNumMips(bloomState.lightBuffer);
 
-    // internal target goes in, blurred buffer goes out
-    ResourceTableSetTexture(bloomState.blurTable, { bloomState.internalTargets[0], BlurBloom::Table_Batch::InputImageY_SLOT, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.blurredBloom, BlurBloom::Table_Batch::BlurImageY_SLOT, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableCommitChanges(bloomState.blurTable);
+    Bloom::BloomUniforms uniforms;
+    uniforms.Mips = mips;
+    uniforms.Resolution[0] = dims.width;
+    uniforms.Resolution[1] = dims.height;
+    uniforms.Resolution[2] = 1.0f / dims.width;
+    uniforms.Resolution[3] = 1.0f / dims.height;
+    BufferUpdate(bloomState.constants, uniforms);
 
-    bloomState.blurX = ShaderGetProgram(bloomState.blurShader, ShaderFeatureFromString("Alt0"));
-    bloomState.blurY = ShaderGetProgram(bloomState.blurShader, ShaderFeatureFromString("Alt1"));
-    bloomState.brightPassProgram = ShaderGetProgram(bloomState.brightPassShader, ShaderFeatureFromString("Alt0"));
+    ResourceTableSetTexture(bloomState.bloomTable, { bloomState.lightBuffer, Bloom::Table_Batch::Input_SLOT });
+    ResourceTableSetRWTexture(bloomState.bloomTable, { bloomState.bloomBuffer, Bloom::Table_Batch::Output_SLOT });
+    ResourceTableSetConstantBuffer(bloomState.bloomTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms::SLOT });
+    ResourceTableCommitChanges(bloomState.bloomTable);
 
-    // Create subpass
-    CoreGraphics::Subpass subpass;
-    subpass.attachments.Append(0);
-    subpass.numScissors = 1;
-    subpass.numViewports = 1;
-
-    // Create pass
-    CoreGraphics::PassCreateInfo passInfo;
-    passInfo.name = "Bloom Pass";
-    bloomState.bloomBufferView = CoreGraphics::CreateTextureView({ "Bloom Pass View", bloomState.bloomBuffer, 0, 1, 0, 1, TextureGetPixelFormat(bloomState.bloomBuffer) });
-    passInfo.attachments.Append(bloomState.bloomBufferView);
-    passInfo.attachmentFlags.Append(CoreGraphics::AttachmentFlagBits::Store);
-    passInfo.attachmentClears.Append(Math::vec4(1)); // dummy value
-    passInfo.attachmentDepthStencil.Append(false);
-    passInfo.subpasses.Append(subpass);
-    bloomState.bloomPass = CoreGraphics::CreatePass(passInfo);
-
-    // Create subgraph for low pass
-    Frame::FramePass* bloomPass = bloomState.frameOpAllocator.Alloc<Frame::FramePass>();
-    bloomPass->SetName("Bloom");
-    bloomPass->pass = bloomState.bloomPass;
-
-    Frame::FrameSubpass* bloomSubpass = bloomState.frameOpAllocator.Alloc<Frame::FrameSubpass>();
-    bloomSubpass->domain = BarrierDomain::Pass;
-    bloomSubpass->SetName("Bloom Lowpass");
-    bloomPass->AddChild(bloomSubpass);
-
-    Frame::FrameCode* lowpassOp = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    lowpassOp->SetName("Bloom Brightness Lowpass");
-    lowpassOp->domain = BarrierDomain::Pass;
-    lowpassOp->textureDeps.Add(bloomState.lightBuffer,
-                               {
-                                   "LightBuffer"
-                                   , CoreGraphics::PipelineStage::PixelShaderRead
-                                   , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                               });
-    lowpassOp->textureDeps.Add(bloomState.bloomBuffer,
-                               {
-                                   "BloomBuffer"
-                                   , CoreGraphics::PipelineStage::ColorWrite
-                                   , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                               });
-
-    lowpassOp->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    Frame::FrameCode* pass = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    pass->SetName("Bloom");
+    pass->domain = BarrierDomain::Global;
+    pass->textureDeps.Add(
+        bloomState.lightBuffer,
+        {
+            "LightBuffer"
+            , PipelineStage::ComputeShaderRead
+            , TextureSubresourceInfo::ColorNoLayer(mips)
+        });
+    pass->textureDeps.Add(
+        bloomState.bloomBuffer,
+        {
+            "BloomBuffer"
+            , PipelineStage::ComputeShaderWrite
+            , TextureSubresourceInfo::ColorNoMipNoLayer()
+        });
+    pass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
-        N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_ORANGE, "Brightness Lowpass Filter");
-
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, bloomState.brightPassProgram);
-        RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, bloomState.brightPassTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-        CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
+        TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
+        CmdSetShaderProgram(cmdBuf, bloomState.bloomProgram);
+        CmdSetResourceTable(cmdBuf, bloomState.bloomTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        uint dispatchX = Math::divandroundup(dims.width, 6);
+        uint dispatchY = Math::divandroundup(dims.height, 6);
+        CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     };
 
-    // Add the code node to the subpass, this is how we actually render
-    bloomSubpass->AddChild(lowpassOp);
-
-    // Create an array of frame operations
-    Util::Array<Frame::FrameOp*> pluginOps;
-
-    // Finally add the pass to the subgraph
-    pluginOps.Append(bloomPass);
-
-    // The hierarchy is:
-    // Bloom Pass
-    // |
-    // +-- Bloom Subpass
-    //   |
-    //   | -- Bloom Lowpass Op -> BloomBuffer
-    //   |
-    // |
-    // |-- Blit BloomBuffer -> BlurredBloomBuffer
-    // |
-    // |-- Bloom Blur (BlurredBloomBuffer -> BloomBuffer, BloomBuffer -> BlurredBloomBuffer) x 5
-
-    // Create pass for bloom blit
-    Frame::FrameBlit* blit = bloomState.frameOpAllocator.Alloc<Frame::FrameBlit>();
-    blit->SetName("Bloom Blit");
-    blit->textureDeps.Add(bloomState.bloomBuffer,
-                    {
-                        "BloomBuffer",
-                        CoreGraphics::PipelineStage::TransferRead,
-                        CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                    });
-    blit->textureDeps.Add(bloomState.blurredBloom,
-                    {
-                        "BloomBufferBlurred",
-                        CoreGraphics::PipelineStage::TransferWrite,
-                        CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                    });
-    blit->from = bloomState.bloomBuffer;
-    blit->to = bloomState.blurredBloom;
-    pluginOps.Append(blit);
-
-    for (int i = 0; i < 5; i++)
-    {
-        auto blurX = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
-        blurX->SetName("Bloom Blur X");
-        blurX->domain = BarrierDomain::Global;
-        blurX->textureDeps.Add(bloomState.internalTargets[0],
-                            {
-                                "Bloom-Internal0"
-                                , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                            });
-
-        blurX->textureDeps.Add(bloomState.blurredBloom,
-                            {
-                                "Bloom-BlurredBloom"
-                                , CoreGraphics::PipelineStage::ComputeShaderRead
-                                , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                            });
-
-        blurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-        {
-            TextureDimensions dims = TextureGetDimensions(bloomState.internalTargets[0]);
-
-            // calculate execution dimensions
-            uint numGroupsX1 = Math::divandroundup(dims.width, BlurBloom::BlurTileWidth);
-            uint numGroupsY2 = dims.height;
-
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, bloomState.blurX);
-            CoreGraphics::CmdSetResourceTable(cmdBuf, bloomState.blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-            CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
-        };
-
-        auto blurY = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
-        blurY->SetName("Bloom Blur Y");
-        blurY->domain = BarrierDomain::Global;
-        blurY->textureDeps.Add(bloomState.internalTargets[0],
-                              {
-                                  "Bloom-Internal0"
-                                  , CoreGraphics::PipelineStage::ComputeShaderRead
-                                  , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                              });
-        blurY->textureDeps.Add(bloomState.blurredBloom,
-                              {
-                                  "Bloom-Output"
-                                  , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                  , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
-                              });
-
-        blurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-        {
-            TextureDimensions dims = TextureGetDimensions(bloomState.internalTargets[0]);
-
-            // calculate execution dimensions
-            uint numGroupsX2 = dims.width;
-            uint numGroupsY1 = Math::divandroundup(dims.height, BlurBloom::BlurTileWidth);
-
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, bloomState.blurY);
-            CoreGraphics::CmdSetResourceTable(cmdBuf, bloomState.blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-            CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
-        };
-
-        pluginOps.Append(blurX);
-        pluginOps.Append(blurY);
-    }
-
     // Finally add all the operations 
-    Frame::AddSubgraph("Bloom", pluginOps);
+    Frame::AddSubgraph("Bloom", { pass });
 }
 
 //------------------------------------------------------------------------------
@@ -266,30 +126,18 @@ void
 BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
     using namespace CoreGraphics;
-    DestroyTexture(bloomState.internalTargets[0]);
+    TextureRelativeDimensions dims = TextureGetRelativeDimensions(bloomState.bloomBuffer);
 
-    CoreGraphics::TextureRelativeDimensions relDims = CoreGraphics::TextureGetRelativeDimensions(bloomState.blurredBloom);
-    TextureCreateInfo tinfo;
-    tinfo.name = "Bloom-Internal0";
-    tinfo.type = Texture2D;
-    tinfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
-    tinfo.width = relDims.width;
-    tinfo.height = relDims.height;
-    tinfo.usage = TextureUsage::ReadWriteTexture;
-    tinfo.windowRelative = true;
-    bloomState.internalTargets[0] = CreateTexture(tinfo);
+    Bloom::BloomUniforms uniforms;
+    uniforms.Mips = TextureGetNumMips(bloomState.lightBuffer);
+    uniforms.Resolution[0] = dims.width;
+    uniforms.Resolution[1] = dims.height;
+    BufferUpdate(bloomState.constants, uniforms);
 
-    ResourceTableSetTexture(bloomState.brightPassTable, { bloomState.lightBuffer, Brightpass::Table_Batch::ColorSource_SLOT, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableCommitChanges(bloomState.brightPassTable);
-
-    // bloom buffer goes in, internal target goes out
-    ResourceTableSetTexture(bloomState.blurTable, { bloomState.blurredBloom, BlurBloom::Table_Batch::InputImageX_SLOT, 0, CoreGraphics::InvalidSamplerId, false });
-    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.internalTargets[0], BlurBloom::Table_Batch::BlurImageX_SLOT, 0, CoreGraphics::InvalidSamplerId });
-
-    // internal target goes in, blurred buffer goes out
-    ResourceTableSetTexture(bloomState.blurTable, { bloomState.internalTargets[0], BlurBloom::Table_Batch::InputImageY_SLOT, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.blurredBloom, BlurBloom::Table_Batch::BlurImageY_SLOT, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableCommitChanges(bloomState.blurTable);
+    ResourceTableSetTexture(bloomState.bloomTable, { bloomState.lightBuffer, Bloom::Table_Batch::Input_SLOT });
+    ResourceTableSetRWTexture(bloomState.bloomTable, { bloomState.bloomBuffer, Bloom::Table_Batch::Output_SLOT });
+    ResourceTableSetConstantBuffer(bloomState.bloomTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms::SLOT });
+    ResourceTableCommitChanges(bloomState.bloomTable);
 }
 
 //------------------------------------------------------------------------------
@@ -313,9 +161,7 @@ BloomContext::Discard()
 {
     bloomState.frameOpAllocator.Release();
 
-    DestroyResourceTable(bloomState.brightPassTable);
-    DestroyResourceTable(bloomState.blurTable);
-    DestroyTexture(bloomState.internalTargets[0]);
+    DestroyResourceTable(bloomState.bloomTable);
 }
 
 } // namespace PostEffects

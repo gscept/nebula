@@ -64,20 +64,11 @@
             },
             {
                 "name": "BloomBuffer",
-                "format": "R16G16B16A16F",
+                "format": "R11G11B10F",
                 "relative": true,
                 "usage": "Render|TransferSource",
-                "width": 0.5,
-                "height": 0.5,
-                "type": "Texture2D"
-            },
-            {
-                "name": "BloomBufferBlurred",
-                "format": "R16G16B16A16F",
-                "relative": true,
-                "usage": "ReadWrite|TransferDestination",
-                "width": 0.25,
-                "height": 0.25,
+                "width": 1.0,
+                "height": 1.0,
                 "type": "Texture2D"
             },
             {
@@ -606,7 +597,7 @@
 
                                     "resource_dependencies": [
                                         {
-                                            "name": "BloomBufferBlurred",
+                                            "name": "BloomBuffer",
                                             "stage": "PixelShaderRead"
                                         },
                                         {
@@ -644,7 +635,7 @@
                                                         },
                                                         {
                                                             "semantic": "BloomTexture",
-                                                            "value": "BloomBufferBlurred"
+                                                            "value": "BloomBuffer"
                                                         }
                                                     ]
                                                 },
