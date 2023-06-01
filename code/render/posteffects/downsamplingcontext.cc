@@ -194,33 +194,21 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     CoreGraphics::ResourceTableSetRWBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferCounter,
         DownsampleCsLight::Table_Batch::AtomicCounter::SLOT,
-        0,
-        CoreGraphics::BufferGetByteSize(state.colorBufferCounter),
-        0
     });
 
     CoreGraphics::ResourceTableSetConstantBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferConstants,
         DownsampleCsLight::Table_Batch::DownsampleUniforms::SLOT,
-        0,
-        CoreGraphics::BufferGetByteSize(state.colorBufferConstants),
-        0
     });
 
     CoreGraphics::ResourceTableSetRWBuffer(state.depthDownsampleResourceTable, {
         state.depthBufferCounter,
         DownsampleCsDepth::Table_Batch::AtomicCounter::SLOT,
-        0,
-        CoreGraphics::BufferGetByteSize(state.depthBufferCounter),
-        0
     });
 
     CoreGraphics::ResourceTableSetConstantBuffer(state.depthDownsampleResourceTable, {
         state.depthBufferConstants,
         DownsampleCsDepth::Table_Batch::DownsampleUniforms::SLOT,
-        0,
-        CoreGraphics::BufferGetByteSize(state.depthBufferConstants),
-        0
     });
 
     Frame::FrameCode* colorDownsamplePass = state.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -229,7 +217,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     colorDownsamplePass->textureDeps.Add(state.lightBuffer,
                                         {
                                              "LightBuffer"
-                                             , PipelineStage::ComputeShaderRead
+                                             , PipelineStage::ComputeShaderWrite
                                              , TextureSubresourceInfo::ColorNoMipNoLayer()
                                         });
 
@@ -251,7 +239,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     depthDownsamplePass->textureDeps.Add(state.depthBuffer,
                                         {
                                              "DepthBuffer"
-                                             , PipelineStage::ComputeShaderRead
+                                             , PipelineStage::ComputeShaderWrite
                                              , TextureSubresourceInfo::DepthStencilNoMipNoLayer()
                                         });
 

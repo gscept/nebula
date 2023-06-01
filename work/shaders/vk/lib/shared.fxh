@@ -81,9 +81,10 @@ group(TICK_GROUP) shared constant PerTickParams
     vec4 Balance;
 
     vec3 DoFDistances;
-    float HDRBrightPassThreshold;
 
-    vec4 HDRBloomColor;
+    vec3 BloomColor;
+    float BloomIntensity;
+    
     vec4 FogDistances;
     vec4 FogColor;
 
@@ -102,6 +103,8 @@ group(TICK_GROUP) shared constant PerTickParams
     textureHandle GlobalLightShadowBuffer;
     textureHandle TerrainShadowBuffer;
     int NumEnvMips;
+
+
     textureHandle EnvironmentMap;
 
     uvec2 TerrainShadowMapSize;

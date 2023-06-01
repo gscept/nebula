@@ -26,7 +26,7 @@ struct
     Graphics::GraphicsEntityId skyBoxEntity;
     Graphics::GraphicsEntityId sunEntity;
     Math::vec4 bloomColor;
-    float bloomThreshold;
+    float bloomIntensity;
     float maxEyeLuminance;
     Math::vec4 fogColor;
     float fogDistances[2];
@@ -39,7 +39,7 @@ struct
     CoreGraphics::TextureId defaultEnvironmentMap;
     CoreGraphics::TextureId defaultIrradianceMap;
 
-    bool showUI = false;
+    bool showUI = true;
 } envState;
 
 __ImplementPluginContext(EnvironmentContext);
@@ -64,7 +64,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         });
 
     envState.bloomColor = Math::vec4(1.0f);
-    envState.bloomThreshold = 50000.0f;
+    envState.bloomIntensity = 0.65f;
     envState.maxEyeLuminance = 0.9f;
     envState.fogColor = Math::vec4(0.5f, 0.5f, 1.0f, 0.0f);
     envState.fogDistances[0] = 200.0f;  // near
@@ -186,8 +186,8 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     tickParams.FogDistances[1] = envState.fogDistances[1];
 
     // bloom parameters
-    envState.bloomColor.store(tickParams.HDRBloomColor);
-    tickParams.HDRBrightPassThreshold = envState.bloomThreshold;
+    envState.bloomColor.store3(tickParams.BloomColor);
+    tickParams.BloomIntensity = envState.bloomIntensity;
 
     // eye adaptation parameters
     tickParams.MaxLuminance = envState.maxEyeLuminance;
@@ -219,7 +219,7 @@ EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
         if (ImGui::Begin("Enviroment Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
-            ImGui::SliderFloat("Bloom Threshold", &envState.bloomThreshold, 0, 100.0f);
+            ImGui::SliderFloat("Bloom Intensity", &envState.bloomIntensity, 0, 1.0f);
             ImGui::SliderFloat("Sky Turbidity", &envState.skyTurbidity, 2.0f, 15.0f);
             ImGui::InputFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
             ImGui::InputFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
@@ -267,9 +267,9 @@ EnvironmentContext::SetBloomColor(const Math::vec4& bloomColor)
 /**
 */
 void 
-EnvironmentContext::SetBloomThreshold(const float threshold)
+EnvironmentContext::SetBloomIntensity(const float intensity)
 {
-    envState.bloomThreshold = threshold;
+    envState.bloomIntensity = intensity;
 }
 
 //------------------------------------------------------------------------------

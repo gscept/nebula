@@ -144,7 +144,7 @@ psMain(in vec2 UV,
     
     vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
     //vec4 godray = subpassLoad(InputAttachment1);
-    c += bloom;   
+    c = lerp(c, bloom, BloomIntensity);
     //c.rgb += godray.rgb;
     //c.rgb += godray.rgb;
     vec4 grey = vec4(dot(c.xyz, Luminance.xyz));
