@@ -36,6 +36,7 @@
 #include "posteffects/ssaocontext.h"
 #include "posteffects/ssrcontext.h"
 #include "posteffects/histogramcontext.h"
+#include "posteffects/downsamplingcontext.h"
 
 #include "physicsinterface.h"
 #include "physics/debugui.h"
@@ -190,6 +191,7 @@ SimpleViewerApplication::Open()
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
         PostEffects::HistogramContext::Create();
+        PostEffects::DownsamplingContext::Create();
         //PostEffects::SSRContext::Create();
 
         // setup gbuffer bindings after frame script is loaded
@@ -197,6 +199,7 @@ SimpleViewerApplication::Open()
         PostEffects::BloomContext::Setup(frameScript);
         PostEffects::SSAOContext::Setup(frameScript);
         //PostEffects::SSRContext::Setup(frameScript);
+        PostEffects::DownsamplingContext::Setup(frameScript);
         PostEffects::HistogramContext::Setup(frameScript);
         PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 
@@ -209,7 +212,7 @@ SimpleViewerApplication::Open()
         Lighting::LightContext::SetupGlobalLight(
             this->globalLight,
             Math::vec3(1, 1, 1),
-            1000.0f,
+            10.0f,
             Math::vec3(0, 0, 0),
             Math::vec3(0, 0, 0),
             0.0f,
