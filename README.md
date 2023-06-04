@@ -58,7 +58,7 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 
 * Unified clustering system - fog volumes, decals and lights all go into the same structure.
 * Screen-space reflections - working condition, but still work in progress.
-* SSAO - Horizon-based ambient occlusion done in compute.
+* Horizon-based ambient occlusion done in compute.
 * Physically based materials and rendering.
 * Multi-threaded subpass recording.
 * Shadow mapping for local lights and CSM for global/directional/sun light.
@@ -71,7 +71,9 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 * Tonemapping.
 * Asynchronous compute.
 * Virtual texturing using sparse binding.
+* Adaptive virtual textured terrain.
 * Fast and conservative GPU memory allocation.
+* Area lights.
 
 #### Entity system
 Nebula has historically had a database-centric approach to entities.
