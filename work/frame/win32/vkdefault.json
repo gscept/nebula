@@ -175,7 +175,7 @@
             },
             {
                 "name": "LocalLightShadow",
-                "format": "R32G32F",
+                "format": "D32S8",
                 "width": 512,
                 "height": 512,
                 "layers": 16,
@@ -268,7 +268,7 @@
                             "attachments": [
                                 {
                                     "name": "LocalLightShadow",
-                                    "clear": [ 1000, 1000, 0, 0 ],
+                                    "clear_depth": 1,
                                     "store": true
                                 }
                             ],
@@ -277,7 +277,7 @@
                                 {
                                     "name": "Spotlight Shadows",
                                     "subpass_dependencies": [],
-                                    "attachments": [ "LocalLightShadow" ],
+                                    "depth": "LocalLightShadow",
                                     "ops": [
                                         {
                                             "subgraph": {

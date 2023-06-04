@@ -32,9 +32,9 @@ SimpleTechnique(PointlightSkinnedAlpha, "Point|Skinned|Alpha",  vsSkinnedPoint()
 SimpleTechnique(PointlightInstanced, "Point|Static|Instanced",  vsStaticInstPoint(), psVSMPoint(), ShadowState);
 
 // CSM methods
-SimpleTechnique(CSM, "Global|Static",                               vsStaticCSM(), psShadow(), ShadowStateCSM);
-SimpleTechnique(CSMAlpha, "Global|Alpha",                           vsStaticCSM(), psShadowAlpha(), ShadowStateCSM);
-SimpleTechnique(CSMInstanced, "Global|Static|Instanced",            vsStaticInstCSM(), psShadow(), ShadowStateCSM);
-SimpleTechnique(CSMInstancedAlpha, "Global|Alpha|Instanced",        vsStaticInstCSM(), psShadowAlpha(), ShadowStateCSM);
-SimpleTechnique(CSMSkinned, "Global|Skinned",                       vsSkinnedCSM(), psShadow(), ShadowStateCSM);
-SimpleTechnique(CSMSkinnedAlpha, "Global|Skinned|Alpha",            vsSkinnedCSM(), psShadowAlpha(), ShadowStateCSM);
+SimpleTechnique(CSM, "Global|Static",                               vsStaticCSM(), psShadow(), ShadowState);
+SimpleTechnique(CSMAlpha, "Global|Alpha",                           vsStaticCSM(), psShadowAlpha(), ShadowState);
+SimpleTechnique(CSMInstanced, "Global|Static|Instanced",            vsStaticInstCSM(), psShadow(), ShadowState);
+SimpleTechnique(CSMInstancedAlpha, "Global|Alpha|Instanced",        vsStaticInstCSM(), psShadowAlpha(), ShadowState);
+SimpleTechnique(CSMSkinned, "Global|Skinned",                       vsSkinnedCSM(), psShadow(), ShadowState);
+SimpleTechnique(CSMSkinnedAlpha, "Global|Skinned|Alpha",            vsSkinnedCSM(), psShadowAlpha(), ShadowState);

@@ -6,7 +6,7 @@
 
 #define IMAGE_IS_RG32F 1
 #define IMAGE_IS_ARRAY 1
-#include "lib/blur_cs.fxh"
+#include "blur_cs.fxh"
 
 //------------------------------------------------------------------------------
 /**

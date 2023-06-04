@@ -57,7 +57,7 @@ CrossBilateralWeight(float r, float d, float d0)
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = SHARED_MEM_SIZE
+[local_size_x] = SHARED_MEM_SIZE
 shader
 void
 csMainX() 
@@ -121,7 +121,7 @@ csMainX()
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = SHARED_MEM_SIZE
+[local_size_x] = SHARED_MEM_SIZE
 shader
 void
 csMainY() 

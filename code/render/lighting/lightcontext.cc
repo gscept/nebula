@@ -23,7 +23,6 @@
 #endif
 
 #include "graphics/globalconstants.h"
-#include "ltc.h"
 
 #include "shared.h"
 #include "lights_cluster.h"
@@ -41,7 +40,7 @@ LightContext::SpotLightAllocator LightContext::spotLightAllocator;
 LightContext::AreaLightAllocator LightContext::areaLightAllocator;
 LightContext::DirectionalLightAllocator LightContext::directionalLightAllocator;
 LightContext::ShadowCasterAllocator LightContext::shadowCasterAllocator;
-Util::HashTable<Graphics::GraphicsEntityId, uint, 6, 1> LightContext::shadowCasterSliceMap;
+Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> LightContext::shadowCasterSliceMap;
 __ImplementContext(LightContext, LightContext::genericLightAllocator);
 
 struct
@@ -60,7 +59,7 @@ struct
     CoreGraphics::BatchGroup::Code spotlightsBatchCode;
     CoreGraphics::BatchGroup::Code globalLightsBatchCode;
 
-    CSMUtil csmUtil{ Shared::NumCascades };
+    CSMUtil csmUtil{ Shared::NUM_CASCADES };
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 9> frameOpAllocator;
 
@@ -169,21 +168,8 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
 
-    TextureCreateInfo ltcLut0Info;
-    ltcLut0Info.bindless = true;
-    ltcLut0Info.buffer = LtcLUTs::ltc1;
-    ltcLut0Info.width = 64;
-    ltcLut0Info.height = 64;
-    ltcLut0Info.format = PixelFormat::R32G32B32A32F;
-    textureState.ltcLut0 = CreateTexture(ltcLut0Info);
-
-    TextureCreateInfo ltcLut1Info;
-    ltcLut1Info.bindless = true;
-    ltcLut1Info.buffer = LtcLUTs::ltc2;
-    ltcLut1Info.width = 64;
-    ltcLut1Info.height = 64;
-    ltcLut1Info.format = PixelFormat::R32G32B32A32F;
-    textureState.ltcLut1 = CreateTexture(ltcLut1Info);
+    textureState.ltcLut0 = Resources::CreateResource("tex:system/ltc_1.dds", "system", nullptr, nullptr, true);
+    textureState.ltcLut1 = Resources::CreateResource("tex:system/ltc_2.dds", "system", nullptr, nullptr, true);
 
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "LightIndexListsBuffer";
@@ -259,7 +245,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
         {
             // draw it!
-            int slice = shadowCasterSliceMap[lightServerState.shadowcastingLocalLights[i]];
+            Ids::Id32 slice = shadowCasterSliceMap[lightServerState.shadowcastingLocalLights[i]];
             Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, slice, bufferIndex);
         }
     };
@@ -431,7 +417,7 @@ LightContext::SetupGlobalLight(
     if (castShadows)
     {
         // create new graphics entity for each view
-        for (IndexT i = 0; i < Shared::NumCascades; i++)
+        for (IndexT i = 0; i < Shared::NUM_CASCADES; i++)
         {
             Graphics::GraphicsEntityId shadowId = Graphics::CreateEntity();
             Visibility::ObserverContext::RegisterEntity(shadowId);
@@ -722,8 +708,8 @@ LightContext::GetTransform(const Graphics::GraphicsEntityId id)
 const Math::mat4
 LightContext::GetObserverTransform(const Graphics::GraphicsEntityId id)
 {
-    const Graphics::ContextEntityId cid = shadowCasterSliceMap[id.id];
-    return shadowCasterAllocator.Get<ShadowCaster_Transform>(cid.id);
+    const Ids::Id32 cid = shadowCasterSliceMap[id.id];
+    return shadowCasterAllocator.Get<ShadowCaster_Transform>(cid);
 }
 
 //------------------------------------------------------------------------------
@@ -754,7 +740,7 @@ LightContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::point
 //------------------------------------------------------------------------------
 /**
 */
-const Math::point&
+const Math::point
 LightContext::GetPosition(const Graphics::GraphicsEntityId id)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -801,7 +787,7 @@ LightContext::SetRotation(const Graphics::GraphicsEntityId id, const Math::quat&
 //------------------------------------------------------------------------------
 /**
 */
-const Math::quat&
+const Math::quat
 LightContext::GetRotation(const Graphics::GraphicsEntityId id)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -857,7 +843,7 @@ LightContext::SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& sc
 //------------------------------------------------------------------------------
 /**
 */
-const Math::vec3&
+const Math::vec3
 LightContext::GetScale(const Graphics::GraphicsEntityId id)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -937,16 +923,40 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
         for (IndexT i = 0; i < observers.Size(); i++)
         {
             // do reverse lookup to find shadow caster
-            Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observers[i]];
-            shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = lightServerState.csmUtil.GetCascadeViewProjection(i);
+            Ids::Id32 ctxId = shadowCasterSliceMap[observers[i]];
+            Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
+            
+            shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = cascadeProj;
+            cascadeProj.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[ctxId]);
         }
 
-        IndexT i;
-        for (i = 0; i < Shared::NumCascades; i++)
+#if __DX12__
+        Math::mat4 textureScale = Math::scaling(0.5f, -0.5f, 1.0f);
+#elif __VULKAN__
+        Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
+#endif
+        Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
+        const Util::FixedArray<Math::mat4> transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
+        Math::vec4 cascadeScales[Shared::NUM_CASCADES];
+        Math::vec4 cascadeOffsets[Shared::NUM_CASCADES];
+
+        for (IndexT splitIndex = 0; splitIndex < Shared::NUM_CASCADES; ++splitIndex)
         {
-            Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
-            cascadeProj.store(lightServerState.shadowMatrixUniforms.CSMViewMatrix[i]);
+            Math::mat4 shadowTexture = (textureTranslation * textureScale) * transforms[splitIndex];
+            Math::vec4 scale = Math::vec4(
+                shadowTexture.row0.x,
+                shadowTexture.row1.y,
+                shadowTexture.row2.z,
+                1);
+            Math::vec4 offset = shadowTexture.row3;
+            offset.w = 0;
+            cascadeOffsets[splitIndex] = offset;
+            cascadeScales[splitIndex] = scale;
         }
+
+        memcpy(lightServerState.shadowMatrixUniforms.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * Shared::NUM_CASCADES);
+        memcpy(lightServerState.shadowMatrixUniforms.CascadeScale, cascadeScales, sizeof(Math::vec4) * Shared::NUM_CASCADES);
+        memcpy(lightServerState.shadowMatrixUniforms.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances().Begin(), sizeof(float) * Shared::NUM_CASCADES);
     }
 
     const Util::Array<LightType>& types = genericLightAllocator.GetArray<Type>();
@@ -972,11 +982,12 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
                     Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]).getmatrix();
                     Math::mat4 viewProjection = projection * inverse(view);
                     Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
-                    Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-                    shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = viewProjection;
+                    Ids::Id32 ctxId = shadowCasterSliceMap[observer];
+                    shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = viewProjection;
 
                     lightServerState.shadowcastingLocalLights.Add(observer);
-                    viewProjection.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
+                    viewProjection.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[ctxId]);
+                    lightServerState.shadowMatrixUniforms.ShadowTiles[ctxId / 4][ctxId % 4] = shadowCasterCount++;
                     break;
                 }
 
@@ -1088,40 +1099,12 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
     {
-
-#if __DX12__
-        Math::mat4 textureScale = Math::scaling(0.5f, -0.5f, 1.0f);
-#elif __VULKAN__
-        Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
-#endif
-        Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
-        const Util::FixedArray<Math::mat4> transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
-        Math::vec4 cascadeScales[Shared::NumCascades];
-        Math::vec4 cascadeOffsets[Shared::NumCascades];
-
-        for (IndexT splitIndex = 0; splitIndex < Shared::NumCascades; ++splitIndex)
-        {
-            Math::mat4 shadowTexture = (textureTranslation * textureScale) * transforms[splitIndex];
-            Math::vec4 scale = Math::vec4(
-                shadowTexture.row0.x,
-                shadowTexture.row1.y,
-                shadowTexture.row2.z,
-                1);
-            Math::vec4 offset = shadowTexture.row3;
-            offset.w = 0;
-            cascadeOffsets[splitIndex] = offset;
-            cascadeScales[splitIndex] = scale;
-        }
-
-        memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * Shared::NumCascades);
-        memcpy(params.CascadeScale, cascadeScales, sizeof(Math::vec4) * Shared::NumCascades);
-        memcpy(params.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances().Begin(), sizeof(float) * Shared::NumCascades);
         params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMap);
         params.TerrainShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.terrainShadowMap);
         params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
-        params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / lightServerState.terrainSize;
-        params.TerrainShadowMapPixelSize[0] = params.TerrainShadowMapPixelSize[1] = 1.0f / lightServerState.terrainShadowMapSize;
-        (lightServerState.csmUtil.GetShadowView() * invViewTransform).store(params.CSMShadowMatrix);
+        params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / Math::max(1u, lightServerState.terrainSize);
+        params.TerrainShadowMapPixelSize[0] = params.TerrainShadowMapPixelSize[1] = 1.0f / Math::max(1u, lightServerState.terrainShadowMapSize);
+        lightServerState.csmUtil.GetShadowView().store(params.CSMShadowMatrix);
 
         flags |= LightsCluster::USE_SHADOW_BITFLAG;
     }
@@ -1174,8 +1157,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                     flags |= LightsCluster::USE_PROJECTION_TEX_BITFLAG;
                 }
 
-                Math::vec4 posAndRange = viewTransform * trans;
-                posAndRange.store3(pointLight.position);
+                trans.store3(pointLight.position);
                 (color[i] * intensity[i]).store(pointLight.color);
                 pointLight.range = range[i];
                 pointLight.flags = flags;
@@ -1194,7 +1176,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 {
                     Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
                     Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-                    shadowProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) * invViewTransform;
+                    shadowProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id);
                 }
                 spotLight.shadowExtension = -1;
                 spotLight.projectionExtension = -1;
@@ -1226,16 +1208,14 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                     numSpotLightsProjection++;
                 }
 
-                Math::mat4 viewSpace = viewTransform * trans;
-
-                Math::vec4 forward = normalize(viewSpace.z_axis);
+                Math::vec4 forward = normalize(trans.z_axis);
                 if (angles[0] == angles[1])
-                    forward.w = 1.0f;
+                    spotLight.angleFade = 1.0f;
                 else
-                    forward.w = 1.0f / (angles[1] - angles[0]);
+                    spotLight.angleFade = 1.0f / (angles[1] - angles[0]);
 
-                viewSpace.position.store3(spotLight.position);
-                forward.store(spotLight.forward);
+                trans.position.store3(spotLight.position);
+                forward.store3(spotLight.forward);
                 (color[i] * intensity[i]).store(spotLight.color);
                 
                 // calculate sine and cosine
@@ -1257,15 +1237,15 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 auto& areaLight = clusterState.lightList.AreaLights[numAreaLights];
                 areaLight.shadowExtension = -1;
 
-                Math::point pos = viewTransform * trans.getposition();
+                Math::point pos = trans.getposition();
                 Math::mat4 rotation = Math::rotationquat(trans.getrotate());
-                Math::vec4 xAxis = viewTransform * (rotation.x_axis);
-                Math::vec4 yAxis = viewTransform * (rotation.y_axis);
+                Math::vec4 xAxis = rotation.x_axis;
+                Math::vec4 yAxis = rotation.y_axis;
 
                 xAxis.store3(areaLight.xAxis);
-                areaLight.width = trans.getscale().x / 2;
+                areaLight.width = trans.getscale().x * 0.5f;
                 yAxis.store3(areaLight.yAxis);
-                areaLight.height = trans.getscale().y / 2;
+                areaLight.height = trans.getscale().y * 0.5f;
                 pos.store3(areaLight.position);
 
                 Math::vec3 scale = trans.getscale();
@@ -1289,7 +1269,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 {
                     Graphics::GraphicsEntityId observer = areaLightAllocator.Get<AreaLight_Observer>(typeIds[i]);
                     Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-                    shadowProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) * invViewTransform;
+                    shadowProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id);
 
                     flags |= LightsCluster::USE_SHADOW_BITFLAG;
                     areaLight.shadowExtension = numAreaLightShadows;

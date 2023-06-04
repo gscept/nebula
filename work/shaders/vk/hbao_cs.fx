@@ -169,7 +169,7 @@ float ComputeHBAO(vec2 P, vec2 T, int centerId)
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = HBAO_TILE_WIDTH
+[local_size_x] = HBAO_TILE_WIDTH
 shader
 void
 csMainX() 
@@ -213,7 +213,7 @@ csMainX()
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = HBAO_TILE_WIDTH
+[local_size_x] = HBAO_TILE_WIDTH
 shader
 void
 csMainY() 

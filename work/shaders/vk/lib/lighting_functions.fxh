@@ -91,15 +91,15 @@ vec3
 CalculatePointLight(
     in PointLight light, 
     in PointLightShadowExtension ext, 
-    in vec3 viewPos,
+    in vec3 pos,
     in vec3 viewVec, 
-    in vec3 viewSpaceNormal, 
+    in vec3 normal, 
     in float depth, 
     in vec4 material, 
     in vec3 diffuseColor,
     in vec3 F0)
 {
-    vec3 lightDir = (light.position.xyz - viewPos);
+    vec3 lightDir = (light.position.xyz - pos);
     float lightDirLen = length(lightDir);
 
     float d2 = lightDirLen * lightDirLen;
@@ -111,9 +111,9 @@ CalculatePointLight(
     lightDir = lightDir * oneDivLightDirLen;
 
     vec3 H = normalize(lightDir.xyz + viewVec);
-    float NL = saturate(dot(lightDir, viewSpaceNormal));
-    float NH = saturate(dot(viewSpaceNormal, H));
-    float NV = saturate(dot(viewSpaceNormal, viewVec));
+    float NL = saturate(dot(lightDir, normal));
+    float NH = saturate(dot(normal, H));
+    float NV = saturate(dot(normal, viewVec));
     float LH = saturate(dot(H, lightDir.xyz)); 
 
     vec3 brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
@@ -139,11 +139,10 @@ vec4
 CalculateSpotLightProjection(
     in SpotLight light
     , in SpotLightProjectionExtension projExt
-    , in vec3 viewPos
-
+    , in vec3 pos
 )
 {
-    vec4 projLightPos = projExt.projection * vec4(viewPos, 1.0f);
+    vec4 projLightPos = projExt.projection * vec4(pos, 1.0f);
     projLightPos.xy /= projLightPos.ww;
     vec2 lightSpaceUv = projLightPos.xy * vec2(0.5f, 0.5f) + 0.5f;
     return sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
@@ -156,10 +155,10 @@ float
 CalculateSpotLightShadow(
     in SpotLight light
     , in SpotLightShadowExtension shadowExt
-    , in vec3 viewPos
+    , in vec3 pos
 )
 {
-    vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
+    vec4 shadowProjLightPos = shadowExt.projection * vec4(pos, 1.0f);
     shadowProjLightPos.xyz /= shadowProjLightPos.www;
     vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
     shadowLookup.y = 1 - shadowLookup.y;
@@ -176,15 +175,15 @@ CalculateSpotLight(
     in SpotLight light, 
     in vec4 projection,
     in float shadow,    
-    in vec3 viewPos,
+    in vec3 pos,
     in vec3 viewVec, 
-    in vec3 viewSpaceNormal, 
+    in vec3 normal, 
     in float depth, 
     in vec4 material, 
     in vec3 diffuseColor,
     in vec3 F0)
 {
-    vec3 lightDir = (light.position - viewPos);
+    vec3 lightDir = (light.position - pos);
     float lightDirLen = length(lightDir);
 
     float att = InvSquareFalloff(light.range, lightDir);
@@ -193,15 +192,15 @@ CalculateSpotLight(
     lightDir = lightDir * oneDivLightDirLen;
 
     float theta = dot(light.forward.xyz, lightDir);
-    float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
+    float intensity = saturate((theta - light.angleSinCos.y) * light.angleFade);
 
     vec4 lightModColor = intensity.xxxx * att;
     lightModColor *= projection;
 
     vec3 H = normalize(lightDir.xyz + viewVec);
-    float NL = saturate(dot(lightDir, viewSpaceNormal));
-    float NH = saturate(dot(viewSpaceNormal, H));
-    float NV = saturate(dot(viewSpaceNormal, viewVec));
+    float NL = saturate(dot(lightDir, normal));
+    float NH = saturate(dot(normal, H));
+    float NV = saturate(dot(normal, viewVec));
     float LH = saturate(dot(H, lightDir.xyz)); 
     
     vec3 brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
@@ -219,26 +218,26 @@ CalculateSpotLight(
 vec3
 CalculateRectLight(
     in AreaLight li
-    , in vec3 viewPos
+    , in vec3 pos
     , in vec3 viewVec
-    , in vec3 viewSpaceNormal
+    , in vec3 normal
     , in vec4 material
     , in bool twoSided
 )
 {
-    vec3 lightDir = (li.position.xyz - viewPos);
+    vec3 lightDir = (li.position.xyz - pos);
     float attenuation = FalloffWindow(li.range, lightDir);
     if (attenuation < 0.0001f)
         return vec3(0);
 
     // Calculate LTC LUT uv
-    float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    float NV = saturate(dot(normal, viewVec));
+    float ltcRoughness = sqr(material[MAT_ROUGHNESS]);
+    vec2 uv = vec2(clamp(0.01f, 0.98f, ltcRoughness), sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
     vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
-    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
 
     // Transform 4 rect points to light
     vec3 points[4];
@@ -259,10 +258,10 @@ CalculateRectLight(
     );
 
     // Integrate specular
-    vec3 spec = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, twoSided)) * t2.x;
+    vec3 spec = vec3(LtcRectIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcRectIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, twoSided));
+    vec3 diff = vec3(LtcRectIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided));
 
     return li.color * (spec + diff) * attenuation;
 }
@@ -273,26 +272,26 @@ CalculateRectLight(
 vec3
 CalculateDiskLight(
     in AreaLight li
-    , in vec3 viewPos
+    , in vec3 pos
     , in vec3 viewVec
-    , in vec3 viewSpaceNormal
+    , in vec3 normal
     , in vec4 material
     , in bool twoSided
 )
 {
-    vec3 lightDir = (li.position.xyz - viewPos);
+    vec3 lightDir = (li.position.xyz - pos);
     float attenuation = FalloffWindow(li.range, lightDir);
     if (attenuation < 0.0001f)
         return vec3(0);
 
      // Calculate LTC LUT uv
-    float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    float NV = saturate(dot(normal, viewVec));
+    float ltcRoughness = sqr(material[MAT_ROUGHNESS]);
+    vec2 uv = vec2(clamp(0.01f, 0.98f, ltcRoughness), sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
-    vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
-    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
+    vec4 t1 = sample2DLod(ltcLUT0, LinearSampler, uv, 0);
 
     // Transform 4 rect points to light
     vec3 points[3];
@@ -300,9 +299,9 @@ CalculateDiskLight(
     // Because of some numerical instability, we have to slightly increase the size in Y for the disk
     vec3 dx = li.xAxis * li.width;
     vec3 dy = li.yAxis * li.height;
-    points[0] = li.position - dx - dy;
-    points[1] = li.position + dx - dy;
-    points[2] = li.position + dx + dy;
+    points[0] = li.position + dx - dy;
+    points[1] = li.position - dx - dy;
+    points[2] = li.position - dx + dy;
 
     // Construct linear cosine transform
     mat3 minv = mat3
@@ -313,10 +312,10 @@ CalculateDiskLight(
     );
 
     // Integrate specular
-    vec3 spec = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, minv, points, true, twoSided)) * t2.x;
+    vec3 spec = vec3(LtcDiskIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcDiskIntegrate(viewSpaceNormal, viewVec, viewPos, mat3(1), points, false, twoSided));
+    vec3 diff = vec3(LtcDiskIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided));
 
     return li.color * (diff + spec) * attenuation;
 }
@@ -327,26 +326,26 @@ CalculateDiskLight(
 vec3 
 CalculateTubeLight(
     in AreaLight li
-    , in vec3 viewPos
+    , in vec3 pos
     , in vec3 viewVec
-    , in vec3 viewSpaceNormal
+    , in vec3 normal
     , in vec4 material
     , in bool twoSided
 )
 {
-    vec3 lightDir = (li.position.xyz - viewPos);
+    vec3 lightDir = (li.position.xyz - pos);
     float attenuation = FalloffWindow(li.range, lightDir);
     if (attenuation < 0.0001f)
         return vec3(0);
 
     // Calculate LTC LUT uv
-    float NV = saturate(dot(viewSpaceNormal, viewVec));
-    vec2 uv = vec2(1.0f - material[MAT_ROUGHNESS], sqrt(1.0f - NV));
+    float NV = saturate(dot(normal, viewVec));
+    float ltcRoughness = sqr(material[MAT_ROUGHNESS]);
+    vec2 uv = vec2(clamp(0.01f, 0.98f, ltcRoughness), sqrt(1.0f - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
-    vec4 t1 = sample2D(ltcLUT0, LinearSampler, uv);
-    vec4 t2 = sample2D(ltcLUT1, LinearSampler, uv);
+    vec4 t1 = sample2DLod(ltcLUT0, LinearSampler, uv, 0);
 
     vec3 points[2];
     vec3 dx = li.xAxis * li.width;
@@ -363,10 +362,10 @@ CalculateTubeLight(
     );
 
     // Integrate specular
-    vec3 spec = vec3(LtcLineIntegrate(viewSpaceNormal, viewVec, viewPos, li.radius, minv, points)) * t2.x;
+    vec3 spec = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, minv, points));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcLineIntegrate(viewSpaceNormal, viewVec, viewPos, li.radius, mat3(1), points));
+    vec3 diff = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, mat3(1), points));
 
     return li.color * (spec + diff) * (1.0f / 2 * PI) * attenuation;
 }
@@ -380,7 +379,7 @@ CalculateTubeLight(
     @param viewSpacePos		Fragments position in viewspace; used for shadowing.
 */
 vec3
-CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, vec3 worldSpaceNormal, vec4 viewSpacePos, vec4 worldSpacePosition)
+CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, vec3 worldSpaceNormal, vec3 worldSpacePosition)
 {
     float NL = saturate(dot(GlobalLightDirWorldspace.xyz, worldSpaceNormal));
     if (NL <= 0) { return vec3(0); }
@@ -392,7 +391,7 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
-        vec4 shadowPos = CSMShadowMatrix * viewSpacePos; // csm contains inversed view + csm transform
+        vec4 shadowPos = CSMShadowMatrix * vec4(worldSpacePosition, 1); // csm contains inversed view + csm transform
         shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer
 #ifdef CSM_DEBUG
         , csmDebug  
@@ -433,11 +432,11 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     @param depth			The fragments depth (gl_FragCoord.z)
 */
 vec3
-LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 viewPos, vec3 viewSpaceNormal, float depth)
+LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 pos, vec3 normal, float depth)
 {
     vec3 light = vec3(0, 0, 0);
     uint flag = AABBs[clusterIndex].featureFlags;
-    vec3 viewVec = -normalize(viewPos.xyz);
+    vec3 viewVec = normalize(EyePos.xyz - pos);
     if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
@@ -450,9 +449,9 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
             light += CalculatePointLight(
                 li,
                 ext,
-                viewPos.xyz,
+                pos,
                 viewVec,
-                viewSpaceNormal,
+                normal,
                 depth,
                 material,
                 diffuseColor,
@@ -474,17 +473,17 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
 
             // if we have extensions, load them from their respective buffers
             if (li.shadowExtension != -1)
-                shadow = CalculateSpotLightShadow(li, SpotLightShadow[li.shadowExtension], viewPos.xyz);
+                shadow = CalculateSpotLightShadow(li, SpotLightShadow[li.shadowExtension], pos);
             if (li.projectionExtension != -1)
-                projection = CalculateSpotLightProjection(li, SpotLightProjection[li.projectionExtension], viewPos.xyz);
+                projection = CalculateSpotLightProjection(li, SpotLightProjection[li.projectionExtension], pos);
 
             light += CalculateSpotLight(
                 li,
                 projection,
                 shadow,
-                viewPos.xyz,
+                pos,
                 viewVec,
-                viewSpaceNormal,
+                normal,
                 depth,
                 material,
                 diffuseColor,
@@ -507,12 +506,11 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
 
             if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_RECT))
             {
-                //light += li.color;
                 light += CalculateRectLight(
                     li
-                    , viewPos.xyz
+                    , pos
                     , viewVec
-                    , viewSpaceNormal
+                    , normal
                     , material
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
@@ -521,9 +519,9 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
             {
                 light += CalculateDiskLight(
                     li
-                    , viewPos.xyz
+                    , pos
                     , viewVec
-                    , viewSpaceNormal
+                    , normal
                     , material
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
@@ -532,9 +530,9 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 v
             {
                 light += CalculateTubeLight(
                     li
-                    , viewPos.xyz
+                    , pos
                     , viewVec
-                    , viewSpaceNormal
+                    , normal
                     , material
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
@@ -551,7 +549,7 @@ vec3
 CalculatePointLightAmbientTransmission(
     in PointLight light,
     in PointLightShadowExtension ext,
-    in vec3 viewPos,
+    in vec3 pos,
     in vec3 viewVec,
     in vec3 normal,
     in float depth,
@@ -559,7 +557,7 @@ CalculatePointLightAmbientTransmission(
     in vec4 albedo,
     in float transmission)
 {
-    vec3 lightDir = (light.position.xyz - viewPos);
+    vec3 lightDir = (light.position.xyz - pos);
     float lightDirLen = length(lightDir);
 
     float d2 = lightDirLen * lightDirLen;
@@ -605,7 +603,7 @@ CalculateSpotLightAmbientTransmission(
     lightDir = lightDir / lightDirLen;
 
     float theta = dot(light.forward.xyz, lightDir);
-    float intensity = saturate((theta - light.angleSinCos.y) * light.forward.w);
+    float intensity = saturate((theta - light.angleSinCos.y) * light.angleFade);
 
     vec4 lightModColor = intensity.xxxx * att * projection;
 
@@ -620,7 +618,7 @@ CalculateSpotLightAmbientTransmission(
 /**
 */
 vec3
-CalculateGlobalLightAmbientTransmission(vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo, in float transmission)
+CalculateGlobalLightAmbientTransmission(vec3 pos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo, in float transmission)
 {
     float NL = saturate(dot(GlobalLightDirWorldspace.xyz, normal));
     float TNL = saturate(dot(-GlobalLightDirWorldspace.xyz, normal)) * transmission;
@@ -634,7 +632,7 @@ CalculateGlobalLightAmbientTransmission(vec4 viewPos, vec3 viewVec, vec3 normal,
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
-        vec4 shadowPos = CSMShadowMatrix * viewPos; // csm contains inversed view + csm transform
+        vec4 shadowPos = CSMShadowMatrix * vec4(pos, 1); // csm contains inversed view + csm transform
         shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer
 #ifdef CSM_DEBUG
             , csmDebug
@@ -727,22 +725,23 @@ LocalLightsAmbientTransmission(
     return light;
 }
 
-#define USE_SCALARIZATION_LOOP 1
+#define USE_SCALARIZATION_LOOP 0
 //------------------------------------------------------------------------------
 /**
 */
 vec3
-CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 viewSpacePos, vec3 albedo, vec4 material, vec3 normal)
+CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec3 normal)
 {
-    uint3 index3D = CalculateClusterIndex(clipXYZ.xy / BlockSize, viewSpacePos.z, InvZScale, InvZBias);
+    float viewDepth = CalculateViewDepth(View, worldSpacePos);
+    uint3 index3D = CalculateClusterIndex(clipXYZ.xy / BlockSize, viewDepth, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
     vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
-    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, vec4(viewSpacePos, 1), vec4(worldSpacePos, 1));
+    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
 
-#ifdef USE_SCALARIZATION_LOOP
+#if USE_SCALARIZATION_LOOP
     // Get the mask for the invocation
     uint4 laneMask = gl_SubgroupEqMask;
 
@@ -753,8 +752,7 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 viewSpacePos, vec3 albedo,
     // Check if all waves use the same index and do this super cheaply
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
-        vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
-        light += LocalLights(firstWaveIndex, albedo, material, F0, vec4(viewSpacePos, 1), viewNormal, clipXYZ.z);        
+        light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
     }
     else
     {
@@ -769,14 +767,12 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 viewSpacePos, vec3 albedo,
             // this will effectively scalarize the light lists
             if (scalarIdx == idx)
             {
-                vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
-                light += LocalLights(scalarIdx, albedo, material, F0, vec4(viewSpacePos, 1), viewNormal, clipXYZ.z);        
+                light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
             }
         }
     }
 #else
-    vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
-    light += LocalLights(idx, albedo, material, F0, vec4(viewSpacePos, 1), viewNormal, clipXYZ.z);  
+    light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
 #endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);

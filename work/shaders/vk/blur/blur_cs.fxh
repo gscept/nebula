@@ -10,7 +10,7 @@
 
   (C) 2016 Individual contributors, see AUTHORS file
 */
-#include "lib/shared.fxh"
+#include "../lib/shared.fxh"
 
 #if IMAGE_IS_RGBA16F
 #define IMAGE_FORMAT_TYPE rgba16f
@@ -91,7 +91,7 @@ write IMAGE_FORMAT_TYPE image2D BlurImageY;
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = SHARED_MEM_SIZE
+[local_size_x] = SHARED_MEM_SIZE
 shader
 void
 csMainX()
@@ -157,7 +157,7 @@ csMainX()
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = SHARED_MEM_SIZE
+[local_size_x] = SHARED_MEM_SIZE
 shader
 void
 csMainY()

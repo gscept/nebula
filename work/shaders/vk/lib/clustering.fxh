@@ -12,7 +12,8 @@
 /**
     Calculate 3D index from screen position and depth
 */
-uint3 CalculateClusterIndex(vec2 screenPos, float depth, float scale, float bias)
+uint3 
+CalculateClusterIndex(vec2 screenPos, float depth, float scale, float bias)
 {
     uint i = uint(screenPos.x);
     uint j = uint(screenPos.y);
@@ -20,6 +21,18 @@ uint3 CalculateClusterIndex(vec2 screenPos, float depth, float scale, float bias
 
     return uint3(i, j, k);
 }
+
+//------------------------------------------------------------------------------
+/**
+    Calculate view Z from world space
+*/
+float
+CalculateViewDepth(mat4 view, vec3 worldPos)
+{
+    vec4 m = vec4(view[0][2], view[1][2], view[2][2], view[3][2]);
+    return dot(m, vec4(worldPos, 1));
+}
+
 
 //------------------------------------------------------------------------------
 /**

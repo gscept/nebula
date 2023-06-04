@@ -335,8 +335,8 @@ vsStatic(
     out vec3 Normal,
     out flat float Sign,
     out vec2 UV,
-    out vec3 WorldSpacePos,
-    out vec4 ViewSpacePos)
+    out vec3 WorldSpacePos
+)
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
@@ -347,7 +347,6 @@ vsStatic(
 
     UV            = UnpackUV(uv);
     WorldSpacePos = modelSpace.xyz;
-    ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -364,8 +363,8 @@ vsStaticInstanced(
     out vec3 Normal,
     out flat float Sign,
     out vec2 UV,
-    out vec3 WorldSpacePos,
-    out vec4 ViewSpacePos)
+    out vec3 WorldSpacePos
+)
 {
     vec4 modelSpace = ModelArray[gl_InstanceID] * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
@@ -376,7 +375,6 @@ vsStaticInstanced(
 
     UV            = UnpackUV(uv);
     WorldSpacePos = modelSpace.xyz;
-    ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -492,8 +490,8 @@ vsSkinned(
     out vec3 Normal,
     out flat float Sign,
     out vec2 UV,
-    out vec3 WorldSpacePos,
-    out vec4 ViewSpacePos)
+    out vec3 WorldSpacePos
+)
 {
     vec4 skinnedPos      = SkinnedPosition(position, weights, indices);
     vec4 skinnedNormal   = SkinnedNormal(normal, weights, indices);
@@ -508,7 +506,6 @@ vsSkinned(
 
     UV            = UnpackUV(uv);
     WorldSpacePos = modelSpace.xyz;
-    ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -528,7 +525,8 @@ vsSkinnedTessellated(
     out flat float Sign,
     out vec4 Position,
     out vec2 UV,
-    out float Distance)
+    out float Distance
+)
 {
     vec4 skinnedPos      = SkinnedPosition(position, weights, indices);
     vec4 skinnedNormal   = SkinnedNormal(normal.xyz, weights, indices);
@@ -573,7 +571,8 @@ psUber(
     in vec3 WorldViewVec,
     [color0] out vec4 Albedo,
     [color1] out vec3 Normals,
-    [color2] out vec4 Material)
+    [color2] out vec4 Material
+)
 {
     vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
     vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
@@ -600,7 +599,8 @@ psUberAlphaTest(
     in vec3 WorldViewVec,
     [color0] out vec4 Albedo,
     [color1] out vec3 Normals,
-    [color2] out vec4 Material)
+    [color2] out vec4 Material
+)
 {
     vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
     vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
@@ -634,7 +634,8 @@ psUberVertexColor(
     in vec3 WorldViewVec,
     [color0] out vec4 Albedo,
     [color1] out vec3 Normals,
-    [color2] out vec4 Material)
+    [color2] out vec4 Material
+)
 {
     vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
     vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
@@ -664,7 +665,8 @@ psUberAlpha(in vec3 ViewSpacePos,
     in vec2 UV,
     [color0] out vec4 Albedo,
     [color1] out vec3 Normals,
-    [color2] out vec4 Material)
+    [color2] out vec4 Material
+)
 {
     vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
     vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);

@@ -15,7 +15,7 @@
 #include "graphics/globalconstants.h"
 
 #include "volumefog.h"
-#include "blur_2d_rgba16f_cs.h"
+#include "blur/blur_2d_rgba16f_cs.h"
 namespace Fog
 {
 

@@ -16,7 +16,7 @@ write rgba16f image2D DebugOutput;
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = 64
+[local_size_x] = 64
 shader 
 void csCull()
 {
@@ -34,7 +34,8 @@ void csCull()
     for (uint i = 0; i < NumPointLights; i++)
     {
         const PointLight light = PointLights[i];
-        if (TestAABBSphere(aabb, light.position.xyz, light.range))
+        vec3 viewSpacePos = (View * vec4(light.position, 1)).xyz;
+        if (TestAABBSphere(aabb, viewSpacePos, light.range))
         {
             PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
@@ -52,10 +53,12 @@ void csCull()
     {
         const SpotLight light = SpotLights[i];
         // first do fast discard sphere test
-        if (TestAABBSphere(aabb, light.position.xyz, light.range))
+        vec3 viewSpacePos = (View * vec4(light.position, 1)).xyz;
+        if (TestAABBSphere(aabb, viewSpacePos, light.range))
         {
             // then do more refined cone test, if previous test passed
-            if (TestAABBCone(aabb, light.position.xyz, light.forward.xyz, light.range, light.angleSinCos))
+            vec3 viewSpaceForward = (View * vec4(light.forward, 0)).xyz;
+            if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
             {
                 SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
                 numLights++;
@@ -72,7 +75,6 @@ void csCull()
     for (uint i = 0; i < NumAreaLights; i++)
     {
         const AreaLight light = AreaLights[i];
-
         if (TestAABBAABB(aabb, light.bboxMin, light.bboxMax))
         {
             AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
@@ -109,7 +111,7 @@ void csCull()
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = 64
+[local_size_x] = 64
 shader
 void csDebug()
 {
@@ -117,9 +119,9 @@ void csDebug()
     float depth = fetch2D(DepthBuffer, PointSampler, coord, 0).r;
 
     // convert screen coord to view-space position
-    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
+    vec4 worldPos = PixelToWorld(coord * InvFramebufferDimensions, depth, InvView, InvProjection);
 
-    uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias);
+    uint3 index3D = CalculateClusterIndex(coord / BlockSize, worldPos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     uint flag = AABBs[idx].featureFlags; // add 0 so we can read the value

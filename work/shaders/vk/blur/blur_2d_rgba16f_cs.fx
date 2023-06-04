@@ -4,8 +4,8 @@
 //  (C) 2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#define IMAGE_IS_RGB16F 1
-#include "lib/blur_cs.fxh"
+#define IMAGE_IS_RGBA16F 1
+#include "blur_cs.fxh"
 
 //------------------------------------------------------------------------------
 /**

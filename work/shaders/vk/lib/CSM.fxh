@@ -55,7 +55,7 @@ CSMPS(
     vec2 uvDdy = dFdy(TexShadow.xy);
 
 	int cascadeIndex;
-	for( cascadeIndex = 0; cascadeIndex < NumCascades; ++cascadeIndex)
+	for( cascadeIndex = 0; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
 	{
 		texCoordShadow = mad(TexShadow, CascadeScale[cascadeIndex], CascadeOffset[cascadeIndex]);
 

@@ -18,8 +18,8 @@ group(TICK_GROUP) binding(0) textureCube		TexturesCube[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture3D			Textures3D[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2DArray	    Textures2DArray[MAX_TEXTURES];
 group(TICK_GROUP) sampler_state		Basic2DSampler {};
-group(TICK_GROUP) sampler_state		PointSampler { Filter = Point; };
-group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; };
+group(TICK_GROUP) sampler_state		PointSampler { Filter = Point; AddressU = Clamp; AddressV = Clamp; };
+group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; AddressU = Clamp; AddressV = Clamp; };
 
 #define sample2D(handle, sampler, uv)						    texture(sampler2D(Textures2D[handle], sampler), uv)
 #define sample2DLod(handle, sampler, uv, lod)				    textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
@@ -59,9 +59,6 @@ group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; };
 #define make_sampler3D(handle, sampler)						sampler3D(Textures3D[handle], sampler)
 
 #define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
-
-// The number of CSM cascades
-const uint NumCascades = 4;
 
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared constant PerTickParams
@@ -138,9 +135,7 @@ group(TICK_GROUP) shared constant PerTickParams
     float Lum;
 
     // CSM params
-    vec4 CascadeOffset[NumCascades];
-    vec4 CascadeScale[NumCascades];
-    vec4 CascadeDistances; 
+
     float GlobalLightShadowBias;
 
     textureHandle NormalBuffer;
@@ -169,7 +164,10 @@ group(FRAME_GROUP) shared constant ViewConstants
 
 group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS";]
 {
-    mat4 CSMViewMatrix[NumCascades];
+    vec4 CascadeOffset[NUM_CASCADES];
+    vec4 CascadeScale[NUM_CASCADES];
+    vec4 CascadeDistances;
+    ivec4 ShadowTiles[SHADOW_CASTER_COUNT / 4];
     mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
@@ -249,7 +247,8 @@ struct SpotLight
 {
     vec3 position;				// view space position of light
     float range;
-    vec4 forward;				// forward vector of light (spotlight and arealights)
+    vec3 forward;				// forward vector of light (spotlight and arealights)
+    float angleFade;
 
     vec2 angleSinCos;			// angle cutoffs
     int projectionExtension;	// projection extension index
@@ -456,6 +455,7 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
     FogBox FogBoxes[128];
 };
 
+const int NUM_CASCADES = 4;
 const int SHADOW_CASTER_COUNT = 16;
 
 #define FLT_MAX     3.40282347E+38F

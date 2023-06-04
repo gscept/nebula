@@ -169,7 +169,7 @@ LocalLightsFog(
             lightDir = lightDir * (1 / lightDirLen);
 
             float theta = dot(li.forward.xyz, lightDir);
-            float intensity = saturate((theta - li.angleSinCos.y) * li.forward.w);
+            float intensity = saturate((theta - li.angleSinCos.y) * li.angleFade);
 
             float shadowFactor = 1.0f;
             if (FlagSet(li.flags, USE_SHADOW_BITFLAG))

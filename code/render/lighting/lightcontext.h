@@ -101,15 +101,15 @@ public:
     /// Set light position
     static const void SetPosition(const Graphics::GraphicsEntityId id, const Math::point& position);
     /// Get light position
-    static const Math::point& GetPosition(const Graphics::GraphicsEntityId id);
+    static const Math::point GetPosition(const Graphics::GraphicsEntityId id);
     /// Set light rotation
     static const void SetRotation(const Graphics::GraphicsEntityId id, const Math::quat& rotation);
     /// Get light rotation
-    static const Math::quat& GetRotation(const Graphics::GraphicsEntityId id);
+    static const Math::quat GetRotation(const Graphics::GraphicsEntityId id);
     /// Set light scale
     static const void SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale);
     /// Get light scale
-    static const Math::vec3& GetScale(const Graphics::GraphicsEntityId id);
+    static const Math::vec3 GetScale(const Graphics::GraphicsEntityId id);
 
     /// get the light type
     static LightType GetType(const Graphics::GraphicsEntityId id);
@@ -270,7 +270,7 @@ private:
         Math::mat4
     > ShadowCasterAllocator;
     static ShadowCasterAllocator shadowCasterAllocator;
-    static Util::HashTable<Graphics::GraphicsEntityId, uint, 6, 1> shadowCasterSliceMap;
+    static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterSliceMap;
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();
