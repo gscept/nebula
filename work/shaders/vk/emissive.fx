@@ -31,8 +31,8 @@ psEmissive(
     in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
-    in vec4 ViewSpacePos,
-    [color0] out vec4 OutColor)
+    [color0] out vec4 OutColor
+)
 {
     OutColor = EmissiveColor;
 }

@@ -310,7 +310,7 @@ psLit(in vec4 ViewSpacePosition,
     vec3 light = vec3(0, 0, 0);
 
     // add light
-    light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, Transmission);
+    light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition.xyz, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, Transmission);
     vec3 viewVec = -normalize(ViewSpacePosition.xyz);
     vec3 viewNormal = (View * vec4(tNormal.xyz, 0)).xyz;
     light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, Transmission);

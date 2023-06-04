@@ -804,12 +804,12 @@ psScreenSpaceVirtual(
         vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
         vec4 viewPos = (View * vec4(pos.xyz, 1));
 
-        uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewPos.z, InvZScale, InvZBias);
+        uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, pos.z, InvZScale, InvZBias);
         uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
         vec3 light = vec3(0, 0, 0);
-        light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal.xyz, viewPos, pos.xxyy);
-        light += LocalLights(idx, albedo.rgb, material, F0, viewPos, viewNormal, gl_FragCoord.z);
+        light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+        light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
         //light += IBL(albedo, F0, normal, viewVec, material);
         light += albedo.rgb * material[MAT_EMISSIVE];
         Color = vec4(light, 1);
@@ -950,12 +950,12 @@ psScreenSpaceVirtual(
     vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
     vec4 viewPos = (View * vec4(pos.xyz, 1));
 
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewPos.z, InvZScale, InvZBias);
+    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, pos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal.xyz, viewPos, pos.xxyy);
-    light += LocalLights(idx, albedo.rgb, material, F0, viewPos, viewNormal, gl_FragCoord.z);
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+    light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, viewNormal, gl_FragCoord.z);
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];
 

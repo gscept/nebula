@@ -36,8 +36,8 @@ sampler_state NoFilterState
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = 32
-[localsizey] = 32
+[local_size_x] = 32
+[local_size_y] = 32
 shader
 void
 csMain()

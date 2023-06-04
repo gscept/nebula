@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 /**
 */
-[localsizex] = 64
+[local_size_x] = 64
 shader 
 void csClusterAABB()
 {
@@ -30,7 +30,7 @@ void csClusterAABB()
 
     // Trace a ray from the eye (origin) towards the four corner points
     vec3 nearMin, nearMax, farMin, farMax;
-    vec3 eye = vec3(0.0f, 0.0f, 0.0f);
+    vec3 eye = vec3(0);
     IntersectLineWithPlane(eye, minCorner.xyz, nearPlane, nearMin);
     IntersectLineWithPlane(eye, maxCorner.xyz, nearPlane, nearMax);
     IntersectLineWithPlane(eye, minCorner.xyz, farPlane, farMin);

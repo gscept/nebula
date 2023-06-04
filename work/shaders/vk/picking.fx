@@ -89,7 +89,7 @@ vsStaticInst(
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psStatic([color0] out float Id) 

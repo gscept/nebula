@@ -81,7 +81,8 @@ vsColoredShadow(
     out vec2 UV,
     out vec4 ProjPos) 
 {
-    vec4 pos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+    uint index = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+    vec4 pos = LightViewMatrix[index] * Model * vec4(position, 1);
     gl_Position = pos;
     ProjPos = pos;
     UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
@@ -103,7 +104,8 @@ vsColoredCSM(
     out vec4 ProjPos,
     out int Instance) 
 {
-    ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+    uint index = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+    ProjPos = LightViewMatrix[index] * Model * vec4(position, 1);
     UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
     Instance = gl_InstanceID;
 }
@@ -241,7 +243,7 @@ psMultilayered(
     vec4 material = calcMaterial(matColor);
     vec4 albedo = calcColor(diffColor); 
     
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePos.z, InvZScale, InvZBias);
+    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, WorldSpacePos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, albedo, N, material);
@@ -251,8 +253,8 @@ psMultilayered(
     vec3 viewNormal = (View * vec4(bumpNormal.xyz, 0)).xyz;
     
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, bumpNormal.xyz, ViewSpacePos, vec4(WorldSpacePos, 1));
-    light += LocalLights(idx, albedo.rgb, material, F0, ViewSpacePos, viewNormal, gl_FragCoord.z);
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, bumpNormal.xyz, WorldSpacePos);
+    light += LocalLights(idx, albedo.rgb, material, F0, ViewSpacePos.xyz, viewNormal, gl_FragCoord.z);
     light += calcEnv(albedo, F0, bumpNormal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];
     
@@ -547,7 +549,7 @@ SimpleTechnique(MLP, "Static", vsColored(), psMultilayered(
         calcEnv = IBL), MLPState);
         
 SimpleTechnique(MLPShadow, "Spot|Static", vsColoredShadow(), psShadow(), ShadowState);
-SimpleTechnique(MLPCSM, "Global|Static", vsColoredCSM(), psVSM(), ShadowStateCSM);
+SimpleTechnique(MLPCSM, "Global|Static", vsColoredCSM(), psVSM(), ShadowState);
 //TessellationTechnique(MLPTessellated, "Static|Tessellated|Colored", vsColoredTessellated(), psMultilayered(), hsDefault(), dsDefault(), MLPState);
 //FullTechnique(MLPTessellatedShadow, "Static|Tessellated|Colored|Shadow", vsColoredCSMTessellated(), psMultilayeredShadowVSM(), hsShadowMLP(), dsShadowMLP(), gsMain(), MLPState);
 //TessellationTechnique(MLPTessellatedCSM, "Static|Tessellated|Colored|CSM", vsColoredShadowTessellated(), psMultilayeredShadowVSM(), hsShadowMLP(), dsShadowMLP(), MLPState);

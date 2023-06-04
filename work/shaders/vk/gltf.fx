@@ -67,8 +67,8 @@ vsGLTFStatic(
         out vec3 Normal,
         out flat float Sign,
         out vec2 UV,
-        out vec3 WorldSpacePos,
-        out vec4 ViewSpacePos)
+        out vec3 WorldSpacePos
+)
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
@@ -78,13 +78,12 @@ vsGLTFStatic(
     Normal      = (Model * vec4(normal, 0)).xyz;
     Sign        = tangent.w;
     WorldSpacePos = modelSpace.xyz;
-    ViewSpacePos = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psGLTF(
@@ -93,14 +92,10 @@ psGLTF(
     in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
-    in vec4 ViewSpacePos,
     [color0] out vec4 OutColor,
     [color1] out vec4 OutNormal,
     [color2] out vec4 OutSpecular)
 {
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePos.z, InvZScale, InvZBias);
-    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
-
     vec4 baseColor = calcColor(sample2D(baseColorTexture, MaterialSampler, UV) * baseColorFactor);
     vec4 metallicRoughness = sample2D(metallicRoughnessTexture, MaterialSampler, UV) * vec4(1.0f, roughnessFactor, metallicFactor, 1.0f);
     vec4 emissive = sample2D(emissiveTexture, MaterialSampler, UV) * emissiveFactor;
@@ -113,17 +108,19 @@ psGLTF(
     material[MAT_EMISSIVE] = 0.0f;
     vec3 N = normalize(calcBump(Tangent, Normal, Sign, normals));
     
-    //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, baseColor, N, material);
-    
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
     float NdotV = saturate(dot(N, viewVec));
     vec3 F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], vec3(0.04));
     
     vec3 viewNormal = (View * vec4(N.xyz, 0)).xyz;
+
+    float viewDepth = CalculateViewDepth(View, WorldSpacePos);
+    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewDepth, InvZScale, InvZBias);
+    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
     
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, ViewSpacePos, vec4(WorldSpacePos, 1));
-    light += LocalLights(idx, baseColor.rgb, material, F0, ViewSpacePos, viewNormal, gl_FragCoord.z);
+    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, WorldSpacePos);
+    light += LocalLights(idx, baseColor.rgb, material, F0, WorldSpacePos, viewNormal, gl_FragCoord.z);
     light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;
     

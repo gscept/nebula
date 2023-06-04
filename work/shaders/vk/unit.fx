@@ -29,7 +29,7 @@ sampler_state TeamSampler
 /**
     Not a ubershader
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psNotaUnit(
@@ -38,10 +38,10 @@ psNotaUnit(
     in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
-    in vec4 ViewSpacePos,
     [color0] out vec4 OutColor)
 {
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePos.z, InvZScale, InvZBias);
+    float viewDepth = CalculateViewDepth(View, WorldSpacePos);
+    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewDepth, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     float teamMask = sample2D(TeamColorMask, TeamSampler, UV).r;
@@ -58,10 +58,10 @@ psNotaUnit(
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateLight(WorldSpacePos.xyz, gl_FragCoord.xyz, ViewSpacePos.xyz, albedo.rgb, material, N);
+    light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, albedo.rgb, material, N);
     light += calcEnv(albedo, F0, N, viewVec, material);
 
-    OutColor = finalizeColor(min(vec3(60000.0f), light.rgb), albedo.a);
+    OutColor = finalizeColor(light.rgb, albedo.a);
 }
 
 //------------------------------------------------------------------------------

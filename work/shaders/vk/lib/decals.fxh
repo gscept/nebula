@@ -6,8 +6,6 @@
 #ifndef DECALS_FXH
 #define DECALS_FXH
 
-
-
 sampler_state DecalSampler
 {
     Filter = MinMagMipLinear;

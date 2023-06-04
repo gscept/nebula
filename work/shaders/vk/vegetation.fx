@@ -340,7 +340,6 @@ vsDrawGrass(
     , out vec2 UV
     , out flat uint InstanceTexture
     , out vec3 WorldSpacePos
-    , out vec4 ViewSpacePos
     )
 {
     InstanceUniforms instanceUniforms = InstanceGrassUniforms[gl_InstanceID];
@@ -352,9 +351,11 @@ vsDrawGrass(
     Tangent = normalize(vec3(position.x, 0.0f, position.z));
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = position + instanceUniforms.position + displacement * 0.2f;
-    ViewSpacePos = View * vec4(WorldSpacePos, 1);
 
-    gl_Position = Projection * ViewSpacePos;
+    if (!instanceUniforms.lodIsBillboard)
+        gl_Position = Projection * View * vec4(WorldSpacePos, 1);
+    else
+        gl_Position = Projection * vec4(WorldSpacePos, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -368,7 +369,7 @@ psDrawGrassZ(
     , in vec2 uv
     , in flat uint instanceTexture
     , in vec3 worldSpacePos
-    , in vec4 viewSpacePos)
+)
 {
     vec4 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
 
@@ -379,7 +380,7 @@ psDrawGrassZ(
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psDrawGrass(
@@ -388,8 +389,8 @@ psDrawGrass(
     , in vec2 uv
     , in flat uint instanceTexture
     , in vec3 worldSpacePos
-    , in vec4 viewSpacePos
-    , [color0] out vec4 Color)
+    , [color0] out vec4 Color
+)
 {
     vec3 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;
     
@@ -408,7 +409,7 @@ psDrawGrass(
     geometryNormal = tbn * geometryNormal;
 
     vec4 material = sampleMaterial(instanceTexture, TextureSampler, uv);
-    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, viewSpacePos.xyz, albedo, material, geometryNormal);
+    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
 
     //Color = vec4(debugCoord.xy, 0, 1);
     Color = vec4(light.rgb, 1);
@@ -430,7 +431,7 @@ vsDrawMeshVColor(
     , out vec2 UV
     , out flat uint InstanceTexture
     , out vec3 WorldSpacePos
-    , out vec4 ViewSpacePos)
+)
 {
     InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceID];
     vec3 displacement = vec3(sin(color.r * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * Time_Random_Luminance_X.x * instanceUniforms.random));
@@ -447,12 +448,11 @@ vsDrawMeshVColor(
     Tangent = rotation * tangent;
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
-    if (!instanceUniforms.lodIsBillboard)
-        ViewSpacePos = View * vec4(WorldSpacePos, 1);
-    else
-        ViewSpacePos = vec4(WorldSpacePos, 1);
 
-    gl_Position = Projection * ViewSpacePos;
+    if (!instanceUniforms.lodIsBillboard)
+        gl_Position = Projection * View * vec4(WorldSpacePos, 1);
+    else
+        gl_Position = Projection * vec4(WorldSpacePos, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -470,7 +470,6 @@ vsDrawMesh(
     , out vec2 UV
     , out flat uint InstanceTexture
     , out vec3 WorldSpacePos
-    , out vec4 ViewSpacePos
 #ifdef LOD_DEBUG
     , out flat uint Lod
 #endif
@@ -491,15 +490,14 @@ vsDrawMesh(
     Tangent = rotation * tangent;
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.025f;
-    if (!instanceUniforms.lodIsBillboard)
-        ViewSpacePos = View * vec4(WorldSpacePos, 1);
-    else
-        ViewSpacePos = vec4(WorldSpacePos + EyePos.xyz, 1);
 
 #ifdef LOD_DEBUG
     Lod = instanceUniforms.lod;
 #endif
-    gl_Position = Projection * ViewSpacePos;
+    if (!instanceUniforms.lodIsBillboard)
+        gl_Position = Projection * View * vec4(WorldSpacePos, 1);
+    else
+        gl_Position = Projection * vec4(WorldSpacePos, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -513,7 +511,7 @@ psDrawMeshZ(
     , in vec2 uv
     , in flat uint instanceTexture
     , in vec3 worldSpacePos
-    , in vec4 viewSpacePos)
+)
 {
     vec4 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
 
@@ -524,7 +522,7 @@ psDrawMeshZ(
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psDrawMesh(
@@ -533,7 +531,6 @@ psDrawMesh(
     , in vec2 uv
     , in flat uint instanceTexture
     , in vec3 worldSpacePos
-    , in vec4 viewSpacePos
 #ifdef LOD_DEBUG
     , in flat uint lod
 #endif
@@ -572,7 +569,7 @@ psDrawMesh(
     vec4 material = sampleMaterial(instanceTexture, TextureSampler, uv);
 
     //vec3 light = vec3(0, 0, 0); 
-    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, viewSpacePos.xyz, albedo, material, geometryNormal);
+    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
     /*
     vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);  
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
@@ -582,7 +579,7 @@ psDrawMesh(
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, geometryNormal.xyz, viewSpacePos, vec4(worldSpacePos, 1));
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, geometryNormal.xyz, worldSpacePos);
     light += LocalLights(idx, albedo.rgb, material, F0, viewSpacePos, viewNormal, gl_FragCoord.z);
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];

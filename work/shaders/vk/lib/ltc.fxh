@@ -85,7 +85,7 @@ LtcRectIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[4], bool specul
     vec2 uv = vec2(z * 0.5f + 0.5f, len);
     uv = uv * LUT_SCALE + LUT_BIAS;
 
-    float scale = sample2D(ltcLUT1, LinearSampler, uv).w;
+    float scale = sample2DLod(ltcLUT1, LinearSampler, uv, 0).w;
 
     sum = len * scale;
     return sum;
@@ -215,7 +215,7 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
     float d22 = dot(v2, v2);
     float d12 = dot(v1, v2);
 
-    if (abs(d12) / sqrt(d11 * d22) > 0.0001f)
+    if (abs(d12) / sqrt(d11 * d22) > 0.0007f)
     {
         float tr = d11 + d22;
         float det = -d12 * d12 + d11 * d22;
@@ -247,13 +247,13 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
     }
     else
     {
-        a = 1.0f / dot(v1, v1);
-        b = 1.0f / dot(v2, v2);
+        a = 1.0f / d11;
+        b = 1.0f / d22;
         v1 *= sqrt(a);
         v2 *= sqrt(b);
     }
 
-    vec3 v3 = cross(v1, v2);
+    vec3 v3 = normalize(cross(v1, v2));
     v3 *= dot(c, v3) < 0.0f ? -1.0f : 1.0f;
 
     float l = dot(v3, c);
@@ -280,11 +280,11 @@ LtcDiskIntegrate(vec3 n, vec3 v, vec3 p, mat3 minv, vec3 corners[3], bool specul
 
     float L1 = sqrt(-e2 / e3);
     float L2 = sqrt(-e2 / e1);
-    float formFactor = L1 * L2 * inversesqrt((1.0f + L1 * L1) * (1.0f + L2 * L2));
+    float formFactor = max(0.0f, L1 * L2 * inversesqrt((1.0f + L1 * L1) * (1.0f + L2 * L2)));
 
     vec2 uv = vec2(avgDir.z * 0.5f + 0.5f, formFactor);
     uv = uv * LUT_SCALE + LUT_BIAS;
-    float scale = sample2D(ltcLUT1, LinearSampler, uv).w;
+    float scale = sample2DLod(ltcLUT1, LinearSampler, uv, 0).w;
 
     return formFactor * scale;
 }

@@ -17,21 +17,8 @@ render_state ShadowState
 {
 	CullMode = Back;
 	DepthClamp = false;
-	DepthEnabled = false;
-	DepthWrite = false;
-	BlendEnabled[0] = true;
-	SrcBlend[0] = One;
-	DstBlend[0] = One;
-	BlendOp[0] = Min;
-
-};
-
-render_state ShadowStateCSM
-{
-	CullMode = Back;
-	DepthClamp = false;
-	DepthEnabled = true;
-	DepthWrite = true;
+    DepthEnabled = true;
+    DepthWrite = true;
     PolygonOffsetEnabled = true;
     PolygonOffsetFactor = 1.8;
 };
@@ -49,7 +36,7 @@ vsStatic(
 {
 	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
-	gl_Layer = gl_InstanceID;
+	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -67,9 +54,9 @@ vsSkinned(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+    ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
 	gl_Position = ProjPos;
-	gl_Layer = gl_InstanceID;
+	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -102,7 +89,7 @@ vsStaticCSM(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
 	UV = UnpackUV(uv);
@@ -122,7 +109,7 @@ vsSkinnedCSM(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * skinnedPos;
+	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
 	gl_Position = ProjPos;
 	gl_Layer = gl_InstanceID;
 	UV = UnpackUV(uv);
@@ -140,7 +127,7 @@ vsStaticInstCSM(
 	out vec4 ProjPos)
 {
 	int viewStride = gl_InstanceID % 4;
-	ProjPos = CSMViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
+	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
 	UV = UnpackUV(uv);
@@ -157,9 +144,9 @@ vsStaticPoint(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+    ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
-	gl_Layer = gl_InstanceID;
+	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -177,9 +164,9 @@ vsSkinnedPoint(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+    ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
 	gl_Position = ProjPos;
-	gl_Layer = gl_InstanceID;
+	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -204,7 +191,7 @@ vsStaticInstPoint(
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psShadow(
@@ -230,7 +217,7 @@ psShadowAlpha(
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psESM(in vec2 UV,
@@ -257,7 +244,7 @@ psESMAlpha(in vec2 UV,
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psVSM(in vec2 UV,
@@ -303,7 +290,7 @@ psVSMAlpha(in vec2 UV,
 //------------------------------------------------------------------------------
 /**
 */
-[earlydepth]
+[early_depth]
 shader
 void
 psVSMPoint(in vec2 UV,
