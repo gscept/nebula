@@ -112,7 +112,7 @@ template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, cons
 /// update buffer data as array
 template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset = 0);
 /// upload data from pointer directly to buffer through submission context
-template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count, const uint offset);
+template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count = 1, const uint offset = 0);
 
 /// fill buffer with data much like memset
 void BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern);

@@ -103,8 +103,6 @@ SetupMipChainResources(
         info.tex = tex;
         info.startMip = i;
         info.numMips = 1;
-        info.startLayer = 0;
-        info.numLayers = 1;
         info.format = CoreGraphics::TextureGetPixelFormat(tex);
         info.bits = CoreGraphics::ImageBits::ColorBits;
         views[i] = CoreGraphics::CreateTextureView(info);
@@ -116,9 +114,6 @@ SetupMipChainResources(
                 views[i],
                 slot6,
                 0,
-                CoreGraphics::InvalidSamplerId,
-                false,
-                false
             });
         }
         else
@@ -128,9 +123,6 @@ SetupMipChainResources(
                 views[i],
                 slot,
                 i,
-                CoreGraphics::InvalidSamplerId,
-                false,
-                false
             });
         }
     }

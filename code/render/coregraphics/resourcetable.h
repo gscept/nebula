@@ -109,6 +109,15 @@ struct ResourceTableTexture
         , isStencil(false)
     {};
 
+    ResourceTableTexture(const CoreGraphics::TextureId tex, IndexT slot, IndexT index)
+        : tex(tex)
+        , slot(slot)
+        , index(index)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+        , isStencil(false)
+    {};
+
     ResourceTableTexture(const CoreGraphics::TextureId tex, IndexT slot, bool isDepth, bool isStencil)
         : tex(tex)
         , slot(slot)
@@ -150,6 +159,15 @@ struct ResourceTableTextureView
         : tex(tex)
         , slot(slot)
         , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+        , isStencil(false)
+    {};
+
+    ResourceTableTextureView(const CoreGraphics::TextureViewId tex, IndexT slot, IndexT index)
+        : tex(tex)
+        , slot(slot)
+        , index(index)
         , sampler(CoreGraphics::InvalidSamplerId)
         , isDepth(false)
         , isStencil(false)

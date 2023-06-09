@@ -87,8 +87,6 @@ View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT buff
     // run the actual script
     if (this->script != nullptr)
     {
-        
-
         N_SCOPE(ViewExecute, Graphics);
         this->script->Run(frameIndex, bufferIndex);
     }
