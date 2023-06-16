@@ -36,6 +36,10 @@
 #include "math/scalar.h"
 #include <type_traits>
 
+#ifdef __linux__
+#include <sys/mman.h>
+#endif
+
 //------------------------------------------------------------------------------
 namespace Util
 {
