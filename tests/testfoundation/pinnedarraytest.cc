@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "util/array.h"
-#include "util/tupleutility.h"
 #include "pinnedarraytest.h"
 
 namespace Test

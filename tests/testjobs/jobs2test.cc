@@ -34,12 +34,10 @@ __ImplementClass(Jobs2Test, 'RET2', Core::RefCounted);
 void
 Jobs2Test::Run()
 {
-    auto systemInfo = Core::SysFunc::GetSystemInfo();
-
     // create a job port
     JobSystemInitInfo portInfo;
     portInfo.name = "TestJob2System";
-    portInfo.numThreads = systemInfo->GetNumCpuCores();
+    portInfo.numThreads = System::NumCpuCores;
     portInfo.priority = UINT_MAX;
     JobSystemInit(portInfo);
 

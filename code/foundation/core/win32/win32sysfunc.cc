@@ -249,14 +249,4 @@ SysFunc::RegisterExitHandler(const Core::ExitHandler* exitHandler)
     return firstHandler;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-const System::SystemInfo*
-SysFunc::GetSystemInfo()
-{
-    return &SysFunc::systemInfo;
-}
-
-
 } // namespace Win32

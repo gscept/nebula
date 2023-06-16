@@ -106,7 +106,6 @@ SimpleViewerApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-        const System::SystemInfo* systemInfo = Core::SysFunc::GetSystemInfo();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = 8;

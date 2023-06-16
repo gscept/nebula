@@ -21,8 +21,8 @@ using namespace Util;
 DirectXTexConversionJob::DirectXTexConversionJob()
 {
     System::SystemInfo systemInfo;
-    this->toolPath.Format("toolkit:bin/%s/texconv", System::SystemInfo::PlatformAsString(systemInfo.GetPlatform()).AsCharPtr());
-    this->cubeToolPath.Format("toolkit:bin/%s/texassemble", System::SystemInfo::PlatformAsString(systemInfo.GetPlatform()).AsCharPtr());
+    this->toolPath.Format("toolkit:bin/%s/texconv", System::PlatformTypeAsString(System::Platform));
+    this->cubeToolPath.Format("toolkit:bin/%s/texassemble", System::PlatformTypeAsString(System::Platform));
     this->SetDstFileExtension("dds");
 }
 

@@ -34,8 +34,6 @@ public:
     static void DebugOut(const char* msg);
     /// sleep for a specified amount of seconds
     static void Sleep(double sec);
-    /// get system info 
-    static const System::SystemInfo* GetSystemInfo();
 
 private:
     friend class Core::ExitHandler;
