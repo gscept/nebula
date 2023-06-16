@@ -26,6 +26,8 @@
 #include "uritest.h"
 #include "textreaderwritertest.h"
 #include "messagereaderwritertest.h"
+#include "pinnedarraytest.h"
+#include "stackarraytest.h"
 #include "xmlreaderwritertest.h"
 // #include "jsonreaderwritertest.h"
 #include "binaryreaderwritertest.h"
@@ -97,6 +99,8 @@ __cdecl main()
     testRunner->AttachTestCase(URITest::Create());
     testRunner->AttachTestCase(StringTest::Create());   
     testRunner->AttachTestCase(ArrayTest::Create());
+    testRunner->AttachTestCase(PinnedArrayTest::Create());
+    testRunner->AttachTestCase(StackArrayTest::Create());
     testRunner->AttachTestCase(StackTest::Create());
     testRunner->AttachTestCase(ListTest::Create());
     testRunner->AttachTestCase(DictionaryTest::Create());
