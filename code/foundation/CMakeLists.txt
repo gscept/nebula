@@ -417,8 +417,6 @@ nebula_begin_module(foundation)
             systeminfo.h
             nebulasettings.h
             base/processbase.h
-            base/systeminfobase.cc
-            base/systeminfobase.h
         )
         fips_dir(app)
         fips_files(

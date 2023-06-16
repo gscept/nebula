@@ -5,6 +5,15 @@
 #include "foundation/stdneb.h"
 #include "system/posix/posixsysteminfo.h"
 
+namespace System
+{
+    CpuArchType CpuArch;
+    PlatformType Platform;
+    SizeT NumCpuCores;
+    SizeT PageSize;
+}
+
+
 namespace Posix
 {
 
@@ -13,12 +22,19 @@ namespace Posix
 */
 PosixSystemInfo::PosixSystemInfo()
 {
-    this->platform = Linux;
+    System::Platform = System::Linux;
 #ifdef __x86_64
-    this->cpuType = X86_64;
+    System::CpuType = System::X86_64;
 #else
-    this->cpuType = X86_32;
+    System::CpuType = System::X86_32;
 #endif
+    System::PageSize = getpagesize();
+
+    struct cpu_raw_data_t raw;
+    struct cpu_id_t data;
+    cpuid_get_raw_data(&raw);
+    cpu_identify(&raw, &data);
+    System::NumCpuCores = data.num_cores;
     // XXX: this->numCpuCores = sysInfo.dwNumberOfProcessors;
     // XXX: this->pageSize = sysInfo.dwPageSize;
 }

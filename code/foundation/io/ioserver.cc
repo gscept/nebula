@@ -211,7 +211,7 @@ IoServer::MountStandardArchives()
     // files override any generic files
     // if the archive files don't exist, no archives will be mounted
     System::SystemInfo systemInfo;  
-    String platformString = System::SystemInfo::PlatformAsString(systemInfo.GetPlatform());
+    String platformString = System::PlatformTypeAsString(System::Platform);
     String platformArchivePath = "root:export";
     
     // prioritize export folder before zip 
@@ -234,7 +234,7 @@ IoServer::UnmountStandardArchives()
     StandardArchivesMounted = false;
 
     System::SystemInfo systemInfo;  
-    String platformString = System::SystemInfo::PlatformAsString(systemInfo.GetPlatform());
+    String platformString = System::PlatformTypeAsString(System::Platform);
     String platformArchivePath = "root:export";
     if (this->IsArchiveMounted(platformArchivePath))
     {

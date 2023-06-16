@@ -7,12 +7,10 @@
     
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
-#include "system/base/systeminfobase.h"
-
 //------------------------------------------------------------------------------
 namespace Posix
 {
-class PosixSystemInfo : public Base::SystemInfoBase
+class PosixSystemInfo
 {
 public:
     /// constructor
