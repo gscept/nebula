@@ -129,9 +129,9 @@ CommitVirtual(void* ptr, size_t size)
 __forceinline void
 FreeVirtual(void* ptr, size_t size)
 {
-    auto ret = munmap(ptr, size);
+    auto ret = madvise(ptr, size, MADV_DONTNEED);
     n_assert(ret == 0);
-    ret = madvise(ptr, size, MADV_DONTNEED);
+    ret = munmap(ptr, size);
     n_assert(ret == 0);
 }
 
