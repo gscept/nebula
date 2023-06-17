@@ -105,7 +105,7 @@ Free(HeapType heapType, void* ptr)
 //------------------------------------------------------------------------------
 /**
 */
-void* 
+__forceinline void*
 AllocVirtual(size_t size)
 {
     void* ret = mmap(nullptr, size, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
@@ -116,7 +116,7 @@ AllocVirtual(size_t size)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+__forceinline void
 CommitVirtual(void* ptr, size_t size)
 {
     auto ret = mprotect(ptr, size, PROT_READ | PROT_WRITE);
@@ -126,7 +126,7 @@ CommitVirtual(void* ptr, size_t size)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+__forceinline void
 FreeVirtual(void* ptr, size_t size)
 {
     auto ret = munmap(ptr, size);
