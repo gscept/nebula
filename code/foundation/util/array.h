@@ -594,7 +594,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::GrowTo(SizeT newCapacity)
                 this->elements = (TYPE*)VirtualAlloc(nullptr, reservationSize, MEM_RESERVE, PAGE_NOACCESS);
                 n_assert(this->elements != nullptr);
 #else
-                this->elements = mmap(nullptr, reservationSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
+                this->elements = (TYPE*)mmap(nullptr, reservationSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
                 n_assert(this->elements != nullptr);
 #endif
             }
