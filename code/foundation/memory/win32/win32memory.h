@@ -36,6 +36,12 @@ extern void* Alloc(HeapType heapType, size_t size, size_t align = 16);
 extern void* Realloc(HeapType heapType, void* ptr, size_t size);
 /// free a chunk of memory
 extern void Free(HeapType heapType, void* ptr);
+/// allocate a range of virtual memory space
+extern void* AllocVirtual(size_t size);
+/// commit virtual memory
+extern void CommitVirtual(void* ptr, size_t size);
+/// free virtual memory
+extern void FreeVirtual(void* ptr, size_t size);
 /// duplicate a C-string
 extern char* DuplicateCString(const char* from);
 /// check if 2 memory regions are overlapping

@@ -16,6 +16,7 @@
 #include "memory/posix/posixmemoryconfig.h"
 #include <malloc.h>
 #include <string.h>
+#include <sys/mman.h>
 
 namespace Memory
 {
@@ -99,6 +100,39 @@ Free(HeapType heapType, void* ptr)
             Threading::Interlocked::Decrement(HeapTypeAllocCount[heapType]);
         #endif
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void* 
+AllocVirtual(size_t size)
+{
+    void* ret = mmap(nullptr, reservationSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
+    n_assert(ret != nullptr);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CommitVirtual(void* ptr, size_t size)
+{
+    auto ret = mprotect(ptr, size, PROT_READ | PROT_WRITE);
+    n_assert(ret == 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FreeVirtual(void* ptr, size_t size)
+{
+    auto ret = munmap(ptr, size);
+    n_assert(ret == 0);
+    ret = madvise(ptr, size, MADV_DONTNEED);
+    n_assert(ret == 0);
 }
 
 //------------------------------------------------------------------------------

@@ -242,7 +242,6 @@ protected:
     _smallvector<TYPE, SMALL_VECTOR_SIZE> stackElements;
 
     struct _e {};
-    std::conditional_t<PINNED, SizeT, _e> numCommittedPages;
     std::conditional_t<PINNED, SizeT, _e> maxCommitSize;
 };
 
@@ -265,7 +264,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array() :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
     grow(_grow),
-    capacity(_capacity),
+    capacity(0),
     count(0),
     elements(this->stackElements.data())
 {
@@ -274,14 +273,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
     {
         this->grow = 16;
     }
-    if (this->capacity > 0)
-    {
-        this->GrowTo(this->capacity);
-    }
-    else
-    {
-        this->capacity = SMALL_VECTOR_SIZE;
-    }
+    this->GrowTo(_capacity);
 }
 
 //------------------------------------------------------------------------------
@@ -290,7 +282,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
     grow(_grow),
-    capacity(initialSize),
+    capacity(0),
     count(initialSize),
     elements(this->stackElements.data())
 {
@@ -301,7 +293,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT initialSize, SizeT _grow, co
     }
     if (initialSize > 0)
     {
-        this->GrowTo(this->capacity);
+        this->GrowTo(initialSize);
         IndexT i;
         for (i = 0; i < initialSize; i++)
         {
@@ -319,7 +311,6 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT maxSize) :
     capacity(0),
     count(0),
     elements(this->stackElements.data()),
-    numCommittedPages(0),
     maxCommitSize(maxSize)
 {
     static_assert(PINNED, "Array must be pinned to use this constructor");
@@ -332,13 +323,13 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT maxSize) :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const TYPE* const buf, SizeT num) :
     grow(16),
-    capacity(num),
+    capacity(0),
     count(num),
     elements(this->stackElements.data())
 {
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     static_assert(std::is_trivially_copyable<TYPE>::value, "TYPE is not trivially copyable; Util::Array cannot be constructed from pointer of TYPE.");
-    this->GrowTo(this->capacity);
+    this->GrowTo(num);
     const SizeT bytes = num * sizeof(TYPE);
     Memory::Copy(buf, this->elements, bytes);
 }
@@ -349,14 +340,14 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const TYPE* const buf, SizeT num) 
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) :
     grow(16),
-    capacity((SizeT)list.size()),
+    capacity(0),
     count((SizeT)list.size()),
     elements(this->stackElements.data())
 {
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
-    if (this->capacity > 0)
+    if (list.size() > 0)
     {
-        this->GrowTo(this->capacity);
+        this->GrowTo(list.size());
         IndexT i;
         for (i = 0; i < this->count; i++)
         {
@@ -375,7 +366,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) 
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::nullptr_t) :
     grow(16),
-    capacity(SMALL_VECTOR_SIZE),
+    capacity(0),
     count(0),
     elements(stackElements.data())
 {
@@ -388,7 +379,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::nullptr_t) :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs) :
     grow(16),
-    capacity(SMALL_VECTOR_SIZE),
+    capacity(0),
     count(0),
     elements(this->stackElements.data())
 {
@@ -434,11 +425,10 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE
     #endif
 
     this->grow = src.grow;
-    this->capacity = src.capacity;
     this->count = src.count;
-    if (this->capacity > 0)
+    if (src.capacity > 0)
     {
-        this->GrowTo(this->capacity);
+        this->GrowTo(src.capacity);
         IndexT i;
         for (i = 0; i < this->count; i++)
         {
@@ -462,17 +452,10 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
         {
             if constexpr (PINNED)
             {
-                SizeT pageSize = System::PageSize;
-
                 // If in small vector, run destructor
                 this->DestroyRange(0, this->count);
 
-#if __WIN32__
-                VirtualFree(this->elements, this->numCommittedPages * pageSize, MEM_RELEASE);
-#else
-                munmap(this->elements, this->numCommittedPages * pageSize);
-                madvise(this->elements, this->numCommittedPages * pageSize, MADV_DONTNEED);
-#endif
+                Memory::FreeVirtual(this->elements, this->capacity * sizeof(TYPE));
             }
             else
                 n_new_array_free(this->capacity, this->elements);
@@ -586,35 +569,30 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::GrowTo(SizeT newCapacity)
     {
         if constexpr (PINNED)
         {
+
             if (this->elements == nullptr)
             {
                 SizeT pageSize = System::PageSize;
                 SizeT reservationSize = Math::align(this->maxCommitSize * sizeof(TYPE), pageSize);
-#if __WIN32__
-                this->elements = (TYPE*)VirtualAlloc(nullptr, reservationSize, MEM_RESERVE, PAGE_NOACCESS);
-                n_assert(this->elements != nullptr);
-#else
-                this->elements = (TYPE*)mmap(nullptr, reservationSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
-                n_assert(this->elements != nullptr);
-#endif
+                this->elements = (TYPE*)Memory::AllocVirtual(reservationSize);
             }
 
             SizeT pageSize = System::PageSize;
-            SizeT totalElementSize = newCapacity * sizeof(TYPE);
-            SizeT totalPagesNeeded = Math::align(totalElementSize, pageSize) / pageSize;
-            if (totalPagesNeeded > this->numCommittedPages)
+
+            // Total amount of bytes needed to fill new capacity
+            SizeT totalByteSize = newCapacity * sizeof(TYPE);
+
+            // Rounded up to the page size so we don't waste memory we allocate anyways
+            SizeT totalBytesNeeded = Math::align(totalByteSize, pageSize);
+            n_assert(totalBytesNeeded <= this->maxCommitSize);
+            SizeT roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);
+            SizeT offset = this->capacity * sizeof(TYPE);
+            if (totalBytesNeeded > offset)
             {
-                SizeT commitSize = (totalPagesNeeded - this->numCommittedPages) * pageSize;
-                SizeT offset = this->numCommittedPages * pageSize;
-                this->capacity += commitSize / sizeof(TYPE);
-                this->numCommittedPages = totalPagesNeeded;
-#if __WIN32__
-                auto ret = VirtualAlloc(((byte*)this->elements) + offset, commitSize, MEM_COMMIT, PAGE_READWRITE);
-                n_assert(ret != nullptr);
-#else
-                auto ret = mprotect(((byte*)this->elements) + offset, commitSize, PROT_READ | PROT_WRITE);
-                n_assert(ret == 0);
-#endif
+                // The amount of bytes we need to commit is the difference between the new and the old capacity
+                SizeT commitSize = (roundedUpNewCapacity - this->capacity) * sizeof(TYPE);
+                this->capacity = roundedUpNewCapacity;
+                Memory::CommitVirtual(((byte*)this->elements) + offset, commitSize);
             }
         }
         else
