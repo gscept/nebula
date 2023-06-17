@@ -108,7 +108,7 @@ Free(HeapType heapType, void* ptr)
 void* 
 AllocVirtual(size_t size)
 {
-    void* ret = mmap(nullptr, reservationSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
+    void* ret = mmap(nullptr, size, PROT_NONE, MAP_ANON | MAP_PRIVATE, 0, 0);
     n_assert(ret != nullptr);
     return ret;
 }

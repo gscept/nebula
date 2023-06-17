@@ -458,7 +458,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
                 Memory::FreeVirtual(this->elements, this->capacity * sizeof(TYPE));
             }
             else
-                n_new_array_free(this->capacity, this->elements);
+                ArrayFree(this->capacity, this->elements);
         }
         else
         {
@@ -597,14 +597,14 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::GrowTo(SizeT newCapacity)
         }
         else
         {
-            TYPE* newArray = n_new_array_alloc<TYPE>(newCapacity);
+            TYPE* newArray = ArrayAlloc<TYPE>(newCapacity);
             if (this->elements)
             {
                 this->MoveRange(newArray, this->elements, this->count);
 
                 // discard old array if not the stack array
                 if (this->elements != this->stackElements.data())
-                    n_new_array_free(this->capacity, this->elements);
+                    ArrayFree(this->capacity, this->elements);
             }
             this->elements = newArray;
             this->capacity = newCapacity;
