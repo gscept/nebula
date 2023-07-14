@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "messaging/message.h"
-#include "messaging/port.h"
 
 namespace Messaging
 {

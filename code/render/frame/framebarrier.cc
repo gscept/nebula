@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framebarrier.h"
-#include "coregraphics/graphicsdevice.h"
 
 using namespace CoreGraphics;
 namespace Frame

@@ -8,7 +8,6 @@
 #include "core/refcounted.h"
 #include "debug/minidump.h"
 #include "util/blob.h"
-#include "util/guid.h"
 #include "net/socket/socket.h"
 #include "debug/minidump.h"
 #include "threading/thread.h"

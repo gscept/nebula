@@ -4,14 +4,11 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "staticuicontext.h"
-#include "Ultralight/Ultralight.h"
-#include "AppCore/AppCore.h"
 #include "Ultralight/JavaScript.h"
 #include "frame/framecode.h"
 #include "frame/framesubgraph.h"
 #include "graphics/graphicsserver.h"
-#include "jobs2/jobs2.h"
-#include "profiling/profiling.h"
+
 namespace StaticUI
 {
 

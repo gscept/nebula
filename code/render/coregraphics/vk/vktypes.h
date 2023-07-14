@@ -11,11 +11,6 @@
 #include "coregraphics/pixelformat.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/primitivetopology.h"
-#include "coregraphics/antialiasquality.h"
-#include "coregraphics/imagefileformat.h"
-#include "coregraphics/indextype.h"
-#include "coregraphics/barrier.h"
-#include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/config.h"
 #include "IL/il.h"
 

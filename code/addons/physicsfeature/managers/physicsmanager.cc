@@ -6,10 +6,8 @@
 #include "physicsmanager.h"
 #include "game/gameserver.h"
 #include "physicsinterface.h"
-#include "physics/streamactorpool.h"
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
-#include "physics/utils.h"
 #include "components/physics.h"
 
 namespace PhysicsFeature

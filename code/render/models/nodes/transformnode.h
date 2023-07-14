@@ -8,8 +8,6 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
-#include "math/mat4.h"
-#include "math/transform44.h"
 #include "math/quat.h"
 namespace Models
 {

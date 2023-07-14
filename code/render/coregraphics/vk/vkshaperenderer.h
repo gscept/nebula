@@ -9,7 +9,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shaperendererbase.h"
 #include "coregraphics/vertexlayout.h"
-#include "coregraphics/resourcetable.h"
 #include "util/fixedarray.h"
 #include "frame/framecode.h"
 

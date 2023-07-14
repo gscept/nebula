@@ -8,7 +8,6 @@
 #include "clustering/clustercontext.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
-#include "lighting/lightcontext.h"
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
 #include "imgui.h"

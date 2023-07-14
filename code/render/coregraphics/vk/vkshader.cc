@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshader.h"
-#include "lowlevel/afxapi.h"
 #include "coregraphics/shaderserver.h"
 #include "lowlevel/vk/vksampler.h"
 #include "lowlevel/vk/vkvarblock.h"
@@ -12,7 +11,6 @@
 #include "lowlevel/vk/vkvariable.h"
 #include "coregraphics/sampler.h"
 #include "coregraphics/resourcetable.h"
-#include "vktypes.h"
 #include "vksampler.h"
 #include "vkgraphicsdevice.h"
 

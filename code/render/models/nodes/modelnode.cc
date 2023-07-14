@@ -4,8 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "modelnode.h"
-#include "coregraphics/graphicsdevice.h"
-#include "coregraphics/resourcetable.h"
 
 using namespace Util;
 using namespace Math;

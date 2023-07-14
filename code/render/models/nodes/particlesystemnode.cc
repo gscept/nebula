@@ -11,8 +11,6 @@
 #include "coregraphics/meshresource.h"
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
-#include "clustering/clustercontext.h"
-#include "lighting/lightcontext.h"
 
 #include "particle.h"
 

@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "renderutil/drawfullscreenquad.h"
-#include "coregraphics/graphicsdevice.h"
 
 namespace RenderUtil
 {

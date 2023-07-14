@@ -20,9 +20,9 @@
 #include <cstdint>
 #include "core/types.h"
 #include "util/array.h"
-#include "id.h"
 #include "math/scalar.h"
 #include <functional>
+
 namespace Ids
 {
 class IdPool

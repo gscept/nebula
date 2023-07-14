@@ -12,7 +12,6 @@
 */
 #include "net/tcpclient.h"
 #include "net/tcpmessagecodec.h"
-#include "io/memorystream.h"
 #include "util/queue.h"
 
 //------------------------------------------------------------------------------

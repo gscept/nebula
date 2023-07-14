@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "renderutil/mayacamerautil.h"
-#include "math/quat.h"
 
 namespace RenderUtil
 {

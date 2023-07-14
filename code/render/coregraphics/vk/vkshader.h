@@ -8,7 +8,6 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "util/set.h"
 #include "util/tupleutility.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/sampler.h"

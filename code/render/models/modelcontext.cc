@@ -6,7 +6,6 @@
 #include "modelcontext.h"
 #include "resources/resourceserver.h"
 #include "nodes/modelnode.h"
-#include "models/nodes/particlesystemnode.h"
 #include "models/nodes/primitivenode.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"

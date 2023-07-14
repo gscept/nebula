@@ -4,11 +4,8 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "core/rttimacros.h"
 #include "core/rtti.h"
-#include "core/refcounted.h"
 #include "core/sysfunc.h"
-#include "memory/poolarrayallocator.h"
 
 namespace Core
 {

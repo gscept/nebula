@@ -10,12 +10,7 @@
 #include "vkloader.h"
 #include "coregraphics/drawthread.h"
 #include "coregraphics/config.h"
-#include "threading/thread.h"
-#include "threading/safequeue.h"
-#include "coregraphics/primitivegroup.h"
 #include "debug/debugtimer.h"
-#include "math/rectangle.h"
-#include "coregraphics/indextype.h"
 
 namespace Vulkan
 {

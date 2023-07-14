@@ -5,11 +5,8 @@
 #include "render/stdneb.h"
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
-#include "frame/frameblit.h"
-#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/resourcetable.h"
 #include "graphics/graphicsserver.h"
-#include "renderutil/drawfullscreenquad.h"
 #include "bloomcontext.h"
 
 #include "bloom.h"

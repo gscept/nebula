@@ -8,9 +8,7 @@
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
-#include "graphics/cameracontext.h"
 #include "game/gameserver.h"
-#include "graphicsfeature/graphicsfeatureunit.h"
 #include "graphicsfeature/components/graphics.h"
 #include "basegamefeature/components/transform.h"
 

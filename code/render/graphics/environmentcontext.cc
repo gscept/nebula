@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "environmentcontext.h"
 #include "shared.h"
-#include "coregraphics/shaderserver.h"
 #include "graphicsserver.h"
 #include "lighting/lightcontext.h"
 #include "graphics/cameracontext.h"

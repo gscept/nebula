@@ -11,7 +11,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */  
 #include "models/nodes/transformnode.h"
-#include "models/model.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/buffer.h"
 

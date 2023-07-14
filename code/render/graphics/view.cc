@@ -4,10 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "view.h"
-#include "coregraphics/graphicsdevice.h"
-#include "coregraphics/displaydevice.h"
 #include "cameracontext.h"
-#include "stage.h"
 
 #include "graphics/globalconstants.h"
 

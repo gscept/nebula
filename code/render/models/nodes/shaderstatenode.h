@@ -10,11 +10,7 @@
 //------------------------------------------------------------------------------
 #include "modelnode.h"
 #include "resources/resourceid.h"
-#include "coregraphics/shader.h"
-#include "materials/shaderconfigserver.h"
 #include "transformnode.h"
-#include "jobs/jobs.h"
-#include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 
 namespace Models

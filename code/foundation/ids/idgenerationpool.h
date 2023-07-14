@@ -18,7 +18,6 @@
 #include "foundation/stdneb.h"
 #include "util/array.h"
 #include "id.h"
-#include "util/list.h"
 #include "util/queue.h"
 
 const uint32_t ID_BITS = 24;

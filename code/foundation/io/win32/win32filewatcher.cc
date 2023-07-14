@@ -1,7 +1,6 @@
 #include "foundation/stdneb.h"
 #include "io/filewatcher.h"
 #include "io/assignregistry.h"
-#include "memory/memory.h"
 #include "util/win32/win32stringconverter.h"
 
 //------------------------------------------------------------------------------

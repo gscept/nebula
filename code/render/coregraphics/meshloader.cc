@@ -6,7 +6,6 @@
 #include "meshloader.h"
 #include "coregraphics/mesh.h"
 #include "nvx3fileformatstructs.h"
-#include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/meshloader.h"
 #include "coregraphics/graphicsdevice.h"
 

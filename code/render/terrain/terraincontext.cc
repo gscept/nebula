@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "terraincontext.h"
-#include "coregraphics/image.h"
 #include "graphics/graphicsserver.h"
 #include "frame/framesubgraph.h"
 #include "graphics/cameracontext.h"

@@ -20,11 +20,8 @@
 #include "systems/quadtreesystem.h"
 #include "systems/bruteforcesystem.h"
 
-#include "system/cpu.h"
 #include "profiling/profiling.h"
 
-#include "dynui/im3d/im3d.h"
-#include "dynui/im3d/im3dcontext.h"
 #include "util/randomnumbertable.h"
 
 #include "jobs2/jobs2.h"

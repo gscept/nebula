@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "scripting/scriptserver.h"
-#include "io/console.h"
 
 namespace Scripting
 {

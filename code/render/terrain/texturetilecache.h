@@ -10,9 +10,6 @@
 //------------------------------------------------------------------------------
 #include "core/types.h"
 #include "math/scalar.h"
-#include "util/hashtable.h"
-#include "memory/arenaallocator.h"
-#include "ids/idpool.h"
 namespace Terrain
 {
 

@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/batchgroup.h"
-#include "frame/frameserver.h"
 #include "graphics/graphicsserver.h"
 
 namespace CoreGraphics

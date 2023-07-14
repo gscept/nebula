@@ -9,7 +9,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/sampler.h"
 #include "ids/idallocator.h"
-#include "vkloader.h"
 
 namespace Vulkan
 {

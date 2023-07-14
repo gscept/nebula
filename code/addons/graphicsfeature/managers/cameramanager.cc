@@ -9,7 +9,6 @@
 #include "graphics/cameracontext.h"
 #include "visibility/visibilitycontext.h"
 #include "game/gameserver.h"
-#include "graphicsfeature/graphicsfeatureunit.h"
 #include "graphics/view.h"
 #include "basegamefeature/components/transform.h"
 

@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/base/shaperendererbase.h"
-#include "threading/threadid.h"
 #include "math/point.h"
 
 namespace Base

@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktextrenderer.h"
-#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
 #include "threading/thread.h"
 #include "io/ioserver.h"

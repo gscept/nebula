@@ -6,7 +6,6 @@
 #include "skeletonloader.h"
 #include "nskfileformatstructs.h"
 #include "util/fourcc.h"
-#include "math/vector.h"
 #include "skeletonresource.h"
 using namespace IO;
 namespace Characters

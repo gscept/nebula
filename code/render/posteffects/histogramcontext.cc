@@ -11,7 +11,6 @@
 
 #include "graphics/globalconstants.h"
 
-#include "downsample/downsample_cs_min.h"
 #include "histogram_cs.h"
 #include "shared.h"
 #include "core/cvar.h"

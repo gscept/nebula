@@ -11,7 +11,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "interface/interfacehandlerbase.h"
-#include "io/console.h"
 #include "debug/debugserver.h"
 #include "http/httpserverproxy.h"
 
@@ -41,4 +40,3 @@ private:
 
 } // namespace Debug
 //------------------------------------------------------------------------------
-    

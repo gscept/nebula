@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "util/array.h"
 #include "coregraphics/memory.h"
-#include "threading/criticalsection.h"
+
 namespace Vulkan
 {
 

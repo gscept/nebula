@@ -5,11 +5,9 @@
 #include "render/stdneb.h"
 #include "vkbarrier.h"
 #include "coregraphics/config.h"
-#include "vkcommandbuffer.h"
 #include "vktypes.h"
 #include "vktexture.h"
 #include "vkbuffer.h"
-#include "coregraphics/vk/vkgraphicsdevice.h"
 
 #if NEBULA_GRAPHICS_DEBUG
     #define NEBULA_BARRIER_INSERT_MARKER 0 // enable or disable to remove barrier markers

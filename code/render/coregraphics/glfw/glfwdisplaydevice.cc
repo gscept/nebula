@@ -6,7 +6,6 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "coregraphics/glfw/glfwdisplaydevice.h"
-#include "coregraphics/graphicsdevice.h"
 #include "GLFW/glfw3native.h"
 #include <GLFW/glfw3.h>
 

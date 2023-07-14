@@ -9,11 +9,8 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "lowlevel/vk/vkprogram.h"
-#include "lowlevel/vk/vkrenderstate.h"
-#include "lowlevel/afxapi.h"
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/resourcetable.h"
-#include "coregraphics/shader.h"
 #include "util/arraystack.h"
 
 namespace Vulkan

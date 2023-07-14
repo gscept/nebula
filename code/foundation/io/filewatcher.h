@@ -16,7 +16,6 @@
 #include "util/dictionary.h"
 #include "io/uri.h"
 #include "io/ioserver.h"
-#include "util/delegate.h"
 #include "threading/thread.h"
 #include "threading/safequeue.h"
 #if __WIN32__

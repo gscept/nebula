@@ -9,7 +9,6 @@
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
 #include "graphics/graphicsserver.h"
-#include "graphics/cameracontext.h"
 
 #include "graphics/globalconstants.h"
 

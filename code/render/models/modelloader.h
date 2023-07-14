@@ -11,10 +11,6 @@
 #include "resources/resourceloader.h"
 #include "util/stack.h"
 #include "model.h"
-#include "nodes/primitivenode.h"
-#include "nodes/shaderstatenode.h"
-#include "nodes/transformnode.h"
-#include "nodes/characternode.h"
 #include "nodes/characterskinnode.h"
 #include "nodes/particlesystemnode.h"
 

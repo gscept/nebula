@@ -31,8 +31,8 @@
 #include "threading/event.h"
 #include "threading/safequeue.h"
 #include "util/stringatom.h"
-#include "util/queue.h"
 #include <atomic>
+
 namespace Jobs
 {
 

@@ -8,7 +8,6 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
-#include "math/bbox.h"
 #include "coregraphics/primitivegroup.h"
 #include "resources/resourceid.h"
 #include "shaderstatenode.h"

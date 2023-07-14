@@ -11,7 +11,6 @@
 #include "math/mat4.h"
 #include "math/vec2.h"
 #include "math/polar.h"
-#include "math/scalar.h"
 
 //------------------------------------------------------------------------------
 namespace RenderUtil

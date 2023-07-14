@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/factory.h"
-#include "core/refcounted.h"
 #include "core/rtti.h"
 #include "core/sysfunc.h"
 

@@ -4,10 +4,9 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "shaderconfig.h"
-#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/config.h"
-#include "coregraphics/resourcetable.h"
+
 namespace Materials
 {
 
