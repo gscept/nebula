@@ -6,7 +6,6 @@
 #include "primitivenode.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/mesh.h"
-#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/meshresource.h"
 
 using namespace Util;

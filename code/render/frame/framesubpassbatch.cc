@@ -5,16 +5,11 @@
 #include "render/stdneb.h"
 #include "framesubpassbatch.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/graphicsdevice.h"
 #include "materials/shaderconfigserver.h"
-#include "models/model.h"
 #include "models/nodes/shaderstatenode.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "visibility/visibilitycontext.h"
-
-#include "models/nodes/particlesystemnode.h"
-#include "models/nodes/primitivenode.h"
 
 using namespace Graphics;
 using namespace CoreGraphics;

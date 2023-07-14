@@ -9,10 +9,9 @@
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
 #include "coregraphics/config.h"
-#include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/buffer.h"
 #include "coregraphics/memory.h"
-#include "vkloader.h"
+
 namespace Vulkan
 {
 

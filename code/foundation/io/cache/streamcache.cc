@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/cache/streamcache.h"
-#include "io/cache/cachedstream.h"
 
 namespace IO
 {

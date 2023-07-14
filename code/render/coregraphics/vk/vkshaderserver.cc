@@ -6,7 +6,6 @@
 #include "vkshaderserver.h"
 #include "effectfactory.h"
 #include "vkgraphicsdevice.h"
-#include "vkshader.h"
 #include "vktexture.h"
 
 #include "graphics/bindlessregistry.h"

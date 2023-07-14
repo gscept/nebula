@@ -4,8 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "bruteforcesystem.h"
-#include "visibility/visibilitycontext.h"
-#include "graphics/graphicsserver.h"
 #include "jobs2/jobs2.h"
 #include "math/mat4.h"
 #include "math/clipstatus.h"

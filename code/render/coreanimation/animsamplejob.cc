@@ -3,13 +3,10 @@
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "jobs/jobs.h"
-#include "coreanimation/animsamplemixinfo.h"
 #include "animsamplemask.h"
 #include "animkeybuffer.h"
 #include "animcurve.h"
 #include "animclip.h"
-#include "profiling/profiling.h"
 
 using namespace Math;
 namespace CoreAnimation

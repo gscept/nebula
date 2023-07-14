@@ -21,8 +21,6 @@
 #include "coregraphics/rendereventhandler.h"
 #include "coregraphics/resourcetable.h"
 #include "memory/rangeallocator.h"
-#include "timing/timer.h"
-#include "util/stack.h"
 #include "memory.h"
 #include "util/set.h"
 

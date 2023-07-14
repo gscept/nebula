@@ -10,7 +10,6 @@
 #include "util/stack.h"
 #include "util/crc.h"
 #include "system/systeminfo.h"
-#include "io/filestream.h"
 #include "io/archfs/archive.h"
 #include "io/archfs/archivefilesystem.h"
 #include "io/filewatcher.h"

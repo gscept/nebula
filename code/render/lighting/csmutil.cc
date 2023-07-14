@@ -5,9 +5,6 @@
 #include "render/stdneb.h"
 #include "lighting/csmutil.h"
 #include "graphics/camerasettings.h"
-#include "coregraphics/rendershape.h"
-#include "coregraphics/shaperenderer.h"
-#include "threading/thread.h"
 #include "graphics/cameracontext.h"
 #include "lighting/lightcontext.h"
 

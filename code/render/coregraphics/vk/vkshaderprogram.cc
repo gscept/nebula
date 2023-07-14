@@ -7,7 +7,6 @@
 #include "vkgraphicsdevice.h"
 #include "coregraphics/shaderserver.h"
 #include "lowlevel/vk/vkrenderstate.h"
-#include "lowlevel/vk/vksampler.h"
 #include "vkresourcetable.h"
 
 using namespace Util;

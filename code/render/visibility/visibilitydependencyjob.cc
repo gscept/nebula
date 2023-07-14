@@ -5,8 +5,6 @@
 #include "render/stdneb.h"
 #include "jobs/jobs.h"
 #include "visibilitycontext.h"
-#include "models/modelcontext.h"
-#include "models/nodes/shaderstatenode.h"
 #include "profiling/profiling.h"
 namespace Visibility
 {

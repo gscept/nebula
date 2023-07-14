@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "net/tcp/stdtcpserver.h"
-#include "io/console.h"
 
 namespace Net
 {

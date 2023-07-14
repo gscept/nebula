@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "net/messageclientconnection.h"
-#include "io/textwriter.h"
 #include "io/memorystream.h"
 //------------------------------------------------------------------------------
 

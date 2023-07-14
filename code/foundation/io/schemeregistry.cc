@@ -7,7 +7,6 @@
 #include "io/schemeregistry.h"
 #include "io/stream.h"
 #include "io/filestream.h"
-#include "http/httpstream.h"
 #include "http/httpnzstream.h"
 #include "safefilestream.h"
 #include "io/cache/cachedstreamtypes.h"

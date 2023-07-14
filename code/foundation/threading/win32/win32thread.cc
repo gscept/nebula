@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "threading/win32/win32thread.h"
-#include "system/systeminfo.h"
 
 namespace Win32
 {

@@ -9,7 +9,6 @@
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
 #include "coregraphics/fence.h"
-#include "vkloader.h"
 namespace Vulkan
 {
 

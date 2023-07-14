@@ -17,7 +17,6 @@
 #include "core/singleton.h"
 #include "net/tcpserver.h"
 #include "net/socket/ipaddress.h"
-#include "io/textreader.h"
 #include "io/textwriter.h"
 #include "http/httpresponsewriter.h"
 #include "http/httprequesthandler.h"
@@ -143,4 +142,3 @@ HttpServer::GetRequestHandlers() const
 } // namespace Http
 //------------------------------------------------------------------------------
 #endif
-    

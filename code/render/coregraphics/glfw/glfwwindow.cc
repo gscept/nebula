@@ -10,14 +10,10 @@
 #include "coregraphics/displayevent.h"
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
-#include "frame/frameserver.h"
-#include "graphics/graphicsserver.h"
 
 #if __VULKAN__
 #include "coregraphics/vk/vkgraphicsdevice.h"
 #include "coregraphics/vk/vktypes.h"
-#include "coregraphics/vk/vkpipelinedatabase.h"
-#include "coregraphics/vk/vkshaderserver.h"
 #endif
 
 namespace CoreGraphics

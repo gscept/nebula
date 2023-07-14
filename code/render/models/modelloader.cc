@@ -9,8 +9,6 @@
 #include "io/binaryreader.h"
 #include "util/fourcc.h"
 #include "nodes/modelnode.h"
-#include "resources/resourceserver.h"
-#include "coregraphics/mesh.h"
 
 using namespace Util;
 using namespace IO;

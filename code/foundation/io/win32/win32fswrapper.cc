@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/win32/win32fswrapper.h"
-#include "core/sysfunc.h"
 #include "system/nebulasettings.h"
 #if __WIN32__
 #include "util/win32/win32stringconverter.h"

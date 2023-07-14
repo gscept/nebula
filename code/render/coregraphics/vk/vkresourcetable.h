@@ -9,8 +9,6 @@
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
 #include "coregraphics/resourcetable.h"
-#include "vkloader.h"
-#include "threading/assertingmutex.h"
 #include "threading/spinlock.h"
 #include <array>
 namespace Vulkan

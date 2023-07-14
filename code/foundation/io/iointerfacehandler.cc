@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/iointerfacehandler.h"
-#include "io/filestream.h"
 
 namespace IO
 {

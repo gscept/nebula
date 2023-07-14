@@ -6,7 +6,6 @@
 #include "render/stdneb.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/legacy/nvx2fileformatstructs.h"
-#include "resources/resourceserver.h"
 #include "coregraphics/config.h"
 #include "coregraphics/indextype.h"
 #include "coregraphics/graphicsdevice.h"

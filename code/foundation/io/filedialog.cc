@@ -3,10 +3,9 @@
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "io/filedialog.h"
 #include "tinyfiledialogs.h"
 #include "ioserver.h"
-#include <typeinfo>
+
 namespace IO
 {
 namespace FileDialog

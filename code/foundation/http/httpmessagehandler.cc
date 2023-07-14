@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "http/httpmessagehandler.h"
-#include "threading/thread.h"
 
 namespace Http
 {

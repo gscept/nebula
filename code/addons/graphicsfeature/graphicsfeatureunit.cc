@@ -18,7 +18,6 @@
 #include "fog/volumetricfogcontext.h"
 #include "posteffects/bloomcontext.h"
 #include "posteffects/ssaocontext.h"
-#include "posteffects/ssrcontext.h"
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
 #include "terrain/terraincontext.h"

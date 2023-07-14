@@ -13,7 +13,6 @@
 */
 #include "core/config.h"
 #include "io/memorystream.h"
-#include "http/httpclient.h"
 
 //------------------------------------------------------------------------------
 namespace Http

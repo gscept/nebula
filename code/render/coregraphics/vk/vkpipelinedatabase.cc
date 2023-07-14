@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkpipelinedatabase.h"
-#include "vkshaderprogram.h"
 #include "vkpass.h"
 
 namespace Vulkan

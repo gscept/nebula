@@ -4,8 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkcommandbufferthread.h"
-#include "threading/event.h"
-#include "coregraphics/vk/vkgraphicsdevice.h"
 
 namespace CoreGraphics
 {

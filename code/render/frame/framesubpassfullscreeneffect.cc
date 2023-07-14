@@ -4,8 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubpassfullscreeneffect.h"
-#include "coregraphics/graphicsdevice.h"
-#include "coregraphics/shaderserver.h"
 
 using namespace CoreGraphics;
 namespace Frame

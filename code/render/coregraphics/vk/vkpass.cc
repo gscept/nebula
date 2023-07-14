@@ -8,9 +8,6 @@
 #include "vktypes.h"
 #include "coregraphics/config.h"
 #include "coregraphics/shaderserver.h"
-#include "vkbuffer.h"
-#include "vkshader.h"
-#include "vkresourcetable.h"
 #include "vktextureview.h"
 #include "coregraphics/pass.h"
 

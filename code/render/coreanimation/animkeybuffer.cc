@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coreanimation/animkeybuffer.h"
-#include "math/vec4.h"
 
 namespace CoreAnimation
 {

@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/textreader.h"
-#include <string.h>
 
 namespace IO
 {

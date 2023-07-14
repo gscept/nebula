@@ -20,8 +20,7 @@
 */
 #include "core/refcounted.h"
 #include "http/httprequest.h"
-#include "io/uri.h"
-#include "io/stream.h"
+
 #include "util/string.h"
 #include "threading/safequeue.h"
 

@@ -6,7 +6,6 @@
 #include "foundation/stdneb.h"
 #include "http/httpresponsereader.h"
 #include "io/textreader.h"
-#include "io/memorystream.h"
 
 namespace Http
 {

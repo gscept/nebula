@@ -7,8 +7,8 @@
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/barrier.h"
-#include "graphics/camerasettings.h"
 #include "../staticui/staticui.h"
+
 namespace StaticUI
 {
 

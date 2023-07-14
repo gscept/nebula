@@ -5,7 +5,7 @@
 #include "foundation/stdneb.h"
 #include "core/debug.h"
 #include "assertingmutex.h"
-#include "interlocked.h"
+
 namespace Threading
 {
 

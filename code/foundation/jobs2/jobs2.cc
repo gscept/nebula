@@ -3,11 +3,10 @@
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "threading/criticalsection.h"
-#include "memory/arenaallocator.h"
 #include "profiling/profiling.h"
 #include "io/ioserver.h"
 #include "jobs2.h"
+
 namespace Jobs2
 {
 

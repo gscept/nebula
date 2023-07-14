@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/uri.h"
-#include "io/ioserver.h"
+#include "io/assignregistry.h"
 #include "io/fswrapper.h"
 #include "core/config.h"
 

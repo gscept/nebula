@@ -9,7 +9,6 @@
 #include "coregraphics/shader.h"
 #include "http/html/htmlpagewriter.h"
 #include "io/ioserver.h"
-#include "graphics/graphicsserver.h"
 
 namespace Debug
 {

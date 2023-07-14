@@ -4,16 +4,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshaperenderer.h"
-#include "coregraphics/vk/vktypes.h"
-#include "coregraphics/graphicsdevice.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/vertexcomponent.h"
-#include "threading/thread.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/meshresource.h"
 #include "resources/resourceid.h"
 #include "resources/resourceserver.h"
-#include "coregraphics/shadersemantics.h"
 #include "frame/framesubgraph.h"
 
 using namespace Base;

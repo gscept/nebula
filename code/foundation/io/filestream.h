@@ -10,8 +10,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "io/stream.h"
-#include "util/string.h"
-#include "io/filetime.h"
 #include "io/fswrapper.h"
 
 //------------------------------------------------------------------------------

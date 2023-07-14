@@ -7,7 +7,6 @@
 #include "coregraphics/fence.h"
 #include "vkgraphicsdevice.h"
 #include "coregraphics/config.h"
-#include "vktypes.h"
 
 namespace Vulkan
 {

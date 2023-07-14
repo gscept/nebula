@@ -5,8 +5,6 @@
 #include "application/stdneb.h"
 #include "physicsfeature/physicsfeatureunit.h"
 #include "physicsinterface.h"
-#include "physics/physxstate.h"
-#include "graphics/graphicsserver.h"
 #include "basegamefeature/managers/timemanager.h"
 #include "physicsfeature/managers/physicsmanager.h"
 #include "physics/actorcontext.h"
