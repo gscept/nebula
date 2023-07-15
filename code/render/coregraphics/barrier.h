@@ -22,7 +22,7 @@ ID_24_8_TYPE(BarrierId);
 struct CmdBufferId;
 struct TextureSubresourceInfo
 {
-    CoreGraphics::ImageBits bits;
+    ImageBits bits;
     uint mip, mipCount, layer, layerCount;
 
     TextureSubresourceInfo() :
@@ -41,29 +41,44 @@ struct TextureSubresourceInfo
         layerCount(layerCount)
     {}
 
+    static TextureSubresourceInfo Texture(CoreGraphics::ImageBits bits, TextureId tex)
+    {
+        return TextureSubresourceInfo(bits, 0, TextureGetNumMips(tex), 0, TextureGetNumLayers(tex));
+    }
+
+    static TextureSubresourceInfo Color(TextureId tex)
+    {
+        return TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(tex), 0, TextureGetNumLayers(tex));
+    }
+
+    static TextureSubresourceInfo DepthStencil(TextureId tex)
+    {
+        return TextureSubresourceInfo(ImageBits::DepthBits | ImageBits::StencilBits, 0, TextureGetNumMips(tex), 0, TextureGetNumLayers(tex));
+    }
+
     static TextureSubresourceInfo ColorNoMipNoLayer()
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, 0, 1, 0, 1);
+        return TextureSubresourceInfo(ImageBits::ColorBits, 0, 1, 0, 1);
     }
 
     static TextureSubresourceInfo ColorNoMip(uint layerCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, 0, 1, 0, layerCount);
+        return TextureSubresourceInfo(ImageBits::ColorBits, 0, 1, 0, layerCount);
     }
 
     static TextureSubresourceInfo ColorNoLayer(uint mipCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, 0, mipCount, 0, 1);
+        return TextureSubresourceInfo(ImageBits::ColorBits, 0, mipCount, 0, 1);
     }
 
     static TextureSubresourceInfo DepthStencilNoMipNoLayer()
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits, 0, 1, 0, 1);
+        return TextureSubresourceInfo(ImageBits::DepthBits | ImageBits::StencilBits, 0, 1, 0, 1);
     }
 
     static TextureSubresourceInfo DepthStencilNoMip(uint layerCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits, 0, 1, 0, layerCount);
+        return TextureSubresourceInfo(ImageBits::DepthBits | ImageBits::StencilBits, 0, 1, 0, layerCount);
     }
 
     static TextureSubresourceInfo DepthStencilNoLayer(uint mipCount)
