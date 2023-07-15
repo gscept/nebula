@@ -283,15 +283,8 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
         toBits = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(toTex));
 
     // add implicit barriers
-    TextureSubresourceInfo subresFrom, subresTo;
-    subresFrom.bits = fromBits;
-    subresFrom.layer = 0;
-    subresFrom.layerCount = 1;
-    subresFrom.mip = 0;
-    subresFrom.mipCount = 1;
-
-    subresTo = subresFrom;
-    subresTo.bits = toBits;
+    TextureSubresourceInfo subresFrom = TextureSubresourceInfo::Texture(fromBits, fromTex);
+    TextureSubresourceInfo subresTo = TextureSubresourceInfo::Texture(toBits, toTex);
 
     op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subresFrom));
     op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subresTo));
@@ -355,15 +348,8 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
         toBits = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(toTex));
 
     // add implicit barriers
-    TextureSubresourceInfo subresFrom, subresTo;
-    subresFrom.bits = fromBits;
-    subresFrom.layer = 0;
-    subresFrom.layerCount = 1;
-    subresFrom.mip = 0;
-    subresFrom.mipCount = 1;
-
-    subresTo = subresFrom;
-    subresTo.bits = toBits;
+    TextureSubresourceInfo subresFrom = TextureSubresourceInfo::Texture(fromBits, fromTex);
+    TextureSubresourceInfo subresTo = TextureSubresourceInfo::Texture(toBits, toTex);
 
     op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subresFrom));
     op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subresTo));
@@ -415,18 +401,11 @@ FrameScriptLoader::ParseResolve(const Ptr<Frame::FrameScript>& script, JzonValue
         toBits = ImageBitsFromString(to_bits->string_value);
 
     // add implicit barriers
-    TextureSubresourceInfo fromSubres, toSubres;
-    fromSubres.bits = fromBits;
-    fromSubres.layer = 0;
-    fromSubres.layerCount = 1;
-    fromSubres.mip = 0;
-    fromSubres.mipCount = 1;
+    TextureSubresourceInfo subresFrom = TextureSubresourceInfo::Texture(fromBits, fromTex);
+    TextureSubresourceInfo subresTo = TextureSubresourceInfo::Texture(toBits, toTex);
 
-    toSubres = fromSubres;
-    toSubres.bits = toBits;
-
-    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, fromSubres));
-    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, toSubres));
+    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subresFrom));
+    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subresTo));
 
     // setup copy operation
     op->fromBits = fromBits;
@@ -461,12 +440,8 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
     bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(ttex));
 
     // add implicit barriers
-    TextureSubresourceInfo subres;
-    subres.bits = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
-    subres.layer = 0;
-    subres.layerCount = 1;
-    subres.mip = 0;
-    subres.mipCount = 1;
+    CoreGraphics::ImageBits bits = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
+    TextureSubresourceInfo subres = TextureSubresourceInfo::Texture(bits, ttex);
     op->textureDeps.Add(ttex, Util::MakeTuple(tex->string_value, CoreGraphics::PipelineStage::TransferRead, subres));
 
     // setup copy operation
@@ -741,6 +716,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
     {
         const CoreGraphics::TextureId tex = TextureViewGetTexture(info.attachments[i]);
         subres.layerCount = TextureGetNumLayers(tex);
+        subres.mipCount = TextureGetNumMips(tex);
         if (info.attachmentDepthStencil[i])
         {
             subres.bits = CoreGraphics::ImageBits::StencilBits | CoreGraphics::ImageBits::DepthBits;
