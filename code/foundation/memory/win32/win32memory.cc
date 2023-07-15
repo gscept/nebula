@@ -401,6 +401,16 @@ CommitVirtual(void* ptr, size_t size)
 /**
 */
 void
+DecommitVirtual(void* ptr, size_t size)
+{
+    auto ret = VirtualFree(ptr, size, MEM_DECOMMIT);
+    n_assert(ret != 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FreeVirtual(void* ptr, size_t size)
 {
     auto ret = VirtualFree(ptr, 0, MEM_RELEASE);

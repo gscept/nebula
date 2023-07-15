@@ -40,6 +40,8 @@ extern void Free(HeapType heapType, void* ptr);
 extern void* AllocVirtual(size_t size);
 /// commit virtual memory
 extern void CommitVirtual(void* ptr, size_t size);
+/// decommit virtual memory
+extern void DecommitVirtual(void* ptr, size_t size);
 /// free virtual memory
 extern void FreeVirtual(void* ptr, size_t size);
 /// duplicate a C-string
