@@ -9,11 +9,12 @@
 #include "physics/actorcontext.h"
 #include "physics/utils.h"
 #include "resources/resourceserver.h"
+#include "io/streamreader.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/physics/material.h"
 #include "flat/physics/actor.h"
-#include "coregraphics/legacy/nvx2streamreader.h"
+#include "coregraphics/nvx3fileformatstructs.h"
 #include "coregraphics/primitivegroup.h"
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceLoader);
@@ -96,27 +97,6 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     ActorContext::DiscardActor(id);
 }
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-Ptr<Legacy::Nvx2StreamReader>
-OpenNvx2(Util::StringAtom res)
-{
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(res.AsString()));
-    Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
-    nvx2Reader->SetStream(stream);
-    nvx2Reader->SetUsage(CoreGraphics::GpuBufferTypes::UsageImmutable);
-    nvx2Reader->SetAccess(CoreGraphics::GpuBufferTypes::AccessNone);
-    nvx2Reader->SetRawMode(true);
-
-    if (nvx2Reader->Open(nullptr))
-    {
-        return nvx2Reader;
-    }
-    return nullptr;
-}
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -125,24 +105,58 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 {
     physx::PxGeometryHolder holder;
 
-    Ptr<Legacy::Nvx2StreamReader> nvx = OpenNvx2(resource);
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();
 
-    if (nvx.isvalid())
+    nvx3Reader->SetStream(stream);
+
+    if (!nvx3Reader->Open())
     {
+        return holder;
+    }
 
-        switch (type)
-        {
-            // FIXME, cooking doesnt seem to like our meshes,
-            // always create convex hull, even if already convex
+    n_assert(stream->CanBeMapped());
+
+    void* mapPtr = nullptr;
+    n_assert(nullptr == mapPtr);
+    // map the stream to memory
+    mapPtr = stream->MemoryMap();
+    n_assert(nullptr != mapPtr);
+
+    auto header = (CoreGraphics::Nvx3Header*)mapPtr;
+
+    n_assert(header != nullptr);
+
+    if (header->magic != NEBULA_NVX_MAGICNUMBER)
+    {
+        // not a nvx3 file, break hard
+        n_error("MeshLoader: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
+    }
+
+    n_assert(header->numMeshes > 0);
+
+    CoreGraphics::Nvx3Elements elements;
+    CoreGraphics::Nvx3::FillNvx3Elements(header, elements);
+
+    const CoreGraphics::Nvx3Group& group = elements.groups[primGroup];
+
+    const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
+    const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;
+
+    const uint vertexCount = (elements.ranges[0].attributesVertexByteOffset - elements.ranges[0].baseVertexByteOffset) / vertexStride;
+    
+    switch (type)
+    {
+        // FIXME, cooking doesnt seem to like our meshes,
+        // always create convex hull, even if already convex
         case MeshTopology_Convex:
         case MeshTopology_ConvexHull:
         {
-            const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
-
             PxConvexMeshDesc convexDesc;
-            convexDesc.points.count = nvx->GetNumVertices();
-            convexDesc.points.stride = nvx->GetVertexWidth() * sizeof(float);
-            convexDesc.points.data = nvx->GetVertexData();
+            convexDesc.points.count = vertexCount;
+            convexDesc.points.stride = vertexStride;
+            convexDesc.points.data = groupVertexBase;
             convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
 
             PxDefaultMemoryOutputStream buf;
@@ -163,16 +177,18 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 
             state.cooking->setParams(params);
 
-            const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
-
             PxTriangleMeshDesc meshDesc;
-            meshDesc.points.count = nvx->GetNumVertices();
-            meshDesc.points.stride = nvx->GetVertexWidth() * sizeof(float);
-            meshDesc.points.data = nvx->GetVertexData();
+            meshDesc.points.count = vertexCount;
+            meshDesc.points.stride = vertexStride;
+            meshDesc.points.data = groupVertexBase;
 
-            meshDesc.triangles.count = group.GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
-            meshDesc.triangles.stride = 3 * sizeof(unsigned int);
-            meshDesc.triangles.data = (void*)&(nvx->GetIndexData()[group.GetBaseIndex()]);
+            meshDesc.triangles.count = group.numIndices / 3;
+            if (elements.ranges[0].indexType == CoreGraphics::IndexType::Index16)
+            {
+                meshDesc.flags |= PxMeshFlag::e16_BIT_INDICES;
+            }
+            meshDesc.triangles.stride = CoreGraphics::IndexType::SizeOf(elements.ranges[0].indexType) * 3 ;
+            meshDesc.triangles.data = elements.indexData + elements.ranges[0].indexByteOffset;
 #if NEBULA_DEBUG
             state.cooking->validateTriangleMesh(meshDesc);
 #endif
@@ -180,9 +196,8 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
             holder = PxTriangleMeshGeometry(aTriangleMesh);
         }
         break;
-        }
-        nvx->Close();
     }
+    nvx3Reader->Close();
     return holder;
 }
 //------------------------------------------------------------------------------
@@ -207,6 +222,7 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
         Util::StringAtom matAtom = shape->material;
         IndexT material = LookupMaterial(matAtom);
         physx::PxGeometryHolder geometry;
+
 
         Math::mat4 trans = shape->transform;
 

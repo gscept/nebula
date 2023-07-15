@@ -59,6 +59,42 @@ struct Nvx3Meshlet
     uint numIndices;
 };
 
+
+struct Nvx3Elements
+{
+    CoreGraphics::Nvx3VertexRange* ranges;
+    CoreGraphics::Nvx3Group* groups;
+    ubyte* vertexData;
+    ubyte* indexData;
+    CoreGraphics::Nvx3Meshlet* meshlets;
+};
+
+namespace Nvx3
+{
+    void FillNvx3Elements(Nvx3Header* header, Nvx3Elements& OutElements);
+};
+
 #pragma pack(pop)
+
+
+
+namespace Nvx3
+{
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+FillNvx3Elements(Nvx3Header* header, Nvx3Elements& OutElements)
+{
+    n_assert(header != nullptr);
+    OutElements.ranges = (CoreGraphics::Nvx3VertexRange*)(header + 1);
+    OutElements.groups = (CoreGraphics::Nvx3Group*)(OutElements.ranges + header->numMeshes);
+    OutElements.vertexData = (ubyte*)(OutElements.groups + header->numGroups);
+    OutElements.indexData = (ubyte*)(OutElements.vertexData + header->vertexDataSize);
+    OutElements.meshlets = (CoreGraphics::Nvx3Meshlet*)(OutElements.indexData + header->indexDataSize);
+}
+
+} // namespace Nvx3
 
 } // namespace CoreGraphics   

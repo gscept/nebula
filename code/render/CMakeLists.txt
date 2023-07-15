@@ -152,6 +152,7 @@ ENDIF()
                 meshloader.h
                 meshresource.cc
                 meshresource.h
+                nvx3fileformatstructs.h
                 pass.h
                 pixelformat.cc
                 pixelformat.h

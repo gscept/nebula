@@ -21,6 +21,8 @@ class NEBULA_ALIGN16 transform44
 public:
     /// constructor
     transform44();
+    /// constructor
+    transform44(const transform44& rhs) = default;
     /// equality operator
     bool operator==(const transform44& rhs) const;
     /// load content from unaligned memory
