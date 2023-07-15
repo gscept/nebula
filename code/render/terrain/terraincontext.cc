@@ -635,13 +635,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                                 {
                                     "Indirection Texture",
                                     CoreGraphics::PipelineStage::TransferWrite,
-                                    CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTexture), 0, 1)
+                                    CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
                                 });
     terrainPrepare->textureDeps.Add(terrainVirtualTileState.indirectionTextureCopy,
                                 {
                                     "Indirection Texture Copy",
                                     CoreGraphics::PipelineStage::TransferRead,
-                                    CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTextureCopy), 0, 1)
+                                    CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTextureCopy)
                                 });
     terrainPrepare->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -759,13 +759,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                             {
                                 "Indirection Texture",
                                 CoreGraphics::PipelineStage::TransferRead,
-                                CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTexture), 0, 1)
+                                CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
                             });
     indirectionCopy->textureDeps.Add(terrainVirtualTileState.indirectionTextureCopy,
                             {
                                 "Indirection Texture Copy",
                                 CoreGraphics::PipelineStage::TransferWrite,
-                                CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTextureCopy), 0, 1)
+                                CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTextureCopy)
                             });
     indirectionCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -903,19 +903,19 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::ColorWrite,
-                                TextureSubresourceInfo::ColorNoMipNoLayer()
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalAlbedoCache)
                             });
     cacheUpdate->textureDeps.Add(terrainVirtualTileState.physicalMaterialCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::ColorWrite,
-                                TextureSubresourceInfo::ColorNoMipNoLayer()
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalMaterialCache)
                             });
     cacheUpdate->textureDeps.Add(terrainVirtualTileState.physicalNormalCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::ColorWrite,
-                                TextureSubresourceInfo::ColorNoMipNoLayer()
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalNormalCache)
                             });
     cacheUpdate->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -1009,25 +1009,25 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::ColorNoMipNoLayer()
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalAlbedoCache)
                             });
     screenSpace->textureDeps.Add(terrainVirtualTileState.physicalMaterialCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::ColorNoMipNoLayer()
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalMaterialCache)
                             });
     screenSpace->textureDeps.Add(terrainVirtualTileState.physicalNormalCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::ColorNoMipNoLayer()
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalNormalCache)
                             });
     screenSpace->textureDeps.Add(terrainVirtualTileState.indirectionTexture,
                         {
                             "Indirection Texture",
                             CoreGraphics::PipelineStage::PixelShaderRead,
-                            TextureSubresourceInfo::ColorNoLayer(CoreGraphics::TextureGetNumMips(terrainVirtualTileState.indirectionTexture))
+                            TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
                         });
     screenSpace->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

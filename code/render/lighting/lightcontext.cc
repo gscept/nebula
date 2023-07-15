@@ -335,25 +335,25 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                 {
                                     "LightBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::Color(textureState.lightingTexture)
                                 });
     lightsCombine->textureDeps.Add(textureState.aoTexture,
                                {
                                    "SSAOBuffer"
                                    , CoreGraphics::PipelineStage::ComputeShaderRead
-                                   , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                                   , CoreGraphics::TextureSubresourceInfo::Color(textureState.aoTexture)
                                });
     lightsCombine->textureDeps.Add(textureState.fogTexture,
                                 {
                                     "VolumeFogBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::Color(textureState.fogTexture)
                                 });
     lightsCombine->textureDeps.Add(textureState.reflectionTexture,
                                 {
                                     "ReflectionBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::Color(textureState.reflectionTexture)
                                 });
     lightsCombine->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

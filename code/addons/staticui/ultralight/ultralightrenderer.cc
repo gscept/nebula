@@ -198,7 +198,7 @@ UltralightRenderer::UpdateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
                             CoreGraphics::TextureBarrierInfo
                             {
                                 storage.tex,
-                                CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                                CoreGraphics::TextureSubresourceInfo::Color(storage.tex)
                             }
                         });
     CoreGraphics::CmdCopy(setupCmd, tempBuf, { from }, storage.tex, { to });
@@ -207,7 +207,7 @@ UltralightRenderer::UpdateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
                             CoreGraphics::TextureBarrierInfo
                             {
                                 storage.tex,
-                                CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                                CoreGraphics::TextureSubresourceInfo::Color(storage.tex)
                             }
                         });
 

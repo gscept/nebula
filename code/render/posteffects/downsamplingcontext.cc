@@ -218,7 +218,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
                                         {
                                              "LightBuffer"
                                              , PipelineStage::ComputeShaderWrite
-                                             , TextureSubresourceInfo::ColorNoMipNoLayer()
+                                             , TextureSubresourceInfo::Color(state.lightBuffer)
                                         });
 
     colorDownsamplePass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
@@ -240,7 +240,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
                                         {
                                              "DepthBuffer"
                                              , PipelineStage::ComputeShaderWrite
-                                             , TextureSubresourceInfo::DepthStencilNoMipNoLayer()
+                                             , TextureSubresourceInfo::DepthStencil(state.depthBuffer)
                                         });
 
     depthDownsamplePass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)

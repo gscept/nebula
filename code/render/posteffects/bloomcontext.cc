@@ -105,14 +105,14 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
         {
             "LightBuffer"
             , PipelineStage::ComputeShaderRead
-            , TextureSubresourceInfo::ColorNoLayer(mips)
+            , TextureSubresourceInfo::Color(bloomState.lightBuffer)
         });
     upscale->textureDeps.Add(
         bloomState.bloomBuffer,
         {
             "BloomBuffer"
             , PipelineStage::ComputeShaderWrite
-            , TextureSubresourceInfo::ColorNoMipNoLayer()
+            , TextureSubresourceInfo::Color(bloomState.bloomBuffer)
         });
     upscale->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
