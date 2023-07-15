@@ -201,6 +201,8 @@ public:
     
     /// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
     void Resize(SizeT num);
+    /// Fit the size of the array to the amount of elements
+    void Fit();
 
     /// Returns sizeof(TYPE)
     constexpr SizeT TypeSize() const;
@@ -553,6 +555,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(Array<TYPE, SMALL_VECTOR_SIZE,
         this->grow = rhs.grow;
         this->count = rhs.count;
         this->capacity = rhs.capacity;
+        if constexpr (PINNED)
+            this->maxCommitSize = rhs.maxCommitSize;
         rhs.elements = nullptr;
         rhs.count = 0;
         rhs.capacity = 0;
@@ -654,7 +658,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Grow()
     30-Jan-03   floh    serious bugfixes!
     07-Dec-04   jo      bugfix: neededSize >= this->capacity => neededSize > capacity   
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> void
+template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+void
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Move(IndexT fromIndex, IndexT toIndex)
 {
     #if NEBULA_BOUNDSCHECKS
@@ -1364,6 +1369,7 @@ template<typename ...ELEM_TYPE>
 inline void 
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(const TYPE& first, const ELEM_TYPE&... elements)
 {
+    // The plus one is for the first element
     this->Reserve(sizeof...(elements) + 1);
     this->Append(first);
     this->Append(std::forward<const ELEM_TYPE&>(elements)...);
@@ -1605,6 +1611,38 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Resize(SizeT num)
     }
 
     this->count = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+inline void 
+Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fit()
+{
+    if constexpr (PINNED)
+    {
+        // The start offset of the memory has to be aligned to the page size
+        SizeT numUsedBytes = Math::align(this->count * sizeof(TYPE), System::PageSize);
+        SizeT numNeededPages = numUsedBytes / System::PageSize;
+        SizeT numUsedPages = this->capacity * sizeof(TYPE) / System::PageSize;
+        SizeT numFreeablePages = numUsedPages - numNeededPages;
+        
+        Memory::DecommitVirtual(((byte*)this->elements) + numUsedBytes, numFreeablePages * System::PageSize);
+    }
+    else
+    {
+        TYPE* newArray = ArrayAlloc<TYPE>(this->count);
+        if (this->elements)
+        {
+            this->MoveRange(newArray, this->elements, this->count);
+            if (this->elements != this->stackElements.data())
+                ArrayFree(this->capacity, this->elements);
+        }
+        this->elements = newArray;
+    }
+
+    this->capacity = this->count;
 }
 
 //------------------------------------------------------------------------------
