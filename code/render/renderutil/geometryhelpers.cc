@@ -61,7 +61,7 @@ GeometryHelpers::CreateRectangle()
     CoreGraphics::VertexLayoutCreateInfo vloInfo;
     vloInfo.comps = {
         CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Float3 }
-        , CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Float2 }
+        , CoreGraphics::VertexComponent{ 2, CoreGraphics::VertexComponent::Float2 }
     };
     meshInfo.vertexLayout = CoreGraphics::CreateVertexLayout(vloInfo);
 
@@ -129,7 +129,7 @@ GeometryHelpers::CreateDisk(SizeT numPoints)
 
     CoreGraphics::VertexLayoutCreateInfo vloInfo;
     vloInfo.comps.Append(CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Float3 });
-    vloInfo.comps.Append(CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Float2 });
+    vloInfo.comps.Append(CoreGraphics::VertexComponent{ 2, CoreGraphics::VertexComponent::Float2 });
     meshInfo.vertexLayout = CoreGraphics::CreateVertexLayout(vloInfo);
 
     return CoreGraphics::CreateMesh(meshInfo);

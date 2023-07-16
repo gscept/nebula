@@ -126,16 +126,22 @@ ShaderSetup(
             goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
         };
         {
-        // add to resource map
-        resourceSlotMapping.Add(block->name.c_str(), block->binding);
-        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(block->set);
-        numsets = uint_max(numsets, block->set + 1);
+            // add to resource map
+            resourceSlotMapping.Add(block->name.c_str(), block->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(block->set);
+            numsets = uint_max(numsets, block->set + 1);
 
-        if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
-        else                                            { cbo.dynamicOffset = false; numUniform += slotsUsed; }
+            if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP)
+            {
+                cbo.dynamicOffset = true; numUniformDyn += slotsUsed;
+            }
+            else
+            {
+                cbo.dynamicOffset = false; numUniform += slotsUsed;
+            }
 
-        rinfo.constantBuffers.Append(cbo);
-        n_assert(block->alignedSize <= props.limits.maxUniformBufferRange);
+            rinfo.constantBuffers.Append(cbo);
+            n_assert(block->alignedSize <= props.limits.maxUniformBufferRange);
         }
         skipbuffer:
 
@@ -186,8 +192,14 @@ ShaderSetup(
             if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageStorageBuffers[ComputeShader]++; slotsUsed++; }
         }
 
-        if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP) { rwbo.dynamicOffset = true; numStorageDyn += slotsUsed; }
-        else                                             { rwbo.dynamicOffset = false; numStorage += slotsUsed; }
+        if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP)
+        {
+            rwbo.dynamicOffset = true; numStorageDyn += slotsUsed;
+        }
+        else
+        {
+            rwbo.dynamicOffset = false; numStorage += slotsUsed;
+        }
 
         rinfo.rwBuffers.Append(rwbo);
         n_assert(buffer->alignedSize < props.limits.maxStorageBufferRange);
@@ -724,6 +736,12 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAt
         info.mode = mode;
         info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         info.usageFlags = CoreGraphics::ConstantBuffer;
+
+        // Initialize data to zeroes
+        Util::FixedArray<byte> data(buffer.byteSize, 0x0);
+        info.data = data.Begin();
+        info.dataSize = data.Size();
+
         return CoreGraphics::CreateBuffer(info);
     }
     else
@@ -745,6 +763,11 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex
         info.name = buffer.name;
         info.mode = mode;
         info.usageFlags = CoreGraphics::ConstantBuffer;
+
+        // Initialize data to zeroes
+        Util::FixedArray<byte> data(buffer.byteSize, 0x0);
+        info.data = data.Begin();
+        info.dataSize = data.Size();
         return CoreGraphics::CreateBuffer(info);
     }
     else

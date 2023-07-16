@@ -445,9 +445,6 @@ GraphicsServer::RunPreLogic()
             state->Defragment();
     }
 
-    // Consider this whole block of code viable for updating resource tables
-    CoreGraphics::ResourceTableBlock(false);
-
     N_MARKER_BEGIN(ContextPreLogic, Graphics);
     for (auto& call : this->preLogicCalls)
     {
@@ -554,6 +551,9 @@ GraphicsServer::NewFrame()
 {
     // Wait and get new frame
     CoreGraphics::NewFrame();
+
+    // Consider this whole block of code viable for updating resource tables
+    CoreGraphics::ResourceTableBlock(false);
 }
 
 } // namespace Graphics
