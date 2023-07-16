@@ -25,7 +25,7 @@ struct CommandManager
     {
         Util::String name;
         bool listAll = true;
-        Util::ArrayStack<Command*, 1> commands;
+        Util::StackArray<Command*, 1> commands;
     };
     //typedef Util::ArrayStack<Command*, 1> CommandStack;
     typedef Util::List<CommandStack> CommandList;
