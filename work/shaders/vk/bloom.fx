@@ -142,11 +142,11 @@ csUpscale()
     {
         // All waves load into LDS
         SampleLookup[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = Sample(sampleUV, i);
+        barrier();
 
         // Only the 14x14 kernel inside the padded one runs the tent filter
         if (pixelOutputMask)
         {
-            memoryBarrierShared();
             sum += SampleTentUpscale(ivec2(gl_LocalInvocationID.xy) + ivec2(1)) * weights[i];
         }
     }
