@@ -112,7 +112,7 @@
                 "name": "ZBuffer",
                 "format": "D32S8",
                 "relative": true,
-                "usage": "Render|TransferSource",
+                "usage": "Render|Sample",
                 "width": 1.0,
                 "height": 1.0,
                 "type": "Texture2D"
@@ -122,7 +122,7 @@
                 "format": "R32F",
                 "mips": "auto",
                 "relative": true,
-                "usage": "TransferDestination|Sample|ReadWrite",
+                "usage": "Sample|ReadWrite",
                 "width": 1.0,
                 "height": 1.0,
                 "type": "Texture2D"
@@ -404,16 +404,8 @@
                     },
 
                     {
-                        "copy": {
-                            "name": "Copy ZBuffer",
-                            "from": {
-                                "tex": "ZBuffer",
-                                "bits": "Depth"
-                            },
-                            "to": {
-                                "tex": "Depth",
-                                "bits": "Color"
-                            }
+                        "subgraph": {
+                            "name": "Depth Extract"
                         }
                     },
 
