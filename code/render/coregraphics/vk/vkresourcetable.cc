@@ -186,7 +186,7 @@ namespace CoreGraphics
 using namespace Vulkan;
 
 Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
-bool ResourceTableBlocked = true;
+bool ResourceTableBlocked = false;
 Threading::CriticalSection PendingTableCommitsLock;
 
 //------------------------------------------------------------------------------
@@ -638,18 +638,7 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 void 
 ResourceTableBlock(bool b)
 {
-    bool wasUnblocked = ResourceTableBlocked && !b;
     ResourceTableBlocked = b;
-
-    if (wasUnblocked)
-    {
-        // if we were blocked but aren't anymore, make sure to flush any pending resource tables
-        PendingTableCommitsLock.Enter();
-        for (ResourceTableId& table : PendingTableCommits)
-            ResourceTableCommitChanges(table);
-        PendingTableCommits.Clear();
-        PendingTableCommitsLock.Leave();
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -658,47 +647,40 @@ ResourceTableBlock(bool b)
 void
 ResourceTableCommitChanges(const ResourceTableId id)
 {
+    n_assert(!ResourceTableBlocked);
+
     // resource tables are blocked, add to pending write queue
-    if (ResourceTableBlocked)
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+
+    // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
+    // we need to re-assign the pointers, but thankfully they have values from before
+    IndexT i;
+    for (i = 0; i < infoList.Size(); i++)
     {
-        PendingTableCommitsLock.Enter();
-        PendingTableCommits.Append(id);
-        PendingTableCommitsLock.Leave();
+        switch (infoList[i].type)
+        {
+            case WriteType::Image:
+                infoList[i].write.pImageInfo = &infoList[i].img;
+                break;
+            case WriteType::Buffer:
+                infoList[i].write.pBufferInfo = &infoList[i].buf;
+                break;
+            case WriteType::TexelBuffer:
+                infoList[i].write.pTexelBufferView = &infoList[i].tex;
+                break;
+        }
+        vkUpdateDescriptorSets(dev, 1, &infoList[i].write, 0, nullptr);
     }
-    else
+    infoList.Free();
+
+    // Do copies
+    if (copies.Size() > 0)
     {
-        Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-        Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
-        Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
-        VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-
-        // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
-        // we need to re-assign the pointers, but thankfully they have values from before
-        IndexT i;
-        for (i = 0; i < infoList.Size(); i++)
-        {
-            switch (infoList[i].type)
-            {
-                case WriteType::Image:
-                    infoList[i].write.pImageInfo = &infoList[i].img;
-                    break;
-                case WriteType::Buffer:
-                    infoList[i].write.pBufferInfo = &infoList[i].buf;
-                    break;
-                case WriteType::TexelBuffer:
-                    infoList[i].write.pTexelBufferView = &infoList[i].tex;
-                    break;
-            }
-            vkUpdateDescriptorSets(dev, 1, &infoList[i].write, 0, nullptr);
-        }
-        infoList.Free();
-
-        // Do copies
-        if (copies.Size() > 0)
-        {
-            vkUpdateDescriptorSets(dev, 0, nullptr, copies.Size(), copies.Begin());
-            copies.Free();
-        }
+        vkUpdateDescriptorSets(dev, 0, nullptr, copies.Size(), copies.Begin());
+        copies.Free();
     }
 }
 
