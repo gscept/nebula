@@ -119,7 +119,7 @@
             },
             {
                 "name": "Depth",
-                "format": "D32S8",
+                "format": "R32F",
                 "mips": "auto",
                 "relative": true,
                 "usage": "TransferDestination|Sample|ReadWrite",
@@ -408,11 +408,11 @@
                             "name": "Copy ZBuffer",
                             "from": {
                                 "tex": "ZBuffer",
-                                "bits": "Depth|Stencil"
+                                "bits": "Depth"
                             },
                             "to": {
                                 "tex": "Depth",
-                                "bits": "Depth|Stencil"
+                                "bits": "Color"
                             }
                         }
                     },
