@@ -266,7 +266,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array() :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
     grow(_grow),
-    capacity(0),
+    capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(this->stackElements.data())
 {
@@ -284,23 +284,21 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
     grow(_grow),
-    capacity(0),
+    capacity(SMALL_VECTOR_SIZE),
     count(initialSize),
-    elements(this->stackElements.data())
+    elements(stackElements.data())
 {
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     if (0 == this->grow)
     {
         this->grow = 16;
     }
-    if (initialSize > 0)
+
+    this->GrowTo(initialSize);
+    IndexT i;
+    for (i = 0; i < initialSize; i++)
     {
-        this->GrowTo(initialSize);
-        IndexT i;
-        for (i = 0; i < initialSize; i++)
-        {
-            this->elements[i] = initialValue;
-        }
+        this->elements[i] = initialValue;
     }
 }
 
@@ -325,9 +323,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT maxSize) :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const TYPE* const buf, SizeT num) :
     grow(16),
-    capacity(0),
+    capacity(SMALL_VECTOR_SIZE),
     count(num),
-    elements(this->stackElements.data())
+    elements(stackElements.data())
 {
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     static_assert(std::is_trivially_copyable<TYPE>::value, "TYPE is not trivially copyable; Util::Array cannot be constructed from pointer of TYPE.");
@@ -342,9 +340,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const TYPE* const buf, SizeT num) 
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) :
     grow(16),
-    capacity(0),
+    capacity(SMALL_VECTOR_SIZE),
     count((SizeT)list.size()),
-    elements(this->stackElements.data())
+    elements(stackElements.data())
 {
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     this->GrowTo((SizeT)list.size());
@@ -374,7 +372,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::nullptr_t) :
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs) :
     grow(16),
-    capacity(0),
+    capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(this->stackElements.data())
 {
@@ -422,14 +420,11 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE
 
     this->grow = src.grow;
     this->count = src.count;
-    if (src.capacity > 0)
+    this->GrowTo(src.capacity);
+    IndexT i;
+    for (i = 0; i < this->count; i++)
     {
-        this->GrowTo(src.capacity);
-        IndexT i;
-        for (i = 0; i < this->count; i++)
-        {
-            this->elements[i] = src.elements[i];
-        }
+        this->elements[i] = src.elements[i];
     }
 }
 
@@ -616,10 +611,6 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::GrowTo(SizeT newCapacity)
             this->elements = newArray;
             this->capacity = newCapacity;
         }
-    }
-    else
-    {
-        this->capacity = SMALL_VECTOR_SIZE;
     }
 }
 
