@@ -1364,9 +1364,13 @@ inline void
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(const TYPE& first, const ELEM_TYPE&... elements)
 {
     // The plus one is for the first element
-    this->Reserve(sizeof...(elements) + 1);
-    this->Append(first);
-    this->Append(std::forward<const ELEM_TYPE&>(elements)...);
+    const int size = sizeof...(elements) + 1;
+    this->Reserve(size);
+    TYPE res[size] = { first, elements... };
+    for (IndexT i = 0; i < size; i++)
+    {
+        this->elements[this->count++] = res[i];
+    }
 }
 
 //------------------------------------------------------------------------------
