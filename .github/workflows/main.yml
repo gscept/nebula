@@ -58,8 +58,8 @@ jobs:
       - name: Fix clang version
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          echo "CC=clang-11" >> $GITHUB_ENV
-          echo "CXX=clang++-11" >> $GITHUB_ENV
+          echo "CC=clang-14" >> $GITHUB_ENV
+          echo "CXX=clang++-14" >> $GITHUB_ENV
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
