@@ -171,7 +171,7 @@ private:
     static const SizeT MaxNumTracks = 16;
     struct AnimationTracks
     {
-        Util::ArrayStack<AnimationRuntime, 8>   pendingAnimations[MaxNumTracks]; // max 16 tracks
+        Util::StackArray<AnimationRuntime, 8>   pendingAnimations[MaxNumTracks]; // max 16 tracks
         AnimationRuntime                        playingAnimations[MaxNumTracks]; // max 16 tracks
     };
 

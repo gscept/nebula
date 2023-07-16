@@ -47,7 +47,7 @@ extern uint32_t UniqueIdCounter;
 
 struct VkProgramReflectionInfo
 {
-    Util::ArrayStack<uint32_t, 8> vsInputSlots;
+    Util::StackArray<uint32_t, 8> vsInputSlots;
     Util::StringAtom name;
 };
 

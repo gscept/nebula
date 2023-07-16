@@ -258,7 +258,7 @@ AssignRegistry::GetAllAssigns() const
 {
     this->critSect.Enter();
 
-    ArrayStack<KeyValuePair<String,String>, 1> content = this->assignTable.Content();
+    StackArray<KeyValuePair<String,String>, 1> content = this->assignTable.Content();
     Array<Assign> assigns(content.Size(), 0);
     IndexT i;
     for (i = 0; i < content.Size(); i++)

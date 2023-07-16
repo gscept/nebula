@@ -33,7 +33,7 @@ struct VertexStream
 struct MeshCreateInfo
 {
     Resources::ResourceName name;
-    Util::ArrayStack<VertexStream, 4> streams;
+    Util::StackArray<VertexStream, 4> streams;
     SizeT indexBufferOffset;
     BufferId indexBuffer;
     IndexType::Code indexType;
@@ -79,7 +79,7 @@ enum
 
 struct __Mesh
 {
-    Util::ArrayStack<VertexStream, 4> streams;
+    Util::StackArray<VertexStream, 4> streams;
     SizeT indexBufferOffset;
     BufferId indexBuffer;
     IndexType::Code indexType;

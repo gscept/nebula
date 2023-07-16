@@ -97,7 +97,7 @@ PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 {
     if (this->onWakeCallback.IsValid())
     {
-        Util::ArrayStack<ActorId, 128> actorIds;
+        Util::StackArray<ActorId, 128> actorIds;
         actorIds.Reserve(count);
         for (physx::PxU32 i = 0; i < count; i++)
         {
@@ -116,7 +116,7 @@ PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 {
     if (this->onSleepCallback.IsValid())
     {
-        Util::ArrayStack<ActorId, 128> actorIds;
+        Util::StackArray<ActorId, 128> actorIds;
         actorIds.Reserve(count);
         for (physx::PxU32 i = 0; i < count; i++)
         {
