@@ -25,12 +25,24 @@ render_state EmissiveState
 */
 shader
 void
+vsEmissive(
+    [slot=0] in vec3 position,
+    [slot=2] in vec2 uv,
+    out vec2 UV
+    )
+{
+    vec4 modelSpace = Model * vec4(position, 1);
+    gl_Position = ViewProjection * modelSpace;
+    UV          = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
 psEmissive(
-    in vec3 Tangent,
-    in vec3 Normal,
-    in flat float Sign,
-    in vec2 UV,
-    in vec3 WorldSpacePos,
+    in vec2 uv,
     [color0] out vec4 OutColor
 )
 {
@@ -43,7 +55,7 @@ psEmissive(
 SimpleTechnique(
     Static,
     "Static",
-    vsStatic(),
+    vsEmissive(),
     psEmissive(),
 EmissiveState);
 
