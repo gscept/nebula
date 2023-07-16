@@ -133,7 +133,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         ResourceTableCommitChanges(graphicsTable);
     }
 
-    blurState.blurShader = ShaderServer::Instance()->GetShader("shd:blur_2d_rgba16f_cs.fxb");
+    blurState.blurShader = ShaderServer::Instance()->GetShader("shd:blur/blur_2d_rgba16f_cs.fxb");
     blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, ShaderServer::Instance()->FeatureStringToMask("Alt0"));
     blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, ShaderServer::Instance()->FeatureStringToMask("Alt1"));
     blurState.blurXTable.Resize(CoreGraphics::GetNumBufferedFrames());
