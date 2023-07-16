@@ -162,7 +162,7 @@ group(FRAME_GROUP) shared constant ViewConstants
     vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance, w is unused
 };
 
-group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS|CS";]
+group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS|CS|PS";]
 {
     vec4 CascadeOffset[NUM_CASCADES];
     vec4 CascadeScale[NUM_CASCADES];
