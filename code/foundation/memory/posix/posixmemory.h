@@ -116,6 +116,18 @@ AllocVirtual(size_t size)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline void 
+DecommitVirtual(void* ptr, size_t size)
+{
+    auto ret = madvise(ptr, size, MADV_DONTNEED);
+    n_assert(ret == 0);
+    ret = mprotect(ptr, size, PROT_NONE);
+    n_assert(ret == 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline void
 CommitVirtual(void* ptr, size_t size)
 {
