@@ -232,7 +232,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         constant.def = this->AllocateVariantMemory(constant.def.type);
                         auto resourceName = reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION;
                         auto res = Resources::CreateResource(resourceName, "material types", nullptr, nullptr, true);
-                        constant.def.Set(res.HashCode64());
+                        MaterialVariant::TextureHandleTuple tuple{ res.HashCode64(), CoreGraphics::TextureGetBindlessHandle(res) };
+                        constant.def.Set(tuple);
 
                         constant.system = system;
                         constant.name = name;
