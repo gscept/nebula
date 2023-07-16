@@ -122,7 +122,7 @@ PinnedArrayTest::Run()
 
     // test Sort()
     array0.Clear();
-    array0.Append(4); array0.Append(2); array0.Append(1); array0.Append(3);
+    array0.Append(4, 2, 1, 3);
     array0.Sort();
     VERIFY(array0[0] == 1);
     VERIFY(array0[1] == 2);
@@ -135,6 +135,18 @@ PinnedArrayTest::Run()
     VERIFY(array0.BinarySearchIndex(3) == 2);
     VERIFY(array0.BinarySearchIndex(4) == 3);
     VERIFY(array0.BinarySearchIndex(5) == -1);
+
+    array0.Clear();
+    array0.Append(1, 2, 3, 4);
+    array0.Fit();
+    VERIFY(array0.Capacity() == 4);
+    array1.Clear();
+    array1.Append(5, 6, 7, 8);
+    array0 = std::move(array1);
+    VERIFY(array0[0] == 5);
+    VERIFY(array0[1] == 6);
+    VERIFY(array0[2] == 7);
+    VERIFY(array0[3] == 8);
 }
 
 }; // namespace Test
