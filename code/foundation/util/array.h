@@ -312,7 +312,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT maxSize) :
     grow(16),
     capacity(0),
     count(0),
-    elements(this->stackElements.data()),
+    elements(nullptr),
     maxCommitSize(maxSize)
 {
     static_assert(PINNED, "Array must be pinned to use this constructor");
@@ -347,18 +347,11 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) 
     elements(this->stackElements.data())
 {
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
-    if (list.size() > 0)
+    this->GrowTo((SizeT)list.size());
+    IndexT i;
+    for (i = 0; i < this->count; i++)
     {
-        this->GrowTo((SizeT)list.size());
-        IndexT i;
-        for (i = 0; i < this->count; i++)
-        {
-            this->elements[i] = list.begin()[i];
-        }
-    }
-    else
-    {
-        this->capacity = SMALL_VECTOR_SIZE;
+        this->elements[i] = list.begin()[i];
     }
 }
 
@@ -409,10 +402,10 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(Array<TYPE, SMALL_VECTOR_SIZE, PIN
     {
         // Otherwise, exchange pointers and invalidate
         this->elements = rhs.elements;
-        rhs.elements = nullptr;
+        rhs.elements = rhs.stackElements.data();
     }
     rhs.count = 0;
-    rhs.capacity = 0;
+    rhs.capacity = SMALL_VECTOR_SIZE;
 }
 
 //------------------------------------------------------------------------------
@@ -449,7 +442,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
 {
     this->grow = 16;
     
-    if (this->elements)
+    if (this->count > 0)
     {
         if (this->elements != this->stackElements.data())
         {
@@ -467,10 +460,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
         {
             // If in small vector, run destructor
             this->DestroyRange(0, this->count);
-        }
-        
-        this->elements = this->stackElements.data();
+        }   
     }
+    this->elements = this->stackElements.data();
     this->count = 0;
     this->capacity = SMALL_VECTOR_SIZE;
 }
