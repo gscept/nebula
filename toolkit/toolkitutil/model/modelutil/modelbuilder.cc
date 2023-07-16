@@ -244,29 +244,28 @@ ModelBuilder::WritePhysics()
                 const Array<ModelConstants::SkinSetNode>& skinSets = this->constants->GetSkinSetNodes();
                 for (Array<ModelConstants::SkinSetNode>::Iterator iter = skinSets.Begin(); iter != skinSets.End(); iter++)
                 {
-                    auto newShape = std::make_unique<PhysicsResource::ShapeT>();
-                    newShape->collider = std::make_unique<PhysicsResource::ColliderT>();
-                    newShape->material = this->physics->GetMaterial();
-                    Math::transform44 t;
-                    t.setposition(iter->transform.position);
-                    t.setrotate(Math::quatyawpitchroll(iter->transform.rotation.y, iter->transform.rotation.x, iter->transform.rotation.z));
-                    t.setscale(iter->transform.scale);
-                    t.setrotatepivot(iter->transform.rotatePivot.vec);
-                    t.setscalepivot(iter->transform.scalePivot.vec);
+                    Math::mat4 setTransform = iter->transform.GetTransform44().getmatrix();
+                    for (ModelConstants::SkinNode const& skinIter : iter->skinFragments)
+                    {
+                        auto newShape = std::make_unique<PhysicsResource::ShapeT>();
+                        newShape->collider = std::make_unique<PhysicsResource::ColliderT>();
+                        newShape->material = this->physics->GetMaterial();
+                        Math::transform44 t = iter->transform.GetTransform44();
 
-                    Math::mat4 nodetrans = t.getmatrix();                   
-                    Math::bbox colBox = iter->boundingBox;
-                    
-                    colBox.transform(nodetrans);                   
-                    newShape->transform = nodetrans;
+                        Math::mat4 nodetrans = setTransform * t.getmatrix();
+                        Math::bbox colBox = skinIter.boundingBox;
 
-                    PhysicsResource::BoxColliderT col;
+                        colBox.transform(nodetrans);
+                        newShape->transform = nodetrans;
 
-                    col.extents = colBox.extents();
-                    newShape->collider->data.Set(col);
-                    newShape->collider->name = iter->name;
-                    newShape->collider->type = Physics::ColliderType_Cube;
-                    actor.shapes.push_back(std::move(newShape));
+                        PhysicsResource::BoxColliderT col;
+
+                        col.extents = colBox.extents();
+                        newShape->collider->data.Set(col);
+                        newShape->collider->name = skinIter.name;
+                        newShape->collider->type = Physics::ColliderType_Cube;
+                        actor.shapes.push_back(std::move(newShape));
+                    }
                 }
             }
             break;

@@ -85,17 +85,33 @@ struct Transform
     {
         this->position = Math::point(0,0,0);
         this->rotation = Math::quat(0,0,0,1);
-        this->scale = Math::vector::nullvec();
+        this->scale = Math::vector::onevec();
         this->scalePivot = Math::point(0,0,0);
         this->rotatePivot = Math::point(0,0,0);
     }
-
+    Transform(const Transform& rhs) = default;
+    Math::transform44 GetTransform44() const;
     Math::point position;
     Math::quat rotation;
     Math::vector scale;
     Math::point scalePivot;
     Math::point rotatePivot;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Math::transform44
+Transform::GetTransform44() const
+{
+    Math::transform44 t;
+    t.setposition(position);
+    t.setrotate(Math::quatyawpitchroll(rotation.y, rotation.x, rotation.z));
+    t.setscale(scale);
+    t.setrotatepivot(rotatePivot.vec);
+    t.setscalepivot(scalePivot.vec);
+    return t;
+}
 
 struct State
 {

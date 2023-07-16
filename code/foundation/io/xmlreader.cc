@@ -403,7 +403,7 @@ XmlReader::GetString(const char* name) const
     const char* val = this->curNode->Attribute(name);    
     if (0 == val)
     {
-        n_error("XmlReader: attribute '%s' doesn't exist on node '%s'!", name, this->curNode->Value());
+        n_error("XmlReader: attribute '%s' doesn't exist in %s on node '%s'!", name, this->stream->GetURI().AsString().AsCharPtr(), this->curNode->Value());
     }
     else
     {

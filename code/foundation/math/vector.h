@@ -70,6 +70,8 @@ struct vector
 
     /// create a null vector
     static vector nullvec();
+    /// create a 1,1,1 vector
+    static vector onevec();
     /// create the up vector
     static vector upvec();
 
@@ -416,6 +418,15 @@ __forceinline vector
 vector::nullvec()
 {
     return vector(0,0,0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vector
+vector::onevec()
+{
+    return vector(1, 1, 1);
 }
 
 //------------------------------------------------------------------------------
