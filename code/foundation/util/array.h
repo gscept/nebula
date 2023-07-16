@@ -349,7 +349,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) 
     static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     if (list.size() > 0)
     {
-        this->GrowTo(list.size());
+        this->GrowTo((SizeT)list.size());
         IndexT i;
         for (i = 0; i < this->count; i++)
         {
@@ -368,7 +368,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) 
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::nullptr_t) :
     grow(16),
-    capacity(0),
+    capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(stackElements.data())
 {
@@ -423,7 +423,8 @@ void
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& src)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(0 == this->elements);
+    // Make sure array is either empty, or stack array before copy
+    n_assert(this->stackElements.data() == this->elements);
     #endif
 
     this->grow = src.grow;
@@ -551,13 +552,24 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(Array<TYPE, SMALL_VECTOR_SIZE,
     if (this != &rhs)
     {
         this->Delete();
-        this->elements = rhs.elements;
+        
+        // If rhs is not using stack, simply reassign pointers
+        if (rhs.elements != rhs.stackElements.data())
+        {
+            this->elements = rhs.elements;
+            rhs.elements = nullptr;
+        }
+        else
+        {
+            // Otherwise, move every element over to the stack of this array
+            this->MoveRange(this->elements, rhs.elements, rhs.count);
+        }
+        
         this->grow = rhs.grow;
         this->count = rhs.count;
         this->capacity = rhs.capacity;
         if constexpr (PINNED)
             this->maxCommitSize = rhs.maxCommitSize;
-        rhs.elements = nullptr;
         rhs.count = 0;
         rhs.capacity = 0;
     }
@@ -573,7 +585,6 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::GrowTo(SizeT newCapacity)
     {
         if constexpr (PINNED)
         {
-
             if (this->elements == nullptr)
             {
                 SizeT pageSize = System::PageSize;
