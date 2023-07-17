@@ -440,7 +440,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
 {
     this->grow = 16;
     
-    if (this->count > 0)
+    if (this->capacity > 0)
     {
         if (this->elements != this->stackElements.data())
         {
