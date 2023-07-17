@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "vktypes.h"
 #include "coregraphics/pixelformat.h"
-#include "il_dds.h"
 
 namespace Vulkan
 {

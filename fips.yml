@@ -6,10 +6,6 @@ imports:
     fips-anyfx:
         git: https://github.com/Duttenheim/fips-anyfx.git
         group: gfx
-    fips-devil:
-        git: https://github.com/gscept/fips-devil.git
-        group: gfx
-        ref: c5343fa
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"

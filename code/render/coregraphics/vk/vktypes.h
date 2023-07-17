@@ -12,7 +12,6 @@
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/config.h"
-#include "IL/il.h"
 
 namespace Vulkan
 {
