@@ -418,9 +418,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE
     n_assert(this->stackElements.data() == this->elements);
     #endif
 
+    this->GrowTo(src.capacity);
     this->grow = src.grow;
     this->count = src.count;
-    this->GrowTo(src.capacity);
     IndexT i;
     for (i = 0; i < this->count; i++)
     {
