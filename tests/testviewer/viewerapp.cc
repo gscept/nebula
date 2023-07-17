@@ -51,6 +51,8 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
+int currentScene = SponzaSceneId;
+
 namespace Tests
 {
 
