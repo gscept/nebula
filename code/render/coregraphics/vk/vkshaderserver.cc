@@ -86,7 +86,7 @@ VkShaderServer::UpdateResources()
     for (int i = this->pendingViewDeletes.Size() - 1; i >= 0; i--)
     {
         // if we have cycled through all our frames, safetly delete the view
-        if (this->pendingViewDeletes[i].replaceCounter == CoreGraphics::GetNumBufferedFrames())
+        if (this->pendingViewDeletes[i].replaceCounter == bufferedFrameIndex)
         {
             vkDestroyImageView(dev, this->pendingViewDeletes[i].view, nullptr);
             this->pendingViewDeletes.EraseIndex(i);
