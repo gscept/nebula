@@ -7,8 +7,7 @@
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "image.h"
-#include "IL/il.h"
-#include "il_dds.h"
+
 namespace CoreGraphics
 {
 
@@ -18,6 +17,9 @@ ImageAllocator imageAllocator;
 */
 ImageId CreateImage(const ImageCreateInfoFile& info)
 {
+    // FIXME use something else, stb_image maybe?
+    n_error("CoreGraphics::CreateImage() Not implemented!");
+#if 0
     // open file, yes, synced
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(info.path);
     stream->SetAccessMode(IO::Stream::ReadAccess);
@@ -426,6 +428,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
         ret.id8 = ImageIdType;
         return ret;
     }
+#endif
     return ImageId::Invalid();
 }
 

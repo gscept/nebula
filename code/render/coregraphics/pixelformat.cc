@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/pixelformat.h"
-#include <IL/il.h>
+//#include <IL/il.h>
 
 namespace CoreGraphics
 {
@@ -313,114 +313,6 @@ PixelFormat::ToTexelSize(Code code)
         {
             n_error("PixelFormat::ToBlockDimensions(): invalid pixel format '%d'", code);
             return 4;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint
-PixelFormat::ToILComponents(Code code)
-{
-    switch (code)
-    {
-    case PixelFormat::R8G8B8X8:         return IL_RGBA;
-    case PixelFormat::R8G8B8A8:         return IL_RGBA;                         
-    case PixelFormat::R5G6B5:           return IL_RGB;
-    case PixelFormat::SRGBA8:           return IL_RGBA;
-    case PixelFormat::R5G5B5A1:         return IL_RGBA;                     
-    case PixelFormat::R4G4B4A4:         return IL_RGBA;
-    case PixelFormat::DXT1:             return IL_RGB;
-    case PixelFormat::DXT1sRGB:         return IL_RGB;
-    case PixelFormat::DXT1A:            return IL_RGBA;
-    case PixelFormat::DXT1AsRGB:        return IL_RGBA;
-    case PixelFormat::DXT3:             return IL_RGBA;
-    case PixelFormat::DXT3sRGB:         return IL_RGBA;
-    case PixelFormat::DXT5:             return IL_RGBA;
-    case PixelFormat::DXT5sRGB:         return IL_RGBA;
-    case PixelFormat::BC4:              return IL_RED;
-    case PixelFormat::BC7:              return IL_RGBA;
-    case PixelFormat::BC7sRGB:          return IL_RGBA;
-    case PixelFormat::R8:               return IL_RED;
-    case PixelFormat::R16F:             return IL_RED;
-    case PixelFormat::R16:              return IL_RED;
-    case PixelFormat::R16G16:           return IL_RG;
-    case PixelFormat::R16G16F:          return IL_RG;
-    case PixelFormat::R16G16B16A16F:    return IL_RGBA;
-    case PixelFormat::R16G16B16A16:     return IL_RGBA;
-    case PixelFormat::R11G11B10F:       return IL_RGB;
-    case PixelFormat::R32F:             return IL_RED;
-    case PixelFormat::R32:              return IL_RED;
-    case PixelFormat::R32G32F:          return IL_RG;
-    case PixelFormat::R32G32:           return IL_RG;
-    case PixelFormat::R32G32B32A32F:    return IL_RGBA;
-    case PixelFormat::R32G32B32A32:     return IL_RGBA;
-    case PixelFormat::R32G32B32F:       return IL_RGB;
-    case PixelFormat::R32G32B32:        return IL_RGB;
-    case PixelFormat::R10G10B10A2:      return IL_RGBA;
-    case PixelFormat::D24X8:            
-    case PixelFormat::D24S8:            return IL_RG;
-    case PixelFormat::D32S8:            return IL_RG;
-    case PixelFormat::R8G8B8:           return IL_RGB;
-    default:                            
-        {
-            n_error("PixelFormat::ToILType(): invalid pixel components '%d'!", code);
-            return IL_RGBA;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint
-PixelFormat::ToILType(Code code)
-{
-    switch (code)
-    {
-    case PixelFormat::R8G8B8X8:         return IL_UNSIGNED_BYTE;
-    case PixelFormat::R8G8B8A8:         return IL_UNSIGNED_BYTE;                            
-    case PixelFormat::R5G6B5:           return IL_UNSIGNED_BYTE;
-    case PixelFormat::SRGBA8:           return IL_UNSIGNED_BYTE;
-    case PixelFormat::R5G5B5A1:         return IL_UNSIGNED_BYTE;                        
-    case PixelFormat::R4G4B4A4:         return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT1:             return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT1sRGB:         return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT1A:            return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT1AsRGB:        return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT3:             return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT3sRGB:         return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT5:             return IL_UNSIGNED_BYTE;
-    case PixelFormat::DXT5sRGB:         return IL_UNSIGNED_BYTE;
-    case PixelFormat::BC4:              return IL_FLOAT;
-    case PixelFormat::BC7:              return IL_UNSIGNED_BYTE;
-    case PixelFormat::BC7sRGB:          return IL_UNSIGNED_BYTE;
-    case PixelFormat::R8:               return IL_UNSIGNED_BYTE;
-    case PixelFormat::R16F:             return IL_HALF;
-    case PixelFormat::R16:              return IL_SHORT;
-    case PixelFormat::R16G16F:          return IL_HALF;
-    case PixelFormat::R16G16:           return IL_SHORT;
-    case PixelFormat::R16G16B16A16F:    return IL_HALF;
-    case PixelFormat::R16G16B16A16:     return IL_SHORT;
-    case PixelFormat::R11G11B10F:       return IL_FLOAT;
-    case PixelFormat::R32F:             return IL_FLOAT;
-    case PixelFormat::R32:              return IL_UNSIGNED_INT;
-    case PixelFormat::R32G32F:          return IL_FLOAT;
-    case PixelFormat::R32G32:           return IL_UNSIGNED_INT;
-    case PixelFormat::R32G32B32A32F:    return IL_FLOAT;
-    case PixelFormat::R32G32B32A32:     return IL_UNSIGNED_INT;
-    case PixelFormat::R32G32B32F:       return IL_FLOAT;
-    case PixelFormat::R32G32B32:        return IL_UNSIGNED_INT;
-    case PixelFormat::R10G10B10A2:      return IL_UNSIGNED_BYTE;
-    case PixelFormat::D24X8:            
-    case PixelFormat::D24S8:            return IL_FLOAT;
-    case PixelFormat::D32S8:            return IL_FLOAT;
-    case PixelFormat::R8G8B8:           return IL_UNSIGNED_BYTE;
-    default:                            
-        {
-            n_error("PixelFormat::ToILType(): invalid pixel components '%d'!", code);
-            return IL_UNSIGNED_BYTE;
         }
     }
 }
