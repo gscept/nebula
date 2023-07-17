@@ -93,8 +93,8 @@ fips_begin_lib(toolkitutil)
             fips_files(
                 # cubefilterer.cc
                 # cubefilterer.h
-                imageconverter.cc
-                imageconverter.h
+                # imageconverter.cc
+                # imageconverter.h
                 textureattrs.cc
                 textureattrs.h
                 textureattrtable.cc
