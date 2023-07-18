@@ -674,7 +674,7 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::DepthStencilRead:
         case CoreGraphics::PipelineStage::AllShadersRead:
             if (depthStencil)
-                return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
             else
                 return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case CoreGraphics::PipelineStage::ColorWrite:           // The image layout from a pass is read on finished
