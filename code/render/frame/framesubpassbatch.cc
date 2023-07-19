@@ -82,7 +82,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                 IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
                 if (batchIndex != InvalidIndex)
                 {
-                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
+                    const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
@@ -180,7 +180,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                 IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
                 if (batchIndex != InvalidIndex)
                 {
-                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
+                    const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
