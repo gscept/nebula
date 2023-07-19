@@ -23,7 +23,7 @@ TextureLoader::TextureLoader()
     this->placeholderResourceName = "systex:white.dds";
     this->failResourceName = "systex:error.dds";
 
-    this->streamerThreadName = "Texture Pool Streamer Thread";
+    this->streamerThreadName = "Texture Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
         // now load texture by walking through all images and mips
         for (int i = 0; i < ctx.num_faces(); i++)
         {
-            for (int j = streamData->lowestLod; j < ctx.num_mipmaps(i); j++)
+            for (int j = streamData->lowestLod; j < ctx.num_mipmaps(i) - streamData->lowestLod; j++)
             {
                 // Perform a texture update
                 CoreGraphics::TextureUpdate(

@@ -44,7 +44,7 @@ void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::T
 /// Add texture to LOD update
 void MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex);
 /// Update LOD for material
-void MaterialSetHighestLod(const MaterialId mat, float lod);
+void MaterialSetLowestLod(const MaterialId mat, float lod);
 
 /// Apply material
 void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, IndexT index);

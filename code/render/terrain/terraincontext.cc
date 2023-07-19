@@ -1082,8 +1082,8 @@ TerrainContext::SetupTerrain(
 
     runtimeInfo.decisionMap = Resources::CreateResource(decisionMap, "terrain"_atm, nullptr, nullptr, true);
     runtimeInfo.heightMap = Resources::CreateResource(heightMap, "terrain"_atm, nullptr, nullptr, true);
-    Resources::SetMaxLOD(runtimeInfo.decisionMap, 0.0f, false);
-    Resources::SetMaxLOD(runtimeInfo.heightMap, 0.0f, false);
+    Resources::SetMinLod(runtimeInfo.decisionMap, 0.0f, false);
+    Resources::SetMinLod(runtimeInfo.heightMap, 0.0f, false);
 
     runtimeInfo.worldWidth = terrainState.settings.worldSizeX;
     runtimeInfo.worldHeight = terrainState.settings.worldSizeZ;

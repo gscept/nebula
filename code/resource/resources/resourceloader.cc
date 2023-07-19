@@ -691,7 +691,7 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
 /**
 */
 void 
-ResourceLoader::SetMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
+ResourceLoader::SetMinLod(const Resources::ResourceId& id, const float lod, bool immediate)
 {
     if (immediate)
     {

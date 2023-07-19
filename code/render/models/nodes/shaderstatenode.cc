@@ -36,15 +36,6 @@ ShaderStateNode::~ShaderStateNode()
 //------------------------------------------------------------------------------
 /**
 */
-void 
-ShaderStateNode::SetMaxLOD(const float lod)
-{
-    Materials::MaterialSetHighestLod(this->material, lod);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Util::FixedArray<CoreGraphics::ResourceTableId>
 ShaderStateNode::CreateResourceTables()
 {

@@ -270,7 +270,7 @@ ModelContext::Setup(
     nodeInstances.renderable.origBoundingBoxes.Append(boundingBox);
     nodeInstances.renderable.nodeLodDistances.Append(Util::MakeTuple(FLT_MAX, FLT_MAX));
     nodeInstances.renderable.nodeLods.Append(0.0f);
-    nodeInstances.renderable.textureLods.Append(0.0f);
+    nodeInstances.renderable.textureLods.Append(1.0f);
     nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
     nodeInstances.renderable.nodeMaterials.Append(material);
     nodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(material));
@@ -638,12 +638,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 // calculate view vector to calculate LOD
                 Math::vec4 viewVector = context->cameraTransform.position - transform.position;
                 float viewDistance = length(viewVector);
-                float textureLod = viewDistance - 38.5f;
+                float textureLod = Math::max(0.0f, (viewDistance - 10.0f) / 30.5f);
 
                 if (textureLod < nodeInstances.renderable.textureLods[j])
                 {
                     // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                    Materials::MaterialSetHighestLod(nodeInstances.renderable.nodeMaterials[j], textureLod);
+                    Materials::MaterialSetLowestLod(nodeInstances.renderable.nodeMaterials[j], textureLod);
                     nodeInstances.renderable.textureLods[j] = textureLod;
                 }
 
@@ -713,7 +713,6 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         }
     }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
 }
-
 
 //------------------------------------------------------------------------------
 /**

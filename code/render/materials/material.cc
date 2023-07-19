@@ -228,15 +228,18 @@ MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::Textur
 void
 MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex)
 {
+    Threading::CriticalScope scope(&materialTextureLoadSection);
     materialAllocator.Get<Material_LODTextures>(mat.resourceId).Append(tex);
-    materialAllocator.Set<Material_MinLOD>(mat.resourceId, 1.0f);
+
+    // When a new texture is added, make sure to update it's LOD as well
+    Resources::SetMinLod(tex, materialAllocator.Get<Material_MinLOD>(mat.resourceId), false);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-MaterialSetHighestLod(const MaterialId mat, float lod)
+MaterialSetLowestLod(const MaterialId mat, float lod)
 {
     Threading::CriticalScope scope(&materialTextureLoadSection);
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_LODTextures>(mat.resourceId);
@@ -247,7 +250,7 @@ MaterialSetHighestLod(const MaterialId mat, float lod)
 
     for (IndexT i = 0; i < textures.Size(); i++)
     {
-        Resources::SetMaxLOD(textures[i], lod, false);
+        Resources::SetMinLod(textures[i], lod, false);
     }
 }
 
