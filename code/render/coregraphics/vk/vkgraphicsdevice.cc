@@ -16,6 +16,8 @@
 #include "app/application.h"
 #include "io/ioserver.h"
 #include "vkfence.h"
+#include "vkshader.h"
+#include "vkvertexlayout.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
@@ -400,7 +402,12 @@ static Threading::CriticalSection pipelineMutex;
 /**
 */
 VkPipeline
-GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
+GetOrCreatePipeline(
+    CoreGraphics::PassId pass
+    , uint subpass
+    , CoreGraphics::ShaderProgramId program
+    , CoreGraphics::InputAssemblyKey inputAssembly
+    , const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
     VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, inputAssembly, info);
@@ -1521,6 +1528,54 @@ void
 ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 {
     state.database.Reload(pro);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::PipelineId
+CreatePipeline(
+    const CoreGraphics::PassId pass
+    , uint subpass
+    , CoreGraphics::ShaderProgramId program
+    , CoreGraphics::InputAssemblyKey inputAssembly
+    , CoreGraphics::VertexLayoutId vertexLayout
+)
+{
+    VkGraphicsPipelineCreateInfo shaderInfo;
+    VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(program.shaderId).Get<ShaderProgram_RuntimeInfo>(program.programId);
+
+    // Setup blend info
+    VkPipelineColorBlendStateCreateInfo blendInfo;
+    blendInfo.attachmentCount = info.colorBlendInfo.attachmentCount;
+    blendInfo.flags = info.colorBlendInfo.flags;
+    blendInfo.logicOp = info.colorBlendInfo.logicOp;
+    blendInfo.logicOpEnable = info.colorBlendInfo.logicOpEnable;
+    blendInfo.pAttachments = info.colorBlendAttachments;
+    memcpy(blendInfo.blendConstants, info.colorBlendInfo.blendConstants, sizeof(info.colorBlendInfo.blendConstants));
+
+    VkPipelineMultisampleStateCreateInfo multisampleInfo;
+    multisampleInfo.alphaToCoverageEnable = info.multisampleInfo.alphaToCoverageEnable;
+    multisampleInfo.alphaToOneEnable = info.multisampleInfo.alphaToOneEnable;
+    multisampleInfo.minSampleShading = info.multisampleInfo.minSampleShading;
+    multisampleInfo.sampleShadingEnable = info.multisampleInfo.sampleShadingEnable;
+    multisampleInfo.pSampleMask = info.multisampleInfo.pSampleMask;
+
+    VkPipelineVertexInputStateCreateInfo* vertexInfo = VertexLayoutGetDerivative(vertexLayout, program);
+
+    shaderInfo.pColorBlendState = &blendInfo;
+    shaderInfo.pDepthStencilState = &info.depthStencilInfo;
+    shaderInfo.pRasterizationState = &info.rasterizerInfo;
+    shaderInfo.pMultisampleState = &multisampleInfo;
+    shaderInfo.pDynamicState = &info.dynamicInfo;
+    shaderInfo.pTessellationState = &info.tessInfo;
+    shaderInfo.pVertexInputState = vertexInfo;
+    shaderInfo.layout = info.layout;
+    shaderInfo.stageCount = info.stageCount;
+    shaderInfo.pStages = info.shaderInfos;
+
+    VkPipeline pipeline = state.database.CreatePipeline(pass, subpass, program, inputAssembly, shaderInfo);
+    return PipelineId{ pipeline };
 }
 
 //------------------------------------------------------------------------------

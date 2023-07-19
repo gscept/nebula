@@ -28,6 +28,7 @@ struct ShaderProgramId;
 struct BarrierId;
 struct EventId;
 struct PassId;
+struct PipelineId;
 
 struct TextureBarrierInfo;
 struct BufferBarrierInfo;
@@ -177,6 +178,8 @@ void CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, cons
 void CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void* data);
 /// Create (if necessary) and bind pipeline based on state thus far
 void CmdSetGraphicsPipeline(const CmdBufferId id);
+/// Set graphics pipeline directly
+void CmdSetGraphicsPipeline(const CmdBufferId buf, PipelineId pipeline);
 
 /// Insert pipeline barrier
 void CmdBarrier(

@@ -72,6 +72,13 @@ struct SubmissionWaitEvent
     CoreGraphics::QueueType queue;
 };
 
+#if __VULKAN__
+struct PipelineId
+{
+    VkPipeline pipeline;
+};
+#endif
+
 struct GraphicsDeviceState
 {
     Util::Array<CoreGraphics::TextureId> backBuffers;
@@ -236,6 +243,15 @@ const CoreGraphics::BufferId GetUploadBuffer();
 
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
+
+/// Create pipeline
+CoreGraphics::PipelineId CreatePipeline(
+    const CoreGraphics::PassId pass
+    , uint subpass
+    , CoreGraphics::ShaderProgramId program
+    , CoreGraphics::InputAssemblyKey inputAssembly
+    , CoreGraphics::VertexLayoutId vertexLayout
+);
 
 /// wait for an individual queue to finish
 void WaitForQueue(CoreGraphics::QueueType queue);

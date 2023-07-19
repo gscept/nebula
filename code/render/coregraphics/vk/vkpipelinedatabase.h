@@ -60,7 +60,7 @@ public:
     /// set subpass
     void SetSubpass(uint32_t subpass);
     /// set shader
-    void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& gfxPipe);
+    void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& shaderInfo);
     /// set vertex layout
     void SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* layout);
     /// set input layout
@@ -73,7 +73,15 @@ public:
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
         , CoreGraphics::InputAssemblyKey inputAssembly
-        , const VkGraphicsPipelineCreateInfo& gfxPipe);
+        , const VkGraphicsPipelineCreateInfo& shaderInfo);
+    /// Create pipeline
+    VkPipeline CreatePipeline(
+        const CoreGraphics::PassId pass
+        , const uint32_t subpass
+        , const CoreGraphics::ShaderProgramId program
+        , CoreGraphics::InputAssemblyKey inputAssembly
+        , const VkGraphicsPipelineCreateInfo& shaderInfo
+    );
     /// resets all iterators
     void Reset();
 

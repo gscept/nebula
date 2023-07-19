@@ -199,56 +199,13 @@ VkPipelineDatabase::GetCompiledPipeline()
         this->ct4->initial ||
         this->ct5->initial)
     {
-        // get fragment of graphics pipeline residing in shader
-        VkGraphicsPipelineCreateInfo shaderInfo = this->currentShaderInfo;
-
-        // get other fragment from framebuffer
-        VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(this->currentPass);
-        VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
-        colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(this->currentPass, this->currentSubpass);
-
-        VkPipelineInputAssemblyStateCreateInfo inputInfo;
-        inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputInfo.pNext = nullptr;
-        inputInfo.flags = 0;
-        inputInfo.topology = (VkPrimitiveTopology)this->currentInputAssemblyInfo.topo;
-        inputInfo.primitiveRestartEnable = this->currentInputAssemblyInfo.primRestart;
-
-        // use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
-        VkGraphicsPipelineCreateInfo info =
-        {
-            VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-            NULL,
-            0,
-            shaderInfo.stageCount,
-            shaderInfo.pStages,
-            this->currentVertexLayout,
-            &inputInfo,
-            shaderInfo.pTessellationState,
-            passInfo.pViewportState,
-            shaderInfo.pRasterizationState,
-            shaderInfo.pMultisampleState,
-            shaderInfo.pDepthStencilState,
-            &colorBlendInfo,
-            shaderInfo.pDynamicState,
-            shaderInfo.layout,
-            PassGetVkRenderPassBeginInfo(this->currentPass).renderPass,
-            this->currentSubpass,
-            VK_NULL_HANDLE,
-            -1
-        };
-        VkResult res = vkCreateGraphicsPipelines(this->dev, this->cache, 1, &info, NULL, &this->currentPipeline);
-        n_assert(res == VK_SUCCESS);
-        this->ct5->pipeline = this->currentPipeline;
+        this->ct5->pipeline = this->CreatePipeline(this->currentPass, this->currentSubpass, this->currentShaderProgram, this->currentInputAssemblyInfo, this->currentShaderInfo);
 
         // DAG path is created, so set entire path to not initial
         this->ct1->initial = this->ct2->initial = this->ct3->initial = this->ct4->initial = this->ct5->initial = false;
     }
-    else
-    {
-        this->currentPipeline = this->ct5->pipeline;
-    }
 
+    this->currentPipeline = this->ct5->pipeline;
     return this->currentPipeline;
 }
 
@@ -261,14 +218,63 @@ VkPipelineDatabase::GetCompiledPipeline(
     , const uint32_t subpass
     , const CoreGraphics::ShaderProgramId program
     , CoreGraphics::InputAssemblyKey inputAssembly
-    , const VkGraphicsPipelineCreateInfo& gfxPipe)
+    , const VkGraphicsPipelineCreateInfo& shaderInfo)
 {
     this->SetPass(pass);
     this->SetSubpass(subpass);
-    this->SetShader(program, gfxPipe);
-    this->SetVertexLayout(gfxPipe.pVertexInputState);
+    this->SetShader(program, shaderInfo);
+    this->SetVertexLayout(shaderInfo.pVertexInputState);
     this->SetInputLayout(inputAssembly);
     return this->GetCompiledPipeline();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPipeline
+VkPipelineDatabase::CreatePipeline(const CoreGraphics::PassId pass, const uint32_t subpass, const CoreGraphics::ShaderProgramId program, CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& shaderInfo)
+{
+    // get other fragment from framebuffer
+    VkGraphicsPipelineCreateInfo passInfo = PassGetVkFramebufferInfo(pass);
+    VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
+    VkRenderPassBeginInfo renderPassInfo = PassGetVkRenderPassBeginInfo(pass);
+    colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(pass, subpass);
+
+    VkPipelineInputAssemblyStateCreateInfo inputInfo;
+    inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputInfo.pNext = nullptr;
+    inputInfo.flags = 0;
+    inputInfo.topology = (VkPrimitiveTopology)inputAssembly.topo;
+    inputInfo.primitiveRestartEnable = inputAssembly.primRestart;
+
+    // use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
+    VkGraphicsPipelineCreateInfo info =
+    {
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        NULL,
+        0,
+        shaderInfo.stageCount,
+        shaderInfo.pStages,
+        shaderInfo.pVertexInputState,
+        &inputInfo,
+        shaderInfo.pTessellationState,
+        passInfo.pViewportState,
+        shaderInfo.pRasterizationState,
+        shaderInfo.pMultisampleState,
+        shaderInfo.pDepthStencilState,
+        &colorBlendInfo,
+        shaderInfo.pDynamicState,
+        shaderInfo.layout,
+        renderPassInfo.renderPass,
+        subpass,
+        VK_NULL_HANDLE,
+        -1
+    };
+
+    VkPipeline pipeline;
+    VkResult res = vkCreateGraphicsPipelines(this->dev, this->cache, 1, &info, NULL, &pipeline);
+    n_assert(res == VK_SUCCESS);
+    return pipeline;
 }
 
 //------------------------------------------------------------------------------

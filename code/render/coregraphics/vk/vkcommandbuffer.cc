@@ -577,6 +577,30 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
 /**
 */
 void
+CmdSetGraphicsPipeline(const CmdBufferId buf, PipelineId pipeline)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(buf.id24);
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+
+    // Set viewport and scissors since Vulkan requires them to be set after the pipeline
+    ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(buf.id24);
+    if (viewports.numPending > 0)
+    {
+        vkCmdSetViewport(cmdBuf, 0, viewports.numPending, viewports.viewports.Begin());
+        viewports.numPending = 0;
+    }
+    ScissorBundle& rects = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(buf.id24);
+    if (rects.numPending > 0)
+    {
+        vkCmdSetScissor(cmdBuf, 0, rects.numPending, rects.scissors.Begin());
+        rects.numPending = 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CmdBarrier(
             const CmdBufferId id,
             CoreGraphics::PipelineStage fromStage,
