@@ -808,7 +808,8 @@ psScreenSpaceVirtual(
         uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
         vec3 light = vec3(0, 0, 0);
-        light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+        float noise = hash12(gl_FragCoord.xy);
+        light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy, noise);
         light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
         //light += IBL(albedo, F0, normal, viewVec, material);
         light += albedo.rgb * material[MAT_EMISSIVE];
@@ -954,7 +955,8 @@ psScreenSpaceVirtual(
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+    float noise = hash12(gl_FragCoord.xy);
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy, noise);
     light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, viewNormal, gl_FragCoord.z);
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];

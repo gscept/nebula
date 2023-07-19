@@ -119,7 +119,8 @@ psGLTF(
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
     
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, WorldSpacePos);
+    float noise = hash12(gl_FragCoord.xy);
+    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, WorldSpacePos, noise);
     light += LocalLights(idx, baseColor.rgb, material, F0, WorldSpacePos, viewNormal, gl_FragCoord.z);
     light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;

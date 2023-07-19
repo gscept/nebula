@@ -419,7 +419,7 @@ PCFShadow(textureHandle shadowMap, vec2 uv, vec2 texelSize)
 /**
 */
 float
-PCFShadowArray(textureHandle shadowMap, float depth, vec2 uv, float idx, vec2 texelSize)
+PCFShadowArray(textureHandle shadowMap, float depth, vec2 uv, float idx, vec2 texelSize, float noise)
 {
     float shadow = 0.0f;
     vec3 offsets = vec3(-2.5f, 2.5f, 0) * texelSize.xyx;
@@ -431,7 +431,7 @@ PCFShadowArray(textureHandle shadowMap, float depth, vec2 uv, float idx, vec2 te
     {
         for (int j = -NumSamples; j < NumSamples; j++)
         {
-            totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + vec2(i, j) * texelSize.xy, depth - GlobalLightShadowBias * exp2(idx), idx).r;
+            totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + vec2(i, j) * texelSize.xy * noise, depth - GlobalLightShadowBias * exp2(idx), idx).r;
         }
     }
     totalShadow *= Weight;

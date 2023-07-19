@@ -253,7 +253,8 @@ psMultilayered(
     vec3 viewNormal = (View * vec4(bumpNormal.xyz, 0)).xyz;
     
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, bumpNormal.xyz, WorldSpacePos);
+    float noise = hash12(gl_FragCoord.xy);
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, bumpNormal.xyz, WorldSpacePos, noise);
     light += LocalLights(idx, albedo.rgb, material, F0, ViewSpacePos.xyz, viewNormal, gl_FragCoord.z);
     light += calcEnv(albedo, F0, bumpNormal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];

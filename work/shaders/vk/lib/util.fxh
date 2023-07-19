@@ -658,9 +658,9 @@ bool IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 i
 float 
 hash11(float p)
 {
-    vec3 p3 = fract(vec3(p) * MOD3);
-    p3 += dot(p3, p3.yzx + 19.19);
-    return fract((p3.x + p3.y) * p3.z);
+    p = fract(p * 0.1031);
+    p += p + 33.33;
+    return fract(p);
 }
 
 //------------------------------------------------------------------------------
@@ -669,8 +669,8 @@ hash11(float p)
 float 
 hash12(vec2 p)
 {
-    vec3 p3 = fract(vec3(p.xyx) * MOD3);
-    p3 += dot(p3, p3.yzx + 19.19);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
@@ -680,9 +680,9 @@ hash12(vec2 p)
 vec3 
 hash32(vec2 p)
 {
-    vec3 p3 = fract(vec3(p.xyx) * MOD3);
-    p3 += dot(p3, p3.yxz + 19.19);
-    return fract(vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
+    vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yxz + 33.33);
+    return fract((p3.xxy + p3.yxx) * p3.zyx);
 }
 
 const int m = 1540483477;

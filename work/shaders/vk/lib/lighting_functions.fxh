@@ -379,7 +379,7 @@ CalculateTubeLight(
     @param viewSpacePos		Fragments position in viewspace; used for shadowing.
 */
 vec3
-CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, vec3 worldSpaceNormal, vec3 worldSpacePosition)
+CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, vec3 worldSpaceNormal, vec3 worldSpacePosition, float noise)
 {
     float NL = saturate(dot(GlobalLightDirWorldspace.xyz, worldSpaceNormal));
     if (NL <= 0) { return vec3(0); }
@@ -392,7 +392,8 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         vec4 shadowPos = CSMShadowMatrix * vec4(worldSpacePosition, 1); // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer
+
+        shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer, noise
 #ifdef CSM_DEBUG
         , csmDebug  
 #endif
@@ -618,7 +619,7 @@ CalculateSpotLightAmbientTransmission(
 /**
 */
 vec3
-CalculateGlobalLightAmbientTransmission(vec3 pos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo, in float transmission)
+CalculateGlobalLightAmbientTransmission(vec3 pos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo, in float transmission, in float noise)
 {
     float NL = saturate(dot(GlobalLightDirWorldspace.xyz, normal));
     float TNL = saturate(dot(-GlobalLightDirWorldspace.xyz, normal)) * transmission;
@@ -633,7 +634,7 @@ CalculateGlobalLightAmbientTransmission(vec3 pos, vec3 viewVec, vec3 normal, flo
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         vec4 shadowPos = CSMShadowMatrix * vec4(pos, 1); // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer
+        shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer, noise
 #ifdef CSM_DEBUG
             , csmDebug
 #endif
@@ -730,7 +731,7 @@ LocalLightsAmbientTransmission(
 /**
 */
 vec3
-CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec3 normal)
+CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec3 normal, in float noise)
 {
     float viewDepth = CalculateViewDepth(View, worldSpacePos);
     uint3 index3D = CalculateClusterIndex(clipXYZ.xy / BlockSize, viewDepth, InvZScale, InvZBias);
@@ -739,7 +740,7 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
     vec3 light = vec3(0, 0, 0);
     vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
-    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
+    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos, noise);
 
 #if USE_SCALARIZATION_LOOP
     // Get the mask for the invocation

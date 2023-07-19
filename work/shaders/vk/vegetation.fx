@@ -409,7 +409,8 @@ psDrawGrass(
     geometryNormal = tbn * geometryNormal;
 
     vec4 material = sampleMaterial(instanceTexture, TextureSampler, uv);
-    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
+    float noise = hash12(gl_FragCoord.xy);
+    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal, noise);
 
     //Color = vec4(debugCoord.xy, 0, 1);
     Color = vec4(light.rgb, 1);
@@ -569,7 +570,8 @@ psDrawMesh(
     vec4 material = sampleMaterial(instanceTexture, TextureSampler, uv);
 
     //vec3 light = vec3(0, 0, 0); 
-    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
+    float noise = hash12(gl_FragCoord.xy);
+    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal, noise);
     /*
     vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);  
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
@@ -579,7 +581,8 @@ psDrawMesh(
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, geometryNormal.xyz, worldSpacePos);
+    float noise = hash12(gl_FragCoord.xy);
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, geometryNormal.xyz, worldSpacePos, noise);
     light += LocalLights(idx, albedo.rgb, material, F0, viewSpacePos, viewNormal, gl_FragCoord.z);
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];

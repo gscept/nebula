@@ -194,13 +194,13 @@ LocalLightsFog(
 /**
 */
 vec3
-GlobalLightFog(vec3 viewPos)
+GlobalLightFog(vec3 viewPos, in float noise)
 {
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         vec4 shadowPos = CSMShadowMatrix * vec4(viewPos, 1); // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer, noise);
         shadowFactor = lerp(1.0f, shadowFactor, 1);
     }
 
@@ -307,7 +307,8 @@ void csRender()
         float weight = exp(-totalParticleDensity) * localParticleDensity;
 
         // this is the Lscat calculation
-        light += GlobalLightFog(samplePos) * weight * localAbsorption;
+        float noise = hash12(seed);
+        light += GlobalLightFog(samplePos, noise) * weight * localAbsorption;
         light += LocalLightsFog(idx, samplePos, rayDirection) * weight * localAbsorption;
     }
     float weight = (exp(-totalParticleDensity));

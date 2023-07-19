@@ -65,7 +65,8 @@ psStandard(
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, albedo.rgb, material, N);
+    float noise = hash12(gl_FragCoord.xy);
+    light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, albedo.rgb, material, N, noise);
     light += calcEnv(albedo, F0, N, viewVec, material);
     
     OutColor = finalizeColor(light.rgb, albedo.a);

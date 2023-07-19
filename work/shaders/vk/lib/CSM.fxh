@@ -42,6 +42,7 @@ float
 CSMPS(
 	  in vec4 TexShadow
 	, in uint Texture
+    , in float noise
 #ifdef CSM_DEBUG
 	, out vec4 Debug
 #endif
@@ -78,7 +79,7 @@ CSMPS(
 	}
 
 	// calculate texture coordinate in shadow space
-	float occlusion = PCFShadowArray(Texture, texCoordShadow.z, texCoordShadow.xy, cascadeIndex, GlobalLightShadowMapSize.xy);
+	float occlusion = PCFShadowArray(Texture, texCoordShadow.z, texCoordShadow.xy, cascadeIndex, GlobalLightShadowMapSize.xy, noise);
 	return occlusion;
 }
 
