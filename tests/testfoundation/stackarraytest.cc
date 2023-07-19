@@ -122,7 +122,7 @@ StackArrayTest::Run()
 
     // test Sort()
     array0.Clear();
-    array0.Append(4); array0.Append(2); array0.Append(1); array0.Append(3);
+    array0.Append(4, 2, 1, 3);
     array0.Sort();
     VERIFY(array0[0] == 1);
     VERIFY(array0[1] == 2);

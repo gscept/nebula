@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula version="1">
+    <Options exportFlags="4" scale="1.000000" />
+    <States>
+        <ModelNode name="root/unnamed:0" material="sur:Sponza/Sponza/unnamed_0.sur" />
+        <ModelNode name="root/unnamed:101" material="sur:Sponza/Sponza/unnamed_24.sur" />
+        <ModelNode name="root/unnamed:12" material="sur:Sponza/Sponza/unnamed_10.sur" />
+        <ModelNode name="root/unnamed:21" material="sur:Sponza/Sponza/unnamed_7.sur" />
+        <ModelNode name="root/unnamed:3" material="sur:Sponza/Sponza/unnamed_4.sur" />
+        <ModelNode name="root/unnamed:38" material="sur:Sponza/Sponza/unnamed_11.sur" />
+        <ModelNode name="root/unnamed:4" material="sur:Sponza/Sponza/unnamed_5.sur" />
+        <ModelNode name="root/unnamed:46" material="sur:Sponza/Sponza/unnamed_9.sur" />
+        <ModelNode name="root/unnamed:49" material="sur:Sponza/Sponza/unnamed_12.sur" />
+        <ModelNode name="root/unnamed:5" material="sur:Sponza/Sponza/unnamed_6.sur" />
+        <ModelNode name="root/unnamed:50" material="sur:Sponza/Sponza/unnamed_2.sur" />
+        <ModelNode name="root/unnamed:59" material="sur:Sponza/Sponza/unnamed_14.sur" />
+        <ModelNode name="root/unnamed:60" material="sur:Sponza/Sponza/unnamed_16.sur" />
+        <ModelNode name="root/unnamed:61" material="sur:Sponza/Sponza/unnamed_15.sur" />
+        <ModelNode name="root/unnamed:62" material="sur:Sponza/Sponza/unnamed_13.sur" />
+        <ModelNode name="root/unnamed:67" material="sur:Sponza/Sponza/unnamed_19.sur" />
+        <ModelNode name="root/unnamed:68" material="sur:Sponza/Sponza/unnamed_18.sur" />
+        <ModelNode name="root/unnamed:7" material="sur:Sponza/Sponza/unnamed_8.sur" />
+        <ModelNode name="root/unnamed:72" material="sur:Sponza/Sponza/unnamed_17.sur" />
+        <ModelNode name="root/unnamed:73" material="sur:Sponza/Sponza/unnamed_20.sur" />
+        <ModelNode name="root/unnamed:74" material="sur:Sponza/Sponza/unnamed_21.sur" />
+        <ModelNode name="root/unnamed:84" material="sur:Sponza/Sponza/unnamed_1.sur" />
+        <ModelNode name="root/unnamed:91" material="sur:Sponza/Sponza/unnamed_3.sur" />
+        <ModelNode name="root/unnamed:95" material="sur:Sponza/Sponza/unnamed_22.sur" />
+        <ModelNode name="root/unnamed:98" material="sur:Sponza/Sponza/unnamed_23.sur" />
+    </States>
+</Nebula>
