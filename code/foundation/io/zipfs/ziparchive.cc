@@ -42,15 +42,22 @@ ZipArchive::~ZipArchive()
     tree of ZipDirEntry and ZipFileEntry objects.
 */
 bool
-ZipArchive::Setup(const URI& zipFileURI)
+ZipArchive::Setup(const URI& zipFileURI, const String& rootPathOverride)
 {
     n_assert(!this->IsValid());
     n_assert(0 == this->zipFileHandle);
 
-    if (ArchiveBase::Setup(zipFileURI))
+    if (ArchiveBase::Setup(zipFileURI, rootPathOverride))
     {
         // extract the root location of the zip archive
-        this->rootPath = this->uri.LocalPath().ExtractDirName();
+        if (!rootPathOverride.IsEmpty())
+        {
+            this->rootPath = AssignRegistry::Instance()->ResolveAssigns(rootPathOverride).LocalPath() + "/";
+        }
+        else
+        {
+            this->rootPath = this->uri.LocalPath().ExtractDirName();
+        }
 
         // open the zip file
         URI absPath = AssignRegistry::Instance()->ResolveAssigns(this->uri);

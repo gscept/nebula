@@ -13,6 +13,8 @@ option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 option(N_MINIMAL_TOOLKIT "Only minimal toolkit" ON)
 
+include(create_resource)
+
 if(FIPS_WINDOWS)
 	option(N_STATIC_BUILD "Use static runtime in windows builds" ON)
 	if(N_STATIC_BUILD)
@@ -137,15 +139,15 @@ option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 macro(nebula_flatc root)
     string(COMPARE EQUAL ${root} "SYSTEM" use_system)
     if(${use_system})
-        set(rootdir ${NROOT})
+        set(rootdir ${NROOT}/syswork)
     else()
-        set(rootdir ${PROJECT_SOURCE_DIR})
+        set(rootdir ${PROJECT_SOURCE_DIR}/work)
     endif()
     set_nebula_export_dir()
 
     foreach(fb ${ARGN})
         set(target_has_flatc 1)
-        set(datadir ${rootdir}/work/data/flatbuffer/)
+        set(datadir ${rootdir}/data/flatbuffer/)
         get_filename_component(filename ${fb} NAME)
         get_filename_component(foldername ${fb} DIRECTORY)
         string(REPLACE ".fbs" ".h" out_header ${filename})
@@ -154,8 +156,8 @@ macro(nebula_flatc root)
         set(fbs ${datadir}${fb})
         set(output ${abs_output_folder}/${out_header})
         add_custom_command(OUTPUT ${output}
-                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
-                PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --schema ${fbs}
+                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
+                PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${fbs}
                 MAIN_DEPENDENCY "${fbs}"
                 DEPENDS ${FLATC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -179,7 +181,7 @@ macro(add_shaders_intern)
         endif()
 
         if (nebula_shader)
-            set(base_path ${NROOT}/work/shaders/vk)
+            set(base_path ${NROOT}/syswork/shaders/vk)
         else()
             set(base_path ${CMAKE_CURRENT_SOURCE_DIR})
         endif()
@@ -194,7 +196,7 @@ macro(add_shaders_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -r ${base_path} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
         endif()
 
         # sadly this doesnt work for some reason
@@ -211,7 +213,7 @@ macro(add_shaders_intern)
 
         set(output ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
         add_custom_command(OUTPUT ${output}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -r ${base_path} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${SHADERC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -224,7 +226,7 @@ macro(add_shaders_intern)
         if(N_ENABLE_SHADER_COMMAND_GENERATION)
             # create compile flags file for live shader compile
             # MESSAGE(WARNING "fooo   " ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
-            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
         endif()
     endif()
 endmacro()
@@ -322,6 +324,13 @@ macro(add_blueprint)
     endforeach()
 endmacro()
 
+# minimal resolving for toolkit and proj assigns used in projectinfo
+function(resolve_assigns str resolved)
+    string(REPLACE "toolkit:" ${NROOT}/ out ${str})
+    string(REPLACE "proj:" ${FIPS_PROJECT_DIR}/ out2 ${out})
+    set (${resolved} ${out2} PARENT_SCOPE)
+endfunction()
+
 macro(add_template_intern)
     foreach(tp ${ARGN})
         get_filename_component(basename ${tp} NAME)
@@ -360,15 +369,37 @@ macro(set_nebula_export_dir)
             MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
             return()
         endif()
-        set(EXPORT_DIR "${workdir}/export")
+        if(EXISTS ${workdir}/projectinfo.json)
+            FILE(READ "${workdir}/projectinfo.json" projectJson)
+                sbeParseJson(projectInfo projectJson)
+                resolve_assigns(${projectInfo.DestDir} targetdir)
+            SET(EXPORT_DIR ${targetdir})
+        else()
+            MESSAGE(WARNING "No projectinfo found in project folder, setting default export")
+            set(EXPORT_DIR "${workdir}/export")
+            set(WORK_DIR "${workdir}")
+        endif()
+        
     else()
         if(EXISTS $ENV{HOME}/.config/nebula/gscept.cfg)
             FILE(READ "$ENV{HOME}/.config/nebula/gscept.cfg" SettingsJson)
             sbeParseJson(Settings SettingsJson)
-            set(EXPORT_DIR ${Settings.ToolkitShared.workdir}/export)
+            set(workdir ${Settings.ToolkitShared.workdir})
+
+             if(EXISTS ${workdir}/projectinfo.json)
+                FILE(READ "${workdir}/projectinfo.json" projectJson)
+                sbeParseJson(projectInfo projectJson)
+                resolve_assigns(${projectInfo.DestDir} targetdir)
+                SET(EXPORT_DIR ${targetdir})
+            else()
+                MESSAGE(WARNING "No projectinfo found in project folder, setting default export")
+                set(EXPORT_DIR "${workdir}/export")
+                set(WORK_DIR "${workdir}")
+            endif()
         else()
             # use environment
             set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
+            set(WORK_DIR $ENV{NEBULA_WORK})
         endif()
     endif()
 endmacro()
@@ -378,24 +409,45 @@ macro(add_nebula_shaders)
         MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
     else()
         set_nebula_export_dir()
-        file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")
-        SOURCE_GROUP(TREE "${NROOT}/work/shaders/vk" PREFIX "res\\shaders" FILES ${FXH})
+        file(GLOB_RECURSE FXH "${NROOT}/syswork/shaders/vk/*.fxh")
+        SOURCE_GROUP(TREE "${NROOT}/syswork/shaders/vk" PREFIX "res\\shaders" FILES ${FXH})
         fips_files(${FXH})
 
-        file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")
+        file(GLOB_RECURSE FX "${NROOT}/syswork/shaders/vk/*.fx")
         foreach(shd ${FX})
             add_shaders_intern(${shd} true)
         endforeach()
+
+        file(GLOB_RECURSE FXHW "${FIPS_PROJECT_DIR}/work/shaders/vk/*.fxh")
+        if (FXHW)
+            SOURCE_GROUP(TREE "${FIPS_PROJECT_DIR}/work/shaders/vk" PREFIX "res\\shaders" FILES ${FXHW})
+            fips_files(${FXHW})
+        endif()
+
+        file(GLOB_RECURSE FXW "${FIPS_PROJECT_DIR}/work/shaders/vk/*.fx")
+        foreach(shd ${FXW})
+            add_shaders_intern(${shd} false)
+        endforeach()
         
         # add configurations for the .vscode anyfx linter
-        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${NROOT}/work/shaders/vk)
+        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${NROOT}/syswork/shaders/vk)
 
-        file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")
+        file(GLOB_RECURSE FRM "${NROOT}/syswork/frame/win32/*.json")
         foreach(shd ${FRM})
             add_frameshader_intern(${shd})
         endforeach()
 
-         file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.json")
+        file(GLOB_RECURSE FRMW "${FIPS_PROJECT_DIR}/work/frame/win32/*.json")
+        foreach(shd ${FRMW})
+            add_frameshader_intern(${shd})
+        endforeach()
+
+         file(GLOB_RECURSE MAT "${NROOT}/syswork/materials/*.json")
+        foreach(shd ${MAT})
+            add_material_intern(${shd})
+        endforeach()
+
+        file(GLOB_RECURSE MATW "${FIPS_PROJECT_DIR}/work/materials/*.json")
         foreach(shd ${MAT})
             add_material_intern(${shd})
         endforeach()
@@ -404,12 +456,16 @@ endmacro()
 
 macro(nebula_add_blueprints)
     set_nebula_export_dir()
-    add_blueprint_intern("${NROOT}/work/data/tables/blueprints.json")
+    if (EXISTS "${FIPS_PROJECT_DIR}/work/data/tables/blueprints.json")
+        add_blueprint_intern("${FIPS_PROJECT_DIR}/work/data/tables/blueprints.json")
+    else()
+        add_blueprint_intern("${NROOT}/syswork/data/tables/blueprints.json")
+    endif()    
 endmacro()
 
 macro(add_shaders)
     if(NOT SHADERC)
-        MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
+        MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
     else()
         set_nebula_export_dir()
         foreach(shd ${ARGN})
@@ -433,6 +489,7 @@ macro(nebula_begin_app name type)
     set(target_has_shaders 0)
 	set(target_has_flatc 0)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+    set_target_properties(${name} PROPERTIES COMPILE_WARNING_AS_ERROR TRUE)
 endmacro()
 
 macro(nebula_end_app)
@@ -456,6 +513,7 @@ macro(nebula_begin_module name)
     set(target_has_nidl 0)
     set(target_has_shaders 0)
     set(target_has_flatc 0)
+    set_target_properties(${name} PROPERTIES COMPILE_WARNING_AS_ERROR TRUE)
 endmacro()
 
 macro(nebula_end_module)

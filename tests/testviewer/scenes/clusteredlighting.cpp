@@ -134,9 +134,9 @@ void OpenScene()
             transform.position = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
-            Resources::ResourceId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
-            Resources::ResourceId normal = Resources::CreateResource("tex:system/nobump.dds", "decal"_atm, nullptr, nullptr, true);
-            Resources::ResourceId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId albedo = Resources::CreateResource("systex:white.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId normal = Resources::CreateResource("systex:nobump.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId material = Resources::CreateResource("systex:default_material.dds", "decal"_atm, nullptr, nullptr, true);
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);
@@ -210,7 +210,6 @@ void OpenScene()
     // setup visibility
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
-    //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
     const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk",  "ske:Units/Unit_Footman.nsk",  "ske:Units/Unit_Spearman.nsk", "ske:Units/Unit_Rifleman.nsk" };
     const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax",  "ani:Units/Unit_Footman.nax",  "ani:Units/Unit_Spearman.nax", "ani:Units/Unit_Rifleman.nax" };
 
@@ -244,7 +243,7 @@ void OpenScene()
                     entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, code);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
                     Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], 0, animationRes[modelIndex], 0, "Viewer");
-                    //Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
+                    Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
                 });
             
             modelIndex = (modelIndex + 1) % 4;

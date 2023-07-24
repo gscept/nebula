@@ -157,6 +157,17 @@ IoServer::MountArchive(const URI& uri)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+IoServer::MountEmbeddedArchive(const URI& uri)
+{
+    Ptr<Archive> archive = this->archiveFileSystem->MountEmbedded(uri, "root:");
+    return archive.isvalid();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 IoServer::UnmountArchive(const URI& uri)
 {

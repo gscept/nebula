@@ -31,7 +31,7 @@ void OpenScene()
 {
     entity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
-    Models::ModelContext::Setup(entity, "mdl:system/placeholder.n3", "ExampleScene", []()
+    Models::ModelContext::Setup(entity, "sysmdl:placeholder.n3", "ExampleScene", []()
     {
         Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
     });
@@ -39,7 +39,7 @@ void OpenScene()
 
     otherEntity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(otherEntity);
-    Models::ModelContext::Setup(otherEntity, "mdl:system/placeholder.n3", "ExampleScene", []()
+    Models::ModelContext::Setup(otherEntity, "sysmdl:placeholder.n3", "ExampleScene", []()
     {
         Visibility::ObservableContext::Setup(otherEntity, Visibility::VisibilityEntityType::Model);
     });
@@ -87,7 +87,7 @@ void StepFrame()
     {
         gid = Graphics::CreateEntity();
         Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(gid);
-        Models::ModelContext::Setup(gid, "mdl:system/placeholder.n3", "ExampleScene", []()
+        Models::ModelContext::Setup(gid, "sysmdl:placeholder.n3", "ExampleScene", []()
         {
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
             Models::ModelContext::SetTransform(gid, Math::translation(Math::vec3(5, 0, 0)));

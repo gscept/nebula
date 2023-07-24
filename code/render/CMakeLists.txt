@@ -8,12 +8,14 @@ FIND_PROGRAM(SHADERC
        NO_DEFAULT_PATH
        )
 
-
 nebula_begin_module(render)
     add_nebula_shaders()
     set(target_has_shaders 1)
     target_include_directories(render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons ${CODE_ROOT}/render)
     fips_deps(foundation input resource anyfx imgui)
+    if (TARGET system_resources-res)
+        target_link_libraries(render $<TARGET_OBJECTS:system_resources-res>)
+    endif()
 
     target_precompile_headers(render PRIVATE "render/stdneb.h" "coregraphics/shaderserver.h" "../foundation/core/rtti.h" "graphics/graphicsserver.h" )
 

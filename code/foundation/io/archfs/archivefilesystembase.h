@@ -38,6 +38,8 @@ public:
     
     /// mount an archive
     virtual Ptr<Archive> Mount(const URI& uri);
+    /// mount an embedded archive
+    virtual Ptr<Archive> MountEmbedded(const URI& uri, const Util::String& rootPath);
     /// unmount an archive by URI
     virtual void Unmount(const URI& uri);
     /// unmount an archive by pointer

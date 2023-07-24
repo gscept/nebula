@@ -61,12 +61,12 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");
     windowServer->RegisterWindow("Presentation::Previewer", "Previewer");
     
-    Icons::play          = LoadIcon("tex:system/icon_play.dds");
-    Icons::pause         = LoadIcon("tex:system/icon_pause.dds");
-    Icons::stop          = LoadIcon("tex:system/icon_stop.dds");
-    Icons::environment   = LoadIcon("tex:system/icon_environment.dds");
-    Icons::game          = LoadIcon("tex:system/icon_game.dds");
-    Icons::light         = LoadIcon("tex:system/icon_light.dds");
+    Icons::play          = LoadIcon("systex:icon_play.dds");
+    Icons::pause         = LoadIcon("systex:icon_pause.dds");
+    Icons::stop          = LoadIcon("systex:icon_stop.dds");
+    Icons::environment   = LoadIcon("systex:icon_environment.dds");
+    Icons::game          = LoadIcon("systex:icon_game.dds");
+    Icons::light         = LoadIcon("systex:icon_light.dds");
     
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Y", "Edit");

@@ -16,6 +16,7 @@
 #include "models/modelloader.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "renderutil/geometryhelpers.h"
+#include "io/ioserver.h"
 
 #include "bindlessregistry.h"
 #include "globalconstants.h"
@@ -50,6 +51,11 @@ void
 GraphicsServer::Open()
 {
     n_assert(!this->isOpen);
+
+#ifdef HAS_EMBEDDED_EXPORT
+    IO::IoServer::Instance()->MountEmbeddedArchive("embed:///export");
+#endif
+
     this->timer = FrameSync::FrameSyncTimer::HasInstance() ? FrameSync::FrameSyncTimer::Instance() : FrameSync::FrameSyncTimer::Create();
     this->isOpen = true;
 

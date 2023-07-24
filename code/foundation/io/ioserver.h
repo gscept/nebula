@@ -48,6 +48,8 @@ public:
 
     /// mount a file archive (without archive file extension!)
     bool MountArchive(const URI& uri);
+    /// mount an embedded file archive
+    bool MountEmbeddedArchive(const URI& uri);
     /// unmount a file archive (without archive file extension!)
     void UnmountArchive(const URI& uri);
     /// return true if a archive is mounted (without archive file extension!)
