@@ -19,8 +19,8 @@ __ImplementClass(Materials::MaterialLoader, 'MALO', Resources::ResourceLoader);
 void 
 MaterialLoader::Setup()
 {
-    this->placeholderResourceName = "sur:system/placeholder.sur";
-    this->failResourceName = "sur:system/error.sur";
+    this->placeholderResourceName = "syssur:placeholder.sur";
+    this->failResourceName = "syssur:error.sur";
 
     // never forget to run this
     ResourceLoader::Setup();
@@ -106,7 +106,7 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                         {
                             Util::String path = reader->GetOptString("value", "");
                             /*if (paramName == "DiffuseMap" || paramName == "AlbedoMap")
-                                path = "tex:system/error.dds";
+                                path = "systex:error.dds";
                                 */
                             Resources::ResourceId tex;
                             if (!path.IsEmpty())

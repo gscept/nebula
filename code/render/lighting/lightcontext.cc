@@ -155,7 +155,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     lightServerState.globalLightShadowMap = frameScript->GetTexture("SunShadowDepth");
     lightServerState.localLightShadows = frameScript->GetTexture("LocalLightShadow");
     if (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId)
-        lightServerState.terrainShadowMap = Resources::CreateResource("tex:system/white.dds", "system");
+        lightServerState.terrainShadowMap = Resources::CreateResource("systex:white.dds", "system");
 
     using namespace CoreGraphics;
 
@@ -166,8 +166,8 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
 
-    textureState.ltcLut0 = Resources::CreateResource("tex:system/ltc_1.dds", "system", nullptr, nullptr, true);
-    textureState.ltcLut1 = Resources::CreateResource("tex:system/ltc_2.dds", "system", nullptr, nullptr, true);
+    textureState.ltcLut0 = Resources::CreateResource("systex:ltc_1.dds", "system", nullptr, nullptr, true);
+    textureState.ltcLut1 = Resources::CreateResource("systex:ltc_2.dds", "system", nullptr, nullptr, true);
 
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "LightIndexListsBuffer";

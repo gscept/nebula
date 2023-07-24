@@ -20,8 +20,8 @@ using namespace IO;
 TextureLoader::TextureLoader()
 {
     this->async = true;
-    this->placeholderResourceName = "tex:system/white.dds";
-    this->failResourceName = "tex:system/error.dds";
+    this->placeholderResourceName = "systex:white.dds";
+    this->failResourceName = "systex:error.dds";
 
     this->streamerThreadName = "Texture Pool Streamer Thread";
 }

@@ -113,7 +113,7 @@ NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material 
     }
     else
     {
-        builder.AddParam("baseColorTexture", "tex:system/white");
+        builder.AddParam("baseColorTexture", "systex:white");
     }
 
     if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
@@ -131,7 +131,7 @@ NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material 
     }
     else
     {
-        builder.AddParam("metallicRoughnessTexture", "tex:system/white");
+        builder.AddParam("metallicRoughnessTexture", "systex:white");
     }
 
     if (material.normalTexture.index != -1)
@@ -150,7 +150,7 @@ NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material 
     }
     else
     {
-        builder.AddParam("normalTexture", "tex:system/normal_color");
+        builder.AddParam("normalTexture", "systex:normal_color");
     }
 
     if (material.emissiveTexture.index != -1)
@@ -169,7 +169,7 @@ NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material 
     }
     else
     {
-        builder.AddParam("emissiveTexture", "tex:system/white");
+        builder.AddParam("emissiveTexture", "systex:white");
     }
 
     if (material.occlusionTexture.index != -1)
@@ -188,7 +188,7 @@ NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material 
     }
     else
     {
-        builder.AddParam("occlusionTexture", "tex:system/white");
+        builder.AddParam("occlusionTexture", "systex:white");
     }
 
     builder.AddParam("baseColorFactor", Util::String::FromVec4(material.pbrMetallicRoughness.baseColorFactor));
