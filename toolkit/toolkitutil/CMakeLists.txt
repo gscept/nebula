@@ -5,7 +5,6 @@
 find_package(FBX REQUIRED)
 
 fips_begin_lib(toolkitutil)
-    fips_vs_warning_level(3)
     target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
