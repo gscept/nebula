@@ -4,8 +4,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Nebula>
 	<Surface template="Placeholder">
-		<Param name="AlbedoMap" value="tex:system/error"/>
-		<Param name="NormalMap" value="tex:system/nobump"/>
-		<Param name="ParameterMap" value="tex:system/default_material" />
+		<Param name="AlbedoMap" value="systex:error"/>
+		<Param name="NormalMap" value="systex:nobump"/>
+		<Param name="ParameterMap" value="systex:default_material" />
 	</Surface>
 </Nebula>

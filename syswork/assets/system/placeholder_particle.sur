@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Nebula>
     <Surface template="ParticleUnlit">
-        <Param name="AlbedoMap" value="tex:system/white" />
-        <Param name="NormalMap" value="tex:system/nobump"/>
-		<Param name="ParameterMap" value="tex:system/default_material" />
+        <Param name="AlbedoMap" value="systex:white" />
+        <Param name="NormalMap" value="systex:nobump"/>
+		<Param name="ParameterMap" value="systex:default_material" />
         <Param name="Transmission" value="0.0"/>
     </Surface>
 </Nebula>

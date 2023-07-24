@@ -2,7 +2,7 @@
 <Nebula version="1">
     <Options exportFlags="4" scale="1.000000" />
     <States>
-        <ModelNode name="root/pTorus1" material="sur:system/placeholder.sur" />
-        <ModelNode name="root/pTorus1_0" material="sur:system/placeholder.sur" />
+        <ModelNode name="root/pTorus1" material="syssur:placeholder.sur" />
+        <ModelNode name="root/pTorus1_0" material="syssur:placeholder.sur" />
     </States>
 </Nebula>
