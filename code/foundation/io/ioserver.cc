@@ -13,6 +13,7 @@
 #include "io/archfs/archive.h"
 #include "io/archfs/archivefilesystem.h"
 #include "io/filewatcher.h"
+#include "io/filestream.h"
 #include <filesystem>
 
 namespace IO
@@ -126,8 +127,21 @@ IoServer::CreateStream(const URI& uri) const
 {
     n_assert(!uri.IsEmpty());
     n_assert(SchemeRegistry::Instance()->IsUriSchemeRegistered(uri.Scheme()));
-    SchemeRegistry* schemeRegistry = SchemeRegistry::Instance();
+    const Core::Rtti & streamClass = SchemeRegistry::Instance()->GetStreamClassByUriScheme(uri.Scheme());
 
+#if !PUBLIC_BUILD
+    if (streamClass == FileStream::RTTI)
+    {
+        const String path = uri.GetHostAndLocalPath();
+        n_assert(path.IsValid());
+        if (FSWrapper::FileExists(path))
+        {
+            Ptr<Stream> stream = (Stream*)streamClass.Create();
+            stream->SetURI(uri);
+            return stream;
+        }
+    }
+#endif
     // check if the URI points into a mounted archive
     if (this->IsArchiveFileSystemEnabled())
     {

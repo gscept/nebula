@@ -169,10 +169,10 @@ UltralightRenderer::UpdateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
     // Create buffer to upload to texture
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
-    bufInfo.byteSize = bitmap->size();
+    bufInfo.byteSize = (SizeT)bitmap->size();
     bufInfo.mode = CoreGraphics::HostLocal;
     bufInfo.data = bitmap->LockPixels();
-    bufInfo.dataSize = bitmap->size();
+    bufInfo.dataSize = (SizeT)bitmap->size();
     CoreGraphics::BufferId tempBuf = CoreGraphics::CreateBuffer(bufInfo);
     bitmap->UnlockPixels();
 
