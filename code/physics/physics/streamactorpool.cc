@@ -210,7 +210,7 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 //------------------------------------------------------------------------------
 /**
 */
-static const auto AddCollider = [&](physx::PxGeometryHolder geometry, IndexT material, const Math::mat4& trans, const char* name, const Util::String& colliderName, ActorInfo& actorInfo, const Util::StringAtom& tag, Ids::Id32 entry)
+static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const Math::mat4& trans, const char* name, const Util::String& colliderName, ActorInfo& actorInfo, const Util::StringAtom& tag, Ids::Id32 entry)
     {
         actorInfo.colliders.Append(colliderName);
         physx::PxShape* newShape = state.physics->createShape(geometry.any(), *state.materials[material].material);
