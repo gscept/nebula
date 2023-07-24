@@ -1,0 +1,10 @@
+<!--
+	Surface material for the placeholder material
+-->
+<Nebula>
+	<Surface template="Billboard">
+		<Param name="AlbedoMap" value="systex:placeholder"/>
+		<Param name="Color" value="1,1,1,1"/>
+		<Param name="ViewAligned" value="false"/>
+	</Surface>
+</Nebula>

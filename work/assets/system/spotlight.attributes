@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Nebula version="1">
-    <Options exportFlags="4" scale="1.000000" />
-    <States>
-        <ModelNode name="root/pCylinder10" material="sur:system/placeholder.sur" />
-        <ModelNode name="root/pCylinder10_0" material="sur:system/placeholder.sur" />
-        <ModelNode name="root/polySurface2" material="Static" />
-    </States>
-</Nebula>

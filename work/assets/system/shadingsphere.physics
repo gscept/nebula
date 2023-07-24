@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Nebula version="1">
-    <Options exportMode="0" meshMode="0" material="default" physicsMesh="phymsh:system/shadingsphere_ph.nvx2" />
-</Nebula>

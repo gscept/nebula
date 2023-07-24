@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Nebula version="4">
-    <Model name="system/shadingsphere" bboxcenter="0.000000,0.000000,-0.000000,1.000000" bboxextents="1.000000,0.999655,0.999655,0.000000">
-        <ShapeNodes>
-            <ShapeNode name="pSphere3" path="root/pSphere3" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,-0.000000,1.000000" bboxextents="1.000000,0.999655,0.999655,0.000000" mesh="msh:system/shadingsphere.nvx" mid="0" primitive="0" />
-        </ShapeNodes>
-    </Model>
-</Nebula>

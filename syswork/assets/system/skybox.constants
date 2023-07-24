@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula version="4">
+    <Model name="system/skybox" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="0.500000,0.500005,0.500005,0.000000">
+        <ShapeNodes>
+            <ShapeNode name="pCube1" path="root/pCube1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="0.500000,0.500005,0.500005,0.000000" mesh="sysmsh:skybox.nvx" mid="0" primitive="0" />
+        </ShapeNodes>
+    </Model>
+</Nebula>
