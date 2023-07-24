@@ -69,7 +69,7 @@ PhysxState::ConnectPVD()
         {
             this->transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
         }
-        this->pvd->connect(*this->transport, PxPvdInstrumentationFlag::ePROFILE | PxPvdInstrumentationFlag::eDEBUG);
+        this->pvd->connect(*this->transport, PxPvdInstrumentationFlag::eALL);
     }
 }
 
@@ -132,18 +132,30 @@ PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 /**
 */
 physx::PxRigidActor*
-PhysxState::CreateActor(bool dynamic, Math::mat4 const & transform)
+PhysxState::CreateActor(ActorType type, Math::mat4 const & transform)
 {
-    if (dynamic)
+    switch (type)
     {
-        PxRigidActor * actor = this->physics->createRigidDynamic(Neb2PxTrans(transform));
-        actor->setActorFlag(physx::PxActorFlag::eSEND_SLEEP_NOTIFIES, true);
-        return actor;
+        case ActorType::Dynamic:
+        {
+            PxRigidActor* actor = this->physics->createRigidDynamic(Neb2PxTrans(transform));
+            actor->setActorFlag(physx::PxActorFlag::eSEND_SLEEP_NOTIFIES, true);
+            return actor;
+        }
+        break;
+        case ActorType::Kinematic:
+        {
+            PxRigidDynamic* actor = this->physics->createRigidDynamic(Neb2PxTrans(transform));
+            actor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+            return actor;
+        }
+        break;
+        case ActorType::Static:
+            return this->physics->createRigidStatic(Neb2PxTrans(transform));
+        break;
     }
-    else
-    {
-        return this->physics->createRigidStatic(Neb2PxTrans(transform));
-    }
+    n_error("unhandled actor type");
+    return nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -183,6 +195,17 @@ PhysxState::Update(Timing::Time delta)
             // simulate synchronously
             scene.scene->simulate(PHYSICS_RATE);
             scene.scene->fetchResults(true);
+            if (scene.updateFunction != nullptr)
+            {
+                uint32_t activeActorCount = 0;
+                PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
+                for (uint32_t i = 0; i < activeActorCount; i++)
+                {
+                    Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
+                    Actor& actor = ActorContext::GetActor(id);
+                    (*scene.updateFunction)(actor);
+                }
+            }
         }
         state.time += PHYSICS_RATE;
     }
@@ -229,6 +252,17 @@ PhysxState::EndFrame()
     for (auto& scene : this->activeScenes)
     {
         scene.scene->fetchResults(true);
+        if (scene.updateFunction != nullptr)
+        {
+            uint32_t activeActorCount = 0;
+            PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
+            for (uint32_t i = 0; i < activeActorCount; i++)
+            {
+                Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
+                Actor& actor = ActorContext::GetActor(id);
+                (*scene.updateFunction)(actor);
+            }
+        }
     }
     state.time += PHYSICS_RATE;
 }

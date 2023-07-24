@@ -25,13 +25,13 @@ class ActorContext
 public:
     /// helper functions for creating shapes
    ///
-    static ActorId CreateBox(Math::vector const& extends, IndexT material, bool dynamic, Math::mat4 const & transform, IndexT scene = 0);
+    static ActorId CreateBox(Math::vector const& extends, IndexT material, ActorType type, Math::mat4 const & transform, IndexT scene = 0);
     ///
-    static ActorId CreateSphere(float radius, IndexT material, bool dynamic, Math::mat4 const & transform, IndexT scene = 0);
+    static ActorId CreateSphere(float radius, IndexT material, ActorType type, Math::mat4 const & transform, IndexT scene = 0);
     ///
     static ActorId CreatePlane(Math::plane const& plane, IndexT material, IndexT scene = 0);
     ///
-    static ActorId CreateCapsule(float radius, float halfHeight, IndexT material, bool dynamic, Math::mat4 const & transform, IndexT scene = 0);
+    static ActorId CreateCapsule(float radius, float halfHeight, IndexT material, ActorType type, Math::mat4 const & transform, IndexT scene = 0);
 
     ///
     static Actor& GetActor(ActorId id);

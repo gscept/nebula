@@ -61,7 +61,7 @@ public:
     void EndFrame();
 
     /// create new empty actor
-    physx::PxRigidActor* CreateActor(bool dynamic, Math::mat4 const & transform);
+    physx::PxRigidActor* CreateActor(ActorType type, Math::mat4 const & transform);
     /// deregister an actor
     void DiscardActor(ActorId id);
 

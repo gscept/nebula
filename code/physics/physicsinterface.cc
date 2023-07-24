@@ -54,7 +54,7 @@ PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
 namespace Physics
 {
 
-void LoadMaterialTable();
+void LoadMaterialTable(const IO::URI& materialTable);
 //------------------------------------------------------------------------------
 /**
 */
@@ -66,7 +66,7 @@ Setup()
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
-    LoadMaterialTable();
+    LoadMaterialTable("sys");
 
     //FIXME this should be somewhere in a toolkit component instead
     Flat::FlatbufferInterface::Init();
@@ -109,6 +109,7 @@ CreateScene()
     sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
     sceneDesc.cpuDispatcher = scene.dispatcher;
     sceneDesc.filterShader = Simulationfilter;
+    sceneDesc.flags.raise(PxSceneFlag::eENABLE_ACTIVE_ACTORS);
     scene.scene = state.physics->createScene(sceneDesc);    
     scene.scene->setSimulationEventCallback(&state);    
     scene.controllerManager= PxCreateControllerManager(*scene.scene);       
@@ -163,6 +164,15 @@ GetScene(IndexT idx)
 //------------------------------------------------------------------------------
 /**
 */
+void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
+{
+    Scene &scene = GetScene(sceneId);
+    scene.updateFunction = callback;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void RenderDebug()
 {
 }
@@ -171,7 +181,7 @@ void RenderDebug()
 /**
 */
 void
-LoadMaterialTable()
+LoadMaterialTable(const IO::URI & materialTable)
 {
     const IO::URI materialtable("phys:physicsmaterials.pmat");
     Util::String materialsString;
@@ -298,9 +308,9 @@ EndFrame()
 /**
 */
 ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, uint64_t userData, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene)
 {
-    return Physics::actorPool->CreateActorInstance(id, trans, dynamic, userData, scene);
+    return Physics::actorPool->CreateActorInstance(id, trans, type, userData, scene);
 }
 
 //------------------------------------------------------------------------------

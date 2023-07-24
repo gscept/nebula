@@ -48,34 +48,40 @@ void
 StreamActorPool::Setup()
 {
     ResourceLoader::Setup();
-    this->placeholderResourceName = "phys:system/box.actor";
-    this->failResourceName = "phys:system/box.actor";
+    this->placeholderResourceName = "sysphys:box.actor";
+    this->failResourceName = "sysphys:box.actor";
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 ActorId
-StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, bool dynamic, uint64_t userData, IndexT scene)
+StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, ActorType type, uint64_t userData, IndexT scene)
 {
     __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
 
-    physx::PxRigidActor * newActor = state.CreateActor(dynamic, trans);
+    physx::PxRigidActor * newActor = state.CreateActor(type, trans);
     info.instanceCount++;
     for (IndexT i = 0; i < info.shapes.Size(); i++)
     {        
         newActor->attachShape(*info.shapes[i]);
     }
-    if (dynamic)
+    if(type != ActorType::Static)
     {
         physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.densities.Begin(), info.densities.Size());
-    }
-    
+    }    
+        
     GetScene(scene).scene->addActor(*newActor);
     
     ActorId newId = ActorContext::AllocateActorId(newActor, id);
-    ActorContext::GetActor(newId).userData = userData;
+    Actor& actor = ActorContext::GetActor(newId);
+    actor.userData = userData;
+
+#if NEBULA_DEBUG
+    actor.debugName = Util::String::Sprintf("%s %d", this->names[id.resourceId].AsString().AsCharPtr(), newId);
+    newActor->setName(actor.debugName.AsCharPtr());
+#endif
 
     return newId;
 }
@@ -200,6 +206,136 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
     nvx3Reader->Close();
     return holder;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+static const auto AddCollider = [&](physx::PxGeometryHolder geometry, IndexT material, const Math::mat4& trans, const char* name, const Util::String& colliderName, ActorInfo& actorInfo, const Util::StringAtom& tag, Ids::Id32 entry)
+    {
+        actorInfo.colliders.Append(colliderName);
+        physx::PxShape* newShape = state.physics->createShape(geometry.any(), *state.materials[material].material);
+#ifdef NEBULA_DEBUG
+        actorInfo.shapeDebugNames.Append(Util::String::Sprintf("%s %s %s %d", name, colliderName.AsCharPtr(), tag.Value(), entry));
+        newShape->setName(actorInfo.shapeDebugNames.Back().AsCharPtr());
+#endif
+        newShape->setLocalPose(Neb2PxTrans(trans));
+        actorInfo.shapes.Append(newShape);
+        actorInfo.densities.Append(GetMaterial(material).density);
+    };
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, ActorInfo& targetActor)
+{
+    MeshTopology type = colliderNode->type;
+    int primGroup = colliderNode->prim_group;
+
+    Util::StringAtom resource = colliderNode->file;
+    if (type != MeshTopology_ApproxSkin)
+    {
+        physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primGroup);
+        AddCollider(geometry, materialIdx, nodeTransform, resource.Value(), nodeName, targetActor, tag, entry);
+        return;
+    }
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();
+
+    nvx3Reader->SetStream(stream);
+
+    if (!nvx3Reader->Open())
+    {
+        return;
+    }
+
+    n_assert(stream->CanBeMapped());
+
+    void* mapPtr = nullptr;
+    n_assert(nullptr == mapPtr);
+    // map the stream to memory
+    mapPtr = stream->MemoryMap();
+    n_assert(nullptr != mapPtr);
+
+    auto header = (CoreGraphics::Nvx3Header*)mapPtr;
+
+    n_assert(header != nullptr);
+
+    if (header->magic != NEBULA_NVX_MAGICNUMBER)
+    {
+        // not a nvx3 file, break hard
+        n_error("MeshLoader: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
+    }
+
+    n_assert(header->numMeshes > 0);
+
+    CoreGraphics::Nvx3Elements elements;
+    CoreGraphics::Nvx3::FillNvx3Elements(header, elements);
+
+    const CoreGraphics::Nvx3Group& group = elements.groups[primGroup];
+
+    const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
+    const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;
+    const ubyte* attributeVertexBase = elements.vertexData + elements.ranges[0].attributesVertexByteOffset;
+
+    const uint vertexCount = (elements.ranges[0].attributesVertexByteOffset - elements.ranges[0].baseVertexByteOffset) / vertexStride;
+    n_assert(elements.ranges[0].layout == CoreGraphics::VertexLayoutType::Skin);
+
+    Util::Array<PxVec3> targetVertexBuffer(vertexCount, 10);
+    // this is super inefficient, but also pointless, so who cares :D
+    CoreGraphics::SkinVertex* skinBuffer = (CoreGraphics::SkinVertex*)attributeVertexBase;
+    CoreGraphics::BaseVertex* vertexBuffer = (CoreGraphics::BaseVertex*)groupVertexBase;
+    ubyte maxIndex = 1;
+    ubyte currBone = 0;
+    while (currBone < maxIndex)
+    {
+        targetVertexBuffer.Reset();
+        for (int i = 0; i < vertexCount; ++i)
+        {
+            CoreGraphics::SkinVertex const& vertex = skinBuffer[i];
+            CoreGraphics::BaseVertex const& pos = vertexBuffer[i];
+
+            if (vertex.skinWeights[0] > 0.0f)
+            {
+                if (currBone == vertex.skinIndices.x)
+                {
+                    targetVertexBuffer.Append({ pos.position[0], pos.position[1], pos.position[2] });
+                }
+                else
+                {
+                    maxIndex = Math::max(vertex.skinIndices.x, maxIndex);
+                }
+            }
+        }
+        if (targetVertexBuffer.Size() > 0)
+        {
+            PxConvexMeshDesc convexDesc;
+            convexDesc.points.count = targetVertexBuffer.Size();
+            convexDesc.points.stride = sizeof (PxVec3);
+            convexDesc.points.data = &targetVertexBuffer[0];
+            convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+
+            PxDefaultMemoryOutputStream buf;
+            PxConvexMeshCookingResult::Enum result;
+            state.cooking->cookConvexMesh(convexDesc, buf, &result);
+            if (result == PxConvexMeshCookingResult::eSUCCESS)
+            {
+                PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+                physx::PxGeometryHolder holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
+                Util::String BoneName = Util::String::Sprintf("%s_%d", nodeName.AsCharPtr(), currBone);
+                AddCollider(holder, materialIdx, nodeTransform, resource.Value(), BoneName, targetActor, tag, entry);
+            }
+            else
+            {
+                n_printf("Convex mesh failed: %d\n", result);
+            }
+        }
+        currBone++;
+    }
+    nvx3Reader->Close();
+}
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -215,35 +351,37 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
     
     actorInfo.feedbackFlag = actor.feedback;
-
+   
     for (auto const& shape : actor.shapes)
     {
         auto const & collider = shape->collider;
         Util::StringAtom matAtom = shape->material;
         IndexT material = LookupMaterial(matAtom);
-        physx::PxGeometryHolder geometry;
-
-
+        
         Math::mat4 trans = shape->transform;
 
         switch (collider->type)
         {
             case ColliderType_Sphere:
             {
+                
                 float radius = collider->data.AsSphereCollider()->radius;
-                geometry = PxSphereGeometry(radius);
+                physx::PxGeometryHolder geometry = PxSphereGeometry(radius);
+                AddCollider(geometry, material, shape->transform, "Sphere", collider->name, actorInfo, tag, entry);
             }
             break;
             case ColliderType_Cube:
             {
                 Math::vector extents = collider->data.AsBoxCollider()->extents;
-                geometry = PxBoxGeometry(Neb2PxVec(extents));
+                physx::PxGeometryHolder geometry = PxBoxGeometry(Neb2PxVec(extents));
+                AddCollider(geometry, material, shape->transform, "Cube", collider->name, actorInfo, tag, entry);
             }
             break;
             case ColliderType_Plane:
             {
                 // plane is defined via transform of the actor
-                geometry = PxPlaneGeometry();
+                physx::PxGeometryHolder geometry = PxPlaneGeometry();
+                AddCollider(geometry, material, shape->transform, "Plane", collider->name, actorInfo, tag, entry);
             }
             break;
             case ColliderType_Capsule:
@@ -251,27 +389,27 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
                 auto capsule = collider->data.AsCapsuleCollider();
                 float radius = capsule->radius;
                 float halfHeight = capsule->halfheight;
-                geometry = PxCapsuleGeometry(radius, halfHeight);
+                physx::PxGeometryHolder geometry = PxCapsuleGeometry(radius, halfHeight);
+                AddCollider(geometry, material, shape->transform, "Capsule", collider->name, actorInfo, tag, entry);
             }
             break;
             case ColliderType_Mesh:
             {
+                AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, tag, entry, actorInfo);
+/*
                 auto mesh = collider->data.AsMeshCollider();
                 MeshTopology type = mesh->type;
                 int primgroup = mesh->prim_group;
 
                 Util::StringAtom resource = mesh->file;
-                geometry = CreateMeshFromResource(type, resource, primgroup);
+                physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primgroup);
+                AddCollider(geometry, material, shape->transform, resource.Value(), collider->name);
+                */
             }
             break;
             default:
                 n_assert("unknown collider type")
-        }
-        actorInfo.colliders.Append(collider->name);
-        physx::PxShape* newShape = state.physics->createShape(geometry.any(), *state.materials[material].material);
-        newShape->setLocalPose(Neb2PxTrans(trans));
-        actorInfo.shapes.Append(newShape);
-        actorInfo.densities.Append(GetMaterial(material).density);
+        }        
     }
 
     __Lock(allocator, Util::ArrayAllocatorAccess::Write);

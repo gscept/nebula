@@ -75,8 +75,8 @@ void PhysicsManager::InitCreateActorProcessor()
                 Resources::CreateResource(res, "PHYS",
                     [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
                     {
-                        bool const dynamic = !Game::HasComponent(world, entity, staticPID);
-                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic, Ids::Id32(entity));
+                        bool const isStatic = Game::HasComponent(world, entity, staticPID);
+                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, isStatic ? Physics::ActorType::Static : Physics::ActorType::Dynamic, Ids::Id32(entity));
                         
                         Game::Op::RegisterComponent regOp;
                         regOp.entity = entity;
