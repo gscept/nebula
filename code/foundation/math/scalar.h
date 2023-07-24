@@ -482,6 +482,30 @@ clamp(float val, float minVal, float maxVal)
 
 //------------------------------------------------------------------------------
 /**
+    int clamping.
+*/
+__forceinline int64_t
+clamp(int64_t val, int64_t minVal, int64_t maxVal)
+{
+    if (val < minVal)      return minVal;
+    else if (val > maxVal) return maxVal;
+    else return val;
+}
+
+//------------------------------------------------------------------------------
+/**
+    int clamping.
+*/
+__forceinline int32_t
+clamp(int32_t val, int32_t minVal, int32_t maxVal)
+{
+    if (val < minVal)      return minVal;
+    else if (val > maxVal) return maxVal;
+    else return val;
+}
+
+//------------------------------------------------------------------------------
+/**
     Floating point ceiling
 */
 __forceinline float
