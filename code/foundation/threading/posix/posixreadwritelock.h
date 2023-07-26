@@ -30,7 +30,10 @@ public:
     void UnlockWrite();
 
 private:
+    int32_t readCounter = 0;
+    int32_t writeCounter = 0;
     pthread_rwlock_t lock;
+    pthread_t lockingThread = 0;
 };
 
 } // namespace Posix
