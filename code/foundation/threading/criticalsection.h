@@ -19,14 +19,7 @@ namespace Threading
 class CriticalSection : public Win32::Win32CriticalSection
 { };
 }
-#elif __linux__
-#include "threading/linux/linuxcriticalsection.h"
-namespace Threading
-{
-class CriticalSection : public Linux::LinuxCriticalSection
-{ };
-}
-#elif ( __OSX__ || __APPLE__ )
+#elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "threading/posix/posixcriticalsection.h"
 namespace Threading
 {

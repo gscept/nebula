@@ -50,7 +50,6 @@ private:
     
     bool manualReset;
     volatile mutable EventStatus status;
-    volatile mutable EventStatus status2;
 };
 
 //------------------------------------------------------------------------------
@@ -59,7 +58,6 @@ private:
 inline
 LinuxEvent::LinuxEvent(bool manual)
     : status(SIGNAL_NONE)
-    , status2(SIGNAL_NONE)
     , manualReset(manual)
 {
     // setup the mutex    
@@ -86,11 +84,9 @@ LinuxEvent::LinuxEvent(LinuxEvent&& ev)
     this->cond = ev.cond;
     this->manualReset = ev.manualReset;
     this->status = ev.status;
-    this->status2 = ev.status2;
     ev.mutex = pthread_mutex_t{};
     ev.cond = pthread_cond_t{};
     ev.status = SIGNAL_NONE;
-    ev.status2 = SIGNAL_NONE;
 }
 
 //------------------------------------------------------------------------------

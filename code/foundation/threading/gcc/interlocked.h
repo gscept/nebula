@@ -1,18 +1,19 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Posix::PosixInterlocked
+    @class Gcc::GccInterlocked
  
-    Provides simple atomic operations on shared variables.
+    Provides simple atomic operations on shared variables using
+    gcc compiler builtins
      
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2023 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 
 //------------------------------------------------------------------------------
-namespace Posix
+namespace Gcc
 {
-class PosixInterlocked
+class GccInterlocked
 {
 public:
     /// interlocked increment
@@ -45,7 +46,7 @@ public:
 /**
 */
 inline int
-PosixInterlocked::Increment(int volatile* var)
+GccInterlocked::Increment(int volatile* var)
 {
     return __sync_add_and_fetch(var, 1);
 }
@@ -54,7 +55,7 @@ PosixInterlocked::Increment(int volatile* var)
 /**
 */
 inline int
-PosixInterlocked::Decrement(int volatile* var)
+GccInterlocked::Decrement(int volatile* var)
 {
     return __sync_sub_and_fetch(var, 1);
 }
@@ -63,7 +64,7 @@ PosixInterlocked::Decrement(int volatile* var)
 /**
 */
 inline long
-PosixInterlocked::Increment(long volatile* var)
+GccInterlocked::Increment(long volatile* var)
 {
     return __sync_add_and_fetch(var, 1);
 }
@@ -72,7 +73,7 @@ PosixInterlocked::Increment(long volatile* var)
 /**
 */
 inline long
-PosixInterlocked::Decrement(long volatile* var)
+GccInterlocked::Decrement(long volatile* var)
 {
     return __sync_sub_and_fetch(var, 1);
 }
@@ -81,7 +82,7 @@ PosixInterlocked::Decrement(long volatile* var)
 /**
 */
 inline int
-PosixInterlocked::Add(int volatile* var, int add)
+GccInterlocked::Add(int volatile* var, int add)
 {
     return __sync_fetch_and_add(var, add);
 }
@@ -90,7 +91,7 @@ PosixInterlocked::Add(int volatile* var, int add)
 /**
 */
 inline int
-PosixInterlocked::Or(int volatile* var, int add)
+GccInterlocked::Or(int volatile* var, int add)
 {
     return __sync_fetch_and_or(var, add);
 }
@@ -99,7 +100,7 @@ PosixInterlocked::Or(int volatile* var, int add)
 /**
 */
 inline int
-PosixInterlocked::And(int volatile* var, int add)
+GccInterlocked::And(int volatile* var, int add)
 {
     return __sync_fetch_and_and(var, add);
 }
@@ -108,7 +109,7 @@ PosixInterlocked::And(int volatile* var, int add)
 /**
 */
 inline int
-PosixInterlocked::Xor(int volatile* var, int add)
+GccInterlocked::Xor(int volatile* var, int add)
 {
     return __sync_fetch_and_xor(var, add);
 }
@@ -117,7 +118,7 @@ PosixInterlocked::Xor(int volatile* var, int add)
 /**
 */
 inline int
-PosixInterlocked::Exchange(int volatile* dest, int value)
+GccInterlocked::Exchange(int volatile* dest, int value)
 {
     return __sync_lock_test_and_set(dest, value);
 }
@@ -126,7 +127,7 @@ PosixInterlocked::Exchange(int volatile* dest, int value)
 /**
 */
 inline void*
-PosixInterlocked::ExchangePointer(void* volatile* dest, void* value)
+GccInterlocked::ExchangePointer(void* volatile* dest, void* value)
 {
     return __sync_lock_test_and_set(dest, value);
 }
@@ -135,7 +136,7 @@ PosixInterlocked::ExchangePointer(void* volatile* dest, void* value)
 /**
  */
 inline int
-PosixInterlocked::CompareExchange(int volatile* dest, int exchange, int comparand)
+GccInterlocked::CompareExchange(int volatile* dest, int exchange, int comparand)
 {
     return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
@@ -144,10 +145,10 @@ PosixInterlocked::CompareExchange(int volatile* dest, int exchange, int comparan
 /**
 */
 inline void*
-PosixInterlocked::CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand)
+GccInterlocked::CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand)
 {
     return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
 
-} // namespace Posix
+} // namespace Gcc
 //------------------------------------------------------------------------------
