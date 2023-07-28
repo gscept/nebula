@@ -55,9 +55,9 @@ JobsTest::Run()
     JobId job = CreateJob(jobInfo);
 
     const uint NumInputs = 1000000;
-    Math::vec4* inputs1 = n_new_array(Math::vec4, NumInputs);
-    Math::vec4* inputs2 = n_new_array(Math::vec4, NumInputs);
-    Math::vec4* outputs = n_new_array(Math::vec4, NumInputs);
+    Math::vec4* inputs1 = new Math::vec4[NumInputs];
+    Math::vec4* inputs2 = new Math::vec4[NumInputs];
+    Math::vec4* outputs = new Math::vec4[NumInputs];
 
     for (uint i = 0; i < NumInputs; i++)
     {

@@ -26,7 +26,7 @@ ComponentInspection::Instance()
 {
     if (nullptr == Singleton)
     {
-        Singleton = n_new(ComponentInspection);
+        Singleton = new ComponentInspection;
         n_assert(nullptr != Singleton);
     }
     return Singleton;
@@ -43,7 +43,7 @@ ComponentInspection::Destroy()
 {
     if (nullptr != Singleton)
     {
-        n_delete(Singleton);
+        delete Singleton;
         Singleton = nullptr;
     }
 }

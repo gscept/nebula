@@ -118,7 +118,7 @@ FixedArray<TYPE>::Delete()
 {
     if (this->elements)
     {
-        n_delete_array(this->elements);
+        delete[] this->elements;
         this->elements = nullptr;
     }
     this->count = 0;
@@ -135,7 +135,7 @@ FixedArray<TYPE>::Alloc(SizeT s)
     #endif
     if (s > 0)
     {
-        this->elements = n_new_array(TYPE, s);
+        this->elements = new TYPE[s];
     }
     this->count = s;
 }
@@ -371,7 +371,7 @@ FixedArray<TYPE>::Resize(SizeT newSize)
     TYPE* newElements = 0;
     if (newSize > 0)
     {
-        newElements = n_new_array(TYPE, newSize);
+        newElements = new TYPE[newSize];
         SizeT numCopy = this->count;
         if (numCopy > 0)
         {

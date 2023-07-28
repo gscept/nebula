@@ -1316,7 +1316,7 @@ TextureSparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::
     }
 
     SizeT bufSize = width * height * bpp;
-    char* intermediate = n_new_array(char, bufSize);
+    char* intermediate = new char[bufSize];
     uint j = 0;
     for (uint i = top; i < top + height; i++, j++)
     {
@@ -1352,7 +1352,7 @@ TextureSparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::
     char* mapped = (char*)GetMappedMemory(alloc);
     memcpy(mapped, intermediate, alloc.size);
 
-    n_delete_array(intermediate);
+    delete[] intermediate;
 
     // perform update of buffer, and stage a copy of buffer data to image
     VkBufferImageCopy copy;

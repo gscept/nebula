@@ -14,6 +14,8 @@ fips_begin_lib(toolkitutil)
     fips_libs(${FBX_LIBRARY})
     if(FIPS_WINDOWS)
         fips_libs(CMP_Core_MT CMP_Framework_MT)
+    else()
+        fips_libs(xml2)
     endif()
         fips_files(
             assetfile.cc

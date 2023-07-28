@@ -506,25 +506,25 @@ Variant::Delete()
     if (String == this->type)
     {
         n_assert(this->string);
-        n_delete(this->string);
+        delete this->string;
         this->string = 0;
     }
     else if (Mat4 == this->type)
     {
         n_assert(this->m);
-        n_delete(this->m);
+        delete this->m;
         this->m = 0;
     }
     else if (Guid == this->type)
     {
         n_assert(this->guid);
-        n_delete(this->guid);
+        delete this->guid;
         this->guid = 0;
     }
     else if (Blob == this->type)
     {
         n_assert(this->blob);
-        n_delete(this->blob);
+        delete this->blob;
         this->blob = 0;
     }
     else if (Object == this->type)
@@ -542,61 +542,61 @@ Variant::Delete()
     else if (IntArray == this->type)
     {
         n_assert(this->intArray);
-        n_delete(this->intArray);
+        delete this->intArray;
         this->intArray = 0;
     }
     else if (FloatArray == this->type)
     {
         n_assert(this->floatArray);
-        n_delete(this->floatArray);
+        delete this->floatArray;
         this->floatArray = 0;
     }
     else if (BoolArray == this->type)
     {
         n_assert(this->boolArray);
-        n_delete(this->boolArray);
+        delete this->boolArray;
         this->boolArray = 0;
     }
     else if (Vec2Array == this->type)
     {
         n_assert(this->vec2Array);
-        n_delete(this->vec2Array);
+        delete this->vec2Array;
         this->vec2Array = 0;
     }
     else if (Vec3Array == this->type)
     {
         n_assert(this->float3Array);
-        n_delete(this->float3Array);
+        delete this->float3Array;
         this->float3Array = 0;
     }
     else if (Vec4Array == this->type)
     {
         n_assert(this->vec4Array);
-        n_delete(this->vec4Array);
+        delete this->vec4Array;
         this->vec4Array = 0;
     }
     else if (Mat4Array == this->type)
     {
         n_assert(this->mat4Array);
-        n_delete(this->mat4Array);
+        delete this->mat4Array;
         this->mat4Array = 0;
     }
     else if (StringArray == this->type)
     {
         n_assert(this->stringArray);
-        n_delete(this->stringArray);
+        delete this->stringArray;
         this->stringArray = 0;
     }
     else if (GuidArray == this->type)
     {
         n_assert(this->guidArray);
-        n_delete(this->guidArray);
+        delete this->guidArray;
         this->guidArray = 0;
     }
     else if (BlobArray == this->type)
     {
         n_assert(this->blobArray);
-        n_delete(this->blobArray);
+        delete this->blobArray;
         this->blobArray = 0;
     }
     this->type = Void;
@@ -675,19 +675,19 @@ Variant::Copy(const Variant& rhs)
             this->f[3] = rhs.f[3];
             break;
         case String:
-            this->string = n_new(Util::String(*rhs.string));
+            this->string = new Util::String(*rhs.string);
             break;
         case Mat4:
-            this->m = n_new(Math::mat4(*rhs.m));
+            this->m = new Math::mat4(*rhs.m);
             break;
         case Transform44:
-            this->t = n_new(Math::transform44(*rhs.t));
+            this->t = new Math::transform44(*rhs.t);
             break;
         case Blob:
-            this->blob = n_new(Util::Blob(*rhs.blob));
+            this->blob = new Util::Blob(*rhs.blob);
             break;
         case Guid:
-            this->guid = n_new(Util::Guid(*rhs.guid));
+            this->guid = new Util::Guid(*rhs.guid);
             break;
         case Object:
             this->object = rhs.object;
@@ -700,34 +700,34 @@ Variant::Copy(const Variant& rhs)
             this->voidPtr = rhs.voidPtr;
             break;
         case IntArray:
-            this->intArray = n_new(Util::Array<int>(*rhs.intArray));
+            this->intArray = new Util::Array<int>(*rhs.intArray);
             break;
         case FloatArray:
-            this->floatArray = n_new(Util::Array<float>(*rhs.floatArray));
+            this->floatArray = new Util::Array<float>(*rhs.floatArray);
             break;
         case BoolArray:
-            this->boolArray = n_new(Util::Array<bool>(*rhs.boolArray));
+            this->boolArray = new Util::Array<bool>(*rhs.boolArray);
             break;
         case Vec2Array:
-            this->vec2Array = n_new(Util::Array<Math::vec2>(*rhs.vec2Array));
+            this->vec2Array = new Util::Array<Math::vec2>(*rhs.vec2Array);
             break;
         case Vec3Array:
-            this->float3Array = n_new(Util::Array<Math::vec3>(*rhs.float3Array));
+            this->float3Array = new Util::Array<Math::vec3>(*rhs.float3Array);
             break;
         case Vec4Array:
-            this->vec4Array = n_new(Util::Array<Math::vec4>(*rhs.vec4Array));
+            this->vec4Array = new Util::Array<Math::vec4>(*rhs.vec4Array);
             break;
         case Mat4Array:
-            this->mat4Array = n_new(Util::Array<Math::mat4>(*rhs.mat4Array));
+            this->mat4Array = new Util::Array<Math::mat4>(*rhs.mat4Array);
             break;
         case StringArray:
-            this->stringArray = n_new(Util::Array<Util::String>(*rhs.stringArray));
+            this->stringArray = new Util::Array<Util::String>(*rhs.stringArray);
             break;
         case GuidArray:
-            this->guidArray = n_new(Util::Array<Util::Guid>(*rhs.guidArray));
+            this->guidArray = new Util::Array<Util::Guid>(*rhs.guidArray);
             break;
         case BlobArray:
-            this->blobArray = n_new(Util::Array<Util::Blob>(*rhs.blobArray));
+            this->blobArray = new Util::Array<Util::Blob>(*rhs.blobArray);
             break;
         default:
             n_error("Variant::Copy(): invalid type!");
@@ -902,7 +902,7 @@ inline
 Variant::Variant(const Util::String& rhs) :
     type(String)
 {
-    this->string = n_new(Util::String(rhs));
+    this->string = new Util::String(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -912,7 +912,7 @@ inline
 Variant::Variant(const char* chrPtr) :
     type(String)
 {
-    this->string = n_new(Util::String(chrPtr));
+    this->string = new Util::String(chrPtr);
 }
 
 //------------------------------------------------------------------------------
@@ -956,7 +956,7 @@ inline
 Variant::Variant(const Math::mat4& rhs) :
     type(Mat4)
 {
-    this->m = n_new(Math::mat4(rhs));
+    this->m = new Math::mat4(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -966,7 +966,7 @@ inline
 Variant::Variant(const Math::transform44& rhs) :
     type(Transform44)
 {
-    this->t = n_new(Math::transform44(rhs));
+    this->t = new Math::transform44(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -976,7 +976,7 @@ inline
 Variant::Variant(const Util::Blob& rhs) :
     type(Blob)
 {
-    this->blob = n_new(Util::Blob(rhs));
+    this->blob = new Util::Blob(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -986,7 +986,7 @@ inline
 Variant::Variant(const Util::Guid& rhs) :
     type(Guid)
 {
-    this->guid = n_new(Util::Guid(rhs));
+    this->guid = new Util::Guid(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -996,7 +996,7 @@ inline
 Variant::Variant(const Util::Array<int>& rhs) :
     type(IntArray)
 {
-    this->intArray = n_new(Util::Array<int>(rhs));
+    this->intArray = new Util::Array<int>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1006,7 +1006,7 @@ inline
 Variant::Variant(const Util::Array<float>& rhs) :
     type(FloatArray)
 {
-    this->floatArray = n_new(Util::Array<float>(rhs));
+    this->floatArray = new Util::Array<float>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1016,7 +1016,7 @@ inline
 Variant::Variant(const Util::Array<bool>& rhs) :
     type(BoolArray)
 {
-    this->boolArray = n_new(Util::Array<bool>(rhs));
+    this->boolArray = new Util::Array<bool>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1026,7 +1026,7 @@ inline
 Variant::Variant(const Util::Array<Math::vec2>& rhs) : 
     type(Vec2Array) 
 {
-    this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
+    this->vec2Array = new Util::Array<Math::vec2>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1036,7 +1036,7 @@ inline
 Variant::Variant(const Util::Array<Math::vec3>& rhs) :
     type(Vec3Array)
 {
-    this->float3Array = n_new(Util::Array<Math::vec3>(rhs));
+    this->float3Array = new Util::Array<Math::vec3>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1046,7 +1046,7 @@ inline
 Variant::Variant(const Util::Array<Math::vec4>& rhs) :
     type(Vec4Array)
 {
-    this->vec4Array = n_new(Util::Array<Math::vec4>(rhs));
+    this->vec4Array = new Util::Array<Math::vec4>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1056,7 +1056,7 @@ inline
 Variant::Variant(const Util::Array<Math::mat4>& rhs) :
     type(Mat4Array)
 {
-    this->mat4Array = n_new(Util::Array<Math::mat4>(rhs));
+    this->mat4Array = new Util::Array<Math::mat4>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1066,7 +1066,7 @@ inline
 Variant::Variant(const Util::Array<Util::String>& rhs) :
     type(StringArray)
 {
-    this->stringArray = n_new(Util::Array<Util::String>(rhs));
+    this->stringArray = new Util::Array<Util::String>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1076,7 +1076,7 @@ inline
 Variant::Variant(const Util::Array<Util::Guid>& rhs) :
     type(GuidArray)
 {
-    this->guidArray = n_new(Util::Array<Util::Guid>(rhs));
+    this->guidArray = new Util::Array<Util::Guid>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1086,7 +1086,7 @@ inline
 Variant::Variant(const Util::Array<Util::Blob>& rhs) :
     type(BlobArray)
 {
-    this->blobArray = n_new(Util::Array<Util::Blob>(rhs));
+    this->blobArray = new Util::Array<Util::Blob>(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1109,19 +1109,19 @@ Variant::SetType(Type t)
     switch (t)
     {
         case String:
-            this->string = n_new(Util::String);
+            this->string = new Util::String;
             break;
         case Mat4:
-            this->m = n_new(Math::mat4);
+            this->m = new Math::mat4;
             break;
         case Transform44:
-            this->t = n_new(Math::transform44);
+            this->t = new Math::transform44;
             break;
         case Blob:
-            this->blob = n_new(Util::Blob);
+            this->blob = new Util::Blob;
             break;
         case Guid:
-            this->guid = n_new(Util::Guid);
+            this->guid = new Util::Guid;
             break;
         case Object:
             this->object = 0;
@@ -1130,34 +1130,34 @@ Variant::SetType(Type t)
             this->voidPtr = 0;
             break;
         case IntArray:
-            this->intArray = n_new(Util::Array<int>);
+            this->intArray = new Util::Array<int>;
             break;
         case FloatArray:
-            this->floatArray = n_new(Util::Array<float>);
+            this->floatArray = new Util::Array<float>;
             break;
         case BoolArray:
-            this->boolArray = n_new(Util::Array<bool>);
+            this->boolArray = new Util::Array<bool>;
             break;
         case Vec2Array:
-            this->vec2Array = n_new(Util::Array<Math::vec2>);
+            this->vec2Array = new Util::Array<Math::vec2>;
             break;
         case Vec3Array:
-            this->float3Array = n_new(Util::Array<Math::vec3>);
+            this->float3Array = new Util::Array<Math::vec3>;
             break;
         case Vec4Array:
-            this->vec4Array = n_new(Util::Array<Math::vec4>);
+            this->vec4Array = new Util::Array<Math::vec4>;
             break;
         case Mat4Array:
-            this->mat4Array = n_new(Util::Array<Math::mat4>);
+            this->mat4Array = new Util::Array<Math::mat4>;
             break;
         case StringArray:
-            this->stringArray = n_new(Util::Array<Util::String>);
+            this->stringArray = new Util::Array<Util::String>;
             break;
         case GuidArray:
-            this->guidArray = n_new(Util::Array<Util::Guid>);
+            this->guidArray = new Util::Array<Util::Guid>;
             break;
         case BlobArray:
-            this->blobArray = n_new(Util::Array<Util::Blob>);
+            this->blobArray = new Util::Array<Util::Blob>;
             break;
         default:
             break;
@@ -1351,7 +1351,7 @@ Variant::operator=(const Util::String& s)
     else
     {
         this->Delete();
-        this->string = n_new(Util::String(s));
+        this->string = new Util::String(s);
     }
     this->type = String;
 }
@@ -1378,7 +1378,7 @@ Variant::operator=(const Math::mat4& val)
     else
     {
         this->Delete();
-        this->m = n_new(Math::mat4(val));
+        this->m = new Math::mat4(val);
     }
     this->type = Mat4;
 }
@@ -1396,7 +1396,7 @@ Variant::operator=(const Math::transform44& val)
     else
     {
         this->Delete();
-        this->t = n_new(Math::transform44(val));
+        this->t = new Math::transform44(val);
     }
     this->type = Transform44;
 }
@@ -1413,7 +1413,7 @@ Variant::operator=(const Util::Guid& val)
     else
     {
         this->Delete();
-        this->guid = n_new(Util::Guid(val));
+        this->guid = new Util::Guid(val);
     }
     this->type = Guid;
 }
@@ -1431,7 +1431,7 @@ Variant::operator=(const Util::Blob& val)
     else
     {
         this->Delete();
-        this->blob = n_new(Util::Blob(val));
+        this->blob = new Util::Blob(val);
     }
     this->type = Blob;
 }
@@ -1475,7 +1475,7 @@ Variant::operator=(const Util::Array<int>& val)
     else
     {
         this->Delete();
-        this->intArray = n_new(Util::Array<int>(val));
+        this->intArray = new Util::Array<int>(val);
     }
     this->type = IntArray;
 }
@@ -1493,7 +1493,7 @@ Variant::operator=(const Util::Array<float>& val)
     else
     {
         this->Delete();
-        this->floatArray = n_new(Util::Array<float>(val));
+        this->floatArray = new Util::Array<float>(val);
     }
     this->type = FloatArray;
 }
@@ -1511,7 +1511,7 @@ Variant::operator=(const Util::Array<bool>& val)
     else
     {
         this->Delete();
-        this->boolArray = n_new(Util::Array<bool>(val));
+        this->boolArray = new Util::Array<bool>(val);
     }
     this->type = BoolArray;
 }
@@ -1530,7 +1530,7 @@ Variant::operator=( const Util::Array<Math::vec2>& rhs )
     else
     {
         this->Delete();
-        this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
+        this->vec2Array = new Util::Array<Math::vec2>(rhs);
     }
     this->type = Vec2Array;
 }
@@ -1548,7 +1548,7 @@ Variant::operator=(const Util::Array<Math::vec3>& val)
     else
     {
         this->Delete();
-        this->float3Array = n_new(Util::Array<Math::vec3>(val));
+        this->float3Array = new Util::Array<Math::vec3>(val);
     }
     this->type = Vec3Array;
 }
@@ -1566,7 +1566,7 @@ Variant::operator=(const Util::Array<Math::vec4>& val)
     else
     {
         this->Delete();
-        this->vec4Array = n_new(Util::Array<Math::vec4>(val));
+        this->vec4Array = new Util::Array<Math::vec4>(val);
     }
     this->type = Vec4Array;
 }
@@ -1584,7 +1584,7 @@ Variant::operator=(const Util::Array<Math::mat4>& val)
     else
     {
         this->Delete();
-        this->mat4Array = n_new(Util::Array<Math::mat4>(val));
+        this->mat4Array = new Util::Array<Math::mat4>(val);
     }
     this->type = Mat4Array;
 }
@@ -1602,7 +1602,7 @@ Variant::operator=(const Util::Array<Util::String>& val)
     else
     {
         this->Delete();
-        this->stringArray = n_new(Util::Array<Util::String>(val));
+        this->stringArray = new Util::Array<Util::String>(val);
     }
     this->type = StringArray;
 }
@@ -1620,7 +1620,7 @@ Variant::operator=(const Util::Array<Util::Guid>& val)
     else
     {
         this->Delete();
-        this->guidArray = n_new(Util::Array<Util::Guid>(val));
+        this->guidArray = new Util::Array<Util::Guid>(val);
     }
     this->type = GuidArray;
 }
@@ -1638,7 +1638,7 @@ Variant::operator=(const Util::Array<Util::Blob>& val)
     else
     {
         this->Delete();
-        this->blobArray = n_new(Util::Array<Util::Blob>(val));
+        this->blobArray = new Util::Array<Util::Blob>(val);
     }
     this->type = BlobArray;
 }

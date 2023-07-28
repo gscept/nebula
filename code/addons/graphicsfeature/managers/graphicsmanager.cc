@@ -163,7 +163,7 @@ GraphicsManager::Create()
 {
 	n_assert(GraphicsFeature::Details::graphics_registered);
     n_assert(!GraphicsManager::HasInstance());
-    GraphicsManager::Singleton = n_new(GraphicsManager);
+    GraphicsManager::Singleton = new GraphicsManager;
 
     
     Game::ComponentCreateInfo info;
@@ -190,7 +190,7 @@ GraphicsManager::Create()
 void
 GraphicsManager::Destroy()
 {
-    n_delete(GraphicsManager::Singleton);
+    delete GraphicsManager::Singleton;
     GraphicsManager::Singleton = nullptr;
 }
 

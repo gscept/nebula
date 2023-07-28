@@ -25,7 +25,7 @@ ScriptedWindow::ScriptedWindow() :
 ScriptedWindow::~ScriptedWindow()
 {
     if (this->script != nullptr)
-        n_delete(this->script);
+        delete this->script;
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ ScriptedWindow::LoadModule(Util::String const& module)
 {
     if (this->script == nullptr)
     {
-        this->script = n_new(pybind11::object);
+        this->script = new pybind11::object;
     }
 
     try

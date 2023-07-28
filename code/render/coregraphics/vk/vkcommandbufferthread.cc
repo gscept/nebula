@@ -70,8 +70,8 @@ VkCommandBufferThread::DoWork()
             // if the command buffer is not big enough, resize it
             if (this->commandBuffer.size > curCommandBufferSize)
             {
-                n_delete_array(curCommandBuffer);
-                curCommandBuffer = n_new_array(byte, this->commandBuffer.size);
+                delete[] curCommandBuffer;
+                curCommandBuffer = new byte[this->commandBuffer.size];
                 curCommandBufferSize = this->commandBuffer.size;
             }
             memcpy(curCommandBuffer, this->commandBuffer.buffer, this->commandBuffer.size);
@@ -275,11 +275,11 @@ VkCommandBufferThread::DoWork()
                 vkCmdPipelineBarrier(this->vkCommandBuffer, vkcmd->srcMask, vkcmd->dstMask, vkcmd->dep, vkcmd->memoryBarrierCount, vkcmd->memoryBarriers, vkcmd->bufferBarrierCount, vkcmd->bufferBarriers, vkcmd->imageBarrierCount, vkcmd->imageBarriers);
 
                 if (vkcmd->memoryBarrierCount) 
-                    n_delete_array(vkcmd->memoryBarriers);
+                    delete[] vkcmd->memoryBarriers;
                 if (vkcmd->bufferBarrierCount) 
-                    n_delete_array(vkcmd->bufferBarriers);
+                    delete[] vkcmd->bufferBarriers;
                 if (vkcmd->imageBarrierCount) 
-                    n_delete_array(vkcmd->imageBarriers);
+                    delete[] vkcmd->imageBarriers;
                 break;
             }           
             case Timestamp:
@@ -355,7 +355,7 @@ VkCommandBufferThread::DoWork()
     }
 
     if (curCommandBuffer != nullptr)
-        n_delete_array(curCommandBuffer);
+        delete[] curCommandBuffer;
 }
 
 } // namespace Vulkan

@@ -97,7 +97,7 @@ VkTextRenderer::Open()
     fontStream->SetAccessMode(IO::Stream::ReadAccess);
     if (fontStream->Open())
     {
-        ttf_buffer = n_new_array(unsigned char, fontStream->GetSize());
+        ttf_buffer = new unsigned char[fontStream->GetSize()];
         void* buf = fontStream->Map();
         memcpy(ttf_buffer, buf, fontStream->GetSize());
         fontStream->Unmap();
@@ -108,9 +108,9 @@ VkTextRenderer::Open()
         n_error("Failed to load font %s!", fontPath);
     }
 
-    unsigned char* bitmap = n_new_array(unsigned char, GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE);
+    unsigned char* bitmap = new unsigned char[GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE];
     int charCount = 96;
-    this->cdata = n_new_array(stbtt_packedchar, charCount);
+    this->cdata = new stbtt_packedchar[charCount];
 
     stbtt_pack_context context;
     if (!stbtt_PackBegin(&context, bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 0, 1, NULL))
@@ -148,8 +148,8 @@ VkTextRenderer::Open()
     ResourceTableCommitChanges(this->textTable);
     this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
 
-    n_delete_array(bitmap);
-    n_delete_array(ttf_buffer);
+    delete[] bitmap;
+    delete[] ttf_buffer;
 }
 
 //------------------------------------------------------------------------------

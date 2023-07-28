@@ -86,7 +86,7 @@ FixedTable<TYPE>::Delete()
 {
     if (this->elements)
     {
-        n_delete_array(this->elements);
+        delete[] this->elements;
         this->elements = 0;
     }
     this->width = 0;
@@ -105,7 +105,7 @@ FixedTable<TYPE>::Allocate(SizeT w, SizeT h)
     #endif
     if ((w > 0) && (h > 0))
     {
-        this->elements = n_new_array(TYPE, w * h);
+        this->elements = new TYPE[w * h];
     }
     this->width = w;
     this->height = h;

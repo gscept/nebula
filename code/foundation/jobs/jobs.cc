@@ -255,8 +255,8 @@ CreateJobSync(const CreateJobSyncInfo& info)
 {
     Ids::Id32 id = jobSyncAllocator.Alloc();
     jobSyncAllocator.Get<SyncCallback>(id) = info.callback;
-    jobSyncAllocator.Get<SyncCompletionEvent>(id) = n_new(Threading::Event(true));
-    jobSyncAllocator.Get<SyncCompletionCounter>(id) = n_new(std::atomic_uint);
+    jobSyncAllocator.Get<SyncCompletionEvent>(id) = new Threading::Event(true);
+    jobSyncAllocator.Get<SyncCompletionCounter>(id) = new std::atomic_uint;
     jobSyncAllocator.Get<SyncCompletionCounter>(id)->store(0);
     jobSyncAllocator.Get<SyncPendingSignal>(id) = false;
 
@@ -273,8 +273,8 @@ CreateJobSync(const CreateJobSyncInfo& info)
 void 
 DestroyJobSync(const JobSyncId id)
 {
-    n_delete(jobSyncAllocator.Get<SyncCompletionEvent>(id.id));
-    n_delete(jobSyncAllocator.Get<SyncCompletionCounter>(id.id));
+    delete jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+    delete jobSyncAllocator.Get<SyncCompletionCounter>(id.id);
     jobSyncAllocator.Dealloc(id.id);
 }
 

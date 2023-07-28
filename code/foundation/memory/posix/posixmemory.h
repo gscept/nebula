@@ -31,14 +31,13 @@ extern int volatile HeapTypeAllocSize[NumHeapTypes];
     Allocate a block of memory from the process heap.
 */
 __forceinline void*
-Alloc(HeapType heapType, size_t size)
+Alloc(HeapType heapType, size_t size, size_t align = 16)
 {
     n_assert(heapType < NumHeapTypes);
     void* allocPtr = 0;
     {
-        // XXX: n_assert(0 != Heaps[heapType]);
-        // allocPtr =  HeapAlloc(Heaps[heapType], HEAP_GENERATE_EXCEPTIONS, size);
-        allocPtr = memalign(16,size);        
+        int err = posix_memalign(&allocPtr, align, size);
+        n_assert(err == 0);
         #if NEBULA_DEBUG
         explicit_bzero(allocPtr,size);
         #endif
@@ -60,12 +59,10 @@ Alloc(HeapType heapType, size_t size)
 __forceinline void*
 Realloc(HeapType heapType, void* ptr, size_t size)
 {
-    // XXX: n_assert((heapType < NumHeapTypes) && (0 != Heaps[heapType]));
     n_assert(heapType < NumHeapTypes);
     #if NEBULA_MEMORY_STATS
         SIZE_T oldSize = HeapSize(Heaps[heapType], 0, ptr);
     #endif
-    // void* allocPtr = HeapReAlloc(Heaps[heapType], HEAP_GENERATE_EXCEPTIONS, ptr, size);
     void* allocPtr = realloc(ptr, size);
     #if NEBULA_MEMORY_STATS
         SIZE_T newSize = HeapSize(Heaps[heapType], 0, allocPtr);
@@ -90,11 +87,9 @@ Free(HeapType heapType, void* ptr)
             SIZE_T size = 0;
         #endif    
         {
-            // XXX: n_assert(0 != Heaps[heapType]);
             #if NEBULA_MEMORY_STATS
                 size = HeapSize(Heaps[heapType], 0, ptr);
             #endif
-            // HeapFree(Heaps[heapType], 0, ptr);
             free(ptr);
         }
         #if NEBULA_MEMORY_STATS
@@ -283,61 +278,6 @@ extern bool Validate();
 #endif
 
 } // namespace Memory
-
-#ifndef NO_ALLOC_OVERLOAD
-#ifdef new
-#undef new
-#endif
-
-#ifdef delete
-#undef delete
-#endif
-
-//------------------------------------------------------------------------------
-/**
-    Replacement global new operator.
-*/
-__forceinline void*
-__cdecl operator new(size_t size)
-{
-    return Memory::Alloc(Memory::ObjectHeap, size);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Replacement global new[] operator.
-*/
-__forceinline void*
-__cdecl operator new[](size_t size)
-{
-    return Memory::Alloc(Memory::ObjectArrayHeap, size);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Replacement global delete operator.
-*/
-__forceinline void
-__cdecl operator delete(void* p)
-{
-    Memory::Free(Memory::ObjectHeap, p);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Replacement global delete[] operator.
-*/
-__forceinline void
-__cdecl operator delete[](void* p)
-{
-    Memory::Free(Memory::ObjectArrayHeap, p);
-}
-#endif
-#define n_new(type) new type
-#define n_new_inplace(type, mem) new (mem) type 
-#define n_new_array(type,size) new type[size]
-#define n_delete(ptr) delete ptr
-#define n_delete_array(ptr) delete[] ptr
 //------------------------------------------------------------------------------
 #endif
 

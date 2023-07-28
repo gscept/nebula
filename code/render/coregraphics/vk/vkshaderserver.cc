@@ -44,7 +44,7 @@ VkShaderServer::Open()
     n_assert(!this->IsOpen());
 
     // create anyfx factory
-    this->factory = n_new(AnyFX::EffectFactory);
+    this->factory = new(AnyFX::EffectFactory);
     ShaderServerBase::Open();
 
     this->pendingViews.SetSignalOnEnqueueEnabled(false);
@@ -58,7 +58,7 @@ void
 VkShaderServer::Close()
 {
     n_assert(this->IsOpen());
-    n_delete(this->factory);
+    delete this->factory;
 
     // We need to wait for the GPU to finish here since we are
     // actually unloading shaders and resource table pools after this point

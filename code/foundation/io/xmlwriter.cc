@@ -50,7 +50,7 @@ XmlWriter::Open()
     if (StreamWriter::Open())
     {
         // create xml document object
-        this->xmlDocument = n_new(TiXmlDocument);
+        this->xmlDocument = new TiXmlDocument;
 
         // add declaration (<?xml version="1.0" encoding="UTF-8"?>)
         this->xmlDocument->InsertEndChild(TiXmlDeclaration("1.0", "UTF-8", ""));
@@ -73,7 +73,7 @@ XmlWriter::Close()
     this->xmlDocument->SaveStream(this->stream);
     
     // delete the XML document object
-    n_delete(this->xmlDocument);
+    delete this->xmlDocument;
     this->xmlDocument = 0;
     this->curNode = 0;
         

@@ -68,12 +68,12 @@ Fiber::Fiber(void(*function)(void*), void* context)
     : handle(nullptr)
     , context(nullptr)
 {
-    this->handle = n_new(fiber_t);
+    this->handle = new fiber_t;
     fiber_t* implHandle = (fiber_t*)this->handle;
     getcontext(&implHandle->fib);
 
     const size_t stackSize = 64 * 1024;
-    implHandle->fib.uc_stack.ss_sp = n_new_array(char, stackSize);
+    implHandle->fib.uc_stack.ss_sp = new char[stackSize];
     implHandle->fib.uc_stack.ss_size = stackSize;
     implHandle->fib.uc_link = nullptr;
 
@@ -92,7 +92,7 @@ Fiber::Fiber(const Fiber& rhs)
     if (this->handle != nullptr)
     {
         fiber_t* implHandle = (fiber_t*)this->handle;
-        n_delete_array(implHandle->fib.uc_stack.ss_sp);
+        delete[] implHandle->fib.uc_stack.ss_sp;
     }
     this->handle = rhs.handle;
     this->context = rhs.context;
@@ -106,7 +106,7 @@ Fiber::~Fiber()
     if (this->handle != nullptr)
     {
         fiber_t* implHandle = (fiber_t*)this->handle;
-        n_delete_array(implHandle->fib.uc_stack.ss_sp);
+        delete[] implHandle->fib.uc_stack.ss_sp;
     }
     this->handle = nullptr;
     this->context = nullptr;
@@ -121,7 +121,7 @@ Fiber::operator=(const Fiber& rhs)
     if (this->handle != nullptr)
     {
         fiber_t* implHandle = (fiber_t*)this->handle;
-        n_delete_array(implHandle->fib.uc_stack.ss_sp);
+        delete[] implHandle->fib.uc_stack.ss_sp;
     }
     this->handle = rhs.handle;
     this->context = rhs.context;

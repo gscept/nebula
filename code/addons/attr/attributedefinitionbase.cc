@@ -619,25 +619,25 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
     switch (valueType)
     {
     case VoidType:
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, true);
         break;
 
     case IntType:
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, 0, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, 0, true);
         break;
 
     case FloatType:
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, 0.0f, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, 0.0f, true);
         break;
 
     case BoolType:
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, false, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, false, true);
         break;
 
     case Vec4Type:
     {
         const static Math::vec4 nullVec {0.0f, 0.0f, 0.0f, 0.0f};
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, nullVec, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, nullVec, true);
         break;
     }
     break;
@@ -645,7 +645,7 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
     case Mat4Type:
     {
         const static Math::mat4 identity;
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, identity, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, identity, true);
         break;
     }
     break;
@@ -653,7 +653,7 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
     case BlobType:
     {
         const static Util::Blob blob;
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, blob, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, blob, true);
         break;
     }
     break;
@@ -661,7 +661,7 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
     case GuidType:
     {
         const static Util::Guid guid;
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, guid, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, guid, true);
         break;
     }
     break;
@@ -669,7 +669,7 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
     case StringType:
     {
         const static Util::String str;
-        dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, str, true));
+        dynAttr = new AttributeDefinitionBase(name, typeName, fourCC, accessMode, str, true);
     }
     break;
 

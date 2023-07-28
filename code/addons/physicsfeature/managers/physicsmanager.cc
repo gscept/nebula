@@ -159,7 +159,7 @@ PhysicsManager::Create()
 {
     n_assert(PhysicsFeature::Details::physics_registered);
     n_assert(!PhysicsManager::HasInstance());
-    PhysicsManager::Singleton = n_new(PhysicsManager);
+    PhysicsManager::Singleton = new PhysicsManager;
     
     Game::ComponentCreateInfo info;
     info.name = "PhysicsActorId";
@@ -185,7 +185,7 @@ PhysicsManager::Create()
 void
 PhysicsManager::Destroy()
 {
-    n_delete(PhysicsManager::Singleton);
+    delete PhysicsManager::Singleton;
     PhysicsManager::Singleton = nullptr;
 }
 

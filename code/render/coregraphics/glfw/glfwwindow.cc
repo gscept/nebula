@@ -357,7 +357,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 #endif
 
     // set user pointer to this window
-    WindowId* ptr = n_new(WindowId);
+    WindowId* ptr = new WindowId;
     *ptr = id;
     if (embed)
     {
@@ -477,7 +477,7 @@ DestroyWindow(const WindowId id)
 {
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
     GLFW::DisableCallbacks(id);
-    n_delete((WindowId*)glfwGetWindowUserPointer(wnd));
+    delete (WindowId*)glfwGetWindowUserPointer(wnd);
     glfwDestroyWindow(wnd);
 
 #if __VULKAN__

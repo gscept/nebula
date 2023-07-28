@@ -88,18 +88,18 @@ public:
             if (this->buffer == nullptr)
             {
                 this->capacity = Math::max(numBytes, this->capacity);
-                this->buffer = n_new_array(byte, this->capacity);
+                this->buffer = new byte[this->capacity];
             }
             else if (this->size + numBytes > this->capacity)
             {
                 // grow, but stop growing exponentially at 2^16 
                 const SizeT grow = Math::max(numBytes, this->capacity >> 1);
                 this->capacity += grow;
-                byte* newBuf = n_new_array(byte, this->capacity);
+                byte* newBuf = new byte[this->capacity];
 
                 // copy over old contents
                 memcpy(newBuf, this->buffer, this->size);
-                n_delete_array(this->buffer);
+                delete[] this->buffer;
                 this->buffer = newBuf;
             }
 
@@ -117,7 +117,7 @@ public:
         /// clear buffer
         void Clear()
         {
-            n_delete_array(this->buffer);
+            delete[] this->buffer;
             this->buffer = nullptr;
             this->capacity = 0;
             this->size = 0;

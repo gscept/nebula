@@ -138,7 +138,7 @@ TrivialArray<TYPE>::Copy(const TrivialArray<TYPE>& src)
     this->size = src.size;
     if (this->capacity > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = new TYPE[this->capacity];
         Memory::Copy(src.elements, this->elements, this->size * sizeof(TYPE));        
     }
 }
@@ -157,7 +157,7 @@ TrivialArray<TYPE>::Copy(const Array<TYPE>& src)
     this->size = src.size;
     if (this->capacity > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = new TYPE[this->capacity];
         Memory::Copy(src.elements, this->elements, this->size * sizeof(TYPE));        
     }
 }
@@ -237,12 +237,12 @@ TrivialArray<TYPE>::operator=(const Array<TYPE>& rhs)
 template<class TYPE> void
 TrivialArray<TYPE>::GrowTo(SizeT newCapacity)
 {
-    TYPE* newArray = n_new_array(TYPE, newCapacity);
+    TYPE* newArray = new TYPE[newCapacity];
     if (this->elements)
     {
         Memory::Copy(this->elements, newArray, this->size * sizeof(TYPE));        
         // discard old array
-        n_delete_array(this->elements);
+        delete[] this->elements;
     }
     this->elements  = newArray;
     this->capacity = newCapacity;

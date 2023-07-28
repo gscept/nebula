@@ -46,3 +46,69 @@ void DumpMemoryLeaks()
 #endif
 
 } // namespace Memory
+
+//------------------------------------------------------------------------------
+/**
+    Replacement global new operators.
+*/
+void*
+operator new(size_t size) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectHeap, size);
+}
+void* 
+operator new(size_t size, std::align_val_t al) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectHeap, size, (size_t)al);
+}
+void* operator new (size_t size, const std::nothrow_t& tag)
+{
+    return Memory::Alloc(Memory::ObjectHeap, size);
+}
+void* operator new (size_t size, std::align_val_t al, const std::nothrow_t& tag)
+{
+    return Memory::Alloc(Memory::ObjectHeap, size, (size_t)al);
+}
+//------------------------------------------------------------------------------
+/**
+    Replacement global new[] operators.
+*/
+void*
+operator new[](size_t size) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size);
+}
+void*
+operator new[](size_t size, std::align_val_t al) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size, (size_t)al);
+}
+void*
+operator new[](size_t size, const std::nothrow_t& tag)
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size);
+}
+void*
+operator new[](size_t size, std::align_val_t al, const std::nothrow_t& tag)
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size, (size_t)al);
+}
+//------------------------------------------------------------------------------
+/**
+    Replacement global delete operator.
+*/
+void
+operator delete(void* p)
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Replacement global delete[] operator.
+*/
+void
+operator delete[](void* p)
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}

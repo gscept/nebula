@@ -73,7 +73,7 @@ MiscTest::Run()
         Type type;
     };
     Threading::SafeQueue<Command> events;
-    byte* buffer = n_new_array(byte, 1024 * 1024);
+    byte* buffer = new byte[1024 * 1024];
 
     static const uint NumWork = 5;
     static const uint WorkSize = 512;

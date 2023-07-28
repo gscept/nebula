@@ -149,7 +149,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
     // First pass, output base attributes (positions and uvs)
     for (auto& mesh : meshes)
     {
-        CoreGraphics::BaseVertex* baseBuffer = n_new_array(CoreGraphics::BaseVertex, mesh->vertices.Size());
+        CoreGraphics::BaseVertex* baseBuffer = new CoreGraphics::BaseVertex[mesh->vertices.Size()];
         for (uint vertexIndex = 0; vertexIndex < mesh->vertices.Size(); vertexIndex++)
         {
             const MeshBuilderVertex& vtx = mesh->vertices[vertexIndex];
@@ -161,7 +161,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             outVtx.uv[1] = vtx.base.uv.y * 1000.0f;
         }
         stream->Write(baseBuffer, sizeof(CoreGraphics::BaseVertex) * mesh->vertices.Size());
-        n_delete_array(baseBuffer);
+        delete[] baseBuffer;
 
         CoreGraphics::VertexLayoutType layout = MeshBuilderVertex::GetVertexLayoutType(mesh->componentMask);
         byte* attributeBuffer = nullptr;
@@ -183,7 +183,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             case CoreGraphics::VertexLayoutType::Normal:
             {
                 bufferSize = sizeof(CoreGraphics::NormalVertex) * mesh->vertices.Size();
-                attributeBuffer = (byte*)n_new_array(byte, bufferSize);
+                attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::NormalVertex* attrBuffer = (CoreGraphics::NormalVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.Size(); vertexIndex++)
                 {
@@ -196,7 +196,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             case CoreGraphics::VertexLayoutType::Colors:
             {
                 bufferSize = sizeof(CoreGraphics::ColorVertex) * mesh->vertices.Size();
-                attributeBuffer = (byte*)n_new_array(byte, bufferSize);
+                attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::ColorVertex* attrBuffer = (CoreGraphics::ColorVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.Size(); vertexIndex++)
                 {
@@ -214,7 +214,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             case CoreGraphics::VertexLayoutType::SecondUV:
             {
                 bufferSize = sizeof(CoreGraphics::SecondUVVertex) * mesh->vertices.Size();
-                attributeBuffer = (byte*)n_new_array(byte, bufferSize);
+                attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::SecondUVVertex* attrBuffer = (CoreGraphics::SecondUVVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.Size(); vertexIndex++)
                 {
@@ -230,7 +230,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             case CoreGraphics::VertexLayoutType::Skin:
             {
                 bufferSize = sizeof(CoreGraphics::SkinVertex) * mesh->vertices.Size();
-                attributeBuffer = (byte*)n_new_array(byte, bufferSize);
+                attributeBuffer = (byte*)new byte[bufferSize];
                 CoreGraphics::SkinVertex* attrBuffer = (CoreGraphics::SkinVertex*)attributeBuffer;
                 for (uint vertexIndex = 0; vertexIndex < mesh->vertices.Size(); vertexIndex++)
                 {
@@ -252,7 +252,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             }
         }
         stream->Write(attributeBuffer, bufferSize);
-        n_delete_array(attributeBuffer);
+        delete[] attributeBuffer;
     }
 }
 
@@ -278,7 +278,7 @@ MeshBuilderSaver::WriteTriangles(const Ptr<Stream>& stream, const Util::Array<Me
         CoreGraphics::IndexType::Code indexType = mesh->vertices.Size() > 0xFFFF ? CoreGraphics::IndexType::Index32 : CoreGraphics::IndexType::Index16;
         SizeT bufferSize = numTriangles * 3 * CoreGraphics::IndexType::SizeOf(indexType);
 
-        byte* buffer = n_new_array(byte, bufferSize);
+        byte* buffer = new byte[bufferSize];
 
         for (IndexT i = 0; i < numTriangles; i++)
         {
@@ -309,7 +309,7 @@ MeshBuilderSaver::WriteTriangles(const Ptr<Stream>& stream, const Util::Array<Me
 
         // write triangle to stream
         stream->Write(buffer, bufferSize);
-        n_delete_array(buffer);
+        delete[] buffer;
     }
 }
 

@@ -54,8 +54,8 @@ Jobs2Test::Run()
 
     // Setup thread context
     const uint NumInputs = 100000;
-    ctx.inout = n_new_array(Math::vec4, NumInputs);
-    ctx.input2 = n_new_array(Math::vec4, NumInputs);
+    ctx.inout = new Math::vec4[NumInputs];
+    ctx.input2 =new Math::vec4[NumInputs];
 
     for (uint i = 0; i < NumInputs; i++)
     {

@@ -142,7 +142,7 @@ Queue<TYPE>::~Queue()
     if (this->data)
     {
         this->Clear();
-        n_delete_array(this->data);
+        delete[] this->data;
     }    
     this->data = nullptr;
 }
@@ -342,7 +342,7 @@ Queue<TYPE>::Reserve(SizeT num)
         // round up to next multiple of 64                
         num = num<64? num: Util::Round::RoundUp(num, 64);
 
-        TYPE * newdata = n_new_array(TYPE, num);
+        TYPE * newdata = new TYPE[num];
 
         // check if empty
         if (this->capacity > 0)
@@ -367,7 +367,7 @@ Queue<TYPE>::Reserve(SizeT num)
                 }
                 if (this->data != nullptr)
                 {
-                    n_delete_array(this->data);
+                    delete[] this->data;
                 }
             }
             else
@@ -380,7 +380,7 @@ Queue<TYPE>::Reserve(SizeT num)
                 }
                 if (this->data != nullptr)
                 {
-                    n_delete_array(this->data);
+                    delete[] this->data;
                 }
             }
         }

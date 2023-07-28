@@ -19,7 +19,7 @@ TypeRegistry::Instance()
 {
     if (0 == Singleton)
     {
-        Singleton = n_new(TypeRegistry);
+        Singleton = new TypeRegistry;
         n_assert(0 != Singleton);
     }
     return Singleton;
@@ -36,7 +36,7 @@ TypeRegistry::Destroy()
 {
     if (0 != Singleton)
     {
-        n_delete(Singleton);
+        delete Singleton;
         Singleton = 0;
     }
 }

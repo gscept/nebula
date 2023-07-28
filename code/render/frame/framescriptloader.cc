@@ -50,7 +50,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
         SizeT size = stream->GetSize();
 
         // create copy for jzon
-        char* jzon_buf = n_new_array(char, size+1);
+        char* jzon_buf = new char[size+1];
         memcpy(jzon_buf, data, size);
         jzon_buf[size] = '\0';
 
@@ -78,7 +78,7 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
         ParseFrameScript(script, main);
 
         // clear jzon
-        n_delete_array(jzon_buf);
+        delete[] jzon_buf;
         jzon_free(json);
 
     }

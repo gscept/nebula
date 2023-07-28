@@ -23,7 +23,7 @@ Factory::Instance()
 {
     if (0 == Singleton)
     {
-        Singleton = n_new(Factory);
+        Singleton = new Factory;
         n_assert(0 != Singleton);
     }
     return Singleton;
@@ -40,7 +40,7 @@ Factory::Destroy()
 {
     if (0 != Singleton)
     {
-        n_delete(Singleton);
+        delete Singleton;
         Singleton = 0;
     }
 }

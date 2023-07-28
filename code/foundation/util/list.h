@@ -496,7 +496,7 @@ template<class TYPE>
 typename List<TYPE>::Iterator
 List<TYPE>::AddAfter(Iterator iter, const TYPE& e)
 {
-    Node* node = n_new(Node(e));
+    Node* node = new Node(e);
     if (0 == iter.GetNode())
     {
         #if NEBULA_BOUNDSCHECKS
@@ -529,7 +529,7 @@ template<class TYPE>
 typename List<TYPE>::Iterator
 List<TYPE>::AddBefore(Iterator iter, const TYPE& e)
 {
-    Node *node = n_new(Node(e));
+    Node *node = new Node(e);
     if (0 == iter.GetNode())
     {
         #if NEBULA_BOUNDSCHECKS
@@ -605,7 +605,7 @@ List<TYPE>::Remove(Iterator iter)
     node->SetNext(0);
     node->SetPrev(0);
     TYPE elm = node->Value();
-    n_delete(node);
+    delete node;
     return elm;
 }
 

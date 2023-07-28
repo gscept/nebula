@@ -21,8 +21,8 @@ Matrix44Inverse::Run(Timer& timer)
 {
     // setup some matrix44 arrays
     const int num = 100000;
-    mat4* m0 = n_new_array(mat4, num);
-    mat4* res = n_new_array(mat4, num);
+    mat4* m0 = new mat4[num];
+    mat4* res = new mat4[num];
     mat4 m(vec4(1.0f, 2.0f, 3.0f, 0.0f),
         vec4(4.0f, 5.0f, 6.0f, 0.0f),
         vec4(7.0f, 8.0f, 9.0f, 0.0f),
@@ -43,6 +43,8 @@ Matrix44Inverse::Run(Timer& timer)
         }
     }
     timer.Stop();
+    delete[] m0;
+    delete[] res;
 }
 
 } // namespace Benchmarking
