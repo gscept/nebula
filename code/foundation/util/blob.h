@@ -100,9 +100,9 @@ private:
 
     static Memory::Heap* DataHeap;
 
-    void* ptr;
-    size_t size;
-    size_t allocSize;
+    void* ptr = nullptr;
+    size_t size = 0;
+    size_t allocSize = 0;
 };
 
 //------------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 namespace Math
 {
 
-struct point
+struct NEBULA_ALIGN16 point
 {
     /// default constructor
     point();

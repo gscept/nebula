@@ -662,13 +662,12 @@ nebula_begin_module(foundation)
     elseif(FIPS_LINUX)
         fips_dir(threading/linux GROUP "threading/linux")
         fips_files(
-            linuxbarrier.h
-            linuxcriticalsection.h
             linuxevent.h
-            linuxinterlocked.h
             linuxthread.cc
             linuxthread.h
         )
+        fips_dir(threading/gcc GROUP "threading/gcc")
+        fips_files(interlocked.h)
     else()
         fips_dir(threading/posix GROUP "threading/posix")
         fips_files(

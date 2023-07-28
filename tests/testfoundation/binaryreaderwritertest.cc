@@ -31,9 +31,12 @@ void
 BinaryReaderWriterTest::Run()
 {
     TestStruct writeBlob;
+    // make valgrind happy
+    Memory::Clear(&writeBlob, sizeof(TestStruct));
     writeBlob.b = false;
     writeBlob.i = 345;
     writeBlob.d = 143.23;
+    Util::Blob testBlob(&writeBlob, sizeof(TestStruct));
     const mat4 m44(vec4(1.0f, 2.0f, 3.0f, 4.0f),
         vec4(5.0f, 6.0f, 7.0f, 8.0f),
         vec4(9.0f, 10.0f, 11.0f, 12.0f),
@@ -52,7 +55,7 @@ BinaryReaderWriterTest::Run()
     writer->SetMemoryMappingEnabled(false);
     VERIFY(writer->Open());
     writer->WriteChar('a');
-    writer->WriteUChar(uchar('ü'));
+    writer->WriteUChar(uchar(150));
     writer->WriteShort(-12);
     writer->WriteUShort(13);
     writer->WriteInt(-123);
@@ -64,7 +67,7 @@ BinaryReaderWriterTest::Run()
     writer->WriteString("Ein String");
     writer->WriteVec4(v4);
     writer->WriteMat4(m44);
-    writer->WriteBlob(Blob(&writeBlob, sizeof(writeBlob)));
+    writer->WriteBlob(testBlob);
     writer->Close();
     stream->Close();
 
@@ -75,7 +78,7 @@ BinaryReaderWriterTest::Run()
     reader->SetMemoryMappingEnabled(true);
     VERIFY(reader->Open());
     VERIFY(reader->ReadChar() == 'a');
-    VERIFY(reader->ReadUChar() == (unsigned char) 'ü');
+    VERIFY(reader->ReadUChar() == (unsigned char) 150);
     VERIFY(reader->ReadShort() == -12);
     VERIFY(reader->ReadUShort() == 13);
     VERIFY(reader->ReadInt() == -123);
@@ -87,7 +90,7 @@ BinaryReaderWriterTest::Run()
     VERIFY(reader->ReadString() == "Ein String");
     VERIFY(reader->ReadVec4() == v4);
     VERIFY(reader->ReadMat4() == m44);
-    VERIFY(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
+    VERIFY(reader->ReadBlob() == testBlob);
     reader->Close();
     stream->Close();
 
@@ -98,7 +101,7 @@ BinaryReaderWriterTest::Run()
     writer->SetMemoryMappingEnabled(true);
     VERIFY(writer->Open());
     writer->WriteChar('a');
-    writer->WriteUChar(uchar('ü'));
+    writer->WriteUChar(uchar(150));
     writer->WriteShort(-12);
     writer->WriteUShort(13);
     writer->WriteInt(-123);
@@ -110,7 +113,7 @@ BinaryReaderWriterTest::Run()
     writer->WriteString("Ein String");
     writer->WriteVec4(v4);
     writer->WriteMat4(m44);
-    writer->WriteBlob(Blob(&writeBlob, sizeof(TestStruct)));
+    writer->WriteBlob(testBlob);
     writer->Close();
     stream->Close();
 
@@ -121,7 +124,7 @@ BinaryReaderWriterTest::Run()
     reader->SetMemoryMappingEnabled(false);
     VERIFY(reader->Open());
     VERIFY(reader->ReadChar() == 'a');
-    VERIFY(reader->ReadUChar() == (unsigned char) 'ü');
+    VERIFY(reader->ReadUChar() == (unsigned char) 150);
     VERIFY(reader->ReadShort() == -12);
     VERIFY(reader->ReadUShort() == 13);
     VERIFY(reader->ReadInt() == -123);
@@ -133,7 +136,7 @@ BinaryReaderWriterTest::Run()
     VERIFY(reader->ReadString() == "Ein String");
     VERIFY(reader->ReadVec4() == v4);
     VERIFY(reader->ReadMat4() == m44);
-    VERIFY(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
+    VERIFY(reader->ReadBlob() == testBlob);
     reader->Close();
     stream->Close();
 }

@@ -65,6 +65,7 @@ public:
 
     /// add element to the back of the Dequeue, can trigger grow
     void Enqueue(const TYPE& e);
+    void Enqueue(TYPE&& e);
     /// remove the element from the front of the Dequeue
     TYPE Dequeue();
     /// access to element at front of Dequeue without removing it
@@ -374,7 +375,7 @@ Queue<TYPE>::Reserve(SizeT num)
                 for (IndexT i = 0; i < this->size; i++)
                 {
                     IndexT idx = this->MapIndex(i);
-                    newdata[i] = this->data[idx];
+                    newdata[i] = std::move(this->data[idx]);
                     this->DestroyElement<TYPE>(idx);
                 }
                 if (this->data != nullptr)
@@ -464,6 +465,22 @@ Queue<TYPE>::Enqueue(const TYPE& e)
         this->Grow();
     }
     this->data[this->MapIndex(this->size++)] = e;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+__forceinline
+void
+Queue<TYPE>::Enqueue(TYPE&& e)
+{
+    if (this->size == this->capacity)
+    {
+        this->Grow();
+    }
+    
+    this->data[this->MapIndex(this->size++)]= std::move(e);
 }
 
 //------------------------------------------------------------------------------

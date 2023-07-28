@@ -2,6 +2,7 @@
 //  flatbufferinterface.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#define NO_ALLOC_OVERLOAD 1
 #include "foundation/stdneb.h"
 #include "flatbufferinterface.h"
 #include "io/assignregistry.h"
@@ -88,7 +89,7 @@ CreateParser(IO::URI const& file)
     if (stream->Open())
     {
         void * buf = stream->Map();
-        flatbuffers::Parser* parser = n_new(flatbuffers::Parser);
+        flatbuffers::Parser* parser = new flatbuffers::Parser;
         if (parser->Deserialize((uint8_t*)buf, stream->GetSize()))
         {
             if (!parser->file_identifier_.empty())
@@ -96,7 +97,7 @@ CreateParser(IO::URI const& file)
                return parser;
             }
         }
-        n_delete(parser);
+        delete(parser);
     }
     return nullptr;
 
@@ -185,6 +186,6 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
             result = flatbuffers::GenerateBinary(*parser, target.AsCharPtr(), filename.AsCharPtr());
         }
     }
-    n_delete(parser);
+    delete parser;
     return false;
 }
