@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include <pthread.h>
+#include "threading/threadid.h"
 namespace Posix
 {
 
@@ -33,7 +34,7 @@ private:
     int32_t readCounter = 0;
     int32_t writeCounter = 0;
     pthread_rwlock_t lock;
-    pthread_t lockingThread = 0;
+    Threading::ThreadId lockingThread = 0;
 };
 
 } // namespace Posix

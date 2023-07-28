@@ -2,7 +2,6 @@
 //  flatbufferinterface.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#define NO_ALLOC_OVERLOAD 1
 #include "foundation/stdneb.h"
 #include "flatbufferinterface.h"
 #include "io/assignregistry.h"

@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/debug.h"
+#include "threading/thread.h"
 #include "posixreadwritelock.h"
 namespace Posix
 {
@@ -48,7 +49,7 @@ PosixReadWriteLock::LockWrite()
         ret = pthread_rwlock_wrlock(&this->lock);
     }
     writeCounter++;
-    lockingThread = pthread_self();
+    lockingThread = Threading::Thread::GetMyThreadId();
     n_assert(ret == 0 || ret == EDEADLK);
 }
 
@@ -73,6 +74,7 @@ PosixReadWriteLock::UnlockWrite()
     {
         int ret = pthread_rwlock_unlock(&this->lock);
         n_assert(ret == 0);
+        lockingThread = Threading::InvalidThreadId;
     }
 }
 

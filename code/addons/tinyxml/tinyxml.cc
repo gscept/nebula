@@ -22,7 +22,6 @@ must not be misrepresented as being the original software.
 distribution.
 */
 #include "foundation/stdneb.h"
-#include "memory/memory.h"
 #include <ctype.h>
 #include "tinyxml.h"
 

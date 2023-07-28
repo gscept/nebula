@@ -26,7 +26,6 @@ distribution.
  * THIS FILE WAS ALTERED BY Tyge L�vset, 7. April 2005.
  */
 #include "foundation/stdneb.h"
-#include "memory/memory.h"
 #ifndef TIXML_USE_STL
 
 #include "tinystr.h"
