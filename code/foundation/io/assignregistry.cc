@@ -138,44 +138,39 @@ AssignRegistry::SetupProjectAssigns()
     String rootDir = Core::CoreServer::Instance()->GetRootDirectory().AsString();
     this->SetAssign(Assign("root", rootDir));
     this->SetAssign(Assign("export", "root:export"));
-
+    
     // setup content assigns
-    this->SetAssign(Assign("msh", "export:meshes"));
-    this->SetAssign(Assign("ani", "export:anims"));
-    this->SetAssign(Assign("ske", "export:skeletons"));
-    this->SetAssign(Assign("data", "export:data"));        
+    this->SetAssign(Assign("msh",   "export:meshes"));
+    this->SetAssign(Assign("ani",   "export:anims"));
+    this->SetAssign(Assign("ske",   "export:skeletons"));
+    this->SetAssign(Assign("data",  "export:data"));        
     this->SetAssign(Assign("video", "export:video"));
-    this->SetAssign(Assign("db", "export:db"));
-    this->SetAssign(Assign("seq", "export:sequences"));
+    this->SetAssign(Assign("db",    "export:db"));
+    this->SetAssign(Assign("seq",   "export:sequences"));
     this->SetAssign(Assign("audio", "export:audio"));
-    this->SetAssign(Assign("stream", "export:audio"));
-    this->SetAssign(Assign("shd", "export:shaders"));
-    this->SetAssign(Assign("tex", "export:textures"));
+    this->SetAssign(Assign("shd",   "export:shaders"));
+    this->SetAssign(Assign("tex",   "export:textures"));
     this->SetAssign(Assign("frame", "export:frame"));
-    this->SetAssign(Assign("mdl", "export:models"));
-    this->SetAssign(Assign("phys", "export:physics"));
+    this->SetAssign(Assign("mdl",   "export:models"));
+    this->SetAssign(Assign("phys",  "export:physics"));
     this->SetAssign(Assign("audio", "export:audio"));    
-    this->SetAssign(Assign("sui", "export:sui"));       
-    this->SetAssign(Assign("mat", "export:materials"));
-    this->SetAssign(Assign("sur", "export:surfaces"));
-    this->SetAssign(Assign("scr", "root:data/scripts"));
-    this->SetAssign(Assign("gui", "root:data/gui"));
-
-    // setup special assigns which may use original meshes but still needs an explicit load
-    this->SetAssign(Assign("parmsh", "export:meshes"));
-
+    this->SetAssign(Assign("sui",   "export:sui"));       
+    this->SetAssign(Assign("mat",   "export:materials"));
+    this->SetAssign(Assign("sur",   "export:surfaces"));
+    this->SetAssign(Assign("scr",   "root:data/scripts"));
+    this->SetAssign(Assign("gui",   "root:data/gui"));
+    
     // assign for nav meshes
     this->SetAssign(Assign("nav", "root:data/navigation"));
 
     // setup special system assigns (for placeholders, etc...)
-    this->SetAssign(Assign("sysmsh", "export:meshes"));
-    this->SetAssign(Assign("systex", "export:textures"));
-    this->SetAssign(Assign("sysanim", "export:anims"));
+    this->SetAssign(Assign("sysmsh",    "msh:system"));
+    this->SetAssign(Assign("systex",    "tex:system"));
+    this->SetAssign(Assign("sysani",    "ani:system"));
+    this->SetAssign(Assign("sysmdl",    "mdl:system"));
+    this->SetAssign(Assign("syssur",    "sur:system"));
+    this->SetAssign(Assign("sysphys",   "phys:system"));
 
-    // Nebula2 backward compat assigns:
-    this->SetAssign(Assign("meshes", "export:meshes"));
-    this->SetAssign(Assign("anims", "export:anims"));
-    this->SetAssign(Assign("textures", "export:textures"));
 
     // tools assigns
     this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    

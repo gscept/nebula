@@ -22,8 +22,8 @@ CoreGraphics::VertexLayoutId layouts[(uint)CoreGraphics::VertexLayoutType::NumTy
 */
 MeshLoader::MeshLoader()
 {
-    this->placeholderResourceName = "msh:system/placeholder.nvx";
-    this->failResourceName = "msh:system/error.nvx";
+    this->placeholderResourceName = "sysmsh:placeholder.nvx";
+    this->failResourceName = "sysmsh:error.nvx";
     this->async = true;
 
     this->streamerThreadName = "Mesh Pool Streamer Thread";

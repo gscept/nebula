@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Nebula version="1">
-    <Options exportFlags="4" scale="1.000000" />
-    <States>
-        <ModelNode name="root/pCube1" material="Static" />
-        <ModelNode name="root/pCube13" material="sur:system/placeholder.sur" />
-        <ModelNode name="root/pCube13_0" material="sur:system/placeholder.sur" />
-    </States>
-</Nebula>

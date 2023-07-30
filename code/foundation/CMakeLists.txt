@@ -5,6 +5,13 @@
 if(FIPS_LINUX)
     FIND_PACKAGE(CURL)
 endif()
+
+if (EXISTS "${NROOT}/syswork/export.zip")
+    create_resource("${NROOT}/syswork/" "${NROOT}/syswork/export.zip" system_resources)
+    set_target_properties(system_resources PROPERTIES FOLDER Resources)
+    set_target_properties(system_resources-res PROPERTIES FOLDER Resources)
+endif()
+
 nebula_begin_module(foundation)
 
     if(FIPS_LINUX)
@@ -12,6 +19,10 @@ nebula_begin_module(foundation)
     endif()
     target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml)
+    if(TARGET system_resources)
+        fips_deps(system_resources)
+        target_compile_definitions(foundation PUBLIC HAS_EMBEDDED_EXPORT)
+    endif()
 
     if(FIPS_WINDOWS)
         fips_libs(curl)
@@ -182,6 +193,8 @@ nebula_begin_module(foundation)
             filewatcher.cc
             filewatcher.h
             mediatype.h
+            embeddedmemorystream.cc
+            embeddedmemorystream.h
             memorystream.cc
             memorystream.h
             schemeregistry.cc

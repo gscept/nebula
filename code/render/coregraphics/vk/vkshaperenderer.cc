@@ -73,11 +73,11 @@ VkShapeRenderer::Open()
         Arrow,
     */
     const Util::String meshResourceNames[] = {
-        "msh:system/box.nvx"
-        , "msh:system/sphere.nvx"
-        , "msh:system/cylinder.nvx"
-        , "msh:system/torus.nvx"
-        , "msh:system/cone.nvx"
+        "sysmsh:box.nvx"
+        , "sysmsh:sphere.nvx"
+        , "sysmsh:cylinder.nvx"
+        , "sysmsh:torus.nvx"
+        , "sysmsh:cone.nvx"
     };
 
     const RenderShape::Type types[] = {

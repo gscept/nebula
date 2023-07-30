@@ -56,7 +56,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(envState.skyBoxEntity);
 
     // setup both model and visibility
-    Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system", []()
+    Models::ModelContext::Setup(envState.skyBoxEntity, "sysmdl:skybox.n3", "system", []()
         {
             Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
             Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
@@ -73,14 +73,14 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     envState.fadeValue = 1.0f;
     envState.skyTurbidity = 2.0f;
 
-    envState.defaultEnvironmentMap = Resources::CreateResource("tex:system/sky_refl.dds"_atm, "system"_atm,
+    envState.defaultEnvironmentMap = Resources::CreateResource("systex:sky_refl.dds"_atm, "system"_atm,
         [](const Resources::ResourceId id)
         {
             envState.defaultEnvironmentMap = id;
             Resources::SetMaxLOD(id, 0.0f, false);
         });
 
-    envState.defaultIrradianceMap = Resources::CreateResource("tex:system/sky_irr.dds"_atm, "system"_atm,
+    envState.defaultIrradianceMap = Resources::CreateResource("systex:sky_irr.dds"_atm, "system"_atm,
         [](const Resources::ResourceId id)
         {
             envState.defaultIrradianceMap = id;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula version="1">
+    <Options exportFlags="28" scale="1.000000" />
+    <States>
+        <ModelNode name="pSphere3" material="PlaceholderSkinned" />
+        <ModelNode name="root/pSphere3" material="syssur:placeholder.sur" />
+        <ModelNode name="root/pSphere3/fragment_0" material="syssur:placeholder.sur" />
+        <ModelNode name="root/pSphere3_0/fragment_0" material="syssur:placeholder.sur" />
+        <ModelNode name="root/pSphere4" material="syssur:placeholder.sur" />
+        <ModelNode name="root/pSphere4_1" material="syssur:placeholder.sur" />
+    </States>
+    <Takes>
+        <Take name="Take 001" />
+    </Takes>
+</Nebula>

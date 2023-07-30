@@ -77,10 +77,21 @@ ArchiveFileSystemBase::Discard()
 Ptr<Archive>
 ArchiveFileSystemBase::Mount(const URI& uri)
 {
+    return MountEmbedded(uri, "");
+}
+//------------------------------------------------------------------------------
+/**
+    This "mounts" an archive file by creating a new Archive object
+    and adding it to the archive dictionary. If mounting fails, an invalid
+    pointer will be returned!
+*/
+Ptr<Archive>
+ArchiveFileSystemBase::MountEmbedded(const URI& uri, const Util::String& rootPath)
+{
     n_assert(!this->IsMounted(uri));
     String path = AssignRegistry::Instance()->ResolveAssigns(uri).LocalPath();
     Ptr<Archive> newArchive = Archive::Create();
-    if (newArchive->Setup(uri))
+    if (newArchive->Setup(uri, rootPath))
     {
         this->critSect.Enter();
         this->archives.Add(path, newArchive);
@@ -92,6 +103,7 @@ ArchiveFileSystemBase::Mount(const URI& uri)
     }
     return newArchive;
 }
+
 
 //------------------------------------------------------------------------------
 /**

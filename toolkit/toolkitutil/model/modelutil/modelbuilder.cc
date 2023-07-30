@@ -149,14 +149,7 @@ ModelBuilder::WritePhysics()
                 {
                     auto newShape = std::make_unique<PhysicsResource::ShapeT>();
                     newShape->collider = std::make_unique<PhysicsResource::ColliderT>();
-                    Math::transform44 t;
-                    t.setposition(iter->transform.position);
-                    t.setrotate(Math::quatyawpitchroll(iter->transform.rotation.y, iter->transform.rotation.x, iter->transform.rotation.z));
-                    t.setscale(iter->transform.scale);
-                    t.setrotatepivot(iter->transform.rotatePivot.vec);
-                    t.setscalepivot(iter->transform.scalePivot.vec);
-                    
-                    Math::mat4 nodetrans = t.getmatrix();                   
+                    Math::mat4 nodetrans = iter->transform.GetTransform44().getmatrix();
 
                     Math::bbox colBox = iter->boundingBox;
                     Math::mat4 newtrans;
@@ -209,21 +202,12 @@ ModelBuilder::WritePhysics()
                     auto newShape = std::make_unique<PhysicsResource::ShapeT>();
                     newShape->collider = std::make_unique<PhysicsResource::ColliderT>();
                     newShape->material = this->physics->GetMaterial();
-                    Math::transform44 t;
-                    t.setposition(iter->transform.position);
-                    t.setrotate(Math::quatyawpitchroll(iter->transform.rotation.y, iter->transform.rotation.x, iter->transform.rotation.z));
+                    Math::transform44 t = iter->transform.GetTransform44();
                     // particles have fairly bogus values, ignore scale if zero
-                    if(lengthsq(iter->transform.scale)<0.001f)
+                    if(lengthsq(t.getscale()) < 0.001f)
                     {
                         t.setscale(Math::vector(1,1,1));
                     }
-                    else
-                    {
-                        t.setscale(iter->transform.scale);
-                    }                   
-                    t.setrotatepivot(iter->transform.rotatePivot.vec);
-                    t.setscalepivot(iter->transform.scalePivot.vec);
-
                     Math::mat4 nodetrans = t.getmatrix();                   
 
                     Math::bbox colBox = iter->boundingBox;
@@ -287,19 +271,38 @@ ModelBuilder::WritePhysics()
                     newShape->collider->type = Physics::ColliderType_Mesh;
                     newShape->collider->name = shapes[i].name;
 
-                    Math::transform44 t;
-                    t.setposition(shapes[i].transform.position);
-                    t.setrotate(Math::quatyawpitchroll(shapes[i].transform.rotation.y, shapes[i].transform.rotation.x, shapes[i].transform.rotation.z));
-                    t.setscale(shapes[i].transform.scale);
-                    t.setrotatepivot(shapes[i].transform.rotatePivot.vec);
-                    t.setscalepivot(shapes[i].transform.scalePivot.vec);
-                    newShape->transform = t.getmatrix();
+
+                    newShape->transform = shapes[i].transform.GetTransform44().getmatrix();
                     newShape->collider->data.Set(newColl);
                     actor.shapes.push_back(std::move(newShape));
-                }                                                                       
+                }
+                const Array<ModelConstants::SkinSetNode>& skinSets = this->constants->GetSkinSetNodes();
+                for (Array<ModelConstants::SkinSetNode>::Iterator iter = skinSets.Begin(); iter != skinSets.End(); iter++)
+                {
+                    Math::mat4 setTransform = iter->transform.GetTransform44().getmatrix();
+                    for (ModelConstants::SkinNode const& skinIter : iter->skinFragments)
+                    {
+                        auto newShape = std::make_unique<PhysicsResource::ShapeT>();
+                        newShape->material = this->physics->GetMaterial();
+                        newShape->collider = std::make_unique<PhysicsResource::ColliderT>();
+
+                        PhysicsResource::MeshColliderT newColl;
+                        newColl.file = skinIter.meshResource;
+                        newColl.prim_group = skinIter.primitiveGroupIndex;
+                        newColl.type = this->physics->GetMeshMode();
+                        newShape->collider->type = Physics::ColliderType_Mesh;
+                        newShape->collider->name = skinIter.name;
+
+                        Math::transform44 nodetrans = skinIter.transform.GetTransform44();
+                        Math::mat4 t = setTransform * nodetrans.getmatrix();
+                        
+                        newShape->transform = t;
+                        newShape->collider->data.Set(newColl);
+                        actor.shapes.push_back(std::move(newShape));
+                    }
+                }
             }
             break;
-            
         case UsePhysics:
             {
                 if(this->constants->GetPhysicsNodes().Size()>0)
@@ -318,14 +321,7 @@ ModelBuilder::WritePhysics()
                         newColl.type = this->physics->GetMeshMode();
                         newShape->collider->type = Physics::ColliderType_Mesh;
                         newShape->collider->name = shapes[i].name;
-
-                        Math::transform44 t;
-                        t.setposition(shapes[i].transform.position);
-                        t.setrotate(Math::quatyawpitchroll(shapes[i].transform.rotation.y, shapes[i].transform.rotation.x, shapes[i].transform.rotation.z));
-                        t.setscale(shapes[i].transform.scale);
-                        t.setrotatepivot(shapes[i].transform.rotatePivot.vec);
-                        t.setscalepivot(shapes[i].transform.scalePivot.vec);
-                        newShape->transform = t.getmatrix();
+                        newShape->transform = shapes[i].transform.GetTransform44().getmatrix();
                         newShape->collider->data.Set(newColl);
                         actor.shapes.push_back(std::move(newShape));
                     }                                                                           
@@ -345,6 +341,7 @@ ModelBuilder::WritePhysics()
                 }               
             }
             break;
+        
         default:
             n_error("not implemented");
     }

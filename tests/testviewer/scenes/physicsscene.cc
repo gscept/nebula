@@ -34,6 +34,8 @@ namespace PhysicsSceneData
 Graphics::GraphicsEntityId ground;
 Graphics::GraphicsEntityId tower;
 Graphics::GraphicsEntityId camera;
+Graphics::GraphicsEntityId knight;
+
 Ptr<Graphics::GraphicsServer> gfxServer;
 
 struct TestObject
@@ -44,10 +46,13 @@ struct TestObject
 
 Util::Array<TestObject> objects;
 
-Resources::ResourceId groundResource;
+Physics::ActorResourceId groundResource;
 Physics::ActorId groundActor;
-Resources::ResourceId towerResource;
+Physics::ActorResourceId towerResource;
 Physics::ActorId towerActor;
+Physics::ActorResourceId knightResource;
+Physics::ActorId knightActor;
+
 
 IndexT physicsScene;
 float v = 0.0f;
@@ -62,16 +67,15 @@ Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
 {
 
     Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-
     ModelContext::RegisterEntity(ent);
-    ObservableContext::RegisterEntity(ent);
-    ModelContext::Setup(ent, "mdl:test/castle_tower.n3", "NotA", [ent]()
-                        {
-                            ObservableContext::Setup(ent, VisibilityEntityType::Model);
-                        });
-    ModelContext::SetTransform(ent, trans);
+    ModelContext::Setup(ent, "mdl:test/castle_tower.n3", "NotA", [=]()
+    {
+        ObservableContext::RegisterEntity(ent);
+        ObservableContext::Setup(ent, VisibilityEntityType::Model);
+    });
 
-    Physics::ActorId actor = Physics::CreateActorInstance(towerResource, trans, true, (uint64_t)ent.id);
+    ModelContext::SetTransform(ent, trans);
+    Physics::ActorId actor = Physics::CreateActorInstance(towerResource, trans, Physics::ActorType::Dynamic, (uint64_t)ent.id);
 
     Physics::ActorContext::SetLinearVelocity(actor, linvel);
     Physics::ActorContext::SetAngularVelocity(actor, angvel);
@@ -106,9 +110,9 @@ Shoot(int count)
 /**
 */
 void
-UpdateTransform(Physics::ActorId id)
+UpdateTransform(Physics::Actor const& actor)
 {
-    ModelContext::SetTransform(Graphics::GraphicsEntityId{ (Ids::Id32)Physics::ActorContext::GetActor(id).userData }, Physics::ActorContext::GetTransform(id));
+    ModelContext::SetTransform(Graphics::GraphicsEntityId{ (Ids::Id32)actor.userData }, Physics::ActorContext::GetTransform(actor.id));
 }
 
 //------------------------------------------------------------------------------
@@ -150,6 +154,7 @@ DeleteRandom(int amount)
 void OpenScene()
 {
     physicsScene = Physics::CreateScene();
+    Physics::SetActiveActorCallback(UpdateTransform, physicsScene);
 
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(ground);
@@ -158,26 +163,41 @@ void OpenScene()
         Visibility::ObservableContext::Setup(ground, Visibility::VisibilityEntityType::Model);
     });
 
+    knight = Graphics::CreateEntity();
+    Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(knight);
+    Models::ModelContext::Setup(knight, "mdl:test/Unit_Knight.n3", "ExampleScene", []()
+    {
+        Visibility::ObservableContext::Setup(knight, Visibility::VisibilityEntityType::Model);
+        Characters::CharacterContext::RegisterEntity(knight);
+        Characters::CharacterContext::Setup(knight, "ske:test/Unit_Knight.nsk", 0, "ani:test/Unit_Knight.nax", 0, "Viewer");
+        Characters::CharacterContext::PlayClip(knight, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
+
+    });
+    knightResource = Resources::CreateResource("phys:test/Unit_Knight.actor", "Viewer", nullptr, nullptr, true);
+    knightActor = Physics::CreateActorInstance(knightResource, Math::mat4(), Physics::ActorType::Static, knight.id);
+
+
     groundResource = Resources::CreateResource("phys:test/groundplane.actor", "Viewer", nullptr, nullptr, true);
-    groundActor = Physics::CreateActorInstance(groundResource, Math::mat4(), false, ground.id);
+    groundActor = Physics::CreateActorInstance(groundResource, Math::mat4(), Physics::ActorType::Static, ground.id);
 
 
     Models::ModelContext::SetTransform(ground, Math::translation(Math::vec3(0, 0, 0)));
 
     tower = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(tower);
-    Models::ModelContext::Setup(tower, "mdl:test/castle_tower.n3", "ExampleScene", []()
+    Models::ModelContext::Setup(tower, "mdl:Buildings/castle_tower.n3", "ExampleScene", []()
     {
         Visibility::ObservableContext::Setup(tower, Visibility::VisibilityEntityType::Model);
     });
 
     towerResource = Resources::CreateResource("phys:test/castle_tower.actor", "Viewer", nullptr, nullptr, true);
 
-    towerActor = Physics::CreateActorInstance(towerResource, Math::translation(Math::vec3(2, 15, 0)), true, tower.id);
+    towerActor = Physics::CreateActorInstance(towerResource, Math::translation(Math::vec3(4, 15, 4)), Physics::ActorType::Dynamic, tower.id);
+
+
 
     gfxServer = Graphics::GraphicsServer::Instance();
     camera = Tests::SimpleViewerApplication::Instance()->GetDefaultCamera();
-
     v = 0.0f;
 };
 
@@ -212,11 +232,6 @@ void CloseScene()
 */
 void StepFrame()
 {
-    for (auto const& o : objects)
-    {
-        UpdateTransform(o.actor);
-    }
-    UpdateTransform(towerActor);
     const Timing::Time delta = gfxServer->GetFrameTime();
     Physics::Update(delta);
     auto inputServer = Input::InputServer::Instance();

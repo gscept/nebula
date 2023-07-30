@@ -32,7 +32,7 @@ public:
     virtual ~ZipArchive();
 
     /// setup the archive from an URI
-    bool Setup(const URI& uri);
+    bool Setup(const URI& uri, const Util::String& rootPath = "");
     /// discard the archive
     void Discard();
 
@@ -69,4 +69,3 @@ private:
 
 } // namespace IO
 //------------------------------------------------------------------------------
-    

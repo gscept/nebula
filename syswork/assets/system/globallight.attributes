@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula version="1">
+    <Options exportFlags="4" scale="1.000000" />
+    <States>
+        <ModelNode name="root/Poly3" material="Static" />
+        <ModelNode name="root/directionalLight" material="Placeholder.sur" />
+        <ModelNode name="root/directionalLight_0" material="syssur:placeholder.sur" />
+    </States>
+</Nebula>

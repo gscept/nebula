@@ -36,7 +36,7 @@ ArchiveBase::~ArchiveBase()
     found, or wrong format).
 */
 bool
-ArchiveBase::Setup(const URI& archiveFileURI)
+ArchiveBase::Setup(const URI& archiveFileURI, const Util::String& rootPath)
 {
     n_assert(!this->IsValid());
     this->uri = archiveFileURI;

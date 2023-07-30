@@ -110,7 +110,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Run prebuild steps
         run: |
-          python fips nebula set work ../fips-deploy
+          python fips nebula set work tests
           python fips nebula set toolkit .
           python fips ultralight
           python fips gen

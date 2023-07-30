@@ -27,6 +27,13 @@ namespace Physics
 RESOURCE_ID_TYPE(ActorResourceId);
 RESOURCE_ID_TYPE(ColliderId);
 
+enum ActorType
+{
+    Static,
+    Kinematic,
+    Dynamic,
+};
+
 struct Material
 {
     physx::PxMaterial * material;
@@ -48,7 +55,12 @@ struct Actor
     ActorId id;
     ActorResourceId res;
     uint64_t userData;
+#ifdef NEBULA_DEBUG
+    Util::String debugName;
+#endif
 };
+
+using UpdateFunctionType = void (*) (const Actor&);
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
 /// instead of static getters, might be removed later on
@@ -59,6 +71,7 @@ struct Scene
     physx::PxScene *scene;
     physx::PxControllerManager *controllerManager;
     physx::PxDefaultCpuDispatcher *dispatcher;
+    UpdateFunctionType updateFunction = nullptr;
 };
 
 /// initialize the physics subsystem and create a default scene
@@ -81,6 +94,10 @@ void DestroyScene(IndexT scene);
 ///
 Physics::Scene& GetScene(IndexT idx = 0);
 
+
+///
+void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId = 0);
+
 /// render a debug visualization of the level
 void RenderDebug();
 ///
@@ -101,7 +118,7 @@ IndexT LookupMaterial(Util::StringAtom name);
 SizeT GetNrMaterials();
 
 ///
-ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, uint64_t userData, IndexT scene = 0);
+ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene = 0);
 ///
 void DestroyActorInstance(Physics::ActorId id);
 }

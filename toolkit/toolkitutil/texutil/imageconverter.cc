@@ -5,8 +5,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "imageconverter.h"
-#include <IL/il.h>
-#include <IL/ilu.h>
 #include "io/ioserver.h"
 #include "io/uri.h"
 

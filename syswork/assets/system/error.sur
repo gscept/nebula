@@ -1,0 +1,11 @@
+<!--
+	Surface material for the error material
+-->
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula>
+	<Surface template="Placeholder">
+		<Param name="AlbedoMap" value="systex:error"/>
+		<Param name="NormalMap" value="systex:nobump"/>
+		<Param name="ParameterMap" value="systex:default_material" />
+	</Surface>
+</Nebula>

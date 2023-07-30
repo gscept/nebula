@@ -58,7 +58,7 @@ public:
     /// get a direct "raw" pointer to the data
     void* GetRawPointer() const;
 
-private:
+protected:
     /// re-allocate the memory buffer
     void Realloc(Size s);
     /// return true if there's enough space for n more bytes

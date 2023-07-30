@@ -12,7 +12,7 @@
     "components": {
         "ModelResource": {
             "_type_": "resource",
-            "_default_": "mdl:system/placeholder.n3"
+            "_default_": "sysmdl:placeholder.n3"
         },
         "Camera": {
             "viewHandle": {

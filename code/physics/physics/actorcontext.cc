@@ -76,15 +76,15 @@ ActorContext::DiscardActor(ActorId id)
 /**
 */
 ActorId
-ActorContext::CreateBox(Math::vector const& extends, IndexT materialId, bool dynamic, Math::mat4 const & transform, IndexT sceneId)
+ActorContext::CreateBox(Math::vector const& extends, IndexT materialId, ActorType type, Math::mat4 const & transform, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
-    PxRigidActor* newActor = state.CreateActor(dynamic, transform);
+    PxRigidActor* newActor = state.CreateActor(type, transform);
 
     Material const & material = Physics::GetMaterial(materialId);
     PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxBoxGeometry(Neb2PxVec(extends)), *material.material);
-    if (dynamic)
+    if (type != ActorType::Static)
     {
         PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
     }
@@ -97,15 +97,15 @@ ActorContext::CreateBox(Math::vector const& extends, IndexT materialId, bool dyn
 /**
 */
 ActorId
-ActorContext::CreateSphere(float radius, IndexT materialId, bool dynamic, Math::mat4 const & transform, IndexT sceneId)
+ActorContext::CreateSphere(float radius, IndexT materialId, ActorType type, Math::mat4 const & transform, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
-    PxRigidActor* newActor = state.CreateActor(dynamic, transform);
+    PxRigidActor* newActor = state.CreateActor(type, transform);
 
     Material const & material = Physics::GetMaterial(materialId);
     PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxSphereGeometry(radius), *material.material);
-    if (dynamic)
+    if (type != ActorType::Static)
     {
         PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
     }
@@ -118,15 +118,15 @@ ActorContext::CreateSphere(float radius, IndexT materialId, bool dynamic, Math::
 /**
 */
 ActorId
-ActorContext::CreateCapsule(float radius, float halfHeight, IndexT materialId, bool dynamic, Math::mat4 const & transform, IndexT sceneId)
+ActorContext::CreateCapsule(float radius, float halfHeight, IndexT materialId, ActorType type, Math::mat4 const & transform, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
-    PxRigidActor* newActor = state.CreateActor(dynamic, transform);
+    PxRigidActor* newActor = state.CreateActor(type, transform);
 
     Material const & material = Physics::GetMaterial(materialId);
     PxShape * shape = PxRigidActorExt::createExclusiveShape(*newActor, PxCapsuleGeometry(radius, halfHeight), *material.material);
-    if (dynamic)
+    if (type != ActorType::Static)
     {
         PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
     }

@@ -7,16 +7,12 @@
          },     
       ],
       "IntermediateDir":   "proj:intermediate",
-      "DestDir":           "proj:export",
+      "DestDir":           "toolkit:syswork/export",
       "AssetSources" :
       [
          {
          "Name":           "System",
-         "Value":          "toolkit:work"
-         },
-         {
-         "Name":           "Project",
-         "Value":          "proj:work"
+         "Value":          "toolkit:syswork"
          },
       ],
       "TextureDestDir":    "DestDir:textures",
@@ -27,11 +23,7 @@
       [
          {
          "Name":           "System",
-         "Value":          "toolkit:work/audio"
-         },
-         {
-         "Name":           "Project",
-         "Value":          "proj:work/audio"
+         "Value":          "toolkit:syswork/audio"
          },
       ],
       "ShaderLanguage":    "SPIRV",
@@ -40,26 +32,21 @@
       [
          {
             "Name":        "System",
-            "Value":       "toolkit:work/shaders/vk"
-         },
-         {
-            "Name":        "Project",
-            "Value":       "proj:work/shaders/vk" 
+            "Value":       "toolkit:syswork/shaders/vk"
          }
-
       ],
       "FrameShaderSources": 
       [
          {
             "Name":        "System",
-            "Value":       "toolkit:work/frame/win32"
+            "Value":       "toolkit:syswork/frame/win32"
          }
       ],
       "MaterialSources":
       [
          {
             "Name":        "System",
-            "Value":       "toolkit:work/materials"
+            "Value":       "toolkit:syswork/materials"
          }
       ],   
 }

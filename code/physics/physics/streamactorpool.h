@@ -32,6 +32,9 @@ struct ActorInfo
     SizeT instanceCount;
     CollisionFeedback feedbackFlag;
     uint16_t collisionGroup;
+#ifdef NEBULA_DEBUG
+    Util::Array<Util::String> shapeDebugNames;
+#endif
 };
 
     
@@ -48,7 +51,7 @@ public:
     void Setup();
 
     ///
-    ActorId CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, bool dynamic, uint64_t userData, IndexT scene = 0);
+    ActorId CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene = 0);
     /// destroys an actor, if the actor was created from a resource it also
     /// reduces use count of resource
     void DiscardActorInstance(ActorId id);

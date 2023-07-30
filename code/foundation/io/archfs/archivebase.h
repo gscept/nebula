@@ -26,7 +26,7 @@ public:
     virtual ~ArchiveBase();
 
     /// setup the archive from an URI (without file extension)
-    bool Setup(const URI& archiveURI);
+    bool Setup(const URI& archiveURI, const Util::String& rootPath);
     /// discard the archive
     void Discard();
     /// return true if archive is valid
@@ -70,4 +70,3 @@ ArchiveBase::GetURI() const
 //------------------------------------------------------------------------------
 
 
-    

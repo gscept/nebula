@@ -84,9 +84,10 @@ AssetBatcherApp::OnBeforeRunLocal()
 {
     IO::IoServer* ioServer = IO::IoServer::Instance();
     ioServer->CreateDirectory("phys:");
-    auto files = ioServer->ListFiles("root:work/data/tables/", "*", true);
-    IO::URI tablePath = "root:work/data/tables/physicsmaterials.json";
+    auto files = ioServer->ListFiles("tool:syswork/data/tables/", "*", true);
+    IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
+    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");
 }
 
 //------------------------------------------------------------------------------
@@ -129,6 +130,7 @@ AssetBatcherApp::DoWork()
 
     // override dests with settings from projectinfo
     AssignRegistry::Instance()->SetAssign(Assign("tex", this->projectInfo.GetAttr("TextureDestDir")));
+    AssignRegistry::Instance()->SetAssign(Assign("export", this->projectInfo.GetAttr("DestDir")));
 
     bool force = false;
     if (this->args.HasArg("-work"))
@@ -181,6 +183,16 @@ AssetBatcherApp::DoWork()
     }
 
     AssignRegistry::Instance()->SetAssign(Assign("home","proj:"));
+
+    /*
+    IO::IoServer* ioServer = IO::IoServer::Instance();
+    ioServer->CreateDirectory("phys:");
+    auto files = ioServer->ListFiles("tool:syswork/data/tables/", "*", true);
+    IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
+    CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
+    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");
+    */
+
     exporter->Open();
     exporter->SetExportMode(mode);
     exporter->SetForce(force);

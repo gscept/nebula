@@ -156,7 +156,7 @@ SetupDefaultState(
     }
     else if (!state.material.IsValid())
     {
-        state.material = skinned ? "sur:system/placeholder_skinned.sur" : "sur:system/placeholder.sur";
+        state.material = skinned ? "syssur:placeholder_skinned.sur" : "syssur:placeholder.sur";
     }
     else if (!state.material.EndsWithString(".sur")) // Temporary to fix all bad material assignments
     {
