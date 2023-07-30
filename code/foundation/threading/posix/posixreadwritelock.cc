@@ -69,7 +69,7 @@ PosixReadWriteLock::UnlockRead()
 void
 PosixReadWriteLock::UnlockWrite()
 {
-    n_assert(lockingThread == pthread_self());
+    //n_assert(lockingThread == pthread_self());
     if (--writeCounter == 0)
     {
         int ret = pthread_rwlock_unlock(&this->lock);

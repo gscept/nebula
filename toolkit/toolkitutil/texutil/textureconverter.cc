@@ -164,7 +164,7 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir,
     job.SetQuietFlag(this->quiet);
     job.Convert();
 #else
-/*
+
     CompressonatorConversionJob job;
     job.SetLogger(this->logger);
     job.SetSrcPath(srcTexPath);
@@ -174,7 +174,6 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir,
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
     job.Convert();
-    */
 #endif
     
     if (this->platform != Platform::Win32 && this->platform != Platform::Linux) return false;
