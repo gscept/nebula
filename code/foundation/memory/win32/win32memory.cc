@@ -26,10 +26,10 @@ HeapType volatile MemoryLoggingHeapType = InvalidHeapType;
     Allocate a block of memory from one of the global heaps.
 */
 void*
-Alloc(HeapType heapType, size_t size)
+Alloc(HeapType heapType, size_t size, size_t align)
 {
     n_assert(heapType < NumHeapTypes);
-    
+    n_assert(align <= 16);
     // need to make sure everything has been setup
     Core::SysFunc::Setup();
 
@@ -377,3 +377,56 @@ DumpMemoryLeaks()
 #endif
 
 } // namespace Memory
+
+//------------------------------------------------------------------------------
+/*
+    Override new / delete operators.
+*/
+void*
+operator new(size_t size) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectHeap, size);
+}
+
+void*
+operator new(size_t size, std::align_val_t al) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectHeap, size, (size_t)al);
+}
+
+void*
+operator new(size_t size, const std::nothrow_t& noThrow) noexcept
+{
+    return Memory::Alloc(Memory::ObjectHeap, size);
+}
+
+void*
+operator new[](size_t size) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size);
+}
+
+void*
+operator new[](size_t size, std::align_val_t al) noexcept(false)
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size, (size_t)al);
+}
+
+void*
+operator new[](size_t size, const std::nothrow_t& noThrow) noexcept
+{
+    return Memory::Alloc(Memory::ObjectArrayHeap, size);
+}
+
+void
+operator delete(void* p)
+{
+    Memory::Free(Memory::ObjectHeap, p);
+}
+
+void
+operator delete[](void* p)
+{
+    Memory::Free(Memory::ObjectArrayHeap, p);
+}
+

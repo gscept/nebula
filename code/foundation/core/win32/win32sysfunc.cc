@@ -54,9 +54,9 @@ SysFunc::Setup()
         Debug::MiniDump::Setup();
         #endif   
 
-        globalStringAtomTable = n_new(Util::GlobalStringAtomTable);
+        globalStringAtomTable = new Util::GlobalStringAtomTable;
         #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
-            localStringAtomTable = n_new(Util::LocalStringAtomTable);
+            localStringAtomTable = new Util::LocalStringAtomTable;
         #endif    
 
         // query simd support
@@ -91,9 +91,9 @@ void
 SysFunc::Exit(int exitCode)
 {
     // delete string atom tables
-    n_delete(globalStringAtomTable);
+    delete globalStringAtomTable;
     #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
-        n_delete(localStringAtomTable);
+        delete localStringAtomTable;
     #endif
 
     // first produce a RefCount leak report
