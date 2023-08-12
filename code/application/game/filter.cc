@@ -2,7 +2,7 @@
 //  @file filter.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "filter.h"
 #include "api.h"
 #include "ids/idallocator.h"

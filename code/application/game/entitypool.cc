@@ -2,7 +2,7 @@
 //  @file entitypool.cc
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "application/stdneb.h"
+
 #include "entitypool.h"
 #include "gameserver.h"
 #include "basegamefeature/managers/blueprintmanager.h"

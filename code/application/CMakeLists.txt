@@ -12,7 +12,6 @@ nebula_begin_module(application)
     endif ()
         fips_files(
             application/stdneb.h
-            application/stdneb.cc
         )
     fips_dir(game)
         fips_files(
@@ -77,4 +76,4 @@ nebula_end_module()
 if(FIPS_WINDOWS)
 target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
 endif()
-target_precompile_headers(application PRIVATE [["foundation/stdneb.h"]] [["application/stdneb.h"]])
+target_precompile_headers(application PRIVATE [["foundation/stdneb.h"]] [["application/stdneb.h"]] [["core/refcounted.h"]])

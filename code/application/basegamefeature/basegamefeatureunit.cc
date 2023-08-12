@@ -3,7 +3,7 @@
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "application/stdneb.h"
+
 #include "basegamefeature/basegamefeatureunit.h"
 #include "appgame/gameapplication.h"
 #include "core/factory.h"

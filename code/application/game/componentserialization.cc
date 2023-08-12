@@ -2,7 +2,7 @@
 //  componentserialization.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "componentserialization.h"
 #include "memdb/typeregistry.h"
 #include "game/entity.h"

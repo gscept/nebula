@@ -2,7 +2,7 @@
 //  api.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "application/stdneb.h"
+
 #include "api.h"
 #include "gameserver.h"
 #include "ids/idallocator.h"

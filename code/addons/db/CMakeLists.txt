@@ -49,4 +49,4 @@ fips_dir(sqlite3)
 fips_deps(attr sqlite3)
 fips_end_lib()
 
-target_precompile_headers(db REUSE_FROM foundation)
+target_precompile_headers(db PRIVATE [["foundation/stdneb.h"]] [["core/refcounted.h"]] [["attr/attrid.h"]] [["db/valuetable.h"]] [["db/table.h"]])
