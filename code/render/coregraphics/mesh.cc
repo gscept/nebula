@@ -2,7 +2,7 @@
 //  mesh.cc
 //  (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "mesh.h"
 #include "coregraphics/commandbuffer.h"
 

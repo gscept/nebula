@@ -1,5 +1,10 @@
-#include "stdneb.h"
 #include "scenes.h"
+#include "graphics/graphicsserver.h"
+#include "models/modelcontext.h"
+#include "visibility/visibilitycontext.h"
+#include "lighting/lightcontext.h"
+#include "imgui.h"
+#include "dynui/im3d/im3d.h"
 
 using namespace Timing;
 using namespace Graphics;

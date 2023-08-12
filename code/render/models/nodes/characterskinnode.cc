@@ -2,7 +2,7 @@
 //  charactermaterialskinnode.cc
 //  (C) 2011-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "characterskinnode.h"
 #include "coregraphics/shaderserver.h"
 

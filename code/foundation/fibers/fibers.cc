@@ -2,7 +2,7 @@
 //  jobs.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "system/cpu.h"
 #include "profiling/profiling.h"
 #include "fibers.h"

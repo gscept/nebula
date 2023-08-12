@@ -2,7 +2,6 @@
 //  @file framesubgraph.cc
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "framesubgraph.h"
 namespace Frame
 {

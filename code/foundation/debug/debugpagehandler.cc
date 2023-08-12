@@ -3,7 +3,7 @@
 //  (C) 2008 Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "debug/debugpagehandler.h"
 #include "http/html/htmlpagewriter.h"
 #include "http/svg/svglinechartwriter.h"

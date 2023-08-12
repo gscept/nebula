@@ -23,7 +23,7 @@ nebula_begin_module(render)
         fips_deps(glfw3)
     endif()
 
-    fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
+    fips_files(render/precompiled.h render/stdneb.h)
 
 IF(FALSE) # incrementally enable modules as they get written
         fips_dir(animation)

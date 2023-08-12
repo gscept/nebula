@@ -2,7 +2,7 @@
 //  csmutil.cc
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "lighting/csmutil.h"
 #include "graphics/camerasettings.h"
 #include "graphics/cameracontext.h"

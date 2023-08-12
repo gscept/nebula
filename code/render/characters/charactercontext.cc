@@ -2,7 +2,7 @@
 //  charactercontext.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "charactercontext.h"
 #include "skeletonresource.h"
 #include "coreanimation/animationresource.h"

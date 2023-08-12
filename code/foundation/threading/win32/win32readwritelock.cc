@@ -2,7 +2,7 @@
 //  @file win32readwritelock.cc
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "win32readwritelock.h"
 
 thread_local uint readCounter = 0;

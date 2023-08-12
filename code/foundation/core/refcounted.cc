@@ -3,7 +3,7 @@
 //  (C) 2006 RadonLabs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file (C) 2002 RadonLabs GmbH
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "core/refcounted.h"
 
 namespace Core

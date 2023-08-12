@@ -2,7 +2,7 @@
 //  ssaocontext.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
 #include "coregraphics/graphicsdevice.h"

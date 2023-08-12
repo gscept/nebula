@@ -2,7 +2,7 @@
 //  volumetricfogcontext.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "volumetricfogcontext.h"
 #include "graphics/graphicsserver.h"
 #include "clustering/clustercontext.h"

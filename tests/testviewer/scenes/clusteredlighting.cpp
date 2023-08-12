@@ -1,7 +1,15 @@
-#include "stdneb.h"
 #include "scenes.h"
-
 #include "unit.h"
+#include "graphics/graphicsserver.h"
+#include "models/modelcontext.h"
+#include "lighting/lightcontext.h"
+#include "visibility/visibilitycontext.h"
+#include "decals/decalcontext.h"
+#include "imgui.h"
+#include "dynui/im3d/im3d.h"
+#include "fog/volumetricfogcontext.h"
+#include "particles/particlecontext.h"
+#include "characters/charactercontext.h"
 
 using namespace Timing;
 using namespace Graphics;

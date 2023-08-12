@@ -2,49 +2,29 @@
 // viewerapp.cc
 // (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
 #include "viewerapp.h"
-
-#include "core/refcounted.h"
-#include "system/systeminfo.h"
-#include "timing/timer.h"
-#include "io/console.h"
-#include "io/logfileconsolehandler.h"
-
-#include "dynui/imguicontext.h"
-#include "dynui/im3d/im3dcontext.h"
-#include "dynui/im3d/im3d.h"
-
-#include "graphics/globalconstants.h"
 #include "visibility/visibilitycontext.h"
-#include "models/modelcontext.h"
-#include "input/keyboard.h"
-#include "input/mouse.h"
+#include "particles/particlecontext.h"
+#include "jobs2/jobs2.h"
+#include "scenes/scenes.h"
+#include "imgui.h"
+#include "dynui/im3d/im3dcontext.h"
+#include "fog/volumetricfogcontext.h"
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
+#include "input/keyboard.h"
+#include "input/mouse.h"
+#include "terrain/terraincontext.h"
 #include "decals/decalcontext.h"
-
-#include "jobs2/jobs2.h"
-
 #include "graphics/environmentcontext.h"
-#include "fog/volumetricfogcontext.h"
+#include "dynui/imguicontext.h"
 #include "clustering/clustercontext.h"
-#include "scenes/scenes.h"
-#include "debug/framescriptinspector.h"
-
 #include "posteffects/bloomcontext.h"
 #include "posteffects/ssaocontext.h"
-#include "posteffects/ssrcontext.h"
+#include "graphics/globalconstants.h"
 #include "posteffects/histogramcontext.h"
 #include "posteffects/downsamplingcontext.h"
-
 #include "physicsinterface.h"
-#include "physics/debugui.h"
-
-#include "terrain/terraincontext.h"
-#include "vegetation/vegetationcontext.h"
-
-#include "imgui.h"
 
 using namespace Timing;
 using namespace Graphics;

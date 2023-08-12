@@ -2,7 +2,7 @@
 //  @file entitypool.cc
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "application/stdneb.h"
+
 #include "world.h"
 #include "gameserver.h"
 #include "api.h"

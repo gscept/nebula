@@ -2,7 +2,7 @@
 //  visibilitydependencyjob.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "jobs/jobs.h"
 #include "visibilitycontext.h"
 #include "profiling/profiling.h"

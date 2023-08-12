@@ -2,7 +2,6 @@
 //  @file framecode.cc
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "framecode.h"
 namespace Frame
 {

@@ -2,7 +2,7 @@
 //  materialloader.cc
 //  (C) 2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "materialloader.h"
 #include "io/bxmlreader.h"
 #include "resources/resourceserver.h"

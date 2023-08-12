@@ -2,7 +2,7 @@
 // lightcontext.cc
 // (C) 2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "lightcontext.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"

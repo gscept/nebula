@@ -2,7 +2,7 @@
 //  quat.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "math/vec4.h"
 #include "math/mat4.h"
 #include "system/byteorder.h"

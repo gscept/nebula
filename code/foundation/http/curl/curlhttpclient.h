@@ -18,7 +18,6 @@
 #include "http/httpmethod.h"
 #include "io/uri.h"
 #include "io/stream.h"
-#include "curl/curl.h"
 
 #ifdef USE_CURL
 //------------------------------------------------------------------------------

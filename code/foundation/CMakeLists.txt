@@ -36,7 +36,7 @@ nebula_begin_module(foundation)
         endif()
     endif()
 
-        fips_files(foundation/stdneb.h foundation/stdneb.cc)
+        fips_files(foundation/stdneb.h)
         fips_dir(core)
             fips_files(
                 config.h
@@ -684,4 +684,4 @@ nebula_begin_module(foundation)
 nebula_end_module()
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})
-    target_precompile_headers(foundation PRIVATE "foundation/stdneb.h" "core/ptr.h" "core/rtti.h" "core/refcounted.h")
+target_precompile_headers(foundation PRIVATE [["foundation/stdneb.h"]] "core/ptr.h" "core/rtti.h" "core/refcounted.h")

@@ -2,7 +2,7 @@
 // vkshaperenderer.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "vkshaperenderer.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/vertexcomponent.h"

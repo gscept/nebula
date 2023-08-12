@@ -2,7 +2,7 @@
 //  embeddedmemorystream.cc
 //  (C) 2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "io/embeddedmemorystream.h"
 
 #ifdef HAS_EMBEDDED_EXPORT

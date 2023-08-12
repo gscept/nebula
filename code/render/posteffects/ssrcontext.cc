@@ -2,7 +2,7 @@
 //  ssrcontext.cc
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "frame/frameplugin.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/resourcetable.h"

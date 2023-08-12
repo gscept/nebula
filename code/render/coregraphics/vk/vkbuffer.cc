@@ -2,7 +2,6 @@
 //  vkbuffer.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "vkgraphicsdevice.h"
 #include "vkcommandbuffer.h"
 #include "vkbuffer.h"

@@ -2,7 +2,6 @@
 //  @file meshresource.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "meshresource.h"
 namespace CoreGraphics
 {

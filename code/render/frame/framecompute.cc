@@ -2,7 +2,7 @@
 // framecompute.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "framecompute.h"
 #include "coregraphics/graphicsdevice.h"
 

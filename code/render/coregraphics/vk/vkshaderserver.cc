@@ -2,7 +2,7 @@
 // vkshaderserver.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "vkshaderserver.h"
 #include "effectfactory.h"
 #include "vkgraphicsdevice.h"

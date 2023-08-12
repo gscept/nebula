@@ -43,6 +43,7 @@
 #include <wininet.h>
 #include <winsock2.h>
 #include <rpc.h>
+#include <winnt.h>
 #if _MSC_VER == 1900
 #pragma warning ( push )
 #pragma warning ( disable : 4091)

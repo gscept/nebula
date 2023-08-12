@@ -1,8 +1,45 @@
 //------------------------------------------------------------------------------
 // (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
 #include "scenes.h"
+
+#include "graphics/graphicsserver.h"
+#include "models/modelcontext.h"
+#include "lighting/lightcontext.h"
+#include "visibility/visibilitycontext.h"
+#include "input/inputserver.h"
+#include "input/keyboard.h"
+
+/*
+#include "renderutil/mayacamerautil.h"
+#include "renderutil/freecamerautil.h"
+
+#include "graphics/view.h"
+#include "graphics/stage.h"
+#include "graphics/cameracontext.h"
+#include "resources/resourceserver.h"
+
+
+#include "io/ioserver.h"
+
+
+#include "models/modelcontext.h"
+
+#include "input/mouse.h"
+#include "dynui/imguicontext.h"
+
+#include "characters/charactercontext.h"
+#include "imgui.h"
+#include "dynui/im3d/im3dcontext.h"
+#include "dynui/im3d/im3d.h"
+#include "graphics/environmentcontext.h"
+#include "clustering/clustercontext.h"
+#include "math/mat4.h"
+#include "particles/particlecontext.h"
+#include "fog/volumetricfogcontext.h"
+#include "decals/decalcontext.h"
+
+*/
 
 namespace SponzaSceneData
 {

@@ -2,7 +2,7 @@
 //  blueprintmanager.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "application/stdneb.h"
+
 #include "blueprintmanager.h"
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
