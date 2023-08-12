@@ -31,7 +31,7 @@ extern HeapType volatile MemoryLoggingHeapType;
     Global memory functions.
 */
 /// allocate a chunk of memory
-extern void* Alloc(HeapType heapType, size_t size);
+extern void* Alloc(HeapType heapType, size_t size, size_t align = 16);
 /// re-allocate a chunk of memory
 extern void* Realloc(HeapType heapType, void* ptr, size_t size);
 /// free a chunk of memory
@@ -87,59 +87,5 @@ void DumpMemoryLeaks();
 // FIXME: Memory-Validation disabled for now
 #define __MEMORY_VALIDATE(s)
 } // namespace Memory
-
-#ifdef new
-#undef new
-#endif
-
-#ifdef delete
-#undef delete
-#endif
-
-//------------------------------------------------------------------------------
-/*
-    Override new / delete operators.
-*/
-__forceinline void*
-operator new(size_t size)
-{
-    return Memory::Alloc(Memory::ObjectHeap, size);
-}
-
-__forceinline void*
-operator new(size_t size, const std::nothrow_t& noThrow) noexcept
-{
-    return Memory::Alloc(Memory::ObjectHeap, size);
-}
-
-__forceinline void*
-operator new[](size_t size)
-{
-    return Memory::Alloc(Memory::ObjectArrayHeap, size);
-}
-
-__forceinline void*
-operator new[](size_t size, const std::nothrow_t& noThrow) noexcept
-{
-    return Memory::Alloc(Memory::ObjectArrayHeap, size);
-}
-
-__forceinline void
-operator delete(void* p)
-{
-    Memory::Free(Memory::ObjectHeap, p);
-}
-
-__forceinline void
-operator delete[](void* p)
-{
-    Memory::Free(Memory::ObjectArrayHeap, p);
-}
-
-#define n_new(type) new type
-#define n_new_inplace(type, mem) new (mem) type 
-#define n_new_array(type, size) new type[size]
-#define n_delete(ptr) delete ptr
-#define n_delete_array(ptr) delete[] ptr
 //------------------------------------------------------------------------------
 

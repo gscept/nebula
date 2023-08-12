@@ -39,7 +39,7 @@ AudioDevice::~AudioDevice()
 bool
 AudioDevice::Open()
 {
-    soloud = n_new(SoLoud::Soloud);
+    soloud = new SoLoud::Soloud;
     soloud->init(SoLoud::Soloud::CLIP_ROUNDOFF);
 
     this->ResetListener();

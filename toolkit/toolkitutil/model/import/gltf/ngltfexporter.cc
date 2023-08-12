@@ -89,7 +89,7 @@ NglTFExporter::ParseScene()
             if (image.embedded)
             {
                 Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.normalTexture.index));
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.normalTexture.index).AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -112,7 +112,7 @@ NglTFExporter::ParseScene()
             if (image.embedded)
             {
                 Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.pbrMetallicRoughness.baseColorTexture.index));
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.pbrMetallicRoughness.baseColorTexture.index).AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -134,7 +134,7 @@ NglTFExporter::ParseScene()
             if (image.embedded)
             {
                 Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.normalTexture.index));
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.normalTexture.index).AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else

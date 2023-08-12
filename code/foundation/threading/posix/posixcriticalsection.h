@@ -28,7 +28,7 @@ public:
     /// destructor
     ~PosixCriticalSection();
     /// copy assignment
-    void operator=(PosixCritialSection&& rhs);
+    void operator=(PosixCriticalSection&& rhs);
     /// enter the critical section
     void Enter() const;
     /// leave the critical section
@@ -66,8 +66,8 @@ PosixCriticalSection::~PosixCriticalSection()
 //------------------------------------------------------------------------------
 /**
 */
-inline
-PosixCritialSection::operator=(PosixCritialSection&& rhs)
+inline void
+PosixCriticalSection::operator=(PosixCriticalSection&& rhs)
 {
     if (this->mutex)
     {

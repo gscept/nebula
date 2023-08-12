@@ -104,7 +104,7 @@ ExporterBase::Progress( float progress, const Util::String& status )
     {
         /// we need tag, progress, size of string, and string itself saved
         int size = sizeof(int) + sizeof(float) + sizeof(int) + status.Length()+1;
-        char* package = n_new_array(char, size);
+        char* package = new char[size];
         char* chunk = package;
 
         *(int*)chunk = 'QPRO';
@@ -117,7 +117,7 @@ ExporterBase::Progress( float progress, const Util::String& status )
         n_assert(copyStatus);
         int sentBytes = 0;
         Socket::Result result = this->socket->Send(package, size, sentBytes);
-        n_delete_array(package);
+        delete[] package;
     }
     else if (this->progressCallback)
     {
@@ -134,7 +134,7 @@ ExporterBase::SetProgressMinMax( int min, int max )
     if (this->remote)
     {
         int size = sizeof(int) + sizeof(int) + sizeof(int);
-        int* package = n_new_array(int, size);
+        int* package = new int[size];
         int* chunk = package;
 
         *chunk = 'QINT';
@@ -145,7 +145,7 @@ ExporterBase::SetProgressMinMax( int min, int max )
 
         int sentBytes = 0;
         Socket::Result result = this->socket->Send(package, size, sentBytes);
-        n_delete_array(package);
+        delete[] package;
     }
     else if (this->minMaxCallback)
     {

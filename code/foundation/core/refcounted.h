@@ -133,7 +133,7 @@ RefCounted::Release()
 {
     if (0 == Threading::Interlocked::Decrement(&this->refCount))
     {
-        n_delete(this);
+        delete this;
     }
 }
 

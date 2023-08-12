@@ -672,7 +672,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     n_assert(numQueues > 0);
 
     // now get queues from device
-    VkQueueFamilyProperties* queuesProps = n_new_array(VkQueueFamilyProperties, numQueues);
+    VkQueueFamilyProperties* queuesProps = new VkQueueFamilyProperties[numQueues];
     vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
     vkGetPhysicalDeviceMemoryProperties(state.physicalDevices[state.currentDevice], &state.memoryProps);
 
@@ -796,7 +796,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             });
     }
 
-    n_delete_array(queuesProps);
+    delete[] queuesProps;
 
     // get physical device features
     VkPhysicalDeviceFeatures features;

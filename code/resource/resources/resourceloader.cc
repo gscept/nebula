@@ -194,7 +194,7 @@ ResourceLoader::RunCallbacks(LoadStatus status, const Resources::ResourceId id)
     IndexT i;
     for (i = 0; i < cbls.Size(); i++)
     {
-        const _Callbacks& cbl = cbls[i];
+        _Callbacks& cbl = cbls[i];
         if (status == Success && cbl.success != nullptr)	
             cbl.success(id);
         else if (status == Failed && cbl.failed != nullptr)
@@ -203,6 +203,7 @@ ResourceLoader::RunCallbacks(LoadStatus status, const Resources::ResourceId id)
             fail.resourceId = this->failResourceId.resourceId;
             cbl.failed(fail);
         }
+        cbl = {};
     }
     cbls.Clear();
 }

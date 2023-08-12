@@ -142,7 +142,7 @@ CommandManager::Execute(Command* command)
         return true;
     }
 
-    n_delete(command);
+    delete command;
     return false;
 }
 
@@ -275,7 +275,7 @@ void CommandManager::AddUndo(Command* command)
         // history limit reached, start popping
         CommandStack stack = undoList.RemoveFront();
         for (Command* cmd : stack.commands)
-            n_delete(cmd);
+            delete cmd;
         undoListSize--;
     }
 
@@ -324,7 +324,7 @@ void CommandManager::ClearUndoList()
     for (CommandList::Iterator it = undoList.Begin(); it != undoList.End(); it++)
     {
         for (Command* cmd : (it->commands))
-            n_delete(cmd);
+            delete cmd;
     }
     undoList.Clear();
     undoListSize = 0;
@@ -338,7 +338,7 @@ void CommandManager::ClearRedoList()
     for (CommandList::Iterator it = redoList.Begin(); it != redoList.End(); it++)
     {
         for (Command* cmd : it->commands)
-            n_delete(cmd);
+            delete cmd;
     }
     redoList.Clear();
     redoListSize = 0;

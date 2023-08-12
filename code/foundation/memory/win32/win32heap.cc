@@ -27,8 +27,8 @@ Win32Heap::Setup()
     #if NEBULA_MEMORY_STATS
     n_assert(0 == list);
     n_assert(0 == criticalSection);
-    list = n_new(List<Win32Heap*>);
-    criticalSection = n_new(CriticalSection);
+    list = new List<Win32Heap*>;
+    criticalSection = new CriticalSection;
     #endif
 }
 

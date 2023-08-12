@@ -100,7 +100,7 @@ AttributeTable::CopyString(IndexT colIndex, IndexT rowIndex, const Util::String&
     if (0 == *valuePtr)
     {
         // allocate new object
-        *valuePtr = n_new(Util::String(val));
+        *valuePtr = new Util::String(val);
     }
     else
     {
@@ -119,7 +119,7 @@ AttributeTable::DeleteString(IndexT colIndex, IndexT rowIndex)
     Util::String** valuePtr = (Util::String**)this->GetValuePtr(colIndex, rowIndex);
     if (0 != *valuePtr)
     {
-        n_delete(*valuePtr);
+        delete *valuePtr;
         *valuePtr = 0;
     }
 }
@@ -135,7 +135,7 @@ AttributeTable::CopyGuid(IndexT colIndex, IndexT rowIndex, const Util::Guid& val
     if (0 == *valuePtr)
     {
         // allocate new object
-        *valuePtr = n_new(Util::Guid(val));
+        *valuePtr = new Util::Guid(val);
     }
     else
     {
@@ -154,7 +154,7 @@ AttributeTable::DeleteGuid(IndexT colIndex, IndexT rowIndex)
     Util::Guid** valuePtr = (Util::Guid**)this->GetValuePtr(colIndex, rowIndex);
     if (0 != *valuePtr)
     {
-        n_delete(*valuePtr);
+        delete *valuePtr;
         *valuePtr = 0;
     }
 }
@@ -170,7 +170,7 @@ AttributeTable::CopyBlob(IndexT colIndex, IndexT rowIndex, const Util::Blob& val
     if (0 == *valuePtr)
     {
         // allocate new object
-        *valuePtr = n_new(Util::Blob(val));
+        *valuePtr = new Util::Blob(val);
     }
     else
     {
@@ -189,7 +189,7 @@ AttributeTable::DeleteBlob(IndexT colIndex, IndexT rowIndex)
     Util::Blob** valuePtr = (Util::Blob**)this->GetValuePtr(colIndex, rowIndex);
     if (0 != *valuePtr)
     {
-        n_delete(*valuePtr);
+        delete *valuePtr;
         *valuePtr = 0;
     }
 }

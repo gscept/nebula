@@ -50,7 +50,7 @@ JsonWriter::Open()
     
     if (StreamWriter::Open())
     {       
-        this->document = n_new(pjson::document);
+        this->document = new pjson::document;
         this->document->set_to_object();
         this->hierarchy.Push(this->document);
         this->nameHierarchy.Push(Util::String());        
@@ -73,7 +73,7 @@ JsonWriter::Close()
 
     this->stream->Write(&buffer[0], (IO::Stream::Size)buffer.size());
 
-    n_delete(this->document);
+    delete this->document;
     this->document = 0;
         
     // close the stream
@@ -87,7 +87,7 @@ void
 JsonWriter::BeginArray(const char * name)
 {
     n_assert(this->IsOpen());
-    pjson::value_variant * node = n_new(pjson::value_variant(pjson::cJSONValueTypeArray));
+    pjson::value_variant * node = new pjson::value_variant(pjson::cJSONValueTypeArray);
     Util::String sName = name;   
     this->hierarchy.Push(node);
     this->nameHierarchy.Push(sName);
@@ -100,7 +100,7 @@ void
 JsonWriter::BeginObject(const char * name)
 {
     n_assert(this->IsOpen());
-    pjson::value_variant * node = n_new(pjson::value_variant(pjson::cJSONValueTypeObject));
+    pjson::value_variant * node = new pjson::value_variant(pjson::cJSONValueTypeObject);
     Util::String sName = name; 
     this->hierarchy.Push(node);
     this->nameHierarchy.Push(sName);
@@ -133,7 +133,7 @@ JsonWriter::End()
         }
         this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), *entry, this->document->get_allocator());
     }
-    n_delete(entry);
+    delete entry;
 }
 
 //------------------------------------------------------------------------------

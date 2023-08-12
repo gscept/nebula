@@ -138,7 +138,7 @@ Game::ManagerAPI
 CameraManager::Create()
 {
     n_assert(!CameraManager::HasInstance());
-    CameraManager::Singleton = n_new(CameraManager);
+    CameraManager::Singleton = new CameraManager;
    
     Singleton->InitUpdateCameraProcessor();
 
@@ -154,7 +154,7 @@ void
 CameraManager::Destroy()
 {
     n_assert(CameraManager::HasInstance());
-    n_delete(CameraManager::Singleton);
+    delete CameraManager::Singleton;
     CameraManager::Singleton = nullptr;
 }
 

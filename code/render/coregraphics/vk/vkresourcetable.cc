@@ -1130,13 +1130,14 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
             (uint32_t)flags.Size(),
             flags.Begin()
         };
+        auto binds = bindings.ValuesAsArray();
         VkDescriptorSetLayoutCreateInfo dslInfo =
         {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             &bindingFlags,
             0,                                                              // USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
             (uint32_t)bindings.Size(),
-            bindings.ValuesAsArray().Begin()
+            binds.Begin()
         };
         VkResult res = vkCreateDescriptorSetLayout(dev, &dslInfo, nullptr, &layout);
         n_assert(res == VK_SUCCESS);

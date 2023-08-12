@@ -71,7 +71,7 @@ AudioManager::Create()
     using namespace Game;
     using namespace Audio;
     n_assert(!AudioManager::HasInstance());
-    AudioManager::Singleton = n_new(AudioManager);
+    AudioManager::Singleton = new AudioManager;
 
     //ProcessorBuilder("AudioManager.ActivateAudioEmitter")
     //    .Func(ActivateAudioEmitter)
@@ -104,7 +104,7 @@ AudioManager::Create()
 void
 AudioManager::Destroy()
 {
-    n_delete(AudioManager::Singleton);
+    delete AudioManager::Singleton;
     AudioManager::Singleton = nullptr;
 }
 

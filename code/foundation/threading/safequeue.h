@@ -45,6 +45,7 @@ public:
     void Clear();
     /// add element to the back of the queue
     void Enqueue(const TYPE& e);
+    void Enqueue(TYPE&& e);
     /// enqueue an array of elements
     void EnqueueArray(const Util::Array<TYPE>& a);
     /// remove the element from the front of the queue
@@ -165,6 +166,21 @@ SafeQueue<TYPE>::Enqueue(const TYPE& e)
 /**
 */
 template<class TYPE> void
+SafeQueue<TYPE>::Enqueue(TYPE&& e)
+{
+    this->criticalSection.Enter();
+    this->queue.Enqueue(std::move(e));
+    this->criticalSection.Leave();
+    if (this->signalOnEnqueueEnabled)
+    {
+        this->enqueueEvent.Signal();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
 SafeQueue<TYPE>::EnqueueArray(const Util::Array<TYPE>& a)
 {
     this->criticalSection.Enter();
@@ -204,7 +220,7 @@ SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE>& outArray)
     outArray.Clear();
     for (IndexT i = 0; i < this->queue.Size(); i++)
     {
-        outArray.Append(this->queue[i]);
+        outArray.Append(std::move(this->queue[i]));
     }
     this->queue.Clear();    
     this->criticalSection.Leave();

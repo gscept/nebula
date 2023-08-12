@@ -100,9 +100,9 @@ private:
 
     static Memory::Heap* DataHeap;
 
-    void* ptr;
-    size_t size;
-    size_t allocSize;
+    void* ptr = nullptr;
+    size_t size = 0;
+    size_t allocSize = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -133,7 +133,7 @@ inline void
 Blob::Setup()
 {
     n_assert(0 == DataHeap);
-    DataHeap = n_new(Memory::Heap("Util.Blob.DataHeap"));
+    DataHeap = new Memory::Heap("Util.Blob.DataHeap");
 }
 
 //------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ inline void
 Blob::Shutdown()
 {
     n_assert(0 != DataHeap);
-    n_delete(DataHeap);
+    delete DataHeap;
     DataHeap = 0;
 }
 

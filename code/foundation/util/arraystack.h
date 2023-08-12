@@ -186,7 +186,7 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT _capacity, SizeT _grow) :
     if (this->capacity > 0)
     {
         if (this->capacity > STACK_SIZE)
-            this->elements = n_new_array(TYPE, this->capacity);
+            this->elements = new TYPE[this->capacity];
         else
         {
             this->capacity = STACK_SIZE;
@@ -216,7 +216,7 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT initialSize, SizeT _grow, const T
     if (this->capacity > 0)
     {
         if (this->capacity > STACK_SIZE)
-            this->elements = n_new_array(TYPE, this->capacity);
+            this->elements = new TYPE[this->capacity];
         else
         {
             this->capacity = STACK_SIZE;
@@ -248,7 +248,7 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(std::initializer_list<TYPE> list) :
     if (this->capacity > 0)
     {
         if (this->capacity > STACK_SIZE)
-            this->elements = n_new_array(TYPE, this->capacity);
+            this->elements = new TYPE[this->capacity];
         else
         {
             this->capacity = STACK_SIZE;
@@ -325,7 +325,7 @@ ArrayStack<TYPE, STACK_SIZE>::Copy(const ArrayStack<TYPE, STACK_SIZE>& src)
     if (this->capacity > 0)
     {
         if (this->capacity > STACK_SIZE)
-            this->elements = n_new_array(TYPE, this->capacity);
+            this->elements = new TYPE[this->capacity];
         else
             this->elements = smallVector;
 
@@ -349,7 +349,7 @@ ArrayStack<TYPE, STACK_SIZE>::Delete()
     if (this->elements)
     {
         if (this->elements != this->smallVector)
-            n_delete_array(this->elements);
+            delete[] this->elements;
 
         this->elements = this->smallVector;
     }
@@ -386,7 +386,7 @@ ArrayStack<TYPE, STACK_SIZE>::Realloc(SizeT _capacity, SizeT _grow)
     if (this->capacity > 0)
     {
         if (this->capacity > STACK_SIZE)
-            this->elements = n_new_array(TYPE, this->capacity);
+            this->elements = new TYPE[this->capacity];
         else
             this->elements = smallVector;
     }
@@ -438,7 +438,7 @@ template<class TYPE, int STACK_SIZE>
 inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept
 {
     if (this->elements && this->capacity > STACK_SIZE)
-        n_delete_array(this->elements);
+        delete[] this->elements;
 
     this->capacity = rhs.capacity;
     this->count = rhs.count;
@@ -469,7 +469,7 @@ ArrayStack<TYPE, STACK_SIZE>::GrowTo(SizeT newCapacity)
 {
     if (newCapacity > STACK_SIZE)
     {
-        TYPE* newArray = n_new_array(TYPE, newCapacity);
+        TYPE* newArray = new TYPE[newCapacity];
         if (this->elements)
         {
             // copy over contents
@@ -481,7 +481,7 @@ ArrayStack<TYPE, STACK_SIZE>::GrowTo(SizeT newCapacity)
 
             // discard old array
             if (this->elements != this->smallVector)
-                n_delete_array(this->elements);
+                delete[] this->elements;
         }
         this->elements = newArray;
     }

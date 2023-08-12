@@ -23,18 +23,11 @@ namespace Threading
 class Interlocked : public Win32::Win32Interlocked
 { };
 }
-#elif ( __OSX__ || __APPLE__ )
-#include "threading/darwin/darwininterlocked.h"
+#elif ( __linux__ || __OSX__ || __APPLE__)
+#include "threading/gcc/interlocked.h"
 namespace Threading
 {
-class Interlocked : public Darwin::DarwinInterlocked
-{ };
-}
-#elif __linux__
-#include "threading/posix/posixinterlocked.h"
-namespace Threading
-{
-class Interlocked : public Posix::PosixInterlocked
+class Interlocked : public Gcc::GccInterlocked
 { };
 }
 #else

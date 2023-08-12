@@ -72,7 +72,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
         // Create a mesh builder per each component and emit primitive groups per unique material
         for (IndexT i = 0; i < nodesByComponents.Size(); i++)
         {
-            MeshBuilder* builder = n_new(MeshBuilder);
+            MeshBuilder* builder = new MeshBuilder;
             const Util::Array<SceneNode*>& nodes = nodesByComponents.ValueAtIndex(i);
             builder->SetComponents(nodesByComponents.KeyAtIndex(i));
             builder->SetPrimitiveTopology(this->meshes[nodes[0]->mesh.meshIndex].GetPrimitiveTopology());
@@ -259,7 +259,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
 void 
 Scene::OptimizePhysics(Util::Array<SceneNode*>& outNodes, MeshBuilder*& outMesh)
 {
-    MeshBuilder* mesh = n_new(MeshBuilder);
+    MeshBuilder* mesh = new MeshBuilder;
     for (SceneNode& node : this->nodes)
     {
         if (node.mesh.material == "physics")

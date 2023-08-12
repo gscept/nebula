@@ -111,8 +111,8 @@ private:
     System::Cpu::CoreId coreId;
     ThreadState volatile threadState;
 
-    LinuxEvent threadStartedEvent;
-    LinuxEvent stopRequestEvent;
+    Threading::Event threadStartedEvent;
+    Threading::Event stopRequestEvent;
 
 #if NEBULA_DEBUG
     static Threading::CriticalSection criticalSection;

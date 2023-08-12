@@ -360,12 +360,12 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
     for (uint i = 0; i < numChunks; i++)
     {
         int chunkSize = Math::min(remainingBytes, BufferGetUploadMaxSize());
-        char* buf = n_new_array(char, chunkSize);
+        char* buf = new char[chunkSize];
         memset(buf, pattern, chunkSize);
         vkCmdUpdateBuffer(Vulkan::CmdBufferGetVk(cmdBuf), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, buf);
         chunkOffset += chunkSize;
         remainingBytes -= chunkSize;
-        n_delete_array(buf);
+        delete[] buf;
     }
 }
 

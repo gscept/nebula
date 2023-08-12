@@ -113,7 +113,7 @@ SimpleTree<VALUETYPE>::Node::~Node()
 {
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        n_delete(children[i]);
+        delete children[i];
     }
 }
 
@@ -250,7 +250,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Append(const VALUETYPE& val)
 {
-    Node* newNode = n_new(Node);
+    Node* newNode = new Node;
     newNode->parent = this;
     newNode->value = val;
     this->children.Append(newNode);
@@ -263,7 +263,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Erase(IndexT i)
 {
-    n_delete(this->children[i]);
+    delete this->children[i];
     this->children.EraseIndex(i);
 }
 

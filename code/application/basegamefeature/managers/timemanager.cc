@@ -68,7 +68,7 @@ Game::ManagerAPI
 TimeManager::Create()
 {
     n_assert(state == nullptr);
-    state = n_new(State);
+    state = new State;
 
     Game::ManagerAPI api;
     api.OnActivate = &OnActivate;
@@ -124,7 +124,7 @@ void
 TimeManager::Destroy()
 {
     n_assert(state != nullptr);
-    n_delete(state);
+    delete state;
     state = nullptr;
 }
 

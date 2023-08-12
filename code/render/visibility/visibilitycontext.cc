@@ -406,7 +406,7 @@ ObserverContext::Discard()
 {
     for (int i = 0; i < ObserverContext::systems.Size(); i++)
     {
-        n_delete(ObserverContext::systems[i]);
+        delete ObserverContext::systems[i];
     }
 
     ObserverContext::systems.Clear();
@@ -419,7 +419,7 @@ ObserverContext::Discard()
 VisibilitySystem*
 ObserverContext::CreateBoxSystem(const BoxSystemLoadInfo& info)
 {
-    BoxSystem* system = n_new(BoxSystem);
+    BoxSystem* system = new BoxSystem;
     system->Setup(info);
     ObserverContext::systems.Append(system);
     return system;
@@ -431,7 +431,7 @@ ObserverContext::CreateBoxSystem(const BoxSystemLoadInfo& info)
 VisibilitySystem*
 ObserverContext::CreatePortalSystem(const PortalSystemLoadInfo& info)
 {
-    PortalSystem* system = n_new(PortalSystem);
+    PortalSystem* system = new PortalSystem;
     system->Setup(info);
     ObserverContext::systems.Append(system);
     return system;
@@ -443,7 +443,7 @@ ObserverContext::CreatePortalSystem(const PortalSystemLoadInfo& info)
 VisibilitySystem*
 ObserverContext::CreateOctreeSystem(const OctreeSystemLoadInfo& info)
 {
-    OctreeSystem* system = n_new(OctreeSystem);
+    OctreeSystem* system = new OctreeSystem;
     system->Setup(info);
     ObserverContext::systems.Append(system);
     return system;
@@ -455,7 +455,7 @@ ObserverContext::CreateOctreeSystem(const OctreeSystemLoadInfo& info)
 VisibilitySystem*
 ObserverContext::CreateQuadtreeSystem(const QuadtreeSystemLoadInfo & info)
 {
-    QuadtreeSystem* system = n_new(QuadtreeSystem);
+    QuadtreeSystem* system = new QuadtreeSystem;
     system->Setup(info);
     ObserverContext::systems.Append(system);
     return system;
@@ -467,7 +467,7 @@ ObserverContext::CreateQuadtreeSystem(const QuadtreeSystemLoadInfo & info)
 VisibilitySystem* 
 ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 {
-    BruteforceSystem* system = n_new(BruteforceSystem);
+    BruteforceSystem* system = new BruteforceSystem;
     system->Setup(info);
     ObserverContext::systems.Append(system);
     return system;

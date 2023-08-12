@@ -193,6 +193,8 @@ macro(add_shaders_intern)
         cmake_path(GET rel_path PARENT_PATH foldername)
 
         # first calculate dependencies
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shaders)
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shaders/${foldername})
         set(depoutput ${CMAKE_BINARY_DIR}/shaders/${foldername}/${basename}.dep)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time

@@ -56,7 +56,7 @@ JsonReader::Open()
     
     if (StreamReader::Open())
     {
-        this->document = n_new(pjson::document);
+        this->document = new pjson::document;
 
         // create an document object        
         // we need to 0 terminate the input buffer
@@ -93,7 +93,7 @@ JsonReader::Close()
 {
     n_assert(0 != this->document);
     this->document->clear();
-    n_delete(this->document);
+    delete this->document;
     this->curNode = 0;
     Memory::Free(Memory::StreamDataHeap, this->buffer);
     this->buffer = nullptr;

@@ -350,9 +350,9 @@ void MeshBuilder::Cleanup(Array<Array<int> >* collapseMap)
     int numVertices = this->vertices.Size();
 
     // generate a index remapping table and sorted vertex array
-    int* indexMap = n_new_array(int, numVertices);
-    int* sortMap = n_new_array(int, numVertices);
-    int* shiftMap = n_new_array(int, numVertices);
+    int* indexMap = new int[numVertices];
+    int* sortMap = new int[numVertices];
+    int* shiftMap = new int[numVertices];
 
     int i;
     for (i = 0; i < numVertices; i++)
@@ -439,9 +439,9 @@ void MeshBuilder::Cleanup(Array<Array<int> >* collapseMap)
     this->vertices = newArray;
 
     // cleanup
-    n_delete_array(indexMap);
-    n_delete_array(sortMap);
-    n_delete_array(shiftMap);
+    delete[] indexMap;
+    delete[] sortMap;
+    delete[] shiftMap;
 }
 
 //------------------------------------------------------------------------------
@@ -529,7 +529,7 @@ MeshBuilder::CalculateTangents()
 {
     int numVertices = this->GetNumVertices();
     int numTriangles = this->GetNumTriangles();
-    vec3* tangents1 = n_new_array(vec3, numVertices * 2);
+    vec3* tangents1 = new vec3[numVertices * 2];
     vec3* tangents2 = tangents1 + numVertices;
 
     // We must have normals to calculate tangents
@@ -617,7 +617,7 @@ MeshBuilder::CalculateTangents()
     //    vertex.SetComponent(MeshBuilderVertex::TangentB4NIndex, normalize3(vertex.GetComponent(MeshBuilderVertex::TangentB4NIndex)));
     //    vertex.SetComponent(MeshBuilderVertex::BinormalB4NIndex, normalize3(vertex.GetComponent(MeshBuilderVertex::BinormalB4NIndex)));
     //}
-    n_delete_array(tangents1);
+    delete[] tangents1;
 }
 
 } // namespace ToolkitUtil

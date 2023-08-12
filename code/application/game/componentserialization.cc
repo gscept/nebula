@@ -23,7 +23,7 @@ ComponentSerialization::Instance()
 {
     if (nullptr == Singleton)
     {
-        Singleton = n_new(ComponentSerialization);
+        Singleton = new ComponentSerialization;
         n_assert(nullptr != Singleton);
     }
     return Singleton;
@@ -40,7 +40,7 @@ ComponentSerialization::Destroy()
 {
     if (nullptr != Singleton)
     {
-        n_delete(Singleton);
+        delete Singleton;
         Singleton = nullptr;
     }
 }

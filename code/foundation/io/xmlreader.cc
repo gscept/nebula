@@ -55,7 +55,7 @@ XmlReader::Open()
     if (StreamReader::Open())
     {
         // create an XML document object
-        this->xmlDocument = n_new(TiXmlDocument);
+        this->xmlDocument = new TiXmlDocument;
         if (!this->xmlDocument->LoadStream(this->stream))
         {
             // parsing XML structure failed, provide feedback
@@ -68,7 +68,7 @@ XmlReader::Open()
             {
                 n_error("XmlReader::Open(): failed to open stream as XML (URI not valid)!\nTinyXML error: %s", this->xmlDocument->ErrorDesc());
             }
-            n_delete(this->xmlDocument);
+            delete this->xmlDocument;
             this->xmlDocument = 0;
             return false;
         }
@@ -95,7 +95,7 @@ XmlReader::Close()
     n_assert(0 != this->xmlDocument);
 
     // delete the xml document
-    n_delete(this->xmlDocument);
+    delete this->xmlDocument;
     this->xmlDocument = 0;
     this->curNode = 0;
 

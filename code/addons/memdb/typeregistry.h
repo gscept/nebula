@@ -73,7 +73,7 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
     if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        ComponentDescription* desc = n_new(ComponentDescription(name, defaultValue, flags));
+        ComponentDescription* desc = new ComponentDescription(name, defaultValue, flags);
 
         ComponentId descriptor = reg->componentDescriptions.Size();
         reg->componentDescriptions.Append(desc);
@@ -101,7 +101,7 @@ TypeRegistry::Register(Util::StringAtom name, SizeT typeSize, void const* defaul
     if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        ComponentDescription* desc = n_new(ComponentDescription(name, typeSize, defaultValue, flags));
+        ComponentDescription* desc = new ComponentDescription(name, typeSize, defaultValue, flags);
 
         ComponentId descriptor = reg->componentDescriptions.Size();
         reg->componentDescriptions.Append(desc);

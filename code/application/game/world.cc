@@ -152,7 +152,7 @@ World::CacheTable(MemDb::TableId tid, MemDb::TableSignature signature)
 World*
 AllocateWorld(WorldCreateInfo const& info)
 {
-    World* world = n_new(World);
+    World* world = new World;
     world->hash = info.hash;
     return world;
 }
@@ -163,7 +163,7 @@ AllocateWorld(WorldCreateInfo const& info)
 void
 DeallocateWorld(World* world)
 {
-    n_delete(world);
+    delete world;
 }
 
 //------------------------------------------------------------------------------

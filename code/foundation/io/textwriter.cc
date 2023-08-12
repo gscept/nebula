@@ -52,7 +52,7 @@ TextWriter::WriteString(const String& str)
 //------------------------------------------------------------------------------
 /**
 */
-void __cdecl
+void 
 TextWriter::WriteFormatted(const char* fmtString, ...)
 {
     va_list argList;

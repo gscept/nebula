@@ -50,15 +50,8 @@ BinaryModelWriter::Open()
         // setup a BinaryWriter
         this->writer = BinaryWriter::Create();
         this->writer->SetStream(this->stream);
-        if (Platform::Win32 == this->platform)
-        {
-            this->writer->SetStreamByteOrder(ByteOrder::LittleEndian);
-        }
-        else
-        {
-            this->writer->SetStreamByteOrder(ByteOrder::BigEndian);
-        }
-
+        this->writer->SetStreamByteOrder(Platform::GetPlatformByteOrder(this->platform));
+        
         if (this->writer->Open())
         {
             // write header

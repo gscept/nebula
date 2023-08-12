@@ -395,7 +395,7 @@ private:
 Editor::Entity
 CreateEntity(Util::StringAtom templateName)
 {
-    CMDCreateEntity* cmd = n_new(CMDCreateEntity);
+    CMDCreateEntity* cmd = new CMDCreateEntity;
     Editor::Entity const entity = Game::AllocateEntity(Editor::state.editorWorld);
     cmd->id = entity;
     cmd->templateName = templateName;
@@ -409,7 +409,7 @@ CreateEntity(Util::StringAtom templateName)
 void
 DeleteEntity(Editor::Entity entity)
 {
-    CMDDeleteEntity* cmd = n_new(CMDDeleteEntity);
+    CMDDeleteEntity* cmd = new CMDDeleteEntity;
     cmd->id = entity;
     CommandManager::Execute(cmd);
 }
@@ -420,7 +420,7 @@ DeleteEntity(Editor::Entity entity)
 void
 SetSelection(Util::Array<Editor::Entity> const& entities)
 {
-	CMDSetSelection* cmd = n_new(CMDSetSelection);
+	CMDSetSelection* cmd = new CMDSetSelection;
     cmd->newSelection = entities;
     CommandManager::Execute(cmd);
 }
@@ -431,7 +431,7 @@ SetSelection(Util::Array<Editor::Entity> const& entities)
 void
 SetComponent(Editor::Entity entity, Game::ComponentId component, void* value)
 {
-    CMDSetProperty* cmd = n_new(CMDSetProperty);
+    CMDSetProperty* cmd = new CMDSetProperty;
     cmd->id = entity;
     cmd->component = component;
     cmd->newValue.Set(value, MemDb::TypeRegistry::TypeSize(component));
@@ -444,7 +444,7 @@ SetComponent(Editor::Entity entity, Game::ComponentId component, void* value)
 void
 AddComponent(Editor::Entity entity, Game::ComponentId component)
 {
-    CMDAddProperty* cmd = n_new(CMDAddProperty);
+    CMDAddProperty* cmd = new CMDAddProperty;
     cmd->id = entity;
     cmd->component = component;
     CommandManager::Execute(cmd);
@@ -456,7 +456,7 @@ AddComponent(Editor::Entity entity, Game::ComponentId component)
 void
 RemoveComponent(Editor::Entity entity, Game::ComponentId component)
 {
-    CMDRemoveProperty* cmd = n_new(CMDRemoveProperty);
+    CMDRemoveProperty* cmd = new CMDRemoveProperty;
     cmd->id = entity;
     cmd->component = component;
     CommandManager::Execute(cmd);
@@ -468,7 +468,7 @@ RemoveComponent(Editor::Entity entity, Game::ComponentId component)
 void
 SetEntityName(Editor::Entity entity, Util::String const& name)
 {
-    CMDSetEntityName* cmd = n_new(CMDSetEntityName);
+    CMDSetEntityName* cmd = new CMDSetEntityName;
     cmd->id = entity;
     cmd->newName = name;
     CommandManager::Execute(cmd);

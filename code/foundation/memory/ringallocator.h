@@ -84,7 +84,7 @@ RingAllocator<SYNCPOINTS>::RingAllocator(const SizeT size) :
     {
         this->states[i] = Reset;
     }
-    this->buffer = n_new_array(byte, size);
+    this->buffer = new byte[size];
     
     this->currentAllocation = 0;
     this->currentInterval.lower = 0;

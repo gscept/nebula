@@ -85,7 +85,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     // the emitterIndices array now contains the indices of all vertices
     // we need to copy
     this->numPoints = emitterIndices.Size();
-    this->points = n_new_array(EmitterPoint, this->numPoints);
+    this->points = new EmitterPoint[this->numPoints];
 
     // make sure the emitter mesh actually has the components we need
     
@@ -134,7 +134,7 @@ void
 EmitterMesh::Discard()
 {
     n_assert(this->IsValid());
-    n_delete_array(this->points);
+    delete[] this->points;
     this->points = 0;
     this->numPoints = 0;
 }

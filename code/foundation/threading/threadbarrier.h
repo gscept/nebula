@@ -17,7 +17,7 @@ namespace Threading
 class ThreadBarrier : public Win32::Win32ThreadBarrier
 { };
 }
-#elif (linux || __OSX__ || __APPLE__)
+#elif (__linux__ || __OSX__ || __APPLE__)
 namespace Threading
 {
 #include "threading/posix/posixthreadbarrier.h"

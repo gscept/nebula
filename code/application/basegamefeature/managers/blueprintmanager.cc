@@ -25,7 +25,7 @@ ManagerAPI
 BlueprintManager::Create()
 {
     n_assert(!BlueprintManager::HasInstance());
-    Singleton = n_new(BlueprintManager);
+    Singleton = new BlueprintManager;
 
     ManagerAPI api;
     api.OnActivate = &BlueprintManager::OnActivate;
@@ -39,7 +39,7 @@ void
 BlueprintManager::Destroy()
 {
     n_assert(BlueprintManager::HasInstance());
-    n_delete(Singleton);
+    delete Singleton;
 }
 
 //------------------------------------------------------------------------------

@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "core/debug.h"
+#include "threading/thread.h"
 #include "posixreadwritelock.h"
 namespace Posix
 {
@@ -32,7 +33,8 @@ PosixReadWriteLock::~PosixReadWriteLock()
 void
 PosixReadWriteLock::LockRead()
 {
-    pthread_rwlock_rdlock(&this->lock);
+    int ret = pthread_rwlock_rdlock(&this->lock);
+    n_assert(ret == 0);
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +43,14 @@ PosixReadWriteLock::LockRead()
 void
 PosixReadWriteLock::LockWrite()
 {
-    pthread_rwlock_wrlock(&this->lock);
+    int ret = pthread_rwlock_trywrlock(&this->lock);
+    if (ret == EBUSY)
+    {
+        ret = pthread_rwlock_wrlock(&this->lock);
+    }
+    writeCounter++;
+    lockingThread = Threading::Thread::GetMyThreadId();
+    n_assert(ret == 0 || ret == EDEADLK);
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +59,8 @@ PosixReadWriteLock::LockWrite()
 void
 PosixReadWriteLock::UnlockRead()
 {
-    pthread_rwlock_unlock(&this->lock);
+    int ret = pthread_rwlock_unlock(&this->lock);
+    n_assert(ret == 0);
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +69,13 @@ PosixReadWriteLock::UnlockRead()
 void
 PosixReadWriteLock::UnlockWrite()
 {
-    pthread_rwlock_unlock(&this->lock);
+    //n_assert(lockingThread == pthread_self());
+    if (--writeCounter == 0)
+    {
+        int ret = pthread_rwlock_unlock(&this->lock);
+        n_assert(ret == 0);
+        lockingThread = Threading::InvalidThreadId;
+    }
 }
 
 } // namespace Posix
