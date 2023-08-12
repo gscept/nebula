@@ -3,7 +3,7 @@
 //  (C) Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "io/zipfs/ziparchive.h"
 #include "io/zipfs/zipfileentry.h"
 #include "io/zipfs/zipdirentry.h"

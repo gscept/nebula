@@ -3,7 +3,7 @@
 //  (C) 2005 RadonLabs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+
 #include "messaging/dispatcher.h"
 #include "messaging/port.h"
 

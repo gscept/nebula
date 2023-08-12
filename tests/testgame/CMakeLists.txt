@@ -11,4 +11,5 @@ add_custom_command(
 
 nebula_add_nidl(testproperties.nidl)
 fips_deps(foundation application testbase scripting )
+target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]] [["application/stdneb.h"]])
 nebula_end_app()

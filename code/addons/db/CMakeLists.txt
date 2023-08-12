@@ -48,3 +48,5 @@ fips_dir(sqlite3)
     )
 fips_deps(attr sqlite3)
 fips_end_lib()
+
+target_precompile_headers(db REUSE_FROM foundation)

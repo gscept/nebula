@@ -10,7 +10,7 @@
 #include "io/ioserver.h"
 #include "timing/timer.h"
 
-#include "Compressonator.h"
+#include "compressonator.h"
 
 
 namespace ToolkitUtil
@@ -54,7 +54,8 @@ CompressonatorConversionJob::Convert()
 
         if (cmp_status != CMP_OK)
         {
-            goto processing_failed;
+            this->logger->Error("Failed to load %s, error code: %d\n", src.AsCharPtr(), cmp_status);
+            return false;
         }
 
 
@@ -65,7 +66,8 @@ CompressonatorConversionJob::Convert()
             cmp_status = CMP_SaveTexture(dstPathUri.LocalPath().AsCharPtr(), &MipSetIn);
             if (cmp_status != CMP_OK)
             {
-                goto processing_failed;
+                this->logger->Error("Failed to load %s, CMP_SaveTexture, error code: %d\n", src.AsCharPtr(), cmp_status);
+                return false;
             }
 
             CMP_FreeMipSet(&MipSetIn);
@@ -133,20 +135,18 @@ CompressonatorConversionJob::Convert()
         cmp_status = CMP_ProcessTexture(&MipSetIn, &MipSetCmp, kernel_options, CompressionCallback);
         if (cmp_status != CMP_OK)
         {
-            goto processing_failed;
+            this->logger->Error("Failed to load %s, CMP_ProcessTexture, error code: %d\n", src.AsCharPtr(), cmp_status);
+            return false;
         }
 
         //----------------------------------------------------------------
         // Save the result into a DDS file
         //----------------------------------------------------------------
         cmp_status = CMP_SaveTexture(dstPathUri.LocalPath().AsCharPtr(), &MipSetCmp);
-
-
-        
-
         if (cmp_status != CMP_OK)
         {
-            goto processing_failed;
+            this->logger->Error("Failed to load %s, CMP_SaveTexture, error code: %d\n", src.AsCharPtr(), cmp_status);
+            return false;
         }
 
         CMP_FreeMipSet(&MipSetIn);
@@ -155,10 +155,6 @@ CompressonatorConversionJob::Convert()
         Timing::Time after = timer.GetTime();
         this->logger->Print("Done after: %f\n", after);
         return true;
-
-    processing_failed:
-
-        this->logger->Error("Failed to load %s, error code: %d\n", src.AsCharPtr(), cmp_status);
     }
     return false;
 }

@@ -3,7 +3,7 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #ifdef USE_CURL
-#include "foundation/stdneb.h"
+
 #include "http/curl/curlhttpclient.h"
 #include "http/httprequestwriter.h"
 #include "http/httpresponsereader.h"
