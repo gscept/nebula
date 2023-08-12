@@ -2,7 +2,6 @@
 //  @file commandbuffer.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "commandbuffer.h"
 #include "barrier.h"
 namespace CoreGraphics

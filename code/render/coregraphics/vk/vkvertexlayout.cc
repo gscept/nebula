@@ -2,7 +2,7 @@
 //  @file vkvertexlayout.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "vkvertexlayout.h"
 #include "vkshader.h"
 #include "vktypes.h"

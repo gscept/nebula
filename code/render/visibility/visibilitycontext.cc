@@ -2,7 +2,7 @@
 //  visobservercontext.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "visibilitycontext.h"
 #include "graphics/graphicsserver.h"
 

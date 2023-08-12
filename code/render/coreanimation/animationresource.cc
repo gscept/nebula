@@ -2,7 +2,6 @@
 //  @file animationresource.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "animationresource.h"
 namespace CoreAnimation
 {

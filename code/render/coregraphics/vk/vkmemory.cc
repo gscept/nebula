@@ -2,7 +2,7 @@
 //  vkmemory.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "vkmemory.h"
 #include "vkgraphicsdevice.h"
 namespace CoreGraphics

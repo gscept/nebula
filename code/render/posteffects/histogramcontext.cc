@@ -2,7 +2,7 @@
 //  histogramcontext.cc
 //  (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "frame/framescript.h"
 #include "graphics/graphicsserver.h"
 #include "histogramcontext.h"

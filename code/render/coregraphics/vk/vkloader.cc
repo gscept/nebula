@@ -2,7 +2,7 @@
 //  vkloader.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "vkloader.h"
 #include "core/debug.h"
 #ifdef __linux__

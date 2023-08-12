@@ -1,5 +1,12 @@
-#include "stdneb.h"
 #include "scenes.h"
+
+#include "graphics/graphicsserver.h"
+#include "models/modelcontext.h"
+#include "lighting/lightcontext.h"
+#include "visibility/visibilitycontext.h"
+#include "input/inputserver.h"
+#include "input/keyboard.h"
+#include "terrain/terraincontext.h"
 
 using namespace Timing;
 using namespace Graphics;

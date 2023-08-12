@@ -1,33 +1,5 @@
 ﻿#pragma once
 #include <functional>
-#include "renderutil/mayacamerautil.h"
-#include "renderutil/freecamerautil.h"
-#include "graphics/graphicsserver.h"
-#include "graphics/view.h"
-#include "graphics/stage.h"
-#include "graphics/cameracontext.h"
-#include "resources/resourceserver.h"
-#include "models/modelcontext.h"
-#include "input/inputserver.h"
-#include "io/ioserver.h"
-#include "graphics/graphicsentity.h"
-#include "visibility/visibilitycontext.h"
-#include "models/modelcontext.h"
-#include "input/keyboard.h"
-#include "input/mouse.h"
-#include "dynui/imguicontext.h"
-#include "lighting/lightcontext.h"
-#include "characters/charactercontext.h"
-#include "imgui.h"
-#include "dynui/im3d/im3dcontext.h"
-#include "dynui/im3d/im3d.h"
-#include "graphics/environmentcontext.h"
-#include "clustering/clustercontext.h"
-#include "math/mat4.h"
-#include "particles/particlecontext.h"
-#include "fog/volumetricfogcontext.h"
-#include "decals/decalcontext.h"
-#include "terrain/terraincontext.h"
 
 struct Scene
 {

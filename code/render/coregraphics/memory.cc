@@ -2,7 +2,7 @@
 //  memory.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "memory.h"
 #include "math/scalar.h"
 namespace CoreGraphics

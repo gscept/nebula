@@ -2,7 +2,7 @@
 //  batchgroup.cc
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "coregraphics/batchgroup.h"
 #include "graphics/graphicsserver.h"
 

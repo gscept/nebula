@@ -1,8 +1,10 @@
 //------------------------------------------------------------------------------
 // (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
 #include "scenes.h"
+
+#include "graphics/graphicsentity.h"
+#include "graphics/graphicsserver.h"
 
 namespace SSRSceneData
 {

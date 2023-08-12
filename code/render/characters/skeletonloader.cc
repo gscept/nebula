@@ -2,7 +2,7 @@
 //  skeletonloader.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "skeletonloader.h"
 #include "nskfileformatstructs.h"
 #include "util/fourcc.h"

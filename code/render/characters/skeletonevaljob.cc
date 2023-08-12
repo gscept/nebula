@@ -2,7 +2,7 @@
 //  skeletonevaljob.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "jobs/jobs.h"
 #include "math/vec4.h"
 #include "math/mat4.h"

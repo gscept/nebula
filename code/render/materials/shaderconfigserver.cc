@@ -2,7 +2,7 @@
 //  materialserver.cc
 //  (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "shaderconfigserver.h"
 #include "resources/resourceserver.h"
 #include "shaderconfig.h"

@@ -2,7 +2,7 @@
 //  vkresourcetable.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "vkresourcetable.h"
 #include "coregraphics/resourcetable.h"
 #include "vkgraphicsdevice.h"

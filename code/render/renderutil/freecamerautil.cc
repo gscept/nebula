@@ -2,7 +2,7 @@
 //  freecamerautil.cc
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "renderutil/freecamerautil.h"
 
 namespace RenderUtil

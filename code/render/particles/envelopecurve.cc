@@ -2,7 +2,7 @@
 //  envelopecurve.cc
 //  (C) 2008 Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
-#include "render/stdneb.h"
+
 #include "particles/envelopecurve.h"
 
 //------------------------------------------------------------------------------

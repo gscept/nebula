@@ -3,7 +3,7 @@
 //  vegetationcontext.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+
 #include "graphics/graphicsserver.h"
 #include "vegetationcontext.h"
 #include "resources/resourceserver.h"

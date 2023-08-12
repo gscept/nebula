@@ -2,7 +2,6 @@
 //  @file frameresolve.cc
 //  @copyright (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
 #include "frameresolve.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/texture.h"
