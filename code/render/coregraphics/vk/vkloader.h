@@ -107,6 +107,9 @@ _DEC_VK(vkCmdSetScissor);
 _DEC_VK(vkCmdSetStencilCompareMask);
 _DEC_VK(vkCmdSetStencilWriteMask);
 _DEC_VK(vkCmdSetStencilReference);
+_DEC_VK(vkCmdSetPrimitiveTopology);
+_DEC_VK(vkCmdSetPrimitiveRestartEnable);
+_DEC_VK(vkCmdSetVertexInputEXT);
 
 _DEC_VK(vkCreateCommandPool);
 _DEC_VK(vkDestroyCommandPool);
