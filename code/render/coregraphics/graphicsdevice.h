@@ -242,8 +242,7 @@ CoreGraphics::PipelineId CreatePipeline(
     const CoreGraphics::PassId pass
     , uint subpass
     , CoreGraphics::ShaderProgramId program
-    , CoreGraphics::InputAssemblyKey inputAssembly
-    , CoreGraphics::VertexLayoutId vertexLayout
+    , const CoreGraphics::InputAssemblyKey inputAssembly
 );
 
 /// wait for an individual queue to finish

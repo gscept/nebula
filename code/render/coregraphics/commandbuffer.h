@@ -48,13 +48,12 @@ enum class CmdPipelineBuildBits : uint
 {
     NoInfoSet = 0,
     ShaderInfoSet = N_BIT(0),
-    VertexLayoutInfoSet = N_BIT(1),
-    FramebufferLayoutInfoSet = N_BIT(2),
-    InputLayoutInfoSet = N_BIT(3),
+    FramebufferLayoutInfoSet = N_BIT(1),
+    InputAssemblyInfoSet = N_BIT(2),
 
-    AllInfoSet = ShaderInfoSet | VertexLayoutInfoSet | FramebufferLayoutInfoSet | InputLayoutInfoSet,
+    AllInfoSet = ShaderInfoSet | FramebufferLayoutInfoSet | InputAssemblyInfoSet,
 
-    PipelineBuilt = N_BIT(4)
+    PipelineBuilt = N_BIT(3)
 };
 
 __ImplementEnumBitOperators(CmdPipelineBuildBits);
@@ -179,7 +178,7 @@ void CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const
 /// Create (if necessary) and bind pipeline based on state thus far
 void CmdSetGraphicsPipeline(const CmdBufferId id);
 /// Set graphics pipeline directly
-void CmdSetGraphicsPipeline(const CmdBufferId buf, PipelineId pipeline);
+void CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline);
 
 /// Insert pipeline barrier
 void CmdBarrier(

@@ -141,24 +141,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 } state;
 
-struct GraphicsDeviceThreadState : CoreGraphics::GraphicsDeviceThreadState
-{
-    IndexT currentDevice;
-
-    Util::FixedArray<CoreGraphics::ShaderProgramId> currentShaderPrograms;
-    CoreGraphics::ShaderFeature::Mask currentShaderMask;
-
-    CoreGraphics::VertexLayoutId currentVertexLayout;
-    CoreGraphics::ShaderProgramId currentVertexLayoutShader;
-
-    VkGraphicsPipelineCreateInfo currentPipelineInfo;
-    VkPipelineLayout currentGraphicsPipelineLayout;
-    VkPipelineLayout currentComputePipelineLayout;
-    VkPipeline currentPipeline;
-
-    uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
-} thread_local threadState;
-
 VkDebugUtilsMessengerEXT VkErrorDebugMessageHandle = nullptr;
 PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT VkDestroyDebugMessenger = nullptr;
@@ -424,7 +406,6 @@ SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaq
 {
     state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, img, opaqueBinds, pageBinds);
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -1546,8 +1527,7 @@ CreatePipeline(
     const CoreGraphics::PassId pass
     , uint subpass
     , CoreGraphics::ShaderProgramId program
-    , CoreGraphics::InputAssemblyKey inputAssembly
-    , CoreGraphics::VertexLayoutId vertexLayout
+    , const CoreGraphics::InputAssemblyKey inputAssembly
 )
 {
     VkGraphicsPipelineCreateInfo shaderInfo;
@@ -1569,15 +1549,12 @@ CreatePipeline(
     multisampleInfo.sampleShadingEnable = info.multisampleInfo.sampleShadingEnable;
     multisampleInfo.pSampleMask = info.multisampleInfo.pSampleMask;
 
-    VkPipelineVertexInputStateCreateInfo* vertexInfo = VertexLayoutGetDerivative(vertexLayout, program);
-
     shaderInfo.pColorBlendState = &blendInfo;
     shaderInfo.pDepthStencilState = &info.depthStencilInfo;
     shaderInfo.pRasterizationState = &info.rasterizerInfo;
     shaderInfo.pMultisampleState = &multisampleInfo;
     shaderInfo.pDynamicState = &info.dynamicInfo;
     shaderInfo.pTessellationState = &info.tessInfo;
-    shaderInfo.pVertexInputState = vertexInfo;
     shaderInfo.layout = info.layout;
     shaderInfo.stageCount = info.stageCount;
     shaderInfo.pStages = info.shaderInfos;

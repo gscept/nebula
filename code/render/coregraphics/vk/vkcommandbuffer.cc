@@ -326,12 +326,12 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
     CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
-    bits |= CoreGraphics::CmdPipelineBuildBits::VertexLayoutInfoSet;
-    bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
-
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkPipelineVertexInputStateCreateInfo* info = VertexLayoutGetDerivative(vl, pipelineBundle.program);
-    pipelineBundle.pipelineInfo.pVertexInputState = info;
+    const VertexLayoutVkBindInfo& bindInfo = VertexLayoutGetVkBindInfo(vl);
+
+    vkCmdSetVertexInputEXT(cmdBuf, bindInfo.binds.Size(), bindInfo.binds.Begin(), bindInfo.attrs.Size(), bindInfo.attrs.Begin());
+    //pipelineBundle.pipelineInfo.pVertexInputState = info;
 }
 
 //------------------------------------------------------------------------------
@@ -378,15 +378,14 @@ CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopol
     CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
-    bits |= CoreGraphics::CmdPipelineBuildBits::InputLayoutInfoSet;
-    bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPrimitiveTopology comp = VkTypes::AsVkPrimitiveType(topo);
     pipelineBundle.inputAssembly.topo = comp;
     pipelineBundle.inputAssembly.primRestart = false;
+    vkCmdSetPrimitiveTopology(cmdBuf, comp);
+    vkCmdSetPrimitiveRestartEnable(cmdBuf, false);
 }
 
 //------------------------------------------------------------------------------
@@ -577,7 +576,7 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
 /**
 */
 void
-CmdSetGraphicsPipeline(const CmdBufferId buf, PipelineId pipeline)
+CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
 {
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(buf.id24);
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);

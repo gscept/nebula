@@ -61,10 +61,8 @@ public:
     void SetSubpass(uint32_t subpass);
     /// set shader
     void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& shaderInfo);
-    /// set vertex layout
-    void SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* layout);
-    /// set input layout
-    void SetInputLayout(const CoreGraphics::InputAssemblyKey input);
+    /// Set input assembly
+    void SetInputAssembly(const CoreGraphics::InputAssemblyKey key);
     /// gets pipeline if it already exists, or creates if exists
     VkPipeline GetCompiledPipeline();
     /// Gets the pipeline associated with a set of state, or returns a previously created one
@@ -72,14 +70,14 @@ public:
         const CoreGraphics::PassId pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
-        , CoreGraphics::InputAssemblyKey inputAssembly
+        , const CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& shaderInfo);
     /// Create pipeline
     VkPipeline CreatePipeline(
         const CoreGraphics::PassId pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
-        , CoreGraphics::InputAssemblyKey inputAssembly
+        , const CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& shaderInfo
     );
     /// resets all iterators
@@ -98,16 +96,15 @@ private:
     uint32_t currentSubpass;
     CoreGraphics::ShaderProgramId currentShaderProgram;
     VkGraphicsPipelineCreateInfo currentShaderInfo;
+    CoreGraphics::InputAssemblyKey currentInputAssembly;
     const VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
 
-    CoreGraphics::InputAssemblyKey currentInputAssemblyInfo;
     StateLevel currentLevel;
 
     struct Tier1Node;
     struct Tier2Node;
     struct Tier3Node;
     struct Tier4Node;
-    struct Tier5Node;
 
     struct BaseNode
     {
@@ -126,14 +123,9 @@ private:
     };
     struct Tier3Node : public BaseNode
     {
-        Util::Dictionary<const VkPipelineVertexInputStateCreateInfo*, Tier4Node*> children;
+        Util::Dictionary<CoreGraphics::InputAssemblyKey, Tier4Node*> children;
     };
     struct Tier4Node : public BaseNode
-    {
-
-        Util::Dictionary<CoreGraphics::InputAssemblyKey, Tier5Node*> children;
-    };
-    struct Tier5Node : public BaseNode
     {
         VkPipeline pipeline = VK_NULL_HANDLE;
     };
@@ -147,7 +139,6 @@ private:
     Tier2Node* ct2;
     Tier3Node* ct3;
     Tier4Node* ct4;
-    Tier5Node* ct5;
     VkPipeline currentPipeline;
 };
 } // namespace Vulkan

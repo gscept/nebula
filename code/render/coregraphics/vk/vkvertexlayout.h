@@ -12,8 +12,17 @@
 namespace Vulkan
 {
 
+struct VertexLayoutVkBindInfo
+{
+    Util::FixedArray<VkVertexInputBindingDescription2EXT> binds;
+    Util::FixedArray<VkVertexInputAttributeDescription2EXT> attrs;
+};
+
 /// Get derivative of vertex layout based on shader
 VkPipelineVertexInputStateCreateInfo* VertexLayoutGetDerivative(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader);
+
+/// Get dynamic bind info
+const VertexLayoutVkBindInfo& VertexLayoutGetVkBindInfo(const CoreGraphics::VertexLayoutId layout);
 
 struct DerivativeLayout
 {
@@ -68,14 +77,15 @@ enum
     , VertexSignature_VkPipelineInfo
     , VertexSignature_BindInfo
     , VertexSignature_LayoutInfo
+    , VertexSignature_DynamicBindInfo
 };
 
-
 typedef Ids::IdAllocator<
-    Util::HashTable<uint64_t, DerivativeLayout>,        //0 program-to-derivative layout binding
-    VkPipelineVertexInputStateCreateInfo,               //1 base vertex input state
-    BindInfo,                                           //2 setup info
-    CoreGraphics::VertexLayoutInfo                      //3 base info
+    Util::HashTable<uint64_t, DerivativeLayout>,      
+    VkPipelineVertexInputStateCreateInfo,             
+    BindInfo,                                         
+    CoreGraphics::VertexLayoutInfo,                   
+    VertexLayoutVkBindInfo
 > VkVertexLayoutAllocator;
 extern VkVertexLayoutAllocator vertexLayoutAllocator;
 } // namespace Vulkan
