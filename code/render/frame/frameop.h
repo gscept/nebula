@@ -138,15 +138,19 @@ protected:
     /// allocate instance of compiled
     virtual Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) = 0;
 
+    struct BuildContext
+    {
+        Frame::FrameScript* script;
+        Memory::ArenaAllocator<BIG_CHUNK>& allocator;
+        Util::Array<FrameOp::Compiled*>& compiledOps;
+        Util::Array<CoreGraphics::EventId>& events;
+        Util::Array<CoreGraphics::BarrierId>& barriers;
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers;
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures;
+    };
+
     /// build operation
-    virtual void Build(
-        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-        Util::Array<FrameOp::Compiled*>& compiledOps,
-        Util::Array<CoreGraphics::EventId>& events,
-        Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures
-        );
+    virtual void Build(const BuildContext& ctx);
 
     /// setup synchronization
     void SetupSynchronization(

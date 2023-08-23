@@ -48,14 +48,7 @@ FrameCode::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameCode::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator
-    , Util::Array<FrameOp::Compiled*>& compiledOps
-    , Util::Array<CoreGraphics::EventId>& events
-    , Util::Array<CoreGraphics::BarrierId>& barriers
-    , Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers
-    , Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures
-)
+FrameCode::Build(const BuildContext& ctx)
 {
     n_assert(this->func != nullptr);
 
@@ -63,11 +56,11 @@ FrameCode::Build(
     if (!this->enabled)
         return;
 
-    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
     this->compiled = myCompiled;
 
-    this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
-    compiledOps.Append(myCompiled);
+    this->SetupSynchronization(ctx.allocator, ctx.events, ctx.barriers, ctx.buffers, ctx.textures);
+    ctx.compiledOps.Append(myCompiled);
 }
 
 } // namespace Frame

@@ -102,23 +102,20 @@ FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void 
-FrameSubpass::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-    Util::Array<FrameOp::Compiled*>& compiledOps, 
-    Util::Array<CoreGraphics::EventId>& events,
-    Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+FrameSubpass::Build(const BuildContext& ctx)
 {
     // if not enable, abort early
     if (!this->enabled)
         return;
 
-    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
-    
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
+
+    // Create new context with ops of this subgraph
+    BuildContext newCtx = { ctx.script, ctx.allocator, myCompiled->ops, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
+
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, myCompiled->ops, events, barriers, buffers, textures);
+        this->children[i]->Build(newCtx);
     }
 
     // Take the barriers from the children
@@ -128,7 +125,7 @@ FrameSubpass::Build(
         child->barriers.Clear();
     }
     this->compiled = myCompiled;
-    compiledOps.Append(myCompiled);
+    ctx.compiledOps.Append(myCompiled);
 }
 
 } // namespace Frame2

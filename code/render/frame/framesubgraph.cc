@@ -66,14 +66,7 @@ FrameSubgraph::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameSubgraph::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator
-    , Util::Array<FrameOp::Compiled*>& compiledOps
-    , Util::Array<CoreGraphics::EventId>& events
-    , Util::Array<CoreGraphics::BarrierId>& barriers
-    , Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers
-    , Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures
-)
+FrameSubgraph::Build(const BuildContext& ctx)
 {
     // If not enable, abort early
     if (!this->enabled)
@@ -83,12 +76,13 @@ FrameSubgraph::Build(
     if (ops.IsEmpty())
         return;
 
-    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
-    // Just fetch subgraph and build it as if it was always a part of the frame script 
+    // Just fetch subgraph and build it as if it was always a part of the frame script
+    BuildContext newCtx = { ctx.script, ctx.allocator, myCompiled->subgraphOps, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
     for (Frame::FrameOp* op : ops)
     {
-        op->Build(allocator, myCompiled->subgraphOps, events, barriers, rwBuffers, textures);
+        op->Build(newCtx);
     }
 
     // Take the barriers from the children
@@ -102,7 +96,7 @@ FrameSubgraph::Build(
     }
 
     this->compiled = myCompiled;
-    compiledOps.Append(myCompiled);
+    ctx.compiledOps.Append(myCompiled);
 }
 
 //------------------------------------------------------------------------------

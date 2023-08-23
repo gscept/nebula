@@ -20,6 +20,7 @@ public:
     virtual ~FrameCode();
 
     using FrameCodeFunc = void(*)(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex);
+    using FrameBuildFunc = void(*)(const CoreGraphics::PassId pass, uint subpass);
     struct CompiledImpl : public FrameOp::Compiled
     {
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
@@ -33,15 +34,10 @@ public:
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
     FrameCodeFunc func;
+    FrameBuildFunc buildFunc;
 private:
 
-    void Build(
-        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-        Util::Array<FrameOp::Compiled*>& compiledOps,
-        Util::Array<CoreGraphics::EventId>& events,
-        Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
+    void Build(const BuildContext& ctx) override;
 };
 
 } // namespace Frame2

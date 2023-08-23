@@ -50,23 +50,17 @@ FrameOp::OnWindowResized()
 /**
 */
 void
-FrameOp::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-    Util::Array<FrameOp::Compiled*>& compiledOps,
-    Util::Array<CoreGraphics::EventId>& events,
-    Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+FrameOp::Build(const BuildContext& ctx)
 {
     // if not enable, abort early
     if (!this->enabled)
         return;
 
     // create compiled version of this op, FramePass and FrameSubpass implement this differently than ordinary ops
-    this->compiled = this->AllocCompiled(allocator);
-    compiledOps.Append(this->compiled);
+    this->compiled = this->AllocCompiled(ctx.allocator);
+    ctx.compiledOps.Append(this->compiled);
 
-    this->SetupSynchronization(allocator, events, barriers, buffers, textures);
+    this->SetupSynchronization(ctx.allocator, ctx.events, ctx.barriers, ctx.buffers, ctx.textures);
 }
 
 //------------------------------------------------------------------------------
