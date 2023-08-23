@@ -69,4 +69,9 @@ void ClearPending();
 namespace CoreGraphics
 {
 
+struct PipelineId
+{
+    VkPipeline pipeline;
+};
+
 } // namespace CoreGraphics

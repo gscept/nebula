@@ -72,13 +72,6 @@ struct SubmissionWaitEvent
     CoreGraphics::QueueType queue;
 };
 
-#if __VULKAN__
-struct PipelineId
-{
-    VkPipeline pipeline;
-};
-#endif
-
 struct GraphicsDeviceState
 {
     Util::Array<CoreGraphics::TextureId> backBuffers;
