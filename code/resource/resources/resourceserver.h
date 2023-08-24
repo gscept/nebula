@@ -53,7 +53,7 @@ public:
     /// reload resource
     void ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr);
     /// stream in a new LOD
-    void SetMaxLOD(const ResourceId& id, float lod, bool immediate);
+    void SetMinLod(const ResourceId& id, float lod, bool immediate);
 
     /// get type of resource pool this resource was allocated with
     Core::Rtti* GetType(const Resources::ResourceId id);
@@ -170,7 +170,7 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
 /**
 */
 inline void 
-ResourceServer::SetMaxLOD(const ResourceId& id, float lod, bool immediate)
+ResourceServer::SetMinLod(const ResourceId& id, float lod, bool immediate)
 {
     // get id of loader
     const Ids::Id8 loaderid = id.cacheIndex;
@@ -180,7 +180,7 @@ ResourceServer::SetMaxLOD(const ResourceId& id, float lod, bool immediate)
     const Ptr<ResourceLoader>& loader = this->loaders[loaderid].downcast<ResourceLoader>();
 
     // update LOD
-    loader->SetMaxLOD(id, lod, immediate);
+    loader->SetMinLod(id, lod, immediate);
 }
 
 //------------------------------------------------------------------------------
@@ -319,9 +319,9 @@ CreateResource(const ResourceName& res, const METADATA& metaData, const Util::St
 /**
 */
 inline void
-SetMaxLOD(const ResourceId& id, float lod, bool immediate)
+SetMinLod(const ResourceId& id, float lod, bool immediate)
 {
-    return ResourceServer::Instance()->SetMaxLOD(id, lod, immediate);
+    return ResourceServer::Instance()->SetMinLod(id, lod, immediate);
 }
 
 //------------------------------------------------------------------------------

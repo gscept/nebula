@@ -233,9 +233,9 @@ DecalContext::SetupDecalPBR(
     pbrDecalAllocator.Set<DecalPBR_Normal>(decal, normal);
     pbrDecalAllocator.Set<DecalPBR_Material>(decal, material);
 
-    Resources::SetMaxLOD(albedo, 0.0f, false);
-    Resources::SetMaxLOD(normal, 0.0f, false);
-    Resources::SetMaxLOD(material, 0.0f, false);
+    Resources::SetMinLod(albedo, 0.0f, false);
+    Resources::SetMinLod(normal, 0.0f, false);
+    Resources::SetMinLod(material, 0.0f, false);
 
     genericDecalAllocator.Set<Decal_Transform>(cid.id, transform);
     genericDecalAllocator.Set<Decal_Type>(cid.id, PBRDecal);

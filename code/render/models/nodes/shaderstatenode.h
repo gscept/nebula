@@ -47,8 +47,6 @@ public:
 
     /// get surface
     const Materials::MaterialId GetMaterial() const { return this->material; };
-    /// trigger an LOD update
-    void SetMaxLOD(const float lod);
 
     /// Create resource table
     static Util::FixedArray<CoreGraphics::ResourceTableId> CreateResourceTables();

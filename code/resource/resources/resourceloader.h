@@ -96,7 +96,7 @@ public:
     void ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
     /// begin updating a resources lod
-    void SetMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
+    void SetMinLod(const Resources::ResourceId& id, const float lod, bool immediate);
 
 protected:
     friend class ResourceServer;

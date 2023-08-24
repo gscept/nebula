@@ -26,7 +26,7 @@ MeshLoader::MeshLoader()
     this->failResourceName = "sysmsh:error.nvx";
     this->async = true;
 
-    this->streamerThreadName = "Mesh Pool Streamer Thread";
+    this->streamerThreadName = "Mesh Streamer Thread";
 
     // Setup vertex layouts
     CoreGraphics::VertexLayoutCreateInfo vlCreateInfo;
