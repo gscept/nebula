@@ -334,7 +334,7 @@ BlueprintManager::SetupBlueprints()
         info.name = blueprint.name.AsString();
 
         const SizeT numBlueprintComponents = blueprint.components.Size();
-        Util::ArrayStack<ComponentId, 32> columns;
+        Util::StackArray<ComponentId, 32> columns;
 
         // append owner, makes it a bit faster than letting entitymanager sort it out...
         columns.Append(GameServer::Instance()->state.ownerId);

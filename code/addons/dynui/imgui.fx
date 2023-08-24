@@ -3,7 +3,7 @@
 //
 //  Shader for ImGUI rendering
 //
-//  (C) 2013 Gustav Sterbrant
+//  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #include "lib/std.fxh"

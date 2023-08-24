@@ -26,7 +26,7 @@ struct Dataset
 #endif
         TableId tid;
         SizeT numInstances = 0;
-        Util::ArrayStack<void*, 16> buffers;
+        Util::StackArray<void*, 16> buffers;
     };
 
     /// views into the tables

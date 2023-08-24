@@ -148,15 +148,6 @@ SysFunc::DebugOut(const char* msg)
 
 //------------------------------------------------------------------------------
 /**
-*/
-const System::SystemInfo*
-SysFunc::GetSystemInfo()
-{
-    return &SysFunc::systemInfo;
-}
-
-//------------------------------------------------------------------------------
-/**
     Register a new exit handler. This method is called at startup time
     from the constructor of static exit handler objects. This is the only
     supported way to register exit handlers. The method will return

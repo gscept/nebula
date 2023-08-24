@@ -29,11 +29,11 @@ public:
     physx::PxCooking * cooking;
     physx::PxPvd *pvd;
     physx::PxPvdTransport *transport;
-    Util::ArrayStack<Physics::Scene, 8> activeScenes;
-    Util::ArrayStack<Physics::Material, 16> materials;
+    Util::StackArray<Physics::Scene, 8> activeScenes;
+    Util::StackArray<Physics::Material, 16> materials;
     Util::Dictionary<Util::StringAtom, IndexT> materialNameTable;
-    Util::ArrayStack<IndexT, 8> activeSceneIds;
-    Util::ArrayStack<IndexT, 8> deadSceneIds;
+    Util::StackArray<IndexT, 8> activeSceneIds;
+    Util::StackArray<IndexT, 8> deadSceneIds;
 
     Util::Set<Ids::Id32> awakeActors;
 

@@ -376,6 +376,47 @@ DumpMemoryLeaks()
 }
 #endif
 
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+AllocVirtual(size_t size)
+{
+    void* ret = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+    n_assert(ret != nullptr);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CommitVirtual(void* ptr, size_t size)
+{
+    auto ret = VirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
+    n_assert(ret != 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DecommitVirtual(void* ptr, size_t size)
+{
+    auto ret = VirtualFree(ptr, size, MEM_DECOMMIT);
+    n_assert(ret != 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FreeVirtual(void* ptr, size_t size)
+{
+    auto ret = VirtualFree(ptr, 0, MEM_RELEASE);
+    n_assert(ret != 0);
+}
+
 } // namespace Memory
 
 //------------------------------------------------------------------------------

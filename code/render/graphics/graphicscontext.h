@@ -134,7 +134,7 @@ ID_32_TYPE(ContextEntityId)
 
 struct GraphicsContextState
 {
-    Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
+    Util::StackArray<GraphicsEntityId, 8> delayedRemoveQueue;
 
     Util::Array<GraphicsEntityId> entities; // ContextEntityId -> GraphicsEntityId. kept adjacent to allocator data.
     Util::HashTable<GraphicsEntityId, ContextEntityId, 128, 64> entitySliceMap;

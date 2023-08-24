@@ -9,12 +9,11 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "system/base/systeminfobase.h"
 
 //------------------------------------------------------------------------------
 namespace Win32
 {
-class Win32SystemInfo : public Base::SystemInfoBase
+class Win32SystemInfo
 {
 public:
     /// constructor

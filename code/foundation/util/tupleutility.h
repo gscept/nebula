@@ -7,7 +7,7 @@
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-
+#include <tuple>
 namespace Util
 {
 
@@ -74,8 +74,18 @@ struct get_template_type;
 /**
     Get inner type of two types
 */
-template <template <typename > class C, typename T>
+template <template <typename> class C, typename T>
 struct get_template_type<C<T>>
+{
+    using type = T;
+};
+
+//------------------------------------------------------------------------------
+/**
+    Get inner type of two types
+*/
+template <template <typename, int, bool> class C, typename T, int I, bool B>
+struct get_template_type<C<T, I, B>>
 {
     using type = T;
 };
@@ -84,8 +94,17 @@ struct get_template_type<C<T>>
 /**
     Get inner type of a constant ref outer type
 */
-template <template <typename > class C, typename T>
+template <template <typename> class C, typename T>
 struct get_template_type<const C<T>&>
+{
+    using type = T;
+};
+//------------------------------------------------------------------------------
+/**
+    Get inner type of two types
+*/
+template <template <typename, int, bool> class C, typename T, int I, bool B>
+struct get_template_type<C<T, I, B>&>
 {
     using type = T;
 };

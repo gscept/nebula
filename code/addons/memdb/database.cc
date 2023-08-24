@@ -760,7 +760,7 @@ Database::Query(FilterSet const& filterset)
             if (tbl.numRows == 0) // ignore empty tables
                 continue;
 
-            Util::ArrayStack<void*, 16> buffers;
+            Util::StackArray<void*, 16> buffers;
             buffers.Reserve(filterset.PropertyIds().Size());
 
             IndexT i = 0;

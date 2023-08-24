@@ -415,7 +415,7 @@ private:
 */
 inline
 String::String() :
-    heapBuffer(0),
+    heapBuffer(nullptr),
     strLen(0),
     heapBufferSize(0)
 {
@@ -431,7 +431,7 @@ String::Delete()
     if (this->heapBuffer)
     {
         Memory::Free(Memory::StringDataHeap, (void*) this->heapBuffer);
-        this->heapBuffer = 0;
+        this->heapBuffer = nullptr;
     }
     this->localBuffer[0] = 0;
     this->strLen = 0;

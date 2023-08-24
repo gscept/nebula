@@ -53,19 +53,19 @@ CorePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->Begin(HtmlElement::Table);        
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Host Platform:");
-                htmlWriter->Element(HtmlElement::TableData, SystemInfo::PlatformAsString(systemInfo.GetPlatform()));
+                htmlWriter->Element(HtmlElement::TableData, System::PlatformTypeAsString(System::Platform));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "CPU Type:");
-                htmlWriter->Element(HtmlElement::TableData, SystemInfo::CpuTypeAsString(systemInfo.GetCpuType()));
+                htmlWriter->Element(HtmlElement::TableData, System::CpuArchTypeAsString(System::CpuArch));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "CPU Cores:");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(systemInfo.GetNumCpuCores()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(System::NumCpuCores));
             htmlWriter->End(HtmlElement::TableRow);
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Page Size:");
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(systemInfo.GetPageSize()));
+                htmlWriter->Element(HtmlElement::TableData, String::FromInt(System::PageSize));
             htmlWriter->End(HtmlElement::TableRow);
         htmlWriter->End(HtmlElement::Table);
             
