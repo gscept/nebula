@@ -65,13 +65,3 @@ void SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>&
 void ClearPending();
 
 } // namespace Vulkan
-
-namespace CoreGraphics
-{
-
-struct PipelineId
-{
-    VkPipeline pipeline;
-};
-
-} // namespace CoreGraphics

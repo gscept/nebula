@@ -1522,50 +1522,6 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::PipelineId
-CreatePipeline(
-    const CoreGraphics::PassId pass
-    , uint subpass
-    , CoreGraphics::ShaderProgramId program
-    , const CoreGraphics::InputAssemblyKey inputAssembly
-)
-{
-    VkGraphicsPipelineCreateInfo shaderInfo;
-    VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(program.shaderId).Get<ShaderProgram_RuntimeInfo>(program.programId);
-
-    // Setup blend info
-    VkPipelineColorBlendStateCreateInfo blendInfo;
-    blendInfo.attachmentCount = info.colorBlendInfo.attachmentCount;
-    blendInfo.flags = info.colorBlendInfo.flags;
-    blendInfo.logicOp = info.colorBlendInfo.logicOp;
-    blendInfo.logicOpEnable = info.colorBlendInfo.logicOpEnable;
-    blendInfo.pAttachments = info.colorBlendAttachments;
-    memcpy(blendInfo.blendConstants, info.colorBlendInfo.blendConstants, sizeof(info.colorBlendInfo.blendConstants));
-
-    VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    multisampleInfo.alphaToCoverageEnable = info.multisampleInfo.alphaToCoverageEnable;
-    multisampleInfo.alphaToOneEnable = info.multisampleInfo.alphaToOneEnable;
-    multisampleInfo.minSampleShading = info.multisampleInfo.minSampleShading;
-    multisampleInfo.sampleShadingEnable = info.multisampleInfo.sampleShadingEnable;
-    multisampleInfo.pSampleMask = info.multisampleInfo.pSampleMask;
-
-    shaderInfo.pColorBlendState = &blendInfo;
-    shaderInfo.pDepthStencilState = &info.depthStencilInfo;
-    shaderInfo.pRasterizationState = &info.rasterizerInfo;
-    shaderInfo.pMultisampleState = &multisampleInfo;
-    shaderInfo.pDynamicState = &info.dynamicInfo;
-    shaderInfo.pTessellationState = &info.tessInfo;
-    shaderInfo.layout = info.layout;
-    shaderInfo.stageCount = info.stageCount;
-    shaderInfo.pStages = info.shaderInfos;
-
-    VkPipeline pipeline = state.database.CreatePipeline(pass, subpass, program, inputAssembly, shaderInfo);
-    return PipelineId{ pipeline };
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 FinishFrame(IndexT frameIndex)
 {

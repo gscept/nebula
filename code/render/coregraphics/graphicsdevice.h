@@ -88,6 +88,7 @@ struct GraphicsDeviceState
     Util::FixedArray<CoreGraphics::BufferId> globalGraphicsConstantBuffer;
     Util::FixedArray<CoreGraphics::BufferId> globalComputeConstantBuffer;
 
+
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
     CoreGraphics::ResourceTableId frameResourceTableGraphics;
@@ -236,14 +237,6 @@ const CoreGraphics::BufferId GetUploadBuffer();
 
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
-
-/// Create pipeline
-CoreGraphics::PipelineId CreatePipeline(
-    const CoreGraphics::PassId pass
-    , uint subpass
-    , CoreGraphics::ShaderProgramId program
-    , const CoreGraphics::InputAssemblyKey inputAssembly
-);
 
 /// wait for an individual queue to finish
 void WaitForQueue(CoreGraphics::QueueType queue);
