@@ -243,14 +243,16 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         , VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK
         , VK_DYNAMIC_STATE_STENCIL_WRITE_MASK
         , VK_DYNAMIC_STATE_STENCIL_REFERENCE
-
+        , VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY
+        , VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE
+        , VK_DYNAMIC_STATE_VERTEX_INPUT_EXT
     };
     runtime.dynamicInfo =
     {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         nullptr,
         0,
-        5,
+        sizeof(dynamicStates) / sizeof(VkDynamicState),
         dynamicStates
     };
 

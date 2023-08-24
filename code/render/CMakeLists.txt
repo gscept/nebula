@@ -156,6 +156,7 @@ ENDIF()
                 meshresource.h
                 nvx3fileformatstructs.h
                 pass.h
+                pipeline.h
                 pixelformat.cc
                 pixelformat.h
                 primitivegroup.h
@@ -301,6 +302,8 @@ ENDIF()
                 vkmemory.h
                 vkpass.cc
                 vkpass.h
+                vkpipeline.cc
+                vkpipeline.h
                 vkpipelinedatabase.cc
                 vkpipelinedatabase.h
                 vkresourcetable.cc

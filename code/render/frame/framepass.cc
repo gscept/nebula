@@ -118,19 +118,13 @@ FramePass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void 
-FramePass::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-    Util::Array<FrameOp::Compiled*>& compiledOps, 
-    Util::Array<CoreGraphics::EventId>& events,
-    Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+FramePass::Build(const BuildContext& ctx)
 {
     // if not enable, abort early
     if (!this->enabled)
         return;
 
-    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
 #if NEBULA_GRAPHICS_DEBUG
     myCompiled->name = this->name;
@@ -138,11 +132,13 @@ FramePass::Build(
 
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, myCompiled->subpasses, events, barriers, buffers, textures);
+        // Create new build context for each subpass
+        BuildContext newCtx = { myCompiled->pass, (uint)i, ctx.allocator, myCompiled->subpasses, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
+        this->children[i]->Build(newCtx);
     }
 
     this->compiled = myCompiled;
-    this->SetupSynchronization(allocator, events, barriers, buffers, textures);
+    this->SetupSynchronization(ctx.allocator, ctx.events, ctx.barriers, ctx.buffers, ctx.textures);
 
     // Take the barriers from the children, this should hold all the barriers after building
     for (Frame::FrameOp::Compiled* child : myCompiled->subpasses)
@@ -151,7 +147,7 @@ FramePass::Build(
         child->barriers.Clear();
     }
 
-    compiledOps.Append(myCompiled);
+    ctx.compiledOps.Append(myCompiled);
 }
 
 } // namespace Frame2

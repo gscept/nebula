@@ -61,13 +61,7 @@ FramePlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FramePlugin::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-    Util::Array<FrameOp::Compiled*>& compiledOps,
-    Util::Array<CoreGraphics::EventId>& events,
-    Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+FramePlugin::Build(const BuildContext& ctx)
 {
     // if not enable, abort early
     if (!this->enabled)
@@ -76,15 +70,15 @@ FramePlugin::Build(
     auto callback = Frame::GetCallback(this->name);
     if (callback != nullptr)
     {
-        CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+        CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
         myCompiled->func = callback;
         this->compiled = myCompiled;
 
         // only setup sync if the function could be found
         if (myCompiled->func != nullptr)
-            this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
-        compiledOps.Append(myCompiled);
+            this->SetupSynchronization(ctx.allocator, ctx.events, ctx.barriers, ctx.buffers, ctx.textures);
+        ctx.compiledOps.Append(myCompiled);
     }
 }
 

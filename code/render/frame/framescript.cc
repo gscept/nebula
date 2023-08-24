@@ -232,10 +232,12 @@ FrameScript::Build()
         }
     }
 
+    FrameOp::BuildContext buildContext { CoreGraphics::InvalidPassId, 0xFFFFFFFF, this->buildAllocator, this->compiled, this->events, this->barriers, buffers, textures };
+
     // build ops
     for (i = 0; i < this->ops.Size(); i++)
     {
-        this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, buffers, textures);
+        this->ops[i]->Build(buildContext);
     }
 
     for (i = 0; i < textures.Size(); i++)

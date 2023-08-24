@@ -23,7 +23,6 @@ Util::Dictionary<Util::StringAtom, VkPipelineLayout> VkShaderPipelineCache;
 Util::Dictionary<Util::StringAtom, VkDescriptorSet> VkShaderDescriptorSetCache;
 ShaderAllocator shaderAlloc;
 
-
 //------------------------------------------------------------------------------
 /**
 */

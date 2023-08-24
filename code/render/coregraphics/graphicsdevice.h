@@ -88,6 +88,7 @@ struct GraphicsDeviceState
     Util::FixedArray<CoreGraphics::BufferId> globalGraphicsConstantBuffer;
     Util::FixedArray<CoreGraphics::BufferId> globalComputeConstantBuffer;
 
+
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
     CoreGraphics::ResourceTableId frameResourceTableGraphics;

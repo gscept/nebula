@@ -36,13 +36,7 @@ public:
 
 private:
 
-    void Build(
-        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-        Util::Array<FrameOp::Compiled*>& compiledOps,
-        Util::Array<CoreGraphics::EventId>& events,
-        Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
+    void Build(const BuildContext& ctx) override;
 };
 
 /// Add a subgraph by name for the framescript

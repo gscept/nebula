@@ -1,10 +1,13 @@
 //------------------------------------------------------------------------------
 //  vkcommandbuffer.cc
-//  (C)2017-2020 Individual contributors, see AUTHORS file
+//  (C)2017-2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include "render/stdneb.h"
+#include "coregraphics/config.h"
+#include "coregraphics/resourcetable.h"
+#include "coregraphics/pipeline.h"
 
 #include "vkcommandbuffer.h"
-#include "coregraphics/config.h"
 #include "vkgraphicsdevice.h"
 #include "vkbuffer.h"
 #include "vktexture.h"
@@ -12,10 +15,11 @@
 #include "vkshader.h"
 #include "vktypes.h"
 #include "vkshaderprogram.h"
-#include "coregraphics/resourcetable.h"
 #include "vkresourcetable.h"
 #include "vkevent.h"
 #include "vkpass.h"
+#include "vkpipeline.h"
+
 #include "graphics/globalconstants.h"
 
 namespace Vulkan
@@ -326,12 +330,12 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
     CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
-    bits |= CoreGraphics::CmdPipelineBuildBits::VertexLayoutInfoSet;
-    bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
-
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkPipelineVertexInputStateCreateInfo* info = VertexLayoutGetDerivative(vl, pipelineBundle.program);
-    pipelineBundle.pipelineInfo.pVertexInputState = info;
+    const VertexLayoutVkBindInfo& bindInfo = VertexLayoutGetVkBindInfo(vl);
+
+    vkCmdSetVertexInputEXT(cmdBuf, bindInfo.binds.Size(), bindInfo.binds.Begin(), bindInfo.attrs.Size(), bindInfo.attrs.Begin());
+    //pipelineBundle.pipelineInfo.pVertexInputState = info;
 }
 
 //------------------------------------------------------------------------------
@@ -378,15 +382,14 @@ CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopol
     CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
-    bits |= CoreGraphics::CmdPipelineBuildBits::InputLayoutInfoSet;
-    bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPrimitiveTopology comp = VkTypes::AsVkPrimitiveType(topo);
     pipelineBundle.inputAssembly.topo = comp;
     pipelineBundle.inputAssembly.primRestart = false;
+    vkCmdSetPrimitiveTopology(cmdBuf, comp);
+    vkCmdSetPrimitiveRestartEnable(cmdBuf, false);
 }
 
 //------------------------------------------------------------------------------
@@ -566,6 +569,42 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
         viewports.numPending = 0;
     }
     ScissorBundle& rects = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(id.id24);
+    if (rects.numPending > 0)
+    {
+        vkCmdSetScissor(cmdBuf, 0, rects.numPending, rects.scissors.Begin());
+        rects.numPending = 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(buf.id24);
+    Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id24);
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineObj.pipeline);
+    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(buf.id24);
+
+    bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
+    pipelineBundle.graphicsLayout = pipelineObj.layout;
+    if (pipelineChange)
+    {
+        IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, PassGetResourceTable(pipelineObj.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+    }
+
+    // Set viewport and scissors since Vulkan requires them to be set after the pipeline
+    ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(buf.id24);
+    if (viewports.numPending > 0)
+    {
+        vkCmdSetViewport(cmdBuf, 0, viewports.numPending, viewports.viewports.Begin());
+        viewports.numPending = 0;
+    }
+    ScissorBundle& rects = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(buf.id24);
     if (rects.numPending > 0)
     {
         vkCmdSetScissor(cmdBuf, 0, rects.numPending, rects.scissors.Begin());

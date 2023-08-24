@@ -16,6 +16,8 @@
 #include "app/application.h"
 #include "io/ioserver.h"
 #include "vkfence.h"
+#include "vkshader.h"
+#include "vkvertexlayout.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
@@ -139,24 +141,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
 } state;
 
-struct GraphicsDeviceThreadState : CoreGraphics::GraphicsDeviceThreadState
-{
-    IndexT currentDevice;
-
-    Util::FixedArray<CoreGraphics::ShaderProgramId> currentShaderPrograms;
-    CoreGraphics::ShaderFeature::Mask currentShaderMask;
-
-    CoreGraphics::VertexLayoutId currentVertexLayout;
-    CoreGraphics::ShaderProgramId currentVertexLayoutShader;
-
-    VkGraphicsPipelineCreateInfo currentPipelineInfo;
-    VkPipelineLayout currentGraphicsPipelineLayout;
-    VkPipelineLayout currentComputePipelineLayout;
-    VkPipeline currentPipeline;
-
-    uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
-} thread_local threadState;
-
 VkDebugUtilsMessengerEXT VkErrorDebugMessageHandle = nullptr;
 PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
 PFN_vkDestroyDebugUtilsMessengerEXT VkDestroyDebugMessenger = nullptr;
@@ -225,7 +209,8 @@ SetupAdapter()
                     "VK_maintenance4",
                     "VK_host_query_reset",
                     "VK_descriptor_indexing",
-                    "VK_EXT_robustness2"
+                    "VK_EXT_robustness2",
+                    "VK_EXT_vertex_input_dynamic_state"
                 };
 
                 uint32_t newNumCaps = 0;
@@ -400,7 +385,12 @@ static Threading::CriticalSection pipelineMutex;
 /**
 */
 VkPipeline
-GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
+GetOrCreatePipeline(
+    CoreGraphics::PassId pass
+    , uint subpass
+    , CoreGraphics::ShaderProgramId program
+    , const CoreGraphics::InputAssemblyKey inputAssembly
+    , const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
     VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, inputAssembly, info);
@@ -416,7 +406,6 @@ SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaq
 {
     state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, img, opaqueBinds, pageBinds);
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -561,7 +550,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         2,															// application version
         "Nebula",													// engine name
         4,															// engine version
-        VK_API_VERSION_1_2											// API version
+        VK_API_VERSION_1_3											// API version
     };
 
     state.usedExtensions = 0;
@@ -823,10 +812,17 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     };
     descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
 
+    VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
+        &descriptorIndexingFeatures,
+        true
+    };
+
     VkDeviceCreateInfo deviceInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        &descriptorIndexingFeatures,
+        &dynamicVertexFeatures,
         0,
         (uint32_t)queueInfos.Size(),
         &queueInfos[0],

@@ -10,6 +10,7 @@
 #include "util/bit.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/pipeline.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "graphics/cameracontext.h"
@@ -87,6 +88,13 @@ struct Im3dState
     CoreGraphics::ShaderProgramId points;
     CoreGraphics::ShaderProgramId triangles;
     CoreGraphics::ShaderProgramId depthTriangles;
+
+    CoreGraphics::PipelineId linesPipeline;
+    CoreGraphics::PipelineId depthLinesPipeline;
+    CoreGraphics::PipelineId pointsPipeline;
+    CoreGraphics::PipelineId trianglesPipeline;
+    CoreGraphics::PipelineId depthTrianglesPipeline;
+
     CoreGraphics::BufferId vbo;     
     CoreGraphics::VertexLayoutId vlo;
     bool renderGrid = false;
@@ -163,6 +171,14 @@ Im3dContext::Create()
     op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         Render(cmdBuf, frame);
+    };
+    op->buildFunc = [](const CoreGraphics::PassId pass, const uint subpass)
+    {
+        imState.linesPipeline = CoreGraphics::CreatePipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.depthLinesPipeline = CoreGraphics::CreatePipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.trianglesPipeline = CoreGraphics::CreatePipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.depthTrianglesPipeline = CoreGraphics::CreatePipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.pointsPipeline = CoreGraphics::CreatePipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
     };
     Frame::AddSubgraph("Im3D", { op });
 }
@@ -421,14 +437,13 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
 */
 template<typename filterFunc>
 static inline void
-CollectByFilter(const CoreGraphics::CmdBufferId cmdBuf, const ShaderProgramId shader, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
+CollectByFilter(const CoreGraphics::CmdBufferId cmdBuf, const PipelineId pipeline, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
 {
-    CoreGraphics::CmdSetShaderProgram(cmdBuf, shader);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
+
+    // setup input buffers
     CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, topology);
     CoreGraphics::CmdSetVertexLayout(cmdBuf, imState.vlo);
-
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
-    // setup input buffers
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, imState.vbo, 0);
 
     for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
@@ -488,20 +503,20 @@ Im3dContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIn
 
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "Im3d");
 
-    CollectByFilter(cmdBuf, imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.pointsPipeline, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
         
-    CollectByFilter(cmdBuf, imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.trianglesPipeline, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId != imState.depthLayerId; });
         
-    CollectByFilter(cmdBuf, imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.linesPipeline, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });     
 
-    CollectByFilter(cmdBuf, imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.depthLinesPipeline, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
         
     //CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
-    CollectByFilter(cmdBuf, imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.depthTrianglesPipeline, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
     CoreGraphics::BufferFlush(imState.vbo);

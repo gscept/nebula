@@ -157,31 +157,26 @@ FrameSubmission::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameSubmission::Build(
-    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-    Util::Array<FrameOp::Compiled*>& compiledOps,
-    Util::Array<CoreGraphics::EventId>& events,
-    Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+FrameSubmission::Build(const BuildContext& ctx)
 {
     // if not enable, abort early
     if (!this->enabled)
         return;
 
-    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
     // build ops
+    BuildContext newCtx = { ctx.currentPass, ctx.subpass, ctx.allocator, myCompiled->compiled, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, myCompiled->compiled, events, barriers, rwBuffers, textures);
+        this->children[i]->Build(newCtx);
     }
 
     this->compiled = myCompiled;
     for (IndexT i = 0; i < this->waitSubmissions.Size(); i++)
         myCompiled->waitSubmissions.Append(static_cast<FrameSubmission::CompiledImpl*>(this->waitSubmissions[i]->compiled));
     myCompiled->commandBufferPool = this->commandBufferPool;
-    compiledOps.Append(this->compiled);
+    ctx.compiledOps.Append(this->compiled);
 }
 
 } // namespace Frame

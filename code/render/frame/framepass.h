@@ -51,13 +51,7 @@ public:
 private:
     friend class FrameScript;
 
-    void Build(
-        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-        Util::Array<FrameOp::Compiled*>& compiledOps,
-        Util::Array<CoreGraphics::EventId>& events,
-        Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
+    void Build(const BuildContext& ctx) override;
 };
 
 } // namespace Frame2

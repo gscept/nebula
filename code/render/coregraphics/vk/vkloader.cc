@@ -123,6 +123,9 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkCmdSetStencilCompareMask);
     _IMP_VK(vkCmdSetStencilWriteMask);
     _IMP_VK(vkCmdSetStencilReference);
+    _IMP_VK(vkCmdSetPrimitiveTopology);
+    _IMP_VK(vkCmdSetPrimitiveRestartEnable);
+    _IMP_VK(vkCmdSetVertexInputEXT);
 
     _IMP_VK(vkCreateCommandPool);
     _IMP_VK(vkDestroyCommandPool);
@@ -287,6 +290,9 @@ _DEF_VK(vkCmdSetScissor);
 _DEF_VK(vkCmdSetStencilCompareMask);
 _DEF_VK(vkCmdSetStencilWriteMask);
 _DEF_VK(vkCmdSetStencilReference);
+_DEF_VK(vkCmdSetPrimitiveTopology);
+_DEF_VK(vkCmdSetPrimitiveRestartEnable);
+_DEF_VK(vkCmdSetVertexInputEXT);
 
 _DEF_VK(vkCreateCommandPool);
 _DEF_VK(vkDestroyCommandPool);
