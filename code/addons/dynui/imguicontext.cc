@@ -11,6 +11,7 @@
 #include "math/rectangle.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
+#include "coregraphics/graphicsdevice.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"
 #include "frame/framesubgraph.h"
@@ -52,7 +53,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "ImGUI");
 
     // apply shader
-    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
+    //CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
 #if __VULKAN__
@@ -97,11 +98,10 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
     }
 
     // setup device
-    CoreGraphics::CmdSetVertexLayout(cmdBuf, state.vlo);
-    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, state.pipeline);
 
     // setup input buffers
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, state.vlo);
     CoreGraphics::CmdSetResourceTable(cmdBuf, state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, state.vbos[currentBuffer], 0);
     CoreGraphics::CmdSetIndexBuffer(cmdBuf, IndexType::Index16, state.ibos[currentBuffer], 0);
@@ -350,6 +350,11 @@ ImguiContext::Create()
         ImguiContext::RecoverImGuiContextErrors();
 #endif
         ImguiContext::ImguiDrawFunction(cmdBuf);
+    };
+    op->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
+    {
+        CoreGraphics::InputAssemblyKey inputAssembly { CoreGraphics::PrimitiveTopology::TriangleList, false  };
+        state.pipeline = CoreGraphics::CreatePipeline({ state.prog, pass, subpass, inputAssembly });
     };
     Frame::AddSubgraph("ImGUI", { op });
 

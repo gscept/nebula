@@ -13,6 +13,7 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 #include "input/inputevent.h"
+#include "coregraphics/pipeline.h"
 #include "graphics/graphicscontext.h"
 #include "coregraphics/vertexlayout.h"
 #include "imguiinputhandler.h"
@@ -69,6 +70,7 @@ public:
         ImguiRendererParams params;
         CoreGraphics::ShaderId uiShader;
         CoreGraphics::ShaderProgramId prog;
+        CoreGraphics::PipelineId pipeline;
 
         ImguiTextureId fontTexture;
         //CoreGraphics::TextureId fontTexture;
