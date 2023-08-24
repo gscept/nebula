@@ -1,10 +1,13 @@
 //------------------------------------------------------------------------------
 //  vkcommandbuffer.cc
-//  (C)2017-2020 Individual contributors, see AUTHORS file
+//  (C)2017-2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include "render/stdneb.h"
+#include "coregraphics/config.h"
+#include "coregraphics/resourcetable.h"
+#include "coregraphics/pipeline.h"
 
 #include "vkcommandbuffer.h"
-#include "coregraphics/config.h"
 #include "vkgraphicsdevice.h"
 #include "vkbuffer.h"
 #include "vktexture.h"
@@ -12,10 +15,11 @@
 #include "vkshader.h"
 #include "vktypes.h"
 #include "vkshaderprogram.h"
-#include "coregraphics/resourcetable.h"
 #include "vkresourcetable.h"
 #include "vkevent.h"
 #include "vkpass.h"
+#include "vkpipeline.h"
+
 #include "graphics/globalconstants.h"
 
 namespace Vulkan
@@ -579,7 +583,19 @@ void
 CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
 {
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(buf.id24);
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+    Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id24);
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineObj.pipeline);
+    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(buf.id24);
+
+    bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
+    pipelineBundle.graphicsLayout = pipelineObj.layout;
+    if (pipelineChange)
+    {
+        IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, PassGetResourceTable(pipelineObj.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+    }
 
     // Set viewport and scissors since Vulkan requires them to be set after the pipeline
     ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(buf.id24);
