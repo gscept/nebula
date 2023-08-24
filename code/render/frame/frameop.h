@@ -17,6 +17,8 @@
 #include "coregraphics/semaphore.h"
 #include "memory/arenaallocator.h"
 #include "coregraphics/commandbuffer.h"
+#include "coregraphics/pass.h"
+
 namespace Frame
 {
 
@@ -140,7 +142,8 @@ protected:
 
     struct BuildContext
     {
-        Frame::FrameScript* script;
+        CoreGraphics::PassId currentPass;
+        uint subpass;
         Memory::ArenaAllocator<BIG_CHUNK>& allocator;
         Util::Array<FrameOp::Compiled*>& compiledOps;
         Util::Array<CoreGraphics::EventId>& events;

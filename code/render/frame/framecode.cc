@@ -9,7 +9,8 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FrameCode::FrameCode()
+FrameCode::FrameCode() :
+    buildFunc(nullptr)
 {
 }
 
@@ -61,6 +62,9 @@ FrameCode::Build(const BuildContext& ctx)
 
     this->SetupSynchronization(ctx.allocator, ctx.events, ctx.barriers, ctx.buffers, ctx.textures);
     ctx.compiledOps.Append(myCompiled);
+
+    if (this->buildFunc)
+        this->buildFunc(ctx.currentPass, ctx.subpass);
 }
 
 } // namespace Frame

@@ -130,9 +130,10 @@ FramePass::Build(const BuildContext& ctx)
     myCompiled->name = this->name;
 #endif
 
-    BuildContext newCtx = { ctx.script, ctx.allocator, myCompiled->subpasses, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
+        // Create new build context for each subpass
+        BuildContext newCtx = { myCompiled->pass, i, ctx.allocator, myCompiled->subpasses, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
         this->children[i]->Build(newCtx);
     }
 

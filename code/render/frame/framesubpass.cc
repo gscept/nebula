@@ -111,7 +111,7 @@ FrameSubpass::Build(const BuildContext& ctx)
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
     // Create new context with ops of this subgraph
-    BuildContext newCtx = { ctx.script, ctx.allocator, myCompiled->ops, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
+    BuildContext newCtx = { ctx.currentPass, ctx.subpass, ctx.allocator, myCompiled->ops, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
 
     for (IndexT i = 0; i < this->children.Size(); i++)
     {

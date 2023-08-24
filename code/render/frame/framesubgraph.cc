@@ -79,7 +79,7 @@ FrameSubgraph::Build(const BuildContext& ctx)
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
     // Just fetch subgraph and build it as if it was always a part of the frame script
-    BuildContext newCtx = { ctx.script, ctx.allocator, myCompiled->subgraphOps, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
+    BuildContext newCtx = { ctx.currentPass, ctx.subpass, ctx.allocator, myCompiled->subgraphOps, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
     for (Frame::FrameOp* op : ops)
     {
         op->Build(newCtx);

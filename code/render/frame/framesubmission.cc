@@ -166,7 +166,7 @@ FrameSubmission::Build(const BuildContext& ctx)
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(ctx.allocator);
 
     // build ops
-    BuildContext newCtx = { ctx.script, ctx.allocator, myCompiled->compiled, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
+    BuildContext newCtx = { ctx.currentPass, ctx.subpass, ctx.allocator, myCompiled->compiled, ctx.events, ctx.barriers, ctx.buffers, ctx.textures };
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
         this->children[i]->Build(newCtx);
