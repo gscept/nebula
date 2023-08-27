@@ -21,11 +21,6 @@ namespace Win32
 class Win32Guid
 {
 public:
-    /// override new operator
-    void* operator new(size_t s);
-    /// override delete operator
-    void operator delete(void* ptr);
-
     /// constructor
     Win32Guid();
     /// copy constructor
@@ -68,27 +63,6 @@ public:
 private:
     UUID uuid;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void*
-Win32Guid::operator new(size_t size)
-{
-    #if NEBULA_DEBUG
-    n_assert(size == sizeof(Win32Guid));
-    #endif
-    return Memory::Alloc(Memory::ObjectHeap, size);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-Win32Guid::operator delete(void* ptr)
-{
-    return Memory::Free(Memory::ObjectHeap, ptr);
-}
 
 //------------------------------------------------------------------------------
 /**

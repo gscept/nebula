@@ -22,11 +22,6 @@ namespace Posix
 class PosixGuid
 {
 public:    
-    /// overloaded operator new
-    void* operator new(size_t size);
-    /// overloaded operator delete
-    void operator delete(void* p);
-
     /// constructor
     PosixGuid();
     /// copy constructor
@@ -67,26 +62,6 @@ public:
 private:    
     uuid_t uuid;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-void*
-PosixGuid::operator new(size_t size)
-{
-    return Memory::Alloc(Memory::ObjectHeap, size);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-void
-PosixGuid::operator delete(void* p)
-{
-    return Memory::Free(Memory::ObjectHeap, p);
-}
 
 //------------------------------------------------------------------------------
 /**

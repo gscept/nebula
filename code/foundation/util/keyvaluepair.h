@@ -64,8 +64,8 @@ public:
     const VALUETYPE& Value() const;
 
 protected:
-    KEYTYPE keyData;
-    VALUETYPE valueData;
+    KEYTYPE keyData = KEYTYPE();
+    VALUETYPE valueData = VALUETYPE();
 };
 
 //------------------------------------------------------------------------------

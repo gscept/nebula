@@ -5,7 +5,8 @@
 #define NOMINMAX
 #include "foundation/stdneb.h"
 #include "scripting/python/pythonserver.h"
-#include "pybind11/embed.h"
+#include "nanobind/nanobind.h"
+#include "conversion.h"
 #include "PyLogHook.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
@@ -40,7 +41,6 @@ PythonServer::~PythonServer()
     __DestructSingleton;
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -53,9 +53,10 @@ PythonServer::Open()
     n_assert(!this->IsOpen());    
     if (ScriptServer::Open())
     {
+        Python::RegisterNebulaModules();
+        Py_Initialize();
         
-        Py_Initialize();        
-
+        nanobind::detail::init(nullptr);
         tyti::pylog::redirect_stdout([](const char* msg) 
         {            
             // collect until we get a newline

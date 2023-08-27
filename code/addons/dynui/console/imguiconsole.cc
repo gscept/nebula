@@ -13,10 +13,10 @@
 #include "io/textwriter.h"
 #include "io/ioserver.h"
 #include "app/application.h"
-#include "pybind11/embed.h"
+#include "nanobind/nanobind.h"
 #include "core/cvar.h"
 
-namespace py = pybind11;
+namespace py = nanobind;
 
 struct completion_t
 {
@@ -200,6 +200,7 @@ TextEditPython(ImGuiInputTextCallbackData* data)
         // python command completion using jedi
         try
         {
+#if 0
             py::object jedi = py::module::import("jedi");
             py::object inter = jedi.attr("Interpreter");
             py::object scope = py::module::import("__main__").attr("__dict__");
@@ -227,10 +228,11 @@ TextEditPython(ImGuiInputTextCallbackData* data)
                 }
 
             }
+#endif
         }
-        catch (pybind11::error_already_set e)
+        catch (...)
         {
-            n_printf("%s", e.what());
+            //n_printf("%s", e.what());
         }
 
 

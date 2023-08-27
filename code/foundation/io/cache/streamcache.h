@@ -44,8 +44,8 @@ private:
     struct CacheEntry
     {
         Ptr<IO::Stream> stream;
-        void * buffer;
-        SizeT useCount;
+        void * buffer = nullptr;
+        SizeT useCount = 0;
     };
 
     Util::Dictionary<Util::String, CacheEntry> streams;

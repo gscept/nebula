@@ -115,15 +115,15 @@ BlueprintManager::ParseBlueprint(Util::String const& blueprintsPath)
 
                 if (jsonReader->SetToFirstChild("components"))
                 {
-                    jsonReader->SetToFirstChild();
-                    do
+                    if (jsonReader->IsArray())
                     {
-                        ComponentEntry newComp;
-                        newComp.name = jsonReader->GetString();
-
-                        bluePrint.components.Append(newComp);
-                    } while (jsonReader->SetToNextChild());
-
+                        Util::Array<Util::String> comps;
+                        jsonReader->Get<>(comps);
+                        for (Util::String const& name : comps)
+                        {
+                            bluePrint.components.Append({ name });
+                        }
+                    }
                     jsonReader->SetToParent();
                 }
 

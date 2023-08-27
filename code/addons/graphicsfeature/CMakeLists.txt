@@ -1,6 +1,7 @@
 nebula_begin_module(graphicsfeature)
 nebula_flatc(SYSTEM graphicsfeature/graphicsfeatureschema.fbs)
 fips_deps(render application dynui staticui nflatbuffer)
+target_precompile_headers(graphicsfeature REUSE_FROM application)
 fips_ide_group(features)
 fips_files(
 	graphicsfeatureunit.h

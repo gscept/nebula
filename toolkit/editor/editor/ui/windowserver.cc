@@ -12,8 +12,6 @@
 #include "input/inputserver.h"
 #include "input/keyboard.h"
 #include "windows/scriptedwindow.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/embed.h"
 
 using namespace Util;
 

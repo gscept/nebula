@@ -28,8 +28,10 @@ struct vector
     vector(scalar v);
     /// copy constructor
     vector(const vector& rhs);
-    /// construct from vec4
+    /// construct from vec3
     vector(const vec3& rhs);
+    /// construct from vec4
+    vector(const vec4& rhs);
     /// construct from SSE 128 byte float array
     vector(const __m128& rhs);
 
@@ -126,6 +128,15 @@ vector::vector(const vector& rhs)
 */
 __forceinline
 vector::vector(const vec3& rhs)
+{
+    this->vec = rhs.vec;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+vector::vector(const vec4& rhs)
 {
     this->vec = rhs.vec;
 }

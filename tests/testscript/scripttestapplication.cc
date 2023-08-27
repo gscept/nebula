@@ -18,13 +18,13 @@
 #ifdef max
 #undef max
 #endif
-#include "pybind11/pybind11.h"
-#include "pybind11/embed.h"
+#include "nanobind/nanobind.h"
+
 using namespace Math;
 using namespace Base;
 using namespace Test;
 
-namespace py = pybind11;
+namespace py = nanobind;
 
 
 
@@ -36,9 +36,16 @@ struct foo
         b = bb; }
 };
 
-PYBIND11_EMBEDDED_MODULE(FooMod, m)
+NB_MODULE(FooMod, m)
 {    
-    py::class_<foo>(m, "foo").def("set", &foo::set);    
+    py::class_<foo>(m, "foo").def("set", &foo::set).def(py::init<int,int>())
+    .def("__repr__", [](foo& p)
+    {
+        Util::String form;
+        form.Format("Foo: %d, %d", p.a, p.b);
+        return form.AsCharPtr();
+    }
+    );
 }
 
 //------------------------------------------------------------------------------
@@ -72,7 +79,7 @@ ScriptTestApplication::Open()
     
     
     
-    //PyImport_AppendInittab("FooMod", PyInit_FooMod);
+    PyImport_AppendInittab("FooMod", PyInit_FooMod);
     Py_Initialize();
 
     //py::module::import("FooMod");
@@ -82,10 +89,12 @@ ScriptTestApplication::Open()
     PyRun_SimpleString("print('a')");
 
     PyRun_SimpleString("import FooMod");
-    py::module main = py::module::import("__main__");
+    PyRun_SimpleString("f = FooMod.foo(2,4)");
+    PyRun_SimpleString("print(f)");
+    py::object main = py::module_::import_("__main__");
     foo f;
-    main.attr("f") = &f;    
-    PyRun_SimpleString("f.set(5, 3)");
+    main.attr("g") = &f;    
+    PyRun_SimpleString("g.set(5, 3)");
    
 
     return true;

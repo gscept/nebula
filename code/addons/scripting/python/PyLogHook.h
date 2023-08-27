@@ -29,7 +29,7 @@
 #ifdef TYTI_PYLOGHOOK_USE_BOOST
 #include <boost/python.hpp>
 #else
-#include <pybind11/pybind11.h>
+#include "nanobind/nanobind.h"
 #endif
 
 
@@ -49,9 +49,9 @@ namespace tyti {
             }
 #else
             template<typename T>
-            inline pybind11::object LogHookMakeObject(T t)
+            inline nanobind::object LogHookMakeObject(T t)
             {
-                return pybind11::cpp_function(std::forward<T>(t));
+                return nanobind::cpp_function(std::forward<T>(t));
             }
 
 #endif

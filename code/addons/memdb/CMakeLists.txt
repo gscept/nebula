@@ -1,6 +1,7 @@
 fips_begin_lib(memdb)
 fips_ide_group(addons)
 target_include_directories(memdb PUBLIC ${CODE_ROOT}/foundation)
+target_precompile_headers(memdb REUSE_FROM foundation)
 fips_files(
     database.h
     database.cc

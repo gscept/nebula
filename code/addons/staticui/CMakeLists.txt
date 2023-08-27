@@ -6,6 +6,7 @@ nebula_begin_module(staticui)
 fips_ide_group(addons)
 fips_deps(render ultralight scripting)
 target_include_directories(staticui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation ${Python_INCLUDE_DIRS})
+target_precompile_headers(staticui REUSE_FROM render)
 add_shaders(staticui.fx)
 fips_files(
     staticuicontext.cc
