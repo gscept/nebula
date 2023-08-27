@@ -1630,6 +1630,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Resize(SizeT num)
 /**
 */
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+void
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::clear() noexcept
 {
     this->Clear();
@@ -1638,8 +1639,6 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::clear() noexcept
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-Array<TYPE>::SetSize(SizeT s)
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 inline void 
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fit()
