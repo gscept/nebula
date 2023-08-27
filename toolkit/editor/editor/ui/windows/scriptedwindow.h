@@ -10,7 +10,7 @@
 #include "editor/ui/window.h"
 #include "io/uri.h"
 
-namespace pybind11
+namespace nanobind
 {
 class object;
 }
@@ -32,7 +32,7 @@ public:
 
 private:
     // loaded python module
-    pybind11::object* script;
+    nanobind::object* script;
     Util::String modulePath;
 };
 

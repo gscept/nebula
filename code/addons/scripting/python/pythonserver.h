@@ -34,7 +34,7 @@ public:
     /// evaluate script in file
     bool EvalFile(const IO::URI& file);
 private:
-    
+
 };
 
 } // namespace Scripting

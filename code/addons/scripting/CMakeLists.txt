@@ -4,7 +4,7 @@
 
 nebula_begin_module(scripting)
 fips_ide_group(addons)
-fips_libs(foundation)
+fips_libs(foundation nanobind)
 
 fips_files(
     scriptserver.cc

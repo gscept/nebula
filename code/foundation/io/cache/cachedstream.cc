@@ -13,7 +13,8 @@ namespace IO
 */
 CachedStream::CachedStream() :
     position(0),
-    buffer(nullptr)
+    buffer(nullptr),
+    size(0)
 {
     accessMode = ReadAccess;
 }

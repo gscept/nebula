@@ -4,10 +4,9 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 
-#include "pybind11/embed.h"
 #include "scripting/python/conversion.h"
 
-namespace py = pybind11;
+namespace py = nanobind;
 
 /// @todo   There should be no more than one python module per binding file.
 //PYBIND11_EMBEDDED_MODULE(edit, m)

@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "scriptedwindow.h"
-#include "pybind11/pybind11.h"
+#include "nanobind/nanobind.h"
 
 namespace Presentation
 {
@@ -43,7 +43,7 @@ ScriptedWindow::Run()
         this->script->attr("draw")();
         ImGui::End();
     }
-    catch (const pybind11::error_already_set& error)
+    catch (const nanobind::python_error& error)
     {
         n_warning(error.what());
     }
@@ -57,14 +57,14 @@ ScriptedWindow::LoadModule(Util::String const& module)
 {
     if (this->script == nullptr)
     {
-        this->script = new pybind11::object;
+        this->script = new nanobind::object;
     }
 
     try
     {
-        *(this->script) = pybind11::module::import(module.AsCharPtr());
+        *(this->script) = nanobind::module_::import_(module.AsCharPtr());
     }
-    catch (const pybind11::error_already_set& error)
+    catch (const nanobind::python_error& error)
     {
         n_warning(error.what());
         return false;

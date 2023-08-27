@@ -5,6 +5,7 @@
 nebula_begin_module(audio)
     target_include_directories(audio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(foundation resource soloud)
+    target_precompile_headers(audio REUSE_FROM foundation)
     
     fips_dir(audio)
     fips_files(

@@ -5,6 +5,7 @@
 nebula_begin_lib(nflatbuffer)
 fips_ide_group(addons)
 target_include_directories(nflatbuffer PRIVATE ${CODE_ROOT}/foundation )
+target_precompile_headers(nflatbuffer REUSE_FROM foundation)
 fips_dir(.)
     fips_files(
         nebula_flat.cc

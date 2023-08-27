@@ -212,6 +212,8 @@ public:
     Iterator end() const;
     size_t size() const;
     void resize(size_t size);
+    void clear() noexcept;
+    void push_back(const TYPE& item);
 
     /// grow array
     void Grow();
@@ -1060,6 +1062,16 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Back() const
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+void
+Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::push_back(const TYPE& item)
+{
+    this->Append(item);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
 bool 
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsEmpty() const
@@ -1617,6 +1629,17 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Resize(SizeT num)
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::clear() noexcept
+{
+    this->Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+Array<TYPE>::SetSize(SizeT s)
 template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
 inline void 
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fit()

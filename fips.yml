@@ -16,8 +16,8 @@ imports:
         group: misc
     fips-imgui:
         git: https://github.com/gscept/fips-imgui.git
-    fips-pybind11:
-        git: https://github.com/gscept/fips-pybind11.git
+    fips-nanobind:
+        git: https://github.com/gscept/fips-nanobind.git
     fips-stb:
         git: https://github.com/fips-libs/fips-stb.git
         group: misc
