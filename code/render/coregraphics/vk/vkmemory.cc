@@ -44,7 +44,6 @@ SetupMemoryPools(
             // device memory is persistent, allocate conservatively
             pool.mapMemory = false;
             pool.blockSize = deviceLocalMemory;
-            pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             deviceLocalFound = true;
             pool.budgetCounter = N_DEVICE_ONLY_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_DEVICE_ONLY_GPU_MEMORY, pool.maxSize);
@@ -54,7 +53,6 @@ SetupMemoryPools(
             // host memory is used for transient transfer buffers, make it allocate and deallocate fast
             pool.mapMemory = true;
             pool.blockSize = hostLocalMemory;
-            pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             hostLocalFound = true;
             pool.budgetCounter = N_HOST_ONLY_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_HOST_ONLY_GPU_MEMORY, pool.maxSize);
@@ -64,7 +62,6 @@ SetupMemoryPools(
             // memory used to read from the GPU should also be conservative
             pool.mapMemory = true;
             pool.blockSize = hostCachedMemory;
-            pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             hostCachedFound = true;
             pool.budgetCounter = N_DEVICE_TO_HOST_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_DEVICE_TO_HOST_GPU_MEMORY, pool.maxSize);
@@ -74,7 +71,6 @@ SetupMemoryPools(
             // memory used to directly write to the device with a flush should be allocated conservatively
             pool.mapMemory = true;
             pool.blockSize = deviceAndHostMemory;
-            pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             hostAndDeviceFound = true;
             pool.budgetCounter = N_HOST_TO_DEVICE_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_HOST_TO_DEVICE_GPU_MEMORY, pool.maxSize);
