@@ -453,12 +453,11 @@ SizeClassificationAllocator::RemoveNode(uint nodeIndex)
 inline uint 
 BucketFromSize(uint size)
 {
-    uint mask = size & ~(size >> 1);
 #if __WIN32__
     DWORD count = 0;
-    _BitScanReverse(&count, mask);
+    _BitScanReverse(&count, size);
 #else
-    int count = __builtin_clz(mask);
+    int count = 31 - __builtin_clz(size);
 #endif
     return count;
 }
