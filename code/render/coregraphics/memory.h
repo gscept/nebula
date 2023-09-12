@@ -12,6 +12,7 @@
 #include "threading/criticalsection.h"
 #include "util/array.h"
 #include "ids/idpool.h"
+#include "memory/sizeclassificationallocator.h"
 
 
 #if __VULKAN__
@@ -41,6 +42,7 @@ struct Alloc
     DeviceMemory mem;
     DeviceSize offset;
     DeviceSize size;
+    uint nodeIndex;
     uint poolIndex;
     uint blockIndex;
 };
@@ -68,17 +70,9 @@ struct MemoryPool
     uint memoryType;
     Ids::IdPool blockPool;
     Util::Array<DeviceMemory> blocks;
-    Util::Array<Util::Array<AllocRange>> blockRanges;
+    Util::Array<Memory::SCAllocator> allocators;
     Util::Array<void*> blockMappedPointers;
     DeviceSize size;
-
-    enum AllocationMethod
-    {
-        MemoryPool_AllocConservative,
-        MemoryPool_AllocLinear,
-    };
-
-    AllocationMethod allocMethod;
 
     const char* budgetCounter;
     DeviceSize maxSize;
@@ -87,9 +81,7 @@ struct MemoryPool
 private:
 
     // allocate conservatively
-    Alloc AllocateConservative(DeviceSize alignment, DeviceSize size);
-    // allocate linearly
-    Alloc AllocateLinear(DeviceSize alignment, DeviceSize size);
+    Alloc Allocate(DeviceSize alignment, DeviceSize size);
     // create new memory block
     DeviceMemory CreateBlock(void** outMappedPtr);
     // destroy block
