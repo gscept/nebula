@@ -3,8 +3,9 @@
 /**
     @class Memory::RangeAllocator
     
-    Doesn't actually allocate memory, but is used to keep track of free ranges
-    of elements in a virtual memory buffer
+    An allocator that reserves a range of memory and outputs an offset to that
+    range. Doesn't allocate any memory but is supposed to be used on a single
+    memory block. 
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file

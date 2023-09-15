@@ -34,7 +34,6 @@ struct VkBufferRuntimeInfo
 struct VkBufferMapInfo
 {
     void* mappedMemory;
-    uint mapCount;
 };
 
 enum
@@ -46,9 +45,10 @@ enum
 
 
 typedef Ids::IdAllocatorSafe<
-    VkBufferLoadInfo,
-    VkBufferRuntimeInfo,
-    VkBufferMapInfo
+    0xFFFF
+    , VkBufferLoadInfo
+    , VkBufferRuntimeInfo
+    , VkBufferMapInfo
 > VkBufferAllocator;
 extern VkBufferAllocator bufferAllocator;
 

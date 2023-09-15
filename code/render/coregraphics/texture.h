@@ -22,6 +22,8 @@ struct TextureSubresourceInfo;
 
 /// texture type
 RESOURCE_ID_TYPE(TextureId);
+void TextureIdAcquire(const TextureId id); 
+void TextureIdRelease(const TextureId id);;
 
 /// texture types
 enum TextureType

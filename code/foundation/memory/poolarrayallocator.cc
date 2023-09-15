@@ -76,9 +76,9 @@ PoolArrayAllocator::Alloc(SizeT size)
     IndexT poolIndex = (size + 3) >> 5;
     if (poolIndex < NumPools)
     {
-        #if NEBULA_DEBUG
+#if NEBULA_DEBUG
         n_assert(uint(size) <= memoryPools[poolIndex].GetBlockSize());
-        #endif
+#endif
         void* ptr = this->memoryPools[poolIndex].Alloc();
         if (0 == ptr)
         {
@@ -90,9 +90,9 @@ PoolArrayAllocator::Alloc(SizeT size)
     else
     {
         // size too big, need to allocate directly from the heap
-        #if NEBULA_DEBUG
+#if NEBULA_DEBUG
         // n_printf("WARNING: Allocation of size '%d' in PoolArrayAllocator '%s' going directly to heap!\n", size, this->name);        
-        #endif
+#endif
         return Memory::Alloc(this->heapType, size);
     }
 }

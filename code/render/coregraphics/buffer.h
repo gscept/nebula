@@ -21,6 +21,9 @@ namespace CoreGraphics
 struct CmdBufferId;
 ID_24_8_TYPE(BufferId);
 
+void BufferIdAcquire(const BufferId id); 
+void BufferIdRelease(const BufferId id);;
+
 enum BufferAccessMode
 {
     DeviceLocal,		// Buffer can only be used by the GPU

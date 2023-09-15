@@ -104,7 +104,8 @@ struct ScissorBundle
 };
 
 typedef Ids::IdAllocatorSafe<
-    VkDevice
+    0xFFF
+    , VkDevice
     , VkCommandBuffer
     , VkCommandPool
     , CoreGraphics::CmdPipelineBuildBits

@@ -993,7 +993,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Back() const
 */
 template<class TYPE, int SMALL_VECTOR_SIZE>
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::push_back(const TYPE& item)
+Array<TYPE, SMALL_VECTOR_SIZE>::push_back(const TYPE& item)
 {
     this->Append(item);
 }
@@ -1001,7 +1001,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::push_back(const TYPE& item)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 bool 
 Array<TYPE, SMALL_VECTOR_SIZE>::IsEmpty() const
 {
@@ -1566,7 +1566,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num)
 */
 template<class TYPE, int SMALL_VECTOR_SIZE>
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::clear() noexcept
+Array<TYPE, SMALL_VECTOR_SIZE>::clear() noexcept
 {
     this->Clear();
 }
