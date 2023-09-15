@@ -23,6 +23,8 @@ uint BucketFromSize(uint size);
 uint BinFromSize(uint size, uint bucket);
 /// Get least significant bit from mask
 uint Lsb(uint mask, byte bit);
+/// Get first one in mask
+uint FirstOne(uint value);
 
 struct SizeClassificationAllocation
 {
@@ -61,6 +63,15 @@ private:
 
     struct SizeClassificationNode
     {
+        SizeClassificationNode() :
+            resident(false)
+            , size(0)
+            , offset(0)
+            , binPrev(END)
+            , binNext(END)
+            , blockPrev(END)
+            , blockNext(END)
+        {};
         bool resident;
         uint size;
         uint offset;
@@ -76,9 +87,7 @@ private:
         struct
         {
             uint16 bin : 4;
-            uint16 bucket : 6;
-            uint16 padding : 6;
-
+            uint16 bucket : 12;
         };
         uint16 index;
     };
@@ -121,14 +130,11 @@ inline
 SizeClassificationAllocator::SizeClassificationAllocator(SizeT size, SizeT maxNumAllocs)
 {   
     this->size = size;
-    if (this->size > 0)
-    {
-        this->freeNodes.Resize(maxNumAllocs);
-        this->nodes.Resize(maxNumAllocs);
+    this->freeNodes.Resize(maxNumAllocs);
+    this->nodes.Resize(maxNumAllocs);
 
-        // Clear the allocator
-        this->Clear();
-    }
+    // Clear the allocator
+    this->Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -156,8 +162,6 @@ SizeClassificationAllocator::Clear()
     }
 
     // Clear nodes
-    SCNode node = { false, 0, 0, SCNode::END, SCNode::END, SCNode::END, SCNode::END };
-    this->nodes.Fill(0, this->nodes.Size(), node);
     for (uint i = 0; i < this->nodes.Size(); i++)
     {
         this->freeNodes[i] = this->nodes.Size() - i - 1;
@@ -166,7 +170,8 @@ SizeClassificationAllocator::Clear()
     this->freeStorage = 0;
 
     // Insert node covering the whole range
-    this->InsertNode(this->size, 0);
+    if (this->size > 0)
+        this->InsertNode(this->size, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -212,7 +217,7 @@ SizeClassificationAllocator::Alloc(uint size, uint alignment)
         }
 
         // Find any bit, since this bucket has to fit
-        bin = Lsb(this->binMasks[bucket], 0x20);
+        bin = FirstOne(this->binMasks[bucket]);
     }
 
     BinIndex binIndex;
@@ -450,7 +455,7 @@ SizeClassificationAllocator::RemoveNode(uint nodeIndex)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint 
+inline uint
 BucketFromSize(uint size)
 {
 #if __WIN32__
@@ -486,6 +491,21 @@ Lsb(uint value, byte bit)
     int count = __builtin_ctz(mask);
 #endif
     return mask ? count : 0xFF;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+FirstOne(uint value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanForward(&count, value);
+#else
+    int count = __builtin_ctz(mask);
+#endif
+    return count;
 }
 
 //------------------------------------------------------------------------------
