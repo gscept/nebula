@@ -49,6 +49,8 @@ NglTFExporter::~NglTFExporter()
 bool 
 NglTFExporter::ParseScene()
 {
+    this->gltfScene = Gltf::Document();
+    this->exportedMeshes.Clear();
     bool res = this->gltfScene.Deserialize(this->path.LocalPath().AsCharPtr());
 
     if (!res)

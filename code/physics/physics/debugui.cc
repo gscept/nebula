@@ -255,7 +255,7 @@ void RenderMaterialsUI()
             Util::String name(nameBuf);
             if (!name.IsEmpty())
             {
-                CreateMaterial(name.AsCharPtr(),0.5f,0.5f,0.5f,1.0f);
+                SetPhysicsMaterial(name.AsCharPtr(),0.5f,0.5f,0.5f,1.0f);
                 ImGui::CloseCurrentPopup();
             }
         }

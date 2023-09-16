@@ -213,7 +213,8 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const Math::mat4& trans, const char* name, const Util::String& colliderName, ActorInfo& actorInfo, const Util::StringAtom& tag, Ids::Id32 entry)
     {
         actorInfo.colliders.Append(colliderName);
-        physx::PxShape* newShape = state.physics->createShape(geometry.any(), *state.materials[material].material);
+        const Physics::Material& mat = GetMaterial(material);
+        physx::PxShape* newShape = state.physics->createShape(geometry.any(), *mat.material);
 #ifdef NEBULA_DEBUG
         actorInfo.shapeDebugNames.Append(Util::String::Sprintf("%s %s %s %d", name, colliderName.AsCharPtr(), tag.Value(), entry));
         newShape->setName(actorInfo.shapeDebugNames.Back().AsCharPtr());

@@ -238,7 +238,7 @@ ModelExporter::NeedsConversion(const Util::String& path)
 
     // check both if FBX is newer than .n3
     Util::String model = "mdl:" + category + "/" + file + ".n3";
-    Util::String physModel = "phys:" + category + "/" + file + ".np3";
+    Util::String physModel = "phys:" + category + "/" + file + ".actor";
     Util::String mesh = "msh:" + category + "/" + file + ".nvx";
     Util::String physMesh = "msh:" + category + "/" + file + "_ph.nvx";
     Util::String animation = "ani:" + category + "/" + file + ".nax";

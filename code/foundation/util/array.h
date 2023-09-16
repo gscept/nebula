@@ -138,6 +138,8 @@ public:
     TYPE& Back() const;
     /// return true if array empty
     bool IsEmpty() const;
+    /// check if index is valid
+    bool IsValidIndex(IndexT index) const;
     /// erase element at index, keep sorting intact
     void EraseIndex(IndexT index);
     /// erase element pointed to by iterator, keep sorting intact
@@ -1077,6 +1079,12 @@ bool
 Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsEmpty() const
 {
     return (this->count == 0);
+}
+template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+bool
+Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsValidIndex(IndexT index) const
+{
+    return this->elements && (index < this->count) && (index >= 0);
 }
 
 //------------------------------------------------------------------------------

@@ -521,22 +521,6 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
     n_assert(pattern.IsValid());
     Array<String> result;
 
-    // transparent archive file system support
-    if (this->IsArchiveFileSystemEnabled())
-    {
-        Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithDir(uri);
-        if (archive.isvalid())
-        {
-            String pathInArchive = archive->ConvertToPathInArchive(uri.LocalPath());
-            result = archive->ListFiles(pathInArchive, pattern);
-            if (asFullPath)
-            {
-                result = this->AddPathPrefixToArray(uri.LocalPath(), result);
-            }
-            return result;
-        }
-    }
-
     //FIXME this should be handled more generically
     if (uri.Scheme() != "file")
     {
@@ -546,7 +530,7 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         if (IoServer::ReadFile(listFile, fileList))
         {
             Util::Array<Util::String> files = fileList.Tokenize("\n");
-            for(auto const& fileName : files)
+            for (auto const& fileName : files)
             {
                 if (String::MatchPattern(fileName, pattern))
                 {
@@ -557,8 +541,30 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         }
     }
 
-    // fallthrough: not contained in archive, handle conventionally
-    result = FSWrapper::ListFiles(uri.GetHostAndLocalPath(), pattern);
+
+
+    // transparent archive file system support
+    if (this->IsArchiveFileSystemEnabled())
+    {
+        Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithDir(uri);
+        if (archive.isvalid())
+        {
+            String pathInArchive = archive->ConvertToPathInArchive(uri.LocalPath());
+            result = archive->ListFiles(pathInArchive, pattern);
+        }
+    }
+// add local files when not public
+#if !PUBLIC_BUILD
+    Array<String> localresult;
+    localresult = FSWrapper::ListFiles(uri.GetHostAndLocalPath(), pattern);
+    for (const String& str : localresult)
+    {
+        if (result.FindIndex(str) == InvalidIndex)
+        {
+            result.Append(str);
+        }
+    }
+#endif
     if (asFullPath)
     {
         result = this->AddPathPrefixToArray(uri.LocalPath(), result);

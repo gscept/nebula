@@ -90,7 +90,7 @@ PhysicsFeatureUnit::OnActivate()
     });
     Physics::CreateScene();
     //FIXME
-    IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
+    IndexT dummyMaterial = Physics::SetPhysicsMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
 }
 
 //------------------------------------------------------------------------------
