@@ -205,7 +205,7 @@ AnimSampleLinear(
                     Math::vec3 v1;
                     v0.load(&srcSamplePtr[currentTime.key0]);
                     v1.load(&srcSamplePtr[currentTime.key1]);
-                    v0 = lerp(v0, v1, sampleWeight);
+                    v0 = Math::lerp(v0, v1, sampleWeight);
                 }
                 else
                     v0 = xyz(idleSamples[i]);
@@ -265,7 +265,7 @@ AnimMix(
             // we have 4 curves per joint
             if (mask != 0) maskWeight = mask->weights[i / 4];
 
-            *outSamplePtr = lerp(*src0SamplePtr, *src1SamplePtr, mixWeight * maskWeight);
+            *outSamplePtr = Math::lerp(*src0SamplePtr, *src1SamplePtr, mixWeight * maskWeight);
         }
         else if (src0Count > 0)
         {

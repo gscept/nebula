@@ -49,7 +49,7 @@ Win32Thread::~Win32Thread()
 
     // unregister from thread list
     #if NEBULA_DEBUG
-        n_assert(0 != this->threadListIterator);
+        n_assert(this->threadListIterator != nullptr);
         Win32Thread::criticalSection.Enter();
         ThreadList.Remove(this->threadListIterator);
         Win32Thread::criticalSection.Leave();
