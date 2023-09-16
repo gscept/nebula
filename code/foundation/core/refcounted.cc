@@ -27,7 +27,7 @@ RefCounted::~RefCounted()
     n_assert(0 == this->refCount);
     #if NEBULA_DEBUG
         n_assert(!this->destroyed);
-        n_assert(0 != this->listIterator);
+        n_assert(nullptr != this->listIterator);
         criticalSection.Enter();
         list.Remove(this->listIterator);
         criticalSection.Leave();

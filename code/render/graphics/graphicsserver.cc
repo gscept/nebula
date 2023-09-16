@@ -62,22 +62,22 @@ GraphicsServer::Open()
     this->displayDevice = CoreGraphics::DisplayDevice::Create();
     this->displayDevice->Open();
 
-    CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
-        32_MB,
-        256_MB,
-        64_MB,
-        256_MB,
-        {
+    CoreGraphics::GraphicsDeviceCreateInfo gfxInfo {
+        .globalConstantBufferMemorySize = 32_MB,
+        .globalVertexBufferMemorySize = 256_MB,
+        .globalIndexBufferMemorySize = 64_MB,
+        .globalUploadMemorySize = 256_MB,
+        .memoryHeaps = {
             128_MB,                 // Device local memory block size
             32_MB,                  // Host coherent memory block size
             128_MB,                 // Host cached memory block size
             8_MB,                   // Device <-> host mirrored memory block size
         },
-        0x10000,
-        0x100000,
-        0x100,
-        3,
-        false
+        .maxOcclusionQueries = 0x10000,
+        .maxTimestampQueries = 0x100000,
+        .maxStatisticsQueries = 0x100,
+        .numBufferedFrames = 3,
+        .enableValidation = false
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
