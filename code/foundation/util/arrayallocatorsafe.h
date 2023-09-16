@@ -46,7 +46,7 @@ struct AllocatorLock
         : allocator(allocator)
         , element(element)
     {
-        this->didAcquire = this->allocator->Acquire(this->element);
+        this->didAcquire = this->allocator->TryAcquire(this->element);
     };
 
     ~AllocatorLock()
@@ -132,9 +132,9 @@ public:
     void UpdateSize();
 
     /// Spinlock to acquire 
-    void TryAcquire(const uint32_t index);
+    bool TryAcquire(const uint32_t index);
     /// Acquire element, asserts if false and returns true if this call acquired
-    bool Acquire(const uint32_t index);
+    void Acquire(const uint32_t index);
     /// Release an object, the next thread that acquires may use this instance as it fits
     void Release(const uint32_t index);
 
@@ -405,8 +405,20 @@ ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::UpdateSize()
 /**
 */
 template<uint MAX_ALLOCS, class ...TYPES>
-void 
+bool 
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::TryAcquire(const uint32_t index)
+{
+    Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
+    Threading::ThreadId currentThread = Threading::Interlocked::CompareExchange((volatile long*)&this->owners[index], myThread, Threading::InvalidThreadId);
+    return currentThread == Threading::InvalidThreadId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<uint MAX_ALLOCS, class ...TYPES>
+void 
+ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Acquire(const uint32_t index)
 {
     Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
     if (this->owners[index] == myThread)
@@ -423,19 +435,7 @@ ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::TryAcquire(const uint32_t index)
 /**
 */
 template<uint MAX_ALLOCS, class ...TYPES>
-inline bool 
-ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Acquire(const uint32_t index)
-{
-    Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
-    Threading::ThreadId currentThread = Threading::Interlocked::CompareExchange((volatile long*)&this->owners[index], myThread, Threading::InvalidThreadId);
-    return currentThread == Threading::InvalidThreadId;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<uint MAX_ALLOCS, class ...TYPES>
-inline void 
+void 
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Release(const uint32_t index)
 {
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId());

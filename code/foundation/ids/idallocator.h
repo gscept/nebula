@@ -90,17 +90,17 @@ private:
     void ty##Release(const ty id);
 
 #define _IMPL_ACQUIRE_RELEASE(ty, allocator) \
-    void ty##Acquire(const ty id) { allocator.TryAcquire(id.id24); } \
+    void ty##Acquire(const ty id) { allocator.Acquire(id.id24); } \
     void ty##Release(const ty id) { allocator.Release(id.id24); }
 
 #define _IMPL_ACQUIRE_RELEASE_RESOURCE(ty, allocator) \
-    void ty##Acquire(const ty id) { allocator.TryAcquire(id.resourceId); } \
+    void ty##Acquire(const ty id) { allocator.Acquire(id.resourceId); } \
     void ty##Release(const ty id) { allocator.Release(id.resourceId); }
 
 #define _DECLARE_LOCK(name, allocator) \
     struct name##Lock \
     { \
-        name##Lock(name##Id element) : element(element) { allocator.TryAcquire(this->element.id24); } \
+        name##Lock(name##Id element) : element(element) { allocator.Acquire(this->element.id24); } \
         ~##name##Lock() { allocator.Release(this->element.id24); } \
     private: \
         name##Id element; \

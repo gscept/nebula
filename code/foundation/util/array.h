@@ -1007,9 +1007,13 @@ Array<TYPE, SMALL_VECTOR_SIZE>::IsEmpty() const
 {
     return (this->count == 0);
 }
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
 bool
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsValidIndex(IndexT index) const
+Array<TYPE, SMALL_VECTOR_SIZE>::IsValidIndex(IndexT index) const
 {
     return this->elements && (index < this->count) && (index >= 0);
 }
