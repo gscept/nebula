@@ -409,7 +409,7 @@ bool
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::TryAcquire(const uint32_t index)
 {
     Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
-    Threading::ThreadId currentThread = Threading::Interlocked::CompareExchange((volatile long*)&this->owners[index], myThread, Threading::InvalidThreadId);
+    Threading::ThreadId currentThread = Threading::Interlocked::CompareExchange((volatile int*)&this->owners[index], myThread, Threading::InvalidThreadId);
     return currentThread == Threading::InvalidThreadId;
 }
 
@@ -425,7 +425,7 @@ ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Acquire(const uint32_t index)
         return;
 
     // Spinlock
-    while (Threading::Interlocked::CompareExchange((volatile long*)&this->owners[index], myThread, Threading::InvalidThreadId) != Threading::InvalidThreadId)
+    while (Threading::Interlocked::CompareExchange((volatile int*)&this->owners[index], myThread, Threading::InvalidThreadId) != Threading::InvalidThreadId)
     {
         Threading::Thread::YieldThread();
     };
