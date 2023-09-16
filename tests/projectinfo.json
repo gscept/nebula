@@ -4,7 +4,7 @@
          {
          "Name":           "ProjectName",
          "Value":          "Nebula Tests"
-         },     
+         },
       ],
       "IntermediateDir":   "proj:intermediate",
       "DestDir":           "proj:export",
@@ -32,7 +32,7 @@
       [
          {
             "Name":        "Project",
-            "Value":       "proj:work/shaders/vk" 
+            "Value":       "proj:work/shaders/vk"
          }
 
       ],
@@ -40,7 +40,7 @@
       [
          {
             "Name":        "Project",
-            "Value":       "proh:work/frame/win32"
+            "Value":       "proj:work/frame/win32"
          }
       ],
       "MaterialSources":
@@ -49,5 +49,5 @@
             "Name":        "Project",
             "Value":       "proj:work/materials"
          }
-      ],   
+      ],
 }
