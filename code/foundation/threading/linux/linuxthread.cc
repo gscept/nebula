@@ -38,7 +38,7 @@ LinuxThread::LinuxThread() :
     stackSize(0),
     coreId(System::Cpu::Core0),
     threadState(Initial),
-    thread(0)
+    thread(nullptr)
 {
     CPU_ZERO(&this->affinity);
     // register with thread list
@@ -61,11 +61,11 @@ LinuxThread::~LinuxThread()
 
     // unregister from thread list
     #if NEBULA_DEBUG
-    n_assert(0 != this->threadListIterator);
+    n_assert(nullptr != this->threadListIterator);
     LinuxThread::criticalSection.Enter();
     ThreadList.Remove(this->threadListIterator);
     LinuxThread::criticalSection.Leave();
-    this->threadListIterator = 0;
+    this->threadListIterator = nullptr;
     #endif
 }
 
