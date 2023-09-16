@@ -35,6 +35,8 @@ public:
     Util::StackArray<IndexT, 8> activeSceneIds;
     Util::StackArray<IndexT, 8> deadSceneIds;
 
+    Physics::Material FallbackMaterial;
+
     Util::Set<Ids::Id32> awakeActors;
 
     Physics::Allocator allocator;

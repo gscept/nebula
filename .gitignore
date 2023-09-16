@@ -35,3 +35,5 @@ test.fxb
 export_old
 /CMakeUserPresets.json
 imgui.ini
+/syswork/export
+/tests/export
