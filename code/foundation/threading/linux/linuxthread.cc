@@ -38,7 +38,7 @@ LinuxThread::LinuxThread() :
     stackSize(0),
     coreId(System::Cpu::Core0),
     threadState(Initial),
-    thread(nullptr)
+    thread(0)
 {
     CPU_ZERO(&this->affinity);
     // register with thread list
