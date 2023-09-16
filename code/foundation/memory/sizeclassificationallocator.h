@@ -503,7 +503,7 @@ FirstOne(uint value)
     DWORD count = 0;
     _BitScanForward(&count, value);
 #else
-    int count = __builtin_ctz(mask);
+    int count = __builtin_ctz(value);
 #endif
     return count;
 }
