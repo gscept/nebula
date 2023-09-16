@@ -58,13 +58,13 @@ ListTest::Run()
     list.AddBack("Anne");
     list.AddBack("Danni");
     List<String>::Iterator iter = list.Find("Danni", list.Begin());
-    n_assert(nullptr != iter);
+    n_assert(iter != nullptr);
     list.AddBefore(iter, "Conni");
     iter = list.Find("Anne", list.Begin());
-    n_assert(nullptr != iter);
+    n_assert(iter != nullptr);
     list.AddAfter(iter, "Berit");
     iter = list.Find("Angelika", list.Begin());
-    VERIFY(nullptr == iter);
+    VERIFY(iter == nullptr);
     VERIFY(list.Size() == 4);
     VERIFY(list.Front() == "Anne");
     VERIFY(list.Back() == "Danni");
