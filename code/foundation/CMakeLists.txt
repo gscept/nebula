@@ -15,7 +15,7 @@ endif()
 nebula_begin_module(foundation)
 
     if(FIPS_LINUX)
-    fips_libs(uuid cjson stdc++fs)
+        fips_libs(uuid cjson stdc++fs)
     endif()
     target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml)

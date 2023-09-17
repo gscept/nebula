@@ -171,21 +171,20 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
         switch (1 << i)
         {
             case CoreGraphics::CmdBufferQueryBits::Occlusion:
-                numQueries = 0x10000; // With occlusion culling, we might have thousands of objects
+                numQueries = 1024; // With occlusion culling, we might have thousands of objects
                 type = CoreGraphics::QueryType::OcclusionQueryType;
                 break;
             case CoreGraphics::CmdBufferQueryBits::Timestamps:
-                numQueries = 0x10000;   // Timestamps will be quite a lot fewer
+                numQueries = 64;   // Timestamps will be quite a lot fewer
                 type = CoreGraphics::QueryType::TimestampsQueryType;
                 break;
             case CoreGraphics::CmdBufferQueryBits::Statistics:
-                numQueries = 0x10;    // Statistics will be just a handful over the whole command buffer
+                numQueries = 64;    // Statistics will be just a handful over the whole command buffer
                 type = CoreGraphics::QueryType::StatisticsQueryType;
                 break;
         }
 
-        queryBundles.offset[i] = CoreGraphics::AllocateQueries(type, numQueries);
-        queryBundles.queryCount[i] = 0;
+        queryBundles.states[i].chunkSize = numQueries;
         queryBundles.enabled[i] = true;
     }
 
@@ -233,6 +232,9 @@ DestroyCmdBuffer(const CmdBufferId id)
 
 #if NEBULA_ENABLE_PROFILING
     QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id.id24);
+    queryBundles.chunks[0].Clear();
+    queryBundles.chunks[1].Clear();
+    queryBundles.chunks[2].Clear();
 
     CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
     markers.markerStack.Clear();
@@ -268,11 +270,13 @@ CmdBeginRecord(const CmdBufferId id, const CmdBufferBeginInfo& info)
 
     // Also write first timestamp
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
+
+    queryBundle.states[CoreGraphics::TimestampsQueryType].currentChunk = 0;
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
-        vkCmdWriteTimestamp(commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, queryBundle.offset[CoreGraphics::TimestampsQueryType]);
-        queryBundle.queryCount[CoreGraphics::TimestampsQueryType]++;
+        QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
+        vkCmdWriteTimestamp(commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, chunk.offset + chunk.queryCount++);
     }
 }
 
@@ -1223,7 +1227,8 @@ CmdStartOcclusionQueries(const CmdBufferId id)
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::OcclusionQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::OcclusionQueryType]);
-    vkCmdBeginQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::OcclusionQueryType] + queryBundle.queryCount[CoreGraphics::OcclusionQueryType], 0x0);
+    QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::OcclusionQueryType);
+    vkCmdBeginQuery(cmdBuf, pool, chunk.offset + chunk.queryCount++, 0x0);
 }
 
 //------------------------------------------------------------------------------
@@ -1236,7 +1241,8 @@ CmdEndOcclusionQueries(const CmdBufferId id)
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::OcclusionQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::OcclusionQueryType]);
-    vkCmdEndQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::OcclusionQueryType] + queryBundle.queryCount[CoreGraphics::OcclusionQueryType]++);
+    QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::OcclusionQueryType);
+    vkCmdEndQuery(cmdBuf, pool, chunk.offset + chunk.queryCount++);
 }
 
 //------------------------------------------------------------------------------
@@ -1249,7 +1255,8 @@ CmdStartPipelineQueries(const CmdBufferId id)
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::StatisticsQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::StatisticsQueryType]);
-    vkCmdBeginQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::StatisticsQueryType] + queryBundle.queryCount[CoreGraphics::StatisticsQueryType], 0x0);
+    QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::StatisticsQueryType);
+    vkCmdBeginQuery(cmdBuf, pool, chunk.offset + chunk.queryCount++, 0x0);
 }
 
 //------------------------------------------------------------------------------
@@ -1262,7 +1269,8 @@ CmdEndPipelineQueries(const CmdBufferId id)
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::StatisticsQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::StatisticsQueryType]);
-    vkCmdEndQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::StatisticsQueryType] + queryBundle.queryCount[CoreGraphics::StatisticsQueryType]++);
+    QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::StatisticsQueryType);
+    vkCmdEndQuery(cmdBuf, pool, chunk.offset + chunk.queryCount++);
 }
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -1272,7 +1280,6 @@ CmdEndPipelineQueries(const CmdBufferId id)
 void
 CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 {
-    __Lock(commandBuffers, id.id24);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
 #if NEBULA_ENABLE_PROFILING
@@ -1281,12 +1288,13 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
+        QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
         CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
         FrameProfilingMarker marker;
         marker.color = color;
         marker.name = name;
         marker.queue = usage;
-        marker.gpuBegin = queryBundle.offset[CoreGraphics::TimestampsQueryType] + queryBundle.queryCount[CoreGraphics::TimestampsQueryType]++;
+        marker.gpuBegin = chunk.offset + chunk.queryCount++;
         vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, marker.gpuBegin);
         markers.markerStack.Push(marker);
     }
@@ -1310,7 +1318,6 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 void
 CmdEndMarker(const CmdBufferId id)
 {
-    __Lock(commandBuffers, id.id24);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
 #if NEBULA_ENABLE_PROFILING
@@ -1318,10 +1325,11 @@ CmdEndMarker(const CmdBufferId id)
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
+        QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
         CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
         n_assert(!markers.markerStack.IsEmpty());
         FrameProfilingMarker marker = markers.markerStack.Pop();
-        marker.gpuEnd = queryBundle.offset[CoreGraphics::TimestampsQueryType] + queryBundle.queryCount[CoreGraphics::TimestampsQueryType]++;
+        marker.gpuEnd = chunk.offset + chunk.queryCount++;
         vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, marker.gpuEnd);
 
         // Push marker to finished list
@@ -1364,9 +1372,20 @@ CmdFinishQueries(const CmdBufferId id)
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
     {
-        if (queryBundle.queryCount[i] != 0)
+        // Grab all chunk offsets and counts 
+        const Util::Array<QueryBundle::QueryChunk>& chunks = queryBundle.chunks[i];
+        if (!chunks.IsEmpty())
         {
-            CoreGraphics::FinishQueries(id, (CoreGraphics::QueryType)i, queryBundle.offset[i], queryBundle.queryCount[i]);
+            Util::FixedArray<IndexT> offsets(chunks.Size());
+            Util::FixedArray<SizeT> counts(chunks.Size());
+            for (IndexT j = 0; j < chunks.Size(); j++)
+            {
+                offsets[j] = chunks[j].offset;
+                counts[j] = chunks[j].queryCount;
+            }
+
+            // Finally copy over all chunks to the output buffer
+            CoreGraphics::FinishQueries(id, (CoreGraphics::QueryType)i, offsets.Begin(), counts.Begin(), chunks.Size());
         }
     }
 }
@@ -1391,7 +1410,8 @@ CmdGetMarkerOffset(const CmdBufferId id)
 {
     CoreGraphics::QueryBundle& queries = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     n_assert(queries.enabled[CoreGraphics::QueryType::TimestampsQueryType]);
-    return queries.offset[CoreGraphics::QueryType::TimestampsQueryType];
+    QueryBundle::QueryChunk& chunk = queries.GetChunk(CoreGraphics::TimestampsQueryType);
+    return queries.chunks[CoreGraphics::TimestampsQueryType][0].offset;
 }
 
 #endif
