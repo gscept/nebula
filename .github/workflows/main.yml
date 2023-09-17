@@ -131,7 +131,7 @@ jobs:
     if: cancelled() == false
     steps:
      - name: Notification       
-       uses: xinthink/action-telegram@v1.1
+       uses: gscept/action-telegram@v1.1.1
        with:
          botToken: ${{ secrets.BotToken }}
          chatId: ${{ secrets.ChatID }}
