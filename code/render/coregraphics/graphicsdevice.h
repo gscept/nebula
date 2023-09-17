@@ -105,6 +105,9 @@ struct GraphicsDeviceState
     int globalUploadBufferMaxValue;
     CoreGraphics::BufferId uploadBuffer;
 
+    uint maxNumBufferedFrames = 1;
+    uint32_t currentBufferedFrameIndex = 0;
+
     bool isOpen : 1;
     bool inNotifyEventHandlers : 1;
     bool renderWireframe : 1;
@@ -139,9 +142,6 @@ struct GraphicsDeviceThreadState
     bool usePatches : 1;
     bool enableValidation : 1;
 };
-
-/// retrieve the current graphics device state
-GraphicsDeviceState const* const GetGraphicsDeviceState();
 
 /// attach a render event handler
 void AttachEventHandler(const Ptr<CoreGraphics::RenderEventHandler>& h);
@@ -261,7 +261,7 @@ void DelayedDeletePass(const CoreGraphics::PassId id);
 /// Allocate a range of queries
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);
 /// Copy query results to buffer
-void FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT start, SizeT count);
+void FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT* starts, SizeT* counts, SizeT numCopies);
 
 /// Get queue index
 IndexT GetQueueIndex(const QueueType queue);

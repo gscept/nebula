@@ -64,17 +64,17 @@ GraphicsServer::Open()
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo {
         .globalConstantBufferMemorySize = 32_MB,
-        .globalVertexBufferMemorySize = 256_MB,
+        .globalVertexBufferMemorySize = 64_MB,
         .globalIndexBufferMemorySize = 64_MB,
-        .globalUploadMemorySize = 256_MB,
+        .globalUploadMemorySize = 64_MB,
         .memoryHeaps = {
-            128_MB,                 // Device local memory block size
+            64_MB,                  // Device local memory block size
             32_MB,                  // Host coherent memory block size
-            128_MB,                 // Host cached memory block size
+            64_MB,                  // Host cached memory block size
             8_MB,                   // Device <-> host mirrored memory block size
         },
-        .maxOcclusionQueries = 0x10000,
-        .maxTimestampQueries = 0x100000,
+        .maxOcclusionQueries = 0x1000,
+        .maxTimestampQueries = 0x100,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
         .enableValidation = false

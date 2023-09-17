@@ -101,9 +101,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     VkSemaphore waitForPresentSemaphore;
 
-    uint maxNumBufferedFrames = 1;
-    uint32_t currentBufferedFrameIndex = 0;
-
     VkExtensionProperties physicalExtensions[64];
 
     uint32_t usedPhysicalExtensions;
@@ -1703,15 +1700,18 @@ AllocateQueries(const CoreGraphics::QueryType type, uint numQueries)
 /**
 */
 void
-FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT start, SizeT count)
+FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT* starts, SizeT* counts, SizeT numCopies)
 {
     VkCommandBuffer vkCmd = CmdBufferGetVk(cmdBuf);
     CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::HostRead, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global);
-    vkCmdCopyQueryPoolResults(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], start, count, BufferGetVk(state.queries[state.currentBufferedFrameIndex].queryBuffer[type]), start * sizeof(uint64), sizeof(uint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::HostRead, CoreGraphics::BarrierDomain::Global);
+    for (IndexT i = 0; i < numCopies; i++)
+    {
+        vkCmdCopyQueryPoolResults(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], starts[i], counts[i], BufferGetVk(state.queries[state.currentBufferedFrameIndex].queryBuffer[type]), starts[i] * sizeof(uint64_t), sizeof(uint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
-    // Finally reset the query pool
-    vkCmdResetQueryPool(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], start, count);
+        // Finally reset the query pool
+        vkCmdResetQueryPool(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], starts[i], counts[i]);
+    }
+    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::HostRead, CoreGraphics::BarrierDomain::Global);
 }
 
 //------------------------------------------------------------------------------
@@ -2381,12 +2381,3 @@ SubmissionWaitEvent::operator=(const std::nullptr_t)
 }
 
 } // namespace CoreGraphics
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::GraphicsDeviceState const* const
-CoreGraphics::GetGraphicsDeviceState()
-{
-    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::state;
-}
