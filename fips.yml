@@ -22,7 +22,7 @@ imports:
         git: https://github.com/fips-libs/fips-stb.git
         group: misc
     fips-soloud:
-        git: https://github.com/fLindahl/fips-soloud.git
+        git: https://github.com/gscept/fips-soloud.git
         group: audio
     nebula-libs:
         git: https://github.com/gscept/nebula-libs
