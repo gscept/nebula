@@ -89,11 +89,13 @@ struct __Mesh
 };
 
 typedef Ids::IdAllocatorSafe<
+    0xFFFF,
     Resources::ResourceName,
     __Mesh
 > MeshAllocator;
 extern MeshAllocator meshAllocator;
 
+_DECLARE_LOCK(Mesh, meshAllocator);
 
 extern MeshId RectangleMesh;
 extern MeshId DiskMesh;

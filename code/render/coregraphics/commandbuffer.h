@@ -140,6 +140,8 @@ struct CmdBufferMarkerBundle
 };
 
 ID_24_8_TYPE(CmdBufferId);
+void CmdBufferIdAcquire(const CmdBufferId id); 
+void CmdBufferIdRelease(const CmdBufferId id);
 
 /// create new command buffer
 const CmdBufferId CreateCmdBuffer(const CmdBufferCreateInfo& info);
@@ -384,6 +386,7 @@ struct CmdMarkerScope
 #else
     #define N_CMD_SCOPE(x, y, z)
 #endif
+
 
 } // namespace CoreGraphics
 

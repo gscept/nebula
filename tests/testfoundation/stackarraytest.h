@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Test::PinnedArrayTest
+    @class Test::StackArrayTest
 
-    Tests Nebula's pinned array class.
+    Tests Nebula's array with item stack.
 
-    (C) 2006 Radon Labs GmbH
+    (C) 2023 Individual contributors, see AUTHORS file
 */
 #include "testbase/testcase.h"
 

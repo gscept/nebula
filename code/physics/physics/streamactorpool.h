@@ -69,7 +69,7 @@ private:
     {
         Actor_Info
     };
-    Ids::IdAllocatorSafe<ActorInfo> allocator;
+    Ids::IdAllocatorSafe<0xFFF, ActorInfo> allocator;
 };
 
 extern StreamActorPool *actorPool;

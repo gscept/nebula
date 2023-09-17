@@ -156,9 +156,12 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
 
         // Upload vertex data
         {
-            // Get upload buffer
-            uint offset = CoreGraphics::Upload(vertexData, header->vertexDataSize);
             CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
+            BufferIdAcquire(uploadBuf);
+            BufferIdAcquire(vbo);
+
+            // Get upload buffer
+            uint offset = CoreGraphics::Upload(vertexData, header->vertexDataSize);           
 
             // Allocate vertices from global repository 
             baseVertexOffset = CoreGraphics::AllocateVertices(header->vertexDataSize);
@@ -170,13 +173,19 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
             CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, vbo, { to }, header->vertexDataSize);
             CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+            BufferIdRelease(uploadBuf);
+            BufferIdRelease(vbo);
         }
 
         // Upload index data
         {
+            CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
+            BufferIdAcquire(uploadBuf);
+            BufferIdAcquire(ibo);
+
             // Get upload buffer
             uint offset = CoreGraphics::Upload(indexData, header->indexDataSize);
-            CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
 
             // Allocate vertices from global repository 
             baseIndexOffset = CoreGraphics::AllocateIndices(header->indexDataSize);
@@ -188,6 +197,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
             CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, ibo, { to }, header->indexDataSize);
             CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+            BufferIdRelease(uploadBuf);
+            BufferIdRelease(ibo);
         }
 
         for (IndexT i = 0; i < header->numGroups; i++)

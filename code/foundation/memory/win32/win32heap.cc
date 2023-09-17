@@ -79,7 +79,7 @@ Win32Heap::~Win32Heap()
     #if NEBULA_MEMORY_STATS
     n_assert(0 == this->allocCount);
     n_assert(0 != criticalSection);
-    n_assert(0 != this->listIterator);
+    n_assert(this->listIterator != nullptr);
     criticalSection->Enter();
     list->Remove(this->listIterator);
     criticalSection->Leave();

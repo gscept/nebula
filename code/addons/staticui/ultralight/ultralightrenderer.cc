@@ -441,7 +441,7 @@ UltralightRenderer::DestroyGeometry(uint32_t geometry_id)
 void
 UltralightRenderer::UpdateCommandList(const ultralight::CommandList& list)
 {
-    this->commands.SetSize(list.size);
+    this->commands.Resize(list.size);
     memcpy(this->commands.Begin(), list.commands, list.size * sizeof(ultralight::Command));
 }
 

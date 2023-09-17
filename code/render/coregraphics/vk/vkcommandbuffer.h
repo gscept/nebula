@@ -86,9 +86,55 @@ struct VkPipelineBundle
 
 struct QueryBundle
 {
-    IndexT offset[CoreGraphics::QueryType::NumQueryTypes];
-    uint queryCount[CoreGraphics::QueryType::NumQueryTypes];
     bool enabled[CoreGraphics::QueryType::NumQueryTypes];
+
+    struct QueryChunk
+    {
+        uint offset;
+        uint queryCount;
+    };
+
+    Util::Array<QueryChunk> chunks[CoreGraphics::QueryType::NumQueryTypes];
+
+    struct QueryState
+    {
+        uint currentChunk;
+        uint chunkSize;
+    };
+    QueryState states[CoreGraphics::QueryType::NumQueryTypes];
+
+
+    QueryChunk& GetChunk(CoreGraphics::QueryType queryType)
+    {
+        Util::Array<QueryChunk>& chunks = this->chunks[queryType];
+        QueryState& state = this->states[queryType];
+
+        auto chunkCreator = [&state, &chunks](CoreGraphics::QueryType type) -> QueryChunk&
+        {
+            QueryChunk& newChunk = chunks.Emplace();
+            newChunk.offset = CoreGraphics::AllocateQueries(type, state.chunkSize);
+            newChunk.queryCount = 0;
+            return newChunk;
+        };
+
+        if (!chunks.IsEmpty())
+        {
+            QueryChunk& currentChunk = chunks[state.currentChunk];
+
+            // If chunk is full, get new
+            if (currentChunk.queryCount == state.chunkSize)
+            {
+                QueryChunk& newChunk = chunkCreator(queryType);
+                state.currentChunk++;
+                return newChunk;
+            }
+            return currentChunk;
+        }
+        else
+        {
+            return chunkCreator(queryType);
+        }
+    };
 };
 
 struct ViewportBundle
@@ -104,7 +150,8 @@ struct ScissorBundle
 };
 
 typedef Ids::IdAllocatorSafe<
-    VkDevice
+    0xFFF
+    , VkDevice
     , VkCommandBuffer
     , VkCommandPool
     , CoreGraphics::CmdPipelineBuildBits

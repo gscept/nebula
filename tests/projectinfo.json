@@ -1,0 +1,53 @@
+{
+      "MetaData":
+      [
+         {
+         "Name":           "ProjectName",
+         "Value":          "Nebula Tests"
+         },
+      ],
+      "IntermediateDir":   "proj:intermediate",
+      "DestDir":           "proj:export",
+      "AssetSources" :
+      [
+         {
+         "Name":           "Project",
+         "Value":          "proj:work"
+         },
+      ],
+      "TextureDestDir":    "DestDir:textures",
+      "TextureAttrTable":  "IntermediateDir:TextureAttrs",
+
+      "AudioDestDir":      "DestDir:audio",
+      "AudioSources":
+      [
+         {
+         "Name":           "Project",
+         "Value":          "proj:work/audio"
+         },
+      ],
+      "ShaderLanguage":    "SPIRV",
+      "ShaderDest":        "DestDir:shaders",
+      "ShaderSources" :
+      [
+         {
+            "Name":        "Project",
+            "Value":       "proj:work/shaders/vk"
+         }
+
+      ],
+      "FrameShaderSources": 
+      [
+         {
+            "Name":        "Project",
+            "Value":       "proj:work/frame/win32"
+         }
+      ],
+      "MaterialSources":
+      [
+         {
+            "Name":        "Project",
+            "Value":       "proj:work/materials"
+         }
+      ],
+}

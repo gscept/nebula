@@ -22,6 +22,8 @@ struct TextureSubresourceInfo;
 
 /// texture type
 RESOURCE_ID_TYPE(TextureId);
+void TextureIdAcquire(const TextureId id); 
+void TextureIdRelease(const TextureId id);;
 
 /// texture types
 enum TextureType
@@ -66,7 +68,7 @@ struct TextureDimensions
 {
     SizeT width, height, depth;
 
-    bool operator==(const TextureDimensions& dims)
+    bool operator==(const TextureDimensions& dims) const
     {
         return this->width == dims.width && this->height == dims.height && this->depth == dims.depth;
     }

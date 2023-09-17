@@ -3,7 +3,7 @@
 //  (C) 2006 Radon Labs GmbH
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#include "util/array.h"
+#include "util/pinnedarray.h"
 #include "pinnedarraytest.h"
 
 namespace Test
@@ -19,7 +19,7 @@ using namespace Util;
 void
 PinnedArrayTest::Run()
 {
-    PinnedArray<int> array0(10e6), array1(10e6), array2(10e6);
+    PinnedArray<0xFFFF, int> array0, array1, array2;
 
     array0.Append(1);
     array0.Append(2);

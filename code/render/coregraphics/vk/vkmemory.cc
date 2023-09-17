@@ -213,7 +213,7 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
     vkGetBufferMemoryRequirements(dev, buf, &req);
     VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
-    VkMemoryPropertyFlags flags;
+    VkMemoryPropertyFlags flags = 0;
 
     switch (type)
     {

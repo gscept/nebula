@@ -109,7 +109,7 @@ void SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& call
 void SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback);
 
 ///
-IndexT CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density);
+IndexT SetPhysicsMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density);
 ///
 Material & GetMaterial(IndexT idx);
 ///

@@ -36,9 +36,7 @@
 #include "math/scalar.h"
 #include <type_traits>
 
-#ifdef __linux__
-#include <sys/mman.h>
-#endif
+
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -58,14 +56,14 @@ struct _smallvector<TYPE, 0>
     TYPE* data() { return nullptr; }
 };
 
-template<class TYPE, int SMALL_VECTOR_SIZE = 0, bool PINNED = false> class Array
+template<class TYPE, int SMALL_VECTOR_SIZE = 0> class Array
 {
 public:
     /// define iterator
     typedef TYPE* Iterator;
     typedef const TYPE* ConstIterator;
 
-    using ArrayT = Array<TYPE, SMALL_VECTOR_SIZE, PINNED>;
+    using ArrayT = Array<TYPE, SMALL_VECTOR_SIZE>;
 
     /// constructor with default parameters
     Array();
@@ -73,8 +71,6 @@ public:
     Array(SizeT initialCapacity, SizeT initialGrow);
     /// constructor with initial size, grow size and initial values
     Array(SizeT initialSize, SizeT initialGrow, const TYPE& initialValue);
-    /// constructor for pinned array
-    Array(SizeT maxSize);
     /// copy constructor
     Array(const ArrayT& rhs);
     /// move constructor
@@ -89,17 +85,17 @@ public:
     ~Array();
 
     /// assignment operator
-    void operator=(const ArrayT& rhs);
+    void operator=(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs);
     /// move operator
-    void operator=(ArrayT&& rhs) noexcept;
+    void operator=(Array<TYPE, SMALL_VECTOR_SIZE>&& rhs) noexcept;
     /// [] operator
     TYPE& operator[](IndexT index) const;
     /// [] operator
     TYPE& operator[](IndexT index);
     /// equality operator
-    bool operator==(const ArrayT& rhs) const;
+    bool operator==(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs) const;
     /// inequality operator
-    bool operator!=(const ArrayT& rhs) const;
+    bool operator!=(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs) const;
     /// convert to "anything"
     template<typename T> T As() const;
 
@@ -114,7 +110,7 @@ public:
     /// append an element which is being forwarded
     void Append(TYPE&& elm);
     /// append the contents of an array to this array
-    void AppendArray(const ArrayT& rhs);
+    void AppendArray(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs);
     /// append from C array
     void AppendArray(const TYPE* arr, const SizeT count);
     /// Emplace item (create new item and return reference)
@@ -124,8 +120,6 @@ public:
     /// increase capacity to fit N more elements into the array.
     void Reserve(SizeT num);
     
-    /// set number of elements (clears existing content)
-    void SetSize(SizeT s);
     /// get number of elements in array
     const SizeT Size() const;
     /// return the byte size of the array.
@@ -138,6 +132,8 @@ public:
     TYPE& Back() const;
     /// return true if array empty
     bool IsEmpty() const;
+    /// check if index is valid
+    bool IsValidIndex(IndexT index) const;
     /// erase element at index, keep sorting intact
     void EraseIndex(IndexT index);
     /// erase element pointed to by iterator, keep sorting intact
@@ -189,7 +185,7 @@ public:
     /// clear contents and preallocate with new attributes
     void Realloc(SizeT capacity, SizeT grow);
     /// returns new array with elements which are not in rhs (slow!)
-    ArrayT Difference(const ArrayT& rhs);
+    ArrayT Difference(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs);
     /// sort the array
     void Sort();
     /// sort with custom function
@@ -222,7 +218,7 @@ protected:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
     /// copy content
-    void Copy(const ArrayT& src);
+    void Copy(const Array<TYPE, SMALL_VECTOR_SIZE>& src);
     /// delete content
     void Delete();
     /// grow array to target size
@@ -244,35 +240,30 @@ protected:
     TYPE* elements;                         // pointer to element array
 
     _smallvector<TYPE, SMALL_VECTOR_SIZE> stackElements;
-
-    struct _e {};
-    std::conditional_t<PINNED, SizeT, _e> maxCommitSize;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array() :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array() :
     grow(16),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(this->stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(SizeT _capacity, SizeT _grow) :
     grow(_grow),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(this->stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     if (0 == this->grow)
     {
         this->grow = 16;
@@ -283,14 +274,13 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT _capacity, SizeT _grow) :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
     grow(_grow),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     if (0 == this->grow)
     {
         this->grow = 16;
@@ -308,29 +298,13 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT initialSize, SizeT _grow, co
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(SizeT maxSize) :
-    grow(16),
-    capacity(0),
-    count(0),
-    elements(nullptr),
-    maxCommitSize(maxSize)
-{
-    static_assert(PINNED, "Array must be pinned to use this constructor");
-    static_assert(SMALL_VECTOR_SIZE == 0, "Pinned arrays may not use small vector optimization");
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const TYPE* const buf, SizeT num) :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(const TYPE* const buf, SizeT num) :
     grow(16),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     static_assert(std::is_trivially_copyable<TYPE>::value, "TYPE is not trivially copyable; Util::Array cannot be constructed from pointer of TYPE.");
     this->GrowTo(num);
     this->count = num;
@@ -341,14 +315,13 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const TYPE* const buf, SizeT num) 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(std::initializer_list<TYPE> list) :
     grow(16),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     this->GrowTo((SizeT)list.size());
     this->count = (SizeT)list.size();
     IndexT i;
@@ -361,35 +334,33 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::initializer_list<TYPE> list) 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(std::nullptr_t) :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(std::nullptr_t) :
     grow(16),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs) :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs) :
     grow(16),
     capacity(SMALL_VECTOR_SIZE),
     count(0),
     elements(this->stackElements.data())
 {
-    static_assert(!PINNED, "Use the Array(SizeT) constructor for pinned arrays");
     this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(Array<TYPE, SMALL_VECTOR_SIZE, PINNED>&& rhs) noexcept :
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Array(Array<TYPE, SMALL_VECTOR_SIZE>&& rhs) noexcept :
     grow(rhs.grow),
     capacity(rhs.capacity),
     count(rhs.count),
@@ -414,9 +385,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Array(Array<TYPE, SMALL_VECTOR_SIZE, PIN
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& src)
+Array<TYPE, SMALL_VECTOR_SIZE>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE>& src)
 {
     #if NEBULA_BOUNDSCHECKS
     // Make sure array is either empty, or stack array before copy
@@ -436,9 +407,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Copy(const Array<TYPE, SMALL_VECTOR_SIZE
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
+Array<TYPE, SMALL_VECTOR_SIZE>::Delete()
 {
     this->grow = 16;
     
@@ -446,15 +417,7 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
     {
         if (this->elements != this->stackElements.data())
         {
-            if constexpr (PINNED)
-            {
-                // If in small vector, run destructor
-                this->DestroyRange(0, this->count);
-
-                Memory::FreeVirtual(this->elements, this->capacity * sizeof(TYPE));
-            }
-            else
-                ArrayFree(this->capacity, this->elements);
+            ArrayFree(this->capacity, this->elements);
         }
         else
         {
@@ -470,8 +433,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Delete()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Destroy(TYPE* elm)
+template<class TYPE, int SMALL_VECTOR_SIZE> void
+Array<TYPE, SMALL_VECTOR_SIZE>::Destroy(TYPE* elm)
 {
     elm->~TYPE();
 }
@@ -479,8 +442,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Destroy(TYPE* elm)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::~Array()
+template<class TYPE, int SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::~Array()
 {
     this->Delete();
 }
@@ -488,8 +451,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::~Array()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Realloc(SizeT _capacity, SizeT _grow)
+template<class TYPE, int SMALL_VECTOR_SIZE> void
+Array<TYPE, SMALL_VECTOR_SIZE>::Realloc(SizeT _capacity, SizeT _grow)
 {
     this->Delete();
     this->grow = _grow;
@@ -508,8 +471,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Realloc(SizeT _capacity, SizeT _grow)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs)
+template<class TYPE, int SMALL_VECTOR_SIZE> void 
+Array<TYPE, SMALL_VECTOR_SIZE>::operator=(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs)
 {
     if (this != &rhs)
     {
@@ -538,8 +501,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(const Array<TYPE, SMALL_VECTOR
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(Array<TYPE, SMALL_VECTOR_SIZE, PINNED>&& rhs) noexcept
+template<class TYPE, int SMALL_VECTOR_SIZE> void
+Array<TYPE, SMALL_VECTOR_SIZE>::operator=(Array<TYPE, SMALL_VECTOR_SIZE>&& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -560,8 +523,6 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(Array<TYPE, SMALL_VECTOR_SIZE,
         this->grow = rhs.grow;
         this->count = rhs.count;
         this->capacity = rhs.capacity;
-        if constexpr (PINNED)
-            this->maxCommitSize = rhs.maxCommitSize;
         rhs.count = 0;
         rhs.capacity = 0;
     }
@@ -570,61 +531,31 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator=(Array<TYPE, SMALL_VECTOR_SIZE,
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::GrowTo(SizeT newCapacity)
+template<class TYPE, int SMALL_VECTOR_SIZE> void
+Array<TYPE, SMALL_VECTOR_SIZE>::GrowTo(SizeT newCapacity)
 {
     if (newCapacity > SMALL_VECTOR_SIZE)
     {
-        if constexpr (PINNED)
+        TYPE* newArray = ArrayAlloc<TYPE>(newCapacity);
+        if (this->elements)
         {
-            if (this->elements == nullptr)
-            {
-                SizeT pageSize = System::PageSize;
-                SizeT reservationSize = Math::align(this->maxCommitSize * sizeof(TYPE), pageSize);
-                this->elements = (TYPE*)Memory::AllocVirtual(reservationSize);
-            }
+            this->MoveRange(newArray, this->elements, this->count);
 
-            SizeT pageSize = System::PageSize;
-
-            // Total amount of bytes needed to fill new capacity
-            SizeT totalByteSize = newCapacity * sizeof(TYPE);
-
-            // Rounded up to the page size so we don't waste memory we allocate anyways
-            SizeT totalBytesNeeded = Math::align(totalByteSize, pageSize);
-            n_assert(totalBytesNeeded <= this->maxCommitSize);
-            SizeT roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);
-            SizeT offset = this->capacity * sizeof(TYPE);
-            if (totalBytesNeeded > offset)
-            {
-                // The amount of bytes we need to commit is the difference between the new and the old capacity
-                SizeT commitSize = (roundedUpNewCapacity - this->capacity) * sizeof(TYPE);
-                this->capacity = roundedUpNewCapacity;
-                Memory::CommitVirtual(((byte*)this->elements) + offset, commitSize);
-            }
+            // discard old array if not the stack array
+            if (this->elements != this->stackElements.data())
+                ArrayFree(this->capacity, this->elements);
         }
-        else
-        {
-            TYPE* newArray = ArrayAlloc<TYPE>(newCapacity);
-            if (this->elements)
-            {
-                this->MoveRange(newArray, this->elements, this->count);
-
-                // discard old array if not the stack array
-                if (this->elements != this->stackElements.data())
-                    ArrayFree(this->capacity, this->elements);
-            }
-            this->elements = newArray;
-            this->capacity = newCapacity;
-        }
+        this->elements = newArray;
+        this->capacity = newCapacity;
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Grow()
+Array<TYPE, SMALL_VECTOR_SIZE>::Grow()
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->grow > 0);
@@ -657,9 +588,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Grow()
     30-Jan-03   floh    serious bugfixes!
     07-Dec-04   jo      bugfix: neededSize >= this->capacity => neededSize > capacity   
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Move(IndexT fromIndex, IndexT toIndex)
+Array<TYPE, SMALL_VECTOR_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
@@ -708,9 +639,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Move(IndexT fromIndex, IndexT toIndex)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::DestroyRange(IndexT fromIndex, IndexT toIndex)
+Array<TYPE, SMALL_VECTOR_SIZE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
 {    
     if constexpr (!std::is_trivially_destructible<TYPE>::value)
     {
@@ -719,20 +650,18 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::DestroyRange(IndexT fromIndex, IndexT to
             this->Destroy(&(this->elements[i]));
         }
     }
-#if NEBULA_DEBUG
     else
     {
         Memory::Clear((void*)&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
     }
-#endif
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::CopyRange(TYPE* to, TYPE* from, SizeT num)
+Array<TYPE, SMALL_VECTOR_SIZE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
 {
     // this is a backward move
     if constexpr (!std::is_trivially_copyable<TYPE>::value)
@@ -752,9 +681,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::CopyRange(TYPE* to, TYPE* from, SizeT nu
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::MoveRange(TYPE* to, TYPE* from, SizeT num)
+Array<TYPE, SMALL_VECTOR_SIZE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
 {
     // copy over contents
     if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
@@ -774,9 +703,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::MoveRange(TYPE* to, TYPE* from, SizeT nu
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline TYPE& 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Get(IndexT index) const
+Array<TYPE, SMALL_VECTOR_SIZE>::Get(IndexT index) const
 {
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements != nullptr);
@@ -788,9 +717,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Get(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(const TYPE& elm)
+Array<TYPE, SMALL_VECTOR_SIZE>::Append(const TYPE& elm)
 {
     // grow allocated space if exhausted
     if (this->count == this->capacity)
@@ -806,9 +735,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(const TYPE& elm)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(TYPE&& elm)
+Array<TYPE, SMALL_VECTOR_SIZE>::Append(TYPE&& elm)
 {
     // grow allocated space if exhausted
     if (this->count == this->capacity)
@@ -824,9 +753,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(TYPE&& elm)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::AppendArray(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs)
+Array<TYPE, SMALL_VECTOR_SIZE>::AppendArray(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs)
 {
     SizeT neededCapacity = this->count + rhs.count;
     if (neededCapacity > this->capacity)
@@ -846,9 +775,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::AppendArray(const Array<TYPE, SMALL_VECT
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::AppendArray(const TYPE* arr, const SizeT count)
+Array<TYPE, SMALL_VECTOR_SIZE>::AppendArray(const TYPE* arr, const SizeT count)
 {
     SizeT neededCapacity = this->count + count;
     if (neededCapacity > this->capacity)
@@ -868,9 +797,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::AppendArray(const TYPE* arr, const SizeT
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 TYPE& 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Emplace()
+Array<TYPE, SMALL_VECTOR_SIZE>::Emplace()
 {
     // grow allocated space if exhausted
     if (this->count == this->capacity)
@@ -880,16 +809,16 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Emplace()
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
 #endif
-    this->elements[count] = TYPE();
+    this->elements[this->count] = TYPE();
     return this->elements[this->count++];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 TYPE* 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EmplaceArray(const SizeT count)
+Array<TYPE, SMALL_VECTOR_SIZE>::EmplaceArray(const SizeT count)
 {
     SizeT neededCapacity = this->count + count;
     if (neededCapacity > this->capacity)
@@ -918,9 +847,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EmplaceArray(const SizeT count)
     NOTE: the functionality of this method has been changed as of 26-Apr-08,
     it will now only change the capacity of the array, not its size.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Reserve(SizeT num)
+Array<TYPE, SMALL_VECTOR_SIZE>::Reserve(SizeT num)
 {
 #if NEBULA_BOUNDSCHECKS
     n_assert(num >= 0);
@@ -936,9 +865,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Reserve(SizeT num)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 const SizeT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Size() const
+Array<TYPE, SMALL_VECTOR_SIZE>::Size() const
 {
     return this->count;
 }
@@ -946,9 +875,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 const SizeT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ByteSize() const
+Array<TYPE, SMALL_VECTOR_SIZE>::ByteSize() const
 {
     return this->count * sizeof(TYPE);
 }
@@ -956,9 +885,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ByteSize() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 const SizeT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Capacity() const
+Array<TYPE, SMALL_VECTOR_SIZE>::Capacity() const
 {
     return this->capacity;
 }
@@ -968,9 +897,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Capacity() const
     Access an element. This method will NOT grow the array, and instead do
     a range check, which may throw an assertion.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 TYPE&
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator[](IndexT index) const
+Array<TYPE, SMALL_VECTOR_SIZE>::operator[](IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->count) && (index >= 0));
@@ -983,9 +912,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator[](IndexT index) const
     Access an element. This method will NOT grow the array, and instead do
     a range check, which may throw an assertion.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 TYPE&
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator[](IndexT index) 
+Array<TYPE, SMALL_VECTOR_SIZE>::operator[](IndexT index) 
 {
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->count) && (index >= 0));
@@ -998,9 +927,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator[](IndexT index)
     The equality operator returns true if all elements are identical. The
     TYPE class must support the equality operator.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 bool
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator==(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs) const
+Array<TYPE, SMALL_VECTOR_SIZE>::operator==(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs) const
 {
     if (rhs.Size() == this->Size())
     {
@@ -1026,9 +955,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator==(const Array<TYPE, SMALL_VECTO
     The inequality operator returns true if at least one element in the 
     array is different, or the array sizes are different.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 bool
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator!=(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs) const
+Array<TYPE, SMALL_VECTOR_SIZE>::operator!=(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs) const
 {
     return !(*this == rhs);
 }
@@ -1036,9 +965,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::operator!=(const Array<TYPE, SMALL_VECTO
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 TYPE&
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Front() const
+Array<TYPE, SMALL_VECTOR_SIZE>::Front() const
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->count > 0));
@@ -1049,9 +978,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Front() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 TYPE&
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Back() const
+Array<TYPE, SMALL_VECTOR_SIZE>::Back() const
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (this->count > 0));
@@ -1062,9 +991,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Back() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::push_back(const TYPE& item)
+Array<TYPE, SMALL_VECTOR_SIZE>::push_back(const TYPE& item)
 {
     this->Append(item);
 }
@@ -1072,9 +1001,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::push_back(const TYPE& item)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 bool 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsEmpty() const
+Array<TYPE, SMALL_VECTOR_SIZE>::IsEmpty() const
 {
     return (this->count == 0);
 }
@@ -1082,9 +1011,19 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsEmpty() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE>
+bool
+Array<TYPE, SMALL_VECTOR_SIZE>::IsValidIndex(IndexT index) const
+{
+    return this->elements && (index < this->count) && (index >= 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseIndex(IndexT index)
+Array<TYPE, SMALL_VECTOR_SIZE>::EraseIndex(IndexT index)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->count) && (index >= 0));
@@ -1104,9 +1043,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseIndex(IndexT index)
 /**    
     NOTE: this method is fast but destroys the sorting order!
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseIndexSwap(IndexT index)
+Array<TYPE, SMALL_VECTOR_SIZE>::EraseIndexSwap(IndexT index)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->count) && (index >= 0));
@@ -1127,9 +1066,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseIndexSwap(IndexT index)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Erase(typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator iter)
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::Erase(typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator iter)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->count)));
@@ -1142,9 +1081,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Erase(typename Array<TYPE, SMALL_VECTOR_
 /**
     NOTE: this method is fast but destroys the sorting order!
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseSwap(typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator iter)
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::EraseSwap(typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator iter)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->count)));
@@ -1156,9 +1095,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseSwap(typename Array<TYPE, SMALL_VEC
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseRange(IndexT start, IndexT end)
+Array<TYPE, SMALL_VECTOR_SIZE>::EraseRange(IndexT start, IndexT end)
 {
     n_assert(end >= start);
     n_assert(end <= this->count);
@@ -1177,9 +1116,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseRange(IndexT start, IndexT end)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseBack()
+Array<TYPE, SMALL_VECTOR_SIZE>::EraseBack()
 {
     n_assert(this->count > 0);
     if constexpr (!std::is_trivially_destructible<TYPE>::value)
@@ -1190,9 +1129,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseBack()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseFront()
+Array<TYPE, SMALL_VECTOR_SIZE>::EraseFront()
 {
     this->EraseIndex(0);
 }
@@ -1200,9 +1139,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::EraseFront()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline TYPE 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::PopFront()
+Array<TYPE, SMALL_VECTOR_SIZE>::PopFront()
 {
     TYPE ret = std::move(this->elements[0]);
     this->EraseIndex(0);
@@ -1212,9 +1151,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::PopFront()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline TYPE 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::PopBack()
+Array<TYPE, SMALL_VECTOR_SIZE>::PopBack()
 {
     this->count--;
     return std::move(this->elements[this->count - 1]);
@@ -1223,9 +1162,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::PopBack()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Insert(IndexT index, const TYPE& elm)
+Array<TYPE, SMALL_VECTOR_SIZE>::Insert(IndexT index, const TYPE& elm)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(index <= this->count && (index >= 0));
@@ -1247,9 +1186,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Insert(IndexT index, const TYPE& elm)
     The current implementation of this method does not shrink the 
     preallocated space. It simply sets the array _size to 0.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Clear()
+Array<TYPE, SMALL_VECTOR_SIZE>::Clear()
 {
     if (this->count > 0)
     {
@@ -1263,9 +1202,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Clear()
     This is identical with Clear(), but does NOT call destructors (it just
     resets the _size member. USE WITH CARE!
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Reset()
+Array<TYPE, SMALL_VECTOR_SIZE>::Reset()
 {
     this->count = 0;
 }
@@ -1274,20 +1213,20 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Reset()
 /**
     Free up memory and reset the grow
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Free()
+Array<TYPE, SMALL_VECTOR_SIZE>::Free()
 {
     this->Delete();
-    this->grow = 8;
+    this->grow = 16;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Begin() const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::Begin() const
 {
     return this->elements;
 }
@@ -1295,19 +1234,19 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Begin() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstIterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstBegin() const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::ConstIterator
+Array<TYPE, SMALL_VECTOR_SIZE>::ConstBegin() const
 {
-    return static_cast<Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstIterator>(this->elements);
+    return static_cast<Array<TYPE, SMALL_VECTOR_SIZE>::ConstIterator>(this->elements);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::End() const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::End() const
 {
     return this->elements + this->count;
 }
@@ -1315,11 +1254,11 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::End() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstIterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstEnd() const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::ConstIterator
+Array<TYPE, SMALL_VECTOR_SIZE>::ConstEnd() const
 {
-    return static_cast<Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstIterator>(this->elements + this->count);
+    return static_cast<Array<TYPE, SMALL_VECTOR_SIZE>::ConstIterator>(this->elements + this->count);
 }
 
 //------------------------------------------------------------------------------
@@ -1330,9 +1269,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::ConstEnd() const
     @param  elm     element to find
     @return         element iterator, or 0 if not found
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Find(const TYPE& elm, const IndexT start) const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::Find(const TYPE& elm, const IndexT start) const
 {
     n_assert(start <= this->count);
     IndexT index;
@@ -1354,9 +1293,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Find(const TYPE& elm, const IndexT start
     @param  elm     element to find
     @return         index to element, or InvalidIndex if not found
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 IndexT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::FindIndex(const TYPE& elm, const IndexT start) const
+Array<TYPE, SMALL_VECTOR_SIZE>::FindIndex(const TYPE& elm, const IndexT start) const
 {
     n_assert(start <= this->count);
     IndexT index;
@@ -1373,10 +1312,10 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::FindIndex(const TYPE& elm, const IndexT 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 template<typename ...ELEM_TYPE>
 inline void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(const TYPE& first, const ELEM_TYPE&... elements)
+Array<TYPE, SMALL_VECTOR_SIZE>::Append(const TYPE& first, const ELEM_TYPE&... elements)
 {
     // The plus one is for the first element
     const int size = sizeof...(elements) + 1;
@@ -1403,10 +1342,10 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Append(const TYPE& first, const ELEM_TYP
     @param  elm     element to find
     @return         index to element, or InvalidIndex if not found
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 template<typename KEYTYPE> 
 inline IndexT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start) const
+Array<TYPE, SMALL_VECTOR_SIZE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start) const
 {
     n_assert(start <= this->count);
     IndexT index;
@@ -1429,9 +1368,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::FindIndex(typename std::enable_if<true, 
     @param  num     num elements to fill
     @param  elm     fill value
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fill(IndexT first, SizeT num, const TYPE& elm)
+Array<TYPE, SMALL_VECTOR_SIZE>::Fill(IndexT first, SizeT num, const TYPE& elm)
 {
     if ((first + num) > this->count)
     {
@@ -1453,11 +1392,11 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fill(IndexT first, SizeT num, const TYPE
 
     @todo this method is broken, check test case to see why!
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Difference(const Array<TYPE, SMALL_VECTOR_SIZE, PINNED>& rhs)
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+Array<TYPE, SMALL_VECTOR_SIZE>
+Array<TYPE, SMALL_VECTOR_SIZE>::Difference(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs)
 {
-    Array<TYPE, SMALL_VECTOR_SIZE, PINNED> diff;
+    Array<TYPE, SMALL_VECTOR_SIZE> diff;
     IndexT i;
     SizeT num = rhs.Size();
     for (i = 0; i < num; i++)
@@ -1474,9 +1413,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Difference(const Array<TYPE, SMALL_VECTO
 /**
     Sorts the array. This just calls the STL sort algorithm.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Sort()
+Array<TYPE, SMALL_VECTOR_SIZE>::Sort()
 {
     std::sort(this->Begin(), this->End());
 }
@@ -1484,9 +1423,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Sort()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Util::Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
+Util::Array<TYPE, SMALL_VECTOR_SIZE>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
 {
     std::sort(this->Begin(), this->End(), func);
 }
@@ -1496,9 +1435,9 @@ Util::Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::SortWithFunc(bool (*func)(const TY
     Does a binary search on the array, returns the index of the identical
     element, or InvalidIndex if not found
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 IndexT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::BinarySearchIndex(const TYPE& elm) const
+Array<TYPE, SMALL_VECTOR_SIZE>::BinarySearchIndex(const TYPE& elm) const
 {
     SizeT num = this->Size();
     if (num > 0)
@@ -1556,9 +1495,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::BinarySearchIndex(const TYPE& elm) const
     by using typename to put the template type in a non-deducable context.
     The enable_if does nothing except allow us to use typename.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 template<typename KEYTYPE> inline IndexT 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
+Array<TYPE, SMALL_VECTOR_SIZE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
     SizeT num = this->Size();
     if (num > 0)
@@ -1610,15 +1549,15 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::BinarySearchIndex(typename std::enable_i
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Resize(SizeT num)
+Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num)
 {
     if (num < this->count)
     {
         this->DestroyRange(num, this->count);
     }
-    else if (num > capacity)
+    else if (num > this->capacity)
     {
         this->GrowTo(num);
     }
@@ -1629,9 +1568,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Resize(SizeT num)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::clear() noexcept
+Array<TYPE, SMALL_VECTOR_SIZE>::clear() noexcept
 {
     this->Clear();
 }
@@ -1639,31 +1578,18 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::clear() noexcept
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
+template<class TYPE, int SMALL_VECTOR_SIZE>
 inline void 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fit()
+Array<TYPE, SMALL_VECTOR_SIZE>::Fit()
 {
-    if constexpr (PINNED)
+    TYPE* newArray = ArrayAlloc<TYPE>(this->count);
+    if (this->elements)
     {
-        // The start offset of the memory has to be aligned to the page size
-        SizeT numUsedBytes = Math::align(this->count * sizeof(TYPE), System::PageSize);
-        SizeT numNeededPages = numUsedBytes / System::PageSize;
-        SizeT numUsedPages = this->capacity * sizeof(TYPE) / System::PageSize;
-        SizeT numFreeablePages = numUsedPages - numNeededPages;
-        
-        Memory::DecommitVirtual(((byte*)this->elements) + numUsedBytes, numFreeablePages * System::PageSize);
+        this->MoveRange(newArray, this->elements, this->count);
+        if (this->elements != this->stackElements.data())
+            ArrayFree(this->capacity, this->elements);
     }
-    else
-    {
-        TYPE* newArray = ArrayAlloc<TYPE>(this->count);
-        if (this->elements)
-        {
-            this->MoveRange(newArray, this->elements, this->count);
-            if (this->elements != this->stackElements.data())
-                ArrayFree(this->capacity, this->elements);
-        }
-        this->elements = newArray;
-    }
+    this->elements = newArray;
 
     this->capacity = this->count;
 }
@@ -1671,20 +1597,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Fit()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED>
-void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::SetSize(SizeT s)
-{
-    if (this->count != s)
-        this->Realloc(s, 8);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 inline constexpr SizeT 
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::TypeSize() const
+Array<TYPE, SMALL_VECTOR_SIZE>::TypeSize() const
 {
     return sizeof(TYPE);
 }
@@ -1692,19 +1607,20 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::TypeSize() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 size_t
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::size() const
+Array<TYPE, SMALL_VECTOR_SIZE>::size() const
 {
     return this->count;
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::begin() const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::begin() const
 {
     return this->elements;
 }
@@ -1712,9 +1628,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::begin() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
-typename Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::Iterator
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::end() const
+template<class TYPE, int SMALL_VECTOR_SIZE> 
+typename Array<TYPE, SMALL_VECTOR_SIZE>::Iterator
+Array<TYPE, SMALL_VECTOR_SIZE>::end() const
 {
     return this->elements + this->count;
 }
@@ -1722,9 +1638,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::end() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::resize(size_t s)
+Array<TYPE, SMALL_VECTOR_SIZE>::resize(size_t s)
 {
     if (static_cast<SizeT>(s) > this->capacity)
     {
@@ -1739,9 +1655,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::resize(size_t s)
     This tests, whether the array is sorted. This is a slow operation
     O(n).
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 bool
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsSorted() const
+Array<TYPE, SMALL_VECTOR_SIZE>::IsSorted() const
 {
     if (this->count > 1)
     {
@@ -1763,9 +1679,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::IsSorted() const
     starting at a given index. Performance is O(n). Returns the index
     at which the element was added.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 IndexT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::InsertAtEndOfIdenticalRange(IndexT startIndex, const TYPE& elm)
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertAtEndOfIdenticalRange(IndexT startIndex, const TYPE& elm)
 {
     IndexT i = startIndex + 1;
     for (; i < this->count; i++)
@@ -1787,9 +1703,9 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::InsertAtEndOfIdenticalRange(IndexT start
     This inserts the element into a sorted array. Returns the index
     at which the element was inserted.
 */
-template<class TYPE, int SMALL_VECTOR_SIZE, bool PINNED> 
+template<class TYPE, int SMALL_VECTOR_SIZE> 
 IndexT
-Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::InsertSorted(const TYPE& elm)
+Array<TYPE, SMALL_VECTOR_SIZE>::InsertSorted(const TYPE& elm)
 {
     SizeT num = this->Size();
     if (num == 0)
@@ -1874,11 +1790,8 @@ Array<TYPE, SMALL_VECTOR_SIZE, PINNED>::InsertSorted(const TYPE& elm)
     return InvalidIndex;
 }
 
-template<class TYPE>
-using PinnedArray = Array<TYPE, 0, true>;
-
 template<class TYPE, int STACK_SIZE>
-using StackArray = Array<TYPE, STACK_SIZE, false>;
+using StackArray = Array<TYPE, STACK_SIZE>;
 
 } // namespace Util
 //------------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 #include "vkbuffer.h"
 namespace Vulkan
 {
-VkBufferAllocator bufferAllocator(0x00FFFFFF);
+VkBufferAllocator bufferAllocator;
 
 //------------------------------------------------------------------------------
 /**
@@ -15,7 +15,7 @@ VkBufferAllocator bufferAllocator(0x00FFFFFF);
 VkBuffer 
 BufferGetVk(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.Get<Buffer_RuntimeInfo>(id.id24).buf;
+    return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id24).buf;
 }
 
 //------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ BufferGetVk(const CoreGraphics::BufferId id)
 VkDeviceMemory 
 BufferGetVkMemory(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.Get<Buffer_LoadInfo>(id.id24).mem.mem;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).mem.mem;
 }
 
 //------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ BufferGetVkMemory(const CoreGraphics::BufferId id)
 VkDevice 
 BufferGetVkDevice(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.Get<Buffer_LoadInfo>(id.id24).dev;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).dev;
 }
 
 } // namespace Vulkan
@@ -41,6 +41,7 @@ namespace CoreGraphics
 {
 
 using namespace Vulkan;
+_IMPL_ACQUIRE_RELEASE(BufferId, bufferAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -49,9 +50,9 @@ const BufferId
 CreateBuffer(const BufferCreateInfo& info)
 {
     Ids::Id32 id = bufferAllocator.Alloc();
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id);
-    VkBufferRuntimeInfo& runtimeInfo = bufferAllocator.GetUnsafe<Buffer_RuntimeInfo>(id);
-    VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id);
+    VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id);
+    VkBufferRuntimeInfo& runtimeInfo = bufferAllocator.Get<Buffer_RuntimeInfo>(id);
+    VkBufferMapInfo& mapInfo = bufferAllocator.Get<Buffer_MapInfo>(id);
 
     loadInfo.dev = Vulkan::GetCurrentDevice();
     runtimeInfo.usageFlags = info.usageFlags;
@@ -217,7 +218,6 @@ CreateBuffer(const BufferCreateInfo& info)
     loadInfo.size = info.size;
     loadInfo.byteSize = size;
     loadInfo.elementSize = info.elementSize;
-    mapInfo.mapCount = 0;
 
     BufferId ret;
     ret.id8 = BufferIdType;
@@ -226,6 +226,8 @@ CreateBuffer(const BufferCreateInfo& info)
 #if NEBULA_GRAPHICS_DEBUG
     ObjectSetName(ret, info.name.Value());
 #endif
+
+    CoreGraphics::BufferIdRelease(ret);
 
     return ret;
 }
@@ -236,17 +238,15 @@ CreateBuffer(const BufferCreateInfo& info)
 void 
 DestroyBuffer(const BufferId id)
 {
-    bufferAllocator.Lock(Util::ArrayAllocatorAccess::Write);
+    bufferAllocator.Acquire(id.id24);
     VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id24);
-    VkBufferRuntimeInfo& runtimeInfo = bufferAllocator.Get<Buffer_RuntimeInfo>(id.id24);
-    VkBufferMapInfo& mapInfo = bufferAllocator.Get<Buffer_MapInfo>(id.id24);
+    const VkBufferMapInfo& mapInfo = bufferAllocator.Get<Buffer_MapInfo>(id.id24);
 
-    n_assert(mapInfo.mapCount == 0);
     CoreGraphics::DelayedDeleteBuffer(id);
     CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     loadInfo.mem = CoreGraphics::Alloc{};
-    bufferAllocator.Unlock(Util::ArrayAllocatorAccess::Write);
     bufferAllocator.Dealloc(id.id24);
+    bufferAllocator.Release(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ DestroyBuffer(const BufferId id)
 const BufferUsageFlags 
 BufferGetType(const BufferId id)
 {
-    return bufferAllocator.GetUnsafe<Buffer_RuntimeInfo>(id.id24).usageFlags;
+    return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id24).usageFlags;
 }
 
 //------------------------------------------------------------------------------
@@ -264,8 +264,7 @@ BufferGetType(const BufferId id)
 const SizeT 
 BufferGetSize(const BufferId id)
 {
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
-    return loadInfo.size;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).size;
 }
 
 //------------------------------------------------------------------------------
@@ -274,8 +273,7 @@ BufferGetSize(const BufferId id)
 const SizeT 
 BufferGetElementSize(const BufferId id)
 {
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
-    return loadInfo.elementSize;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).elementSize;
 }
 
 //------------------------------------------------------------------------------
@@ -284,8 +282,7 @@ BufferGetElementSize(const BufferId id)
 const SizeT 
 BufferGetByteSize(const BufferId id)
 {
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
-    return loadInfo.byteSize;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).byteSize;
 }
 
 //------------------------------------------------------------------------------
@@ -303,9 +300,8 @@ BufferGetUploadMaxSize()
 void* 
 BufferMap(const BufferId id)
 {
-    VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
+    const VkBufferMapInfo& mapInfo = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id24);
     n_assert2(mapInfo.mappedMemory != nullptr, "Buffer must be created as dynamic or mapped to support mapping");
-    mapInfo.mapCount++;
     return mapInfo.mappedMemory;
 }
 
@@ -315,9 +311,7 @@ BufferMap(const BufferId id)
 void 
 BufferUnmap(const BufferId id)
 {
-    VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
-    n_assert(mapInfo.mapCount > 0);
-    mapInfo.mapCount--;
+    // Do nothing on Vulkan
 }
 
 //------------------------------------------------------------------------------
@@ -326,10 +320,10 @@ BufferUnmap(const BufferId id)
 void
 BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset)
 {
-    VkBufferMapInfo& map = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
+    const VkBufferMapInfo& map = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id24);
 
 #if NEBULA_DEBUG
-    VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     n_assert(size + offset <= (uint)setup.byteSize);
 #endif
     byte* buf = (byte*)map.mappedMemory + offset;
@@ -352,7 +346,7 @@ BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const vo
 void
 BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern)
 {
-    VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     
     int remainingBytes = setup.byteSize;
     uint numChunks = Math::divandroundup(setup.byteSize, BufferGetUploadMaxSize());
@@ -375,7 +369,7 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 void 
 BufferFlush(const BufferId id, IndexT offset, SizeT size)
 {
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Flush(loadInfo.dev, loadInfo.mem, offset, size);
 }
@@ -386,7 +380,7 @@ BufferFlush(const BufferId id, IndexT offset, SizeT size)
 void 
 BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
 {
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Invalidate(loadInfo.dev, loadInfo.mem, offset, size);
 }

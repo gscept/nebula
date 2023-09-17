@@ -66,7 +66,15 @@ Setup()
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
-    LoadMaterialTable("sys");
+
+    // fallback material
+    state.FallbackMaterial.material = state.physics->createMaterial(0.7f, 0.7f, 0.3f);
+    state.FallbackMaterial.density = 1.0f;
+    state.FallbackMaterial.name = Util::StringAtom("_fallback");  
+    state.FallbackMaterial.serialId = state.FallbackMaterial.name.StringHashCode();
+
+    LoadMaterialTable("sysphys:physicsmaterials.pmat");
+    LoadMaterialTable("phys:physicsmaterials.pmat");
 
     //FIXME this should be somewhere in a toolkit component instead
     Flat::FlatbufferInterface::Init();
@@ -183,7 +191,7 @@ void RenderDebug()
 void
 LoadMaterialTable(const IO::URI & materialTable)
 {
-    const IO::URI materialtable("phys:physicsmaterials.pmat");
+    const IO::URI materialtable(materialTable);
     Util::String materialsString;
     
     if (IO::IoServer::Instance()->ReadFile(materialtable, materialsString))
@@ -192,7 +200,7 @@ LoadMaterialTable(const IO::URI & materialTable)
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::Materials>(materials, (uint8_t*)materialsString.AsCharPtr());
         for (auto const& material : materials.entries)
         {
-            CreateMaterial(material->name, material->static_friction, material->dynamic_friction, material->restitution, material->density);
+            SetPhysicsMaterial(material->name, material->static_friction, material->dynamic_friction, material->restitution, material->density);
         }
     }
 }
@@ -203,8 +211,11 @@ LoadMaterialTable(const IO::URI & materialTable)
 Physics::Material&
 GetMaterial(IndexT idx)
 {
-    n_assert2(idx < state.materials.Size(), "unkown material");
-    return state.materials[idx];
+    if (state.materials.IsValidIndex(idx))
+    {
+        return state.materials[idx];
+    }
+    return state.FallbackMaterial;
 }
 
 //------------------------------------------------------------------------------
@@ -229,19 +240,32 @@ SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
 /**
 */
 IndexT 
-CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restitution, float density)
+SetPhysicsMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restitution, float density)
 {
     n_assert(state.physics);
-    PxMaterial* newMat = state.physics->createMaterial(staticFriction, dynamicFriction, restitution);
-    state.materials.Append(Material());
-    IndexT newIdx = state.materials.Size() - 1;
-    Material & mat = state.materials[newIdx];
-    mat.material = newMat;
-    mat.density = density;
-    mat.name = name;
-    mat.serialId = name.StringHashCode();
-    state.materialNameTable.Add(name, newIdx);
-    return newIdx;
+    if (state.materialNameTable.Contains(name))
+    {
+        IndexT idx = state.materialNameTable[name];
+        Material& mat = state.materials[idx];
+        mat.density = density;
+        mat.material->setDynamicFriction(dynamicFriction);
+        mat.material->setStaticFriction(staticFriction);
+        mat.material->setRestitution(restitution);
+        return idx;
+    }
+    else
+    {
+        PxMaterial* newMat = state.physics->createMaterial(staticFriction, dynamicFriction, restitution);
+        state.materials.Append(Material());
+        IndexT newIdx = state.materials.Size() - 1;
+        Material& mat = state.materials[newIdx];
+        mat.material = newMat;
+        mat.density = density;
+        mat.name = name;
+        mat.serialId = name.StringHashCode();
+        state.materialNameTable.Add(name, newIdx);
+        return newIdx;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -250,8 +274,7 @@ CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFrictio
 IndexT
 LookupMaterial(Util::StringAtom name)
 {
-    n_assert(state.materialNameTable.Contains(name));
-    return state.materialNameTable[name];
+    return state.materialNameTable.FindIndex(name);
 }
 
 //------------------------------------------------------------------------------

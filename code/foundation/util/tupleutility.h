@@ -84,8 +84,19 @@ struct get_template_type<C<T>>
 /**
     Get inner type of two types
 */
-template <template <typename, int, bool> class C, typename T, int I, bool B>
-struct get_template_type<C<T, I, B>>
+template <template <typename, int> class C, typename T, int I>
+struct get_template_type<C<T, I>>
+{
+    using type = T;
+};
+
+
+//------------------------------------------------------------------------------
+/**
+    Get inner type of two types
+*/
+template <template <int, typename> class C, int I, typename T>
+struct get_template_type<C<I, T>>
 {
     using type = T;
 };
@@ -99,12 +110,23 @@ struct get_template_type<const C<T>&>
 {
     using type = T;
 };
+
 //------------------------------------------------------------------------------
 /**
     Get inner type of two types
 */
-template <template <typename, int, bool> class C, typename T, int I, bool B>
-struct get_template_type<C<T, I, B>&>
+template <template <int, typename> class C, int I, typename T>
+struct get_template_type<C<I, T>&>
+{
+    using type = T;
+};
+
+//------------------------------------------------------------------------------
+/**
+    Get inner type of two types
+*/
+template <template <typename, int> class C, typename T, int I>
+struct get_template_type<C<T, I>&>
 {
     using type = T;
 };
