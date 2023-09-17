@@ -131,7 +131,7 @@ jobs:
     if: cancelled() == false
     steps:
      - name: Notification       
-       uses: variar/action-telegram@v1.3
+       uses: gscept/action-telegram@v1.1.1
        with:
          botToken: ${{ secrets.BotToken }}
          chatId: ${{ secrets.ChatID }}
