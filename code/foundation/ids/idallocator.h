@@ -101,7 +101,7 @@ private:
     struct name##Lock \
     { \
         name##Lock(name##Id element) : element(element) { allocator.Acquire(this->element.id24); } \
-        ~##name##Lock() { allocator.Release(this->element.id24); } \
+        ~name##Lock() { allocator.Release(this->element.id24); } \
     private: \
         name##Id element; \
     };
