@@ -1248,9 +1248,14 @@ LockTransferSetupCommandBuffer()
         cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
         state.setupTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
-        CoreGraphics::CmdBeginRecord(state.setupTransferCommandBuffer, {true, false, false});
+        CoreGraphics::CmdBeginRecord(state.setupTransferCommandBuffer, { true, false, false });
         CoreGraphics::CmdBeginMarker(state.setupTransferCommandBuffer, NEBULA_MARKER_PURPLE, "Transfer");
     }
+    else
+    {
+        CmdBufferIdAcquire(state.setupTransferCommandBuffer);
+    }
+    
     return state.setupTransferCommandBuffer;
 }
 
@@ -1261,6 +1266,7 @@ void
 UnlockTransferSetupCommandBuffer()
 {
     transferLock.Leave();
+    CmdBufferIdRelease(state.setupTransferCommandBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -1281,6 +1287,11 @@ LockGraphicsSetupCommandBuffer()
         CoreGraphics::CmdBeginRecord(state.setupGraphicsCommandBuffer, { true, false, false });
         CoreGraphics::CmdBeginMarker(state.setupGraphicsCommandBuffer, NEBULA_MARKER_PURPLE, "Setup");
     }
+    else
+    {
+        CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
+    }
+    
     return state.setupGraphicsCommandBuffer;
 }
 
@@ -1291,6 +1302,7 @@ void
 UnlockGraphicsSetupCommandBuffer()
 {
     setupLock.Leave();
+    CmdBufferIdRelease(state.setupGraphicsCommandBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -1314,6 +1326,7 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
     transferLock.Enter();
     if (state.setupTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
+        CmdBufferIdAcquire(state.setupTransferCommandBuffer);
         CmdEndMarker(state.setupTransferCommandBuffer);
         CmdEndRecord(state.setupTransferCommandBuffer);
         transferWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.setupTransferCommandBuffer));
@@ -1325,6 +1338,8 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         // Delete command buffer
         CoreGraphics::DelayedDeleteCommandBuffer(state.setupTransferCommandBuffer);
 
+        CmdBufferIdRelease(state.setupTransferCommandBuffer);
+
         // Reset command buffer id for the next frame
         state.setupTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
     }
@@ -1333,6 +1348,8 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
     setupLock.Enter();
     if (state.setupGraphicsCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
+        CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
+
         CmdEndMarker(state.setupGraphicsCommandBuffer);
         CmdEndRecord(state.setupGraphicsCommandBuffer);
         
@@ -1348,6 +1365,8 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
 
         // Delete command buffer
         CoreGraphics::DelayedDeleteCommandBuffer(state.setupGraphicsCommandBuffer);
+
+        CmdBufferIdRelease(state.setupGraphicsCommandBuffer);
 
         // Reset command buffer id for the next frame
         state.setupGraphicsCommandBuffer = CoreGraphics::InvalidCmdBufferId;
@@ -1860,6 +1879,8 @@ FlushUpload()
     uint64_t size = uploadBuffer.uploadEndAddress - uploadBuffer.uploadStartAddress;
     if (size > 0)
     {
+        BufferIdAcquire(state.uploadBuffer);
+
         VkMappedMemoryRange range;
         range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         range.pNext = nullptr;
@@ -1869,6 +1890,8 @@ FlushUpload()
         VkResult res = vkFlushMappedMemoryRanges(state.devices[state.currentDevice], 1, &range);
         n_assert(res == VK_SUCCESS);
         uploadBuffer.uploadEndAddress = Math::align(uploadBuffer.uploadEndAddress, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+
+        BufferIdRelease(state.uploadBuffer);
     }
 }
 

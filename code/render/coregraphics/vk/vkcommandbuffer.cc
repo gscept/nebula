@@ -25,7 +25,7 @@
 namespace Vulkan
 {
 
-VkCommandBufferAllocator commandBuffers(0x00FFFFFF);
+VkCommandBufferAllocator commandBuffers;
 VkCommandBufferPoolAllocator commandBufferPools(0x00FFFFFF);
 Threading::CriticalSection commandBufferCritSect;
 
@@ -57,7 +57,7 @@ CmdBufferGetVk(const CoreGraphics::CmdBufferId id)
     n_assert(id.id8 == CoreGraphics::IdType::CommandBufferIdType);
 #endif
     if (id == CoreGraphics::InvalidCmdBufferId) return VK_NULL_HANDLE;
-    else                                            return commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    else                                        return commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ CmdBufferGetVk(const CoreGraphics::CmdBufferId id)
 const VkCommandPool
 CmdBufferGetVkPool(const CoreGraphics::CmdBufferId id)
 {
-    return commandBuffers.GetUnsafe<CmdBuffer_VkCommandPool>(id.id24);;
+    return commandBuffers.Get<CmdBuffer_VkCommandPool>(id.id24);;
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ CmdBufferGetVkPool(const CoreGraphics::CmdBufferId id)
 const VkDevice
 CmdBufferGetVkDevice(const CoreGraphics::CmdBufferId id)
 {
-    return commandBuffers.GetUnsafe<CmdBuffer_VkDevice>(id.id24);;
+    return commandBuffers.Get<CmdBuffer_VkDevice>(id.id24);;
 }
 
 } // Vulkan
@@ -84,6 +84,8 @@ namespace CoreGraphics
 {
 
 using namespace Vulkan;
+
+_IMPL_ACQUIRE_RELEASE(CmdBufferId, commandBuffers);
 
 //------------------------------------------------------------------------------
 /**
@@ -144,13 +146,13 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     };
     VkDevice dev = CmdBufferPoolGetVkDevice(info.pool);
     Ids::Id32 id = commandBuffers.Alloc();
-    VkResult res = vkAllocateCommandBuffers(dev, &vkInfo, &commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id));
+    VkResult res = vkAllocateCommandBuffers(dev, &vkInfo, &commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id));
     n_assert(res == VK_SUCCESS);
-    commandBuffers.SetUnsafe<CmdBuffer_VkCommandPool>(id, pool);
-    commandBuffers.SetUnsafe<CmdBuffer_VkDevice>(id, dev);
-    commandBuffers.SetUnsafe<CmdBuffer_Usage>(id, info.usage);
+    commandBuffers.Set<CmdBuffer_VkCommandPool>(id, pool);
+    commandBuffers.Set<CmdBuffer_VkDevice>(id, dev);
+    commandBuffers.Set<CmdBuffer_Usage>(id, info.usage);
 
-    QueryBundle& queryBundles = commandBuffers.GetUnsafe<CmdBuffer_Query>(id);
+    QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id);
 
     uint bits = (uint)info.queryTypes;
     for (IndexT i = 0; i < CoreGraphics::CmdBufferQueryBits::NumBits; i++)
@@ -187,7 +189,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
         queryBundles.enabled[i] = true;
     }
 
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id);
     pipelineBundle.blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     pipelineBundle.blendInfo.pNext = nullptr;
     pipelineBundle.blendInfo.flags = 0;
@@ -206,9 +208,9 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     pipelineBundle.computeLayout = VK_NULL_HANDLE;
     pipelineBundle.graphicsLayout = VK_NULL_HANDLE;
 
-    ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(id);
+    ViewportBundle& viewports = commandBuffers.Get<CmdBuffer_PendingViewports>(id);
     viewports.viewports.Resize(8);
-    ScissorBundle& scissors = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(id);
+    ScissorBundle& scissors = commandBuffers.Get<CmdBuffer_PendingScissors>(id);
     scissors.scissors.Resize(8);
 
     CmdBufferId ret;
@@ -227,7 +229,7 @@ DestroyCmdBuffer(const CmdBufferId id)
     n_assert(id.id8 == CommandBufferIdType);
 #endif
 
-    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
+    __Lock(commandBuffers, id.id24);
 
 #if NEBULA_ENABLE_PROFILING
     QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id.id24);
@@ -261,15 +263,15 @@ CmdBeginRecord(const CmdBufferId id, const CmdBufferBeginInfo& info)
         flags,
         nullptr     // fixme, this part can optimize if used properly!
     };
-    VkResult res = vkBeginCommandBuffer(commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24), &begin);
+    VkResult res = vkBeginCommandBuffer(commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24), &begin);
     n_assert(res == VK_SUCCESS);
 
     // Also write first timestamp
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
-        vkCmdWriteTimestamp(commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, queryBundle.offset[CoreGraphics::TimestampsQueryType]);
+        vkCmdWriteTimestamp(commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, queryBundle.offset[CoreGraphics::TimestampsQueryType]);
         queryBundle.queryCount[CoreGraphics::TimestampsQueryType]++;
     }
 }
@@ -284,7 +286,7 @@ CmdEndRecord(const CmdBufferId id)
     n_assert(id.id8 == CommandBufferIdType);
 #endif
 
-    VkResult res = vkEndCommandBuffer(commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24));
+    VkResult res = vkEndCommandBuffer(commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24));
     n_assert(res == VK_SUCCESS);
 }
 
@@ -299,7 +301,7 @@ CmdReset(const CmdBufferId id, const CmdBufferClearInfo& info)
 #endif
     VkCommandBufferResetFlags flags = 0;
     flags |= info.allowRelease ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
-    VkResult res = vkResetCommandBuffer(commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24), flags);
+    VkResult res = vkResetCommandBuffer(commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24), flags);
     n_assert(res == VK_SUCCESS);
 }
 
@@ -310,10 +312,10 @@ void
 CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
 {
 #if _DEBUG
-    CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+    CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
     VkDeviceSize offset = bufferOffset;
     vkCmdBindVertexBuffers(cmdBuf, streamIndex, 1, &buf, &offset);
@@ -326,12 +328,12 @@ void
 CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
 {
 #if _DEBUG
-    CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+    CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     const VertexLayoutVkBindInfo& bindInfo = VertexLayoutGetVkBindInfo(vl);
 
     vkCmdSetVertexInputEXT(cmdBuf, bindInfo.binds.Size(), bindInfo.binds.Begin(), bindInfo.attrs.Size(), bindInfo.attrs.Begin());
@@ -345,10 +347,10 @@ void
 CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
 {
 #if _DEBUG
-    CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+    CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
     VkDeviceSize offset = bufferOffset;
     VkIndexType vkIdxType = indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
@@ -362,10 +364,10 @@ void
 CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, CoreGraphics::IndexType::Code indexSize, SizeT bufferOffset)
 {
 #if _DEBUG
-    CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+    CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
     VkDeviceSize offset = bufferOffset;
     VkIndexType vkIdxType = indexSize == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
@@ -379,12 +381,12 @@ void
 CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo)
 {
 #if _DEBUG
-    CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+    CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
 
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPrimitiveTopology comp = VkTypes::AsVkPrimitiveType(topo);
     pipelineBundle.inputAssembly.topo = comp;
     pipelineBundle.inputAssembly.primRestart = false;
@@ -398,8 +400,8 @@ CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopol
 void
 CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pro, bool bindGlobals)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 
     IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
@@ -411,7 +413,7 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
         if (bindGlobals && pipelineChange)
         {
-            QueueType queue = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+            QueueType queue = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
             if (queue == GraphicsQueueType)
             {
                 CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
@@ -426,7 +428,7 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
     }
     else
     {
-        CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
+        CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
         bits |= CoreGraphics::CmdPipelineBuildBits::ShaderInfoSet;
         bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
 
@@ -485,9 +487,9 @@ CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId ta
 void
 CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets)
 {
-    const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     VkDescriptorSet set = Vulkan::ResourceTableGetVkDescriptorSet(table);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBindPoint bindPoint;
     switch (pipeline)
     {
@@ -527,8 +529,8 @@ CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uin
 void
 CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, const void* data)
 {
-    const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdPushConstants(cmdBuf, pipelineBundle.graphicsLayout, VK_SHADER_STAGE_ALL_GRAPHICS, offset, size, data);
 }
 
@@ -538,8 +540,8 @@ CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, const voi
 void
 CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void* data)
 {
-    const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdPushConstants(cmdBuf, pipelineBundle.computeLayout, VK_SHADER_STAGE_COMPUTE_BIT, offset, size, data);
 }
 
@@ -549,26 +551,26 @@ CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void
 void
 CmdSetGraphicsPipeline(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
-    CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
+    CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
     n_assert((bits & CmdPipelineBuildBits::AllInfoSet) != 0);
     if (!AllBits(bits, CmdPipelineBuildBits::PipelineBuilt))
     {
-        const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+        const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
         VkPipeline pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.program, pipelineBundle.inputAssembly, pipelineBundle.pipelineInfo);
         bits |= CmdPipelineBuildBits::PipelineBuilt;
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     }
 
     // Set viewport and scissors since Vulkan requires them to be set after the pipeline
-    ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(id.id24);
+    ViewportBundle& viewports = commandBuffers.Get<CmdBuffer_PendingViewports>(id.id24);
     if (viewports.numPending > 0)
     {
         vkCmdSetViewport(cmdBuf, 0, viewports.numPending, viewports.viewports.Begin());
         viewports.numPending = 0;
     }
-    ScissorBundle& rects = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(id.id24);
+    ScissorBundle& rects = commandBuffers.Get<CmdBuffer_PendingScissors>(id.id24);
     if (rects.numPending > 0)
     {
         vkCmdSetScissor(cmdBuf, 0, rects.numPending, rects.scissors.Begin());
@@ -582,10 +584,10 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
 void
 CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(buf.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(buf.id24);
     Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id24);
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineObj.pipeline);
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(buf.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(buf.id24);
 
     bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
     pipelineBundle.graphicsLayout = pipelineObj.layout;
@@ -598,13 +600,13 @@ CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
     }
 
     // Set viewport and scissors since Vulkan requires them to be set after the pipeline
-    ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(buf.id24);
+    ViewportBundle& viewports = commandBuffers.Get<CmdBuffer_PendingViewports>(buf.id24);
     if (viewports.numPending > 0)
     {
         vkCmdSetViewport(cmdBuf, 0, viewports.numPending, viewports.viewports.Begin());
         viewports.numPending = 0;
     }
-    ScissorBundle& rects = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(buf.id24);
+    ScissorBundle& rects = commandBuffers.Get<CmdBuffer_PendingScissors>(buf.id24);
     if (rects.numPending > 0)
     {
         vkCmdSetScissor(cmdBuf, 0, rects.numPending, rects.scissors.Begin());
@@ -707,7 +709,7 @@ CmdBarrier(
 void
 CmdBarrier(const CmdBufferId id, const CoreGraphics::BarrierId barrier)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     const VkBarrierInfo& info = BarrierGetVk(barrier);
     vkCmdPipelineBarrier(cmdBuf,
         info.srcFlags,
@@ -724,7 +726,7 @@ CmdBarrier(const CmdBufferId id, const CoreGraphics::BarrierId barrier)
 void
 CmdSignalEvent(const CmdBufferId id, const CoreGraphics::EventId ev, const CoreGraphics::PipelineStage stage)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     const VkEventInfo& info = EventGetVk(ev);
     vkCmdSetEvent(cmdBuf, info.event, VkTypes::AsVkPipelineStage(stage));
 }
@@ -735,7 +737,7 @@ CmdSignalEvent(const CmdBufferId id, const CoreGraphics::EventId ev, const CoreG
 void
 CmdWaitEvent(const CmdBufferId id, const EventId ev, const CoreGraphics::PipelineStage waitStage, const CoreGraphics::PipelineStage signalStage)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     const VkEventInfo& info = EventGetVk(ev);
     vkCmdWaitEvents(
         cmdBuf
@@ -758,7 +760,7 @@ CmdWaitEvent(const CmdBufferId id, const EventId ev, const CoreGraphics::Pipelin
 void
 CmdResetEvent(const CmdBufferId id, const CoreGraphics::EventId ev, const CoreGraphics::PipelineStage stage)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     const VkEventInfo& info = EventGetVk(ev);
     vkCmdResetEvent(cmdBuf, info.event, VkTypes::AsVkPipelineStage(stage));
 }
@@ -769,12 +771,12 @@ CmdResetEvent(const CmdBufferId id, const CoreGraphics::EventId ev, const CoreGr
 void
 CmdBeginPass(const CmdBufferId id, const PassId pass)
 {
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     const VkRenderPassBeginInfo& info = PassGetVkRenderPassBeginInfo(pass);
     const VkGraphicsPipelineCreateInfo& framebufferInfo = PassGetVkFramebufferInfo(pass);
 
-    CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
+    CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
     bits |= CoreGraphics::CmdPipelineBuildBits::FramebufferLayoutInfoSet;
     bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
 
@@ -798,9 +800,9 @@ CmdBeginPass(const CmdBufferId id, const PassId pass)
 void
 CmdNextSubpass(const CmdBufferId id)
 {
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     pipelineBundle.pipelineInfo.subpass++;
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdNextSubpass(cmdBuf, VK_SUBPASS_CONTENTS_INLINE);
 }
 
@@ -810,7 +812,7 @@ CmdNextSubpass(const CmdBufferId id)
 void
 CmdEndPass(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdEndRenderPass(cmdBuf);
 }
 
@@ -820,7 +822,7 @@ CmdEndPass(const CmdBufferId id)
 void
 CmdResetClipToPass(const CmdBufferId id)
 {
-    VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
 
     // Set viewports and scissors
     auto viewports = PassGetViewports(pipelineBundle.pass);
@@ -835,7 +837,7 @@ CmdResetClipToPass(const CmdBufferId id)
 void
 CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     if (pg.GetNumIndices() > 0)
         vkCmdDrawIndexed(cmdBuf, pg.GetNumIndices(), 1, pg.GetBaseIndex(), pg.GetBaseVertex(), 0);
     else
@@ -848,7 +850,7 @@ CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg)
 void
 CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, const CoreGraphics::PrimitiveGroup& pg)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     if (pg.GetNumIndices() > 0)
         vkCmdDrawIndexed(cmdBuf, pg.GetNumIndices(), numInstances, pg.GetBaseIndex(), pg.GetBaseVertex(), baseInstance);
     else
@@ -861,7 +863,7 @@ CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, const Cor
 void
 CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdDrawIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, numDraws, stride);
 }
 
@@ -871,7 +873,7 @@ CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, Index
 void
 CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdDrawIndexedIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, numDraws, stride);
 }
 
@@ -881,7 +883,7 @@ CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer
 void
 CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdDispatch(cmdBuf, dimX, dimY, dimZ);
 }
 
@@ -891,7 +893,7 @@ CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ)
 void
 CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const CoreGraphics::TextureCopy sourceCopy, const CoreGraphics::TextureId dest, const CoreGraphics::TextureCopy destCopy)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkImage vkSrc = TextureGetVkImage(source);
     VkImage vkDst = TextureGetVkImage(dest);
 
@@ -943,7 +945,7 @@ CmdCopy(
         copy.extent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
     }
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdCopyImage(cmdBuf, TextureGetVkImage(fromTexture), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(toTexture), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copies.Size(), copies.Begin());
 }
 
@@ -974,7 +976,7 @@ CmdCopy(
         copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
     }
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdCopyImageToBuffer(
         cmdBuf
         , TextureGetVkImage(fromTexture)
@@ -1009,7 +1011,7 @@ CmdCopy(
         copy.size = size;
     }
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdCopyBuffer(cmdBuf, BufferGetVk(fromBuffer), BufferGetVk(toBuffer), copies.Size(), copies.Begin());
 }
 
@@ -1040,7 +1042,7 @@ CmdCopy(
         copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
     }
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdCopyBufferToImage(
         cmdBuf
         , BufferGetVk(fromBuffer)
@@ -1079,7 +1081,7 @@ CmdBlit(
     blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
     blit.dstSubresource = { VkTypes::AsVkImageAspectFlags(toBits), (uint32_t)toMip, (uint32_t)toLayer, 1 };
 
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdBlitImage(
         cmdBuf
         , TextureGetVkImage(from)
@@ -1097,7 +1099,7 @@ CmdBlit(
 void
 CmdSetViewports(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> viewports)
 {
-    ViewportBundle& pending = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(id.id24);
+    ViewportBundle& pending = commandBuffers.Get<CmdBuffer_PendingViewports>(id.id24);
     pending.numPending = 0;
     for (Math::rectangle<int> viewport : viewports)
     {
@@ -1118,7 +1120,7 @@ CmdSetViewports(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> vie
 void
 CmdSetScissors(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> rects)
 {
-    ScissorBundle& pending = commandBuffers.GetUnsafe<CmdBuffer_PendingScissors>(id.id24);
+    ScissorBundle& pending = commandBuffers.Get<CmdBuffer_PendingScissors>(id.id24);
     pending.numPending = 0;
     for (Math::rectangle<int> rect : rects)
     {
@@ -1137,7 +1139,7 @@ CmdSetScissors(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> rect
 void
 CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkViewport vp;
     vp.width = (float)rect.width();
     vp.height = (float)rect.height();
@@ -1154,7 +1156,7 @@ CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index
 void
 CmdSetScissorRect(const CmdBufferId id, const Math::rectangle<int>& rect, int index)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkRect2D sc;
     sc.extent.width = rect.width();
     sc.extent.height = rect.height();
@@ -1169,7 +1171,7 @@ CmdSetScissorRect(const CmdBufferId id, const Math::rectangle<int>& rect, int in
 void
 CmdSetStencilRef(const CmdBufferId id, const uint frontRef, const uint backRef)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     if (frontRef == backRef)
     {
         vkCmdSetStencilReference(cmdBuf, VK_STENCIL_FACE_FRONT_AND_BACK, frontRef);
@@ -1187,7 +1189,7 @@ CmdSetStencilRef(const CmdBufferId id, const uint frontRef, const uint backRef)
 void
 CmdSetStencilReadMask(const CmdBufferId id, const uint readMask)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdSetStencilCompareMask(cmdBuf, VK_STENCIL_FACE_FRONT_AND_BACK, readMask);
 }
 
@@ -1197,7 +1199,7 @@ CmdSetStencilReadMask(const CmdBufferId id, const uint readMask)
 void
 CmdSetStencilWriteMask(const CmdBufferId id, const uint writeMask)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdSetStencilWriteMask(cmdBuf, VK_STENCIL_FACE_FRONT_AND_BACK, writeMask);
 }
 
@@ -1207,7 +1209,7 @@ CmdSetStencilWriteMask(const CmdBufferId id, const uint writeMask)
 void
 CmdUpdateBuffer(const CmdBufferId id, const CoreGraphics::BufferId buffer, uint offset, uint size, const void* data)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdUpdateBuffer(cmdBuf, Vulkan::BufferGetVk(buffer), offset, size, data);
 }
 
@@ -1217,8 +1219,8 @@ CmdUpdateBuffer(const CmdBufferId id, const CoreGraphics::BufferId buffer, uint 
 void
 CmdStartOcclusionQueries(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::OcclusionQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::OcclusionQueryType]);
     vkCmdBeginQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::OcclusionQueryType] + queryBundle.queryCount[CoreGraphics::OcclusionQueryType], 0x0);
@@ -1230,8 +1232,8 @@ CmdStartOcclusionQueries(const CmdBufferId id)
 void
 CmdEndOcclusionQueries(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::OcclusionQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::OcclusionQueryType]);
     vkCmdEndQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::OcclusionQueryType] + queryBundle.queryCount[CoreGraphics::OcclusionQueryType]++);
@@ -1243,8 +1245,8 @@ CmdEndOcclusionQueries(const CmdBufferId id)
 void
 CmdStartPipelineQueries(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::StatisticsQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::StatisticsQueryType]);
     vkCmdBeginQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::StatisticsQueryType] + queryBundle.queryCount[CoreGraphics::StatisticsQueryType], 0x0);
@@ -1256,8 +1258,8 @@ CmdStartPipelineQueries(const CmdBufferId id)
 void
 CmdEndPipelineQueries(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::StatisticsQueryType);
     n_assert(queryBundle.enabled[CoreGraphics::StatisticsQueryType]);
     vkCmdEndQuery(cmdBuf, pool, queryBundle.offset[CoreGraphics::StatisticsQueryType] + queryBundle.queryCount[CoreGraphics::StatisticsQueryType]++);
@@ -1270,7 +1272,7 @@ CmdEndPipelineQueries(const CmdBufferId id)
 void
 CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 {
-    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
+    __Lock(commandBuffers, id.id24);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
 #if NEBULA_ENABLE_PROFILING
@@ -1308,7 +1310,7 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 void
 CmdEndMarker(const CmdBufferId id)
 {
-    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
+    __Lock(commandBuffers, id.id24);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
 #if NEBULA_ENABLE_PROFILING
@@ -1338,7 +1340,7 @@ CmdEndMarker(const CmdBufferId id)
 void
 CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
     alignas(16) float col[4];
     color.store(col);
@@ -1358,8 +1360,8 @@ CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 void
 CmdFinishQueries(const CmdBufferId id)
 {
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
     {
         if (queryBundle.queryCount[i] != 0)
@@ -1377,7 +1379,7 @@ CmdFinishQueries(const CmdBufferId id)
 Util::Array<CoreGraphics::FrameProfilingMarker>
 CmdCopyProfilingMarkers(const CmdBufferId id)
 {
-    CoreGraphics::CmdBufferMarkerBundle& markers = commandBuffers.GetUnsafe<CmdBuffer_ProfilingMarkers>(id.id24);
+    CoreGraphics::CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
     return markers.finishedMarkers;
 }
 
@@ -1387,7 +1389,7 @@ CmdCopyProfilingMarkers(const CmdBufferId id)
 uint
 CmdGetMarkerOffset(const CmdBufferId id)
 {
-    CoreGraphics::QueryBundle& queries = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    CoreGraphics::QueryBundle& queries = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     n_assert(queries.enabled[CoreGraphics::QueryType::TimestampsQueryType]);
     return queries.offset[CoreGraphics::QueryType::TimestampsQueryType];
 }

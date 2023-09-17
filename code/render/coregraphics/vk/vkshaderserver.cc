@@ -97,12 +97,12 @@ VkShaderServer::UpdateResources()
     {
         const _PendingView& pend = pendingViewsThisFrame[i];
 
-        textureAllocator.Lock(Util::ArrayAllocatorAccess::Write);
+        textureAllocator.TryAcquire(pend.tex.resourceId);
         VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.resourceId);
         VkImageView oldView = info.view;
         VkResult res = vkCreateImageView(GetCurrentDevice(), &pend.createInfo, nullptr, &info.view);
         n_assert(res == VK_SUCCESS);
-        textureAllocator.Unlock(Util::ArrayAllocatorAccess::Write);
+        textureAllocator.Release(pend.tex.resourceId);
 
         _PendingViewDelete pendingDelete;
         pendingDelete.view = oldView;

@@ -114,6 +114,7 @@ nebula_begin_module(foundation)
             list.h
             localstringatomtable.cc
             localstringatomtable.h
+            pinnedarray.h
             priorityarray.h
             quadtree.h
             queue.h

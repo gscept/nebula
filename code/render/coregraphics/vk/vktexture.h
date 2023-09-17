@@ -71,10 +71,11 @@ enum
 
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
 typedef Ids::IdAllocatorSafe<
-    VkTextureRuntimeInfo,                   // runtime info (for binding)
-    VkTextureLoadInfo,                      // loading info (mostly used during the load/unload phase)
-    VkTextureMappingInfo,                   // used when image is mapped to memory
-    VkTextureWindowInfo
+    0xFFFF
+    , VkTextureRuntimeInfo                   // runtime info (for binding)
+    , VkTextureLoadInfo                      // loading info (mostly used during the load/unload phase)
+    , VkTextureMappingInfo                   // used when image is mapped to memory
+    , VkTextureWindowInfo
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 
@@ -84,7 +85,8 @@ enum
     , TextureExtension_StencilBind
 };
 typedef Ids::IdAllocatorSafe<
-    CoreGraphics::TextureViewId
+    0xFFFF
+    , CoreGraphics::TextureViewId
     , IndexT
 > VkTextureStencilExtensionAllocator;
 extern VkTextureStencilExtensionAllocator textureStencilExtensionAllocator;
@@ -94,7 +96,8 @@ enum
     TextureExtension_SwapInfo
 };
 typedef Ids::IdAllocatorSafe<
-    VkTextureSwapInfo
+    0xFF
+    , VkTextureSwapInfo
 > VkTextureSwapExtensionAllocator;
 extern VkTextureSwapExtensionAllocator textureSwapExtensionAllocator;
 
@@ -115,11 +118,12 @@ enum
     TextureExtension_SparseOpaqueAllocs
 };
 typedef Ids::IdAllocatorSafe<
-    TextureSparsePageTable,
-    VkSparseImageMemoryRequirements,
-    Util::Array<VkSparseMemoryBind>,
-    Util::Array<VkSparseImageMemoryBind>,
-    Util::Array<CoreGraphics::Alloc>
+    0xFF
+    , TextureSparsePageTable
+    , VkSparseImageMemoryRequirements
+    , Util::Array<VkSparseMemoryBind>
+    , Util::Array<VkSparseImageMemoryBind>
+    , Util::Array<CoreGraphics::Alloc>
 > VkTextureSparseExtensionAllocator;
 extern VkTextureSparseExtensionAllocator textureSparseExtensionAllocator;
 

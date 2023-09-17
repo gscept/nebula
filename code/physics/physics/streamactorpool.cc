@@ -58,7 +58,7 @@ StreamActorPool::Setup()
 ActorId
 StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, ActorType type, uint64_t userData, IndexT scene)
 {
-    __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
+    __LockName(&this->allocator, lock, id.resourceId);
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
 
     physx::PxRigidActor * newActor = state.CreateActor(type, trans);
@@ -96,7 +96,7 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
-        __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
+        __LockName(&this->allocator, lock, id.id);
         ActorInfo& info = this->allocator.Get<0>(actor.res.resourceId);
         info.instanceCount--;
     }
@@ -413,13 +413,13 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
         }        
     }
 
-    __Lock(allocator, Util::ArrayAllocatorAccess::Write);
     Ids::Id32 id = allocator.Alloc();
     allocator.Set<Actor_Info>(id, actorInfo);
 
     ActorResourceId ret;
     ret.resourceId = id;
     ret.resourceType = 0;
+    allocator.Release(id);
     return ret;
 }
 
@@ -429,7 +429,7 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
 void
 StreamActorPool::Unload(const Resources::ResourceId id)
 {
-    __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
+    __LockName(&this->allocator, lock, id.resourceId);
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
     n_assert2(info.instanceCount == 0, "Actor has active Instances");
     const Util::StringAtom tag = this->GetTag(id);

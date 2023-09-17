@@ -2,6 +2,7 @@
 //------------------------------------------------------------------------------
 /**
     A spinlock is a lock which keeps the core busy while the lock is being held.
+    Efficiently waits where we can guarantee the acquire/release happens within a short time. 
 
     Use with caution, as this is not a synchronization primitive, the OS won't 
     be able to yield the CPU core to other threads with the same affinity, which

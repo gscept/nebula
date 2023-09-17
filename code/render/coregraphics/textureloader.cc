@@ -188,7 +188,7 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
         CoreGraphics::CmdEndMarker(handoverCmdBuf);
         CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
-
+        TextureIdRelease(texture);
         return texture;
     }
     stream->MemoryUnmap();
