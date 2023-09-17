@@ -96,10 +96,10 @@ struct GraphicsDeviceState
 
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 
-    Memory::RangeAllocator vertexAllocator;
+    Memory::SCAllocator vertexAllocator;
     CoreGraphics::BufferId vertexBuffer;
 
-    Memory::RangeAllocator indexAllocator;
+    Memory::SCAllocator indexAllocator;
     CoreGraphics::BufferId indexBuffer;
 
     int globalUploadBufferMaxValue;
@@ -196,21 +196,26 @@ CoreGraphics::BufferId GetComputeConstantBuffer(IndexT i);
 /// Flush constants for queue type, do this before recording any commands doing draw or dispatch
 void FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue);
 
+struct VertexAlloc
+{
+    uint size, offset, node;
+};
+
 /// Allocate vertices from the global vertex pool
-uint AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
+const VertexAlloc AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
 /// Allocate vertices from the global vertex pool by bytes
-uint AllocateVertices(const SizeT bytes);
+const VertexAlloc AllocateVertices(const SizeT bytes);
 /// Deallocate vertices
-void DeallocateVertices(uint offset);
+void DeallocateVertices(const VertexAlloc& alloc);
 /// Get vertex buffer 
 const CoreGraphics::BufferId GetVertexBuffer();
 
 /// Allocate indices from the global index pool
-uint AllocateIndices(const SizeT numIndices, const IndexType::Code indexType);
+const VertexAlloc AllocateIndices(const SizeT numIndices, const IndexType::Code indexType);
 /// Allocate indices from the global index pool by bytes
-uint AllocateIndices(const SizeT bytes);
+const VertexAlloc AllocateIndices(const SizeT bytes);
 /// Deallocate indices
-void DeallocateIndices(uint offset);
+void DeallocateIndices(const VertexAlloc& alloc);
 /// Get index buffer
 const CoreGraphics::BufferId GetIndexBuffer();
 
