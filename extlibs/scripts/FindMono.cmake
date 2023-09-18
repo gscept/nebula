@@ -1,0 +1,41 @@
+# MONO_FOUND             System has Mono installed
+# MONO_EXECUTABLE        Where to find 'mono.exe'
+# MONO_LIBRARIES         Libraries to link
+# MONO_LIBRARY_DIRS      Directories containing the libraries
+# MONO_INCLUDE_DIRS      Header files
+
+IF(DEFINED ENV{MONO_ROOT})
+  # check environment variables for mono root
+  SET(MONO_ROOT $ENV{MONO_ROOT})
+ELSE(DEFINED ENV{MONO_ROOT})
+  # check standard installation path
+  IF(WIN32)
+    SET(DEFAULT_MONO_PATH "C:/Program Files/Mono")
+    IF(EXISTS ${DEFAULT_MONO_PATH})
+      SET(MONO_ROOT ${DEFAULT_MONO_PATH})
+    ENDIF(EXISTS ${DEFAULT_MONO_PATH})
+  ENDIF(WIN32)
+ENDIF(DEFINED ENV{MONO_ROOT})
+
+IF(WIN32)
+  IF(MONO_ROOT AND EXISTS ${MONO_ROOT})
+    SET(MONO_INCLUDE_DIRS
+        ${MONO_ROOT}/include/mono-2.0
+        )
+    SET(MONO_LIBRARY_DIRS ${MONO_ROOT}/lib)
+    SET(MONO_LIBRARIES 
+        ${MONO_LIBRARY_DIRS}/mono-2.0-sgen.lib
+        )
+    SET(MONO_FOUND TRUE)
+  ELSE(MONO_ROOT AND EXISTS ${MONO_ROOT})
+    SET(MONO_FOUND FALSE)
+  ENDIF(MONO_ROOT AND EXISTS ${MONO_ROOT})
+ENDIF(WIN32)
+
+IF(NOT MONO_FOUND)
+  IF(MONO_FIND_REQUIRED)
+      MESSAGE(FATAL_ERROR "Could not find Mono!")
+  ENDIF(MONO_FIND_REQUIRED)
+ENDIF(NOT MONO_FOUND)
+
+MARK_AS_ADVANCED(MONO_EXECUTABLE)

@@ -35,6 +35,7 @@ enum HeapType
     PhysicsHeap,                // physics engine allocations go here
     AppHeap,                    // for general Application layer stuff
     NetworkHeap,                // for network layer
+    ScriptingHeap,              // for scripting layers
     
     NumHeapTypes,
     InvalidHeapType,

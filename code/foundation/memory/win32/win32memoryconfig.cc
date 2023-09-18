@@ -45,6 +45,7 @@ SetupHeaps()
             case PhysicsHeap:
             case AppHeap:
             case NetworkHeap:
+            case ScriptingHeap:
                 initialSize = 8 * megaByte;
                 break;
 
@@ -62,7 +63,7 @@ SetupHeaps()
                 break;
 
             default:
-                Core::SysFunc::Error("Invalid heap type in Memory::SetupHeaps() (win360memoryconfig.cc)!");
+                Core::SysFunc::Error("Invalid heap type in Memory::SetupHeaps() (win32memoryconfig.cc)!");
                 break;
         }
         if (0 != initialSize)
@@ -100,8 +101,9 @@ GetHeapTypeName(HeapType heapType)
         case PhysicsHeap:               return "Physics Heap";
         case AppHeap:                   return "App Heap";
         case NetworkHeap:               return "Network Heap";
+        case ScriptingHeap:             return "Scripting Heap";
         default:
-            Core::SysFunc::Error("Invalid HeapType arg in Memory::GetHeapTypeName()! (win360memoryconfig.cc)");
+            Core::SysFunc::Error("Invalid HeapType arg in Memory::GetHeapTypeName()! (win32memoryconfig.cc)");
             return 0;
     }
 }
