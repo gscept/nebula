@@ -54,7 +54,7 @@ add_custom_command(TARGET NebulaEngine
     POST_BUILD
 )
 
-fips_begin_module(nsharp)
+fips_begin_lib(nsharp)
     fips_libs(foundation application ${MONO_LIBRARIES})
     fips_deps(NebulaEngine)
 
@@ -94,7 +94,7 @@ fips_begin_module(nsharp)
             entity.h
             entity.cc
         )
-fips_end_module()
+fips_end_lib()
 target_include_directories(nsharp PUBLIC ${CODE_ROOT}/foundation ${MONO_INCLUDE_DIRS})
 target_precompile_headers(nsharp REUSE_FROM foundation)
 target_link_options(nsharp PUBLIC "/WHOLEARCHIVE:nsharp")
