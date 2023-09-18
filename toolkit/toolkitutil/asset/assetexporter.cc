@@ -7,6 +7,7 @@
 #include "io/ioserver.h"
 #include "io/assignregistry.h"
 #include "toolkit-common/toolkitconsolehandler.h"
+#include "nflatbuffer/flatbufferinterface.h"
 
 using namespace Util;
 using namespace IO;
@@ -221,6 +222,28 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
                 Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), files[fileIndex].AsCharPtr());
                 ioServer->CopyFile(assetPath + files[fileIndex], dstFile);
                 log.AddEntry(console, "Audio", files[fileIndex]);
+            }
+        }
+    }
+    if (this->mode & ExportModes::Physics)
+    {
+        Logger logger;
+        Array<String> files = ioServer->ListFiles(assetPath, "*.actor", true);
+        Util::String dstDir = Util::String::Sprintf("dst:physics/%s", category.AsCharPtr());
+
+        for (auto const& file : files)
+        {
+            Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), file.ExtractFileName().AsCharPtr());
+            logger.Print("Exporting Physics Actor: '%s' ... ", file.AsCharPtr());
+            if (this->mode & ExportModes::ForcePhysics || NeedsConversion(file, dstFile))
+            {
+                Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO");
+                log.AddEntry(console, "Physics", file);
+                logger.Print("converted\n");
+            }
+            else
+            {
+                logger.Print("skipped\n");
             }
         }
     }

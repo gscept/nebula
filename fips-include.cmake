@@ -3,6 +3,7 @@ fips_ide_group(nebula)
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
 cmake_policy(SET CMP0147 NEW)
 endif()
+cmake_policy(SET CMP0079 NEW)
 
 SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
@@ -67,7 +68,7 @@ set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
 
 find_package(Python 3.7 COMPONENTS Development REQUIRED)
-MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE} ${Python_INCLUDE_DIRS}")
+# MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE} ${Python_INCLUDE_DIRS}")
 
 #physx
 

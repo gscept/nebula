@@ -47,6 +47,7 @@ def WriteSourceHeader(f, filename):
     f.WriteLine("//")
     f.WriteLine("//  MACHINE GENERATED, DON'T EDIT!")
     f.WriteLine("//------------------------------------------------------------------------------")
+    f.WriteLine("#include \"foundation/stdneb.h\"")
     
 
 #------------------------------------------------------------------------------

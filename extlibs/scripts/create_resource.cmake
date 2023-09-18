@@ -84,6 +84,7 @@ std::map<std::string, int> const& get_resource_ids() {
   add_library(${lib} EXCLUDE_FROM_ALL ${CMAKE_CURRENT_BINARY_DIR}/${lib}/src/${lib}.cc)
   target_compile_features(${lib} PUBLIC cxx_std_17)
   target_include_directories(${lib} PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/${lib}/include)
+  target_link_libraries(${lib} ${lib}-res)
 endfunction(create_resource)
 
 elseif(APPLE)
