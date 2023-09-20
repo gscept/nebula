@@ -42,6 +42,9 @@ public:
     TYPE bottom;
 };
 
+typedef rectangle<float> floatRectangle;
+typedef rectangle<int> intRectangle;
+
 //------------------------------------------------------------------------------
 /**
 */

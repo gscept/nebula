@@ -612,7 +612,7 @@ ModelConstants::Load(const Ptr<Stream>& stream)
 
                 // get mesh
                 node.meshResource = reader->GetString("mesh");
-                node.meshIndex = reader->GetInt("mid");
+                node.meshIndex = reader->GetOptInt("mid", 0);
 
                 // add shape to constants
                 this->AddShapeNode(node);

@@ -3,7 +3,7 @@
     "components": {
         "PhysicsResource": {
             "_type_": "resource",
-            "_default_": "phys:placeholder.actor"
+            "_default_": "sysphys:placeholder.actor"
         }
     }
 }

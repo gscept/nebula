@@ -14,5 +14,5 @@ fips_dir(.)
         flatbufferinterface.h
     )
 nebula_flatc(SYSTEM foundation/math.fbs)
-fips_deps(flatbuffers sqlite3)
+fips_deps(flatbuffers sqlite3 foundation)
 nebula_end_lib()

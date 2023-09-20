@@ -64,6 +64,8 @@ public:
 
     /// create new empty actor
     physx::PxRigidActor* CreateActor(ActorType type, Math::mat4 const & transform);
+    /// create new empty actor
+    physx::PxRigidActor* CreateActor(ActorType type, Math::vec3 const& location, Math::quat const& orientation);
     /// deregister an actor
     void DiscardActor(ActorId id);
 
