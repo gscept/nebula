@@ -44,6 +44,11 @@ NglTFScene::Setup(Gltf::Document* scene
     // set export settings
     this->flags = flags;
 
+    if (scene->scene == -1)
+    {
+        // if omitted, we can pick any scene, let's use 0
+        scene->scene = 0;
+    }
     // set scale
     SceneScale = scale;
     AdjustedScale = 1.0f / scale;

@@ -9,6 +9,7 @@
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
 #include "components/physics.h"
+#include "graphicsfeature/graphicsfeatureunit.h"
 
 namespace PhysicsFeature
 {
@@ -58,6 +59,7 @@ void PhysicsManager::InitCreateActorProcessor()
     {
         Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
         Game::ComponentId const staticPID = Game::GetComponentId("Static"_atm);
+        Game::ComponentId const modelID = Game::GetComponentId("ModelResource"_atm);
 
         for (int v = 0; v < data.numViews; v++)
         {
@@ -70,7 +72,15 @@ void PhysicsManager::InitCreateActorProcessor()
             {
                 Game::Entity const& entity = owners[i];
                 Math::mat4 const& trans = transforms[i];
-                Resources::ResourceName const& res = resources[i];
+                Resources::ResourceName res = resources[i];
+
+                if (res == "mdl:")
+                {
+                    Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, entity, modelID).value.Value();
+                    Util::String fileName = modelRes.ExtractFileName();
+                    fileName.StripFileExtension();
+                    res = Util::String::Sprintf("phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr());
+                }
 
                 Resources::CreateResource(res, "PHYS",
                     [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)

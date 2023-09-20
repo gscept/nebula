@@ -24,6 +24,9 @@ using namespace physx;
 namespace Physics
 {
 
+
+static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& scale);
+
 StreamActorPool *actorPool = nullptr;
 //------------------------------------------------------------------------------
 /**
@@ -61,11 +64,22 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans
     __LockName(&this->allocator, lock, id.resourceId);
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
 
-    physx::PxRigidActor * newActor = state.CreateActor(type, trans);
+    Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
+    Math::decompose(trans, outScale, outRotation, outTranslation);
+
+    bool isScaled = outScale != Math::_plus1;
+
+
+    physx::PxRigidActor * newActor = state.CreateActor(type, outTranslation, outRotation);
     info.instanceCount++;
     for (IndexT i = 0; i < info.shapes.Size(); i++)
-    {        
-        newActor->attachShape(*info.shapes[i]);
+    {
+        PxShape* newShape = info.shapes[i];
+        if (isScaled)
+        {
+            newShape = GetScaledShape(newShape, outScale);
+        }
+        newActor->attachShape(*newShape);
     }
     if(type != ActorType::Static)
     {
@@ -207,22 +221,35 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
     return holder;
 }
 
+
+static PxShape* CreateColliderShape(physx::PxGeometryHolder geometry, physx::PxMaterial* material, physx::PxTransform const& trans, const Util::String& colliderName, bool exclusive)
+{
+    physx::PxShape* newShape = state.physics->createShape(geometry.any(), *material, exclusive);
+    n_assert(newShape != nullptr);
+#ifdef NEBULA_DEBUG
+    newShape->setName(colliderName.AsCharPtr());
+#endif
+    newShape->setLocalPose(trans);
+    return newShape;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
 static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const Math::mat4& trans, const char* name, const Util::String& colliderName, ActorInfo& actorInfo, const Util::StringAtom& tag, Ids::Id32 entry)
-    {
-        actorInfo.colliders.Append(colliderName);
-        const Physics::Material& mat = GetMaterial(material);
-        physx::PxShape* newShape = state.physics->createShape(geometry.any(), *mat.material);
+{
+    const Physics::Material& mat = GetMaterial(material);
+    actorInfo.colliders.Append(colliderName);
+    Util::String shapeDebugName;
 #ifdef NEBULA_DEBUG
-        actorInfo.shapeDebugNames.Append(Util::String::Sprintf("%s %s %s %d", name, colliderName.AsCharPtr(), tag.Value(), entry));
-        newShape->setName(actorInfo.shapeDebugNames.Back().AsCharPtr());
+    shapeDebugName = Util::String::Sprintf("%s %s %s %d", name, colliderName.AsCharPtr(), tag.Value(), entry);
+    actorInfo.shapeDebugNames.Append(shapeDebugName);
 #endif
-        newShape->setLocalPose(Neb2PxTrans(trans));
-        actorInfo.shapes.Append(newShape);
-        actorInfo.densities.Append(GetMaterial(material).density);
-    };
+    PxShape* newShape = CreateColliderShape(geometry, mat.material, Neb2PxTrans(trans), shapeDebugName, false);
+    actorInfo.shapes.Append(newShape);
+    actorInfo.densities.Append(GetMaterial(material).density);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -445,4 +472,76 @@ StreamActorPool::Unload(const Resources::ResourceId id)
     allocator.Dealloc(id.resourceId);
 }
 
+
+static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& inScale)
+{
+    n_assert(shape != nullptr);
+    physx::PxTransform localTrans = shape->getLocalPose();
+    physx::PxGeometryType::Enum type = shape->getGeometryType();
+    physx::PxVec3 scale = Neb2PxVec(inScale);
+
+    //localTrans.p = localTrans.p.multiply(scale);
+    PxGeometryHolder holder;
+    Util::String debugName;
+#ifdef NEBULA_DEBUG
+    
+#endif
+    PxShape* newShape = nullptr;
+    switch (type)
+    {
+        case physx::PxGeometryType::eSPHERE:
+        {
+            const float radiusScale = scale.maxElement();
+            PxSphereGeometry sGeom;
+            bool success = shape->getSphereGeometry(sGeom);
+            n_assert(success);
+            const float newRadius = sGeom.radius * radiusScale;
+            holder = PxSphereGeometry(newRadius);
+        }
+        break;
+        case physx::PxGeometryType::eCAPSULE:
+        {   
+            PxCapsuleGeometry cGeom;
+            bool success = shape->getCapsuleGeometry(cGeom);
+            n_assert(success);
+            holder = PxCapsuleGeometry(cGeom.radius * scale.x, cGeom.halfHeight * scale.z);
+        }
+        break;
+        case physx::PxGeometryType::eBOX:
+        {
+            PxBoxGeometry bGeom;
+            bool success = shape->getBoxGeometry(bGeom);
+            n_assert(success);
+            physx::PxVec3 half = bGeom.halfExtents;
+            half = half.multiply(scale);
+            holder = PxBoxGeometry(half);
+        }
+        break;
+        case physx::PxGeometryType::eCONVEXMESH:
+        {
+            physx::PxConvexMeshGeometry geom;
+            bool success = shape->getConvexMeshGeometry(geom);
+            n_assert(success);
+            physx::PxMeshScale meshScale(scale, physx::PxQuat(physx::PxIDENTITY::PxIdentity));
+            holder = physx::PxConvexMeshGeometry(geom.convexMesh, meshScale);
+        }
+        break;
+        case physx::PxGeometryType::eTRIANGLEMESH:
+        {
+            physx::PxTriangleMeshGeometry geom;
+            bool success = shape->getTriangleMeshGeometry(geom);
+            n_assert(success);
+            physx::PxMeshScale meshScale(scale, physx::PxQuat(physx::PxIDENTITY::PxIdentity));
+            holder = physx::PxTriangleMeshGeometry(geom.triangleMesh, meshScale);
+        }
+        break;
+        default:
+            n_assert_fmt(false, "unsupported mesh type %d", type);
+    }
+    const uint16 mats = shape->getNbMaterials();
+    physx::PxMaterial* mat[16];
+    n_assert(mats < 16);
+    shape->getMaterials((physx::PxMaterial **) &mat, 16, 0);
+    return CreateColliderShape(holder, mat[0], localTrans, debugName, true);
+}
 }

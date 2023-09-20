@@ -40,7 +40,7 @@ table BoxCollider
 
 union ColliderData
 {
-    BoxCollider,SphereCollider, CapsuleCollider, MeshCollider
+    BoxCollider, SphereCollider, CapsuleCollider, MeshCollider
 }
 
 table Collider

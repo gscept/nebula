@@ -132,26 +132,39 @@ PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 /**
 */
 physx::PxRigidActor*
-PhysxState::CreateActor(ActorType type, Math::mat4 const & transform)
+PhysxState::CreateActor(ActorType type, Math::mat4 const& transform)
 {
+    Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
+    Math::decompose(transform, outScale, outRotation, outTranslation);
+    n_assert_fmt(outScale == Math::_plus1, "Cant scale physics actors");
+    return CreateActor(type, outTranslation, outRotation);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+physx::PxRigidActor*
+PhysxState::CreateActor(ActorType type, Math::vec3 const& location, Math::quat const& orientation)
+{
+    PxTransform pxTrans(Neb2PxVec(location), Neb2PxQuat(orientation));
     switch (type)
     {
         case ActorType::Dynamic:
         {
-            PxRigidActor* actor = this->physics->createRigidDynamic(Neb2PxTrans(transform));
+            PxRigidActor* actor = this->physics->createRigidDynamic(pxTrans);
             actor->setActorFlag(physx::PxActorFlag::eSEND_SLEEP_NOTIFIES, true);
             return actor;
         }
         break;
         case ActorType::Kinematic:
         {
-            PxRigidDynamic* actor = this->physics->createRigidDynamic(Neb2PxTrans(transform));
+            PxRigidDynamic* actor = this->physics->createRigidDynamic(pxTrans);
             actor->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
             return actor;
         }
         break;
         case ActorType::Static:
-            return this->physics->createRigidStatic(Neb2PxTrans(transform));
+            return this->physics->createRigidStatic(pxTrans);
         break;
     }
     n_error("unhandled actor type");
