@@ -136,7 +136,7 @@ PhysxState::CreateActor(ActorType type, Math::mat4 const& transform)
 {
     Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
     Math::decompose(transform, outScale, outRotation, outTranslation);
-    n_assert_fmt(outScale == Math::_plus1, "Cant scale physics actors");
+    n_assert2(outScale == Math::_plus1, "Cant scale physics actors");
     return CreateActor(type, outTranslation, outRotation);
 }
 
