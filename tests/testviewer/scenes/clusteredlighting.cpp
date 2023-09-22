@@ -203,6 +203,7 @@ void OpenScene()
     entities.Append({ ground, nullptr });
     entityNames.Append("Ground");
 
+    /*
     particle = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
     ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer", []()
@@ -213,7 +214,7 @@ void OpenScene()
         }); 
     entities.Append({ particle, nullptr });
     entityNames.Append("Particle");
-
+    */
 
     // setup visibility
 
@@ -233,7 +234,7 @@ void OpenScene()
         for (IndexT j = -NumModels; j < NumModels; j++)
         {
             Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-            Graphics::RegisterEntity<ModelContext, Characters::CharacterContext, ObservableContext>(ent);
+            Graphics::RegisterEntity<ModelContext>(ent);
             IndexT entityIndex = entities.Size();
             entities.Append({ ent, nullptr });
             Util::String sid;
@@ -249,6 +250,8 @@ void OpenScene()
 
                     uint materialIndex = i + (j + NumModels) * (NumModels * 2);
                     entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, code);
+
+                    Graphics::RegisterEntity<Characters::CharacterContext, ObservableContext>(ent);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
                     Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], 0, animationRes[modelIndex], 0, "Viewer");
                     Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);

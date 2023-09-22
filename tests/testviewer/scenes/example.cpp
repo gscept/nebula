@@ -88,9 +88,10 @@ void StepFrame()
     if (frameIndex % 60 == 0)
     {
         gid = Graphics::CreateEntity();
-        Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(gid);
+        Graphics::RegisterEntity<Models::ModelContext>(gid);
         Models::ModelContext::Setup(gid, "sysmdl:placeholder.n3", "ExampleScene", []()
         {
+            Graphics::RegisterEntity<Visibility::ObservableContext>(gid);
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
             Models::ModelContext::SetTransform(gid, Math::translation(Math::vec3(5, 0, 0)));
         });

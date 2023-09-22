@@ -73,7 +73,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(RunVisibilityTests, Visibility);
 
-    const Models::ModelContext::ModelInstance::Renderable& nodeInstances = Models::ModelContext::GetModelRenderables();
+    const Models::ModelContext::ModelInstance::Renderable& NodeInstances = Models::ModelContext::GetModelRenderables();
 
     Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
     const Util::Array<bool>& observerIsOrthogonal = observerAllocator.GetArray<Observer_IsOrtho>();
@@ -131,7 +131,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     static Threading::AtomicCounter idCounter;
     idCounter = 1;
-    if (nodeInstances.nodeBoundingBoxes.Size() > 0)
+    if (NodeInstances.nodeBoundingBoxes.Size() > 0)
     {
         struct IdUpdateContext
         {
@@ -156,8 +156,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     return;
 
                 // Get node range and update ids buffer
-                const Models::NodeInstanceRange& nodeInstances = Models::ModelContext::GetModelRenderableRange(context->ids[index]);
-                for (IndexT j = nodeInstances.begin; j < nodeInstances.end; j++)
+                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(context->ids[index]);
+                for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
                     context->nodes->Begin()[invocationOffset + offset++] = j;
             }
         }, ids.Size(), idCtx, {}, &idCounter, nullptr);
@@ -165,13 +165,13 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->PrepareEntities(nodeInstances.nodeBoundingBoxes.Begin(), nodes.Begin(), ids.Begin(), reinterpret_cast<uint32_t*>(nodeInstances.nodeFlags.Begin()), nodes.Size());
+            sys->PrepareEntities(NodeInstances.nodeBoundingBoxes.Begin(), nodes.Begin(), ids.Begin(), reinterpret_cast<uint32_t*>(NodeInstances.nodeFlags.Begin()), nodes.Size());
         }
     }
 
     // run all visibility systems
     const Threading::AtomicCounter* const* prevSystemCounters = nullptr;
-    if ((observerTransforms.Size() > 0) && (nodeInstances.nodeBoundingBoxes.Size() > 0))
+    if ((observerTransforms.Size() > 0) && (NodeInstances.nodeBoundingBoxes.Size() > 0))
     {
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
@@ -190,7 +190,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     for (i = 0; i < observerResults.Size(); i++)
     {
         // early abort empty visibility queries
-        if (nodeInstances.nodeStates.Size() == 0)
+        if (NodeInstances.nodeStates.Size() == 0)
         {
             continue;
         }
@@ -212,7 +212,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         jobCtx.ids = nodes.Begin();
         jobCtx.drawList = &visibilities;
         jobCtx.allocator = &allocator;
-        jobCtx.renderables = &nodeInstances;
+        jobCtx.renderables = &NodeInstances;
 
         // Before we create our draws, we have to wait for the constants to be allocated first
         // For particles, that's done before visibility so we can omit it here
