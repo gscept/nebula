@@ -983,6 +983,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
                 case CoreGraphics::QueryType::TimestampsQueryType:
                     queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
                     queryPoolInfo.queryCount = info.maxTimestampQueries;   // Timestamps will be quite a lot fewer
+                    baseSize = sizeof(uint64_t);
                     byteSize = baseSize * queryPoolInfo.queryCount;
                     break;
                 case CoreGraphics::QueryType::StatisticsQueryType:
