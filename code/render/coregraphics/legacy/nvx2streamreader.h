@@ -146,8 +146,7 @@ private:
     uint numIndices;
     uint numEdges;
     uint vertexComponentMask;
-    uint baseVertexOffset;
-    uint baseIndexOffset;
+    CoreGraphics::VertexAlloc vertexAllocation, indexAllocation;
     Util::Array<CoreGraphics::VertexComponent> vertexComponents;   
 };
 
@@ -256,7 +255,7 @@ Nvx2StreamReader::GetNumEdges() const
 inline SizeT 
 Nvx2StreamReader::GetBaseVertexOffset() const
 {
-    return this->baseVertexOffset;
+    return this->vertexAllocation.offset;
 }
 
 //------------------------------------------------------------------------------
@@ -265,7 +264,7 @@ Nvx2StreamReader::GetBaseVertexOffset() const
 inline SizeT 
 Nvx2StreamReader::GetBaseIndexOffset() const
 {
-    return this->baseIndexOffset;
+    return this->indexAllocation.offset;
 }
 
 //------------------------------------------------------------------------------

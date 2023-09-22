@@ -40,6 +40,8 @@ struct MeshCreateInfo
     VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveTopology::Code topology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+
+    CoreGraphics::VertexAlloc vertexBufferAllocation, indexBufferAllocation;
 };
 
 /// create new mesh
@@ -86,6 +88,7 @@ struct __Mesh
     VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+    CoreGraphics::VertexAlloc vertexAllocation, indexAllocation;
 };
 
 typedef Ids::IdAllocatorSafe<
