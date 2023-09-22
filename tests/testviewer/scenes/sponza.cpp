@@ -69,7 +69,7 @@ void OpenScene()
     
     Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
     Math::mat4 r = Math::rotationx(Math::deg2rad(0.0f));
-    Math::mat4 s = Math::scaling(Math::vec3(1, 1, 1));
+    Math::mat4 s = Math::scaling(Math::vec3(0.01, 0.01, 0.01));
     
     Math::mat4 trs = r * s;
     trs = t * trs;

@@ -128,34 +128,34 @@ public:
         /// Transforms are only used by the model context to traverse and propagate the transform hierarchy
         struct Transformable
         {
-            Util::Array<Math::mat4> origTransforms;
-            Util::Array<Math::mat4> nodeTransforms;
-            Util::Array<uint32> nodeParents;
+            Util::PinnedArray<0xFFFF, Math::mat4> origTransforms;
+            Util::PinnedArray<0xFFFF, Math::mat4> nodeTransforms;
+            Util::PinnedArray<0xFFFF, uint32> nodeParents;
         } transformable;
 
         /// The bounding boxes are used by visibility and the states by rendering
         struct Renderable
         {
-            Util::Array<Math::bbox> origBoundingBoxes;
-            Util::Array<Math::bbox> nodeBoundingBoxes;
-            Util::Array<Util::Tuple<float, float>> nodeLodDistances;
-            Util::Array<float> nodeLods;
-            Util::Array<float> textureLods;
-            Util::Array<uint32> nodeTransformIndex;
-            Util::Array<uint64> nodeSortId;
-            Util::Array<NodeInstanceFlags> nodeFlags;
-            Util::Array<Materials::MaterialId> nodeMaterials;
-            Util::Array<Materials::ShaderConfig*> nodeShaderConfigs;
-            Util::Array<NodeInstanceState> nodeStates;
-            Util::Array<Models::NodeType> nodeTypes;
-            Util::Array<Models::ModelNode*> nodes;
-            Util::Array<CoreGraphics::MeshId> nodeMeshes;
-            Util::Array<IndexT> nodePrimitiveGroupIndex;
-            Util::Array<Util::Tuple<uint32, uint32>> nodeDrawModifiers;
+            Util::PinnedArray<0xFFFF, Math::bbox> origBoundingBoxes;
+            Util::PinnedArray<0xFFFF, Math::bbox> nodeBoundingBoxes;
+            Util::PinnedArray<0xFFFF, Util::Tuple<float, float>> nodeLodDistances;
+            Util::PinnedArray<0xFFFF, float> nodeLods;
+            Util::PinnedArray<0xFFFF, float> textureLods;
+            Util::PinnedArray<0xFFFF, uint32> nodeTransformIndex;
+            Util::PinnedArray<0xFFFF, uint64> nodeSortId;
+            Util::PinnedArray<0xFFFF, NodeInstanceFlags> nodeFlags;
+            Util::PinnedArray<0xFFFF, Materials::MaterialId> nodeMaterials;
+            Util::PinnedArray<0xFFFF, Materials::ShaderConfig*> nodeShaderConfigs;
+            Util::PinnedArray<0xFFFF, NodeInstanceState> nodeStates;
+            Util::PinnedArray<0xFFFF, Models::NodeType> nodeTypes;
+            Util::PinnedArray<0xFFFF, Models::ModelNode*> nodes;
+            Util::PinnedArray<0xFFFF, CoreGraphics::MeshId> nodeMeshes;
+            Util::PinnedArray<0xFFFF, IndexT> nodePrimitiveGroupIndex;
+            Util::PinnedArray<0xFFFF, Util::Tuple<uint32, uint32>> nodeDrawModifiers;
 
-            Util::Array<void*> nodeSpecialData;
+            Util::PinnedArray<0xFFFF, void*> nodeSpecialData;
 #if NEBULA_GRAPHICS_DEBUG
-            Util::Array<Util::StringAtom> nodeNames;
+            Util::PinnedArray<0xFFFF, Util::StringAtom> nodeNames;
 #endif
         } renderable;
 
@@ -181,6 +181,8 @@ public:
     static const ModelInstance::Renderable& GetModelRenderables();
     /// Get node transformable context
     static const ModelInstance::Transformable& GetModelTransformables();
+    /// Get if model is loaded
+    static bool IsLoaded(const Graphics::GraphicsEntityId id);
 
     static Threading::AtomicCounter ConstantsUpdateCounter;
     static Threading::AtomicCounter TransformsUpdateCounter;
@@ -188,7 +190,8 @@ public:
 private:
     friend class VisibilityContext;
 
-    static ModelInstance nodeInstances;
+    static ModelInstance NodeInstances;
+    static Memory::SCAllocator TransformInstanceAllocator, RenderInstanceAllocator;
 
     enum
     {
@@ -242,6 +245,9 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
     if (rid != Resources::InvalidResourceId) // decrement model resource
         Resources::DiscardResource(rid);
     rid = Resources::InvalidResourceId;
+
+    TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id).allocation);
+    RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation);
 
     modelContextAllocator.Dealloc(id.id);
 }
