@@ -46,7 +46,7 @@ struct AllocatorLock
         : allocator(allocator)
         , element(element)
     {
-        this->didAcquire = this->allocator->TryAcquire(this->element);
+        this->didAcquire = this->allocator->Acquire(this->element);
     };
 
     ~AllocatorLock()
@@ -132,9 +132,9 @@ public:
     void UpdateSize();
 
     /// Spinlock to acquire 
-    bool TryAcquire(const uint32_t index);
+    void TryAcquire(const uint32_t index);
     /// Acquire element, asserts if false and returns true if this call acquired
-    void Acquire(const uint32_t index);
+    bool Acquire(const uint32_t index);
     /// Release an object, the next thread that acquires may use this instance as it fits
     void Release(const uint32_t index);
 
@@ -405,30 +405,31 @@ ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::UpdateSize()
 /**
 */
 template<uint MAX_ALLOCS, class ...TYPES>
-bool 
+void 
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::TryAcquire(const uint32_t index)
 {
     Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
     Threading::ThreadId currentThread = Threading::Interlocked::CompareExchange((volatile int*)&this->owners[index], myThread, Threading::InvalidThreadId);
-    return currentThread == Threading::InvalidThreadId;
+    n_assert(currentThread == Threading::InvalidThreadId);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<uint MAX_ALLOCS, class ...TYPES>
-void 
+bool 
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Acquire(const uint32_t index)
 {
     Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
     if (this->owners[index] == myThread)
-        return;
+        return false;
 
     // Spinlock
     while (Threading::Interlocked::CompareExchange((volatile int*)&this->owners[index], myThread, Threading::InvalidThreadId) != Threading::InvalidThreadId)
     {
         Threading::Thread::YieldThread();
     };
+    return true;
 }
 
 //------------------------------------------------------------------------------
