@@ -429,7 +429,7 @@
                             "attachments": [
                                 {
                                     "name": "ZBuffer",
-                                    "store": false,
+                                    "store": true,
                                     "load": true,
                                     "load_stencil": true
                                 },
