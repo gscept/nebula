@@ -15,7 +15,8 @@ namespace Vulkan
 
 typedef Ids::IdAllocator<
     VkDevice,
-    VkSampler
+    VkSampler,
+    uint32_t
 > VkSamplerAllocator;
 extern VkSamplerAllocator samplerAllocator;
 

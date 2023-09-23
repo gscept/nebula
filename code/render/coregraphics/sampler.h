@@ -10,6 +10,7 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
+#include "util/bit.h"
 namespace CoreGraphics
 {
 
@@ -76,6 +77,27 @@ struct SamplerCreateInfo
     float                       maxLod;
     SamplerBorderMode           borderColor;
     bool                        unnormalizedCoordinates;
+
+    const uint32_t HashCode() const
+    {
+        uint32_t res = 0;
+        Util::HashCombine(res, this->magFilter);
+        Util::HashCombine(res, this->minFilter);
+        Util::HashCombine(res, this->mipmapMode);
+        Util::HashCombine(res, this->addressModeU);
+        Util::HashCombine(res, this->addressModeV);
+        Util::HashCombine(res, this->addressModeW);
+        Util::HashCombine(res, this->mipLodBias);
+        Util::HashCombine(res, this->anisotropyEnable);
+        Util::HashCombine(res, this->maxAnisotropy);
+        Util::HashCombine(res, this->compareEnable);
+        Util::HashCombine(res, this->compareOp);
+        Util::HashCombine(res, this->minLod);
+        Util::HashCombine(res, this->maxLod);
+        Util::HashCombine(res, this->borderColor);
+        Util::HashCombine(res, this->unnormalizedCoordinates);
+        return res;
+    }
 };
 
 /// create sampler
