@@ -1,4 +1,8 @@
-
+//------------------------------------------------------------------------------
+//  depth_extract_cs.fxh
+//  Read depth
+//  (C) 2021 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 sampler2D ZBufferInput;
 write r32f image2D DepthOutput;
 

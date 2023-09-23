@@ -240,7 +240,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     colorDownsamplePass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         TextureDimensions dims = TextureGetDimensions(state.lightBuffer);
-        CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram);
+        CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, false);
         CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = (dims.width - 1) / 64;
         uint dispatchY = (dims.height - 1) / 64;
@@ -262,7 +262,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     depthDownsamplePass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         TextureDimensions dims = TextureGetDimensions(state.depthBuffer);
-        CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram);
+        CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, false);
         CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = (dims.width - 1) / 64;
         uint dispatchY = (dims.height - 1) / 64;
@@ -290,7 +290,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     extractPass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         TextureDimensions dims = TextureGetDimensions(state.depthBuffer);
-        CmdSetShaderProgram(cmdBuf, state.extractProgram);
+        CmdSetShaderProgram(cmdBuf, state.extractProgram, false);
         CmdSetResourceTable(cmdBuf, state.extractResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
         uint dispatchX = (dims.width - 1) / 64;
         CmdDispatch(cmdBuf, dispatchX + 1, dims.height, 1);

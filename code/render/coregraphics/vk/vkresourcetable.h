@@ -92,7 +92,7 @@ typedef Ids::IdAllocator<
     Util::Array<uint>
 > VkResourceTableLayoutAllocator;
 extern VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
-extern VkDescriptorSetLayout emptySetLayout;
+extern VkDescriptorSetLayout EmptySetLayout;
 
 /// run this before using any resource tables
 void SetupEmptyDescriptorSetLayout();

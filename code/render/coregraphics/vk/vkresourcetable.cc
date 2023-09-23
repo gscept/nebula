@@ -15,10 +15,12 @@
 namespace Vulkan
 {
 
+extern PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName;
+
 VkResourceTableAllocator resourceTableAllocator;
 VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 VkResourcePipelineAllocator resourcePipelineAllocator;
-VkDescriptorSetLayout emptySetLayout;
+VkDescriptorSetLayout EmptySetLayout;
 
 //------------------------------------------------------------------------------
 /**
@@ -61,8 +63,22 @@ SetupEmptyDescriptorSetLayout()
         0,
         nullptr
     };
-    VkResult res = vkCreateDescriptorSetLayout(Vulkan::GetCurrentDevice(), &info, nullptr, &emptySetLayout);
+    VkResult res = vkCreateDescriptorSetLayout(Vulkan::GetCurrentDevice(), &info, nullptr, &EmptySetLayout);
     n_assert(res == VK_SUCCESS);
+
+#if NEBULA_GRAPHICS_DEBUG
+    VkDebugUtilsObjectNameInfoEXT dbgInfo =
+    {
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        nullptr,
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        (uint64_t)EmptySetLayout,
+        "Placeholder Resource Table Layout"
+    };
+    VkDevice dev = GetCurrentDevice();
+    res = VkDebugObjectName(dev, &dbgInfo);
+    n_assert(res == VK_SUCCESS);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1189,7 +1205,7 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
     {
         while (info.indices[i] != layouts.Size())
         {
-            layouts.Append(emptySetLayout);
+            layouts.Append(EmptySetLayout);
         }
         layouts.Append(resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(info.tables[i].id24));
     }

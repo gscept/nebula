@@ -496,17 +496,6 @@ NebulaVulkanErrorDebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
     void* userData)
 {
-    const int ignore[] =
-    {
-        602160055
-    };
-
-    for (IndexT i = 0; i < sizeof(ignore) / sizeof(int); i++)
-    {
-        if (callbackData->messageIdNumber == ignore[i])
-            return VK_FALSE;
-    }
-
     n_warning("%s\n", callbackData->pMessage);
     return VK_FALSE;
 }

@@ -216,6 +216,8 @@ FromVkBorderMode(VkBorderColor mode)
     }
 }
 
+Util::Dictionary<uint32_t, Ids::Id32> UniqueSamplerHashes;
+
 
 //------------------------------------------------------------------------------
 /**
@@ -223,40 +225,55 @@ FromVkBorderMode(VkBorderColor mode)
 SamplerId
 CreateSampler(const SamplerCreateInfo& info)
 {
-    Ids::Id32 id = samplerAllocator.Alloc();
-
-    VkDevice& dev = samplerAllocator.Get<0>(id);
-    VkSampler& sampler = samplerAllocator.Get<1>(id);
-
-    dev = Vulkan::GetCurrentDevice();
-    VkSamplerCreateInfo samplerInfo =
+    uint32_t hash = info.HashCode();
+    IndexT i = UniqueSamplerHashes.FindIndex(hash);
+    if (i == InvalidIndex)
     {
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        NULL,
-        0,
-        ToVkSamplerFilter(info.minFilter),
-        ToVkSamplerFilter(info.magFilter),
-        ToVkSamplerMipMapMode(info.mipmapMode),
-        ToVkSamplerAddressMode(info.addressModeU),
-        ToVkSamplerAddressMode(info.addressModeV),
-        ToVkSamplerAddressMode(info.addressModeW),
-        info.mipLodBias,
-        info.anisotropyEnable,
-        info.maxAnisotropy,
-        info.compareEnable,
-        ToVkCompareOperation(info.compareOp),
-        -info.minLod,
-        info.maxLod,
-        ToVkBorderMode(info.borderColor),
-        info.unnormalizedCoordinates
-    };
-    VkResult res = vkCreateSampler(dev, &samplerInfo, nullptr, &sampler);
-    n_assert(res == VK_SUCCESS);
+        Ids::Id32 id = samplerAllocator.Alloc();
 
-    SamplerId ret;
-    ret.id24 = id;
-    ret.id8 = SamplerIdType;
-    return ret;
+        VkDevice& dev = samplerAllocator.Get<0>(id);
+        VkSampler& sampler = samplerAllocator.Get<1>(id);
+        samplerAllocator.Set<2>(id, hash);
+
+        dev = Vulkan::GetCurrentDevice();
+        VkSamplerCreateInfo samplerInfo =
+        {
+            VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            NULL,
+            0,
+            ToVkSamplerFilter(info.minFilter),
+            ToVkSamplerFilter(info.magFilter),
+            ToVkSamplerMipMapMode(info.mipmapMode),
+            ToVkSamplerAddressMode(info.addressModeU),
+            ToVkSamplerAddressMode(info.addressModeV),
+            ToVkSamplerAddressMode(info.addressModeW),
+            info.mipLodBias,
+            info.anisotropyEnable,
+            info.maxAnisotropy,
+            info.compareEnable,
+            ToVkCompareOperation(info.compareOp),
+            -info.minLod,
+            info.maxLod,
+            ToVkBorderMode(info.borderColor),
+            info.unnormalizedCoordinates
+        };
+        VkResult res = vkCreateSampler(dev, &samplerInfo, nullptr, &sampler);
+        n_assert(res == VK_SUCCESS);
+
+        UniqueSamplerHashes.Add(hash, id);
+
+        SamplerId ret;
+        ret.id24 = id;
+        ret.id8 = SamplerIdType;
+        return ret;
+    }
+    else
+    {
+        SamplerId ret;
+        ret.id24 = UniqueSamplerHashes.ValueAtIndex(i);
+        ret.id8 = SamplerIdType;
+        return ret;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -265,6 +282,7 @@ CreateSampler(const SamplerCreateInfo& info)
 void
 DestroySampler(const SamplerId& id)
 {
+    UniqueSamplerHashes.Erase(samplerAllocator.Get<2>(id.id24));
     VkDevice& dev = samplerAllocator.Get<0>(id.id24);
     VkSampler& sampler = samplerAllocator.Get<1>(id.id24);
     vkDestroySampler(dev, sampler, nullptr);
