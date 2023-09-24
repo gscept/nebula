@@ -591,12 +591,12 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     tileUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Normal Cache View", terrainVirtualTileState.physicalNormalCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalNormalCache) }));
     tileUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Material Cache View", terrainVirtualTileState.physicalMaterialCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalMaterialCache) }));
     AttachmentFlagBits bits = AttachmentFlagBits::Load | AttachmentFlagBits::Store;
-    tileUpdatePassCreate.attachmentFlags.AppendArray({ bits, bits, bits });
-    tileUpdatePassCreate.attachmentDepthStencil.Append(false);
-    tileUpdatePassCreate.attachmentClears.AppendArray({ Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0) });
+    tileUpdatePassCreate.attachmentFlags.Append(bits, bits, bits);
+    tileUpdatePassCreate.attachmentDepthStencil.Append(false, false, false);
+    tileUpdatePassCreate.attachmentClears.Append(Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0));
     
     CoreGraphics::Subpass subpass;
-    subpass.attachments.AppendArray({ 0, 1, 2 });
+    subpass.attachments.Append(0, 1, 2);
     subpass.numScissors = 3;
     subpass.numViewports = 3;
 
@@ -610,9 +610,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     lowresUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Lowres Normal Cache View", terrainVirtualTileState.lowresNormal, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresNormal) }));
     lowresUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Lowres Material Cache View", terrainVirtualTileState.lowresMaterial, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresMaterial) }));
     bits = AttachmentFlagBits::Store;
-    lowresUpdatePassCreate.attachmentFlags.AppendArray({ bits, bits, bits });
-    lowresUpdatePassCreate.attachmentDepthStencil.AppendArray({ false, false, false });
-    lowresUpdatePassCreate.attachmentClears.AppendArray({ Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0) });
+    lowresUpdatePassCreate.attachmentFlags.Append(bits, bits, bits);
+    lowresUpdatePassCreate.attachmentDepthStencil.Append(false, false, false);
+    lowresUpdatePassCreate.attachmentClears.Append(Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0));
 
     lowresUpdatePassCreate.subpasses.Append(subpass);
     terrainVirtualTileState.tileFallbackPass = CoreGraphics::CreatePass(lowresUpdatePassCreate);
