@@ -766,6 +766,17 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         // set clear flag if present
         JzonValue* clear = jzon_get(cur, "clear");
         AttachmentFlagBits flags = AttachmentFlagBits::NoFlags;
+
+        JzonValue* flagBits = jzon_get(cur, "flags");
+        if (flagBits != nullptr)
+        {
+            flags = AttachmentFlagsFromString(flagBits->string_value);
+            if (AnyBits(flags, AttachmentFlagBits::ClearStencil | AttachmentFlagBits::LoadStencil | AttachmentFlagBits::DiscardStencil))
+            {
+                n_assert_msg(isDepth, "Format is not depth-stencil");
+            }
+        }
+
         if (clear != nullptr)
         {
             n_assert_msg(!isDepth, "Format is depth-stencil, use clear_depth and/or clear_stencil");
@@ -800,37 +811,10 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
             flags |= AttachmentFlagBits::ClearStencil;
         }
 
-        // set if attachment should store at the end of the pass
-        JzonValue* store = jzon_get(cur, "store");
-        if (store && store->bool_value)
-        {
-            flags |= AttachmentFlagBits::Store;
-        }
-
-        // set if attachment should store at the end of the pass
-        JzonValue* storeStencil = jzon_get(cur, "store_stencil");
-        if (storeStencil && storeStencil->bool_value)
-        {
-            n_assert_msg(isDepth, "Format is not depth-stencil");
-            flags |= AttachmentFlagBits::StoreStencil;
-        }
-
-        JzonValue* load = jzon_get(cur, "load");
-        if (load && load->bool_value)
-        {
-            // we can't really load and clear
-            n_assert_msg(clear == nullptr, "Can't load color/depth if value is also being cleared.");
-            flags |= AttachmentFlagBits::Load;
-        }
-
-        JzonValue* loadStencil = jzon_get(cur, "load_stencil");
-        if (loadStencil && loadStencil->bool_value)
-        {
-            // we can't really load and clear
-            n_assert_msg(isDepth, "Format is not depth-stencil");
-            n_assert_msg(clear == nullptr, "Can't load stencil if value is also being cleared.");
-            flags |= AttachmentFlagBits::LoadStencil;
-        }
+        n_assert_msg(!AllBits(flags, AttachmentFlagBits::Clear | AttachmentFlagBits::Load), "Can't both clear and load");
+        n_assert_msg(!AllBits(flags, AttachmentFlagBits::ClearStencil | AttachmentFlagBits::LoadStencil), "Can't both clear and load stencil");
+        n_assert_msg(!AllBits(flags, AttachmentFlagBits::Store | AttachmentFlagBits::Discard), "Can't both discard and store");
+        n_assert_msg(!AllBits(flags, AttachmentFlagBits::StoreStencil | AttachmentFlagBits::DiscardStencil), "Can't both discard and store stencil");
 
         pass.attachmentFlags.Append((AttachmentFlagBits)flags);
         pass.attachmentDepthStencil.Append(isDepth);
