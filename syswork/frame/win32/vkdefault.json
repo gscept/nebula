@@ -240,7 +240,7 @@
                                 {
                                     "name": "SunShadowDepth",
                                     "clear_depth": 1,
-                                    "store": true
+                                    "flags": "Store"
                                 }
                             ],
 
@@ -269,7 +269,7 @@
                                 {
                                     "name": "LocalLightShadow",
                                     "clear_depth": 1,
-                                    "store": true
+                                    "flags": "Store"
                                 }
                             ],
                             
@@ -334,12 +334,12 @@
                                 {
                                     "name": "TerrainPosBuffer",
                                     "clear": [ 0, 0, 0, 255 ],
-                                    "store": true
+                                    "flags": "Store"
                                 },
                                 {
                                     "name": "ZBuffer",
                                     "clear_depth": 1,
-                                    "store": true
+                                    "flags": "Store"
                                 }
                             ],
 
@@ -375,8 +375,7 @@
                                     "name": "ZBuffer",
                                     "clear_depth": 1,
                                     "clear_stencil": 0,
-                                    "store": true,
-                                    "store_stencil": true
+                                    "flags": "Store|StoreStencil"
                                 }
                             ],
 
@@ -429,23 +428,21 @@
                             "attachments": [
                                 {
                                     "name": "ZBuffer",
-                                    "store": true,
-                                    "load": true,
-                                    "load_stencil": true
+                                    "flags":  "Store|Load|LoadStencil"
                                 },
                                 {
                                     "name": "LightBuffer",
                                     "clear": [ 0, 0, 0, 0 ],
-                                    "store": true
+                                    "flags": "Store"
                                 },
                                 {
                                     "name": "NormalBuffer",
-                                    "store": true,
+                                    "flags": "Store",
                                     "clear": [ 0, 0, 0, 0 ]
                                 },
                                 {
                                     "name": "SpecularBuffer",
-                                    "store": true,
+                                    "flags": "Store",
                                     "clear": [ 0, 0, 0, 0 ]
                                 }
 
@@ -569,13 +566,11 @@
                             "attachments": [
                                 {
                                     "name": "ColorBuffer",
-                                    "load": true,
-                                    "store": true
+                                    "flags": "Load|Store"
                                 },
                                 {
                                     "name": "ZBuffer",
-                                    "load": true,
-                                    "store": false
+                                    "flags": "Load"
                                 }
                             ],
 
@@ -704,13 +699,11 @@
                             "attachments": [
                                 {
                                     "name": "ColorBuffer",
-                                    "load": true,
-                                    "store": true
+                                    "flags": "Load|Store"
                                 },
                                 {
                                     "name": "ZBuffer",
-                                    "store": false,
-                                    "load": true
+                                    "flags":  "Load|Discard"
                                 }
                             ],
 

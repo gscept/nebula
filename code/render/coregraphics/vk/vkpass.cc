@@ -363,6 +363,7 @@ GetSubpassInfo(
 
     VkAttachmentStoreOp storeOps[] =
     {
+        VK_ATTACHMENT_STORE_OP_NONE,
         VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_STORE_OP_STORE,
     };
@@ -377,10 +378,59 @@ GetSubpassInfo(
 
         VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         VkAttachmentDescription& attachment = outAttachments[i];
-        IndexT loadIdx = AllBits(loadInfo.attachmentFlags[i], AttachmentFlagBits::Load) ? 2 : AllBits(loadInfo.attachmentFlags[i], AttachmentFlagBits::Clear) ? 1 : 0;
-        IndexT storeIdx = AllBits(loadInfo.attachmentFlags[i], AttachmentFlagBits::Store) ? 1 : 0;
-        IndexT stencilLoadIdx = AllBits(loadInfo.attachmentFlags[i], AttachmentFlagBits::LoadStencil) ? 2 : AllBits(loadInfo.attachmentFlags[i], AttachmentFlagBits::ClearStencil) ? 1 : 0;
-        IndexT stencilStoreIdx = AllBits(loadInfo.attachmentFlags[i], AttachmentFlagBits::StoreStencil) ? 1 : 0;
+        IndexT loadIdx = 0;
+        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::Load | AttachmentFlagBits::Clear))
+        {
+            case AttachmentFlagBits::Load:
+                loadIdx = 2;
+                break;
+            case AttachmentFlagBits::Clear:
+                loadIdx = 1;
+                break;
+            default:
+                loadIdx = 0;
+                break;
+        }
+        IndexT stencilLoadIdx = 0;
+        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::LoadStencil | AttachmentFlagBits::ClearStencil))
+        {
+            case AttachmentFlagBits::LoadStencil:
+                stencilLoadIdx = 2;
+                break;
+            case AttachmentFlagBits::ClearStencil:
+                stencilLoadIdx = 1;
+                break;
+            default:
+                stencilLoadIdx = 0;
+                break;
+        }
+        IndexT storeIdx = 0;
+        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::Store | AttachmentFlagBits::Discard))
+        {
+            case AttachmentFlagBits::Store:
+                storeIdx = 2;
+                break;
+            case AttachmentFlagBits::Discard:
+                storeIdx = 1;
+                break;
+            default:
+                storeIdx = 0;
+                break;
+        }
+        IndexT stencilStoreIdx = 0;
+        switch (loadInfo.attachmentFlags[i] & (AttachmentFlagBits::StoreStencil | AttachmentFlagBits::DiscardStencil))
+        {
+            case AttachmentFlagBits::StoreStencil:
+                stencilStoreIdx = 2;
+                break;
+            case AttachmentFlagBits::DiscardStencil:
+                stencilStoreIdx = 1;
+                break;
+            default:
+                stencilStoreIdx = 0;
+                break;
+        }
+
         attachment.flags = 0;
         if (loadInfo.attachmentIsDepthStencil[i])
         {

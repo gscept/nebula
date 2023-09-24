@@ -22,7 +22,7 @@ struct ResourceTableId;
 struct TextureView;
 ID_24_8_TYPE(PassId);
 
-enum class AttachmentFlagBits : uint8
+enum class AttachmentFlagBits : uint16
 {
     NoFlags = 0,
     Clear               = N_BIT(0),
@@ -30,10 +30,30 @@ enum class AttachmentFlagBits : uint8
     Load                = N_BIT(2),
     LoadStencil         = N_BIT(3),
     Store               = N_BIT(4),
-    StoreStencil        = N_BIT(6)
+    StoreStencil        = N_BIT(6),
+    Discard             = N_BIT(7),
+    DiscardStencil      = N_BIT(8),
 };
 __ImplementEnumBitOperators(AttachmentFlagBits);
 __ImplementEnumComparisonOperators(AttachmentFlagBits);
+
+static AttachmentFlagBits 
+AttachmentFlagsFromString(const Util::String& string)
+{
+    Util::Array<Util::String> bits = string.Tokenize("|");
+
+    AttachmentFlagBits ret = AttachmentFlagBits::NoFlags;
+    for (IndexT i = 0; i < bits.Size(); i++)
+    {
+        if (bits[i] == "Load")                  ret |= AttachmentFlagBits::Load;
+        else if (bits[i] == "LoadStencil")      ret |= AttachmentFlagBits::LoadStencil;
+        else if (bits[i] == "Store")            ret |= AttachmentFlagBits::Store;
+        else if (bits[i] == "StoreStencil")     ret |= AttachmentFlagBits::StoreStencil;
+        else if (bits[i] == "Discard")          ret |= AttachmentFlagBits::Discard;
+        else if (bits[i] == "DiscardStenci;")   ret |= AttachmentFlagBits::DiscardStencil;
+    }
+    return ret;
+};
 
 struct Subpass
 {
