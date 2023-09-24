@@ -500,8 +500,8 @@ vsSkinned(
     vec4 modelSpace = Model * skinnedPos;
     gl_Position = ViewProjection * modelSpace;
     
-    Tangent 	  = (Model * skinnedTangent).xyz;
-    Normal 		  = (Model * skinnedNormal).xyz;
+    Tangent 	  = normalize((Model * skinnedTangent).xyz);
+    Normal 		  = normalize((Model * skinnedNormal).xyz);
     Sign          = tangent.w;
 
     UV            = UnpackUV(uv);
@@ -535,8 +535,8 @@ vsSkinnedTessellated(
     Position = Model * skinnedPos;
     UV = UnpackUV(uv);
 
-    Tangent     = (Model * skinnedTangent).xyz;
-    Normal      = (Model * skinnedNormal).xyz;
+    Tangent     = normalize((Model * skinnedTangent).xyz);
+    Normal      = normalize((Model * skinnedNormal).xyz);
     Sign        = tangent.w;
 
     float vertexDistance = distance( Position.xyz, EyePos.xyz );
