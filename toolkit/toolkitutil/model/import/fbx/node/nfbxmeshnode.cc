@@ -133,7 +133,7 @@ NFbxMeshNode::ExtractMesh(
     {
         FbxVector4 v = fbxMesh->GetControlPointAt(i);
         v.FixIncorrectValue();
-        controlPoints[i] = FbxToMath(v) * AdjustedScale;
+        controlPoints[i] = FbxToMath(v) * vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
         componentMask |= MeshBuilderVertex::Position;
     }
 
@@ -349,8 +349,7 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             FbxAMatrix inversedPose = linkMatrix.Inverse();
             inversedPose = inversedPose * transformMatrix * geometricTransform;
             jointNode->skeleton.bindMatrix = FbxToMath(inversedPose);
-            jointNode->skeleton.bindMatrix.position *= AdjustedScale;
-
+            jointNode->skeleton.bindMatrix.position *= Math::vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
 
             int clusterVertexIndexCount = cluster->GetControlPointIndicesCount();
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
