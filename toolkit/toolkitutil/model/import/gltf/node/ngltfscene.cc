@@ -42,7 +42,7 @@ NglTFScene::Setup(Gltf::Document* scene
     n_assert(scene);
 
     // set export settings
-    this->flags = flags;
+    this->flags = exportFlags;
 
     if (scene->scene == -1)
     {
