@@ -10,11 +10,20 @@
 #include "resources/resourceserver.h"
 #include "components/physics.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
+#include "basegamefeature/components/transform.h"
 
 namespace PhysicsFeature
 {
 
 __ImplementSingleton(PhysicsManager)
+
+struct PhysicsActor
+{
+    Physics::ActorId value;
+    DECLARE_COMPONENT;
+};
+
+DEFINE_COMPONENT(PhysicsActor);
 
 //------------------------------------------------------------------------------
 /**
@@ -35,82 +44,56 @@ PhysicsManager::~PhysicsManager()
 //------------------------------------------------------------------------------
 /**
 */
+void CreateActor(Game::World* world, Game::Owner const& entity, Game::WorldTransform const& trans, PhysicsFeature::PhysicsResource& res)
+{
+    if (res.value == "mdl:")
+    {
+        n_assert(Game::HasComponent(world, entity.value, GraphicsFeature::ModelResource::ID()));
+        Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, entity.value).value.Value();
+        Util::String fileName = modelRes.ExtractFileName();
+        fileName.StripFileExtension();
+        res.value = Util::String::Sprintf("phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr());
+    }
+
+    Physics::ActorType actorType = Physics::ActorType::Static;
+    if (Game::HasComponent(world, entity.value, PhysicsFeature::PhysicsType::ID()))
+    {
+        actorType = Game::GetComponent<PhysicsFeature::PhysicsType>(world, entity.value).value;
+    }
+    
+    Resources::CreateResource(res.value, "PHYS",
+        [world, trans, entity, actorType](Resources::ResourceId id)
+        {
+
+            Physics::ActorId actorid = Physics::CreateActorInstance(id, trans.value, actorType, Ids::Id32(entity.value));
+
+            Game::Op::RegisterComponent regOp;
+            regOp.entity = entity.value;
+            regOp.component = PhysicsActor::ID();
+            regOp.value = &actorid;
+            Game::AddOp(Game::WorldGetScratchOpBuffer(world), regOp);
+
+            if (actorType == Physics::ActorType::Kinematic)
+            {
+                Game::Op::RegisterComponent regOp;
+                regOp.entity = entity.value;
+                regOp.component = PhysicsFeature::IsKinematic::ID();
+                regOp.value = nullptr;
+                Game::AddOp(Game::WorldGetScratchOpBuffer(world), regOp);
+            }
+        }, nullptr, true);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void PhysicsManager::InitCreateActorProcessor()
 {
-    Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId("Owner");
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
-    filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.inclusive[2] = Game::GetComponentId("PhysicsResource");
-    filterInfo.access[2] = Game::AccessMode::READ;
-    filterInfo.numInclusive = 3;
-
-    filterInfo.exclusive[0] = this->pids.physicsActor;
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "PhysicsManager.CreateActors"_atm;
-    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
-    {
-        Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
-        Game::ComponentId const modelID = Game::GetComponentId("ModelResource"_atm);
-        Game::ComponentId const typeID = Game::GetComponentId("PhysicsType"_atm);
-
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-            Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
-            Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
-            Resources::ResourceName const* const resources = (Resources::ResourceName*)view.buffers[2];
-            
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Game::Entity const& entity = owners[i];
-                Math::mat4 const& trans = transforms[i];
-                Resources::ResourceName res = resources[i];
-                
-                if (res == "mdl:")
-                {
-                    Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, entity, modelID).value.Value();
-                    Util::String fileName = modelRes.ExtractFileName();
-                    fileName.StripFileExtension();
-                    res = Util::String::Sprintf("phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr());
-                }
-
-                Physics::ActorType actorType = Physics::ActorType::Static;
-                if (Game::HasComponent(world, entity, typeID))
-                {
-                    actorType = Game::GetComponent<Physics::ActorType>(world, entity, typeID);
-                }
-
-                Resources::CreateResource(res, "PHYS",
-                    [world, trans, &opBuffer, entity, actorType](Resources::ResourceId id)
-                    {
-                        
-                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, actorType, Ids::Id32(entity));
-                        
-                        Game::Op::RegisterComponent regOp;
-                        regOp.entity = entity;
-                        regOp.component = PhysicsManager::Singleton->pids.physicsActor;
-                        regOp.value = &actorid;
-                        Game::AddOp(opBuffer, regOp);
-
-                    }, nullptr, true);
-            }
-        }
-
-        // execute ops
-        Game::Dispatch(opBuffer);
-        Game::DestroyOpBuffer(opBuffer);
-    };
-    
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+    Game::ProcessorBuilder("PhysicsManager.CreateActors"_atm)
+        .Excluding<PhysicsActor>()
+        .On("OnBeginFrame")
+        .Func(&CreateActor)
+        .Build();
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +102,7 @@ void PhysicsManager::InitCreateActorProcessor()
 void
 PhysicsManager::OnDecay()
 {
-    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.physicsActor);
+    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(PhysicsActor::ID());
     Physics::ActorId* data = (Physics::ActorId*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
@@ -130,42 +113,38 @@ PhysicsManager::OnDecay()
 //------------------------------------------------------------------------------
 /**
 */
-void PhysicsManager::InitPollTransformProcessor()
+void
+PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, PhysicsFeature::PhysicsActor const& actor)
 {
-    Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = this->pids.physicsActor;
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
-    filterInfo.access[1] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 2;
+    transform.value = Physics::ActorContext::GetTransform(actor.value);
+}
 
-    filterInfo.exclusive[0] = Game::GetComponentId("Static");
-    filterInfo.numExclusive = 1;
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassKinematicTransforms(Game::World* world, Game::WorldTransform const& transform, PhysicsFeature::PhysicsActor const& actor, PhysicsFeature::IsKinematic)
+{
+    Physics::ActorContext::SetTransform(actor.value, transform.value);
+}
 
-    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsManager::InitPollTransformProcessor()
+{
+    Game::ProcessorBuilder("PhysicsManager.PollRigidbodyTransforms"_atm)
+        .Excluding({ Game::GetComponentId("Static"), IsKinematic::ID() })
+        .On("OnFrame")
+        .Func(&PollRigidbodyTransforms)
+        .Build();
 
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "PhysicsManager.PollTransforms"_atm;
-    processorInfo.OnFrame = [](Game::World* world, Game::Dataset data)
-    {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-            Physics::ActorId const* const actorIdBuffer = (Physics::ActorId*)view.buffers[0];
-            Math::mat4* const transforms = (Math::mat4*)view.buffers[1];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Physics::ActorId const actorid = actorIdBuffer[i];
-                Math::mat4& transform = transforms[i];
-                transform = Physics::ActorContext::GetTransform(actorid);
-            }
-        }
-    };
-
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+    Game::ProcessorBuilder("PhysicsManager.PassKinematicTransforms"_atm)
+        .Excluding({ Game::GetComponentId("Static") })
+        .On("OnFrame")
+        .Func(&PassKinematicTransforms)
+        .Build();
 }
 
 //------------------------------------------------------------------------------
@@ -177,14 +156,8 @@ PhysicsManager::Create()
     n_assert(PhysicsFeature::Details::physics_registered);
     n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = new PhysicsManager;
-    
-    Game::ComponentCreateInfo info;
-    info.name = "PhysicsActorId";
-    Physics::ActorId defaultValue;
-    info.defaultValue = &defaultValue;
-    info.flags = Game::ComponentFlags::COMPONENTFLAG_MANAGED;
-    info.byteSize = sizeof(Physics::ActorId);
-    Singleton->pids.physicsActor = Game::CreateComponent(info);
+
+    MemDb::TypeRegistry::Register<PhysicsActor>("PhysicsActorId"_atm, PhysicsActor(), Game::ComponentFlags::COMPONENTFLAG_MANAGED);
 
     Singleton->InitCreateActorProcessor();
     Singleton->InitPollTransformProcessor();
@@ -215,7 +188,7 @@ PhysicsManager::OnCleanup(Game::World* world)
     n_assert(PhysicsManager::HasInstance());
 
     Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Singleton->pids.physicsActor;
+    filterInfo.inclusive[0] = PhysicsActor::ID();
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 

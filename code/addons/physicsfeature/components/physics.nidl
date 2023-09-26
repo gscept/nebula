@@ -7,9 +7,10 @@
         "PhysicsResource": {
             "_type_": "resource",
             "_default_": "sysphys:placeholder.actor"
-        },
+        }
         "PhysicsType": {
             "_type_":  "Physics::ActorType"
-        }
+        },
+        "IsKinematic": {}
     }
 }

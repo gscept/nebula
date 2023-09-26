@@ -25,10 +25,6 @@ public:
     /// destroy entity manager
     static void Destroy();
 
-    struct Pids
-    {
-        Game::ComponentId physicsActor;
-    } pids;
 private:
     /// constructor
     PhysicsManager();

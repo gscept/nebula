@@ -64,9 +64,9 @@ class ComponentDefinition:
         if self.isFlag:
             return ""
         numVars = len(self.variables)
-        if numVars == 0:
-            util.fmtError("ComponentDefinition does not contain a single variable!")
-        elif numVars == 1 and not self.isStruct: # special case: only one variable. This sets the default name of the structs inner variable to "value".
+        #if numVars == 0:
+        #    util.fmtError("ComponentDefinition does not contain a single variable!")
+        if numVars == 1 and not self.isStruct: # special case: only one variable. This sets the default name of the structs inner variable to "value".
             retVal = 'struct {}\n{{\n'.format(self.componentName)
             if self.variables[0].defaultValue is None:
                 retVal += '    {} {};\n'.format(self.variables[0].type, "value")
