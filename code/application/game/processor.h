@@ -82,6 +82,9 @@ public:
     template<typename ... COMPONENTS>
     ProcessorBuilder& Excluding();
 
+    /// entities must not have any of these components
+    ProcessorBuilder& Excluding(std::initializer_list<ComponentId>);
+
     /// select on which event the processor is executed
     ProcessorBuilder& On(Util::StringAtom eventName);
 
