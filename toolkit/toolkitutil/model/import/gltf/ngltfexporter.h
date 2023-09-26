@@ -9,7 +9,7 @@
 */
 #include "model/import/base/modelexporter.h"
 #include "toolkit-common/base/exporttypes.h"
-#include "gltf/gltfdata.h"
+#include "gltfdata.h"
 #include "node/ngltfscene.h"
 #include "toolkitutil/texutil/textureconverter.h"
 

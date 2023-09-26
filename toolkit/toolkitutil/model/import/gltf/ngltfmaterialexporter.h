@@ -7,7 +7,7 @@
 
     (C) 2020 Individual contributors, see AUTHORS file
 */
-#include "gltf/gltfdata.h"
+#include "gltfdata.h"
 #include "surface/surfacebuilder.h"
 
 namespace ToolkitUtil

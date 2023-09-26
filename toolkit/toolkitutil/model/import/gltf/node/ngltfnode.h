@@ -15,7 +15,7 @@
 #include "coreanimation/infinitytype.h"
 #include "model/animutil/animbuilder.h"
 #include "model/modelutil/modelattributes.h"
-#include "gltf/gltfdata.h"
+#include "model/import/gltf/gltfdata.h"
 #include "core/weakptr.h"
 
 #define KEYS_PER_MS 40
