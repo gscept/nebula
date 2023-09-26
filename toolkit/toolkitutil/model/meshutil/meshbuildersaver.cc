@@ -176,7 +176,7 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
             outVtx.tangent.x = vtx.attributes.normal.tangent.x * 0.5f * 255.0f;
             outVtx.tangent.y = vtx.attributes.normal.tangent.y * 0.5f * 255.0f;
             outVtx.tangent.z = vtx.attributes.normal.tangent.z * 0.5f * 255.0f;
-            outVtx.tangent.w = vtx.attributes.normal.sign > 0 ? 128.0f : -127.0f; // unused
+            outVtx.tangent.w = vtx.attributes.normal.sign > 0.0f ? 0x7F  : 0x80;
         };
         switch (layout)
         {

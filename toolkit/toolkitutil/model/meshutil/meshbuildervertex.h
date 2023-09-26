@@ -114,7 +114,7 @@ private:
         struct Normal
         {
             Math::vec3 normal, tangent;
-            byte sign;
+            float sign;
         } normal;
 
         struct SecondUV
