@@ -81,7 +81,7 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans
         }
         newActor->attachShape(*newShape);
     }
-    if(type != ActorType::Static)
+    if(type == ActorType::Dynamic)
     {
         physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.densities.Begin(), info.densities.Size());
     }    

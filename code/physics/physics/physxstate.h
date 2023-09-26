@@ -42,7 +42,6 @@ public:
     Physics::Allocator allocator;
     Physics::ErrorCallback errorCallback;
     physx::PxOverlapHit overlapBuffer[MAX_SHAPE_OVERLAPS];
-    Timing::Time time;
 
     Util::Delegate<void(ActorId*, SizeT)> onSleepCallback;
     Util::Delegate<void(ActorId*, SizeT)> onWakeCallback;
@@ -54,13 +53,13 @@ public:
     ///
     void Shutdown();
 
-    /// do a sync full simulation step. Do not mix Update and Begin/EndFrame!
+    /// convenience function to do a sync full simulation step. Do not mix Update and Begin/EndFrame!
     void Update(Timing::Time delta);
 
     /// explicit call to simulate, will process async in the background
-    void BeginFrame(Timing::Time delta);
+    void BeginSimulating(Timing::Time delta, IndexT scene);
     // explicit call to fetch the results of the simulation
-    void EndFrame();
+    void EndSimulating(IndexT scene);
 
     /// create new empty actor
     physx::PxRigidActor* CreateActor(ActorType type, Math::mat4 const & transform);
@@ -88,7 +87,6 @@ public:
     ///
 
     void onAdvance(const physx::PxRigidBody*const* bodyBuffer, const physx::PxTransform* poseBuffer, const physx::PxU32 count) {}
-
 };
 
 extern PhysxState state;

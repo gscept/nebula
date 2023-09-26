@@ -58,8 +58,8 @@ void PhysicsManager::InitCreateActorProcessor()
     processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
     {
         Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
-        Game::ComponentId const staticPID = Game::GetComponentId("Static"_atm);
         Game::ComponentId const modelID = Game::GetComponentId("ModelResource"_atm);
+        Game::ComponentId const typeID = Game::GetComponentId("PhysicsType"_atm);
 
         for (int v = 0; v < data.numViews; v++)
         {
@@ -67,13 +67,14 @@ void PhysicsManager::InitCreateActorProcessor()
             Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
             Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
             Resources::ResourceName const* const resources = (Resources::ResourceName*)view.buffers[2];
+            
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
                 Game::Entity const& entity = owners[i];
                 Math::mat4 const& trans = transforms[i];
                 Resources::ResourceName res = resources[i];
-
+                
                 if (res == "mdl:")
                 {
                     Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, entity, modelID).value.Value();
@@ -82,11 +83,17 @@ void PhysicsManager::InitCreateActorProcessor()
                     res = Util::String::Sprintf("phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr());
                 }
 
+                Physics::ActorType actorType = Physics::ActorType::Static;
+                if (Game::HasComponent(world, entity, typeID))
+                {
+                    actorType = Game::GetComponent<Physics::ActorType>(world, entity, typeID);
+                }
+
                 Resources::CreateResource(res, "PHYS",
-                    [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
+                    [world, trans, &opBuffer, entity, actorType](Resources::ResourceId id)
                     {
-                        bool const isStatic = Game::HasComponent(world, entity, staticPID);
-                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, isStatic ? Physics::ActorType::Static : Physics::ActorType::Dynamic, Ids::Id32(entity));
+                        
+                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, actorType, Ids::Id32(entity));
                         
                         Game::Op::RegisterComponent regOp;
                         regOp.entity = entity;
@@ -230,3 +237,33 @@ PhysicsManager::OnCleanup(Game::World* world)
 }
 
 } // namespace PhysicsFeature
+
+
+#include "pjson/pjson.h"
+#include "io/jsonreader.h"
+
+namespace IO
+{
+     template<>  void JsonReader::Get<Physics::ActorType>(Physics::ActorType& ret, char const* attr)
+    {
+         ret = Physics::ActorType::Static;
+        const pjson::value_variant* node = this->GetChild(attr);
+        if (node->is_string())
+        {
+            Util::String str = node->as_string_ptr();
+            if (str == "Static") { ret = Physics::ActorType::Static; return; }
+            if (str == "Kinematic") { ret = Physics::ActorType::Kinematic; return; }
+            if (str == "Dynamic") { ret = Physics::ActorType::Dynamic; return; }
+        }
+    }
+
+    template<>  void JsonWriter::Add<Physics::ActorType>(Physics::ActorType const& t, Util::String const& val)
+    {
+        switch (t)
+        {
+            case Physics::ActorType::Static: this->Add("Static", val); return;
+            case Physics::ActorType::Kinematic: this->Add("Kinematic", val); return;
+            case Physics::ActorType::Dynamic: this->Add("Dynamic", val); return;
+        }
+    }
+};

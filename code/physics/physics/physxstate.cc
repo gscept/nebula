@@ -53,8 +53,6 @@ PhysxState::Setup()
 
     // preallocate actors
     ActorContext::actors.Reserve(1024);
-
-    this->time = 0.0;
 }
 
 //------------------------------------------------------------------------------
@@ -188,6 +186,20 @@ PhysxState::DiscardActor(ActorId id)
 //------------------------------------------------------------------------------
 /**
 */
+static void CollectModified(Physics::Scene& scene, Util::Set<Ids::Id32>& modifiedActors)
+{
+    uint32_t activeActorCount = 0;
+    PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
+    for (uint32_t i = 0; i < activeActorCount; i++)
+    {
+        Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
+        modifiedActors.Add(id);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 PhysxState::Update(Timing::Time delta)
 {
@@ -197,30 +209,30 @@ PhysxState::Update(Timing::Time delta)
         if (!this->pvd->isConnected()) this->ConnectPVD();
         else this->DisconnectPVD();
     }
-    this->time -= delta;
-    // we limit the simulation to 5 frames
-    this->time = Math::max(this->time, -5.0 * PHYSICS_RATE);
-    while (this->time < 0.0)
+
+    Util::Set<Ids::Id32> modifiedActors;
+    for (IndexT Id : this->activeSceneIds)
     {
-        for (IndexT Id : this->activeSceneIds)
+        modifiedActors.Clear();
+        Physics::Scene& scene = this->activeScenes[Id];
+        scene.time -= delta;
+        // we limit the simulation to 5 frames
+        scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
+        while (scene.time < 0.0)
         {
-            auto& scene = this->activeScenes[Id];
-            // simulate synchronously
             scene.scene->simulate(PHYSICS_RATE);
             scene.scene->fetchResults(true);
+            scene.time += PHYSICS_RATE;
             if (scene.updateFunction != nullptr)
             {
-                uint32_t activeActorCount = 0;
-                PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
-                for (uint32_t i = 0; i < activeActorCount; i++)
-                {
-                    Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
-                    Actor& actor = ActorContext::GetActor(id);
-                    (*scene.updateFunction)(actor);
-                }
+                CollectModified(scene, modifiedActors);
             }
         }
-        state.time += PHYSICS_RATE;
+        for (Ids::Id32 id : modifiedActors.KeysAsArray())
+        {
+            Actor& actor = ActorContext::GetActor(id);
+            (*scene.updateFunction)(actor);
+        }
     }
     N_MARKER_END();
 }
@@ -229,55 +241,63 @@ PhysxState::Update(Timing::Time delta)
 /**
 */
 void
-PhysxState::BeginFrame(Timing::Time delta)
+PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 {
-    N_MARKER_BEGIN(BeginFrame, Physics);
-    this->time -= delta;
-    // we limit the simulation to 5 frames
-    this->time = Math::max(this->time, -5.0 * PHYSICS_RATE);
-    while (this->time < PHYSICS_RATE)
+    N_MARKER_BEGIN(BeginSimulation, Physics);
+#if NEBULA_DEBUG
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
     {
-        for (auto& scene : this->activeScenes)
-        {
-            // simulate synchronously until we are in sync again
-            scene.scene->simulate(PHYSICS_RATE);
-            scene.scene->fetchResults(true);
-        }
-        state.time += PHYSICS_RATE;
+        if (!this->pvd->isConnected()) this->ConnectPVD();
+        else this->DisconnectPVD();
     }
-    for (auto& scene : this->activeScenes)
+#endif
+
+    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    Physics::Scene& scene = this->activeScenes[sceneId];
+    scene.time -= delta;
+    
+    scene.scene->simulate(PHYSICS_RATE);
+    N_MARKER_END();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::EndSimulating(IndexT sceneId)
+{
+    N_MARKER_BEGIN(EndSimulating, Physics);
+    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    Physics::Scene& scene = this->activeScenes[sceneId];
+
+    scene.scene->fetchResults(true);
+
+    Util::Set<Ids::Id32> modifiedActors;
+    if (scene.updateFunction != nullptr)
+    {
+        CollectModified(scene, modifiedActors);
+    }
+
+    // we limit the simulation to 5 frames
+    scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
+    while (scene.time < PHYSICS_RATE)
     {
         // simulate synchronously until we are in sync again
         scene.scene->simulate(PHYSICS_RATE);
+        scene.scene->fetchResults(true);
+        CollectModified(scene, modifiedActors);
+        scene.time += PHYSICS_RATE;
     }
 
-    N_MARKER_END();
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysxState::EndFrame()
-{
-    N_MARKER_BEGIN(EndFrame, Physics);
-    for (auto& scene : this->activeScenes)
+    if (scene.updateFunction != nullptr)
     {
-        scene.scene->fetchResults(true);
-        if (scene.updateFunction != nullptr)
+        for (Ids::Id32 id : modifiedActors.KeysAsArray())
         {
-            uint32_t activeActorCount = 0;
-            PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
-            for (uint32_t i = 0; i < activeActorCount; i++)
-            {
-                Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
-                Actor& actor = ActorContext::GetActor(id);
-                (*scene.updateFunction)(actor);
-            }
+            Actor& actor = ActorContext::GetActor(id);
+            (*scene.updateFunction)(actor);
         }
     }
-    state.time += PHYSICS_RATE;
+    N_MARKER_END();
 }
 
 
