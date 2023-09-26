@@ -109,18 +109,14 @@ psGLTF(
     vec3 N = normalize(calcBump(Tangent, Normal, Sign, normals));
     
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
-    float NdotV = saturate(dot(N, viewVec));
     vec3 F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], vec3(0.04));
     
-    vec3 viewNormal = (View * vec4(N.xyz, 0)).xyz;
-
     float viewDepth = CalculateViewDepth(View, WorldSpacePos);
     uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewDepth, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
     
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, WorldSpacePos);
-    light += LocalLights(idx, baseColor.rgb, material, F0, WorldSpacePos, viewNormal, gl_FragCoord.z);
+    light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, baseColor.rgb, material, N);
     light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;
     
