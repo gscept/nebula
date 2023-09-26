@@ -42,6 +42,7 @@ __ImplementEnumBitOperators(NodeBits);
 
 struct NodeInstanceRange
 {
+    Memory::SCAlloc allocation;
     SizeT begin, end;
 };
 

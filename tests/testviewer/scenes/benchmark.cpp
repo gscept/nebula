@@ -61,7 +61,7 @@ void OpenScene()
         for (IndexT j = -NumModels; j < NumModels; j++)
         {
             Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-            Graphics::RegisterEntity<ModelContext, ObservableContext>(ent);
+            Graphics::RegisterEntity<ModelContext>(ent);
             entities.Append(ent);
             Util::String sid;
             sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
@@ -73,6 +73,8 @@ void OpenScene()
             // create model and move it to the front
             ModelContext::Setup(ent, modelRes[resourceIndex], "NotA", [=]()
                 {
+                
+                    Graphics::RegisterEntity<ObservableContext>(ent);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
                     //Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");

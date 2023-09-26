@@ -496,17 +496,6 @@ NebulaVulkanErrorDebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
     void* userData)
 {
-    const int ignore[] =
-    {
-        602160055
-    };
-
-    for (IndexT i = 0; i < sizeof(ignore) / sizeof(int); i++)
-    {
-        if (callbackData->messageIdNumber == ignore[i])
-            return VK_FALSE;
-    }
-
     n_warning("%s\n", callbackData->pMessage);
     return VK_FALSE;
 }
@@ -983,6 +972,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
                 case CoreGraphics::QueryType::TimestampsQueryType:
                     queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
                     queryPoolInfo.queryCount = info.maxTimestampQueries;   // Timestamps will be quite a lot fewer
+                    baseSize = sizeof(uint64_t);
                     byteSize = baseSize * queryPoolInfo.queryCount;
                     break;
                 case CoreGraphics::QueryType::StatisticsQueryType:
@@ -1022,7 +1012,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
         | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
-    state.vertexAllocator.Resize(info.globalVertexBufferMemorySize);
+    state.vertexAllocator = Memory::SCAllocator(info.globalVertexBufferMemorySize, 0xFFFF);
 
     CoreGraphics::BufferCreateInfo iboInfo;
     iboInfo.name = "Global Index Cache";
@@ -1034,7 +1024,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
         | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
-    state.indexAllocator.Resize(info.globalIndexBufferMemorySize);
+    state.indexAllocator = Memory::SCAllocator(info.globalIndexBufferMemorySize, 0xFFFF);
 
     CoreGraphics::BufferCreateInfo uploadInfo;
     uploadInfo.name = "Global Upload Buffer";
@@ -1737,40 +1727,39 @@ Threading::CriticalSection vertexAllocationMutex;
 //------------------------------------------------------------------------------
 /**
 */
-uint
+const VertexAlloc
 AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    IndexT ret;
-    state.vertexAllocator.Alloc(numVertices * vertexSize, 1, ret);
-    n_assert(ret != InvalidIndex);
-    N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, numVertices * vertexSize);
-    return ret;
+    const uint size = numVertices * vertexSize;
+    Memory::SCAlloc alloc = state.vertexAllocator.Alloc(size);
+    n_assert(alloc.offset != alloc.OOM);
+    N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, size);
+    return VertexAlloc{ .size = size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint
+const VertexAlloc
 AllocateVertices(const SizeT bytes)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    IndexT ret;
-    state.vertexAllocator.Alloc(bytes, 1, ret);
-    n_assert(ret != InvalidIndex);
+    Memory::SCAlloc alloc = state.vertexAllocator.Alloc(bytes);
+    n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, bytes);
-    return ret;
+    return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DeallocateVertices(uint offset)
+DeallocateVertices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    SizeT length = state.vertexAllocator.Dealloc(offset);
-    N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, length);
+    state.vertexAllocator.Dealloc(Memory::SCAlloc{.offset = alloc.offset, .node = alloc.node});
+    N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, alloc.size);
 }
 
 //------------------------------------------------------------------------------
@@ -1785,40 +1774,39 @@ GetVertexBuffer()
 //------------------------------------------------------------------------------
 /**
 */
-uint
+const VertexAlloc
 AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    IndexT ret;
-    state.indexAllocator.Alloc(numIndices * IndexType::SizeOf(indexType), 1, ret);
-    n_assert(ret != InvalidIndex);
+    uint size = numIndices * IndexType::SizeOf(indexType);
+    Memory::SCAlloc alloc = state.indexAllocator.Alloc(size);
+    n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
-    return ret;
+    return VertexAlloc{ .size = size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint
+const VertexAlloc
 AllocateIndices(const SizeT bytes)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    IndexT ret;
-    state.indexAllocator.Alloc(bytes, 1, ret);
-    n_assert(ret != InvalidIndex);
+    Memory::SCAlloc alloc = state.indexAllocator.Alloc(bytes);
+    n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, bytes);
-    return ret;
+    return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DeallocateIndices(uint offset)
+DeallocateIndices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    SizeT length = state.indexAllocator.Dealloc(offset);
-    N_BUDGET_COUNTER_DECR(N_INDEX_MEMORY, length);
+    state.indexAllocator.Dealloc(Memory::SCAlloc{.offset = alloc.offset, .node = alloc.node});
+    N_BUDGET_COUNTER_DECR(N_INDEX_MEMORY, alloc.size);
 }
 
 //------------------------------------------------------------------------------

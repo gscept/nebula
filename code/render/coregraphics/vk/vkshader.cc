@@ -108,6 +108,15 @@ ShaderSetup(
             if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { numPerStageUniformBuffers[PixelShader]++; slotsUsed++; }
             if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageUniformBuffers[ComputeShader]++; slotsUsed++; }
         }
+        else
+        {
+            numPerStageUniformBuffers[VertexShader]++;
+            numPerStageUniformBuffers[HullShader]++;
+            numPerStageUniformBuffers[DomainShader]++;
+            numPerStageUniformBuffers[GeometryShader]++;
+            numPerStageUniformBuffers[PixelShader]++;
+            numPerStageUniformBuffers[ComputeShader]++;
+        }
 
         if (block->variables.empty()) continue;
         if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
@@ -190,6 +199,15 @@ ShaderSetup(
             if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { numPerStageStorageBuffers[PixelShader]++; slotsUsed++; }
             if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageStorageBuffers[ComputeShader]++; slotsUsed++; }
         }
+        else
+        {
+            numPerStageStorageBuffers[VertexShader]++;
+            numPerStageStorageBuffers[HullShader]++;
+            numPerStageStorageBuffers[DomainShader]++;
+            numPerStageStorageBuffers[GeometryShader]++;
+            numPerStageStorageBuffers[PixelShader]++;
+            numPerStageStorageBuffers[ComputeShader]++;
+        }
 
         if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP)
         {
@@ -260,6 +278,15 @@ ShaderSetup(
                 if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { numPerStageSamplers[PixelShader]++; };
                 if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageSamplers[ComputeShader]++; };
                 smla.visibility = vis;
+            }
+            else
+            {
+                numPerStageSamplers[VertexShader]++;
+                numPerStageSamplers[HullShader]++;
+                numPerStageSamplers[DomainShader]++;
+                numPerStageSamplers[GeometryShader]++;
+                numPerStageSamplers[PixelShader]++;
+                numPerStageSamplers[ComputeShader]++;
             }
             smla.slot = sampler->bindingLayout.binding;
             smla.sampler = samp;
@@ -384,6 +411,10 @@ ShaderSetup(
             ResourceTableLayoutId layout = CreateResourceTableLayout(info);
             setLayouts[i] = Util::MakePair(layoutCreateInfos.KeyAtIndex(i), layout);
             setLayoutMap.Add(layoutCreateInfos.KeyAtIndex(i), i);
+
+#if NEBULA_GRAPHICS_DEBUG
+            ObjectSetName(layout, Util::String::Sprintf("%s - Resource Table Layout %d", name.Value(), i).AsCharPtr());
+#endif
         }
     }
 

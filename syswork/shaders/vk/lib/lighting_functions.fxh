@@ -428,7 +428,7 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     @param material			Material parameters (metallic, roughness, cavity)
     @param F0				Fresnel reflectance at 0 degree incidence angle
     @param viewPos			The fragments position in view space
-    @param viewSpaceNormal	The fragments view space normal
+    @param normal       	The fragments normal
     @param depth			The fragments depth (gl_FragCoord.z)
 */
 vec3

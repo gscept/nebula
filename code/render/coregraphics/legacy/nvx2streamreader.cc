@@ -289,12 +289,12 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 
     // Allocate vertices from global repository 
     uint elementSize = VertexLayoutGetSize(this->layout);
-    this->baseVertexOffset = CoreGraphics::AllocateVertices(this->numVertices, elementSize);
+    this->vertexAllocation = CoreGraphics::AllocateVertices(this->numVertices, elementSize);
 
     // Copy from host mappable buffer to device local buffer
     CoreGraphics::BufferCopy from, to;
     from.offset = offset;
-    to.offset = this->baseVertexOffset;
+    to.offset = this->vertexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, this->vbo, { to }, this->vertexDataSize);
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
@@ -320,12 +320,12 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     this->ibo = CoreGraphics::GetIndexBuffer();
 
     // Allocate vertices from global repository 
-    this->baseIndexOffset = CoreGraphics::AllocateIndices(this->numIndices, CoreGraphics::IndexType::Index32);
+    this->indexAllocation = CoreGraphics::AllocateIndices(this->numIndices, CoreGraphics::IndexType::Index32);
 
     // Copy from host mappable buffer to device local buffer
     CoreGraphics::BufferCopy from, to;
     from.offset = offset;
-    to.offset = this->baseIndexOffset;
+    to.offset = this->indexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, this->ibo, { to }, this->indexDataSize);
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();

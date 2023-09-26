@@ -33,7 +33,6 @@ CalculateViewDepth(mat4 view, vec3 worldPos)
     return dot(m, vec4(worldPos, 1));
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */

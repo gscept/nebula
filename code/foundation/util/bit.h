@@ -133,6 +133,16 @@ CountBits(uint32 i)
     return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
+//------------------------------------------------------------------------------
+/**
+    Combine hashes
+*/
+template<typename T>
+inline void HashCombine(uint32_t& s, const T& v)
+{
+    std::hash<T> h;
+    s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
+}
+
 } // namespace Util
 
-    

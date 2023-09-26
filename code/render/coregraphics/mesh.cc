@@ -25,13 +25,15 @@ CreateMesh(const MeshCreateInfo& info)
     // Thing is, we just allocated this index so we own it right now
     meshAllocator.Set<Mesh_Name>(id, info.name);
     __Mesh internals{
-        info.streams,
-        info.indexBufferOffset,
-        info.indexBuffer,
-        info.indexType,
-        info.vertexLayout,
-        info.topology,
-        info.primitiveGroups
+        .streams = info.streams,
+        .indexBufferOffset = info.indexBufferOffset,
+        .indexBuffer = info.indexBuffer,
+        .indexType = info.indexType,
+        .vertexLayout = info.vertexLayout,
+        .primitiveTopology = info.topology,
+        .primitiveGroups = info.primitiveGroups,
+        .vertexAllocation = info.vertexBufferAllocation,
+        .indexAllocation = info.indexBufferAllocation
     };
     meshAllocator.Set<Mesh_Internals>(id, internals);
     meshAllocator.Release(id);
@@ -48,6 +50,11 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
+    const CoreGraphics::VertexAlloc& vertices = meshAllocator.ConstGet<Mesh_Internals>(id.id24).vertexAllocation;
+    const CoreGraphics::VertexAlloc& indices = meshAllocator.ConstGet<Mesh_Internals>(id.id24).indexAllocation;
+
+    CoreGraphics::DeallocateVertices(vertices);
+    CoreGraphics::DeallocateIndices(indices);
     meshAllocator.Dealloc(id.id24);
 }
 

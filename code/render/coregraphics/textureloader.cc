@@ -229,6 +229,7 @@ TextureLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bo
     TextureId texture;
     texture.resourceId = id.resourceId;
     texture.resourceType = id.resourceType;
+    TextureIdAcquire(texture);
 
     const gliml::context& ctx = streamData->ctx;
     CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, adjustedLod, streamData->lowestLod, 0, ctx.num_faces());
@@ -321,6 +322,8 @@ TextureLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bo
 
     // When all that is done, set the highest lod which triggers a new image view creation
     TextureSetHighestLod(texture, adjustedLod);
+
+    TextureIdRelease(texture);
 }
 
 } // namespace CoreGraphics

@@ -153,6 +153,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
         SizeT baseVertexOffset, baseIndexOffset;
         CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
         CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
+        CoreGraphics::VertexAlloc vertexAllocation, indexAllocation = { .size = 0xFFFFFFFF, .offset = 0xFFFFFFFF, .node = 0xFFFFFFFF };
 
         // Upload vertex data
         {
@@ -163,8 +164,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             // Get upload buffer
             uint offset = CoreGraphics::Upload(vertexData, header->vertexDataSize);           
 
-            // Allocate vertices from global repository 
-            baseVertexOffset = CoreGraphics::AllocateVertices(header->vertexDataSize);
+            // Allocate vertices from global repository
+            vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
+            baseVertexOffset = vertexAllocation.offset;
 
             // Copy from host mappable buffer to device local buffer
             CoreGraphics::BufferCopy from, to;
@@ -187,8 +189,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             // Get upload buffer
             uint offset = CoreGraphics::Upload(indexData, header->indexDataSize);
 
-            // Allocate vertices from global repository 
-            baseIndexOffset = CoreGraphics::AllocateIndices(header->indexDataSize);
+            // Allocate vertices from global repository
+            indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
+            baseIndexOffset = indexAllocation.offset;
 
             // Copy from host mappable buffer to device local buffer
             CoreGraphics::BufferCopy from, to;
@@ -221,6 +224,8 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             mshInfo.indexType = vertexRanges[i].indexType;
             mshInfo.primitiveGroups = primGroups;
             mshInfo.vertexLayout = layouts[(uint)vertexRanges[i].layout];
+            mshInfo.vertexBufferAllocation = vertexAllocation;
+            mshInfo.indexBufferAllocation = indexAllocation;
             MeshId mesh = CreateMesh(mshInfo);
             meshes[i] = mesh;
         }
