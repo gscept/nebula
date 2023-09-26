@@ -18,7 +18,7 @@ __ImplementSingleton(PhysicsFeatureUnit);
 //------------------------------------------------------------------------------
 /**
 */
-PhysicsFeatureUnit::PhysicsFeatureUnit()
+PhysicsFeatureUnit::PhysicsFeatureUnit() : simulating(false)
 {
     __ConstructSingleton;
 }
@@ -42,10 +42,15 @@ PhysicsFeatureUnit::OnActivate()
     Game::TimeSourceCreateInfo timeSourceInfo;
     timeSourceInfo.hash = TIMESOURCE_PHYSICS;
     Game::TimeManager::CreateTimeSource(timeSourceInfo);
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
     this->AttachManager(PhysicsManager::Create());
 
     Physics::Setup();
+
+    IndexT defaultScene = Physics::CreateScene();
+    this->physicsWorlds.Add(world, defaultScene);
+
     Physics::SetOnSleepCallback([](Physics::ActorId* actors, SizeT num)
     {
         // FIXME: This assumes all actors are in the default world.
@@ -88,7 +93,7 @@ PhysicsFeatureUnit::OnActivate()
         Game::Dispatch(buffer);
         Game::DestroyOpBuffer(buffer);
     });
-    Physics::CreateScene();
+    
     //FIXME
     IndexT dummyMaterial = Physics::SetPhysicsMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
 }
@@ -109,8 +114,28 @@ PhysicsFeatureUnit::OnDeactivate()
 void 
 PhysicsFeatureUnit::OnBeginFrame()
 {
+    if (!simulating) return;
+
+    for (auto const& scene : this->physicsWorlds)
+    {
+        Physics::EndSimulating(scene.Value());
+    }
+    simulating = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsFeatureUnit::OnEndFrame()
+{
     Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_PHYSICS);
-    Physics::Update(time->frameTime);
+    for (auto const& scene : this->physicsWorlds)
+    {
+        Physics::BeginSimulating(time->frameTime, scene.Value());
+    }
+    simulating = true;
+    
 }
 
 //------------------------------------------------------------------------------

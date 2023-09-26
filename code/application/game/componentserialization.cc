@@ -52,7 +52,8 @@ void
 ComponentSerialization::Deserialize(Ptr<IO::JsonReader> const& reader, ComponentId component, void* ptr)
 {
     n_assert(Singleton != nullptr);
-    Singleton->serializers[component.id].deserializeJson(reader, 0, ptr);
+    const char* name = MemDb::TypeRegistry::GetDescription(component)->name.Value();
+    Singleton->serializers[component.id].deserializeJson(reader, name, ptr);
 }
 
 //------------------------------------------------------------------------------

@@ -72,6 +72,7 @@ struct Scene
     physx::PxControllerManager *controllerManager;
     physx::PxDefaultCpuDispatcher *dispatcher;
     UpdateFunctionType updateFunction = nullptr;
+    Timing::Time time;
 };
 
 /// initialize the physics subsystem and create a default scene
@@ -83,8 +84,8 @@ void ShutDown();
 void Update(Timing::Time delta);
 
 // explicit calls to simulate and fetch results. Do not mix with Update!
-void BeginFrame(Timing::Time delta);
-void EndFrame();
+void BeginSimulating(Timing::Time delta, IndexT scene);
+void EndSimulating(IndexT scene);
 
 ///
 IndexT CreateScene();

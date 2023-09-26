@@ -64,9 +64,9 @@ class ComponentDefinition:
         if self.isFlag:
             return ""
         numVars = len(self.variables)
-        if numVars == 0:
-            util.fmtError("ComponentDefinition does not contain a single variable!")
-        elif numVars == 1 and not self.isStruct: # special case: only one variable. This sets the default name of the structs inner variable to "value".
+        #if numVars == 0:
+        #    util.fmtError("ComponentDefinition does not contain a single variable!")
+        if numVars == 1 and not self.isStruct: # special case: only one variable. This sets the default name of the structs inner variable to "value".
             retVal = 'struct {}\n{{\n'.format(self.componentName)
             if self.variables[0].defaultValue is None:
                 retVal += '    {} {};\n'.format(self.variables[0].type, "value")
@@ -262,8 +262,10 @@ def WriteStructJsonSerializers(f, document):
         f.WriteLine("if (node->is_object())")
         f.WriteLine("{")
         f.IncreaseIndent()
+        f.WriteLine("this->SetToNode(attr);")
         for var in comp.variables:
             f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
+        f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
         f.DecreaseIndent()

@@ -12,6 +12,7 @@
 #include "ids/idallocator.h"
 #include "resources/resourceid.h"
 #include "core/rttimacros.h"
+#include "memory/sizeclassificationallocator.h"
 #include <functional>
 namespace Models
 {

@@ -32,6 +32,16 @@ ProcessorBuilder::ProcessorBuilder(Util::StringAtom processorName) :
 /**
 */
 ProcessorBuilder&
+ProcessorBuilder::Excluding(std::initializer_list<ComponentId> components)
+{
+    this->filterBuilder.Excluding(components);
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ProcessorBuilder&
 ProcessorBuilder::On(Util::StringAtom eventName)
 {
     this->onEvent = eventName;

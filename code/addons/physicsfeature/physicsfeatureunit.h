@@ -35,9 +35,13 @@ public:
 
     /// called on begin of frame
     virtual void OnBeginFrame();
-
+    /// called at the end of the feature trigger cycle
+    virtual void OnEndFrame();
     /// called when game debug visualization is on
     virtual void OnRenderDebug();
+private:
+    Util::Dictionary<Game::World*, IndexT> physicsWorlds;
+    bool simulating;
 };
 
 } // namespace PhysicsFeature

@@ -223,28 +223,22 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                 // Override components if necessary
                 if (jsonReader->SetToFirstChild("components"))
                 {
-                    jsonReader->SetToFirstChild();
-                    do
+                    Util::Array<ComponentId> const&  columns = templateDatabase->GetColumns(templateTid);
+                    for (ComponentId id : columns)
                     {
-                        Util::StringAtom componentName = jsonReader->GetCurrentNodeName();
-                        MemDb::ComponentId descriptor = MemDb::TypeRegistry::GetComponentId(componentName);
-                        if (descriptor == MemDb::ComponentId::Invalid())
+                        MemDb::ComponentDescription * descriptor = MemDb::TypeRegistry::GetDescription(id);
+                        if (descriptor != nullptr)
                         {
-                            n_warning("Warning: Template contains invalid component named '%s'. (%s)\n", componentName.Value(), templatePath.AsCharPtr());
-                            continue;
+                            Util::StringAtom compName = descriptor->name;
+                            if (jsonReader->HasAttr(compName.Value()))
+                            {
+                                MemDb::ColumnIndex column = templateDatabase->GetColumnId(templateTid, id);
+                                if (column == MemDb::ColumnIndex::Invalid()) continue;
+                                void* componentValue = templateDatabase->GetValuePointer(templateTid, column, instance);
+                                ComponentSerialization::Deserialize(jsonReader, id, componentValue);
+                            }
                         }
-
-                        MemDb::ColumnIndex column = templateDatabase->GetColumnId(templateTid, descriptor);
-                        if (column == MemDb::ColumnIndex::Invalid())
-                        {
-                            n_warning("Warning: Template contains component named '%s' that does not exist in blueprint. (%s)\n", componentName.Value(), templatePath.AsCharPtr());
-                            continue;
-                        }
-
-                        void* componentValue = templateDatabase->GetValuePointer(templateTid, column, instance);
-                        ComponentSerialization::Deserialize(jsonReader, descriptor, componentValue);
-                    } while (jsonReader->SetToNextChild());
-
+                    }
                     jsonReader->SetToParent();
                 }
 

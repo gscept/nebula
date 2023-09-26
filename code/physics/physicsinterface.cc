@@ -126,6 +126,7 @@ CreateScene()
 #endif
     scene.physics = state.physics;
     scene.foundation = state.foundation;
+    scene.time = 0.0;
     return idx;
 }
 
@@ -136,7 +137,9 @@ void
 DestroyScene(IndexT sceneId)
 {
     n_assert(state.foundation);
-    n_assert(sceneId < state.activeScenes.Size() && state.activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    n_assert(sceneId < state.activeScenes.Size());
+    IndexT activeIndex = state.activeSceneIds.FindIndex(sceneId);
+    n_assert(activeIndex != InvalidIndex);
 
     Scene& scene = state.activeScenes[sceneId];
 
@@ -157,6 +160,7 @@ DestroyScene(IndexT sceneId)
     scene.scene->release();
     scene.dispatcher->release();
     state.deadSceneIds.Append(sceneId);
+    state.activeSceneIds.EraseIndex(activeIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -309,21 +313,22 @@ Update(Timing::Time delta)
 /**
 */
 void
-BeginFrame(Timing::Time delta)
+BeginSimulating(Timing::Time delta, IndexT scene)
 {
 #if NEBULA_DEBUG
-    n_assert2(updateCalled == false, "Mixed sync Update in PhysicsInterface with Split Begin/EndFrame, this is most definitely wrong");
+    n_assert2(updateCalled == false, "Mixed sync Update in PhysicsInterface with Split Begin/EndSimulating, this is most definitely wrong");
 #endif
-    state.BeginFrame(delta);
+
+    state.BeginSimulating(delta, scene);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-EndFrame()
+EndSimulating(IndexT scene)
 {
-    state.EndFrame();
+    state.EndSimulating(scene);
 }
 
 
