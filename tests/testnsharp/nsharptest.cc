@@ -18,8 +18,8 @@ __ImplementClass(Test::NSharpTest, 'nshT', Test::TestCase);
 static Math::vec2 reg_vec2;
 static Math::vec3 reg_vec3;
 static Math::vec4 reg_vec4;
-
 static Util::String reg_string;
+static bool testArrayOfIntResult = false;
 
 void PassVec2(MonoObject* obj)
 {
@@ -39,6 +39,23 @@ void PassVec4(MonoObject* obj)
 NEBULA_EXPORT void PassString(Util::String const& string)
 {
     reg_string = string;
+}
+
+NEBULA_EXPORT void TestArrayOfInt(Util::Array<int> const& arr)
+{
+    testArrayOfIntResult = true;
+    int const values[10] =
+    {
+        1,2,3,4,5,6,7,8,9,10
+    };
+
+    for (IndexT i = 0; i < arr.size(); i++)
+    {
+        if (arr[i] != values[i])
+        {
+            testArrayOfIntResult = false;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -91,6 +108,10 @@ NSharpTest::Run()
     VERIFY(reg_string == "This is a C# string!\n");
     VERIFY(reg_string.Length() == 21); // make sure we're not just reading from the heap pointer...
     n_printf(reg_string.AsCharPtr());
+
+    VERIFY(testArrayOfIntResult);
+
+
 }
 
 }

@@ -82,5 +82,13 @@ N_Log(const char * log_domain, const char * log_level, const char * message, int
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+N_Assert(bool value)
+{
+    n_assert(value);
+}
 
 } // namespace Mono

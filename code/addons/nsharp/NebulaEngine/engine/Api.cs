@@ -5,18 +5,157 @@ using System.Collections;
 using System.Collections.Generic;
 using Mathf;
 
+
+/*
+ 
+Entities are only ids as per usual, pointing into their respective tables in unmanaged code
+
+Components in managed code are objects that are allocated linearly per type by some object pool manager.
+
+
+
+
+ */
+
+namespace Psuedo
+{
+    struct Entity
+    {
+        uint id;
+
+        //bool IsAlive() { return Nebula.Game.IsAlive(this.id); }
+
+
+        // This is for getting and setting unmanaged components
+        bool HasComponent<T>() { return false; }
+        void SetComponent<T>(T component) { return; }
+        T GetComponent<T>() { return default(T); }
+
+        // These are for managed properties
+        bool HasProperty<T>() { return false; }
+        void AddProperty<T>() { }
+        T GetProperty<T>() { return default(T); }
+
+        Matrix GetTransform() { return default(Matrix); }
+        void SetTransform(Matrix matrix) { return; }
+
+        static void Destroy(Entity entity) { }
+    }
+
+    // Example of imported, "unmanaged" component
+    [NativeCppClass]
+    struct AudioEmitter
+    {
+        uint emitterId;
+        bool autoplay;
+        bool loop;
+    }
+
+    class Property
+    {
+        private Entity owner;
+
+        public bool active;
+
+        public Entity Owner
+        {
+            get
+            {
+                return owner;
+            }
+        }
+
+        public virtual Nebula.Game.Events[] AcceptedEvents()
+        {
+            // Override in subclass to tell the property manager which functions to call for this class
+            // This is only executed once when the property type is registered to the property manager
+            return null;
+        }
+
+        public virtual void SetupAcceptedMessages()
+        {
+            // Override in subclass
+            // This is only executed once when the property type is registered to the property manager
+        }
+
+
+        public virtual void OnActivate() { }
+        public virtual void OnDeactivate() { }
+        public virtual void OnBeginFrame() { }
+    }
+
+    class AudioEmitterProperty : Property
+    {
+        public bool autoplay;
+        public bool loop;
+        public float volume;
+        public float pitch;
+
+        public override void OnActivate()
+        {
+            base.OnActivate();
+
+            // Do on activate stuff
+        }
+
+        public override void OnBeginFrame()
+        {
+            base.OnBeginFrame();
+
+            // Do on frame stuff
+        }
+
+        public override void SetupAcceptedMessages()
+        {
+            
+        }
+
+        public override Nebula.Game.Events[] AcceptedEvents()
+        {
+            return new[] {
+                Nebula.Game.Events.OnActivate,
+                Nebula.Game.Events.OnFrame
+            };
+        }
+    }
+
+    class NebulaApiV1
+    {
+        // ...
+    }
+
+    class NebulaApp
+    {
+        void OnStart(NebulaApiV1 api)
+        {
+            //PropertyManager.Register<AudioEmitterProperty>();
+
+            // api.DoSomething();???
+        }
+
+        void OnShutdown()
+        {
+            // Might be able to automate deregistering, if we keep track of the registered proeprties per api object passed  to the dll.
+            // PropertyManager.Deregister<AudioEmitterProperty>();
+        }
+    }
+
+}
+
 namespace Nebula
 {
     namespace Game
     {
         public enum Events
         {
+            OnActivate,
+            OnDeactivate,
             // Update order
             //OnBeginFrame, // Called every frame before rendering (old vis results)
             //OnFixedFrame, // Called every couple of frames with a fixed delta frame time. These updates are distributed and might not be called on the same frame for all components (called after OnBeginFrame)
             OnFrame, // Called every frame while rendering (up to date vis results)
-            //OnEndFrame, // Called after rendering is done
-            
+                     //OnEndFrame, // Called after rendering is done
+
             // Total number of events
             NumEvents
         }
@@ -31,7 +170,7 @@ namespace Nebula
             }
 
             public T this[int index]
-            { 
+            {
                 get
                 {
                     return buffer[index];
@@ -60,7 +199,7 @@ namespace Nebula
                     Instance.eventCallbacks.Add(new List<EventDelegate>());
                 }
             }
-            private ComponentManager() {}
+            private ComponentManager() { }
 
             public static ComponentManager Instance
             {
@@ -124,7 +263,7 @@ namespace Nebula
             {
                 InstanceId instance = entityMap[entity];
                 this.OnDeactivate(instance);
-                
+
                 // TODO: Dealloc data.
 
             }
@@ -153,7 +292,7 @@ namespace Nebula
             public readonly List<Events> events = new List<Events>();
 
             private int size;
-            protected DATA data;
+            protected ComponentData<DATA> data;
             private Dictionary<Entity, InstanceId> entityMap;
         }
 
@@ -163,7 +302,7 @@ namespace Nebula
         public struct Entity : IEquatable<Entity>
         {
             private UInt32 id;
-            
+
             public Entity(uint id)
             {
                 this.id = id;
@@ -195,6 +334,12 @@ namespace Nebula
                 }
             }
 
+            public T GetComponent<T>()
+            {
+                Debug.Assert(false);
+                return default(T);
+            }
+
             /// <summary>
             /// Check whether this entity is valid (alive)
             /// </summary>
@@ -220,7 +365,7 @@ namespace Nebula
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             private extern void SetTransform(Matrix mat);
 
-            
+
         }
 
         public struct InstanceId
@@ -253,16 +398,22 @@ namespace Nebula
 
     public class Debug
     {
-        [DllImport ("__Internal", EntryPoint="N_Print")]
+        [DllImport("__Internal", EntryPoint = "N_Print")]
         public static extern void Log(string val);
+
+        [DllImport("__Internal", EntryPoint = "N_Assert")]
+        public static extern void Assert(bool value);
+
+        [DllImport("__Internal", EntryPoint = "N_Assert")]
+        public static extern void Assert(bool value, string message);
     }
 
-// [DllImport ("__Internal", EntryPoint="Foobar", CharSet=CharSet.Ansi)]
-// static extern void Foobar(
-//     [MarshalAs (UnmanagedType.CustomMarshaler,
-//         MarshalTypeRef=typeof(StringMarshaler))]
-//     String val
-// );
+    // [DllImport ("__Internal", EntryPoint="Foobar", CharSet=CharSet.Ansi)]
+    // static extern void Foobar(
+    //     [MarshalAs (UnmanagedType.CustomMarshaler,
+    //         MarshalTypeRef=typeof(StringMarshaler))]
+    //     String val
+    // );
 
 }
 

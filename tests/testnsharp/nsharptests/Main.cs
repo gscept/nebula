@@ -1,7 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using ConsoleHook;
 using Mathf;
 
 namespace NST
@@ -32,10 +31,20 @@ namespace NST
         {
             [DllImport("__Internal", EntryPoint = "PassString")]
             public static extern void PassString([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Util.StringMarshaler))] string val);
+
+            [DllImport("__Internal", EntryPoint = "TestArrayOfInt")]
+            public static extern void TestArrayOfInt(int[] arr);
             public static void RunTests()
             {
                 string myStr = "This is a C# string!\n";
                 PassString(myStr);
+
+                int[] arr = new int[10];
+                for (int i = 0; i < arr.Length; i++)
+                { 
+                    arr[i] = i + 1;
+                }
+                //TestArrayOfInt(arr);
             }
         }
     }
