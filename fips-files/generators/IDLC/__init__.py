@@ -118,6 +118,7 @@ class IDLCodeGenerator:
         srcFileName = tail or ntpath.basename(head)
 
         IDLDocument.WriteSourceHeader(f, srcFileName)        
+        IDLDocument.AddInclude(f, "application/stdneb.h")
         IDLDocument.AddInclude(f, hdrInclude)
         IDLDocument.AddInclude(f, "core/sysfunc.h")
         IDLDocument.AddInclude(f, "util/stringatom.h")
