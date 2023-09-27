@@ -80,6 +80,8 @@ struct MemoryPool
 
 private:
 
+    static constexpr uint DedicatedBlockNodeIndex = 0xFFFFFFFF;
+
     // allocate conservatively
     Alloc Allocate(DeviceSize alignment, DeviceSize size);
     // create new memory block
