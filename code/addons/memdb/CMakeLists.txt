@@ -11,6 +11,7 @@ fips_files(
     filterset.h
     componentdescription.h
     componentid.h
+    table.cc
     table.h
     tablesignature.h
     typeregistry.h
