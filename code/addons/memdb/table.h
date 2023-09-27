@@ -18,6 +18,7 @@
 #include "componentid.h"
 #include "tablesignature.h"
 #include "util/bitfield.h"
+#include "util/queue.h"
 
 namespace MemDb
 {
@@ -92,6 +93,12 @@ struct Table
 
 using AttributeId = ComponentId;
 
+struct RowId
+{
+    uint16_t partition;
+    uint16_t index;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -103,15 +110,10 @@ private:
     _Table() = default;
 
 public:
-    struct RowId
-    {
-        uint16_t partition;
-        uint16_t index;
-    };
-
     class Partition
     {
     public:
+        uint16_t partitionIndex;
         // total capacity (in elements) that the partition can contain
         static constexpr uint capacity = 256;
         /// number of rows
@@ -126,6 +128,10 @@ public:
         Util::BitField<capacity> modifiedRows;
         // has this partition been modified lately?
         bool modified;
+
+    private:
+        friend _Table;
+        uint16_t AllocateRowIndex();
     };
 
     /// Check if a column exists in the table
@@ -143,13 +149,13 @@ public:
     /// Add an attribute to the table
     ColumnIndex AddAttribute(AttributeId attribute, bool updateSignature = true);
     /// Add/Get a free row from the table
-    RowId AddRow(TableId table);
+    RowId AddRow();
     /// Deallocate a row from a table. This only frees the row for recycling. See ::Defragment
-    void RemoveRow(TableId table, RowId row);
+    void RemoveRow(RowId row);
     /// Get total number of rows in a table
-    SizeT GetNumRows(TableId table) const;
+    SizeT GetNumRows() const;
     /// Set all row values to default
-    void SetToDefault(TableId table, RowId row);
+    void SetToDefault(RowId row);
 
     /// Defragment table
     SizeT Defragment(std::function<void(IndexT, IndexT)> const& moveCallback);
@@ -176,7 +182,12 @@ private:
 
     uint32_t totalNumRows = 0;
 
+    // Current partition that we'll be using when allocating data.
+    Partition* currentPartition;
+    // All available partitions
     Util::Array<Partition*> partitions;
+    // index to partitions that aren't filled to the brim
+    Util::Queue<uint16_t> vacantPartitions;
     /// all components that this table has
     Util::Array<ComponentId> attributes;
     /// maps componentid -> index in columns array
