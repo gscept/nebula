@@ -10,7 +10,7 @@
 #include "toolkit-common/base/exporttypes.h"
 #include "model/meshutil/meshbuildergroup.h"
 #include "jobs/jobs.h"
-#include "gltf/gltfdata.h"
+#include "model/import/gltf/gltfdata.h"
 #include "model/import/base/scenenode.h"
 
 //------------------------------------------------------------------------------

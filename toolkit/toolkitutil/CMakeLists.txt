@@ -10,7 +10,7 @@ fips_begin_lib(toolkitutil)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
 
-    fips_deps(foundation render gltf physics)
+    fips_deps(foundation render physics)
     fips_libs(${FBX_LIBRARY})
     if(FIPS_WINDOWS)
         fips_libs(CMP_Core_MT CMP_Framework_MT)
@@ -144,6 +144,8 @@ fips_begin_lib(toolkitutil)
 
         fips_dir(model/import/gltf)
             fips_files(
+                gltfdata.h
+                gltfreader.cc
                 ngltfexporter.cc
                 ngltfexporter.h
                 ngltfmaterialexporter.cc

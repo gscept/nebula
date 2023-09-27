@@ -85,7 +85,6 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetPixelFormat(TextureAttrs::BC5);
             attrs.SetFlipNormalY(true);
-
             
             Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.normalTexture.index].source];
             if (image.embedded)

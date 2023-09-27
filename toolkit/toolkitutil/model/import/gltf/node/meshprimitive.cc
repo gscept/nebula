@@ -148,10 +148,10 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         uint const vertCount = context->scene->accessors[primitive->attributes[Gltf::Primitive::Attribute::Position]].count;
         uint const triCount = context->scene->accessors[primitive->indices].count / 3;
 
-        context->outMeshes[index]->NewMesh(vertCount, triCount);
+        meshBuilder->NewMesh(vertCount, triCount);
         for (uint j = 0; j < vertCount; j++)
         {
-            context->outMeshes[index]->AddVertex(MeshBuilderVertex());
+            meshBuilder->AddVertex(MeshBuilderVertex());
         }
 
         // Extract vertex data
@@ -204,6 +204,7 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
                         break;
                     case MeshBuilderVertex::Components::Tangents:
                         vtx.SetTangent(xyz(data));
+                        vtx.SetSign(data.w);
                         break;
                     case MeshBuilderVertex::Components::Color:
                         vtx.SetColor(data);
@@ -251,17 +252,17 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         if (!(attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Normal>() &&
               attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Tangent>()))
         {
-            if (context->flags & ExportFlags::CalcNormals)
+            if (AllBits(context->flags, ExportFlags::CalcNormals))
             {
                 meshBuilder->CalculateNormals();
             }
-            if (context->flags & ExportFlags::CalcTangents)
+            if (AllBits(context->flags, ExportFlags::CalcTangents))
             {
                 meshBuilder->CalculateTangents();
             }
         }
 
-        if (context->flags & ToolkitUtil::FlipUVs)
+        if (AllBits(context->flags, ToolkitUtil::FlipUVs))
         {
             meshBuilder->FlipUvs();
         }
