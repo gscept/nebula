@@ -34,13 +34,16 @@ struct SizeClassificationAllocation
     static constexpr uint OOM = 0xFFFFFFFF;
 };
 
+static constexpr uint NUM_BUCKETS = 0x20;
+static constexpr uint NUM_BINS_PER_BUCKET = 0x10;
+
 class SizeClassificationAllocator
 {
 public:
     /// Default constructor
     SizeClassificationAllocator();
     /// Constructor
-    SizeClassificationAllocator(SizeT size, SizeT maxNumAllocs);
+    SizeClassificationAllocator(uint size, SizeT maxNumAllocs);
     /// Destructor
     ~SizeClassificationAllocator();
 
@@ -93,14 +96,12 @@ private:
     };
 
     /// Get bin index from size
-    static BinIndex IndexFromSize(uint size);
+    static BinIndex IndexFromSize(uint size, bool round = false);
 
     uint size;
     uint freeStorage;
     uint freeNodeIterator;
 
-    static constexpr uint NUM_BUCKETS = 0x20;
-    static constexpr uint NUM_BINS_PER_BUCKET = 0xF;
     uint bucketUsageMask;
     uint binMasks[NUM_BUCKETS];
     uint binHeads[NUM_BUCKETS * NUM_BINS_PER_BUCKET];
@@ -127,7 +128,7 @@ SizeClassificationAllocator::SizeClassificationAllocator() :
 /**
 */
 inline
-SizeClassificationAllocator::SizeClassificationAllocator(SizeT size, SizeT maxNumAllocs)
+SizeClassificationAllocator::SizeClassificationAllocator(uint size, SizeT maxNumAllocs)
 {   
     this->size = size;
     this->freeNodes.Resize(maxNumAllocs);
@@ -192,12 +193,11 @@ SizeClassificationAllocator::Alloc(uint size, uint alignment)
     // We are not allowed any more allocations
     if (this->freeStorage < size)
     {
-        return { SCAlloc::OOM, SCAlloc::OOM };
+        return { SCAlloc::OOM, SCNode::END };
     }
 
-    BinIndex minIndex = IndexFromSize(size);
-
-    uint bin = 0xFF;
+    BinIndex minIndex = IndexFromSize(size, true);
+    uint bin = 0xFFFFFFFF;
     uint bucket = minIndex.bucket;
 
     if (this->bucketUsageMask & (1 << bucket))
@@ -205,15 +205,15 @@ SizeClassificationAllocator::Alloc(uint size, uint alignment)
         bin = Lsb(this->binMasks[bucket], minIndex.bin);
     }
 
-    if (bin > NUM_BINS_PER_BUCKET)
+    if (bin == 0xFFFFFFFF)
     {
         // Find next bit set after bucket in the usage mask
         bucket = Lsb(this->bucketUsageMask, bucket + 1);
 
         // If this means we get 32, it means we're out of buckets that fit
-        if (bucket > NUM_BUCKETS)
+        if (bucket == 0xFFFFFFFF)
         {
-            return { SCAlloc::OOM, SCAlloc::OOM };
+            return { SCAlloc::OOM, SCNode::END };
         }
 
         // Find any bit, since this bucket has to fit
@@ -234,7 +234,7 @@ SizeClassificationAllocator::Alloc(uint size, uint alignment)
     // Since we get a new size, need to check there is space with padding
     if (this->freeStorage < (size + padding))
     {
-        return { SCAlloc::OOM, SCAlloc::OOM };
+        return { SCAlloc::OOM, SCNode::END };
     }
 
     // Save total size of node
@@ -473,7 +473,7 @@ BucketFromSize(uint size)
 inline uint 
 BinFromSize(uint size, uint bucket)
 {
-    uint mask = (size >> (bucket - 4)) & 0xF;
+    uint mask = (size >> (bucket - 4)) & (NUM_BINS_PER_BUCKET - 1u);
     return mask;
 }
 
@@ -490,7 +490,7 @@ Lsb(uint value, byte bit)
 #else
     int count = __builtin_ctz(mask);
 #endif
-    return mask ? count : 0xFF;
+    return mask ? count : 0xFFFFFFFF;
 }
 
 //------------------------------------------------------------------------------
@@ -512,11 +512,17 @@ FirstOne(uint value)
 /**
 */
 inline SizeClassificationAllocator::BinIndex
-SizeClassificationAllocator::IndexFromSize(uint size)
+SizeClassificationAllocator::IndexFromSize(uint size, bool round)
 {
     SizeClassificationAllocator::BinIndex ret;
     ret.bucket = BucketFromSize(size);
     ret.bin = BinFromSize(size, ret.bucket);
+    if (round)
+    {
+        uint mask = (1 << ret.bucket) | (ret.bin << (ret.bucket - 4));
+        if ((~mask & size) != 0)
+            ret.bin++;
+    }
     return ret;
 }
 
