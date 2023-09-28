@@ -126,9 +126,9 @@ GraphicsFeatureUnit::OnActivate()
         terrainSettings.world_size_width, terrainSettings.world_size_height,            // World size in meters
         terrainSettings.tile_size_width, terrainSettings.tile_size_height,              // Tile size in meters
         terrainSettings.quads_per_tile_width, terrainSettings.quads_per_tile_height,    // Amount of quads per tile
-        this->globalLight
     };
     Terrain::TerrainContext::Create(settings);
+    Terrain::TerrainContext::SetSun(this->globalLight);
 
     Vegetation::VegetationSetupSettings vegSettings{
         terrainSettings.min_height, terrainSettings.max_height,      // min/max height 
