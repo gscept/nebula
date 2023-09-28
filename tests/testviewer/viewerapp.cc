@@ -148,14 +148,14 @@ SimpleViewerApplication::Open()
 
         Dynui::ImguiContext::Create();
 
-        //Terrain::TerrainSetupSettings terSettings{
-        //    0, 1024.0f,      // min/max height 
-        //    //0, 0,
-        //    8192, 8192,   // world size in meters
-        //    256, 256,     // tile size in meters
-        //    16, 16        // 1 vertex every X meters
-        //};
-        //Terrain::TerrainContext::Create(terSettings);
+        Terrain::TerrainSetupSettings terSettings{
+            .minHeight = 0, .maxHeight = 1024.0f,      // min/max height 
+            //0, 0,
+            .worldSizeX = 8192, .worldSizeZ = 8192,   // world size in meters
+            .tileWidth = 256, .tileHeight = 256,     // tile size in meters
+            .quadsPerTileX = 16, .quadsPerTileY = 16        // 1 vertex every X meters
+        };
+        Terrain::TerrainContext::Create(terSettings);
 
         // setup vegetation
         //Vegetation::VegetationSetupSettings vegSettings{
@@ -215,6 +215,7 @@ SimpleViewerApplication::Open()
 
         // create environment context for the atmosphere effects
         EnvironmentContext::Create(this->globalLight);
+        Terrain::TerrainContext::SetSun(this->globalLight);
 
         this->UpdateCamera();
 
@@ -233,7 +234,7 @@ SimpleViewerApplication::Open()
             EnvironmentContext::OnBeforeFrame,
             EnvironmentContext::RenderUI,
             Particles::ParticleContext::UpdateParticles,
-            //Terrain::TerrainContext::RenderUI
+            Terrain::TerrainContext::RenderUI
         };
 
         Util::FixedArray<Graphics::ViewDependentCall> preLogicViewCalls =
@@ -246,7 +247,7 @@ SimpleViewerApplication::Open()
             Decals::DecalContext::UpdateViewDependentResources,
             Fog::VolumetricFogContext::UpdateViewDependentResources,
             Lighting::LightContext::UpdateViewDependentResources,
-            //Terrain::TerrainContext::CullPatches
+            Terrain::TerrainContext::CullPatches
         };
 
         Util::FixedArray<Graphics::ViewIndependentCall> postLogicCalls = 
@@ -266,7 +267,7 @@ SimpleViewerApplication::Open()
         Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls = 
         {
 
-            //Terrain::TerrainContext::UpdateLOD,
+            Terrain::TerrainContext::UpdateLOD,
             //Vegetation::VegetationContext::UpdateViewResources
         };
 
