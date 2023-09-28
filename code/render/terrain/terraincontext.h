@@ -31,7 +31,6 @@ struct TerrainSetupSettings
     float worldSizeX, worldSizeZ;
     float tileWidth, tileHeight;
     float quadsPerTileX, quadsPerTileY; // vertex density is vertices per meter
-    Graphics::GraphicsEntityId sun;
 };
 
 struct BiomeSetupSettings
@@ -111,6 +110,9 @@ public:
     static void SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold);
     /// set biome height threshold
     static void SetBiomeHeightThreshold(TerrainBiomeId id, float threshold);
+
+    /// Set the sun entity for terrain shadows
+    static void SetSun(const Graphics::GraphicsEntityId sun);
 
     /// cull terrain patches
     static void CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
