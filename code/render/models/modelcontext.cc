@@ -281,13 +281,9 @@ ModelContext::Setup(
     transformRange.begin = transformRange.allocation.offset;
     transformRange.end = transformRange.allocation.offset + 1;
 
-    NodeInstances.transformable.origTransforms.Resize(transformRange.end);
-    NodeInstances.transformable.nodeTransforms.Resize(transformRange.end);
-    NodeInstances.transformable.nodeParents.Resize(transformRange.end);
-
-    NodeInstances.transformable.origTransforms[transformRange.begin] = Math::mat4();
-    NodeInstances.transformable.nodeTransforms[transformRange.begin] = transform;
-    NodeInstances.transformable.nodeParents[transformRange.begin] = UINT32_MAX;
+    NodeInstances.transformable.origTransforms.Append(Math::mat4());
+    NodeInstances.transformable.nodeTransforms.Append(transform);
+    NodeInstances.transformable.nodeParents.Append(UINT32_MAX);
     roots.Append(0);
 
      // Setup node states
