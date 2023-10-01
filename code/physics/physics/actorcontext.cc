@@ -172,7 +172,15 @@ ActorContext::GetActor(ActorId id)
 void ActorContext::SetTransform(ActorId id, Math::mat4 const & transform)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
-    GET_DYNAMIC(id)->setGlobalPose(Neb2PxTrans(transform));
+    auto* actor = GET_DYNAMIC(id);
+    if (actor->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+    {
+        actor->setKinematicTarget(Neb2PxTrans(transform));
+    }
+    else
+    {
+        actor->setGlobalPose(Neb2PxTrans(transform));
+    }
 }
 
 //------------------------------------------------------------------------------
