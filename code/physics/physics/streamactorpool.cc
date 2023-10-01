@@ -445,8 +445,7 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
 
     ActorResourceId ret;
     ret.resourceId = id;
-    ret.resourceType = 0;
-    allocator.Release(id);
+    ret.resourceType = Physics::ActorIdType;
     return ret;
 }
 
@@ -465,10 +464,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
     {
         i->release();
     }
-    for (auto s : info.shapes)
-    {
-        s->release();        
-    }    
+    info.shapes.Clear();
     allocator.Dealloc(id.resourceId);
 }
 

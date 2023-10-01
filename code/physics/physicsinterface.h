@@ -83,9 +83,12 @@ void ShutDown();
 /// perform sync simulation step(s)
 void Update(Timing::Time delta);
 
-// explicit calls to simulate and fetch results. Do not mix with Update!
+/// explicit calls to simulate and fetch results. Do not mix with Update!
 void BeginSimulating(Timing::Time delta, IndexT scene);
 void EndSimulating(IndexT scene);
+
+/// this will block until simulation has ended for cleanups e.g.
+void FlushSimulation(IndexT scene);
 
 ///
 IndexT CreateScene();

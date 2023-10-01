@@ -17,12 +17,6 @@ namespace PhysicsFeature
 
 __ImplementSingleton(PhysicsManager)
 
-struct PhysicsActor
-{
-    Physics::ActorId value;
-    DECLARE_COMPONENT;
-};
-
 DEFINE_COMPONENT(PhysicsActor);
 
 //------------------------------------------------------------------------------
