@@ -110,7 +110,7 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
-        __LockName(&this->allocator, lock, id.id);
+        __LockName(&this->allocator, lock, actor.res.resourceId);
         ActorInfo& info = this->allocator.Get<0>(actor.res.resourceId);
         info.instanceCount--;
     }
