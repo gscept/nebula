@@ -2,7 +2,7 @@
 Language:        Cpp
 # BasedOnStyle:  Microsoft
 AccessModifierOffset: -4
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments:
   Enabled:         false
@@ -61,7 +61,7 @@ BraceWrapping:
   AfterUnion:      false
   BeforeCatch:     true
   BeforeElse:      true
-  BeforeLambdaBody: false
+  BeforeLambdaBody: true
   BeforeWhile:     false
   IndentBraces:    false
   SplitEmptyFunction: true
@@ -130,10 +130,10 @@ MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 ObjCBinPackProtocolList: Auto
 ObjCBlockIndentWidth: 2
-ObjCBreakBeforeNestedBlockParam: true
+ObjCBreakBeforeNestedBlockParam: false
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
-PackConstructorInitializers: BinPack
+PackConstructorInitializers: Never
 PenaltyBreakAssignment: 2
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 300
@@ -161,7 +161,7 @@ SpaceAfterTemplateKeyword: true
 SpaceAroundPointerQualifiers: Default
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCaseColon: false
-SpaceBeforeCpp11BracedList: false
+SpaceBeforeCpp11BracedList: true
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
