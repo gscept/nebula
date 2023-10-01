@@ -32,6 +32,8 @@ public:
     void OnActivate();
     /// Called upon deactivation of feature unit
     void OnDeactivate();
+    /// called from within GameServer::NotifyBeforeCleanup()
+    void OnBeforeCleanup(Game::World* world);
 
     /// called on begin of frame
     virtual void OnBeginFrame();

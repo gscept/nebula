@@ -85,10 +85,7 @@ Setup()
 */
 void ShutDown()
 {
-    PxCloseExtensions();
-    state.cooking->release();
-    state.physics->release();
-    state.foundation->release();
+    state.Shutdown();
 }
 
 //------------------------------------------------------------------------------
@@ -331,6 +328,14 @@ EndSimulating(IndexT scene)
     state.EndSimulating(scene);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FlushSimulation(IndexT scene)
+{
+    state.FlushSimulation(scene);
+}
 
 //------------------------------------------------------------------------------
 /**

@@ -107,8 +107,25 @@ PhysicsFeatureUnit::OnActivate()
 void
 PhysicsFeatureUnit::OnDeactivate()
 {   
-    FeatureUnit::OnDeactivate();    
+    FeatureUnit::OnDeactivate();
+    for (auto const& scene : this->physicsWorlds)
+    {
+        Physics::DestroyScene(scene.Value());
+    }
     Physics::ShutDown();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsFeatureUnit::OnBeforeCleanup(Game::World* world)
+{
+    n_assert(this->physicsWorlds.Contains(world));
+    IndexT scene = this->physicsWorlds[world];
+    Physics::FlushSimulation(scene);
+    FeatureUnit::OnBeforeCleanup(world);
 }
 
 //------------------------------------------------------------------------------
