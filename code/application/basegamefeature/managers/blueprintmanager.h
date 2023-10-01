@@ -34,7 +34,7 @@ public:
     struct Template
     {
         BlueprintId bid;
-        MemDb::Row row; // row in blueprint table
+        MemDb::RowId row; // row in blueprint table
         Util::StringAtom name;
     };
 

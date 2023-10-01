@@ -193,8 +193,8 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                 Ptr<MemDb::Database> templateDatabase = GameServer::Instance()->state.templateDatabase;
                 BlueprintId blueprint = this->blueprintMap[blueprintName];
                 MemDb::TableId templateTid = this->blueprints[blueprint.id].tableId;
-                IndexT instance = templateDatabase->AllocateRow(templateTid);
-                n_assert2(instance < 0xFFFF, "Maximum number of templates per blueprint reached! You win!");
+                MemDb::RowId instance = templateDatabase->GetTable(templateTid).AddRow();
+                n_assert2(instance.index < 0xFFFF, "Maximum number of templates per blueprint reached! You win!");
 
                 // Create template name
                 Util::String fileName = templatePath.ExtractFileName();
@@ -223,18 +223,19 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                 // Override components if necessary
                 if (jsonReader->SetToFirstChild("components"))
                 {
-                    Util::Array<ComponentId> const&  columns = templateDatabase->GetColumns(templateTid);
+                    MemDb::Table& table = templateDatabase->GetTable(templateTid);
+                    Util::Array<ComponentId> const&  columns = table.GetAttributes();
                     for (ComponentId id : columns)
                     {
-                        MemDb::ComponentDescription * descriptor = MemDb::TypeRegistry::GetDescription(id);
+                        MemDb::AttributeDescription * descriptor = MemDb::TypeRegistry::GetDescription(id);
                         if (descriptor != nullptr)
                         {
                             Util::StringAtom compName = descriptor->name;
                             if (jsonReader->HasAttr(compName.Value()))
                             {
-                                MemDb::ColumnIndex column = templateDatabase->GetColumnId(templateTid, id);
+                                MemDb::ColumnIndex column = table.GetAttributeIndex(id);
                                 if (column == MemDb::ColumnIndex::Invalid()) continue;
-                                void* componentValue = templateDatabase->GetValuePointer(templateTid, column, instance);
+                                void* componentValue = table.GetValuePointer(column, instance);
                                 ComponentSerialization::Deserialize(jsonReader, id, componentValue);
                             }
                         }
@@ -370,7 +371,7 @@ BlueprintManager::SetupBlueprints()
             this->blueprintMap.Add(blueprint.name, idxBluePrint);
 
             // Create a template for this blueprints default values
-            IndexT instance = templateDatabase->AllocateRow(tid);
+            MemDb::RowId instance = templateDatabase->GetTable(tid).AddRow();
             TemplateId templateId;
             if (this->templateIdPool.Allocate(templateId.id))
                 this->templates.Append({});

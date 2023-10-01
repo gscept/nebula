@@ -9,24 +9,4 @@
 namespace MemDb
 {
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Dataset::Validate()
-{
-    for (IndexT i = 0; i < this->tables.Size();)
-    {
-        auto& view = this->tables[i];
-        if (!db->IsValid(view.tid))
-        {
-            this->tables.EraseIndexSwap(i);
-            continue;
-        }
-
-        view.numInstances = db->GetNumRows(view.tid);
-        i++;
-    }
-}
-
 } // namespace MemDb

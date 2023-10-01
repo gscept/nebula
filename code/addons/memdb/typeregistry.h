@@ -18,23 +18,23 @@ class TypeRegistry
 public:
     /// register a type (templated)
     template<typename TYPE>
-    static ComponentId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
+    static AttributeId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
 
     /// register a POD, mem-copyable type
-    static ComponentId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
+    static AttributeId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
 
     /// get component id from name
-    static ComponentId GetComponentId(Util::StringAtom name);
+    static AttributeId GetComponentId(Util::StringAtom name);
     /// get component description by id
-    static ComponentDescription* GetDescription(ComponentId descriptor);
+    static AttributeDescription* GetDescription(AttributeId descriptor);
     /// get type size by component id
-    static SizeT TypeSize(ComponentId descriptor);
+    static SizeT TypeSize(AttributeId descriptor);
     /// get flags by component id
-    static uint32_t Flags(ComponentId descriptor);
+    static uint32_t Flags(AttributeId descriptor);
     /// get component default value pointer
-    static void const* const DefaultValue(ComponentId descriptor);
+    static void const* const DefaultValue(AttributeId descriptor);
     /// get an array of all component descriptions
-    static Util::Array<ComponentDescription*> const& GetAllComponents();
+    static Util::Array<AttributeDescription*> const& GetAllComponents();
 
 private:
     static TypeRegistry* Instance();
@@ -45,8 +45,8 @@ private:
 
     static TypeRegistry* Singleton;
 
-    Util::Array<ComponentDescription*> componentDescriptions;
-    Util::Dictionary<Util::StringAtom, ComponentId> registry;
+    Util::Array<AttributeDescription*> componentDescriptions;
+    Util::Dictionary<Util::StringAtom, AttributeId> registry;
 };
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ private:
     The reason for this is because it allows us to do value initialization in declarations.
 */
 template<typename TYPE>
-inline ComponentId
+inline AttributeId
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
 {
     // Special case for string atoms since they actually are trivial to copy and destroy
@@ -73,9 +73,9 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
     if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        ComponentDescription* desc = new ComponentDescription(name, defaultValue, flags);
+        AttributeDescription* desc = new AttributeDescription(name, defaultValue, flags);
 
-        ComponentId descriptor = reg->componentDescriptions.Size();
+        AttributeId descriptor = reg->componentDescriptions.Size();
         reg->componentDescriptions.Append(desc);
         reg->registry.Add(name, descriptor);
 
@@ -88,22 +88,22 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
         n_error("Tried to register component named %s: Cannot register two components with same name!", name.Value());
     }
 
-    return ComponentId::Invalid();
+    return AttributeId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ComponentId
+inline AttributeId
 TypeRegistry::Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags)
 {
     auto* reg = Instance();
     if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        ComponentDescription* desc = new ComponentDescription(name, typeSize, defaultValue, flags);
+        AttributeDescription* desc = new AttributeDescription(name, typeSize, defaultValue, flags);
 
-        ComponentId descriptor = reg->componentDescriptions.Size();
+        AttributeId descriptor = reg->componentDescriptions.Size();
         reg->componentDescriptions.Append(desc);
         reg->registry.Add(name, descriptor);
         return descriptor;
@@ -113,13 +113,13 @@ TypeRegistry::Register(Util::StringAtom name, SizeT typeSize, void const* defaul
         n_error("Tried to register component named %s: Cannot register two components with same name!", name.Value());
     }
 
-    return ComponentId::Invalid();
+    return AttributeId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ComponentId
+inline AttributeId
 TypeRegistry::GetComponentId(Util::StringAtom name)
 {
     auto* reg = Instance();
@@ -129,14 +129,14 @@ TypeRegistry::GetComponentId(Util::StringAtom name)
         return reg->registry.ValueAtIndex(index);
     }
 
-    return ComponentId::Invalid();
+    return AttributeId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ComponentDescription*
-TypeRegistry::GetDescription(ComponentId descriptor)
+inline AttributeDescription*
+TypeRegistry::GetDescription(AttributeId descriptor)
 {
     auto* reg = Instance();
     if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
@@ -149,7 +149,7 @@ TypeRegistry::GetDescription(ComponentId descriptor)
 /**
 */
 inline SizeT
-TypeRegistry::TypeSize(ComponentId descriptor)
+TypeRegistry::TypeSize(AttributeId descriptor)
 {
     auto* reg = Instance();
     n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
@@ -160,7 +160,7 @@ TypeRegistry::TypeSize(ComponentId descriptor)
 /**
 */
 inline uint32_t
-TypeRegistry::Flags(ComponentId descriptor)
+TypeRegistry::Flags(AttributeId descriptor)
 {
     auto* reg = Instance();
     n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
@@ -171,7 +171,7 @@ TypeRegistry::Flags(ComponentId descriptor)
 /**
 */
 inline void const* const
-TypeRegistry::DefaultValue(ComponentId descriptor)
+TypeRegistry::DefaultValue(AttributeId descriptor)
 {
     auto* reg = Instance();
     n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
@@ -181,7 +181,7 @@ TypeRegistry::DefaultValue(ComponentId descriptor)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::Array<ComponentDescription*> const&
+inline Util::Array<AttributeDescription*> const&
 TypeRegistry::GetAllComponents()
 {
     auto* reg = Instance();

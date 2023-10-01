@@ -10,7 +10,7 @@
 namespace Game
 {
 
-typedef MemDb::ComponentId ComponentId;
+typedef MemDb::AttributeId ComponentId;
 
 #define DECLARE_COMPONENT public:\
 static Game::ComponentId ID() { return id; }\

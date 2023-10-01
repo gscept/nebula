@@ -47,7 +47,7 @@ QueryBenchmark::Run(Timer& timer)
     Ptr<Database> db = Database::Create();
     
     // Setup a multitude of descriptors
-    Util::Array<ComponentId> d;
+    Util::Array<AttributeId> d;
     const SizeT numDescs = 1024;
     for (int i = 0; i < numDescs; i++)
     {
@@ -55,7 +55,7 @@ QueryBenchmark::Run(Timer& timer)
         d.Append(TypeRegistry::Register<IntTest>(name, IntTest()));
     }
 
-    using DA = Util::FixedArray<ComponentId>;
+    using DA = Util::FixedArray<AttributeId>;
 
     // Create a couple of tables
     for (int i = 0; i < Database::MAX_NUM_TABLES; i++)

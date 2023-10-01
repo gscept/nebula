@@ -191,7 +191,7 @@ def WriteComponentSourceDefinitions(f, document):
         f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(comp.componentName))
         if comp.isFlag is False:
             flags = 0 if not comp.isManaged else 1 # this must be equal to managed component flag in Game::ComponentFlags
-            f.WriteLine('MemDb::ComponentId const cid = MemDb::TypeRegistry::Register<{type}>(name, {defval}, {flags});'.format(type=comp.componentName, defval=defval, flags=flags))
+            f.WriteLine('MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<{type}>(name, {defval}, {flags});'.format(type=comp.componentName, defval=defval, flags=flags))
             if comp.isStruct:
                 f.WriteLine('Game::ComponentSerialization::Register<{type}>(cid);'.format(type=comp.componentName))
                 f.WriteLine('Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<{type}>);'.format(type=comp.componentName))

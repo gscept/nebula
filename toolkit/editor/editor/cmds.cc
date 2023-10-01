@@ -33,7 +33,7 @@ InternalCreateEntity(Editor::Entity id, Util::StringAtom templateName)
     createInfo.immediate = true;
     createInfo.templateId = tid;
     Game::Entity const entity = Game::CreateEntity(gameWorld, createInfo);
-    
+
     if (Editor::state.editables.Size() >= id.index)
         Editor::state.editables.Append({});
     Game::AllocateInstance(Editor::state.editorWorld, id, tid);
@@ -56,13 +56,14 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
 
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
 
-    MemDb::TableSignature const& signature = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTableSignature(editorTable);
+    MemDb::TableSignature const& signature =
+        Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(editorTable).GetSignature();
 
     Game::Entity const entity = Game::AllocateEntity(gameWorld);
     MemDb::TableId gameTable = Game::GetWorldDatabase(gameWorld)->FindTable(signature);
     n_assert(gameTable != MemDb::InvalidTableId);
-    MemDb::Row instance = Game::AllocateInstance(gameWorld, entity, gameTable);
-    Game::GetWorldDatabase(gameWorld)->DeserializeInstance(entityState, gameTable, instance);
+    MemDb::RowId instance = Game::AllocateInstance(gameWorld, entity, gameTable);
+    Game::GetWorldDatabase(gameWorld)->GetTable(gameTable).DeserializeInstance(entityState, instance);
     Game::SetComponent<Game::Entity>(gameWorld, entity, Game::GetComponentId("Owner"_atm), entity);
 
     if (Game::IsActive(Editor::state.editorWorld, editorEntity))
@@ -70,16 +71,19 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
         n_warning("Entity already has an instance!\n");
         return false;
     }
-    
+
     if (Editor::state.editables.Size() >= editorEntity.index)
         Editor::state.editables.Append({});
-    MemDb::Row editorInstance = Game::AllocateInstance(Editor::state.editorWorld, editorEntity, editorTable);
-    Game::GetWorldDatabase(Editor::state.editorWorld)->DeserializeInstance(entityState, editorTable, editorInstance);
-    Game::SetComponent<Editor::Entity>(Editor::state.editorWorld, editorEntity, Game::GetComponentId("Owner"_atm), editorEntity);
+    MemDb::RowId editorInstance = Game::AllocateInstance(Editor::state.editorWorld, editorEntity, editorTable);
+    Game::GetWorldDatabase(Editor::state.editorWorld)
+        ->GetTable(editorTable)
+        .DeserializeInstance(entityState, editorInstance);
+    Game::SetComponent<Editor::Entity>(
+        Editor::state.editorWorld, editorEntity, Game::GetComponentId("Owner"_atm), editorEntity
+    );
 
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
     edit.gameEntity = entity;
-    
 
     return true;
 }
@@ -102,7 +106,7 @@ InternalDestroyEntity(Editor::Entity editorEntity)
     edit.gameEntity = Game::Entity::Invalid();
 
     Game::DeallocateInstance(Editor::state.editorWorld, editorEntity);
-    
+
     // Make sure the editor world is always defragged
     Game::Defragment(Editor::state.editorWorld, mapping.table);
 }
@@ -120,22 +124,22 @@ InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
 
     Game::SetComponent(Editor::state.editorWorld, editorEntity, component, value, size);
-	Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
-	if (Game::IsValid(defaultWorld, edit.gameEntity))
-	{
+    Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
+    if (Game::IsValid(defaultWorld, edit.gameEntity))
+    {
         Game::SetComponent(defaultWorld, edit.gameEntity, component, value, size);
-		if (component == Game::GetComponentId("ModelResource"))
-		{
-			auto modelEntityDataPid = Game::GetComponentId("ModelEntityData");
-			if (Game::HasComponent(defaultWorld, edit.gameEntity, modelEntityDataPid))
-			{
-				Game::Op::DeregisterComponent deregOp;
-				deregOp.entity = edit.gameEntity;
-				deregOp.component = modelEntityDataPid;
-				Game::Execute(defaultWorld, deregOp);
-			}
-		}
-	}
+        if (component == Game::GetComponentId("ModelResource"))
+        {
+            auto modelEntityDataPid = Game::GetComponentId("ModelEntityData");
+            if (Game::HasComponent(defaultWorld, edit.gameEntity, modelEntityDataPid))
+            {
+                Game::Op::DeregisterComponent deregOp;
+                deregOp.entity = edit.gameEntity;
+                deregOp.component = modelEntityDataPid;
+                Game::Execute(defaultWorld, deregOp);
+            }
+        }
+    }
 
     return true;
 }
@@ -147,7 +151,7 @@ bool
 InternalAddProperty(Editor::Entity editorEntity, Game::ComponentId component, void* value)
 {
     n_assert(Game::IsValid(Editor::state.editorWorld, editorEntity));
-    
+
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
 
     if (Game::HasComponent(Editor::state.editorWorld, editorEntity, component))
@@ -156,10 +160,10 @@ InternalAddProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
     Game::Op::RegisterComponent regOp;
     regOp.component = component;
     regOp.value = value;
-    
+
     regOp.entity = editorEntity;
     Game::Execute(Editor::state.editorWorld, regOp);
-    
+
     regOp.entity = edit.gameEntity;
     Game::Execute(Game::GetWorld(WORLD_DEFAULT), regOp);
 
@@ -173,7 +177,7 @@ bool
 InternalRemoveProperty(Editor::Entity editorEntity, Game::ComponentId component)
 {
     n_assert(Game::IsValid(Editor::state.editorWorld, editorEntity));
-    
+
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
 
     if (!Game::HasComponent(Editor::state.editorWorld, editorEntity, component))
@@ -181,10 +185,10 @@ InternalRemoveProperty(Editor::Entity editorEntity, Game::ComponentId component)
 
     Game::Op::DeregisterComponent deregOp;
     deregOp.component = component;
-    
+
     deregOp.entity = editorEntity;
     Game::Execute(Editor::state.editorWorld, deregOp);
-    
+
     deregOp.entity = edit.gameEntity;
     Game::Execute(Game::GetWorld(WORLD_DEFAULT), deregOp);
 
@@ -196,9 +200,18 @@ InternalRemoveProperty(Editor::Entity editorEntity, Game::ComponentId component)
 */
 struct CMDCreateEntity : public Edit::Command
 {
-    ~CMDCreateEntity() { if (!executed) Game::DeallocateEntity(Editor::state.editorWorld, this->id); };
-    const char* Name() override { return "Create Entity"; };
-    bool Execute() override
+    ~CMDCreateEntity()
+    {
+        if (!executed)
+            Game::DeallocateEntity(Editor::state.editorWorld, this->id);
+    };
+    const char*
+    Name() override
+    {
+        return "Create Entity";
+    };
+    bool
+    Execute() override
     {
         if (this->id == Editor::Entity::Invalid())
             this->id = Game::AllocateEntity(Editor::state.editorWorld);
@@ -212,13 +225,15 @@ struct CMDCreateEntity : public Edit::Command
 
         return InternalCreateEntity(id, templateName);
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         InternalDestroyEntity(id);
         return true;
     };
     Editor::Entity id;
     Util::StringAtom templateName;
+
 private:
     bool initialized = false;
 };
@@ -228,28 +243,41 @@ private:
 */
 struct CMDDeleteEntity : public Edit::Command
 {
-    ~CMDDeleteEntity() { if (executed) Game::DeallocateEntity(Editor::state.editorWorld, this->id); };
-    const char* Name() override { return "Delete Entity"; };
-    bool Execute() override
+    ~CMDDeleteEntity()
+    {
+        if (executed)
+            Game::DeallocateEntity(Editor::state.editorWorld, this->id);
+    };
+    const char*
+    Name() override
+    {
+        return "Delete Entity";
+    };
+    bool
+    Execute() override
     {
         if (this->id == Editor::Entity::Invalid())
             return false;
         if (!this->initialized)
         {
             Game::EntityMapping mapping = Game::GetEntityMapping(Editor::state.editorWorld, this->id);
-            this->entityState = Game::GetWorldDatabase(Editor::state.editorWorld)->SerializeInstance(mapping.table, mapping.instance);
+            this->entityState = Game::GetWorldDatabase(Editor::state.editorWorld)
+                                    ->GetTable(mapping.table)
+                                    .SerializeInstance(mapping.instance);
             this->tid = mapping.table;
             this->initialized = true;
         }
         InternalDestroyEntity(this->id);
         return true;
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         InternalCreateEntity(this->id, this->tid, this->entityState);
         return true;
     };
     Editor::Entity id;
+
 private:
     bool initialized = false;
     Util::Blob entityState;
@@ -261,8 +289,13 @@ private:
 */
 struct CMDSetSelection : public Edit::Command
 {
-    const char* Name() override { return "Set selection"; };
-    bool Execute() override
+    const char*
+    Name() override
+    {
+        return "Set selection";
+    };
+    bool
+    Execute() override
     {
         if (!this->initialized)
         {
@@ -273,13 +306,15 @@ struct CMDSetSelection : public Edit::Command
         Tools::SelectionTool::selection.Sort();
         return true;
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         Tools::SelectionTool::selection = oldSelection;
         Tools::SelectionTool::selection.Sort();
         return true;
     };
     Util::Array<Editor::Entity> newSelection;
+
 private:
     Util::Array<Editor::Entity> oldSelection;
     bool initialized = false;
@@ -291,27 +326,37 @@ private:
 struct CMDSetProperty : public Edit::Command
 {
     ~CMDSetProperty() {};
-    const char* Name() override { return "Set property"; };
-    bool Execute() override
+    const char*
+    Name() override
     {
-        if (!newValue.IsValid()) return false;
+        return "Set property";
+    };
+    bool
+    Execute() override
+    {
+        if (!newValue.IsValid())
+            return false;
         if (!oldValue.IsValid())
         {
             Game::EntityMapping const mapping = Game::GetEntityMapping(Editor::state.editorWorld, id);
             MemDb::TableId const tid = mapping.table;
             Ptr<MemDb::Database> editorWorldDB = Game::GetWorldDatabase(Editor::state.editorWorld);
-            void* oldValuePtr = editorWorldDB->GetValuePointer(tid, editorWorldDB->GetColumnId(tid, component), mapping.instance);
+            void* oldValuePtr = editorWorldDB->GetTable(tid).GetValuePointer(
+                editorWorldDB->GetTable(tid).GetAttributeIndex(component), mapping.instance
+            );
             oldValue.Set(oldValuePtr, newValue.Size());
         }
         return InternalSetProperty(id, component, newValue.GetPtr(), newValue.Size());
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         return InternalSetProperty(id, component, oldValue.GetPtr(), oldValue.Size());
     };
     Editor::Entity id;
     Game::ComponentId component;
     Util::Blob newValue;
+
 private:
     Util::Blob oldValue;
 };
@@ -322,12 +367,18 @@ private:
 struct CMDAddProperty : public Edit::Command
 {
     ~CMDAddProperty() {};
-    const char* Name() override { return "Add property"; };
-    bool Execute() override
+    const char*
+    Name() override
+    {
+        return "Add property";
+    };
+    bool
+    Execute() override
     {
         return InternalAddProperty(id, component, nullptr);
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         return InternalRemoveProperty(id, component);
     };
@@ -341,25 +392,34 @@ struct CMDAddProperty : public Edit::Command
 struct CMDRemoveProperty : public Edit::Command
 {
     ~CMDRemoveProperty() {};
-    const char* Name() override { return "Remove property"; };
-    bool Execute() override
+    const char*
+    Name() override
+    {
+        return "Remove property";
+    };
+    bool
+    Execute() override
     {
         if (!value.IsValid() && MemDb::TypeRegistry::TypeSize(component) != 0)
         {
             Game::EntityMapping const mapping = Game::GetEntityMapping(Editor::state.editorWorld, id);
             MemDb::TableId const tid = mapping.table;
             Ptr<MemDb::Database> editorWorldDB = Game::GetWorldDatabase(Editor::state.editorWorld);
-            void* valuePtr = editorWorldDB->GetValuePointer(tid, editorWorldDB->GetColumnId(tid, component), mapping.instance);
+            void* valuePtr = editorWorldDB->GetTable(tid).GetValuePointer(
+                editorWorldDB->GetTable(tid).GetAttributeIndex(component), mapping.instance
+            );
             value.Set(valuePtr, MemDb::TypeRegistry::TypeSize(component));
         }
         return InternalRemoveProperty(id, component);
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         return InternalAddProperty(id, component, value.IsValid() ? value.GetPtr() : nullptr);
     };
     Editor::Entity id;
     Game::ComponentId component;
+
 private:
     Util::Blob value;
 };
@@ -369,8 +429,13 @@ private:
 */
 struct CMDSetEntityName : public Edit::Command
 {
-    const char* Name() override { return "Set entity name"; };
-    bool Execute() override
+    const char*
+    Name() override
+    {
+        return "Set entity name";
+    };
+    bool
+    Execute() override
     {
         if (oldName.IsEmpty())
             oldName = Editor::state.editables[id.index].name;
@@ -378,13 +443,15 @@ struct CMDSetEntityName : public Edit::Command
         Editor::state.editables[id.index].name = newName;
         return true;
     };
-    bool Unexecute() override
+    bool
+    Unexecute() override
     {
         Editor::state.editables[id.index].name = oldName;
         return true;
     };
     Editor::Entity id;
     Util::String newName;
+
 private:
     Util::String oldName;
 };
@@ -420,7 +487,7 @@ DeleteEntity(Editor::Entity entity)
 void
 SetSelection(Util::Array<Editor::Entity> const& entities)
 {
-	CMDSetSelection* cmd = new CMDSetSelection;
+    CMDSetSelection* cmd = new CMDSetSelection;
     cmd->newSelection = entities;
     CommandManager::Execute(cmd);
 }

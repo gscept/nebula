@@ -43,7 +43,7 @@ namespace Game
 struct EntityMapping
 {
     MemDb::TableId table;
-    MemDb::Row instance;
+    MemDb::RowId instance;
 };
 
 /// Opaque entity operations buffer
@@ -158,7 +158,7 @@ bool                        IsActive(World*, Entity e);
 /// Returns the entity mapping of an entity
 EntityMapping               GetEntityMapping(World*, Entity entity);
 /// Get instance of entity
-MemDb::Row                  GetInstance(World*, Entity entity);
+MemDb::RowId                GetInstance(World*, Entity entity);
 /// add a component to an entity.
 template<typename TYPE>
 void                        AddComponent(World*, Entity, TYPE* prop);
@@ -222,7 +222,7 @@ TemplateId                  GetTemplateId(Util::StringAtom name);
 /// Get number of instances in a specific table
 SizeT                       GetNumInstances(World*, MemDb::TableId table);
 /// retrieve the instance buffer for a specific component in a table
-void*                       GetInstanceBuffer(World*, MemDb::TableId const, ComponentId const);
+void*                       GetInstanceBuffer(World*, MemDb::TableId const, uint16_t partitionId, ComponentId const);
 
 // Following functions are unsafe to use in general scenarios
 
@@ -231,17 +231,17 @@ Entity                      AllocateEntity(World*);
 /// deallocate an entity id. Make sure to deallocate the entity db entry first.
 void                        DeallocateEntity(World*, Entity);
 /// allocate an instance in the table and map it to the entity
-MemDb::Row                  AllocateInstance(World*, Entity, MemDb::TableId);
+MemDb::RowId                AllocateInstance(World*, Entity, MemDb::TableId);
 /// allocate an instance from a blueprint in the table and map it to the entity
-MemDb::Row                  AllocateInstance(World*, Entity, BlueprintId);
+MemDb::RowId                AllocateInstance(World*, Entity, BlueprintId);
 /// allocate an instance from a template in the table and map it to the entity
-MemDb::Row                  AllocateInstance(World*, Entity, TemplateId);
+MemDb::RowId                AllocateInstance(World*, Entity, TemplateId);
 /// deallocate an entitys entry from the worlds database
 void                        DeallocateInstance(World*, Entity);
 /// deallocate an entry from the worlds database. @note this does not disassociate it with any entity, which might lead to subtle bugs if not handled correctly.
-void                        DeallocateInstance(World*, MemDb::TableId, MemDb::Row);
+void                        DeallocateInstance(World*, MemDb::TableId, MemDb::RowId);
 /// migrate an entity to a different table
-MemDb::Row                  Migrate(World*, Entity, MemDb::TableId toTable);
+MemDb::RowId                Migrate(World*, Entity, MemDb::TableId toTable);
 /// migrate an array of entities from one table to another. Fills the newInstances array with the new row ids for each entity. @note assumes all entities are associated with the fromTable.
 void                        Migrate(World*, Util::Array<Entity> const& entities, MemDb::TableId fromTable, MemDb::TableId toTable, Util::FixedArray<IndexT>& newInstances);
 /// defragment an entity table
@@ -251,7 +251,7 @@ MemDb::TableId              CreateEntityTable(World* world, CategoryCreateInfo c
 /// set the value of an entity
 void                        SetComponent(World*, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size);
 /// get the decay buffer for a specific component
-ComponentDecayBuffer const   GetDecayBuffer(Game::ComponentId component);
+ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
@@ -272,8 +272,8 @@ SetComponent(World* world, Game::Entity const entity, ComponentId const componen
     n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(component), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, component);
-    *(ptr + mapping.instance) = value;
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, component);
+    *(ptr + mapping.instance.index) = value;
 }
 
 //------------------------------------------------------------------------------
@@ -287,8 +287,8 @@ SetComponent(World* world, Game::Entity const entity, TYPE value)
     n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, TYPE::ID());
-    *(ptr + mapping.instance) = value;
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, TYPE::ID());
+    *(ptr + mapping.instance.index) = value;
 }
 
 //------------------------------------------------------------------------------
@@ -302,8 +302,8 @@ GetComponent(World* world, Game::Entity const entity, ComponentId const componen
     n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(component), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, component);
-    return *(ptr + mapping.instance);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, component);
+    return *(ptr + mapping.instance.index);
 }
 
 //------------------------------------------------------------------------------
@@ -317,8 +317,8 @@ GetComponent(World* world, Game::Entity const entity)
     n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, TYPE::ID());
-    return *(ptr + mapping.instance);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, TYPE::ID());
+    return *(ptr + mapping.instance.index);
 }
 
 //------------------------------------------------------------------------------

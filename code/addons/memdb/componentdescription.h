@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    ComponentDescription
+    AttributeDescription
 
-    Describes a component's type and default value.
-    The components type can be omitted by registering it with a size of zero bytes.
-        This essentially means the component is only used when querying the database
+    Describes an attributes's type and default value.
+    The attributes type can be omitted by registering it with a size of zero bytes.
+        This essentially means the attribute is only used when querying the database
     This information is used to allocate the table columns.
 
     @note   This is mostly just used internally by the database and typeregistry,
@@ -25,27 +25,27 @@
 namespace MemDb
 {
 
-class ComponentDescription
+class AttributeDescription
 {
 public:
     /// construct from template type, with default value.
     template<typename T>
-    explicit ComponentDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags);
+    explicit AttributeDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags);
     /// construct from type size in bytes, with default value from void*.
-    explicit ComponentDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags);
+    explicit AttributeDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags);
     /// default constructor
-    ComponentDescription() = default;
+    AttributeDescription() = default;
     /// move constructor
-    ComponentDescription(ComponentDescription&& desc) noexcept;
+    AttributeDescription(AttributeDescription&& desc) noexcept;
     /// desctructor
-    ~ComponentDescription();
+    ~AttributeDescription();
     
     /// move assignment operator
-    void operator=(ComponentDescription&& rhs) noexcept;
+    void operator=(AttributeDescription&& rhs) noexcept;
     /// assignment operator
-    void operator=(ComponentDescription& rhs);
+    void operator=(AttributeDescription& rhs);
 
-    /// name of component
+    /// name of attribute
     Util::StringAtom name;
     /// size of type in bytes
     SizeT typeSize = 0;
@@ -59,7 +59,7 @@ public:
 /**
 */
 template<typename T> inline
-ComponentDescription::ComponentDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags) :
+AttributeDescription::AttributeDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags) :
     name(name),
     typeSize(sizeof(T)),
     externalFlags(flags)
@@ -72,7 +72,7 @@ ComponentDescription::ComponentDescription(Util::StringAtom name, T const& defau
 /**
 */
 inline
-ComponentDescription::ComponentDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags) :
+AttributeDescription::AttributeDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags) :
     name(name),
     typeSize(typeSizeBytes),
     externalFlags(flags)
@@ -96,7 +96,7 @@ ComponentDescription::ComponentDescription(Util::StringAtom name, SizeT typeSize
 /**
 */
 inline
-ComponentDescription::ComponentDescription(ComponentDescription&& desc) noexcept :
+AttributeDescription::AttributeDescription(AttributeDescription&& desc) noexcept :
     defVal(desc.defVal), typeSize(desc.typeSize), name(desc.name)
 {
     desc.defVal = nullptr;
@@ -108,7 +108,7 @@ ComponentDescription::ComponentDescription(ComponentDescription&& desc) noexcept
 /**
 */
 inline
-ComponentDescription::~ComponentDescription()
+AttributeDescription::~AttributeDescription()
 {
     if (this->defVal != nullptr)
     {
@@ -120,7 +120,7 @@ ComponentDescription::~ComponentDescription()
 /**
 */
 inline void
-ComponentDescription::operator=(ComponentDescription&& rhs) noexcept
+AttributeDescription::operator=(AttributeDescription&& rhs) noexcept
 {
     this->typeSize = rhs.typeSize;
     this->defVal = rhs.defVal;
@@ -135,7 +135,7 @@ ComponentDescription::operator=(ComponentDescription&& rhs) noexcept
 /**
 */
 inline void
-ComponentDescription::operator=(ComponentDescription& rhs)
+AttributeDescription::operator=(AttributeDescription& rhs)
 {
     this->typeSize = rhs.typeSize;
     this->defVal = rhs.defVal;

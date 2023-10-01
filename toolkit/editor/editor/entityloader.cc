@@ -87,13 +87,16 @@ LoadEntities(const char* filePath)
                     do
                     {
                         Util::StringAtom const componentName = reader->GetCurrentNodeName();
-                        MemDb::ComponentId descriptor = MemDb::TypeRegistry::GetComponentId(componentName);
-                        if (descriptor == MemDb::ComponentId::Invalid())
+                        MemDb::AttributeId descriptor = MemDb::TypeRegistry::GetComponentId(componentName);
+                        if (descriptor == MemDb::AttributeId::Invalid())
                         {
-                            n_warning("Warning: Entity '%s' contains invalid component named '%s'.\n", entityName.AsCharPtr(), componentName.Value());
+                            n_warning(
+                                "Warning: Entity '%s' contains invalid component named '%s'.\n",
+                                entityName.AsCharPtr(),
+                                componentName.Value()
+                            );
                             continue;
                         }
-
 
                         if (!Game::HasComponent(Editor::state.editorWorld, editorEntity, descriptor))
                         {
@@ -114,7 +117,7 @@ LoadEntities(const char* filePath)
             if (reader->SetToFirstChild("removed_components"))
             {
                 n_assert(reader->IsArray());
-                
+
                 Util::Array<Util::String> values;
                 reader->Get<Util::Array<Util::String>>(values);
                 for (auto s : values)
@@ -123,7 +126,7 @@ LoadEntities(const char* filePath)
                     if (component != Game::ComponentId::Invalid())
                         Edit::RemoveComponent(editorEntity, component);
                 }
-                
+
                 reader->SetToParent();
             }
         } while (reader->SetToNextChild());
@@ -132,7 +135,7 @@ LoadEntities(const char* filePath)
         return true;
     }
     return false;
-} 
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -174,10 +177,10 @@ SaveEntities(const char* filePath)
                 }
                 MemDb::Table const& table = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(view.tableId);
                 IndexT col = 0;
-                if (table.components.Size() > 1)
+                if (table.GetAttributes().Size() > 1)
                 {
                     writer->BeginObject("components");
-                    for (auto component : table.components)
+                    for (auto component : table.GetAttributes())
                     {
                         uint32_t const flags = MemDb::TypeRegistry::Flags(component);
                         if (component != ownerPid && (flags & Game::ComponentFlags::COMPONENTFLAG_MANAGED) == 0)
@@ -185,9 +188,15 @@ SaveEntities(const char* filePath)
                             SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
                             if (typeSize > 0)
                             {
-                                void* buffer = Game::GetInstanceBuffer(Editor::state.editorWorld, table.tid, component);
+                                void* buffer = Game::GetInstanceBuffer(
+                                    Editor::state.editorWorld, view.tableId, mapping.instance.partition, component
+                                );
                                 n_assert(buffer != nullptr);
-                                Game::ComponentSerialization::Serialize(writer, component, ((byte*)buffer) + MemDb::TypeRegistry::TypeSize(component) * mapping.instance);
+                                Game::ComponentSerialization::Serialize(
+                                    writer,
+                                    component,
+                                    ((byte*)buffer) + MemDb::TypeRegistry::TypeSize(component) * mapping.instance.index
+                                );
                             }
                             else
                             {

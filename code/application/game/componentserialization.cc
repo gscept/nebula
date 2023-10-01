@@ -87,7 +87,7 @@ ComponentSerialization::~ComponentSerialization()
 /**
 */
 bool
-ComponentSerialization::ValidateTypeSize(MemDb::ComponentId component, uint32_t size)
+ComponentSerialization::ValidateTypeSize(MemDb::AttributeId component, uint32_t size)
 {
     if (!MemDb::TypeRegistry::TypeSize(component) == size)
     {

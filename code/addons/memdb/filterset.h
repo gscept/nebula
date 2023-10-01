@@ -22,20 +22,20 @@ public:
     /// default constructor
     FilterSet() = default;
     /// construct from initializer lists
-    FilterSet(const std::initializer_list<ComponentId> inclusive, const std::initializer_list<ComponentId> exclusive);
+    FilterSet(const std::initializer_list<AttributeId> inclusive, const std::initializer_list<AttributeId> exclusive);
     /// construct from single inclusive array
-    explicit FilterSet(const Util::FixedArray<ComponentId>& inclusive);
+    explicit FilterSet(const Util::FixedArray<AttributeId>& inclusive);
     /// construct from inclusive and exclusive arrays
-    explicit FilterSet(const Util::FixedArray<ComponentId>& inclusive, const Util::FixedArray<ComponentId>& exclusive);
+    explicit FilterSet(const Util::FixedArray<AttributeId>& inclusive, const Util::FixedArray<AttributeId>& exclusive);
     /// construct from table signatures
-    explicit FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<ComponentId>& inclusiveComponents);
+    explicit FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<AttributeId>& inclusiveComponents);
 
     /// get the inclusive signature mask
     TableSignature const& Inclusive() const;
     /// get the exclusive signature mask
     TableSignature const& Exclusive() const;
     /// get a fixed array of all the components contained in the inclusive set
-    Util::FixedArray<ComponentId> const& PropertyIds() const;
+    Util::FixedArray<AttributeId> const& PropertyIds() const;
 
 private:
     /// categories must include all components in this signature
@@ -43,14 +43,14 @@ private:
     /// categories must NOT contain any components in this array
     TableSignature exclusive;
     /// components that are in the inclusive set
-    Util::FixedArray<ComponentId> inclusiveComponents;
+    Util::FixedArray<AttributeId> inclusiveComponents;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 inline
-FilterSet::FilterSet(const std::initializer_list<ComponentId> inclusive, const std::initializer_list<ComponentId> exclusive) :
+FilterSet::FilterSet(const std::initializer_list<AttributeId> inclusive, const std::initializer_list<AttributeId> exclusive) :
     inclusive(inclusive),
     exclusive(exclusive),
     inclusiveComponents(inclusive)
@@ -62,7 +62,7 @@ FilterSet::FilterSet(const std::initializer_list<ComponentId> inclusive, const s
 /**
 */
 inline
-FilterSet::FilterSet(const Util::FixedArray<ComponentId>& inclusive) :
+FilterSet::FilterSet(const Util::FixedArray<AttributeId>& inclusive) :
     inclusive(inclusive),
     exclusive(),
     inclusiveComponents(inclusive)
@@ -74,7 +74,7 @@ FilterSet::FilterSet(const Util::FixedArray<ComponentId>& inclusive) :
 /**
 */
 inline
-FilterSet::FilterSet(const Util::FixedArray<ComponentId>& inclusive, const Util::FixedArray<ComponentId>& exclusive) :
+FilterSet::FilterSet(const Util::FixedArray<AttributeId>& inclusive, const Util::FixedArray<AttributeId>& exclusive) :
     inclusive(inclusive),
     exclusive(exclusive),
     inclusiveComponents(inclusive)
@@ -85,7 +85,7 @@ FilterSet::FilterSet(const Util::FixedArray<ComponentId>& inclusive, const Util:
 /**
 */
 inline
-FilterSet::FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<ComponentId>& inclusiveComponents) :
+FilterSet::FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<AttributeId>& inclusiveComponents) :
     inclusive(inclusive),
     exclusive(exclusive),
     inclusiveComponents(inclusiveComponents)
@@ -114,7 +114,7 @@ FilterSet::Exclusive() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::FixedArray<ComponentId> const&
+inline Util::FixedArray<AttributeId> const&
 FilterSet::PropertyIds() const
 {
     return this->inclusiveComponents;

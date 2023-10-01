@@ -19,6 +19,7 @@
 #include "tablesignature.h"
 #include "util/bitfield.h"
 #include "util/queue.h"
+#include "ids/idgenerationpool.h"
 
 namespace MemDb
 {
@@ -27,9 +28,25 @@ namespace MemDb
 ID_32_TYPE(TableId);
 
 /// row identifier
-typedef IndexT Row;
+struct RowId
+{
+    uint16_t partition;
+    uint16_t index;
 
-constexpr Row InvalidRow = -1;
+    bool
+    operator!=(RowId const& rhs)
+    {
+        return partition != rhs.partition || index != rhs.index;
+    }
+
+    bool
+    operator==(RowId const& rhs)
+    {
+        return partition == rhs.partition && index == rhs.index;
+    }
+};
+
+constexpr RowId InvalidRow = {0xFFFF, 0xFFFF};
 
 /// column id
 ID_16_TYPE(ColumnIndex);
@@ -40,98 +57,61 @@ struct TableCreateInfo
     /// name to be given to the table
     Util::String name;
     /// array of components the table should initially have
-    ComponentId const* components;
+    AttributeId const* components;
     /// number of columns
     SizeT numComponents;
 };
 
-//------------------------------------------------------------------------------
-/**
-    A table hold components as columns, and buffers for those columns.
-    Property descriptions are retrieved from the MemDb::TypeRegistry
-
-    @see    memdb/typeregistry.h
-    @todo   This should be changed to SOAs
-*/
-struct Table
-{
-    using ColumnBuffer = void*;
-    /// table identifier
-    TableId tid = TableId::Invalid();
-    /// name of the table
-    Util::StringAtom name;
-    /// number of rows
-    uint32_t numRows = 0;
-    /// total number of rows allocated
-    uint32_t capacity = 128;
-    /// initial grow. Gets doubled when table is saturated and expanded
-    uint32_t grow = 128;
-    // holds freed indices/rows to be reused in the table.
-    Util::Array<IndexT> freeIds;
-    /// all components that this table has
-    Util::Array<ComponentId> components;
-    /// can be used to keep track if the columns has been reallocated
-    uint32_t version = 0;
-
-    // TODO: partition the tables into chunks
-    //struct Partition
-    //{
-    //	static constexpr uint	 capacity = 4096;  // total capacity (in elements) that the partition can contain
-    //	uint64_t				 version = 0;	   // bump the version if you change anything about the partition
-    //	void* buffer = nullptr;					   // contains the data
-    //	Util::BitField<capacity> modified;		   // check a bit if the value in the buffer has been modified, and you need to track it
-    //	uint32_t			     size = 0;		   // current number of elements in the buffer;
-    //};
-
-    /// holds all the column buffers. This excludes non-typed components
-    Util::ArrayAllocator<ComponentId, ColumnBuffer> columns;
-    /// maps componentid -> index in columns array
-    Util::HashTable<ComponentId, IndexT, 32, 1> columnRegistry;
-    /// allocation heap used for the column buffers
-    static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
-};
-
-using AttributeId = ComponentId;
-
-struct RowId
-{
-    uint16_t partition;
-    uint16_t index;
-};
+using AttributeId = AttributeId;
 
 //------------------------------------------------------------------------------
 /**
 */
-class _Table
+class Table
 {
     using ColumnBuffer = void*;
 
 private:
-    _Table() = default;
+    friend class Database;
+    Table() = default;
+    ~Table();
 
 public:
     class Partition
     {
+    private:
+        Partition() = default;
+        ~Partition();
+
     public:
-        uint16_t partitionIndex;
         // total capacity (in elements) that the partition can contain
-        static constexpr uint capacity = 256;
+        static constexpr uint CAPACITY = 256;
+        // The table that this partition is part of
+        Table* table = nullptr;
+        // next active partition that has entities, or null if end of chain
+        Partition* next = nullptr;
+        // previous active partition that has entities, or null if first in chain
+        Partition* previous = nullptr;
+        // The id of the partition
+        uint16_t partitionId = 0xFFFF;
         /// number of rows
         uint32_t numRows = 0;
-        // holds freed indices/rows to be reused in the table.
-        Util::Array<IndexT> freeIds;
-        /// holds all the column buffers. This excludes non-typed components
-        Util::ArrayAllocator<ComponentId, ColumnBuffer> columns;
         // bump the version if you change anything about the partition
         uint64_t version = 0;
-        // check a bit if the row has been modified, and you need to track it
-        Util::BitField<capacity> modifiedRows;
-        // has this partition been modified lately?
-        bool modified;
-
+        // holds freed indices/rows to be reused in the table.
+        Util::Array<uint16_t> freeIds;
+        /// holds all the column buffers. This excludes non-typed components
+        Util::Array<ColumnBuffer> columns;
+        /// check a bit if the row has been modified, and you need to track it.
+        /// bits are reset when partition is defragged
+        Util::BitField<CAPACITY> modifiedRows;
+        
     private:
-        friend _Table;
+        friend Table;
+        /// recycle free row or allocate new row
         uint16_t AllocateRowIndex();
+        /// erase row by swapping with last row and reducing number of rows in table
+        void EraseSwapIndex(uint16_t instance);
     };
 
     /// Check if a column exists in the table
@@ -158,42 +138,85 @@ public:
     void SetToDefault(RowId row);
 
     /// Defragment table
-    SizeT Defragment(std::function<void(IndexT, IndexT)> const& moveCallback);
+    SizeT Defragment(std::function<void(Partition*, RowId, RowId)> const& moveCallback);
     /// Clean table. Does not deallocate anything; just sets the size of the table to zero.
     void Clean();
+    /// Reset table. Deallocated all data
+    void Reset();
 
+    /// Get first active partition with entities
+    Partition* GetFirstActivePartition();
+    /// Get number of partitions that contain entities
+    uint16_t GetNumActivePartitions();
+    /// Get number of partitions in table
+    uint16_t GetNumPartitions();
+    ///
+    Partition* GetPartition(uint16_t partitionId);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetValuePointer(ColumnIndex cid, RowId row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
-    void* GetBuffer(ColumnIndex cid);
+    void* GetBuffer(uint16_t partition, ColumnIndex cid);
 
     /// Serialize a row into a blob.
     Util::Blob SerializeInstance(RowId row);
     /// deserialize a blob into a row
     void DeserializeInstance(Util::Blob const& data, RowId row);
 
+    /// move instance from one table to another.
+    static RowId MigrateInstance(
+        Table& src,
+        RowId srcRow,
+        Table& dst,
+        bool defragment = true,
+        std::function<void(Partition*, IndexT, IndexT)> const& moveCallback = nullptr
+    );
+    /// duplicate instance from one row into destination table.
+    static RowId DuplicateInstance(Table const& src, RowId srcRow, Table& dst);
+    
+    /// move n instances from one table to another.
+    static void MigrateInstances(
+        Table& src,
+        Util::Array<RowId> const& srcRows,
+        Table& dst,
+        Util::FixedArray<RowId>& dstRows,
+        bool defragment = true,
+        std::function<void(Partition*, IndexT, IndexT)> const& moveCallback = nullptr
+    );
+    /// duplicate instance from one row into destination table.
+    static void DuplicateInstances(
+        Table& src, Util::Array<RowId> const& srcRows, Table& dst, Util::FixedArray<RowId>& dstRows
+    );
+
+    /// allocation heap used for the column buffers
+    static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
+
+    /// name of the table
+    Util::StringAtom name;
 private:
+    /// Create a new partition for this table. Adds it to the list of partitions and the vacancy list
+    Partition* NewPartition();
+
     TableSignature signature;
 
     /// table identifier
     TableId tid = TableId::Invalid();
-    /// name of the table
-    Util::StringAtom name;
-
+    
     uint32_t totalNumRows = 0;
 
-    // Current partition that we'll be using when allocating data.
+    /// Current partition that we'll be using when allocating data.
     Partition* currentPartition;
-    // All available partitions
+    /// All partitions, even null partitions
     Util::Array<Partition*> partitions;
-    // index to partitions that aren't filled to the brim
-    Util::Queue<uint16_t> vacantPartitions;
-    /// all components that this table has
-    Util::Array<ComponentId> attributes;
-    /// maps componentid -> index in columns array
-    Util::HashTable<ComponentId, IndexT, 32, 1> columnRegistry;
-    /// allocation heap used for the column buffers
-    static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
+    /// free indices in the partitions array for reusing null partitions
+    Util::Array<uint16_t> freePartitions;
+    /// First partition that has entities. You can use this to iterate over all active partitions with entities by following the chain of partition->next.
+    Partition* firstActivePartition = nullptr;
+    /// number of active partitions
+    uint16_t numActivePartitions = 0;
+    /// all attributes that this table has
+    Util::Array<AttributeId> attributes;
+    /// maps attr id -> index in columns array
+    Util::HashTable<AttributeId, IndexT, 32, 1> columnRegistry;
 };
 
 } // namespace MemDb

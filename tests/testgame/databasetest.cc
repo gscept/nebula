@@ -37,7 +37,7 @@ struct StructTest
 {
     int foo = 10;
     bool boo = true;
-    Math::float4 f4 = {1,2,3,4};
+    Math::float4 f4 = {1, 2, 3, 4};
     DECLARE_COMPONENT;
 };
 
@@ -57,10 +57,10 @@ DatabaseTest::Run()
     TableId table2;
     TableId table3;
 
-    ComponentId TestIntId = TypeRegistry::Register<IntTest>("TestIntId", IntTest());
-    ComponentId TestFloatId = TypeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
-    ComponentId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
-    ComponentId TestNonTypedComponent = TypeRegistry::Register("TestNonTypedComponent", 0, nullptr);
+    AttributeId TestIntId = TypeRegistry::Register<IntTest>("TestIntId", IntTest());
+    AttributeId TestFloatId = TypeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
+    AttributeId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
+    AttributeId TestNonTypedComponent = TypeRegistry::Register("TestNonTypedComponent", 0, nullptr);
 
     for (int i = 0; i < 2; i++)
     {
@@ -69,193 +69,199 @@ DatabaseTest::Run()
         {
             TableCreateInfo info;
             info.name = "Table0";
-            ComponentId const cids[] = {
-                    TestIntId,
-                    TestFloatId,
-                    TestStructId
-            };
+            AttributeId const cids[] = {TestIntId, TestFloatId, TestStructId};
             info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(ComponentId);
+            info.numComponents = sizeof(cids) / sizeof(AttributeId);
             table0 = db->CreateTable(info);
         }
 
         {
             TableCreateInfo info;
             info.name = "Table1";
-            ComponentId const cids[] = {
-                TestIntId,
-                TestFloatId
-            };
+            AttributeId const cids[] = {TestIntId, TestFloatId};
             info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(ComponentId);
+            info.numComponents = sizeof(cids) / sizeof(AttributeId);
             table1 = db->CreateTable(info);
         };
 
         {
             TableCreateInfo info;
             info.name = "Table2";
-            ComponentId const cids[] = {
-                TestStructId,
-                TestIntId,
-                TestNonTypedComponent
-            };
+            AttributeId const cids[] = {TestStructId, TestIntId, TestNonTypedComponent};
             info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(ComponentId);
+            info.numComponents = sizeof(cids) / sizeof(AttributeId);
             table2 = db->CreateTable(info);
         };
 
         {
             TableCreateInfo info;
             info.name = "Table3";
-            ComponentId const cids[] = {
-                TestNonTypedComponent
-            };
+            AttributeId const cids[] = {TestNonTypedComponent};
             info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(ComponentId);
+            info.numComponents = sizeof(cids) / sizeof(AttributeId);
             table3 = db->CreateTable(info);
         };
 
-        Util::Array<IndexT> instances;
+        Util::Array<RowId> instances;
+
+        Table& tbl0 = db->GetTable(table0);
+        Table& tbl1 = db->GetTable(table1);
+        Table& tbl2 = db->GetTable(table2);
+        Table& tbl3 = db->GetTable(table3);
 
         for (size_t i = 0; i < 10; i++)
         {
-            instances.Append(db->AllocateRow(table0));
+            instances.Append(tbl0.AddRow());
         }
+
+        // 10 rows obviously
+        VERIFY(tbl0.GetNumRows() == 10);
 
         for (auto i : instances)
         {
-            db->DeallocateRow(table0, i);
+            tbl0.RemoveRow(i);
         }
         instances.Clear();
 
-        // make sure we allocate enough so that we need to grow/reallocate the buffers
-        for (size_t i = 0; i < 10000; i++)
+        // Still 10 rows
+        // RemoveRow shouldn't immediately erase the row. It only adds it to free ids. You must defragment to reduce num rows.
+        VERIFY(tbl0.GetNumRows() == 10);
+
+        // make sure we allocate enough so that we need to create multiple partitions
+        const size_t numInstA = Table::Partition::CAPACITY * 100;
+        for (size_t i = 0; i < numInstA; i++)
         {
-            instances.Append(db->AllocateRow(table0));
+            instances.Append(tbl0.AddRow());
         }
 
-        {
-            int* intData = (int*)db->GetBuffer(table0, db->GetColumnId(table0, TestIntId));
-            float* floatData = (float*)db->GetBuffer(table0, db->GetColumnId(table0, TestFloatId));
-            StructTest* structData = (StructTest*)db->GetBuffer(table0, db->GetColumnId(table0, TestStructId));
+        // Since we've not executed defragment since previous test, we should have reused the old rows
+        VERIFY(tbl0.GetNumRows() == numInstA);
 
-            SizeT numRows = db->GetNumRows(table0);
+        { // make sure default values are correctly assigned to all rows
+            uint16_t const numParts = tbl0.GetNumPartitions();
+
             bool passed = false;
-            for (size_t i = 0; i < numRows; i++)
+            for (uint16_t partId = 0; partId < numParts; partId++)
             {
-                passed |= (intData[i] == *(int*)TypeRegistry::GetDescription(TestIntId)->defVal);
-                passed |= (floatData[i] == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
+                int* intData = (int*)tbl0.GetBuffer(partId, tbl0.GetAttributeIndex(TestIntId));
+                float* floatData = (float*)tbl0.GetBuffer(partId, tbl0.GetAttributeIndex(TestFloatId));
+                StructTest* structData = (StructTest*)tbl0.GetBuffer(partId, tbl0.GetAttributeIndex(TestStructId));
+
+                Table::Partition* partition = tbl0.GetPartition(partId);
+                SizeT const numRows = partition->numRows;
+                for (size_t i = 0; i < numRows; i++)
+                {
+                    passed |= (intData[i] == *(int*)TypeRegistry::GetDescription(TestIntId)->defVal);
+                    passed |= (floatData[i] == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
+                }
             }
             VERIFY(passed);
         }
 
         for (auto i : instances)
         {
-            db->DeallocateRow(table0, i);
+            tbl0.RemoveRow(i);
         }
 
         instances.Clear();
 
-        VERIFY(db->GetNumRows(table0) == 10000);
+        // RemoveRow shouldn't immediately erase the row. It only adds it to free ids. You must defragment to reduce num rows.
+        VERIFY(tbl0.GetNumRows() == numInstA);
+        instances.Append(tbl0.AddRow());
+        instances.Append(tbl0.AddRow());
+        instances.Append(tbl0.AddRow());
 
-        instances.Append(db->AllocateRow(table0));
-        instances.Append(db->AllocateRow(table0));
-        instances.Append(db->AllocateRow(table0));
+        tbl0.Defragment([](MemDb::Table::Partition*, MemDb::RowId, MemDb::RowId) {});
 
-        VERIFY(db->GetNumRows(table0) == 10000);
+        // Make sure defragment reduces num rows
+        VERIFY(tbl0.GetNumRows() == 3);
 
-        db->Defragment(table0, [](IndexT, IndexT) {});
+        tbl0.Clean();
 
-        VERIFY(db->GetNumRows(table0) == 3);
-
-        for (auto i : instances)
-            VERIFY(i < 10010);
-
-        db->Clean(table0);
-
-        VERIFY(db->GetNumRows(table0) == 0);
+        // Make sure cleaning the table reduces num rows
+        VERIFY(tbl0.GetNumRows() == 0);
 
         instances.Clear();
 
         for (size_t i = 0; i < 10; i++)
         {
-            instances.Append(db->AllocateRow(table1));
+            instances.Append(tbl1.AddRow());
         }
 
-        const auto tbl1cid = db->GetColumnId(table1, TestFloatId);
+        const auto tbl1cid = tbl1.GetAttributeIndex(TestFloatId);
         for (auto i : instances)
         {
-            VERIFY(*((float*)db->GetValuePointer(table1, tbl1cid, i)) == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
+            // Verify default values are set correctly
+            VERIFY(
+                *((float*)tbl1.GetValuePointer(tbl1cid, i)) ==
+                *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal
+            );
         }
 
-        db->Clean(table1);
+        tbl1.Clean();
         instances.Clear();
 
         for (size_t i = 0; i < 10; i++)
         {
-            instances.Append(db->AllocateRow(table2));
+            instances.Append(tbl2.AddRow());
         }
 
-        VERIFY(db->GetNumRows(table2) == 10);
+        VERIFY(tbl2.GetNumRows() == 10);
 
-        const auto tbl2cid = db->GetColumnId(table2, TestNonTypedComponent);
-        VERIFY(tbl2cid == InvalidIndex);
-        VERIFY(db->HasComponent(table2, TestNonTypedComponent));
+        const auto tbl2cid = tbl2.GetAttributeIndex(TestNonTypedComponent);
+        VERIFY(tbl2.HasAttribute(TestNonTypedComponent));
+        VERIFY(tbl2.GetBuffer(0, tbl2cid) == nullptr);
 
-        db->Clean(table2);
+        tbl2.Clean();
         instances.Clear();
 
         for (size_t i = 0; i < 10; i++)
         {
-            instances.Append(db->AllocateRow(table3));
+            instances.Append(tbl3.AddRow());
         }
 
-        VERIFY(db->GetNumRows(table3) == 10);
+        VERIFY(tbl3.GetNumRows() == 10);
 
-        const auto tbl3cid = db->GetColumnId(table3, TestNonTypedComponent);
-        VERIFY(tbl3cid == InvalidIndex);
-        VERIFY(db->HasComponent(table3, TestNonTypedComponent));
+        const auto tbl3cid = tbl3.GetAttributeIndex(TestNonTypedComponent);
+        VERIFY(tbl3.HasAttribute(TestNonTypedComponent));
+        VERIFY(tbl3.GetBuffer(0, tbl3cid) == nullptr);
 
         for (auto i : instances)
         {
-            db->DeallocateRow(table3, i);
+            tbl3.RemoveRow(i);
         }
 
-        db->Defragment(table3, [](IndexT, IndexT) {});
+        tbl3.Defragment([](MemDb::Table::Partition*, MemDb::RowId, MemDb::RowId) {});
 
-        db->Clean(table3);
+        tbl3.Clean();
         instances.Clear();
 
         for (size_t i = 0; i < 10; i++)
         {
-            db->AllocateRow(table0);
-            db->AllocateRow(table1);
-            db->AllocateRow(table2);
-            db->AllocateRow(table3);
+            tbl0.AddRow();
+            tbl1.AddRow();
+            tbl2.AddRow();
+            tbl3.AddRow();
         }
 
         {
-            FilterSet filter = FilterSet({ TestIntId,
-                                           TestNonTypedComponent
-                                         });
+            FilterSet filter = FilterSet({TestIntId, TestNonTypedComponent});
             Dataset data = db->Query(filter);
             VERIFY(data.tables.Size() == 1);
         }
 
         {
-            FilterSet filter = FilterSet({ TestNonTypedComponent });
+            FilterSet filter = FilterSet({TestNonTypedComponent});
             Dataset data = db->Query(filter);
             VERIFY(data.tables.Size() == 2);
         }
 
         {
             FilterSet filter = FilterSet(
-                { // inclusive
-                    TestNonTypedComponent
-                },
-            { // exclusive
-                TestIntId
-            }
+                {// inclusive
+                 TestNonTypedComponent},
+                {// exclusive
+                 TestIntId}
             );
 
             Dataset data = db->Query(filter);
@@ -268,95 +274,97 @@ DatabaseTest::Run()
 
         VERIFY(dbCopy->GetNumTables() == db->GetNumTables());
         // note that the table id is the same for both databases in this case, but doesn't have to be if the original table has deleted tables
-        VERIFY(dbCopy->GetNumRows(table0) == db->GetNumRows(table0));
-        VERIFY(dbCopy->GetTable(table0).columns.Size() == db->GetTable(table0).columns.Size());
-
+        VERIFY(dbCopy->GetTable(table0).GetNumRows() == db->GetTable(table0).GetNumRows());
+        VERIFY(dbCopy->GetTable(table0).GetAttributes().Size() == db->GetTable(table0).GetAttributes().Size());
     }
 
     // Test table signatures
 
-    TableSignature mask = TableSignature({ TestIntId, 129 });
-    TableSignature mask0 = TableSignature({ TestIntId, 129 });
+    TableSignature mask = TableSignature({TestIntId, 129});
+    TableSignature mask0 = TableSignature({TestIntId, 129});
 
     VERIFY(mask == mask0);
     VERIFY(TableSignature::CheckBits(mask, mask0));
 
-    TableSignature mask2 = TableSignature({ TestIntId, TestFloatId, });
-    TableSignature mask3 = TableSignature({ TestFloatId, TestIntId });
-    
+    TableSignature mask2 = TableSignature({
+        TestIntId,
+        TestFloatId,
+    });
+    TableSignature mask3 = TableSignature({TestFloatId, TestIntId});
+
     VERIFY(mask2 == mask3);
     VERIFY(TableSignature::CheckBits(mask2, mask3));
 
-    TableSignature mask4 = TableSignature({ TestIntId, TestFloatId, TestStructId });
-    TableSignature mask5 = TableSignature({ TestFloatId, TestStructId, TestIntId});
-    
+    TableSignature mask4 = TableSignature({TestIntId, TestFloatId, TestStructId});
+    TableSignature mask5 = TableSignature({TestFloatId, TestStructId, TestIntId});
+
     VERIFY(mask4 == mask5);
     VERIFY(TableSignature::CheckBits(mask4, mask5));
     VERIFY(!(mask2 == mask5));
-    
+
     VERIFY(!TableSignature::CheckBits(mask2, mask5));
 
     VERIFY(TableSignature::CheckBits(mask5, mask2));
 
-    TableSignature mask6 = TableSignature({ TestIntId, TestFloatId, TestStructId });
-    TableSignature mask7 = TableSignature({ TestFloatId });
-    TableSignature mask8 = TableSignature({ TestIntId });
+    TableSignature mask6 = TableSignature({TestIntId, TestFloatId, TestStructId});
+    TableSignature mask7 = TableSignature({TestFloatId});
+    TableSignature mask8 = TableSignature({TestIntId});
 
     VERIFY(TableSignature::HasAny(mask6, mask7) == true);
     VERIFY(TableSignature::HasAny(mask8, mask7) == false);
 
-    VERIFY(!TableSignature::CheckBits({ 1 }, { 0, 1, 2 }));
-    VERIFY(!TableSignature::CheckBits({ 0 }, { 0, 1, 2 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0, 1, 2 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0, 2 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0, 1 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 1 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 2 }));
-    VERIFY(!TableSignature::CheckBits({ 0, 1, 2 }, { 3 }));
-    VERIFY(!TableSignature::CheckBits({ 0, 1, 2 }, { 4 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 0 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 1 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 2 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 3 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 4 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 5 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 6 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 7 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 8 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 9 }));
-    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 10 }));
-    VERIFY(!TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 11 }));
+    VERIFY(!TableSignature::CheckBits({1}, {0, 1, 2}));
+    VERIFY(!TableSignature::CheckBits({0}, {0, 1, 2}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2}, {0, 1, 2}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2}, {0, 2}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2}, {0, 1}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2}, {0}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2}, {1}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2}, {2}));
+    VERIFY(!TableSignature::CheckBits({0, 1, 2}, {3}));
+    VERIFY(!TableSignature::CheckBits({0, 1, 2}, {4}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {0}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {1}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {2}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {3}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {4}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {5}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {6}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {7}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {8}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {9}));
+    VERIFY(TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {10}));
+    VERIFY(!TableSignature::CheckBits({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {11}));
 
     {
         const ushort num = 8096;
-        Util::FixedArray<ComponentId> da(num);
+        Util::FixedArray<AttributeId> da(num);
         for (ushort i = 0; i < num; i++)
         {
             da[i] = i;
         }
 
         TableSignature s = da;
-        VERIFY(TableSignature::CheckBits(s, { 0 }));
-        VERIFY(TableSignature::CheckBits(s, { 1 }));
-        VERIFY(TableSignature::CheckBits(s, { 2 }));
-        VERIFY(TableSignature::CheckBits(s, { 3 }));
-        VERIFY(TableSignature::CheckBits(s, { 4 }));
-        VERIFY(TableSignature::CheckBits(s, { 0,1,2,3,4 }));
-        VERIFY(TableSignature::CheckBits(s, { 0, 1023 }));
-        VERIFY(TableSignature::CheckBits(s, { 0, 8000 }));
+        VERIFY(TableSignature::CheckBits(s, {0}));
+        VERIFY(TableSignature::CheckBits(s, {1}));
+        VERIFY(TableSignature::CheckBits(s, {2}));
+        VERIFY(TableSignature::CheckBits(s, {3}));
+        VERIFY(TableSignature::CheckBits(s, {4}));
+        VERIFY(TableSignature::CheckBits(s, {0, 1, 2, 3, 4}));
+        VERIFY(TableSignature::CheckBits(s, {0, 1023}));
+        VERIFY(TableSignature::CheckBits(s, {0, 8000}));
         VERIFY(TableSignature::CheckBits(s, s));
     }
 
     {
         for (ushort i = 2; i < 10000; i += 7)
         {
-            TableSignature s = { (ComponentId)i };
-            VERIFY(!TableSignature::CheckBits(s, { 1 }));
+            TableSignature s = {(AttributeId)i};
+            VERIFY(!TableSignature::CheckBits(s, {1}));
         }
     }
 
-    TableSignature signature = { 1, 6, 250, 1010 };
+    TableSignature signature = {1, 6, 250, 1010};
 
     VERIFY(signature.IsSet(1));
     VERIFY(signature.IsSet(6));
@@ -371,4 +379,4 @@ DatabaseTest::Run()
     VERIFY(!signature.IsSet(2000));
 }
 
-}
+} // namespace Test

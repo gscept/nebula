@@ -16,6 +16,6 @@
 namespace MemDb
 {
 
-ID_16_TYPE(ComponentId);
+ID_16_TYPE(AttributeId);
 
 } // namespace MemDb

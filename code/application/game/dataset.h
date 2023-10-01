@@ -26,6 +26,8 @@ struct Dataset
     {
         /// table identifier
         MemDb::TableId tableId = MemDb::TableId::Invalid();
+        /// partition identifier
+        uint16_t partitionId = 0xFFFF;
         /// number of instances in view
         uint32_t numInstances = 0;
         /// component buffers. @note Can be NULL if a queried component is a flag

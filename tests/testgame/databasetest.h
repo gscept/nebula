@@ -15,6 +15,7 @@ namespace Test
 class DatabaseTest : public TestCase
 {
     __DeclareClass(DatabaseTest);
+
 public:
     /// run the test
     virtual void Run();

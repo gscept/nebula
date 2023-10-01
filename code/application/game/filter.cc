@@ -12,7 +12,7 @@ namespace Game
 using ComponentArray = Util::FixedArray<ComponentId>;
 using AccessModeArray = Util::FixedArray<AccessMode>;
 
-static Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, AccessModeArray>  filterAllocator;
+static Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, AccessModeArray> filterAllocator;
 
 //------------------------------------------------------------------------------
 /**
@@ -53,8 +53,8 @@ ComponentsInFilter(Filter filter)
 //------------------------------------------------------------------------------
 /**
 */
-FilterBuilder::FilterBuilder() :
-    info(FilterCreateInfo())
+FilterBuilder::FilterBuilder()
+    : info(FilterCreateInfo())
 {
     // empty
 }
@@ -129,11 +129,41 @@ FilterBuilder::CreateFilter(FilterCreateInfo info)
         accessArray[i] = info.access[i];
     }
 
-    filterAllocator.Set(filter,
-        InclusiveTableMask(inclusiveArray),
-        ExclusiveTableMask(exclusiveArray),
-        inclusiveArray,
-        accessArray
+#define VERIFY_FILTERS 1
+#if _DEBUG && VERIFY_FILTERS
+    for (auto const& comp : inclusiveArray)
+    {
+        int count = 0;
+        for (auto const& other : inclusiveArray)
+        {
+            count += (comp == other);
+        }
+        n_assert2(count == 1, "Component cannot exists more than once in a filter!");
+    }
+
+    for (auto const& comp : exclusiveArray)
+    {
+        int count = 0;
+        for (auto const& other : exclusiveArray)
+        {
+            count += (comp == other);
+        }
+        n_assert2(count == 1, "Component cannot exists more than once in a filter!");
+    }
+
+    for (auto const& comp : inclusiveArray)
+    {
+        int count = 0;
+        for (auto const& other : exclusiveArray)
+        {
+            count += (comp == other);
+        }
+        n_assert2(count == 0, "Component cannot exist in both inclusive and exclusive sets in the same filter!");
+    }
+#endif
+
+    filterAllocator.Set(
+        filter, InclusiveTableMask(inclusiveArray), ExclusiveTableMask(exclusiveArray), inclusiveArray, accessArray
     );
 
     return filter;

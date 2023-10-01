@@ -52,6 +52,10 @@ public:
     template<typename ... TYPES>
     FilterBuilder& Including();
     FilterBuilder& Including(std::initializer_list<ComponentRequest>);
+    
+    // Get current count in inclusive set
+    uint8_t GetNumInclusive();
+
     template<typename ... TYPES>
     FilterBuilder& Excluding();
     FilterBuilder& Excluding(std::initializer_list<ComponentId>);
@@ -133,6 +137,15 @@ FilterBuilder::Excluding()
 {
     UnrollExclusiveComponents<TYPES...>(std::make_index_sequence<sizeof...(TYPES)>());
     return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint8_t
+FilterBuilder::GetNumInclusive()
+{
+    return this->info.numInclusive;
 }
 
 } // namespace Game

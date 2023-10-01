@@ -96,7 +96,7 @@ public:
 
 private:
     template<typename...TYPES, std::size_t...Is>
-    static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, std::index_sequence<Is...>)
+    static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
     {
         func(world, *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...);
     }
@@ -125,15 +125,17 @@ template<typename ...COMPONENTS>
 inline ProcessorBuilder&
 ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
 {
+    size_t const bufferStartOffset = this->filterBuilder.GetNumInclusive();
     this->filterBuilder.Including<COMPONENTS...>();
-    this->func = [func](World* world, Game::Dataset data) {
+    this->func = [func, bufferStartOffset](World* world, Game::Dataset data)
+    {
         for (int v = 0; v < data.numViews; v++)
         {
             Game::Dataset::EntityTableView const& view = data.views[v];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
-                UpdateExpander<COMPONENTS...>(world, func, view, i, std::make_index_sequence<sizeof...(COMPONENTS)>());
+                UpdateExpander<COMPONENTS...>(world, func, view, i, bufferStartOffset, std::make_index_sequence<sizeof...(COMPONENTS)>());
             }
         }
     };

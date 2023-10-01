@@ -30,11 +30,11 @@ public:
     /// copy constructor
     TableSignature(TableSignature const& rhs);
     /// construct from fixed array of component ids
-    TableSignature(Util::FixedArray<ComponentId> const& descriptors);
+    TableSignature(Util::FixedArray<AttributeId> const& descriptors);
     /// construct from component id initializer list, for convenience
-    TableSignature(std::initializer_list<ComponentId> descriptors);
+    TableSignature(std::initializer_list<AttributeId> descriptors);
     /// construct from component id pointer array
-    TableSignature(ComponentId const* descriptors, SizeT num);
+    TableSignature(AttributeId const* descriptors, SizeT num);
     /// destructor
     ~TableSignature();
     /// assignment operator
@@ -44,9 +44,9 @@ public:
     /// check if signature is valid
     bool const IsValid() const { return size > 0; }
     /// check if a single bit is set
-    bool const IsSet(ComponentId component) const;
+    bool const IsSet(AttributeId component) const;
     /// flip a bit.
-    void FlipBit(ComponentId component);
+    void FlipBit(AttributeId component);
 
     /// (src & mask) == mask
     static bool const CheckBits(TableSignature const& src, TableSignature const& mask);
@@ -55,7 +55,7 @@ public:
 
 protected:
     /// create bitfield from fixed array.
-    void Setup(ComponentId const* descriptors, SizeT num);
+    void Setup(AttributeId const* descriptors, SizeT num);
 
     /// large bit field, using SSE registers
     __m128i* mask;
@@ -67,7 +67,7 @@ protected:
 /**
 */
 inline
-TableSignature::TableSignature(Util::FixedArray<ComponentId> const& descriptors)
+TableSignature::TableSignature(Util::FixedArray<AttributeId> const& descriptors)
 {
     this->Setup(descriptors.Begin(), descriptors.Size());
 }
@@ -76,7 +76,7 @@ TableSignature::TableSignature(Util::FixedArray<ComponentId> const& descriptors)
 /**
 */
 inline
-TableSignature::TableSignature(std::initializer_list<ComponentId> descriptors)
+TableSignature::TableSignature(std::initializer_list<AttributeId> descriptors)
 {
     this->Setup(descriptors.begin(), (SizeT)descriptors.size());
 }
@@ -85,7 +85,7 @@ TableSignature::TableSignature(std::initializer_list<ComponentId> descriptors)
 /**
 */
 inline
-TableSignature::TableSignature(ComponentId const* descriptors, SizeT num)
+TableSignature::TableSignature(AttributeId const* descriptors, SizeT num)
 {
     this->Setup(descriptors, num);
 }
@@ -95,14 +95,14 @@ TableSignature::TableSignature(ComponentId const* descriptors, SizeT num)
 */
 inline
 void
-TableSignature::Setup(ComponentId const* componentBuffer, SizeT num)
+TableSignature::Setup(AttributeId const* componentBuffer, SizeT num)
 {
     if (num > 0)
     {
-        Util::Array<ComponentId> descriptors(componentBuffer, num);
+        Util::Array<AttributeId> descriptors(componentBuffer, num);
         descriptors.Sort();
-        ComponentId const last = *(descriptors.End() - 1);
-        n_assert(last != ComponentId::Invalid());
+        AttributeId const last = *(descriptors.End() - 1);
+        n_assert(last != AttributeId::Invalid());
         uint const largestBit = last.id;
         this->size = (largestBit / 128) + 1;
         this->mask = (__m128i*)Memory::Alloc(Memory::HeapType::ObjectHeap, this->size * 16);
@@ -114,9 +114,9 @@ TableSignature::Setup(ComponentId const* componentBuffer, SizeT num)
         // offsets start at first values offset
         uint64_t offset = descriptors[0].id / 128;
         uint64_t prevOffset = offset;
-        for (ComponentId i : descriptors)
+        for (AttributeId i : descriptors)
         {
-            n_assert(i != ComponentId::Invalid());
+            n_assert(i != AttributeId::Invalid());
             offset = i.id / 128;
             if (offset != prevOffset)
             {
@@ -193,7 +193,7 @@ TableSignature::operator==(TableSignature const& rhs) const
 /**
 */
 inline bool const
-TableSignature::IsSet(ComponentId component) const
+TableSignature::IsSet(AttributeId component) const
 {
     int offset = component.id / 128;
     if (offset < this->size)
@@ -213,7 +213,7 @@ TableSignature::IsSet(ComponentId component) const
 /**
 */
 inline void
-TableSignature::FlipBit(ComponentId component)
+TableSignature::FlipBit(AttributeId component)
 {
     int offset = component.id / 128;
     n_assert(offset < this->size); // currently, we can't flip a bit that is outside the signatures size.

@@ -25,8 +25,8 @@ static int numFramesExecuted = 0;
 
 __ImplementClass(Test::EntitySystemTest, 'GEST', Test::TestCase);
 
-
-void StepFrame()
+void
+StepFrame()
 {
 #if NEBULA_ENABLE_PROFILING
     Profiling::ProfilingNewFrame();
@@ -72,13 +72,13 @@ EntitySystemTest::Run()
 
     for (int i = 0; i < 500; i++)
     {
-        Entity player = Game::CreateEntity(world, { playerBlueprint });
+        Entity player = Game::CreateEntity(world, {playerBlueprint});
     }
 
     Util::Array<Entity> enemies;
     for (int i = 0; i < 500; i++)
     {
-        Entity enemy = Game::CreateEntity(world, { enemyBlueprint });
+        Entity enemy = Game::CreateEntity(world, {enemyBlueprint});
         enemies.Append(enemy);
     }
 
@@ -93,7 +93,7 @@ EntitySystemTest::Run()
     for (i = 0; i < 100; i++)
     {
         StepFrame();
-        
+
         if (i % 5 == 1)
         {
             Game::DeleteEntity(world, enemies[i + 200]);
@@ -113,7 +113,7 @@ EntitySystemTest::Run()
     Util::Queue<Game::Entity> queue;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity(world, { enemyBlueprint });
+        Entity enemy = Game::CreateEntity(world, {enemyBlueprint});
         queue.Enqueue(enemy);
     }
 
@@ -129,9 +129,9 @@ EntitySystemTest::Run()
 
     // run a frame
     StepFrame();
-    
+
     // Delete all
-    while(!queue.IsEmpty())
+    while (!queue.IsEmpty())
     {
         auto e = queue.Dequeue();
         Game::DeleteEntity(world, e);
@@ -143,7 +143,7 @@ EntitySystemTest::Run()
     Util::Stack<Game::Entity> stack;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity(world, { enemyBlueprint });
+        Entity enemy = Game::CreateEntity(world, {enemyBlueprint});
         stack.Push(enemy);
     }
 
@@ -170,26 +170,24 @@ EntitySystemTest::Run()
     // run a frame
     StepFrame();
 
-    Game::Entity entities[10] =
-    {
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint }),
-        Game::CreateEntity(world, { playerBlueprint })
-    };
+    Game::Entity entities[10] = {
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint}),
+        Game::CreateEntity(world, {playerBlueprint})};
 
     // run a frame
     StepFrame();
 
     // Delete the last entity only
     Game::DeleteEntity(world, entities[9]);
-    
+
     // run a frame
     StepFrame();
 
@@ -216,16 +214,20 @@ EntitySystemTest::Run()
             managedComponentDescriptor = Game::CreateComponent(componentInfo);
         }
 
+        Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
         Game::Entity enemies[] = {
-            Game::CreateEntity(world, { enemyBlueprint, true }),
-            Game::CreateEntity(world, { enemyBlueprint, true }),
-            Game::CreateEntity(world, { enemyBlueprint, true }),
-            Game::CreateEntity(world, { enemyBlueprint, true }),
-            Game::CreateEntity(world, { enemyBlueprint, true })
+            Game::CreateEntity(world, enemyInfo),
+            Game::CreateEntity(world, enemyInfo),
+            Game::CreateEntity(world, enemyInfo),
+            Game::CreateEntity(world, enemyInfo),
+            Game::CreateEntity(world, enemyInfo),
         };
 
         {
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).table) == 5);
+            VERIFY(
+                Game::GetWorldDatabase(world)->GetTable(Game::GetEntityMapping(world, enemies[0]).table).GetNumRows() ==
+                5
+            );
         }
 
         Game::Op::RegisterComponent regOp;
@@ -240,7 +242,10 @@ EntitySystemTest::Run()
         Game::Execute(world, regOp);
 
         {
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).table) == 3);
+            VERIFY(
+                Game::GetWorldDatabase(world)->GetTable(Game::GetEntityMapping(world, enemies[0]).table).GetNumRows() ==
+                3
+            );
         }
 
         StepFrame();
@@ -251,16 +256,15 @@ EntitySystemTest::Run()
         StepFrame();
 
         {
-            
-            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).table;
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
+            MemDb::TableId tid = Game::GetEntityMapping(world, enemies[0]).table;
+            VERIFY(Game::GetWorldDatabase(world)->GetTable(tid).GetNumRows() == 2);
         }
 
         StepFrame();
 
         {
-            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).table;
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
+            MemDb::TableId tid = Game::GetEntityMapping(world, enemies[0]).table;
+            VERIFY(Game::GetWorldDatabase(world)->GetTable(tid).GetNumRows() == 2);
         }
     }
 
@@ -296,9 +300,7 @@ EntitySystemTest::Run()
         Game::DestroyFilter(filter);
     }
 
-    Game::Filter filter = Game::FilterBuilder()
-        .Including<const TestHealth, const TestStruct>()
-        .Build();
+    Game::Filter filter = Game::FilterBuilder().Including<const TestHealth, const TestStruct>().Build();
 
     Game::Dataset set = Game::Query(world, filter);
 
@@ -316,8 +318,8 @@ EntitySystemTest::Run()
             VERIFY(s.foo == h.value);
         }
     }
-    
-    VERIFY(set.numViews == 3);
+
+    VERIFY(set.numViews > 3);
 
     Test::TestHealth* healths = (Test::TestHealth*)set.views[0].buffers[0];
     Test::TestStruct* structs = (Test::TestStruct*)set.views[0].buffers[1];
@@ -333,27 +335,20 @@ EntitySystemTest::Run()
     StepFrame();
 
     bool hasExecutedUpdateFunc = false;
-    std::function updateFunc = [&](
-            World* world,
-            Test::TestHealth const& testHealth,
-            Test::TestStruct& testStruct
-        )
+    std::function updateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
     {
         VERIFY(testStruct.foo == 100);
         testStruct.foo = testHealth.value * testHealth.value;
         hasExecutedUpdateFunc = true;
     };
 
-    Game::ProcessorBuilder("TestUpdateFunc")
-        .Func(updateFunc)
-        .Including<TestVec4>()
-        .Build();
+    Game::ProcessorBuilder("TestUpdateFunc").Func(updateFunc).Including<TestVec4>().Build();
 
     StepFrame();
-    
+
     VERIFY(hasExecutedUpdateFunc);
 
     t->StopTime();
 }
 
-}
+} // namespace Test

@@ -70,19 +70,31 @@ Query(World* world, Util::Array<MemDb::TableId>& tids, Filter filter)
 //------------------------------------------------------------------------------
 /**
 */
-Dataset
+Game::Dataset
 Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter filter)
 {
-    Dataset data;
+    Game::Dataset data;
     data.numViews = 0;
 
-    if (tids.Size() == 0)
+    // count num views.
+    for (IndexT i = 0; i < tids.Size(); i++)
+    {
+        MemDb::Table& tbl = db->GetTable(tids[i]);
+        SizeT const numRows = tbl.GetNumRows();
+        if (numRows > 0)
+        {
+            data.numViews += tbl.GetNumActivePartitions();
+        }
+    }
+
+    if (data.numViews == 0)
     {
         data.views = nullptr;
         return data;
     }
 
-    data.views = (Dataset::EntityTableView*)viewAllocator.Alloc(sizeof(Dataset::EntityTableView) * tids.Size());
+    data.views = (Dataset::EntityTableView*)viewAllocator.Alloc(sizeof(Dataset::EntityTableView) * data.numViews);
+    data.numViews = 0;
 
     Util::FixedArray<ComponentId> const& components = ComponentsInFilter(filter);
 
@@ -90,28 +102,28 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
     {
         if (db->IsValid(tids[tableIndex]))
         {
-            SizeT const numRows = db->GetNumRows(tids[tableIndex]);
+            MemDb::Table& tbl = db->GetTable(tids[tableIndex]);
+            SizeT const numRows = tbl.GetNumRows();
             if (numRows > 0)
             {
-                Dataset::EntityTableView* view = data.views + data.numViews;
-                view->tableId = tids[tableIndex];
-
-                MemDb::Table const& tbl = db->GetTable(tids[tableIndex]);
-
-                IndexT i = 0;
-                for (auto component : components)
+                MemDb::Table::Partition* part = tbl.GetFirstActivePartition();
+                while (part != nullptr)
                 {
-                    MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, component);
-                    // Check if the component is a flag, and return a nullptr in that case.
-                    if (colId != InvalidIndex)
-                        view->buffers[i] = db->GetBuffer(tbl.tid, colId);
-                    else
-                        view->buffers[i] = nullptr;
-                    i++;
-                }
+                    Dataset::EntityTableView* view = data.views + data.numViews;
+                    view->tableId = tids[tableIndex];
 
-                view->numInstances = numRows;
-                data.numViews++;
+                    IndexT i = 0;
+                    for (auto component : components)
+                    {
+                        MemDb::ColumnIndex colId = tbl.GetAttributeIndex(component);
+                        view->buffers[i] = tbl.GetBuffer(part->partitionId, colId);
+                        i++;
+                    }
+
+                    view->numInstances = part->numRows;
+                    data.numViews++;
+                    part = part->next;
+                }
             }
         }
         else

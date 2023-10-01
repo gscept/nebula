@@ -105,7 +105,7 @@ template<>
 void
 ComponentDrawFuncT<Game::Entity>(ComponentId component, void* data, bool* commit)
 {
-	MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
+	MemDb::AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(component);
 
 	Game::Entity* entity = (Game::Entity*)data;
 	Ids::Id32 id = (Ids::Id32)*entity;
@@ -121,7 +121,7 @@ template<>
 void
 ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
+    MemDb::AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     if (ImGui::InputInt(desc->name.Value(), (int*)data))
         *commit = true;
@@ -134,7 +134,7 @@ template<>
 void
 ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
+    MemDb::AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     if (ImGui::InputInt(desc->name.Value(), (int*)data))
         *commit = true;
@@ -147,7 +147,7 @@ template<>
 void
 ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
+    MemDb::AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     if (ImGui::InputFloat(desc->name.Value(), (float*)data))
         *commit = true;
@@ -160,7 +160,7 @@ template<>
 void
 ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
+    MemDb::AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     ImGui::Text("%s: %s", desc->name.Value(), ((Util::StringAtom*)data)->Value());
     if (ImGui::BeginDragDropTarget())
     {
@@ -182,7 +182,7 @@ template<>
 void
 ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
+    MemDb::AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     ImGui::Text(desc->name.Value());
     if (ImGui::InputFloat4("##row0", (float*)data))
