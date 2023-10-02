@@ -10,6 +10,8 @@
 #include "physics/actorcontext.h"
 #include "game/api.h"
 
+#define USE_SYNC_UPDATE 0
+
 namespace PhysicsFeature
 {
 __ImplementClass(PhysicsFeature::PhysicsFeatureUnit, 'PXFU' , Game::FeatureUnit);
@@ -60,8 +62,10 @@ PhysicsFeatureUnit::OnActivate()
         Game::OpBuffer buffer = Game::CreateOpBuffer(world);
         for (IndexT i = 0; i < num; i++)
         {
+            n_assert(Physics::ActorContext::IsValid(actors[i]));
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
+            n_assert(Game::IsValid(world, entity) && Game::IsActive(world, entity));
             Game::Op::RegisterComponent registerOp;
             registerOp.entity = entity;
             registerOp.component = staticPid;
@@ -80,8 +84,10 @@ PhysicsFeatureUnit::OnActivate()
         Game::OpBuffer buffer = Game::CreateOpBuffer(world);
         for (IndexT i = 0; i < num; i++)
         {
+            n_assert(Physics::ActorContext::IsValid(actors[i]));
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
+            n_assert(Game::IsValid(world, entity) && Game::IsActive(world, entity));
             if (Game::HasComponent(world, entity, staticPid))
             {
                 Game::Op::DeregisterComponent deregisterOp;
@@ -93,9 +99,6 @@ PhysicsFeatureUnit::OnActivate()
         Game::Dispatch(buffer);
         Game::DestroyOpBuffer(buffer);
     });
-    
-    //FIXME
-    IndexT dummyMaterial = Physics::SetPhysicsMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
 }
 
 //------------------------------------------------------------------------------
@@ -104,8 +107,25 @@ PhysicsFeatureUnit::OnActivate()
 void
 PhysicsFeatureUnit::OnDeactivate()
 {   
-    FeatureUnit::OnDeactivate();    
+    FeatureUnit::OnDeactivate();
+    for (auto const& scene : this->physicsWorlds)
+    {
+        Physics::DestroyScene(scene.Value());
+    }
     Physics::ShutDown();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsFeatureUnit::OnBeforeCleanup(Game::World* world)
+{
+    n_assert(this->physicsWorlds.Contains(world));
+    IndexT scene = this->physicsWorlds[world];
+    Physics::FlushSimulation(scene);
+    FeatureUnit::OnBeforeCleanup(world);
 }
 
 //------------------------------------------------------------------------------
@@ -114,6 +134,10 @@ PhysicsFeatureUnit::OnDeactivate()
 void 
 PhysicsFeatureUnit::OnBeginFrame()
 {
+#if USE_SYNC_UPDATE > 0
+    Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_PHYSICS);
+    Physics::Update(time->frameTime);
+#else
     if (!simulating) return;
 
     for (auto const& scene : this->physicsWorlds)
@@ -121,21 +145,24 @@ PhysicsFeatureUnit::OnBeginFrame()
         Physics::EndSimulating(scene.Value());
     }
     simulating = false;
+#endif
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PhysicsFeatureUnit::OnEndFrame()
+PhysicsFeatureUnit::OnDecay()
 {
+    FeatureUnit::OnDecay();
+#if USE_SYNC_UPDATE == 0
     Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_PHYSICS);
     for (auto const& scene : this->physicsWorlds)
     {
         Physics::BeginSimulating(time->frameTime, scene.Value());
     }
     simulating = true;
-    
+#endif
 }
 
 //------------------------------------------------------------------------------

@@ -78,6 +78,8 @@ struct
     CoreGraphics::TextureId biomeWeights[Terrain::MAX_BIOMES];
     IndexT biomeCounter;
 
+    Graphics::GraphicsEntityId sun;
+
     CoreGraphics::TextureId terrainShadowMap;
     Math::vec4 cachedSunDirection;
     bool updateShadowMap;
@@ -266,7 +268,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainState.terrainShader = ShaderGet("shd:terrain/terrain.fxb");
     terrainState.resourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
     terrainState.terrainShadowProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainShadows"));
-
 
     CoreGraphics::BufferCreateInfo sysBufInfo;
     sysBufInfo.name = "VirtualSystemBuffer"_atm;
@@ -1326,6 +1327,15 @@ TerrainContext::SetBiomeHeightThreshold(TerrainBiomeId id, float threshold)
 //------------------------------------------------------------------------------
 /**
 */
+void
+TerrainContext::SetSun(const Graphics::GraphicsEntityId sun)
+{
+    terrainState.sun = sun;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
@@ -1738,7 +1748,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
-    Math::mat4 sunTransform = Lighting::LightContext::GetTransform(terrainState.settings.sun);
+    Math::mat4 sunTransform = Lighting::LightContext::GetTransform(terrainState.sun);
     if (terrainState.cachedSunDirection != sunTransform.z_axis)
     {
         terrainState.updateShadowMap = true;

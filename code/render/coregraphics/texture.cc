@@ -115,8 +115,6 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
             }
         },
         nullptr);
-
-    CoreGraphics::CmdEndMarker(cmdBuf);
 }
 
 //------------------------------------------------------------------------------

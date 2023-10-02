@@ -17,12 +17,6 @@ namespace PhysicsFeature
 
 __ImplementSingleton(PhysicsManager)
 
-struct PhysicsActor
-{
-    Physics::ActorId value;
-    DECLARE_COMPONENT;
-};
-
 DEFINE_COMPONENT(PhysicsActor);
 
 //------------------------------------------------------------------------------
@@ -113,7 +107,7 @@ PhysicsManager::OnDecay()
 //------------------------------------------------------------------------------
 /**
 */
-void
+static void
 PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, PhysicsFeature::PhysicsActor const& actor)
 {
     transform.value = Physics::ActorContext::GetTransform(actor.value);
@@ -122,7 +116,7 @@ PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, Phy
 //------------------------------------------------------------------------------
 /**
 */
-void
+static void
 PassKinematicTransforms(Game::World* world, Game::WorldTransform const& transform, PhysicsFeature::PhysicsActor const& actor, PhysicsFeature::IsKinematic)
 {
     Physics::ActorContext::SetTransform(actor.value, transform.value);

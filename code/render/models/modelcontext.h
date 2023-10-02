@@ -246,6 +246,8 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
         Resources::DiscardResource(rid);
     rid = Resources::InvalidResourceId;
 
+    modelContextAllocator.Get<Model_NodeInstanceRoots>(id.id).Clear();
+    modelContextAllocator.Get<Model_NodeLookup>(id.id).Clear();
     TransformInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceTransform>(id.id).allocation);
     RenderInstanceAllocator.Dealloc(modelContextAllocator.Get<Model_NodeInstanceStates>(id.id).allocation);
 

@@ -58,8 +58,11 @@ public:
 
     /// explicit call to simulate, will process async in the background
     void BeginSimulating(Timing::Time delta, IndexT scene);
-    // explicit call to fetch the results of the simulation
+    /// explicit call to fetch the results of the simulation
     void EndSimulating(IndexT scene);
+
+    /// will block until a potential simulation step is done
+    void FlushSimulation(IndexT scene);
 
     /// create new empty actor
     physx::PxRigidActor* CreateActor(ActorType type, Math::mat4 const & transform);

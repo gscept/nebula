@@ -11,9 +11,18 @@
 #include "core/singleton.h"
 #include "game/manager.h"
 #include "game/category.h"
+#include "game/component.h"
+#include "physicsinterface.h"
+#include "memdb/typeregistry.h"
 
 namespace PhysicsFeature
 {
+
+struct PhysicsActor
+{
+    Physics::ActorId value;
+    DECLARE_COMPONENT;
+};
 
 class PhysicsManager
 {

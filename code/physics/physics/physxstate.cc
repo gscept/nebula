@@ -37,8 +37,7 @@ PhysxState::Setup()
     this->foundation = PxCreateFoundation(PX_PHYSICS_VERSION, this->allocator, this->errorCallback);
     n_assert2(this->foundation, "PxCreateFoundation failed!");
 
-    this->pvd = PxCreatePvd(*this->foundation);   
-    
+    this->pvd = PxCreatePvd(*this->foundation);    
 
     this->physics = PxCreatePhysics(PX_PHYSICS_VERSION, *this->foundation, PxTolerancesScale(), false, this->pvd);
     n_assert2(this->physics, "PxCreatePhysics failed!");
@@ -53,6 +52,28 @@ PhysxState::Setup()
 
     // preallocate actors
     ActorContext::actors.Reserve(1024);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void PhysxState::Shutdown()
+{
+   
+    PxCloseExtensions();
+    this->cooking->release();
+    this->cooking = nullptr;
+    this->physics->release();
+    this->physics = nullptr;
+    if (this->pvd != nullptr)
+    {
+        this->DisconnectPVD();
+        this->pvd->release();
+        this->pvd = nullptr;
+    }
+    this->foundation->release();
+    this->foundation = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -300,6 +321,16 @@ PhysxState::EndSimulating(IndexT sceneId)
     N_MARKER_END();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::FlushSimulation(IndexT sceneId)
+{
+    n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+    Physics::Scene& scene = this->activeScenes[sceneId];
+    scene.scene->fetchResults(true);
+}
 
 PhysxState state;
 }

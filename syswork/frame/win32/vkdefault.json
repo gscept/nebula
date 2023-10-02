@@ -328,17 +328,25 @@
                         }
                     },
                     {
+                        "subgraph": {
+                            "name": "Terrain Update Caches"
+
+                        }
+                    },
+
+                    {
                         "pass": {
-                            "name": "Terrain GBuffer",
+                            "name": "Prepass",
                             "attachments": [
-                                {
-                                    "name": "TerrainPosBuffer",
-                                    "clear": [ 0, 0, 0, 255 ],
-                                    "flags": "Store"
-                                },
                                 {
                                     "name": "ZBuffer",
                                     "clear_depth": 1,
+                                    "clear_stencil": 0,
+                                    "flags": "Store|StoreStencil"
+                                },
+                                {
+                                    "name": "TerrainPosBuffer",
+                                    "clear": [ 0, 0, 0, 255 ],
                                     "flags": "Store"
                                 }
                             ],
@@ -356,33 +364,10 @@
                                             }
                                         }
                                     ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Terrain Update Caches"
-
-                        }
-                    },
-
-                    {
-                        "pass": {
-                            "name": "Prepass",
-                            "attachments": [
-                                {
-                                    "name": "ZBuffer",
-                                    "clear_depth": 1,
-                                    "clear_stencil": 0,
-                                    "flags": "Store|StoreStencil"
-                                }
-                            ],
-
-                            "subpasses": [
+                                },
                                 {
                                     "name": "DepthPrepass",
-                                    "subpass_dependencies": [],
+                                    "subpass_dependencies": ["TerrainPass"],
                                     "attachments": [],
                                     "depth": "ZBuffer",
                                     "ops": [
@@ -398,7 +383,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+
                         }
                     },
 
