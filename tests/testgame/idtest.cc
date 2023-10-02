@@ -27,7 +27,7 @@ IdTest::Run()
         Util::Array<uint32_t> secondGenIds;
 
         IdGenerationPool pool;
-        
+
         Id32 tmp;
         pool.Allocate(tmp);
         VERIFY(tmp == 0);
@@ -147,4 +147,4 @@ IdTest::Run()
     }
 }
 
-}
+} // namespace Test

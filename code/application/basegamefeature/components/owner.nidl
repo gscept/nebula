@@ -2,6 +2,7 @@
     "components": {
         "Owner": {
             "_type_": "entity"
-        }
+        },
+        "IsActive":  {}
     }
 }

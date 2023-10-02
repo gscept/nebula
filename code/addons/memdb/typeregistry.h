@@ -67,7 +67,8 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
     //    static_assert(std::is_trivially_destructible<TYPE>(), "TYPE must be trivially destructible.");
     //}
     
-    static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
+    static_assert(!std::is_polymorphic<TYPE>(), "TYPE must not be polymorpic.");
+    static_assert(!std::is_abstract<TYPE>(), "TYPE must not be abstract.");
     
     auto* reg = Instance();
     if (!reg->registry.Contains(name))

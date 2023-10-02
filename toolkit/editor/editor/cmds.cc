@@ -22,7 +22,7 @@ InternalCreateEntity(Editor::Entity id, Util::StringAtom templateName)
 
     Game::TemplateId const tid = Game::GetTemplateId(templateName);
 
-    if (Game::IsActive(Editor::state.editorWorld, id))
+    if (Game::HasInstance(Editor::state.editorWorld, id))
     {
         n_warning("Entity already has an instance!\n");
         return false;
@@ -66,7 +66,7 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     Game::GetWorldDatabase(gameWorld)->GetTable(gameTable).DeserializeInstance(entityState, instance);
     Game::SetComponent<Game::Entity>(gameWorld, entity, Game::GetComponentId("Owner"_atm), entity);
 
-    if (Game::IsActive(Editor::state.editorWorld, editorEntity))
+    if (Game::HasInstance(Editor::state.editorWorld, editorEntity))
     {
         n_warning("Entity already has an instance!\n");
         return false;
@@ -95,7 +95,7 @@ void
 InternalDestroyEntity(Editor::Entity editorEntity)
 {
     n_assert(Game::IsValid(Editor::state.editorWorld, editorEntity));
-    n_assert(Game::IsActive(Editor::state.editorWorld, editorEntity));
+    n_assert(Game::HasInstance(Editor::state.editorWorld, editorEntity));
 
     Game::EntityMapping const mapping = Game::GetEntityMapping(Editor::state.editorWorld, editorEntity);
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
@@ -118,7 +118,7 @@ bool
 InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, void* value, size_t size)
 {
     n_assert(Game::IsValid(Editor::state.editorWorld, editorEntity));
-    n_assert(Game::IsActive(Editor::state.editorWorld, editorEntity));
+    n_assert(Game::HasInstance(Editor::state.editorWorld, editorEntity));
 
     Game::EntityMapping mapping = Game::GetEntityMapping(Editor::state.editorWorld, editorEntity);
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];

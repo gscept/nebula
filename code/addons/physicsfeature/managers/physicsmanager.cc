@@ -12,12 +12,22 @@
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "basegamefeature/components/transform.h"
 
+//------------------------------------------------------------------------------
+/**
+
+All entities get IsActive flag at beginning of frame
+Full partition migration from one table to the one that has the flag
+
+OnActivate is run before flag is set, automatically filtered on !IsActive
+
+*/
+
 namespace PhysicsFeature
 {
 
 __ImplementSingleton(PhysicsManager)
 
-DEFINE_COMPONENT(PhysicsActor);
+    //DEFINE_COMPONENT(PhysicsActor);
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +48,10 @@ PhysicsManager::~PhysicsManager()
 //------------------------------------------------------------------------------
 /**
 */
-void CreateActor(Game::World* world, Game::Owner const& entity, Game::WorldTransform const& trans, PhysicsFeature::PhysicsResource& res)
+void
+CreateActor(
+    Game::World* world, Game::Owner const& entity, Game::WorldTransform const& trans, PhysicsFeature::PhysicsResource& res
+)
 {
     if (res.value == "mdl:")
     {
@@ -54,11 +67,12 @@ void CreateActor(Game::World* world, Game::Owner const& entity, Game::WorldTrans
     {
         actorType = Game::GetComponent<PhysicsFeature::PhysicsType>(world, entity.value).value;
     }
-    
-    Resources::CreateResource(res.value, "PHYS",
+
+    Resources::CreateResource(
+        res.value,
+        "PHYS",
         [world, trans, entity, actorType](Resources::ResourceId id)
         {
-
             Physics::ActorId actorid = Physics::CreateActorInstance(id, trans.value, actorType, Ids::Id32(entity.value));
 
             Game::Op::RegisterComponent regOp;
@@ -75,19 +89,61 @@ void CreateActor(Game::World* world, Game::Owner const& entity, Game::WorldTrans
                 regOp.value = nullptr;
                 Game::AddOp(Game::WorldGetScratchOpBuffer(world), regOp);
             }
-        }, nullptr, true);
+        },
+        nullptr,
+        true
+    );
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void PhysicsManager::InitCreateActorProcessor()
+void
+PhysicsManager::InitCreateActorProcessor()
 {
     Game::ProcessorBuilder("PhysicsManager.CreateActors"_atm)
-        .Excluding<PhysicsActor>()
-        .On("OnBeginFrame")
-        .Func(&CreateActor)
+        .On("OnActivate")
+        .Func(
+            [](Game::World* world,
+               Game::Owner const& owner,
+               Game::WorldTransform const& transform,
+               PhysicsFeature::PhysicsActor& actor)
+            {
+                auto res = actor.resource;
+                if (res == "mdl:")
+                {
+                    n_assert(Game::HasComponent(world, owner.value, GraphicsFeature::ModelResource::ID()));
+                    Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, owner.value).value.Value();
+                    Util::String fileName = modelRes.ExtractFileName();
+                    fileName.StripFileExtension();
+                    res = Util::String::Sprintf(
+                        "phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr()
+                    );
+                    actor.resource = res;
+                }
+
+                Resources::ResourceId resId = Resources::CreateResource(res, "PHYS");
+                Physics::ActorId actorid =
+                    Physics::CreateActorInstance(resId, transform.value, actor.actorType, Ids::Id32(owner.value));
+                actor.value = actorid;
+
+                if (actor.actorType == Physics::ActorType::Kinematic)
+                {
+                    Game::Op::RegisterComponent regOp;
+                    regOp.entity = owner.value;
+                    regOp.component = PhysicsFeature::IsKinematic::ID();
+                    regOp.value = nullptr;
+                    Game::AddOp(Game::WorldGetScratchOpBuffer(world), regOp);
+                }
+            }
+        )
         .Build();
+
+    //Game::ProcessorBuilder("PhysicsManager.CreateActors"_atm)
+    //    .Excluding<PhysicsActor>()
+    //    .On("OnBeginFrame")
+    //    .Func(&CreateActor)
+    //    .Build();
 }
 
 //------------------------------------------------------------------------------
@@ -97,17 +153,17 @@ void
 PhysicsManager::OnDecay()
 {
     Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(PhysicsActor::ID());
-    Physics::ActorId* data = (Physics::ActorId*)decayBuffer.buffer;
+    PhysicsFeature::PhysicsActor* data = (PhysicsFeature::PhysicsActor*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
-        Physics::DestroyActorInstance(data[i]);
+        Physics::DestroyActorInstance(data[i].value);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-static void
+void
 PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, PhysicsFeature::PhysicsActor const& actor)
 {
     transform.value = Physics::ActorContext::GetTransform(actor.value);
@@ -116,8 +172,10 @@ PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, Phy
 //------------------------------------------------------------------------------
 /**
 */
-static void
-PassKinematicTransforms(Game::World* world, Game::WorldTransform const& transform, PhysicsFeature::PhysicsActor const& actor, PhysicsFeature::IsKinematic)
+void
+PassKinematicTransforms(
+    Game::World* world, Game::WorldTransform const& transform, PhysicsFeature::PhysicsActor& actor, PhysicsFeature::IsKinematic
+)
 {
     Physics::ActorContext::SetTransform(actor.value, transform.value);
 }
@@ -129,13 +187,13 @@ void
 PhysicsManager::InitPollTransformProcessor()
 {
     Game::ProcessorBuilder("PhysicsManager.PollRigidbodyTransforms"_atm)
-        .Excluding({ Game::GetComponentId("Static"), IsKinematic::ID() })
+        .Excluding({Game::GetComponentId("Static"), IsKinematic::ID()})
         .On("OnFrame")
         .Func(&PollRigidbodyTransforms)
         .Build();
 
     Game::ProcessorBuilder("PhysicsManager.PassKinematicTransforms"_atm)
-        .Excluding({ Game::GetComponentId("Static") })
+        .Excluding({Game::GetComponentId("Static")})
         .On("OnFrame")
         .Func(&PassKinematicTransforms)
         .Build();
@@ -151,15 +209,17 @@ PhysicsManager::Create()
     n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = new PhysicsManager;
 
-    MemDb::TypeRegistry::Register<PhysicsActor>("PhysicsActorId"_atm, PhysicsActor(), Game::ComponentFlags::COMPONENTFLAG_MANAGED);
+    MemDb::TypeRegistry::Register<PhysicsActor>(
+        "PhysicsActorId"_atm, PhysicsActor(), Game::ComponentFlags::COMPONENTFLAG_MANAGED
+    );
 
     Singleton->InitCreateActorProcessor();
     Singleton->InitPollTransformProcessor();
 
     Game::ManagerAPI api;
-    api.OnCleanup    = &OnCleanup;
+    api.OnCleanup = &OnCleanup;
     api.OnDeactivate = &Destroy;
-    api.OnDecay      = &OnDecay;
+    api.OnDecay = &OnDecay;
     return api;
 }
 
@@ -205,32 +265,70 @@ PhysicsManager::OnCleanup(Game::World* world)
 
 } // namespace PhysicsFeature
 
-
 #include "pjson/pjson.h"
 #include "io/jsonreader.h"
 
 namespace IO
 {
-     template<>  void JsonReader::Get<Physics::ActorType>(Physics::ActorType& ret, char const* attr)
+template <>
+void
+JsonReader::Get<Physics::ActorType>(Physics::ActorType& ret, char const* attr)
+{
+    ret = Physics::ActorType::Static;
+    const pjson::value_variant* node = this->GetChild(attr);
+    if (node->is_string())
     {
-         ret = Physics::ActorType::Static;
-        const pjson::value_variant* node = this->GetChild(attr);
-        if (node->is_string())
+        Util::String str = node->as_string_ptr();
+        if (str == "Static")
         {
-            Util::String str = node->as_string_ptr();
-            if (str == "Static") { ret = Physics::ActorType::Static; return; }
-            if (str == "Kinematic") { ret = Physics::ActorType::Kinematic; return; }
-            if (str == "Dynamic") { ret = Physics::ActorType::Dynamic; return; }
+            ret = Physics::ActorType::Static;
+            return;
+        }
+        if (str == "Kinematic")
+        {
+            ret = Physics::ActorType::Kinematic;
+            return;
+        }
+        if (str == "Dynamic")
+        {
+            ret = Physics::ActorType::Dynamic;
+            return;
         }
     }
+}
 
-    template<>  void JsonWriter::Add<Physics::ActorType>(Physics::ActorType const& t, Util::String const& val)
+template <>
+void
+JsonWriter::Add<Physics::ActorType>(Physics::ActorType const& t, Util::String const& val)
+{
+    switch (t)
     {
-        switch (t)
-        {
-            case Physics::ActorType::Static: this->Add("Static", val); return;
-            case Physics::ActorType::Kinematic: this->Add("Kinematic", val); return;
-            case Physics::ActorType::Dynamic: this->Add("Dynamic", val); return;
-        }
+    case Physics::ActorType::Static:
+        this->Add("Static", val);
+        return;
+    case Physics::ActorType::Kinematic:
+        this->Add("Kinematic", val);
+        return;
+    case Physics::ActorType::Dynamic:
+        this->Add("Dynamic", val);
+        return;
     }
-};
+}
+
+template <>
+void
+JsonReader::Get<Physics::ActorId>(Physics::ActorId& ret, char const* attr)
+{
+    // read nothing
+    ret = Physics::ActorId();
+}
+
+template <>
+void
+JsonWriter::Add<Physics::ActorId>(Physics::ActorId const& id, Util::String const& val)
+{
+    // Write nothing
+    return;
+}
+
+}; // namespace IO

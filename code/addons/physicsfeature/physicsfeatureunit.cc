@@ -65,7 +65,7 @@ PhysicsFeatureUnit::OnActivate()
             n_assert(Physics::ActorContext::IsValid(actors[i]));
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
-            n_assert(Game::IsValid(world, entity) && Game::IsActive(world, entity));
+            n_assert(Game::IsValid(world, entity) && Game::HasInstance(world, entity));
             Game::Op::RegisterComponent registerOp;
             registerOp.entity = entity;
             registerOp.component = staticPid;
@@ -87,7 +87,7 @@ PhysicsFeatureUnit::OnActivate()
             n_assert(Physics::ActorContext::IsValid(actors[i]));
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
-            n_assert(Game::IsValid(world, entity) && Game::IsActive(world, entity));
+            n_assert(Game::IsValid(world, entity) && Game::HasInstance(world, entity));
             if (Game::HasComponent(world, entity, staticPid))
             {
                 Game::Op::DeregisterComponent deregisterOp;

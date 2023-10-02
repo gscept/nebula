@@ -21,9 +21,9 @@ CreateProcessor(ProcessorCreateInfo const& info)
 //------------------------------------------------------------------------------
 /**
 */
-ProcessorBuilder::ProcessorBuilder(Util::StringAtom processorName) :
-    name(processorName),
-    onEvent("OnBeginFrame")
+ProcessorBuilder::ProcessorBuilder(Util::StringAtom processorName)
+    : name(processorName),
+      onEvent("OnBeginFrame")
 {
     this->filterBuilder = FilterBuilder();
 }
@@ -67,17 +67,20 @@ ProcessorBuilder::Build()
     ProcessorCreateInfo info;
     info.name = this->name;
 
+    // clang-format off
     if      (this->onEvent == "OnBeginFrame")  info.OnBeginFrame = this->func;
     else if (this->onEvent == "OnFrame")       info.OnFrame = this->func;
     else if (this->onEvent == "OnEndFrame")    info.OnEndFrame = this->func;
     else if (this->onEvent == "OnSave")        info.OnSave = this->func;
     else if (this->onEvent == "OnLoad")        info.OnLoad = this->func;
     else if (this->onEvent == "OnRenderDebug") info.OnRenderDebug = this->func;
+    else if (this->onEvent == "OnActivate")    info.OnActivate = this->func;
     else
     {
         n_error("Invalid event name in processor!\n");
         info.OnBeginFrame = this->func;
     }
+    // clang-format on
 
     info.async = this->async;
     info.filter = this->filterBuilder.Build();

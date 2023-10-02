@@ -254,7 +254,6 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
             Table::Partition* dstPart = dstTable.NewPartition();
             dstPart->partitionId = srcPart->partitionId;
             dstPart->numRows = srcPart->numRows;
-            dstPart->modified = srcPart->modified;
             dstPart->modifiedRows = srcPart->modifiedRows;
             dstPart->freeIds = srcPart->freeIds;
             dstPart->table = &dstTable;

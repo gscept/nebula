@@ -56,9 +56,9 @@ class ComponentDefinition:
         # Check to see if any of the types within the struct are resource.
         for var in self.variables:
             if var.type == IDLTypes.GetTypeString("resource"):
-                if self.isStruct:
-                    util.fmtError("Structs containing resources not supported!")
-                self.isResource = True
+                #if self.isStruct:
+                #    util.fmtError("Structs containing resources not supported!")
+                self.isResource = False
 
     def AsTypeDefString(self):
         if self.isFlag:

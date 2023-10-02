@@ -16,6 +16,7 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
 #include "game/componentinspection.h"
+#include "debug/debugcounter.h"
 
 namespace Game
 {
@@ -28,6 +29,8 @@ static Ids::IdAllocator<World*, RegCidQueue, DeregCidQueue> opBufferAllocator;
 static Memory::ArenaAllocator<1024> opAllocator;
 
 static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
+
+_declare_counter(onActivateNumNewTablesCreated);
 
 //------------------------------------------------------------------------------
 /**
@@ -84,6 +87,8 @@ public:
     Util::Array<CallbackInfo> onEndFrameCallbacks;
     Util::Array<CallbackInfo> onLoadCallbacks;
     Util::Array<CallbackInfo> onSaveCallbacks;
+    Util::Array<CallbackInfo> onActivateCallbacks;
+    CallbackInfo activateAllInstancesCallback;
 
     /// set to true if the caches for the callbacks are invalid
     bool cacheValid = false;
@@ -97,6 +102,59 @@ World::World()
 {
     this->db = MemDb::Database::Create();
     this->scratchOpBuffer = Game::CreateOpBuffer(this);
+
+    activateAllInstancesCallback.filter = Game::FilterBuilder()
+        .Including<Game::Owner>()
+        .Excluding<Game::IsActive>()
+        .Build();
+    activateAllInstancesCallback.func = [](Game::World* world, Game::Dataset const& data)
+    {
+        // Move all partitions to their respective counterpart
+        for (size_t i = 0; i < data.numViews; i++)
+        {
+            auto const& view = data.views[i];
+            if (view.numInstances > (MemDb::Table::Partition::CAPACITY / 3) * 2)
+            {
+                // Only move entire partition if there are a lot of entities created simultaneously
+                MemDb::Table& oldTable = world->db->GetTable(view.tableId);
+                MemDb::TableSignature signature = oldTable.GetSignature();
+                signature.FlipBit(Game::IsActive::ID());
+
+                MemDb::TableId newTableId = world->db->FindTable(signature);
+                if (newTableId == MemDb::TableId::Invalid())
+                {
+                    _incr_counter(onActivateNumNewTablesCreated, 1);
+                    // Create new table that can hold our partitions
+                    MemDb::TableCreateInfo info;
+                    info.name = oldTable.name.Value();
+                    info.name += "_active";
+                    info.components = &oldTable.GetAttributes()[0];
+                    info.numComponents = oldTable.GetAttributes().Size();
+                    newTableId = world->db->CreateTable(info);
+                    world->CacheTable(newTableId, signature);
+                }
+                MemDb::Table& newTable = world->db->GetTable(newTableId);
+
+                MemDb::Table::MovePartition(oldTable, view.partitionId, newTable);
+                MemDb::Table::Partition* partition = newTable.GetPartition(view.partitionId);
+                n_assert(partition->columns.Size() == newTable.GetAttributes().Size() - 1);
+                // Add IsActive column to partition
+                partition->columns.Append(nullptr);
+            }
+            else
+            {
+                // Move instance one by one
+                for (size_t instance = 0; instance < view.numInstances; instance++)
+                {
+                    Game::AddComponent<Game::IsActive>(world, ((Game::Owner*)view.buffers[0])[instance].value, nullptr);
+                }
+            }
+            
+        }
+    };
+    
+    _setup_counter(onActivateNumNewTablesCreated);
+    _begin_counter_noreset(onActivateNumNewTablesCreated);
 }
 
 //------------------------------------------------------------------------------
@@ -121,28 +179,36 @@ World::CacheTable(MemDb::TableId tid, MemDb::TableSignature signature)
         &this->onEndFrameCallbacks,
         &this->onLoadCallbacks,
         &this->onSaveCallbacks,
+        &this->onActivateCallbacks,
+    };
+
+    auto const FillCache = [signature, tid](CallbackInfo& cbInfo)
+    {
+        if (MemDb::TableSignature::CheckBits(signature, GetInclusiveTableMask(cbInfo.filter)))
+        {
+            MemDb::TableSignature const& exclusive = GetExclusiveTableMask(cbInfo.filter);
+            if (exclusive.IsValid())
+            {
+                if (!MemDb::TableSignature::HasAny(signature, exclusive))
+                    cbInfo.cache.Append(tid);
+            }
+            else
+            {
+                cbInfo.cache.Append(tid);
+            }
+        }
     };
 
     for (auto arrPtr : cbArrays)
     {
         auto const& arr = *arrPtr;
-        for (auto& cbinfo : arr)
+        for (auto& cbInfo : arr)
         {
-            if (MemDb::TableSignature::CheckBits(signature, GetInclusiveTableMask(cbinfo.filter)))
-            {
-                MemDb::TableSignature const& exclusive = GetExclusiveTableMask(cbinfo.filter);
-                if (exclusive.IsValid())
-                {
-                    if (!MemDb::TableSignature::HasAny(signature, exclusive))
-                        cbinfo.cache.Append(tid);
-                }
-                else
-                {
-                    cbinfo.cache.Append(tid);
-                }
-            }
+            FillCache(cbInfo);
         }
     }
+
+    FillCache(activateAllInstancesCallback);
 }
 
 //------------------------------------------------------------------------------
@@ -171,11 +237,26 @@ DeallocateWorld(World* world)
 void
 WorldBeginFrame(World* world)
 {
+    int const numActiveCallBacks = world->onActivateCallbacks.Size();
+    for (int i = 0; i < numActiveCallBacks; i++)
+    {
+        Dataset data = Game::Query(world, world->onActivateCallbacks[i].cache, world->onActivateCallbacks[i].filter);
+        world->onActivateCallbacks[i].func(world, data);
+    }
+
+    for (int i = 0; i < numActiveCallBacks; i++)
+    {
+        // Move all newly created partitions to their respective table with IsActive flag included
+        Dataset data = Game::Query(world, world->onActivateCallbacks[i].cache, world->onActivateCallbacks[i].filter);
+        world->activateAllInstancesCallback.func(world, data);
+    }
+
+    Game::Dispatch(world->scratchOpBuffer);
+
     int const num = world->onBeginFrameCallbacks.Size();
     for (int i = 0; i < num; i++)
     {
-        Dataset data =
-            Game::Query(world, world->onBeginFrameCallbacks[i].cache, world->onBeginFrameCallbacks[i].filter);
+        Dataset data = Game::Query(world, world->onBeginFrameCallbacks[i].cache, world->onBeginFrameCallbacks[i].filter);
         world->onBeginFrameCallbacks[i].func(world, data);
     }
     Game::Dispatch(world->scratchOpBuffer);
@@ -252,6 +333,7 @@ WorldPrefilterProcessors(World* world)
         &world->onEndFrameCallbacks,
         &world->onLoadCallbacks,
         &world->onSaveCallbacks,
+        &world->onActivateCallbacks,
     };
 
     for (auto arrPtr : cbArrays)
@@ -385,7 +467,7 @@ DeleteEntity(World* world, Game::Entity entity)
     n_assert(IsValid(world, entity));
     n_assert(GameServer::HasInstance());
 
-    if (IsActive(world, entity))
+    if (HasInstance(world, entity))
     {
         World::DeallocInstanceCommand cmd;
         cmd.entity = entity;
@@ -404,11 +486,7 @@ DeleteEntity(World* world, Game::Entity entity)
 */
 void
 DecayComponent(
-    Game::World* world,
-    Game::ComponentId component,
-    MemDb::TableId tableId,
-    MemDb::ColumnIndex column,
-    MemDb::RowId instance
+    Game::World* world, Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance
 )
 {
     if (MemDb::TypeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_MANAGED)
@@ -662,7 +740,7 @@ IsValid(World* world, Entity e)
 /**
 */
 bool
-IsActive(World* world, Entity e)
+HasInstance(World* world, Entity e)
 {
     n_assert(IsValid(world, e));
     return world->entityMap[e.index].instance != MemDb::InvalidRow;
@@ -674,7 +752,7 @@ IsActive(World* world, Entity e)
 EntityMapping
 GetEntityMapping(World* world, Game::Entity entity)
 {
-    n_assert(IsActive(world, entity));
+    n_assert(HasInstance(world, entity));
     return world->entityMap[entity.index];
 }
 
@@ -903,7 +981,7 @@ DeallocateInstance(World* world, Entity entity)
 MemDb::RowId
 Migrate(World* world, Entity entity, MemDb::TableId newCategory)
 {
-    n_assert(IsActive(world, entity));
+    n_assert(HasInstance(world, entity));
     EntityMapping mapping = GetEntityMapping(world, entity);
     MemDb::RowId newInstance = MemDb::Table::MigrateInstance(
         world->db->GetTable(mapping.table), mapping.instance, world->db->GetTable(newCategory), false
@@ -982,6 +1060,9 @@ RegisterProcessors(World* world, std::initializer_list<ProcessorHandle> handles)
 
         if (info.OnSave != nullptr)
             world->onSaveCallbacks.Append({handle, info.filter, info.OnSave});
+
+        if (info.OnActivate != nullptr)
+            world->onActivateCallbacks.Append({handle, info.filter, info.OnActivate});
     }
 
     world->cacheValid = false;
@@ -1054,7 +1135,7 @@ AllocateEntity(World* world)
 void
 DeallocateEntity(World* world, Entity entity)
 {
-    n_assert(!IsActive(world, entity));
+    n_assert(!HasInstance(world, entity));
     world->pool.Deallocate(entity);
     world->numEntities--;
 }
@@ -1137,8 +1218,7 @@ BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
     CategoryCreateInfo info;
     info.name = blueprints[bid.id].name.Value();
 
-    auto const& components =
-        GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).GetAttributes();
+    auto const& components = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).GetAttributes();
     info.components.Resize(components.Size());
     for (int i = 0; i < components.Size(); i++)
     {
@@ -1195,6 +1275,10 @@ WorldRenderDebug(World* world)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnLoad --");
+        for (auto const& callback : world->onLoadCallbacks)
+            PrintCallbackInfo(callback);
+
+        ImGui::TextDisabled("-- OnActivate --");
         for (auto const& callback : world->onLoadCallbacks)
             PrintCallbackInfo(callback);
 

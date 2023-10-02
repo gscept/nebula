@@ -98,14 +98,14 @@ public:
         uint32_t numRows = 0;
         // bump the version if you change anything about the partition
         uint64_t version = 0;
-        // holds freed indices/rows to be reused in the table.
+        // holds freed indices/rows to be reused in the partition.
         Util::Array<uint16_t> freeIds;
         /// holds all the column buffers. This excludes non-typed components
         Util::Array<ColumnBuffer> columns;
         /// check a bit if the row has been modified, and you need to track it.
         /// bits are reset when partition is defragged
         Util::BitField<CAPACITY> modifiedRows;
-        
+
     private:
         friend Table;
         /// recycle free row or allocate new row
@@ -172,7 +172,7 @@ public:
     );
     /// duplicate instance from one row into destination table.
     static RowId DuplicateInstance(Table const& src, RowId srcRow, Table& dst);
-    
+
     /// move n instances from one table to another.
     static void MigrateInstances(
         Table& src,
@@ -183,15 +183,17 @@ public:
         std::function<void(Partition*, IndexT, IndexT)> const& moveCallback = nullptr
     );
     /// duplicate instance from one row into destination table.
-    static void DuplicateInstances(
-        Table& src, Util::Array<RowId> const& srcRows, Table& dst, Util::FixedArray<RowId>& dstRows
-    );
+    static void DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& dst, Util::FixedArray<RowId>& dstRows);
+
+    /// move an entire partition from one table to another. IMPORTANT: the destination tables signature, and attribute order must be the exact same as the source tables, for the first N attributes, N being the amount of attributes in the source table.
+    static void MovePartition(MemDb::Table& srcTable, uint16_t srcPart, MemDb::Table& dstTable);
 
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
 
     /// name of the table
     Util::StringAtom name;
+
 private:
     /// Create a new partition for this table. Adds it to the list of partitions and the vacancy list
     Partition* NewPartition();
@@ -200,7 +202,7 @@ private:
 
     /// table identifier
     TableId tid = TableId::Invalid();
-    
+
     uint32_t totalNumRows = 0;
 
     /// Current partition that we'll be using when allocating data.

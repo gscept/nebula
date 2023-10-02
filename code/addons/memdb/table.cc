@@ -56,7 +56,7 @@ Table::NewPartition()
     }
     else
     {
-        partition->partitionId = this->freePartitions.Back();
+        partition->partitionId = this->freePartitions.PopBack();
         n_assert(this->partitions[partition->partitionId] == nullptr);
         this->partitions[partition->partitionId] = partition;
     }
@@ -651,6 +651,56 @@ Table::DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& 
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+    This should only be used for VERY specific purposes.
+*/
+void
+Table::MovePartition(MemDb::Table& srcTable, uint16_t srcPartIndex, MemDb::Table& dstTable)
+{
+#if _DEBUG
+    // Verify correct usage
+    for (int i = 0; i < srcTable.attributes.Size(); i++)
+    {
+        n_assert(srcTable.attributes[i] == dstTable.attributes[i]);
+    }
+#endif
+
+    Partition* partition = srcTable.partitions[srcPartIndex];
+    srcTable.partitions[srcPartIndex] = nullptr;
+
+    srcTable.numActivePartitions--;
+
+    if (partition->previous != nullptr)
+        partition->previous->next = partition->next;
+    if (partition->next != nullptr)
+        partition->next->previous = partition->previous;
+
+    partition->table = &dstTable;
+
+    partition->next = dstTable.firstActivePartition;
+    if (dstTable.firstActivePartition != nullptr)
+    {
+        dstTable.firstActivePartition->previous = partition;
+    }
+    dstTable.firstActivePartition = partition;
+    dstTable.numActivePartitions++;
+    dstTable.currentPartition = partition;
+
+    uint16_t dstPartIndex;
+    if (dstTable.freePartitions.IsEmpty())
+    {
+        dstPartIndex = dstTable.partitions.Size();
+        dstTable.partitions.Append(partition);
+    }
+    else
+    {
+        dstPartIndex = dstTable.freePartitions.PopBack();
+    }
+
+    partition->partitionId = dstPartIndex;
 }
 
 //------------------------------------------------------------------------------

@@ -7,34 +7,41 @@
             "TWO": 2
         }
     },
-    "components": {
-        "TestResource": "resource",
-        "TestVec4": {
-            "_type_": "vec4",
-            "_default_": [ 1, 2, 3, 4 ]
-        },
-        "TestStruct": {
-            "pos": {
-                "_type_": "vec3",
-                "_default_": [ 1, 2, 3 ]
-            },
-            "cell": {
-                "_type_": "vec2",
-                "_default_": [ 10, 20.2 ]
-            },
-            "foo": {
-                "_type_": "int",
-                "_default_":  1
-            },
-            "bar": "float",
-            "gnyrf": {
-                "_type_": "bool"
-            },
-            "enumerable": "Test::TestEnumType"
-        },
-        "TestHealth": {
-            "_type_": "uint",
-            "_default_": 100
-        }
-    }
+  "components": {
+    "TestResource": "resource",
+    "TestVec4": {
+      "_type_": "vec4",
+      "_default_": [ 1, 2, 3, 4 ]
+    },
+    "TestStruct": {
+      "pos": {
+        "_type_": "vec3",
+        "_default_": [ 1, 2, 3 ]
+      },
+      "cell": {
+        "_type_": "vec2",
+        "_default_": [ 10, 20.2 ]
+      },
+      "foo": {
+        "_type_": "int",
+        "_default_": 1
+      },
+      "bar": "float",
+      "gnyrf": {
+        "_type_": "bool"
+      },
+      "enumerable": "Test::TestEnumType"
+    },
+    "TestHealth": {
+      "_type_": "uint",
+      "_default_": 100
+    },
+    "MyFlag1": {
+      "_type_": "_flag_",
+      "_desc_": "This is a description of a flag"
+    },
+    //"MyFlag2": "_flag_" // TODO: This is not working :(
+    "TestEmptyStruct": {}
+
+  }
 }

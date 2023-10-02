@@ -53,6 +53,8 @@ struct ProcessorCreateInfo
     ProcessorFrameCallback OnSave = nullptr;
     /// render a debug visualization 
     ProcessorFrameCallback OnRenderDebug = nullptr;
+    /// called on new partitions at beginning of frame
+    ProcessorFrameCallback OnActivate = nullptr;
 };
 
 /// Create a processor
@@ -125,7 +127,7 @@ template<typename ...COMPONENTS>
 inline ProcessorBuilder&
 ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
 {
-    size_t const bufferStartOffset = this->filterBuilder.GetNumInclusive();
+    uint8_t const bufferStartOffset = this->filterBuilder.GetNumInclusive();
     this->filterBuilder.Including<COMPONENTS...>();
     this->func = [func, bufferStartOffset](World* world, Game::Dataset data)
     {

@@ -7,14 +7,8 @@ using Mathf;
 
 
 /*
- 
 Entities are only ids as per usual, pointing into their respective tables in unmanaged code
-
 Components in managed code are objects that are allocated linearly per type by some object pool manager.
-
-
-
-
  */
 
 namespace Psuedo
@@ -25,21 +19,30 @@ namespace Psuedo
 
         //bool IsAlive() { return Nebula.Game.IsAlive(this.id); }
 
-
         // This is for getting and setting unmanaged components
-        bool HasComponent<T>() { return false; }
-        void SetComponent<T>(T component) { return; }
-        T GetComponent<T>() { return default(T); }
+        public bool HasComponent<T>() { return false; }
+        public void SetComponent<T>(T component) { return; }
+        public T GetComponent<T>() { return default(T); }
 
         // These are for managed properties
-        bool HasProperty<T>() { return false; }
-        void AddProperty<T>() { }
-        T GetProperty<T>() { return default(T); }
+        public bool HasProperty<T>() { return false; }
+        public void AddProperty<T>() { }
+        public T GetProperty<T>() { return default(T); }
 
-        Matrix GetTransform() { return default(Matrix); }
-        void SetTransform(Matrix matrix) { return; }
+        public Matrix GetTransform() { return default(Matrix); }
+        public void SetTransform(Matrix matrix) { return; }
+
+        public void Send(in Msg msg)
+        {
+            for (int i = 0; i < properties.Count; i++)
+            {
+                properties[i].OnMessage(msg);
+            }
+        }
 
         static void Destroy(Entity entity) { }
+
+        private List<Property> properties;
     }
 
     // Example of imported, "unmanaged" component
@@ -78,10 +81,24 @@ namespace Psuedo
             // This is only executed once when the property type is registered to the property manager
         }
 
+        public virtual void OnMessage(in Msg msg)
+        {
+            // Override in subclass
+        }
 
         public virtual void OnActivate() { }
         public virtual void OnDeactivate() { }
         public virtual void OnBeginFrame() { }
+    }
+
+    class Msg
+    {
+    }
+
+    class PlayAudioMessage : Msg
+    {
+        public bool loop;
+        public float volume;
     }
 
     class AudioEmitterProperty : Property
@@ -98,16 +115,27 @@ namespace Psuedo
             // Do on activate stuff
         }
 
+        public override void OnMessage(in Msg msg)
+        {
+            PlayAudioMessage audio = (PlayAudioMessage)msg;
+            if (audio != null)
+            {
+
+            }
+        }
+
         public override void OnBeginFrame()
         {
             base.OnBeginFrame();
+
+            Mathf.Matrix t = this.Owner.GetTransform();
+            AudioEmitterProperty prop = this.Owner.GetProperty<AudioEmitterProperty>();
 
             // Do on frame stuff
         }
 
         public override void SetupAcceptedMessages()
         {
-            
         }
 
         public override Nebula.Game.Events[] AcceptedEvents()

@@ -12,7 +12,8 @@
             "desc": "A test player blueprint",
             "components": [
                 "TestHealth",
-                "TestStruct"
+                "TestStruct",
+                "TestEmptyStruct"
             ]
         }
 	}

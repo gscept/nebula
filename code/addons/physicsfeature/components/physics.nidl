@@ -1,16 +1,21 @@
 {
   "namespace": "PhysicsFeature",
-      "includes": [
-        "physicsinterface.h"
-    ],
-    "components": {
-        "PhysicsResource": {
-            "_type_": "resource",
-            "_default_": "sysphys:placeholder.actor"
-        }
-        "PhysicsType": {
-            "_type_":  "Physics::ActorType"
-        },
-        "IsKinematic": {}
+  "includes": [
+    "physicsinterface.h"
+  ],
+  "components": {
+    "PhysicsActor": {
+      "value": "Physics::ActorId",
+      "resource": "Resources::ResourceName",
+      "actorType": "Physics::ActorType"
     }
+    "PhysicsResource": {
+      "_type_": "resource",
+      "_default_": "sysphys:placeholder.actor"
+    },
+    "PhysicsType": {
+      "_type_": "Physics::ActorType"
+    },
+    "IsKinematic": {}
+  }
 }

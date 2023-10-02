@@ -154,7 +154,7 @@ void                        DeleteEntity(World*, Game::Entity entity);
 /// Check if an entity ID is still valid.
 bool                        IsValid(World*, Entity e);
 /// Check if an entity is active (has an instance). It might be valid, but inactive just after it has been created.
-bool                        IsActive(World*, Entity e);
+bool                        HasInstance(World*, Entity e);
 /// Returns the entity mapping of an entity
 EntityMapping               GetEntityMapping(World*, Entity entity);
 /// Get instance of entity
@@ -255,6 +255,11 @@ ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
+template <typename LAMBDA>
+void RegisterLoadFunc(LAMBDA lambda);
+
+template <typename... COMPONENTS>
+void RegisterLoadFunc(std::function<void(Game::World*, COMPONENTS...)> func);
 
 //------------------------------------------------------------------------------
 /**
