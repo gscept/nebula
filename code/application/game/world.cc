@@ -155,10 +155,8 @@ World::World()
                 // Move instance one by one
                 for (size_t instance = 0; instance < view.numInstances; instance++)
                 {
-                    Entity entity = ((Game::Owner*)view.buffers[0])[instance].value;
-                    Game::
-                    entity.AddComponent<Game::IsActive>(world, nullptr);
-                    Game::AddComponent<Game::IsActive>(world, ((Game::Owner*)view.buffers[0])[instance].value, nullptr);
+                    Entity const& entity = ((Game::Owner*)view.buffers[0])[instance].value;
+                    Game::AddComponent<Game::IsActive>(world, entity, nullptr);
                 }
             }
             
