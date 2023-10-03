@@ -1143,6 +1143,9 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 inline TYPE 
 Array<TYPE, SMALL_VECTOR_SIZE>::PopFront()
 {
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->count > 0);
+#endif
     TYPE ret = std::move(this->elements[0]);
     this->EraseIndex(0);
     return ret;
@@ -1155,8 +1158,11 @@ template<class TYPE, int SMALL_VECTOR_SIZE>
 inline TYPE 
 Array<TYPE, SMALL_VECTOR_SIZE>::PopBack()
 {
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->count > 0);
+#endif
     this->count--;
-    return std::move(this->elements[this->count - 1]);
+    return std::move(this->elements[this->count]);
 }
 
 //------------------------------------------------------------------------------
