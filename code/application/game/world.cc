@@ -16,7 +16,6 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
 #include "game/componentinspection.h"
-#include "debug/debugcounter.h"
 
 namespace Game
 {
@@ -29,8 +28,6 @@ static Ids::IdAllocator<World*, RegCidQueue, DeregCidQueue> opBufferAllocator;
 static Memory::ArenaAllocator<1024> opAllocator;
 
 static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
-
-_declare_counter(onActivateNumNewTablesCreated);
 
 //------------------------------------------------------------------------------
 /**
@@ -159,12 +156,8 @@ World::World()
                     Game::AddComponent<Game::IsActive>(world, entity, nullptr);
                 }
             }
-            
         }
     };
-    
-    _setup_counter(onActivateNumNewTablesCreated);
-    _begin_counter_noreset(onActivateNumNewTablesCreated);
 }
 
 //------------------------------------------------------------------------------

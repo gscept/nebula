@@ -59,7 +59,7 @@ class ComponentDefinition:
             if var.type == IDLTypes.GetTypeString("resource"):
                 #if self.isStruct:
                 #    util.fmtError("Structs containing resources not supported!")
-                self.isResource = False
+                self.isResource = True
 
     def AsTypeDefString(self):
         if self.isFlag:
