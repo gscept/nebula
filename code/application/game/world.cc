@@ -113,44 +113,44 @@ World::World()
         for (size_t i = 0; i < data.numViews; i++)
         {
             auto const& view = data.views[i];
-            if (view.numInstances > (MemDb::Table::Partition::CAPACITY / 3) * 2)
-            {
-                // Only move entire partition if there are a lot of entities created simultaneously
-                MemDb::Table& oldTable = world->db->GetTable(view.tableId);
-                MemDb::TableSignature signature = oldTable.GetSignature();
-                signature.FlipBit(Game::IsActive::ID());
-            
-                MemDb::TableId newTableId = world->db->FindTable(signature);
-                if (newTableId == MemDb::TableId::Invalid())
-                {
-                    _incr_counter(onActivateNumNewTablesCreated, 1);
-                    // Create new table that can hold our partitions
-                    MemDb::TableCreateInfo info;
-                    info.name = oldTable.name.Value();
-                    info.name += "_active";
-                    info.components = &oldTable.GetAttributes()[0];
-                    info.numComponents = oldTable.GetAttributes().Size();
-                    newTableId = world->db->CreateTable(info);
-                    world->db->GetTable(newTableId).AddAttribute(Game::IsActive::ID());
-                    world->CacheTable(newTableId, signature);
-                }
-                MemDb::Table& newTable = world->db->GetTable(newTableId);
-            
-                uint16_t newPartitionId = MemDb::Table::MovePartition(oldTable, view.partitionId, newTable);
-                MemDb::Table::Partition* partition = newTable.GetPartition(newPartitionId);
-                n_assert(partition->columns.Size() == newTable.GetAttributes().Size() - 1);
-                // Add IsActive column to partition
-                partition->columns.Append(nullptr);
-            
-                // Update all entities instance row partition id
-                Game::Entity* entities = (Game::Entity*)partition->columns[0];
-                for (int k = 0; k < view.numInstances; k++)
-                {
-                    Game::Entity entity = entities[k];
-                    world->entityMap[entity.index].instance.partition = newPartitionId;
-                }
-            }
-            else
+            //if (view.numInstances > (MemDb::Table::Partition::CAPACITY / 3) * 2)
+            //{
+            //    // Only move entire partition if there are a lot of entities created simultaneously
+            //    MemDb::Table& oldTable = world->db->GetTable(view.tableId);
+            //    MemDb::TableSignature signature = oldTable.GetSignature();
+            //    signature.FlipBit(Game::IsActive::ID());
+            //
+            //    MemDb::TableId newTableId = world->db->FindTable(signature);
+            //    if (newTableId == MemDb::TableId::Invalid())
+            //    {
+            //        _incr_counter(onActivateNumNewTablesCreated, 1);
+            //        // Create new table that can hold our partitions
+            //        MemDb::TableCreateInfo info;
+            //        info.name = oldTable.name.Value();
+            //        info.name += "_active";
+            //        info.components = &oldTable.GetAttributes()[0];
+            //        info.numComponents = oldTable.GetAttributes().Size();
+            //        newTableId = world->db->CreateTable(info);
+            //        world->db->GetTable(newTableId).AddAttribute(Game::IsActive::ID());
+            //        world->CacheTable(newTableId, signature);
+            //    }
+            //    MemDb::Table& newTable = world->db->GetTable(newTableId);
+            //
+            //    uint16_t newPartitionId = MemDb::Table::MovePartition(oldTable, view.partitionId, newTable);
+            //    MemDb::Table::Partition* partition = newTable.GetPartition(newPartitionId);
+            //    n_assert(partition->columns.Size() == newTable.GetAttributes().Size() - 1);
+            //    // Add IsActive column to partition
+            //    partition->columns.Append(nullptr);
+            //
+            //    // Update all entities instance row partition id
+            //    Game::Entity* entities = (Game::Entity*)partition->columns[0];
+            //    for (int k = 0; k < view.numInstances; k++)
+            //    {
+            //        Game::Entity entity = entities[k];
+            //        world->entityMap[entity.index].instance.partition = newPartitionId;
+            //    }
+            //}
+            //else
             {
                 // Move instance one by one
                 for (size_t instance = 0; instance < view.numInstances; instance++)
