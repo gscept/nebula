@@ -245,12 +245,6 @@ ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
-template <typename LAMBDA>
-void RegisterLoadFunc(LAMBDA lambda);
-
-template <typename... COMPONENTS>
-void RegisterLoadFunc(std::function<void(Game::World*, COMPONENTS...)> func);
-
 //------------------------------------------------------------------------------
 /**
     -- Beginning of template implementations --
