@@ -121,6 +121,7 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
                     }
 
                     view->numInstances = part->numRows;
+                    view->partitionId = part->partitionId;
                     data.numViews++;
                     part = part->next;
                 }

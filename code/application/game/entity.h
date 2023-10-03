@@ -19,40 +19,74 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
+#include "memdb/tableid.h"
 
 namespace Game
 {
-    struct Entity
-    {
-        uint32_t index     : 22; // 4M concurrent entities
-        uint32_t generation : 10; // 1024 generations per index
-    
-        static Entity FromId(Ids::Id32 id)
-        {
-            Entity ret;
-            ret.index = id & 0x003FFFFF;
-            ret.generation = (id & 0xFFC0000) >> 22;
-            return ret;
-        }
-        explicit constexpr operator Ids::Id32() const
-        {
-            return ((generation << 22) & 0xFFC0000) + (index & 0x003FFFFF);
-        }
-        static constexpr Entity Invalid()
-        {
-            return { 0xFFFFFFFF, 0xFFFFFFFF };
-        }
-        constexpr uint32_t HashCode() const
-        {
-            return index;
-        }
-        const bool operator==(const Entity& rhs) const { return Ids::Id32(*this) == Ids::Id32(rhs); }
-        const bool operator!=(const Entity& rhs) const { return Ids::Id32(*this) != Ids::Id32(rhs); }
-        const bool operator<(const Entity& rhs) const { return index < rhs.index; }
-        const bool operator>(const Entity& rhs) const { return index > rhs.index; }
-    };
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct Entity
+{
+    uint32_t index : 22;      // 4M concurrent entities
+    uint32_t generation : 10; // 1024 generations per index
+
+    static Entity FromId(Ids::Id32 id);
+
+    explicit constexpr operator Ids::Id32() const;
+    static constexpr Entity Invalid();
+    constexpr uint32_t HashCode() const;
+    const bool operator==(const Entity& rhs) const;
+    const bool operator!=(const Entity& rhs) const;
+    const bool operator<(const Entity& rhs) const;
+    const bool operator>(const Entity& rhs) const;
+};
+
+//------------------------------------------------------------------------------
+/**
+    Maps an entity to a table and instance id
+*/
+struct EntityMapping
+{
+    MemDb::TableId table;
+    MemDb::RowId instance;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool
+Entity::operator==(const Entity& rhs) const
+{
+    return Ids::Id32(*this) == Ids::Id32(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool
+Entity::operator!=(const Entity& rhs) const
+{
+    return Ids::Id32(*this) != Ids::Id32(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool
+Entity::operator<(const Entity& rhs) const
+{
+    return index < rhs.index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool
+Entity::operator>(const Entity& rhs) const
+{
+    return index > rhs.index;
+}
 
 } // namespace Game
-
-
-

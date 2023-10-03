@@ -74,7 +74,11 @@ ProcessorBuilder::Build()
     else if (this->onEvent == "OnSave")        info.OnSave = this->func;
     else if (this->onEvent == "OnLoad")        info.OnLoad = this->func;
     else if (this->onEvent == "OnRenderDebug") info.OnRenderDebug = this->func;
-    else if (this->onEvent == "OnActivate")    info.OnActivate = this->func;
+    else if (this->onEvent == "OnActivate")
+    {
+        info.OnActivate = this->func;
+        this->filterBuilder.Excluding<Game::IsActive>();
+    }
     else
     {
         n_error("Invalid event name in processor!\n");

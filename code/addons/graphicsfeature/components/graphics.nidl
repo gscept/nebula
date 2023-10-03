@@ -2,6 +2,7 @@
     "namespace": "GraphicsFeature",
     "includes": [
         "math/mat4.h"
+        "resources/resourceid.h"
     ],
     "enums": {
         "ProjectionMode": {

@@ -119,7 +119,7 @@ World::World()
                 MemDb::Table& oldTable = world->db->GetTable(view.tableId);
                 MemDb::TableSignature signature = oldTable.GetSignature();
                 signature.FlipBit(Game::IsActive::ID());
-
+            
                 MemDb::TableId newTableId = world->db->FindTable(signature);
                 if (newTableId == MemDb::TableId::Invalid())
                 {
@@ -131,21 +131,33 @@ World::World()
                     info.components = &oldTable.GetAttributes()[0];
                     info.numComponents = oldTable.GetAttributes().Size();
                     newTableId = world->db->CreateTable(info);
+                    world->db->GetTable(newTableId).AddAttribute(Game::IsActive::ID());
                     world->CacheTable(newTableId, signature);
                 }
                 MemDb::Table& newTable = world->db->GetTable(newTableId);
-
-                MemDb::Table::MovePartition(oldTable, view.partitionId, newTable);
-                MemDb::Table::Partition* partition = newTable.GetPartition(view.partitionId);
+            
+                uint16_t newPartitionId = MemDb::Table::MovePartition(oldTable, view.partitionId, newTable);
+                MemDb::Table::Partition* partition = newTable.GetPartition(newPartitionId);
                 n_assert(partition->columns.Size() == newTable.GetAttributes().Size() - 1);
                 // Add IsActive column to partition
                 partition->columns.Append(nullptr);
+            
+                // Update all entities instance row partition id
+                Game::Entity* entities = (Game::Entity*)partition->columns[0];
+                for (int k = 0; k < view.numInstances; k++)
+                {
+                    Game::Entity entity = entities[k];
+                    world->entityMap[entity.index].instance.partition = newPartitionId;
+                }
             }
             else
             {
                 // Move instance one by one
                 for (size_t instance = 0; instance < view.numInstances; instance++)
                 {
+                    Entity entity = ((Game::Owner*)view.buffers[0])[instance].value;
+                    Game::
+                    entity.AddComponent<Game::IsActive>(world, nullptr);
                     Game::AddComponent<Game::IsActive>(world, ((Game::Owner*)view.buffers[0])[instance].value, nullptr);
                 }
             }
@@ -243,6 +255,8 @@ WorldBeginFrame(World* world)
         Dataset data = Game::Query(world, world->onActivateCallbacks[i].cache, world->onActivateCallbacks[i].filter);
         world->onActivateCallbacks[i].func(world, data);
     }
+
+    Game::Dispatch(world->scratchOpBuffer);
 
     for (int i = 0; i < numActiveCallBacks; i++)
     {
@@ -986,7 +1000,10 @@ Migrate(World* world, Entity entity, MemDb::TableId newCategory)
     MemDb::RowId newInstance = MemDb::Table::MigrateInstance(
         world->db->GetTable(mapping.table), mapping.instance, world->db->GetTable(newCategory), false
     );
-    Defragment(world, mapping.table);
+
+    // TODO: We had a defrag here... Why?
+    //Defragment(world, mapping.table);
+
     world->entityMap[entity.index] = {newCategory, newInstance};
     return newInstance;
 }
@@ -1027,7 +1044,8 @@ Migrate(
         world->db->GetTable(fromCategory), instances, world->db->GetTable(newCategory), newInstances, false
     );
 
-    Defragment(world, fromCategory);
+    // TODO: We had a defrag here... Why?
+    //Defragment(world, fromCategory);
 
     for (IndexT i = 0; i < num; i++)
     {
@@ -1279,7 +1297,7 @@ WorldRenderDebug(World* world)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnActivate --");
-        for (auto const& callback : world->onLoadCallbacks)
+        for (auto const& callback : world->onActivateCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::Separator();

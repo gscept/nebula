@@ -264,11 +264,6 @@ Table::Defragment(std::function<void(Partition*, MemDb::RowId, MemDb::RowId)> co
     Partition* part = this->firstActivePartition;
     while (part != nullptr)
     {
-        uint16_t i = part->partitionId;
-
-        if (part == nullptr)
-            continue;
-
         // Pack arrays
         while (part->freeIds.Size() != 0)
         {
@@ -293,7 +288,7 @@ Table::Defragment(std::function<void(Partition*, MemDb::RowId, MemDb::RowId)> co
 
         part->modifiedRows.Clear();
 
-        if (part->numRows == 0 && part != this->currentPartition)
+        if (part->numRows == 0 && part->partitionId != this->currentPartition->partitionId)
         {
             // erase partition
             if (part->next != nullptr)
@@ -301,9 +296,9 @@ Table::Defragment(std::function<void(Partition*, MemDb::RowId, MemDb::RowId)> co
             if (part->previous != nullptr)
                 part->previous->next = part->next;
             Partition* nextPart = part->next;
+            this->partitions[part->partitionId] = nullptr;
+            this->freePartitions.Append(part->partitionId);
             delete part;
-            this->partitions[i] = nullptr;
-            freePartitions.Append(i);
             this->numActivePartitions--;
             part = nextPart;
         }
@@ -657,7 +652,7 @@ Table::DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& 
 /**
     This should only be used for VERY specific purposes.
 */
-void
+uint16_t
 Table::MovePartition(MemDb::Table& srcTable, uint16_t srcPartIndex, MemDb::Table& dstTable)
 {
 #if _DEBUG
@@ -670,6 +665,7 @@ Table::MovePartition(MemDb::Table& srcTable, uint16_t srcPartIndex, MemDb::Table
 
     Partition* partition = srcTable.partitions[srcPartIndex];
     srcTable.partitions[srcPartIndex] = nullptr;
+    srcTable.freePartitions.Append(srcPartIndex);
 
     srcTable.numActivePartitions--;
 
@@ -701,6 +697,12 @@ Table::MovePartition(MemDb::Table& srcTable, uint16_t srcPartIndex, MemDb::Table
     }
 
     partition->partitionId = dstPartIndex;
+    srcTable.totalNumRows -= partition->numRows;
+    srcTable.numActivePartitions--;
+    dstTable.totalNumRows += partition->numRows;
+    dstTable.numActivePartitions++;
+
+    return dstPartIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -769,6 +771,7 @@ Table::Partition::EraseSwapIndex(uint16_t instance)
         }
     }
 
+    n_assert(this->numRows > 0);
     this->numRows--;
 }
 

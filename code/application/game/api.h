@@ -36,16 +36,6 @@ namespace Game
 //      Types
 //------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------
-/**
-    Maps an entity to a table and instance id
-*/
-struct EntityMapping
-{
-    MemDb::TableId table;
-    MemDb::RowId instance;
-};
-
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
 

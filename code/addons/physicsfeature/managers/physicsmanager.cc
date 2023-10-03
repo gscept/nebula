@@ -122,7 +122,7 @@ PhysicsManager::InitCreateActorProcessor()
                     actor.resource = res;
                 }
 
-                Resources::ResourceId resId = Resources::CreateResource(res, "PHYS");
+                Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
                 Physics::ActorId actorid =
                     Physics::CreateActorInstance(resId, transform.value, actor.actorType, Ids::Id32(owner.value));
                 actor.value = actorid;
@@ -208,10 +208,6 @@ PhysicsManager::Create()
     n_assert(PhysicsFeature::Details::physics_registered);
     n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = new PhysicsManager;
-
-    MemDb::TypeRegistry::Register<PhysicsActor>(
-        "PhysicsActorId"_atm, PhysicsActor(), Game::ComponentFlags::COMPONENTFLAG_MANAGED
-    );
 
     Singleton->InitCreateActorProcessor();
     Singleton->InitPollTransformProcessor();

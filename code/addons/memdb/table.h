@@ -20,36 +20,10 @@
 #include "util/bitfield.h"
 #include "util/queue.h"
 #include "ids/idgenerationpool.h"
+#include "tableid.h"
 
 namespace MemDb
 {
-
-/// Table identifier
-ID_32_TYPE(TableId);
-
-/// row identifier
-struct RowId
-{
-    uint16_t partition;
-    uint16_t index;
-
-    bool
-    operator!=(RowId const& rhs)
-    {
-        return partition != rhs.partition || index != rhs.index;
-    }
-
-    bool
-    operator==(RowId const& rhs)
-    {
-        return partition == rhs.partition && index == rhs.index;
-    }
-};
-
-constexpr RowId InvalidRow = {0xFFFF, 0xFFFF};
-
-/// column id
-ID_16_TYPE(ColumnIndex);
 
 /// information for creating a table
 struct TableCreateInfo
@@ -61,8 +35,6 @@ struct TableCreateInfo
     /// number of columns
     SizeT numComponents;
 };
-
-using AttributeId = AttributeId;
 
 //------------------------------------------------------------------------------
 /**
@@ -186,7 +158,8 @@ public:
     static void DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& dst, Util::FixedArray<RowId>& dstRows);
 
     /// move an entire partition from one table to another. IMPORTANT: the destination tables signature, and attribute order must be the exact same as the source tables, for the first N attributes, N being the amount of attributes in the source table.
-    static void MovePartition(MemDb::Table& srcTable, uint16_t srcPart, MemDb::Table& dstTable);
+    /// returns new partition id in dstTable
+    static uint16_t MovePartition(MemDb::Table& srcTable, uint16_t srcPart, MemDb::Table& dstTable);
 
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
