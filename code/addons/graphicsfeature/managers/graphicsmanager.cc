@@ -11,6 +11,8 @@
 #include "game/gameserver.h"
 #include "graphicsfeature/components/graphics.h"
 #include "basegamefeature/components/transform.h"
+#include "io/jsonreader.h"
+#include "io/jsonwriter.h"
 
 namespace GraphicsFeature
 {
@@ -54,51 +56,20 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 void
 GraphicsManager::InitCreateModelProcessor()
 {
-    Game::Filter filter = Game::FilterBuilder()
-        .Including<
-            const Game::Owner,
-            const Game::WorldTransform,
-            const ModelResource>()
-        .Excluding({ this->pids.modelEntityData })
-        .Build();
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "GraphicsManager.CreateModels"_atm;
-    processorInfo.OnEndFrame = [](Game::World* world, Game::Dataset data)
-    {
-        Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
-
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-            Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
-            Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
-            Resources::ResourceName const* const resources = (Resources::ResourceName*)view.buffers[2];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
+    Game::ProcessorBuilder("GraphicsManager.CreateModels"_atm)
+        .On("OnActivate")
+        .Func(
+            [](Game::World* world,
+               Game::Owner const& owner,
+               Game::WorldTransform const& t,
+               GraphicsFeature::Model& model)
             {
-                Game::Entity const& entity = owners[i];
-                Math::mat4 const& t = transforms[i];
-                Resources::ResourceName const& res = resources[i];
-                Graphics::GraphicsEntityId gid = Graphics::CreateEntity();
-                RegisterModelEntity(gid, res, t);
-                ModelEntityData mdlData;
-                mdlData.gid = gid;
-
-                Game::Op::RegisterComponent regOp;
-                regOp.entity = entity;
-                regOp.component = GraphicsManager::Singleton->pids.modelEntityData;
-                regOp.value = &mdlData;
-                Game::AddOp(opBuffer, regOp);
+                auto res = model.resource;
+                model.graphicsEntityId = Graphics::CreateEntity();
+                RegisterModelEntity(model.graphicsEntityId, model.resource, t.value);
             }
-        }
-        Game::Dispatch(opBuffer);
-        Game::DestroyOpBuffer(opBuffer);
-    };
-    
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+        )
+        .Build();
 }
 
 //------------------------------------------------------------------------------
@@ -107,13 +78,13 @@ GraphicsManager::InitCreateModelProcessor()
 void
 GraphicsManager::OnDecay()
 {
-    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.modelEntityData);
-    ModelEntityData* data = (ModelEntityData*)decayBuffer.buffer;
+    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Model::ID());
+    Model* data = (Model*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
-        Visibility::ObservableContext::DeregisterEntity(data[i].gid);
-        Models::ModelContext::DeregisterEntity(data[i].gid);
-        Graphics::DestroyEntity(data[i].gid);
+        Visibility::ObservableContext::DeregisterEntity(data[i].graphicsEntityId);
+        Models::ModelContext::DeregisterEntity(data[i].graphicsEntityId);
+        Graphics::DestroyEntity(data[i].graphicsEntityId);
     }
 }
 
@@ -125,7 +96,7 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 {
 
     Game::Filter filter = Game::FilterBuilder()
-        .Including({ {Game::AccessMode::READ, this->pids.modelEntityData} })
+        .Including({ {Game::AccessMode::READ, Model::ID()} })
         .Including<Game::WorldTransform>()
         .Excluding({ Game::GetComponentId("Static") })
         .Build();
@@ -134,20 +105,22 @@ GraphicsManager::InitUpdateModelTransformProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "GraphicsManager.UpdateModelTransforms"_atm;
-    processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
+    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
         {
             Game::Dataset::EntityTableView const& view = data.views[v];
-            ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
+
+            // TODO: check if any entitys transform is modified in the partition, and skip otherwise.
+
+            Model const* const modelData = (Model*)view.buffers[0];
             Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
-                ModelEntityData const& modelEntityData = modelEntityDatas[i];
+                Model const& model = modelData[i];
                 Math::mat4 const& transform = transforms[i];
-
-                Models::ModelContext::SetTransform(modelEntityData.gid, transform);
+                Models::ModelContext::SetTransform(model.graphicsEntityId, transform);
             }
         }
     };
@@ -164,15 +137,6 @@ GraphicsManager::Create()
 	n_assert(GraphicsFeature::Details::graphics_registered);
     n_assert(!GraphicsManager::HasInstance());
     GraphicsManager::Singleton = new GraphicsManager;
-
-    
-    Game::ComponentCreateInfo info;
-    info.name = "ModelEntityData";
-    ModelEntityData defaultValue;
-    info.defaultValue = &defaultValue;
-    info.flags = Game::ComponentFlags::COMPONENTFLAG_MANAGED;
-    info.byteSize = sizeof(ModelEntityData);
-    Singleton->pids.modelEntityData = Game::CreateComponent(info);
 
     Singleton->InitCreateModelProcessor();
     Singleton->InitUpdateModelTransformProcessor();
@@ -204,7 +168,7 @@ GraphicsManager::OnCleanup(Game::World* world)
     n_assert(GraphicsManager::HasInstance());
     
     Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Singleton->pids.modelEntityData;
+    filterInfo.inclusive[0] = GraphicsFeature::Model::ID();
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 
@@ -214,21 +178,21 @@ GraphicsManager::OnCleanup(Game::World* world)
     for (int v = 0; v < data.numViews; v++)
     {
         Game::Dataset::EntityTableView const& view = data.views[v];
-        ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
+        Model const* const modelData = (Model*)view.buffers[0];
         
         for (IndexT i = 0; i < view.numInstances; ++i)
         {
-            ModelEntityData const& modelEntityData = modelEntityDatas[i];
+            Model const& model = modelData[i];
             
-            if (Models::ModelContext::IsEntityRegistered(modelEntityData.gid))
+            if (Models::ModelContext::IsEntityRegistered(model.graphicsEntityId))
             {
-                if (Visibility::ObservableContext::IsEntityRegistered(modelEntityData.gid))
-                    Visibility::ObservableContext::DeregisterEntity(modelEntityData.gid);
+                if (Visibility::ObservableContext::IsEntityRegistered(model.graphicsEntityId))
+                    Visibility::ObservableContext::DeregisterEntity(model.graphicsEntityId);
 
-                Models::ModelContext::DeregisterEntity(modelEntityData.gid);
+                Models::ModelContext::DeregisterEntity(model.graphicsEntityId);
             }
             
-            Graphics::DestroyEntity(modelEntityData.gid);
+            Graphics::DestroyEntity(model.graphicsEntityId);
         }
     }
 
@@ -236,3 +200,19 @@ GraphicsManager::OnCleanup(Game::World* world)
 }
 
 } // namespace Game
+
+template <>
+void
+IO::JsonReader::Get<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId& ret, char const* attr)
+{
+    // read nothing
+    ret = Graphics::GraphicsEntityId();
+}
+
+template <>
+void
+IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const& id, Util::String const& val)
+{
+    // Write nothing
+    return;
+}

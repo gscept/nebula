@@ -112,7 +112,7 @@ GraphicsFeatureUnit::OnActivate()
 
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
-    StaticUI::StaticUIContext::Create();
+    //StaticUI::StaticUIContext::Create();
 
     CameraContext::Create();
     ModelContext::Create();

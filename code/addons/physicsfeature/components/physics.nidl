@@ -5,8 +5,12 @@
   ],
   "components": {
     "PhysicsActor": {
+      "_managed_": true,
       "value": "Physics::ActorId",
-      "resource": "Resources::ResourceName",
+      "resource": {
+        "_type_": "Resources::ResourceName",
+        "_default_": "mdl:",
+      },
       "actorType": "Physics::ActorType"
     }
     "PhysicsResource": {

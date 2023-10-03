@@ -49,56 +49,6 @@ PhysicsManager::~PhysicsManager()
 /**
 */
 void
-CreateActor(
-    Game::World* world, Game::Owner const& entity, Game::WorldTransform const& trans, PhysicsFeature::PhysicsResource& res
-)
-{
-    if (res.value == "mdl:")
-    {
-        n_assert(Game::HasComponent(world, entity.value, GraphicsFeature::ModelResource::ID()));
-        Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, entity.value).value.Value();
-        Util::String fileName = modelRes.ExtractFileName();
-        fileName.StripFileExtension();
-        res.value = Util::String::Sprintf("phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr());
-    }
-
-    Physics::ActorType actorType = Physics::ActorType::Static;
-    if (Game::HasComponent(world, entity.value, PhysicsFeature::PhysicsType::ID()))
-    {
-        actorType = Game::GetComponent<PhysicsFeature::PhysicsType>(world, entity.value).value;
-    }
-
-    Resources::CreateResource(
-        res.value,
-        "PHYS",
-        [world, trans, entity, actorType](Resources::ResourceId id)
-        {
-            Physics::ActorId actorid = Physics::CreateActorInstance(id, trans.value, actorType, Ids::Id32(entity.value));
-
-            Game::Op::RegisterComponent regOp;
-            regOp.entity = entity.value;
-            regOp.component = PhysicsActor::ID();
-            regOp.value = &actorid;
-            Game::AddOp(Game::WorldGetScratchOpBuffer(world), regOp);
-
-            if (actorType == Physics::ActorType::Kinematic)
-            {
-                Game::Op::RegisterComponent regOp;
-                regOp.entity = entity.value;
-                regOp.component = PhysicsFeature::IsKinematic::ID();
-                regOp.value = nullptr;
-                Game::AddOp(Game::WorldGetScratchOpBuffer(world), regOp);
-            }
-        },
-        nullptr,
-        true
-    );
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 PhysicsManager::InitCreateActorProcessor()
 {
     Game::ProcessorBuilder("PhysicsManager.CreateActors"_atm)
@@ -112,8 +62,8 @@ PhysicsManager::InitCreateActorProcessor()
                 auto res = actor.resource;
                 if (res == "mdl:")
                 {
-                    n_assert(Game::HasComponent(world, owner.value, GraphicsFeature::ModelResource::ID()));
-                    Util::String modelRes = Game::GetComponent<GraphicsFeature::ModelResource>(world, owner.value).value.Value();
+                    n_assert(Game::HasComponent(world, owner.value, GraphicsFeature::Model::ID()));
+                    Util::String modelRes = Game::GetComponent<GraphicsFeature::Model>(world, owner.value).resource.Value();
                     Util::String fileName = modelRes.ExtractFileName();
                     fileName.StripFileExtension();
                     res = Util::String::Sprintf(

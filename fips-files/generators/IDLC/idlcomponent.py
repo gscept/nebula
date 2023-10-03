@@ -41,7 +41,8 @@ class ComponentDefinition:
                 self.isManaged = comp["_managed_"]
             if not "_type_" in comp:
                 for varName, var in comp.items():
-                    self.variables.append(GetVariableFromEntry(varName, var))
+                    if varName != "_managed_":
+                        self.variables.append(GetVariableFromEntry(varName, var))
                 self.isStruct = True
             else:
                 var = GetVariableFromEntry(componentName, comp)

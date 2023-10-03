@@ -1,8 +1,8 @@
 {
     "namespace": "GraphicsFeature",
     "includes": [
-        "math/mat4.h"
-        "resources/resourceid.h"
+        "math/mat4.h",
+        "resources/resourceid.h""graphics/graphicsentity.h"
     ],
     "enums": {
         "ProjectionMode": {
@@ -11,9 +11,13 @@
         }
     },
     "components": {
-        "ModelResource": {
-            "_type_": "resource",
-            "_default_": "sysmdl:placeholder.n3"
+        "Model": {
+            "_managed_": true,
+            "resource": {
+                "_type_": "resource",
+                "_default_": "sysmdl:placeholder.n3"
+            },
+            "graphicsEntityId": "Graphics::GraphicsEntityId"
         },
         "Camera": {
             "viewHandle": {

@@ -19,11 +19,6 @@
 namespace GraphicsFeature
 {
 
-struct ModelEntityData
-{
-    Graphics::GraphicsEntityId gid;
-};
-
 class GraphicsManager
 {
     __DeclareSingleton(GraphicsManager);
@@ -34,10 +29,6 @@ public:
     /// destroy entity manager
     static void Destroy();
 
-    struct Pids
-    {
-        Game::ComponentId modelEntityData;
-    } pids;
 private:
     /// constructor
     GraphicsManager();
