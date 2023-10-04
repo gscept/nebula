@@ -223,7 +223,7 @@ BitField<NUMBITS>::SetBit(const uint64_t i, uint64_t mul)
     n_assert(i < NUMBITS);
     const TYPE index = i / BASE;
     const TYPE bit = (1ull << (i % BASE));
-    this->bits[index] |= bit * boolean;
+    this->bits[index] |= bit * mul;
 }
 
 //------------------------------------------------------------------------------
