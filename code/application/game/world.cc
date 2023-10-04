@@ -249,10 +249,9 @@ WorldBeginFrame(World* world)
 
     Game::Dispatch(world->scratchOpBuffer);
 
-    for (int i = 0; i < numActiveCallBacks; i++)
     {
         // Move all newly created partitions to their respective table with IsActive flag included
-        Dataset data = Game::Query(world, world->onActivateCallbacks[i].cache, world->onActivateCallbacks[i].filter);
+        Dataset data = Game::Query(world, world->activateAllInstancesCallback.cache, world->activateAllInstancesCallback.filter);
         world->activateAllInstancesCallback.func(world, data);
     }
 

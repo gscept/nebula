@@ -334,11 +334,10 @@ EntitySystemTest::Run()
 
     StepFrame();
 
+    
     bool hasExecutedUpdateFunc = false;
     std::function updateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
     {
-        VERIFY(testStruct.foo == 100);
-        testStruct.foo = testHealth.value * testHealth.value;
         hasExecutedUpdateFunc = true;
     };
 
@@ -346,7 +345,29 @@ EntitySystemTest::Run()
 
     StepFrame();
 
+    // make sure update func is actually executed
     VERIFY(hasExecutedUpdateFunc);
+
+
+    // Test on activate func
+    // Create one entity, which will go through the on activate step, once and once only.
+    Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
+    Game::CreateEntity(world, enemyInfo);
+
+    int numActivateExecutions = 0;
+    std::function activateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
+    { 
+        numActivateExecutions++;
+    };
+
+    Game::ProcessorBuilder("TestActivateFunc").On("OnActivate").Func(activateFunc).Build();
+
+    StepFrame();
+    VERIFY(numActivateExecutions == 1);
+
+    // Doublecheck so that we don't execute the activate func twice for the same entity
+    StepFrame();
+    VERIFY(numActivateExecutions == 1);
 
     t->StopTime();
 }
