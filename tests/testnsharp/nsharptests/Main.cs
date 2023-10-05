@@ -2,9 +2,18 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Mathf;
+using Nebula.Game;
 
 namespace NST
 {
+    public class TestProperty : Property
+    {
+        public int i;
+        public float f;
+        public string s;
+        public Mathf.Vector3 v;
+    }
+
     public class Tests
     {
         public class InternalCalls
@@ -56,6 +65,16 @@ namespace NST
             Console.Write("Console.Write works!\n");
             Console.WriteLine("Console.WriteLine works!");
             Nebula.Debug.Log("Nebula.Debug.Log works!\n");
+
+            // Test properties
+            TestProperty testProp0 = new TestProperty();
+            PropertyManager.Instance.RegisterProperty(testProp0);
+
+            Entity entity = new Entity();
+            entity.AddProperty(testProp0);
+
+
+            PropertyManager.Instance.PrintAllProperties();
         }
     }
 }

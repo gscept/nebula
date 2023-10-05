@@ -17,6 +17,10 @@ fips_begin_sharedlib(NebulaEngine)
     fips_dir(NebulaEngine/engine)
         fips_files(
             Api.cs
+			Entity.cs
+			Component.cs
+			Property.cs
+			PropertyManager.cs
             ConsoleHook.cs
         )
     fips_dir(NebulaEngine/xna)

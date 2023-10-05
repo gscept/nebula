@@ -110,15 +110,18 @@ MonoServer::Open()
 
 	mono_config_parse(NULL);
 
-	if (debuggerEnabled && waitForDebugger)
-	{
-		static const char* options[] = {
-			"--debugger-agent=address=0.0.0.0:55555,transport=dt_socket,server=y",
-			"--soft-breakpoints",
-			// "--trace"
-		};
-		mono_jit_parse_options(sizeof(options) / sizeof(char*), (char**)options);
-	}
+    if (debuggerEnabled)
+    {
+        if (waitForDebugger)
+        {
+            static const char* options[] = {
+                "--debugger-agent=address=0.0.0.0:55555,transport=dt_socket,server=y",
+                "--soft-breakpoints",
+                // "--trace"
+            };
+            mono_jit_parse_options(sizeof(options) / sizeof(char*), (char**)options);
+        }
+    }
 
     // TODO: We should bundle release with the needed libraries and configs for mono
 #if (__WIN32__)
@@ -130,6 +133,11 @@ MonoServer::Open()
 #error "MONO NOT YET SUPPORTED ON PROVIDED PLATFORM"
 #endif
 
+    if (debuggerEnabled)
+    {
+        mono_debug_init(MONO_DEBUG_FORMAT_MONO);
+    }
+
 	// Intialize JIT runtime
 	this->domain = mono_jit_init("Nebula Mono Subsystem");
 	if (!domain)
@@ -138,11 +146,10 @@ MonoServer::Open()
 		return false;
 	}
 
-	if (debuggerEnabled)
-	{
-		mono_debug_init(MONO_DEBUG_FORMAT_MONO);
-		mono_debug_domain_create(this->domain);
-	}
+    if (debuggerEnabled)
+    {
+        mono_debug_domain_create(this->domain);
+    }
 
 	mono_trace_set_log_handler(Mono::N_Log, nullptr);
 	mono_trace_set_print_handler(Mono::N_Print);
