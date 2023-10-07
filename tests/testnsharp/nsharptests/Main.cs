@@ -14,6 +14,58 @@ namespace NST
         public Mathf.Vector3 v;
     }
 
+    class AudioEmitterProperty : Property
+    {
+        public bool autoplay;
+        public bool loop;
+        public float volume;
+        public float pitch;
+
+        public override void OnActivate()
+        {
+            base.OnActivate();
+
+            // Do on activate stuff
+        }
+
+        public override void OnMessage(in Msg msg)
+        {
+
+        }
+
+        public override void OnBeginFrame()
+        {
+            base.OnBeginFrame();
+
+            Mathf.Matrix t = this.Entity.GetTransform();
+            AudioEmitterProperty prop = this.Entity.GetProperty<AudioEmitterProperty>();
+
+            // Do on frame stuff
+        }
+
+        public override System.Type[] AcceptedMessages()
+        {
+            return new[]
+            {
+                    typeof(PlayAudioMessage)
+                };
+        }
+
+        public override Nebula.Game.Events[] AcceptedEvents()
+        {
+            return new[] {
+                Nebula.Game.Events.OnActivate,
+                Nebula.Game.Events.OnFrame
+            };
+        }
+    }
+
+    public class PlayAudioMessage : Msg
+    {
+        public float volume;
+        public bool looping;
+    }
+
     public class Tests
     {
         public class InternalCalls
@@ -66,12 +118,15 @@ namespace NST
             Console.WriteLine("Console.WriteLine works!");
             Nebula.Debug.Log("Nebula.Debug.Log works!\n");
 
-            // Test properties
+
             TestProperty testProp0 = new TestProperty();
             PropertyManager.Instance.RegisterProperty(testProp0);
 
             Entity entity = new Entity();
             entity.AddProperty(testProp0);
+
+            World world = Nebula.Game.World.Get(World.DEFAULT_WORLD);
+            world.RegisterEntity(entity);
 
 
             PropertyManager.Instance.PrintAllProperties();

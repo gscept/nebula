@@ -17,6 +17,9 @@ namespace Nebula
                 Console.SetOut(consoleWriter);
             }
 
+            Game.PropertyManager propertyManager = Game.PropertyManager.Instance;
+
+
 #if DEBUG
             Console.WriteLine("[NSharp] Nebula.AppEntry.Main() returned with code 0");
 #endif

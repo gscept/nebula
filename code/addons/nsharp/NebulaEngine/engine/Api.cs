@@ -27,18 +27,6 @@ namespace Nebula
 
     namespace Game
     {
-        public class Msg
-        {
-            // empty
-        }
-
-        // ----- Example ------
-        public class PlayAudioMessage : Msg
-        {
-            public float volume;
-            public bool looping;
-        }
-
         class NebulaApiV1
         {
             // ...

@@ -72,7 +72,12 @@ namespace Nebula
 
             public override string ToString()
             {
-                return GetType().ToString() + " -> Entity: " + entity.ToString();
+                if (entity != null)
+                {
+                    return GetType().ToString() + " -> Entity: " + entity.ToString();
+                }
+
+                return GetType().ToString();
             }
 
             public virtual void OnActivate() { }
@@ -81,53 +86,5 @@ namespace Nebula
             public virtual void OnFrame() { }
             public virtual void OnEndFrame() { }
         }
-
-        // ------ Example ---------
-        class AudioEmitterProperty : Property
-        {
-            public bool autoplay;
-            public bool loop;
-            public float volume;
-            public float pitch;
-
-            public override void OnActivate()
-            {
-                base.OnActivate();
-
-                // Do on activate stuff
-            }
-
-            public override void OnMessage(in Msg msg)
-            {
-                
-            }
-
-            public override void OnBeginFrame()
-            {
-                base.OnBeginFrame();
-
-                Mathf.Matrix t = this.Entity.GetTransform();
-                AudioEmitterProperty prop = this.Entity.GetProperty<AudioEmitterProperty>();
-
-                // Do on frame stuff
-            }
-
-            public override System.Type[] AcceptedMessages()
-            {
-                return new[]
-                {
-                    typeof(PlayAudioMessage)
-                };
-            }
-
-            public override Nebula.Game.Events[] AcceptedEvents()
-            {
-                return new[] {
-                Nebula.Game.Events.OnActivate,
-                Nebula.Game.Events.OnFrame
-            };
-            }
-        }
-
     }
 }

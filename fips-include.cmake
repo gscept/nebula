@@ -144,6 +144,7 @@ IF (USE_MONO)
     # Ignore policy that disallows environment variables
     cmake_policy(SET CMP0074 NEW)
     find_package(MONO REQUIRED)
+    find_package(Dotnet REQUIRED)
     cmake_policy(POP)
 ENDIF (USE_MONO)
 

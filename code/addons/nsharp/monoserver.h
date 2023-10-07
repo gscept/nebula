@@ -20,6 +20,7 @@
 #include "util/dictionary.h"
 #include "mono/utils/mono-forward.h"
 #include "monobindings.h"
+#include "system/library.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
@@ -50,6 +51,10 @@ public:
 	/// Check if mono server is open
 	bool const IsOpen();
 private:
+    /// load the host fxr library and get exported function addresses
+    bool LoadHostFxr();
+    void CloseHostFxr();
+
 	MonoDomain* domain;
 
     Mono::MonoBindings bindings;
@@ -61,6 +66,7 @@ private:
 	bool waitForDebugger;
 
 	bool isOpen;
+    System::Library hostfxr;
 };
 
 } // namespace Scripting

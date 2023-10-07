@@ -9,6 +9,7 @@ fips_begin_sharedlib(NebulaEngine)
     fips_dir(NebulaEngine/)
         fips_files(
             Main.cs
+            runtimeconfig.template.json
         )
     fips_dir(NebulaEngine/util)
         fips_files(
@@ -21,6 +22,8 @@ fips_begin_sharedlib(NebulaEngine)
 			Component.cs
 			Property.cs
 			PropertyManager.cs
+            World.cs
+            Msg.cs
             ConsoleHook.cs
         )
     fips_dir(NebulaEngine/xna)
@@ -48,18 +51,16 @@ target_compile_options(NebulaEngine
     PRIVATE "/langversion:7.2"
     PRIVATE "/unsafe"
 )
+
 set_target_properties(NebulaEngine PROPERTIES 
-    VS_DOTNET_REFERENCES "System.Runtime.Serialization"
-)
-# we need to convert .pdb to .mdb files to load debugging symbols correctly
-add_custom_command(TARGET NebulaEngine
-    COMMAND ${MONO_ROOT}/bin/pdb2mdb ${FIPS_PROJECT_DEPLOY_DIR}/NebulaEngine${CMAKE_SHARED_LIBRARY_SUFFIX}
-    VERBATIM
-    POST_BUILD
+    DOTNET_SDK "Microsoft.NET.Sdk"    
+    DOTNET_TARGET_FRAMEWORK "net7.0"
 )
 
+add_custom_target(intertarget DEPENDS NebulaEngine)
+
 fips_begin_lib(nsharp)
-    fips_libs(foundation application ${MONO_LIBRARIES})
+    fips_libs(foundation application ${MONO_LIBRARIES} ${DOTNET_NETHOST_LIBRARIES})
     fips_deps(NebulaEngine)
 
     fips_files(
@@ -99,10 +100,13 @@ fips_begin_lib(nsharp)
             entity.cc
         )
 fips_end_lib()
-target_include_directories(nsharp PUBLIC ${CODE_ROOT}/foundation ${MONO_INCLUDE_DIRS})
+
+target_include_directories(nsharp PUBLIC ${CODE_ROOT}/foundation ${MONO_INCLUDE_DIRS} ${DOTNET_NETHOST_INCLUDE_DIR})
 target_precompile_headers(nsharp REUSE_FROM foundation)
 target_link_options(nsharp PUBLIC "/WHOLEARCHIVE:nsharp")
 target_compile_options(nsharp PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+
+FILE(COPY ${DOTNET_NETHOST_DLL} DESTINATION ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/)
 
 FILE(COPY ${MONO_ROOT}/bin/mono-2.0-sgen.dll DESTINATION ${FIPS_DEPLOY_DIR}/${CMAKE_PROJECT_NAME}/${FIPS_CONFIG}/)
 IF(N_DEBUG_SYMBOLS)

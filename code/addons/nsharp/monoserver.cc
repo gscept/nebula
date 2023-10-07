@@ -15,6 +15,16 @@
 #include "mono/utils/mono-logger.h"
 #include "debug/debugserver.h"
 #include "monobindings.h"
+#include "util/commandlineargs.h"
+
+#include <string>
+#include <locale>
+#include <codecvt>
+
+// .net apphost includes
+#include "nethost.h"
+#include "coreclr_delegates.h"
+#include "hostfxr.h"
 
 using namespace IO;
 
@@ -25,6 +35,25 @@ __ImplementSingleton(Scripting::MonoServer);
 
 using namespace Util;
 using namespace IO;
+
+struct DotNET_API
+{
+    // clang-format off
+    hostfxr_initialize_for_runtime_config_fn InitConfig             = nullptr;
+    hostfxr_initialize_for_dotnet_command_line_fn InitCommandLine   = nullptr;
+    hostfxr_get_runtime_delegate_fn GetDelegate                     = nullptr;
+    hostfxr_close_fn Close                                          = nullptr;
+    // clang-format on
+
+    // validate that the api is correctly loaded.
+    bool
+    Validate()
+    {
+        return InitConfig && InitCommandLine && GetDelegate && Close;
+    }
+};
+
+static DotNET_API api;
 
 //------------------------------------------------------------------------------
 /**
@@ -86,6 +115,122 @@ ScriptingCalloc(size_t count, size_t size)
 	void* ptr = Memory::Alloc(Memory::HeapType::ScriptingHeap, bytes);
 	memset(ptr, 0, bytes);
 	return ptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Using the nethost library, discover the location of hostfxr and get exports
+*/
+bool
+MonoServer::LoadHostFxr()
+{
+    // Pre-allocate a large buffer for the path to hostfxr
+    char_t buffer[NEBULA_MAXPATH];
+    size_t buffer_size = sizeof(buffer) / sizeof(char_t);
+    int rc = get_hostfxr_path(buffer, &buffer_size, nullptr);
+    if (rc != 0)
+        return false;
+
+    char path[NEBULA_MAXPATH];
+    // Convert wide char path to const char*
+    sprintf(path, "%ws", buffer);
+
+    // Load hostfxr and get desired exports
+    this->hostfxr.SetPath(path);
+    if (!this->hostfxr.Load())
+        return false;
+
+    api = {
+        .InitConfig=(hostfxr_initialize_for_runtime_config_fn)this->hostfxr.GetExport("hostfxr_initialize_for_runtime_config"),
+        .InitCommandLine=(hostfxr_initialize_for_dotnet_command_line_fn)this->hostfxr.GetExport("hostfxr_initialize_for_dotnet_command_line"),
+        .GetDelegate=(hostfxr_get_runtime_delegate_fn)this->hostfxr.GetExport("hostfxr_get_runtime_delegate"),
+        .Close=(hostfxr_close_fn)this->hostfxr.GetExport("hostfxr_close")
+    };
+
+    return api.Validate();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MonoServer::CloseHostFxr()
+{
+    this->hostfxr.Close();
+    api = {};
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+std::wstring
+ToWideString(Util::String const& str)
+{
+#ifdef _WIN32
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+#else
+    #error "Not yet implemented on this platform! Assumptions have been made for Windows which cannot be made for other platforms.
+#endif
+    std::wstring ret = convert.from_bytes(str.AsCharPtr());
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+LoadAssemblyAndGetExport(IO::URI const& configPath)
+{
+    // Load .NET Core
+    void* load_assembly_and_get_function_pointer = nullptr;
+    hostfxr_handle cxt = nullptr;
+    Util::String const path = configPath.GetHostAndLocalPath();
+
+    int rc = api.InitConfig(ToWideString(path).c_str(), nullptr, &cxt);
+    if ((rc != 0 || cxt == nullptr))
+    {
+        n_error("Failed to initialize .NET Core!");
+        api.Close(cxt);
+    }
+    // Get the load assembly function pointer
+    rc = api.GetDelegate(cxt, hdt_load_assembly_and_get_function_pointer, &load_assembly_and_get_function_pointer);
+    if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
+    {
+        n_error("Failed to get delegate when loading dotnet assembly!");
+    }
+
+    api.Close(cxt);
+    return (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+LoadAssemblyAndGetExport(Util::CommandLineArgs const& args)
+{
+    // Load .NET Core
+    void* load_assembly_and_get_function_pointer = nullptr;
+    hostfxr_handle cxt = nullptr;
+    
+    // TEMP
+    const char_t* argv[] = {L"C:/Users/fredrik/git/nebula_workspace/fips-deploy/nebula/vulkan-win64-vstudio-debug/NebulaEngine.dll"};
+
+    int rc = api.InitCommandLine(1, argv, nullptr, &cxt);
+    if ((rc != 0 || cxt == nullptr))
+    {
+        n_error("Failed to initialize .NET Core!");
+        api.Close(cxt);
+    }
+    // Get the load assembly function pointer
+    rc = api.GetDelegate(cxt, hdt_load_assembly_and_get_function_pointer, &load_assembly_and_get_function_pointer);
+    if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
+    {
+        n_error("Failed to get delegate when loading dotnet assembly!");
+    }
+
+    api.Close(cxt);
+    return (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
 }
 
 //------------------------------------------------------------------------------
@@ -187,6 +332,20 @@ MonoServer::Open()
 
 	mono_runtime_invoke(entryPoint, NULL, NULL, NULL);
 
+    // Host custom .net runtime
+    bool res = this->LoadHostFxr();
+    n_assert(res);
+
+    const IO::URI configPath = ("bin:NebulaEngine.runtimeconfig.json");
+    load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
+
+    //Util::CommandLineArgs clArgs;
+    //load_assembly_and_get_function_pointer = (load_assembly_and_get_function_pointer_fn)LoadAssemblyAndGetExport(clArgs);
+
+    load_assembly_and_get_function_pointer = (load_assembly_and_get_function_pointer_fn)LoadAssemblyAndGetExport(configPath);
+
+    n_assert2(load_assembly_and_get_function_pointer != nullptr, "Failure: LoadAssemblyAndGetExport()");
+
 	this->isOpen = true;
 	return true;
 }
@@ -201,6 +360,8 @@ MonoServer::Close()
     
 	// shutdown mono runtime
 	mono_jit_cleanup(this->domain);
+
+    this->CloseHostFxr();
 
 	this->isOpen = false;
 }

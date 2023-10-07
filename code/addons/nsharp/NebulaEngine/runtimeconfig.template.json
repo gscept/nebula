@@ -1,0 +1,9 @@
+{
+  "configProperties": {
+    "System.Globalization.UseNls": true,
+    "System.Net.DisableIPv6": true,
+    "System.GC.Concurrent": false,
+    "System.Threading.ThreadPool.MinThreads": "4",
+    "System.Threading.ThreadPool.MaxThreads": "25"
+  }
+}

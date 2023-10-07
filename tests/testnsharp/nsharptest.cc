@@ -77,7 +77,7 @@ NSharpTest::Run()
 {
     Ptr<MonoServer> monoServer = MonoServer::Create();
     monoServer->SetDebuggingEnabled(true);
-    monoServer->WaitForDebuggerToConnect(true);
+    monoServer->WaitForDebuggerToConnect(false);
     monoServer->Open();
 
     Scripting::MonoAssemblyId assemblyId = monoServer->Load("bin:NSharpTests.dll");
