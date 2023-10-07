@@ -64,9 +64,9 @@ NEBULA_EXPORT void TestArrayOfInt(Util::Array<int> const& arr)
 void
 SetupInternalCalls()
 {
-    mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec2", &PassVec2);
-    mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec3", &PassVec3);
-    mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec4", &PassVec4);
+    //mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec2", &PassVec2);
+    //mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec3", &PassVec3);
+    //mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec4", &PassVec4);
 }
 
 //------------------------------------------------------------------------------
@@ -80,8 +80,8 @@ NSharpTest::Run()
     monoServer->WaitForDebuggerToConnect(false);
     monoServer->Open();
 
-    Scripting::MonoAssemblyId assemblyId = monoServer->Load("bin:NSharpTests.dll");
-    bool assemblyLoaded = assemblyId != Scripting::MonoAssemblyId::Invalid();
+    Scripting::NSharpAssemblyId assemblyId = monoServer->LoadAssembly("bin:NSharpTests.dll");
+    bool assemblyLoaded = assemblyId != Scripting::NSharpAssemblyId::Invalid();
     VERIFY(assemblyLoaded);
     if (!assemblyLoaded)
     {
@@ -89,25 +89,25 @@ NSharpTest::Run()
         return;
     }
 
-    VERIFY(0 == monoServer->Exec(assemblyId, "NST.AppEntry::Main()"));
+    VERIFY(0 == monoServer->ExecUnmanagedCall(assemblyId, "NST.AppEntry::Main()"));
 
-    SetupInternalCalls();
-    VERIFY(0 == monoServer->Exec(assemblyId, "NST.Tests/InternalCalls::RunTests()"));
-
-    Math::vec2 const v2 = { 1.0f, 2.0f };
-    VERIFY(reg_vec2 == v2);
-
-    Math::vec3 const v3 = { 1.0f, 2.0f, 3.0f };
-    VERIFY(reg_vec3 == v3);
-
-    Math::vec4 const v4 = { 1.0f, 2.0f, 3.0f, 4.0f };
-    VERIFY(reg_vec4 == v4);
-
-    VERIFY(0 == monoServer->Exec(assemblyId, "NST.Tests/DLLImportCalls::RunTests()"));
-
-    VERIFY(reg_string == "This is a C# string!\n");
-    VERIFY(reg_string.Length() == 21); // make sure we're not just reading from the heap pointer...
-    n_printf(reg_string.AsCharPtr());
+    //SetupInternalCalls();
+    //VERIFY(0 == monoServer->ExecUnmanagedCall(assemblyId, "NST.Tests/InternalCalls::RunTests()"));
+    //
+    //Math::vec2 const v2 = { 1.0f, 2.0f };
+    //VERIFY(reg_vec2 == v2);
+    //
+    //Math::vec3 const v3 = { 1.0f, 2.0f, 3.0f };
+    //VERIFY(reg_vec3 == v3);
+    //
+    //Math::vec4 const v4 = { 1.0f, 2.0f, 3.0f, 4.0f };
+    //VERIFY(reg_vec4 == v4);
+    //
+    //VERIFY(0 == monoServer->ExecUnmanagedCall(assemblyId, "NST.Tests/DLLImportCalls::RunTests()"));
+    //
+    //VERIFY(reg_string == "This is a C# string!\n");
+    //VERIFY(reg_string.Length() == 21); // make sure we're not just reading from the heap pointer...
+    //n_printf(reg_string.AsCharPtr());
 
     //VERIFY(testArrayOfIntResult);
 

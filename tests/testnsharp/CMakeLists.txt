@@ -19,11 +19,19 @@ set_target_properties(NSharpTests PROPERTIES
     DOTNET_TARGET_FRAMEWORK "net7.0"
 )
 
+IF(WIN32)
+    set_target_properties(NSharpTests PROPERTIES VS_GLOBAL_GenerateRuntimeConfigurationFiles "true")
+ENDIF(WIN32)
+
 nebula_begin_app(testnsharp windowed)
 fips_src(. *.* GROUP test)
 
 fips_deps(foundation testbase nsharp)
 target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]])
+
+nebula_add_script_library(NSharpTests)
+
 nebula_end_app()
+
 
 ENDIF(USE_MONO)

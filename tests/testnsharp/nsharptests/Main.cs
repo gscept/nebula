@@ -1,6 +1,8 @@
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using ConsoleHook;
 using Mathf;
 using Nebula.Game;
 
@@ -112,12 +114,14 @@ namespace NST
 
     public class AppEntry
     {
+        [UnmanagedCallersOnly]
         static public void Main()
         {
+            Nebula.Runtime.Setup();
+
             Console.Write("Console.Write works!\n");
             Console.WriteLine("Console.WriteLine works!");
             Nebula.Debug.Log("Nebula.Debug.Log works!\n");
-
 
             TestProperty testProp0 = new TestProperty();
             PropertyManager.Instance.RegisterProperty(testProp0);
@@ -127,7 +131,6 @@ namespace NST
 
             World world = Nebula.Game.World.Get(World.DEFAULT_WORLD);
             world.RegisterEntity(entity);
-
 
             PropertyManager.Instance.PrintAllProperties();
         }

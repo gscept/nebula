@@ -245,6 +245,13 @@ macro(add_shaders_intern)
     endif()
 endmacro()
 
+macro(nebula_add_script_library target)
+    fips_deps(nsharp ${target})
+    IF(WIN32)
+        set_target_properties(${CurTargetName} PROPERTIES VS_GLOBAL_ResolveNuGetPackages "false")
+    ENDIF(WIN32)
+endmacro()
+
 macro(nebula_add_nidl)
     SOURCE_GROUP("NIDL Files" FILES ${ARGN})
     set(target_has_nidl 1)

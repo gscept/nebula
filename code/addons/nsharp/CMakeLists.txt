@@ -57,7 +57,9 @@ set_target_properties(NebulaEngine PROPERTIES
     DOTNET_TARGET_FRAMEWORK "net7.0"
 )
 
-add_custom_target(intertarget DEPENDS NebulaEngine)
+IF(WIN32)
+    set_target_properties(NebulaEngine PROPERTIES VS_GLOBAL_GenerateRuntimeConfigurationFiles "true")
+ENDIF(WIN32)
 
 fips_begin_lib(nsharp)
     fips_libs(foundation application ${MONO_LIBRARIES} ${DOTNET_NETHOST_LIBRARIES})
@@ -100,6 +102,10 @@ fips_begin_lib(nsharp)
             entity.cc
         )
 fips_end_lib()
+
+IF(WIN32)
+    set_target_properties(nsharp PROPERTIES VS_GLOBAL_ResolveNuGetPackages "false")
+ENDIF(WIN32)
 
 target_include_directories(nsharp PUBLIC ${CODE_ROOT}/foundation ${MONO_INCLUDE_DIRS} ${DOTNET_NETHOST_INCLUDE_DIR})
 target_precompile_headers(nsharp REUSE_FROM foundation)

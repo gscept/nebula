@@ -18,15 +18,15 @@
 #include "io/uri.h"
 #include "util/arrayallocator.h"
 #include "util/dictionary.h"
-#include "mono/utils/mono-forward.h"
-#include "monobindings.h"
+//#include "monobindings.h"
 #include "system/library.h"
+#include "monoconfig.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
 {
 
-ID_16_TYPE(MonoAssemblyId);
+ID_16_TYPE(NSharpAssemblyId);
 
 class MonoServer : public Core::RefCounted
 {
@@ -45,21 +45,21 @@ public:
 	void SetDebuggingEnabled(bool enabled);
 	void WaitForDebuggerToConnect(bool enabled);
 	/// Load mono exe or DLL at path
-	MonoAssemblyId Load(IO::URI const& uri);
-	/// Execute function in an assembly. This is not very efficient and should not be used in place of mono delegates
-	int Exec(MonoAssemblyId assembly, Util::String const& function);
+	NSharpAssemblyId LoadAssembly(IO::URI const& uri);
+	/// Execute function in an assembly. This is not very efficient and should not be used in place of delegates
+	int ExecUnmanagedCall(NSharpAssemblyId assembly, Util::String const& function);
 	/// Check if mono server is open
 	bool const IsOpen();
 private:
+    struct Assembly;
+
     /// load the host fxr library and get exported function addresses
     bool LoadHostFxr();
     void CloseHostFxr();
 
-	MonoDomain* domain;
+    //Mono::MonoBindings bindings;
 
-    Mono::MonoBindings bindings;
-
-	Util::ArrayAllocator<MonoAssembly*> assemblies;
+    Util::ArrayAllocator<Assembly*> assemblies;
 	Util::Dictionary<Util::String, uint32_t> assemblyTable;
 
     bool debuggerEnabled;
