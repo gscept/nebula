@@ -1,4 +1,4 @@
-IF(USE_MONO)
+IF(USE_DOTNET)
 
 fips_begin_sharedlib(NSharpTests)
     enable_language(CSharp)
@@ -34,4 +34,4 @@ nebula_add_script_library(NSharpTests)
 nebula_end_app()
 
 
-ENDIF(USE_MONO)
+ENDIF(USE_DOTNET)

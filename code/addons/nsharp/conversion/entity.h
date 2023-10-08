@@ -1,24 +1,15 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Mono::Entity
+	@file nsharp/conversion/entity.h
 
 	(C) 2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "monoconfig.h"
+#include "nsharp/nsconfig.h"
 #include "game/entity.h"
-#include "mono/metadata/image.h"
-#include "mono/metadata/object.h"
 
-namespace Mono
+namespace Scripting
 {
 
-class Entity
-{
-public:
-	static void Setup(MonoImage* image);
-	static MonoObject* Convert(Game::Entity entity);
-}; // namespace Mono
-
-}
+}// namespace Scripting

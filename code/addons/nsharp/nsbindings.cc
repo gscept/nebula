@@ -1,52 +1,13 @@
 //------------------------------------------------------------------------------
-//  monobindings.cc
+//  nsbindings.cc
 //  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "monobindings.h"
+#include "nsbindings.h"
 #include "core/debug.h"
-#include "mono/metadata/loader.h"
-#include "mono/jit/jit.h"
-#include "mono/metadata/assembly.h"
-#include "mono/metadata/debug-helpers.h"
-#include "conversion/vector2.h"
-#include "conversion/vector3.h"
-#include "conversion/vector4.h"
 
-namespace Mono
+namespace Scripting
 {
-
-MonoBindings::MonoBindings(MonoImage* image) :
-    image(image)
-{
-}
-
-MonoBindings::~MonoBindings()
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MonoBindings::Initialize()
-{
-    // Setup math class conversions
-    Mono::Vector2::Setup(this->image);
-    Mono::Vector3::Setup(this->image);
-    Mono::Vector4::Setup(this->image);
-
-    // Setup calls between C/C++/C#
-	MonoBindings::SetupInternalCalls();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MonoBindings::SetupInternalCalls()
-{
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -91,4 +52,4 @@ N_Assert(bool value)
     n_assert(value);
 }
 
-} // namespace Mono
+} // namespace Scripting

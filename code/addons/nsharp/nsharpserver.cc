@@ -1,13 +1,13 @@
 //------------------------------------------------------------------------------
-//  monoserver.cc
+//  nsharpserver.cc
 //  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "monoserver.h"
+#include "nsharpserver.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "debug/debugserver.h"
-#include "monobindings.h"
+#include "nsbindings.h"
 #include "util/commandlineargs.h"
 
 #include <string>
@@ -23,8 +23,8 @@ using namespace IO;
 
 namespace Scripting
 {
-__ImplementClass(Scripting::MonoServer, 'MONO', Core::RefCounted);
-__ImplementSingleton(Scripting::MonoServer);
+__ImplementClass(Scripting::NSharpServer, 'N#Sv', Core::RefCounted);
+__ImplementSingleton(Scripting::NSharpServer);
 
 using namespace Util;
 using namespace IO;
@@ -37,7 +37,7 @@ enum HostFxrStatusCode
     Success_DifferentRuntimeProperties = 0x00000002,
 };
 
-struct MonoServer::Assembly
+struct NSharpServer::Assembly
 {
     Util::String name;    // assembly name
     std::wstring dllPath; // path to dll
@@ -66,7 +66,7 @@ static DotNET_API api;
 //------------------------------------------------------------------------------
 /**
 */
-MonoServer::MonoServer()
+NSharpServer::NSharpServer()
     : isOpen(false),
       waitForDebugger(false),
       debuggerEnabled(false)
@@ -77,7 +77,7 @@ MonoServer::MonoServer()
 //------------------------------------------------------------------------------
 /**
 */
-MonoServer::~MonoServer()
+NSharpServer::~NSharpServer()
 {
     if (this->IsOpen())
     {
@@ -130,7 +130,7 @@ ScriptingCalloc(size_t count, size_t size)
     Using the nethost library, discover the location of hostfxr and get exports
 */
 bool
-MonoServer::LoadHostFxr()
+NSharpServer::LoadHostFxr()
 {
     // Pre-allocate a large buffer for the path to hostfxr
     char_t buffer[NEBULA_MAXPATH];
@@ -164,7 +164,7 @@ MonoServer::LoadHostFxr()
 /**
 */
 void
-MonoServer::CloseHostFxr()
+NSharpServer::CloseHostFxr()
 {
     this->hostfxr.Close();
     api = {};
@@ -248,7 +248,7 @@ LoadAssemblyAndGetExport(Util::CommandLineArgs const& args)
 /**
 */
 bool
-MonoServer::Open()
+NSharpServer::Open()
 {
     n_assert(!this->IsOpen());
     // Host custom .net runtime
@@ -292,7 +292,7 @@ MonoServer::Open()
 /**
 */
 void
-MonoServer::Close()
+NSharpServer::Close()
 {
     n_assert(this->IsOpen());
 
@@ -305,7 +305,7 @@ MonoServer::Close()
 /**
 */
 void
-MonoServer::SetDebuggingEnabled(bool enabled)
+NSharpServer::SetDebuggingEnabled(bool enabled)
 {
     this->debuggerEnabled = enabled;
 }
@@ -314,7 +314,7 @@ MonoServer::SetDebuggingEnabled(bool enabled)
 /**
 */
 void
-MonoServer::WaitForDebuggerToConnect(bool enabled)
+NSharpServer::WaitForDebuggerToConnect(bool enabled)
 {
     this->waitForDebugger = enabled;
 }
@@ -323,7 +323,7 @@ MonoServer::WaitForDebuggerToConnect(bool enabled)
 /**
 */
 NSharpAssemblyId
-MonoServer::LoadAssembly(IO::URI const& uri)
+NSharpServer::LoadAssembly(IO::URI const& uri)
 {
     Util::String configPath = uri.GetHostAndLocalPath();
     configPath.StripFileExtension();
@@ -334,7 +334,7 @@ MonoServer::LoadAssembly(IO::URI const& uri)
 
     if (assembly->GetExport == nullptr)
     {
-        n_warning("Could not load Mono assembly!");
+        n_warning("Could not load .NET assembly!");
         delete assembly;
         return InvalidIndex;
     }
@@ -354,7 +354,7 @@ MonoServer::LoadAssembly(IO::URI const& uri)
 	Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
 */
 int
-MonoServer::ExecUnmanagedCall(NSharpAssemblyId assemblyId, Util::String const& function)
+NSharpServer::ExecUnmanagedCall(NSharpAssemblyId assemblyId, Util::String const& function)
 {
     if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
     {
@@ -404,7 +404,7 @@ MonoServer::ExecUnmanagedCall(NSharpAssemblyId assemblyId, Util::String const& f
 /**
 */
 bool const
-MonoServer::IsOpen()
+NSharpServer::IsOpen()
 {
     return this->isOpen;
 }

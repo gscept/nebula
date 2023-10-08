@@ -108,12 +108,15 @@ namespace NST
             public static extern void PassString([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Util.StringMarshaler))] string val);
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfInt")]
+            [SuppressGCTransition]
             public static extern void TestArrayOfInt(int[] arr, int size);
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfVec3")]
+            [SuppressGCTransition]
             public static extern void TestArrayOfVec3(Mathf.Vector3[] arr, int size);
 
             [DllImport("__Internal", EntryPoint = "TestArrayOfVec4")]
+            [SuppressGCTransition] // This attribute can be used to avoid transitioning the GC, saving on performance. There are rules however: https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.suppressgctransitionattribute?view=net-7.0
             public static extern void TestArrayOfVec4(Mathf.Vector4[] arr, int size);
 
             [UnmanagedCallersOnly]
@@ -170,7 +173,6 @@ namespace NST
             PropertyManager.Instance.PrintAllProperties();
 
             Tests.Verify(1 == 1);
-            Tests.Verify(1 == 0);
         }
     }
 }

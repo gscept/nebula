@@ -137,16 +137,15 @@ endif()
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
-option(USE_MONO "Build with mono support" OFF)
+option(USE_DOTNET "Build with .NET support" OFF)
 
-IF (USE_MONO)
+IF (USE_DOTNET)
     cmake_policy(PUSH)
     # Ignore policy that disallows environment variables
     cmake_policy(SET CMP0074 NEW)
-    find_package(MONO REQUIRED)
     find_package(Dotnet REQUIRED)
     cmake_policy(POP)
-ENDIF (USE_MONO)
+ENDIF (USE_DOTNET)
 
 macro(nebula_flatc root)
     string(COMPARE EQUAL ${root} "SYSTEM" use_system)

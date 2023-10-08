@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Scripting::MonoServer
+    @class Scripting::NSharpServer
   
-    Mono backend for the Nebula scripting subsystem.
+    C# backend for the Nebula scripting subsystem.
   
     Main goals for the nSharp library:
     Fast compilation times.
@@ -18,9 +18,8 @@
 #include "io/uri.h"
 #include "util/arrayallocator.h"
 #include "util/dictionary.h"
-//#include "monobindings.h"
 #include "system/library.h"
-#include "monoconfig.h"
+#include "nsconfig.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
@@ -28,15 +27,15 @@ namespace Scripting
 
 ID_16_TYPE(NSharpAssemblyId);
 
-class MonoServer : public Core::RefCounted
+class NSharpServer : public Core::RefCounted
 {
-    __DeclareClass(MonoServer);
-    __DeclareSingleton(MonoServer);
+    __DeclareClass(NSharpServer);
+    __DeclareSingleton(NSharpServer);
 public:
     /// constructor
-	MonoServer();
+	NSharpServer();
     /// destructor
-    virtual ~MonoServer();
+    virtual ~NSharpServer();
     /// open the script server
     bool Open();
     /// close the script server
@@ -44,11 +43,11 @@ public:
     /// enable debugging. this needs to be called before Open()
 	void SetDebuggingEnabled(bool enabled);
 	void WaitForDebuggerToConnect(bool enabled);
-	/// Load mono exe or DLL at path
+	/// Load dotnet exe or DLL at path
 	NSharpAssemblyId LoadAssembly(IO::URI const& uri);
 	/// Execute function in an assembly. This is not very efficient and should not be used in place of delegates
 	int ExecUnmanagedCall(NSharpAssemblyId assembly, Util::String const& function);
-	/// Check if mono server is open
+	/// Check if server is open
 	bool const IsOpen();
 private:
     struct Assembly;
@@ -56,8 +55,6 @@ private:
     /// load the host fxr library and get exported function addresses
     bool LoadHostFxr();
     void CloseHostFxr();
-
-    //Mono::MonoBindings bindings;
 
     Util::ArrayAllocator<Assembly*> assemblies;
 	Util::Dictionary<Util::String, uint32_t> assemblyTable;

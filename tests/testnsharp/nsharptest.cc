@@ -4,10 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "nsharptest.h"
-#include "nsharp/monoserver.h"
-#include "nsharp/conversion/vector2.h"
-#include "nsharp/conversion/vector3.h"
-#include "nsharp/conversion/vector4.h"
+#include "nsharp/nsharpserver.h"
 
 using namespace Scripting;
 
@@ -137,12 +134,12 @@ NSharpTest::Run()
     verifyManagedCallback = [this](bool success, const char* filePath, int lineNumber)
     { this->Verify(success, "<Managed Function Test>", filePath, lineNumber); };
 
-    Ptr<MonoServer> monoServer = MonoServer::Create();
-    monoServer->SetDebuggingEnabled(true);
-    monoServer->WaitForDebuggerToConnect(false);
-    monoServer->Open();
+    Ptr<NSharpServer> nsServer = NSharpServer::Create();
+    nsServer->SetDebuggingEnabled(true);
+    nsServer->WaitForDebuggerToConnect(false);
+    nsServer->Open();
 
-    Scripting::NSharpAssemblyId assemblyId = monoServer->LoadAssembly("bin:NSharpTests.dll");
+    Scripting::NSharpAssemblyId assemblyId = nsServer->LoadAssembly("bin:NSharpTests.dll");
     bool assemblyLoaded = assemblyId != Scripting::NSharpAssemblyId::Invalid();
     VERIFY(assemblyLoaded);
     if (!assemblyLoaded)
@@ -151,9 +148,9 @@ NSharpTest::Run()
         return;
     }
 
-    VERIFY(0 == monoServer->ExecUnmanagedCall(assemblyId, "NST.AppEntry::Main()"));
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.AppEntry::Main()"));
 
-    VERIFY(0 == monoServer->ExecUnmanagedCall(assemblyId, "NST.Tests+VariablePassing::RunTests()"));
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+VariablePassing::RunTests()"));
 
     Math::vec2 const v2 = {1.0f, 2.0f};
     VERIFY(reg_vec2 == v2);
@@ -164,7 +161,7 @@ NSharpTest::Run()
     Math::vec4 const v4 = {1.0f, 2.0f, 3.0f, 4.0f};
     VERIFY(reg_vec4 == v4);
 
-    VERIFY(0 == monoServer->ExecUnmanagedCall(assemblyId, "NST.Tests+DLLImportCalls::RunTests()"));
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+DLLImportCalls::RunTests()"));
 
     VERIFY(reg_string == "This is a C# string!\n");
     VERIFY(reg_string.Length() == 21); // make sure we're not just reading from the heap pointer...

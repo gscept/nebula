@@ -1,35 +1,18 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@file monobindings.h
+	@file nsbindings.h
 
-	Bindings specifically for mono scripting
+	Bindings specifically for C# scripting
 
 	(C) 2019 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "monoconfig.h"
-#include "mono/metadata/object.h"
+#include "nsconfig.h"
 #include "game/entity.h"
-#include "mono/metadata/object-forward.h"
 
-namespace Mono
+namespace Scripting
 {
-
-class MonoBindings
-{
-public:
-	MonoBindings() = default;
-	MonoBindings(MonoImage* image);
-	~MonoBindings();
-
-	void Initialize();
-
-private:
-	static void SetupInternalCalls();
-
-	MonoImage* image = nullptr;
-};
 
 //------------------------------------------------------------------------------
 /**
@@ -51,4 +34,4 @@ NEBULA_EXPORT void N_Log(const char *log_domain, const char *log_level, const ch
 */
 NEBULA_EXPORT void N_Assert(bool value);
 
-} // namespace Mono
+} // namespace Scripting
