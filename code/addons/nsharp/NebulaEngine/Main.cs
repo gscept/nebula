@@ -9,14 +9,15 @@ namespace Nebula
 {
     public class Runtime
     {
-        /// <summary>
-        /// Call to initialize the Nebula C# runtime
-        /// </summary>
-        public static void Setup()
+        /// <summary> Call to initialize the Nebula C# runtime </summary>
+        /// <param name="currentAssembly"> 
+        /// The assembly that is currently executing. You can get this via Assembly.GetExecutingAssembly()
+        /// </param>
+        public static void Setup(Assembly currentAssembly)
         {
-            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), Nebula.Runtime.ImportResolver);
+            NativeLibrary.SetDllImportResolver(currentAssembly, Nebula.Runtime.ImportResolver);
 
-            if (Assembly.GetExecutingAssembly() != typeof(NebulaEngine.AppEntry).Assembly)
+            if (currentAssembly != typeof(NebulaEngine.AppEntry).Assembly)
             {
                 NativeLibrary.SetDllImportResolver(typeof(NebulaEngine.AppEntry).Assembly, Nebula.Runtime.ImportResolver);
             }
@@ -51,7 +52,7 @@ namespace NebulaEngine
         [UnmanagedCallersOnly]
         static public void Main()
         {
-            Nebula.Runtime.Setup();
+            Nebula.Runtime.Setup(Assembly.GetExecutingAssembly());
 
             // Setup console redirect / log hook
             using (var consoleWriter = new ConsoleWriter())
@@ -60,7 +61,7 @@ namespace NebulaEngine
                 consoleWriter.WriteLineEvent += ConsoleEvents.WriteLineFunc;
                 Console.SetOut(consoleWriter);
             }
-            
+
             Nebula.Game.PropertyManager propertyManager = Nebula.Game.PropertyManager.Instance;
             propertyManager.RegisterProperty(new Nebula.Game.Property());
 

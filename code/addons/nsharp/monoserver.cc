@@ -251,7 +251,6 @@ bool
 MonoServer::Open()
 {
     n_assert(!this->IsOpen());
-
     // Host custom .net runtime
     bool res = this->LoadHostFxr();
     n_assert(res);
@@ -352,7 +351,7 @@ MonoServer::LoadAssembly(IO::URI const& uri)
 
 //------------------------------------------------------------------------------
 /**
-	Function should be formatted as: "Namespace.Namespace.Class/NestedClass::Function()"
+	Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
 */
 int
 MonoServer::ExecUnmanagedCall(NSharpAssemblyId assemblyId, Util::String const& function)
@@ -389,7 +388,10 @@ MonoServer::ExecUnmanagedCall(NSharpAssemblyId assemblyId, Util::String const& f
 
     if (rc != 0 || func == nullptr)
     {
-        n_warning("Could not find function in C# script!");
+        n_warning("Could not find function '%s' in assembly (%s)!", function.AsCharPtr(), assembly->name.AsCharPtr());
+        n_printf("\tPossible solutions:\n"
+                 "\t\tFunction name is correctly formatted (ex. Namespace.Namespace.Class+NestedClass::Function())?\n"
+                 "\t\tFunction is declared with the [UnmanagedCallersOnly] attribute in C#?");
         return 2;
     }
 

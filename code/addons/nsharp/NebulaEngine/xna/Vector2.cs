@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace Mathf
@@ -16,6 +17,7 @@ namespace Mathf
 #endif
     [DataContract]
     [DebuggerDisplay("{DebugDisplayString,nq}")]
+    [StructLayout(LayoutKind.Sequential)]
     public struct Vector2 : IEquatable<Vector2>
     {
         #region Private Fields
