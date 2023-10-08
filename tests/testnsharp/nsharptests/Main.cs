@@ -6,6 +6,7 @@ using System.Security;
 using ConsoleHook;
 using Mathf;
 using Nebula.Game;
+using NST;
 
 namespace NST
 {
@@ -81,6 +82,35 @@ namespace NST
             VERIFY(test, filePath, lineNumber);
         }
 
+        [UnmanagedCallersOnly]
+        static public void PerformTests()
+        {
+            TestProperty testProp0 = new TestProperty();
+            PropertyManager.Instance.RegisterProperty(testProp0);
+            PropertyManager.Instance.PrintAllProperties();
+
+            World world = Nebula.Game.World.Get(World.DEFAULT_WORLD);
+            Entity entity = world.CreateEntity("Empty");
+            entity.AddProperty(testProp0);
+
+            Tests.Verify(entity.IsValid());
+
+            Entity entity2 = world.CreateEntity("Empty");
+            Tests.Verify(entity2.IsValid());
+            Tests.Verify(entity2.Id != entity.Id);
+
+            Entity.Destroy(entity);
+
+            Tests.Verify(!entity.IsValid());
+            Tests.Verify(entity2.IsValid());
+
+            Entity.Destroy(entity2);
+
+            Tests.Verify(!entity2.IsValid());
+
+            Tests.Verify(1 == 1);
+        }
+
         public class VariablePassing
         {
             [DllImport("__Internal", EntryPoint = "PassVec2"), SuppressUnmanagedCodeSecurity]
@@ -150,29 +180,70 @@ namespace NST
         }
     }
 
-    public class AppEntry
+    public class TestApp : NebulaApp
     {
-        [UnmanagedCallersOnly]
-        static public void Main()
+        public override void OnBeginFrame()
         {
-            Nebula.Runtime.Setup(Assembly.GetExecutingAssembly());
+            base.OnBeginFrame();
+        }
+
+        public override void OnEndFrame()
+        {
+            base.OnEndFrame();
+        }
+
+        public override void OnFrame()
+        {
+            base.OnFrame();
+        }
+
+        public override void OnShutdown()
+        {
+            base.OnShutdown();
+        }
+
+        public override void OnStart()
+        {
+            base.OnStart();
 
             Console.Write("Console.Write works!\n");
             Console.WriteLine("Console.WriteLine works!");
             Nebula.Debug.Log("Nebula.Debug.Log works!\n");
-
-            TestProperty testProp0 = new TestProperty();
-            PropertyManager.Instance.RegisterProperty(testProp0);
-
-            Entity entity = new Entity();
-            entity.AddProperty(testProp0);
-
-            World world = Nebula.Game.World.Get(World.DEFAULT_WORLD);
-            world.RegisterEntity(entity);
-
-            PropertyManager.Instance.PrintAllProperties();
-
-            Tests.Verify(1 == 1);
         }
+    }
+}
+
+public class AppEntry
+{
+    [UnmanagedCallersOnly]
+    static public void Main()
+    {
+        Nebula.Runtime.OverrideNebulaApp(new TestApp());
+        Nebula.Runtime.Setup(Assembly.GetExecutingAssembly());
+        Nebula.Runtime.Start();
+    }
+
+    [UnmanagedCallersOnly]
+    static public void OnBeginFrame()
+    {
+        Nebula.Runtime.OnBeginFrame();
+    }
+
+    [UnmanagedCallersOnly]
+    static public void OnFrame()
+    {
+        Nebula.Runtime.OnFrame();
+    }
+
+    [UnmanagedCallersOnly]
+    static public void OnEndFrame()
+    {
+        Nebula.Runtime.OnEndFrame();
+    }
+
+    [UnmanagedCallersOnly]
+    static public void Exit()
+    {
+        Nebula.Runtime.Close();
     }
 }

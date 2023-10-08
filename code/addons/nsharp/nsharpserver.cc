@@ -255,34 +255,13 @@ NSharpServer::Open()
     bool res = this->LoadHostFxr();
     n_assert(res);
 
-    const IO::URI configPath = ("bin:NebulaEngine.runtimeconfig.json");
-    load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
-
-    load_assembly_and_get_function_pointer =
-        (load_assembly_and_get_function_pointer_fn)LoadAssemblyAndGetExport(configPath.GetHostAndLocalPath());
-
-    n_assert2(load_assembly_and_get_function_pointer != nullptr, "Failure: LoadAssemblyAndGetExport()");
+    this->nebulaEngineAssemblyId = this->LoadAssembly("bin:NebulaEngine.dll");
+    n_assert(this->nebulaEngineAssemblyId != AssemblyId::Invalid());
 
     // TODO: See if we can setup custom memory allocator functions for the runtime
 
-    // Function pointer to managed delegate
-    IO::URI nebulaEngineLibPath = "bin:NebulaEngine.dll";
-    const char_t* dotnet_type = L"NebulaEngine.AppEntry, NebulaEngine";
-    const char_t* dotnet_type_method = L"Main";
-    typedef void(CORECLR_DELEGATE_CALLTYPE * custom_entry_point_fn)();
-    custom_entry_point_fn nebulaEngineMain = nullptr;
-
-    int rc = load_assembly_and_get_function_pointer(
-        ToWideString(nebulaEngineLibPath.GetHostAndLocalPath()).c_str(),
-        dotnet_type,
-        dotnet_type_method,
-        UNMANAGEDCALLERSONLY_METHOD,
-        nullptr,
-        (void**)&nebulaEngineMain
-    );
-    n_assert2(rc == 0 && nebulaEngineMain != nullptr, "Failure: load_assembly_and_get_function_pointer()");
-
-    nebulaEngineMain();
+    int execRes = this->ExecUnmanagedCall(this->nebulaEngineAssemblyId, "NebulaEngine.AppEntry::Main()");
+    n_assert(execRes == 0);
 
     this->isOpen = true;
     return true;
@@ -295,6 +274,9 @@ void
 NSharpServer::Close()
 {
     n_assert(this->IsOpen());
+
+    int res = this->ExecUnmanagedCall(this->nebulaEngineAssemblyId, "NebulaEngine.AppEntry::Shutdown()");
+    n_assert(res == 0);
 
     this->CloseHostFxr();
 
@@ -322,7 +304,7 @@ NSharpServer::WaitForDebuggerToConnect(bool enabled)
 //------------------------------------------------------------------------------
 /**
 */
-NSharpAssemblyId
+AssemblyId
 NSharpServer::LoadAssembly(IO::URI const& uri)
 {
     Util::String configPath = uri.GetHostAndLocalPath();
@@ -343,7 +325,7 @@ NSharpServer::LoadAssembly(IO::URI const& uri)
     assembly->name = uri.AsString().ExtractFileName();
     assembly->name.StripFileExtension();
 
-    NSharpAssemblyId assemblyId = this->assemblies.Alloc();
+    AssemblyId assemblyId = this->assemblies.Alloc();
     this->assemblies.Get<0>(assemblyId.id) = assembly;
     this->assemblyTable.Add(assembly->name, assemblyId.id);
     return assemblyId;
@@ -354,7 +336,7 @@ NSharpServer::LoadAssembly(IO::URI const& uri)
 	Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
 */
 int
-NSharpServer::ExecUnmanagedCall(NSharpAssemblyId assemblyId, Util::String const& function)
+NSharpServer::ExecUnmanagedCall(AssemblyId assemblyId, Util::String const& function)
 {
     if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
     {
@@ -407,6 +389,15 @@ bool const
 NSharpServer::IsOpen()
 {
     return this->isOpen;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+AssemblyId
+NSharpServer::GetCoreAssembly() const
+{
+    return this->nebulaEngineAssemblyId;
 }
 
 } // namespace Scripting

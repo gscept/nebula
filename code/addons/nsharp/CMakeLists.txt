@@ -66,6 +66,9 @@ fips_begin_lib(nsharp)
     fips_deps(NebulaEngine)
 
     fips_files(
+        assemblyid.h
+        scriptfeatureunit.cc
+        scriptfeatureunit.h
         nsconfig.h
         nsharpserver.cc
         nsharpserver.h

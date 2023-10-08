@@ -5,23 +5,35 @@ using System.Collections;
 using System.Collections.Generic;
 using Mathf;
 
+using Api = Nebula.Game.NebulaApiV1;
+
 namespace Nebula
 {
     namespace Game
     {
         public class Entity
         {
-            public Entity()
-            {
-                this.properties = new List<Property>();
-            }
-
+            private World world;
+            public World World { get { return this.world; } }
             private uint id;
-            public uint Id { get { return id; } }
+            public uint Id { get { return this.id; } }
 
             private List<Property> properties;
 
-            //bool IsAlive() { return Nebula.Game.IsAlive(this.id); }
+            /// <summary>
+            /// Do not create new entities using this constructor, instead create them via World.CreateEntity.
+            /// </summary>
+            internal Entity(World world, uint entityId)
+            {
+                this.world = world;
+                this.id = entityId;
+                this.properties = new List<Property>();
+            }
+
+            /// <summary>
+            /// Check if entity is valid (not destroyed)
+            /// </summary>
+            public bool IsValid() { return Api.IsValid(this.world.Id, this.id); }
 
             // This is for getting and setting unmanaged components
             public bool HasComponent<T>() { return false; }
@@ -72,9 +84,18 @@ namespace Nebula
                 // TODO: implement me!
             }
 
-            static void Destroy(Entity entity)
+            /// <summary>
+            /// Schedule the entity for destruction.
+            /// Note that this does not immediately remove the entity from the native backend.
+            /// </summary>
+            public static void Destroy(Entity entity)
             {
+                if (entity.id == 0xFFFFFFFF)
+                    return; // Already destroyed
 
+                Api.DeleteEntity(entity.world.Id, entity.id);
+                entity.id = 0xFFFFFFFF;
+                // TODO: Clean up anything related to the entity
             }
 
             public override string ToString()

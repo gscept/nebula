@@ -27,24 +27,52 @@ namespace Nebula
 
     namespace Game
     {
-        class NebulaApiV1
+        public interface INebulaApi { };
+
+        public class NebulaApiV1 : INebulaApi
         {
-            // ...
+            [DllImport("__Internal", EntryPoint = "EntityCreateFromTemplate")]
+            public static extern uint CreateEntity(uint worldId, string template);
+
+            [DllImport("__Internal", EntryPoint = "EntityIsValid")]
+            public static extern bool IsValid(uint worldId, uint entityId);
+
+            [DllImport("__Internal", EntryPoint = "EntityDelete")]
+            public static extern void DeleteEntity(uint worldId, uint entityId);
+
+            [DllImport("__Internal", EntryPoint = "WorldGetDefaultWorldId")]
+            public static extern uint GetDefaultWorldId();
         }
 
-        class NebulaApp
+        public class NebulaApp
         {
-            void OnStart(NebulaApiV1 api)
-            {
-                //PropertyManager.Register<AudioEmitterProperty>();
+            private bool isRunning = false;
 
-                // api.DoSomething();???
+            public bool IsRunning { get { return isRunning; } }
+
+            public virtual void OnStart()
+            {
+                this.isRunning = true;
             }
 
-            void OnShutdown()
+            public virtual void OnShutdown()
             {
-                // Might be able to automate deregistering, if we keep track of the registered proeprties per api object passed  to the dll.
-                // PropertyManager.Deregister<AudioEmitterProperty>();
+                this.isRunning = false;
+            }
+
+            public virtual void OnBeginFrame()
+            {
+
+            }
+
+            public virtual void OnFrame()
+            {
+
+            }
+
+            public virtual void OnEndFrame()
+            {
+
             }
         }
     }

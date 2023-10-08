@@ -20,12 +20,11 @@
 #include "util/dictionary.h"
 #include "system/library.h"
 #include "nsconfig.h"
+#include "assemblyid.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
 {
-
-ID_16_TYPE(NSharpAssemblyId);
 
 class NSharpServer : public Core::RefCounted
 {
@@ -44,17 +43,22 @@ public:
 	void SetDebuggingEnabled(bool enabled);
 	void WaitForDebuggerToConnect(bool enabled);
 	/// Load dotnet exe or DLL at path
-	NSharpAssemblyId LoadAssembly(IO::URI const& uri);
+	AssemblyId LoadAssembly(IO::URI const& uri);
 	/// Execute function in an assembly. This is not very efficient and should not be used in place of delegates
-	int ExecUnmanagedCall(NSharpAssemblyId assembly, Util::String const& function);
+	int ExecUnmanagedCall(AssemblyId assembly, Util::String const& function);
 	/// Check if server is open
 	bool const IsOpen();
+    /// Get the nebula engine api core assembly that contains the nebula C# runtime
+    AssemblyId GetCoreAssembly() const;
+
 private:
     struct Assembly;
 
     /// load the host fxr library and get exported function addresses
     bool LoadHostFxr();
     void CloseHostFxr();
+
+    AssemblyId nebulaEngineAssemblyId;
 
     Util::ArrayAllocator<Assembly*> assemblies;
 	Util::Dictionary<Util::String, uint32_t> assemblyTable;

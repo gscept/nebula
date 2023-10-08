@@ -5,6 +5,10 @@
 #include "stdneb.h"
 #include "nsharptest.h"
 #include "nsharp/nsharpserver.h"
+#include "timing/timer.h"
+#include "profiling/profiling.h"
+#include "game/gameserver.h"
+#include "nsharp/scriptfeatureunit.h"
 
 using namespace Scripting;
 
@@ -131,24 +135,15 @@ TestArrayOfVec4(Math::vec4* arr, int size)
 void
 NSharpTest::Run()
 {
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingRegisterThread();
+#endif
+
     verifyManagedCallback = [this](bool success, const char* filePath, int lineNumber)
     { this->Verify(success, "<Managed Function Test>", filePath, lineNumber); };
 
-    Ptr<NSharpServer> nsServer = NSharpServer::Create();
-    nsServer->SetDebuggingEnabled(true);
-    nsServer->WaitForDebuggerToConnect(false);
-    nsServer->Open();
-
-    Scripting::NSharpAssemblyId assemblyId = nsServer->LoadAssembly("bin:NSharpTests.dll");
-    bool assemblyLoaded = assemblyId != Scripting::NSharpAssemblyId::Invalid();
-    VERIFY(assemblyLoaded);
-    if (!assemblyLoaded)
-    {
-        n_warning("Failed to load assembly. Cannot proceed with test!\n");
-        return;
-    }
-
-    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.AppEntry::Main()"));
+    Ptr<NSharpServer> nsServer = NSharpServer::Instance();
+    AssemblyId assemblyId = Scripting::ScriptFeatureUnit::Instance()->GetAssemblyId();
 
     VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+VariablePassing::RunTests()"));
 
@@ -170,6 +165,11 @@ NSharpTest::Run()
     VERIFY(testArrayOfIntResult);
     VERIFY(testArrayOfVec3Result);
     VERIFY(testArrayOfVec4Result);
+
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests::PerformTests()"));
+
+    while (true)
+        StepFrame();
 }
 
 } // namespace Test

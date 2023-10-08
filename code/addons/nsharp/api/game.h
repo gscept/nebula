@@ -20,17 +20,22 @@ namespace Api
 /**
 	Check whether an entity id is valid.
 */
-NEBULA_EXPORT bool IsEntityValid(unsigned int entity);
+NEBULA_EXPORT bool EntityIsValid(uint32_t worldId, uint32_t entity);
 
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT unsigned int CreateEntity();
+NEBULA_EXPORT uint32_t EntityCreateFromTemplate(uint32_t worldId, const char* tmpl);
 
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT void DeleteEntity(unsigned int entity);
+NEBULA_EXPORT void EntityDelete(uint32_t worldId, uint32_t entity);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT uint32_t WorldGetDefaultWorldId();
 
 } // namespace Api
 
