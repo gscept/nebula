@@ -2,3 +2,4 @@
 *.fx linguist-language=GLSL
 *.fxh linguist-language=GLSL
 *.nidl linguist-language=jsonc
+*.snippet linguist-language=xml
