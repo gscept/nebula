@@ -62,7 +62,7 @@ namespace Nebula
 
             public virtual void OnBeginFrame()
             {
-
+                PropertyManager.Instance.OnBeginFrame();
             }
 
             public virtual void OnFrame()

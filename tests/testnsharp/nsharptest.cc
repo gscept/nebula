@@ -168,8 +168,11 @@ NSharpTest::Run()
 
     VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests::PerformTests()"));
 
-    while (true)
-        StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
 }
 
 } // namespace Test

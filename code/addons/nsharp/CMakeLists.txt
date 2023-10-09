@@ -14,6 +14,7 @@ fips_begin_sharedlib(NebulaEngine)
     fips_dir(NebulaEngine/util)
         fips_files(
             String.cs
+			ListExtensions.cs
         )
     fips_dir(NebulaEngine/engine)
         fips_files(

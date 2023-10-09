@@ -18,9 +18,14 @@ namespace Nebula
             // not to mark type as beforefieldinit
             static PropertyManager()
             {
-
             }
-            private PropertyManager() { }
+            private PropertyManager()
+            {
+                for (int i = 0; i < this.eventListeners.Length; i++)
+                {
+                    this.eventListeners[i] = new List<Property>();
+                }
+            }
 
             public static PropertyManager Instance
             {
@@ -32,33 +37,73 @@ namespace Nebula
 
             public void RegisterProperty(Property property)
             {
-                List<Property> properties;
-                bool exists = this.registry.TryGetValue(property.GetType(), out properties);
-                if (!exists)
+                FrameEvent[] acceptedEvents = property.AcceptedEvents();
+                if (acceptedEvents != null)
                 {
-                    properties = new List<Property>();
-                    this.registry.Add(property.GetType(), properties);
-                }
-                properties.Add(property);                
-            }
-
-            public void PrintAllProperties()
-            {
-                foreach (var item in registry)
-                {
-                    Console.Write(item.Key.ToString());
-                    Console.Write(":\n");
-                    foreach (var prop in item.Value)
+                    for (int i = 0; i < acceptedEvents.Length; i++)
                     {
-                        Console.Write("\t");
-                        Console.Write(prop.ToString());
-                        Console.Write("\n");
+                        this.eventListeners[(int)acceptedEvents[i]].Add(property);
                     }
-                    
                 }
             }
 
-            private Dictionary<System.Type, List<Property>> registry = new Dictionary<System.Type, List<Property>>();
+            public void OnBeginFrame()
+            {
+                List<Property> props = this.eventListeners[(int)FrameEvent.OnBeginFrame];
+                for (int i = 0; i < props.Count; i++)
+                {
+                    Property prop = props[i];
+                    if (!prop.IsValid)
+                    {
+                        // Remove invalid properties
+                        props.EraseSwap(i);
+                        i--; // rerun the same index
+                        continue;
+                    }
+                    if (prop.Active)
+                        prop.OnBeginFrame();
+                }
+            }
+
+            public void OnFrame()
+            {
+                List<Property> props = this.eventListeners[(int)FrameEvent.OnFrame];
+                for (int i = 0; i < props.Count; i++)
+                {
+                    Property prop = props[i];
+                    if (!prop.IsValid)
+                    {
+                        // Remove invalid properties
+                        props.EraseSwap(i);
+                        i--; // rerun the same index
+                        continue;
+                    }
+
+                    if (prop.Active)
+                        prop.OnFrame();
+                }
+            }
+
+            public void OnEndFrame()
+            {
+                List<Property> props = this.eventListeners[(int)FrameEvent.OnEndFrame];
+                for (int i = 0; i < props.Count; i++)
+                {
+                    Property prop = props[i];
+                    if (!prop.IsValid)
+                    {
+                        // Remove invalid properties
+                        props.EraseSwap(i);
+                        i--; // rerun the same index
+                        continue;
+                    }
+
+                    if (prop.Active)
+                        prop.OnEndFrame();
+                }
+            }
+
+            private List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
         }
     }
 }

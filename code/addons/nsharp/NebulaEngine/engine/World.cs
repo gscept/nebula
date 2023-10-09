@@ -19,7 +19,7 @@ namespace Nebula
             public uint Id { get { return id; } }
 
             private List<Entity> entities;
-
+            
             public Entity CreateEntity(string template)
             {
                 uint id = Api.CreateEntity(this.id, template);

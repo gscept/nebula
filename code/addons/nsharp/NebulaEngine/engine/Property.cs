@@ -11,11 +11,8 @@ namespace Nebula
 {
     namespace Game
     {
-        public enum Events
+        public enum FrameEvent
         {
-            OnActivate,
-            OnDeactivate,
-            
             // Update order
             OnBeginFrame, // Called every frame before rendering (old vis results)
             OnFixedFrame, // Called every couple of frames with a fixed delta frame time. These updates are distributed and might not be called on the same frame for all components (called after OnBeginFrame)
@@ -28,8 +25,44 @@ namespace Nebula
 
         public class Property
         {
-            private Entity entity;
-            private bool attachedToEntity;
+            private bool active = false;
+
+            /// <summary>
+            /// Activate or deactivate property
+            /// This is not trivial and can potentially be costly
+            /// </summary>
+            public bool Active
+            { 
+                get { return active; }
+                set
+                { 
+                    if (active == value)
+                    {
+                        return;
+                    }
+
+                    if (value)
+                    {
+                        this.OnActivate();
+                    }
+                    else
+                    {
+                        this.OnDeactivate();
+                    }
+                    active = value;
+                }
+            }
+
+            private Entity entity = null;
+            
+            public void Destroy()
+            {
+                if (IsValid && active)
+                {
+                    this.OnDeactivate();
+                    entity = null;
+                }
+            }
 
             public Entity Entity
             {
@@ -39,10 +72,9 @@ namespace Nebula
                 }
                 set
                 {
-                    if (!attachedToEntity)
+                    if (entity == null)
                     {
                         entity = value;
-                        attachedToEntity = true;
                     }
                     else
                     {
@@ -50,12 +82,14 @@ namespace Nebula
                     }
                 }
             }
+            
+            public bool IsValid { get { return entity != null; } }
 
-            public bool active;
-
-            public virtual Nebula.Game.Events[] AcceptedEvents()
+            /// <summary>
+            /// Override in subclass to tell the property manager which functions to call for this class
+            /// </summary>
+            public virtual Nebula.Game.FrameEvent[] AcceptedEvents()
             {
-                // Override in subclass to tell the property manager which functions to call for this class
                 return null;
             }
 

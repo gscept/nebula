@@ -123,8 +123,7 @@ namespace NebulaEngine
             }
 
             Nebula.Game.PropertyManager propertyManager = Nebula.Game.PropertyManager.Instance;
-            propertyManager.RegisterProperty(new Nebula.Game.Property());
-
+            
 #if DEBUG
             Console.WriteLine("[NSharp] NebulaEngine.AppEntry.Main() returned with code 0");
 #endif

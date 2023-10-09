@@ -12,10 +12,24 @@ namespace NST
 {
     public class TestProperty : Property
     {
-        public int i;
+        public int i = 0;
         public float f;
         public string s;
         public Mathf.Vector3 v;
+
+        public override void OnBeginFrame()
+        {
+            i++;
+            Console.WriteLine(String.Format("TestProperty OnBeginFrame() called {0} times", i));
+        }
+
+        public override FrameEvent[] AcceptedEvents()
+        {
+            return new[]
+            {
+                FrameEvent.OnBeginFrame
+            };
+        }
     }
 
     class AudioEmitterProperty : Property
@@ -51,15 +65,15 @@ namespace NST
         {
             return new[]
             {
-                    typeof(PlayAudioMessage)
-                };
+                 typeof(PlayAudioMessage)
+            };
         }
 
-        public override Nebula.Game.Events[] AcceptedEvents()
+        public override Nebula.Game.FrameEvent[] AcceptedEvents()
         {
-            return new[] {
-                Nebula.Game.Events.OnActivate,
-                Nebula.Game.Events.OnFrame
+            return new[]
+            {
+                Nebula.Game.FrameEvent.OnBeginFrame
             };
         }
     }
@@ -85,11 +99,9 @@ namespace NST
         [UnmanagedCallersOnly]
         static public void PerformTests()
         {
-            TestProperty testProp0 = new TestProperty();
-            PropertyManager.Instance.RegisterProperty(testProp0);
-            PropertyManager.Instance.PrintAllProperties();
-
             World world = Nebula.Game.World.Get(World.DEFAULT_WORLD);
+
+            TestProperty testProp0 = new TestProperty();
             Entity entity = world.CreateEntity("Empty");
             entity.AddProperty(testProp0);
 
@@ -109,6 +121,10 @@ namespace NST
             Tests.Verify(!entity2.IsValid());
 
             Tests.Verify(1 == 1);
+
+            TestProperty p1 = new TestProperty();
+            Entity entity3 = world.CreateEntity("Empty");
+            entity3.AddProperty(p1);
         }
 
         public class VariablePassing

@@ -13,9 +13,9 @@ namespace Nebula
     {
         public class Entity
         {
-            private World world;
+            private World world = null;
             public World World { get { return this.world; } }
-            private uint id;
+            private uint id = 0xFFFFFFFF;
             public uint Id { get { return this.id; } }
 
             private List<Property> properties;
@@ -52,11 +52,16 @@ namespace Nebula
                 }
                 return false;
             }
+
             public void AddProperty(Property property)
             {
+                Debug.Assert(this.id != 0xFFFFFFFF);
                 property.Entity = this;
                 this.properties.Add(property);
+                PropertyManager.Instance.RegisterProperty(property);
+                property.Active = true;
             }
+
             public T GetProperty<T>() where T : Property
             {
                 for (int i = 0; i < this.properties.Count; i++)
@@ -81,7 +86,7 @@ namespace Nebula
 
             public void Send(in Msg msg)
             {
-                // TODO: implement me!
+                // TODO: Implement me!
             }
 
             /// <summary>
@@ -95,7 +100,14 @@ namespace Nebula
 
                 Api.DeleteEntity(entity.world.Id, entity.id);
                 entity.id = 0xFFFFFFFF;
-                // TODO: Clean up anything related to the entity
+
+                for (int i = 0; i < entity.properties.Count; i++)
+                {
+                    Property property = entity.properties[i];
+                    property.Destroy();
+                }
+
+                entity.properties.Clear();
             }
 
             public override string ToString()
