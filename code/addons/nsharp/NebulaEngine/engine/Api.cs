@@ -40,6 +40,18 @@ namespace Nebula
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
             public static extern void DeleteEntity(uint worldId, uint entityId);
 
+            [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
+            public static extern bool HasComponent(uint worldId, uint entityId, uint componentId);
+
+            [DllImport("__Internal", EntryPoint = "ComponentGetId")]
+            public static extern uint GetComponentId(string name);
+
+            [DllImport("__Internal", EntryPoint = "ComponentGetData")]
+            public static extern void GetComponentData(uint worldId, uint entityId, uint componentId, IntPtr data, int dataSize);
+            
+            [DllImport("__Internal", EntryPoint = "ComponentSetData")]
+            public static extern void SetComponentData(uint worldId, uint entityId, uint componentId, IntPtr data, int dataSize);
+
             [DllImport("__Internal", EntryPoint = "WorldGetDefaultWorldId")]
             public static extern uint GetDefaultWorldId();
         }

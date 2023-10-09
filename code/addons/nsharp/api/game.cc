@@ -50,6 +50,65 @@ EntityDelete(uint32_t worldId, uint32_t entity)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_t componentId)
+{
+    Game::World* world = Game::GetWorld(worldId);
+    return Game::HasComponent(world, Game::Entity::FromId(entity), componentId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t
+ComponentGetId(const char* name)
+{
+    return (uint32_t)Game::GetComponentId(name).id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentGetData(uint32_t worldId, uint32_t eId, uint32_t componentId, void* outData, int dataSize)
+{
+    Game::Entity entity = Game::Entity::FromId(eId);
+    Game::World* world = Game::GetWorld(worldId);
+
+    n_assert2(
+        dataSize == MemDb::TypeRegistry::TypeSize(componentId),
+        "ComponentGetData: Provided component size in bytes is not the correct size for the given ComponentId."
+    );
+
+    Game::EntityMapping mapping = Game::GetEntityMapping(world, entity);
+    byte* ptr = (byte*)Game::GetInstanceBuffer(world, mapping.table, mapping.instance.partition, componentId);
+    ptr += (mapping.instance.index * dataSize);
+    Memory::Copy(ptr, outData, dataSize);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ComponentSetData(uint32_t worldId, uint32_t eId, uint32_t componentId, void* data, int dataSize)
+{
+    Game::Entity entity = Game::Entity::FromId(eId);
+    Game::World* world = Game::GetWorld(worldId);
+
+    n_assert2(
+        dataSize == MemDb::TypeRegistry::TypeSize(componentId),
+        "ComponentSetData: Provided component size in bytes is not the correct size for the given ComponentId."
+    );
+
+    Game::EntityMapping mapping = Game::GetEntityMapping(world, entity);
+    byte* ptr = (byte*)Game::GetInstanceBuffer(world, mapping.table, mapping.instance.partition, componentId);
+    ptr += (mapping.instance.index * dataSize);
+    Memory::Copy(data, ptr, dataSize);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint32_t
 WorldGetDefaultWorldId()
 {

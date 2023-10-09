@@ -13,12 +13,12 @@ namespace Nebula
     {
         public sealed class PropertyManager
         {
+            private List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
+
             private static readonly PropertyManager instance = new PropertyManager();
             // Explicit static constructor to tell C# compiler
             // not to mark type as beforefieldinit
-            static PropertyManager()
-            {
-            }
+            static PropertyManager() { }
             private PropertyManager()
             {
                 for (int i = 0; i < this.eventListeners.Length; i++)
@@ -27,6 +27,9 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Returns the property manager singleton instance.
+            /// </summary>
             public static PropertyManager Instance
             {
                 get
@@ -35,6 +38,13 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Registers a property to the manager.
+            /// </summary>
+            /// <remarks>
+            /// Developers usually doesn't need to do this manually - it is subsequently called when adding a property to an entity.
+            /// </remarks>
+            /// <see cref="Nebula.Game.Entity.AddProperty(Property)"/>
             public void RegisterProperty(Property property)
             {
                 FrameEvent[] acceptedEvents = property.AcceptedEvents();
@@ -47,6 +57,9 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Calls all eventlistener properties that has subscribed to the OnBeginFrame event
+            /// </summary>
             public void OnBeginFrame()
             {
                 List<Property> props = this.eventListeners[(int)FrameEvent.OnBeginFrame];
@@ -65,6 +78,9 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Calls all eventlistener properties that has subscribed to the OnFrame event
+            /// </summary>
             public void OnFrame()
             {
                 List<Property> props = this.eventListeners[(int)FrameEvent.OnFrame];
@@ -84,6 +100,9 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Calls all eventlistener properties that has subscribed to the OnEndFrame event
+            /// </summary>
             public void OnEndFrame()
             {
                 List<Property> props = this.eventListeners[(int)FrameEvent.OnEndFrame];
@@ -102,8 +121,6 @@ namespace Nebula
                         prop.OnEndFrame();
                 }
             }
-
-            private List<Property>[] eventListeners = new List<Property>[(int)Nebula.Game.FrameEvent.NumEvents];
         }
     }
 }

@@ -53,6 +53,21 @@ namespace Nebula
                 else
                     return null;
             }
+
+            public void CollectGarbage()
+            {
+                for (int i = 0; i < this.entities.Count; i++)
+                {
+                    Entity entity = this.entities[i];
+                    if (!entity.IsValid())
+                    {
+                        Entity.Destroy(entity);
+                        this.entities.EraseSwap(i);
+                        i--; // rerun same index, since we've swapped and erased.
+                        continue;
+                    }
+                }
+            }
         }
     }
 }

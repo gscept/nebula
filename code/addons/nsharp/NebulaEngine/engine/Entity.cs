@@ -14,15 +14,21 @@ namespace Nebula
         public class Entity
         {
             private World world = null;
-            public World World { get { return this.world; } }
             private uint id = 0xFFFFFFFF;
-            public uint Id { get { return this.id; } }
-
             private List<Property> properties;
 
             /// <summary>
-            /// Do not create new entities using this constructor, instead create them via World.CreateEntity.
+            /// The world that this entity belongs to
             /// </summary>
+            public World World { get { return this.world; } }
+            /// <summary>
+            /// Unique identifier for the entity
+            /// </summary>
+            public uint Id { get { return this.id; } }
+
+            /// <remarks>
+            /// Do not create new entities using this constructor, instead create them via World.CreateEntity.
+            /// </remarks>
             internal Entity(World world, uint entityId)
             {
                 this.world = world;
@@ -35,12 +41,55 @@ namespace Nebula
             /// </summary>
             public bool IsValid() { return Api.IsValid(this.world.Id, this.id); }
 
-            // This is for getting and setting unmanaged components
-            public bool HasComponent<T>() { return false; }
-            public void SetComponent<T>(T component) { return; }
-            public T GetComponent<T>() { return default(T); }
+            /// <summary>
+            /// Check if entity has some unmanaged component
+            /// </summary>
+            public bool HasComponent<T>() where T : struct, NativeComponent
+            {
+                uint componentId = Nebula.Game.ComponentManager.Instance.GetComponentId<T>();
+                return Api.HasComponent(this.world.Id, this.id, componentId);
+            }
 
-            // These are for managed properties
+            /// <summary>
+            /// Set the value of a native, unmanaged component.
+            /// </summary>
+            /// <remarks>
+            /// This method does allocate and copy memory, thus should be used sparringly in time-critical code.
+            /// </remarks>
+            public void SetComponent<T>(in T component) where T : struct, NativeComponent
+            {
+                uint componentId = Nebula.Game.ComponentManager.Instance.GetComponentId<T>();
+                int size = Marshal.SizeOf<T>();
+                // HACK: there might be more efficient ways to avoid GC problems, if there are any...
+                IntPtr ptr = Marshal.AllocHGlobal(size);
+                Marshal.StructureToPtr(component, ptr, false);
+                Api.SetComponentData(this.world.Id, this.id, componentId, ptr, size);
+                Marshal.FreeHGlobal(ptr);
+            }
+
+            /// <summary>
+            /// Gets a value copy of the native, unmanaged component.
+            /// </summary>
+            /// <remarks>
+            /// This method does allocate and copy memory, thus should be used sparringly in time-critical code.
+            /// </remarks>
+            public T GetComponent<T>() where T : struct, NativeComponent
+            {
+                uint componentId = Nebula.Game.ComponentManager.Instance.GetComponentId<T>();
+                int size = Marshal.SizeOf<T>();
+                IntPtr ptr = Marshal.AllocHGlobal(size);
+                Api.GetComponentData(this.world.Id, this.id, componentId, ptr, size);
+                T component = Marshal.PtrToStructure<T>(ptr);
+                Marshal.FreeHGlobal(ptr);
+                return component;
+            }
+
+            /// <summary>
+            /// Checks if the entity has a certain property
+            /// </summary>
+            /// <remarks>
+            /// This is a linear search (O(N)) through all properties attached to this entity.
+            /// </remarks>
             public bool HasProperty<T>() where T : Property
             {
                 for (int i = 0; i < this.properties.Count; i++)
@@ -53,6 +102,9 @@ namespace Nebula
                 return false;
             }
 
+            /// <summary>
+            /// Adds a property to the entity
+            /// </summary>
             public void AddProperty(Property property)
             {
                 Debug.Assert(this.id != 0xFFFFFFFF);
@@ -62,6 +114,15 @@ namespace Nebula
                 property.Active = true;
             }
 
+            /// <summary>
+            /// Gets the property if it exists in the entity.
+            /// </summary>
+            /// <remarks>
+            /// This is a linear search (O(N)) through all properties attached to this entity.
+            /// </remarks>
+            /// <returns>
+            /// Null, or the property if entity has it.
+            /// </returns>
             public T GetProperty<T>() where T : Property
             {
                 for (int i = 0; i < this.properties.Count; i++)
@@ -75,15 +136,26 @@ namespace Nebula
                 return null;
             }
 
+            /// <summary>
+            /// Gets the transform from the entity.
+            /// </summary>
             public Matrix GetTransform()
             {
                 return default(Matrix);
             }
+
+            /// <summary>
+            /// Sets the transform of the entity.
+            /// </summary>
             public void SetTransform(Matrix matrix)
             {
                 return;
             }
 
+            /// <summary>
+            /// Sends this entity a message.
+            /// The message will be propagated into all Properties that this entity has.
+            /// </summary>
             public void Send(in Msg msg)
             {
                 // TODO: Implement me!
@@ -110,6 +182,9 @@ namespace Nebula
                 entity.properties.Clear();
             }
 
+            /// <summary>
+            /// Constructs a string representation of this entity
+            /// </summary>
             public override string ToString()
             {
                 return id.ToString();

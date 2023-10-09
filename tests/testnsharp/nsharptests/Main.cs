@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -105,26 +106,29 @@ namespace NST
             Entity entity = world.CreateEntity("Empty");
             entity.AddProperty(testProp0);
 
-            Tests.Verify(entity.IsValid());
+            Verify(entity.IsValid());
 
             Entity entity2 = world.CreateEntity("Empty");
-            Tests.Verify(entity2.IsValid());
-            Tests.Verify(entity2.Id != entity.Id);
+            Verify(entity2.IsValid());
+            Verify(entity2.Id != entity.Id);
 
             Entity.Destroy(entity);
 
-            Tests.Verify(!entity.IsValid());
-            Tests.Verify(entity2.IsValid());
+            Verify(!entity.IsValid());
+            Verify(entity2.IsValid());
 
             Entity.Destroy(entity2);
 
-            Tests.Verify(!entity2.IsValid());
-
-            Tests.Verify(1 == 1);
+            Verify(!entity2.IsValid());
 
             TestProperty p1 = new TestProperty();
             Entity entity3 = world.CreateEntity("Empty");
             entity3.AddProperty(p1);
+
+            Nebula.Game.Component.Owner owner = entity3.GetComponent<Nebula.Game.Component.Owner>();
+            Verify(owner.entity == entity3.Id);
+
+            Verify(1 == 1);
         }
 
         public class VariablePassing
