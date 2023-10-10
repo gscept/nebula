@@ -827,37 +827,17 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
 
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
-    bool hasOwner = false; 
-    bool hasTransform = false;
 
-    for (auto const& c : info.components)
-    {
-        if (c == Owner::ID())
-            hasOwner = true;
-        if (c == WorldTransform::ID())
-            hasOwner = true;
-    }
+    // always add owner and transform as first columns
+    components[0] = Game::Owner::ID();
+    components[1] = Game::WorldTransform::ID();
+    tableInfo.numComponents = info.components.Size() + 2;
 
-    if (info.components[0] != GameServer::Singleton->state.ownerId)
-    {
-        // push owner id into the component array
-        const SizeT tableSize = 1 + info.components.Size();
-        n_assert(tableSize < NUM_PROPS);
-        tableInfo.numComponents = tableSize;
-        tableInfo.components = components;
+    n_assert(tableInfo.numComponents < NUM_PROPS);
 
-        // always add owner as first column
-        components[0] = GameServer::Singleton->state.ownerId;
-        for (int i = 1; i < tableSize; i++)
-        {
-            components[i] = info.components[i - 1];
-        }
-    }
-    else
+    for (int i = 0; i < info.components.Size(); i++)
     {
-        const SizeT tableSize = info.components.Size();
-        tableInfo.numComponents = tableSize;
-        tableInfo.components = info.components.begin();
+        components[i + 2] = info.components[i];
     }
 
     // Create an instance table
