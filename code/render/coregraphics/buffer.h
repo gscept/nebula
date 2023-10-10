@@ -14,15 +14,14 @@
 #include "coregraphics/config.h"
 #include "coregraphics/commandbuffer.h"
 #include "gpubuffertypes.h"
+#include "ids/idallocator.h"
 
 namespace CoreGraphics
 {
 
 struct CmdBufferId;
 ID_24_8_TYPE(BufferId);
-
-void BufferIdAcquire(const BufferId id); 
-void BufferIdRelease(const BufferId id);;
+_DECL_ACQUIRE_RELEASE(BufferId);
 
 enum BufferAccessMode
 {
@@ -164,5 +163,26 @@ BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TY
 {
     BufferUpload(cmdBuf, id, (const void*)data, sizeof(TYPE) * count, offset);
 }
+
+//------------------------------------------------------------------------------
+/**
+    Set of buffers which creates a buffer per each buffered frame
+*/
+struct BufferSet
+{
+    /// Default constructor
+    BufferSet() {};
+    /// Constructor
+    BufferSet(const BufferCreateInfo& createInfo);
+    /// Move constructor
+    BufferSet(BufferSet&& rhs);
+    /// Move assignment
+    void operator=(BufferSet&& rhs);
+    
+    /// Destructor
+    ~BufferSet();
+
+    Util::FixedArray<CoreGraphics::BufferId> buffers;
+};
 
 } // namespace CoreGraphics

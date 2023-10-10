@@ -31,7 +31,7 @@ struct
 
     CoreGraphics::BufferId clusterFogIndexLists;
 
-    Util::FixedArray<CoreGraphics::BufferId> stagingClusterFogLists;
+    CoreGraphics::BufferSet stagingClusterFogLists;
     CoreGraphics::BufferId clusterFogLists;
 
     CoreGraphics::TextureId fogVolumeTexture0;
@@ -104,7 +104,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     rwbInfo.name = "FogListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    fogState.stagingClusterFogLists.Resize(CoreGraphics::GetNumBufferedFrames());
+    fogState.stagingClusterFogLists = std::move(BufferSet(rwbInfo));
 
     fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
     fogState.renderProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Render"));
@@ -117,8 +117,6 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        fogState.stagingClusterFogLists[i] = CreateBuffer(rwbInfo);
-
         CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
         CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
@@ -167,7 +165,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
-        CmdCopy(cmdBuf, fogState.stagingClusterFogLists[bufferIndex], { from }, fogState.clusterFogLists, { to }, sizeof(Volumefog::FogLists));
+        CmdCopy(cmdBuf, fogState.stagingClusterFogLists.buffers[bufferIndex], { from }, fogState.clusterFogLists, { to }, sizeof(Volumefog::FogLists));
     };
 
     // The second pass is to cull the decals based on screen space AABBs
@@ -450,8 +448,8 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
         Volumefog::FogLists fogList;
         Memory::CopyElements(fogState.fogBoxes, fogList.FogBoxes, numFogBoxVolumes);
         Memory::CopyElements(fogState.fogSpheres, fogList.FogSpheres, numFogSphereVolumes);
-        CoreGraphics::BufferUpdate(fogState.stagingClusterFogLists[bufferIndex], fogList);
-        CoreGraphics::BufferFlush(fogState.stagingClusterFogLists[bufferIndex]);
+        CoreGraphics::BufferUpdate(fogState.stagingClusterFogLists.buffers[bufferIndex], fogList);
+        CoreGraphics::BufferFlush(fogState.stagingClusterFogLists.buffers[bufferIndex]);
     }
 
     Volumefog::VolumeFogUniforms fogUniforms;

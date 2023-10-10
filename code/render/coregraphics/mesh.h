@@ -99,7 +99,7 @@ typedef Ids::IdAllocatorSafe<
 > MeshAllocator;
 extern MeshAllocator meshAllocator;
 
-_DECLARE_LOCK(Mesh, meshAllocator);
+_DECL_ACQUIRE_RELEASE(MeshId);
 
 extern MeshId RectangleMesh;
 extern MeshId DiskMesh;

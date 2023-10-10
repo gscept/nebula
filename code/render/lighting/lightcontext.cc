@@ -71,7 +71,7 @@ struct
     CoreGraphics::ShaderProgramId debugProgram;
     CoreGraphics::ShaderProgramId renderProgram;
     CoreGraphics::BufferId clusterLightIndexLists;
-    Util::FixedArray<CoreGraphics::BufferId> stagingClusterLightsList;
+    CoreGraphics::BufferSet stagingClusterLightsList;
     CoreGraphics::BufferId clusterLightsList;
     CoreGraphics::BufferId clusterPointLights;
     CoreGraphics::BufferId clusterSpotLights;
@@ -184,12 +184,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     rwbInfo.name = "LightListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostCached;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
-
-    for (IndexT i = 0; i < clusterState.stagingClusterLightsList.Size(); i++)
-    {
-        clusterState.stagingClusterLightsList[i] = CreateBuffer(rwbInfo);
-    }
+    clusterState.stagingClusterLightsList = std::move(BufferSet(rwbInfo));
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
@@ -293,7 +288,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
-        CmdCopy(cmdBuf, clusterState.stagingClusterLightsList[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
+        CmdCopy(cmdBuf, clusterState.stagingClusterLightsList.buffers[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
     };
 
     // Classify and cull is dependent on the light index lists and the AABB buffer being ready
@@ -1303,8 +1298,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     // update list of point lights
     if (numPointLights > 0 || numSpotLights > 0 || numAreaLights > 0)
     {
-        CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], clusterState.lightList);
-        CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
+        CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList.buffers[bufferIndex], clusterState.lightList);
+        CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList.buffers[bufferIndex]);
     }
 
     // get per-view resource tables

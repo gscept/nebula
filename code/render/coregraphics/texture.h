@@ -13,6 +13,7 @@
 #include "coregraphics/window.h"
 #include "coregraphics/memory.h"
 #include "math/rectangle.h"
+#include "ids/idallocator.h"
 
 namespace CoreGraphics
 {
@@ -22,8 +23,7 @@ struct TextureSubresourceInfo;
 
 /// texture type
 RESOURCE_ID_TYPE(TextureId);
-void TextureIdAcquire(const TextureId id); 
-void TextureIdRelease(const TextureId id);;
+_DECL_ACQUIRE_RELEASE(TextureId);
 
 /// texture types
 enum TextureType
