@@ -40,6 +40,16 @@ NEBULA_EXPORT bool EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_
 //------------------------------------------------------------------------------
 /**
 */
+NEBULA_EXPORT Math::mat4 EntityGetTransform(uint32_t worldId, uint32_t entity);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT void EntitySetTransform(uint32_t worldId, uint32_t entity, Math::mat4 transform);
+
+//------------------------------------------------------------------------------
+/**
+*/
 NEBULA_EXPORT uint32_t ComponentGetId(const char* name);
 
 //------------------------------------------------------------------------------

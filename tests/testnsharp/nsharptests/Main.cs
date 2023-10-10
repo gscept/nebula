@@ -128,6 +128,26 @@ namespace NST
             Nebula.Game.Component.Owner owner = entity3.GetComponent<Nebula.Game.Component.Owner>();
             Verify(owner.entity == entity3.Id);
 
+            Matrix transform = entity3.GetTransform();
+            Verify(transform == Matrix.Identity);
+
+            transform.M11 = 11;
+            transform.M12 = 12;
+            transform.M32 = 32;
+            transform.M41 = 41;
+            transform.M42 = 42;
+            transform.M43 = 43;
+
+            entity3.SetTransform(transform);
+            Matrix newTransform = entity3.GetTransform();
+            Verify(transform == newTransform);
+
+            Verify(transform.Right == new Vector3(11, 12, 0));
+            Verify(transform.Up == new Vector3(0, 1, 0));
+            // TODO: Make sure our matrices in cpp and c# use the same coordinate system by default
+            // Verify(transform.Forward == new Vector3(0, 32, 1));
+            Verify(transform.Translation == new Vector3(41, 42, 43));
+
             Verify(1 == 1);
         }
 

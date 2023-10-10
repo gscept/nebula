@@ -141,7 +141,7 @@ namespace Nebula
             /// </summary>
             public Matrix GetTransform()
             {
-                return default(Matrix);
+                return Api.GetTransform(this.world.Id, this.id);
             }
 
             /// <summary>
@@ -149,7 +149,7 @@ namespace Nebula
             /// </summary>
             public void SetTransform(Matrix matrix)
             {
-                return;
+                Api.SetTransform(this.world.Id, this.id, matrix);
             }
 
             /// <summary>

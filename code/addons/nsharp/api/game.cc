@@ -6,6 +6,7 @@
 #include "game.h"
 #include "game/api.h"
 #include "game/world.h"
+#include "basegamefeature/components/transform.h"
 
 namespace Scripting
 {
@@ -55,6 +56,27 @@ EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_t componentId)
 {
     Game::World* world = Game::GetWorld(worldId);
     return Game::HasComponent(world, Game::Entity::FromId(entity), componentId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::mat4
+EntityGetTransform(uint32_t worldId, uint32_t entity)
+{
+    Game::World* world = Game::GetWorld(worldId);
+    return Game::GetComponent<Game::WorldTransform>(world, Game::Entity::FromId(entity)).value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntitySetTransform(uint32_t worldId, uint32_t entity, Math::mat4 transform)
+{
+    Game::World* world = Game::GetWorld(worldId);
+    Game::WorldTransform wt = {.value = transform};
+    Game::SetComponent<Game::WorldTransform>(world, Game::Entity::FromId(entity), wt);
 }
 
 //------------------------------------------------------------------------------
