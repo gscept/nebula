@@ -16,6 +16,11 @@ namespace Scripting
 namespace Api
 {
 
+struct float16
+{
+    float f[16];
+};
+
 //------------------------------------------------------------------------------
 /**
 	Check whether an entity id is valid.
@@ -40,7 +45,7 @@ NEBULA_EXPORT bool EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT Math::mat4 EntityGetTransform(uint32_t worldId, uint32_t entity);
+NEBULA_EXPORT float16 EntityGetTransform(uint32_t worldId, uint32_t entity);
 
 //------------------------------------------------------------------------------
 /**

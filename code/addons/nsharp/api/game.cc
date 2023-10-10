@@ -7,6 +7,7 @@
 #include "game/api.h"
 #include "game/world.h"
 #include "basegamefeature/components/transform.h"
+#include "util/typepunning.h"
 
 namespace Scripting
 {
@@ -61,11 +62,13 @@ EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_t componentId)
 //------------------------------------------------------------------------------
 /**
 */
-Math::mat4
+float16
 EntityGetTransform(uint32_t worldId, uint32_t entity)
 {
     Game::World* world = Game::GetWorld(worldId);
-    return Game::GetComponent<Game::WorldTransform>(world, Game::Entity::FromId(entity)).value;
+    Math::mat4 const m = Game::GetComponent<Game::WorldTransform>(world, Game::Entity::FromId(entity)).value;
+    float16 const& f = Util::TypePunning<float16, Math::mat4>(m);
+    return f;
 }
 
 //------------------------------------------------------------------------------
