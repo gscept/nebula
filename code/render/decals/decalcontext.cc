@@ -31,7 +31,7 @@ struct
     CoreGraphics::ShaderProgramId renderPBRProgram;
     CoreGraphics::ShaderProgramId renderEmissiveProgram;
     CoreGraphics::BufferId clusterDecalIndexLists;
-    Util::FixedArray<CoreGraphics::BufferId> stagingClusterDecalsList;
+    CoreGraphics::BufferSet stagingClusterDecalsList;
     CoreGraphics::BufferId clusterDecalsList;
     CoreGraphics::BufferId clusterPointDecals;
     CoreGraphics::BufferId clusterSpotDecals;
@@ -98,12 +98,11 @@ DecalContext::Create()
     rwbInfo.name = "DecalListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    decalState.stagingClusterDecalsList.Resize(CoreGraphics::GetNumBufferedFrames());
+
+    decalState.stagingClusterDecalsList = std::move(BufferSet(rwbInfo));
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        decalState.stagingClusterDecalsList[i] = CreateBuffer(rwbInfo);
-
         CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
         CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
@@ -134,7 +133,7 @@ DecalContext::Create()
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
-        CmdCopy(cmdBuf, decalState.stagingClusterDecalsList[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists));
+        CmdCopy(cmdBuf, decalState.stagingClusterDecalsList.buffers[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists));
     };
 
     // The second pass is to cull the decals based on screen space AABBs
@@ -408,8 +407,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         DecalsCluster::DecalLists decalList;
         Memory::CopyElements(decalState.pbrDecals, decalList.PBRDecals, numPbrDecals);
         Memory::CopyElements(decalState.emissiveDecals, decalList.EmissiveDecals, numEmissiveDecals);
-        CoreGraphics::BufferUpdate(decalState.stagingClusterDecalsList[bufferIndex], decalList);
-        CoreGraphics::BufferFlush(decalState.stagingClusterDecalsList[bufferIndex]);
+        CoreGraphics::BufferUpdate(decalState.stagingClusterDecalsList.buffers[bufferIndex], decalList);
+        CoreGraphics::BufferFlush(decalState.stagingClusterDecalsList.buffers[bufferIndex]);
     }
 }
 

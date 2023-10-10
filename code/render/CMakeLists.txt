@@ -125,6 +125,7 @@ ENDIF()
                 barrier.h
                 batchgroup.cc
                 batchgroup.h
+                buffer.cc
                 buffer.h
                 gpubuffertypes.h
                 commandbuffer.cc

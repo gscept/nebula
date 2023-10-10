@@ -164,4 +164,25 @@ BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TY
     BufferUpload(cmdBuf, id, (const void*)data, sizeof(TYPE) * count, offset);
 }
 
+//------------------------------------------------------------------------------
+/**
+    Set of buffers which creates a buffer per each buffered frame
+*/
+struct BufferSet
+{
+    /// Default constructor
+    BufferSet() {};
+    /// Constructor
+    BufferSet(const BufferCreateInfo& createInfo);
+    /// Move constructor
+    BufferSet(BufferSet&& rhs);
+    /// Move assignment
+    void operator=(BufferSet&& rhs);
+    
+    /// Destructor
+    ~BufferSet();
+
+    Util::FixedArray<CoreGraphics::BufferId> buffers;
+};
+
 } // namespace CoreGraphics

@@ -139,7 +139,6 @@ private:
     struct TerrainRuntimeInfo
     {
         Util::Array<Math::bbox> sectionBoxes;
-        Util::Array<CoreGraphics::PrimitiveGroup> sectorPrimGroups;
         Util::Array<bool> sectorVisible;
         Util::Array<Util::FixedArray<uint>> sectorUniformOffsets;
         Util::Array<Util::FixedArray<uint>> sectorTileOffsets;
@@ -156,8 +155,6 @@ private:
         Resources::ResourceId heightMap;
         Resources::ResourceId normalMap;
         Resources::ResourceId decisionMap;
-
-        Util::FixedArray<CoreGraphics::ResourceTableId> patchTables;
 
         CoreGraphics::BufferId vbo;
         CoreGraphics::BufferId ibo;

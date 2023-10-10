@@ -27,7 +27,7 @@ struct
     CoreGraphics::BufferId histogramConstants;
     CoreGraphics::BufferId histogramClearCountersBuffer;
     CoreGraphics::ResourceTableId histogramResourceTable;
-    Util::FixedArray<CoreGraphics::BufferId> histogramReadback;
+    CoreGraphics::BufferSet histogramReadbackBuffers;
 
     CoreGraphics::TextureDimensions sourceTextureDimensions;
     CoreGraphics::TextureId sourceTexture;
@@ -96,14 +96,10 @@ HistogramContext::Create()
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
     bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
-    histogramState.histogramReadback.Resize(CoreGraphics::GetNumBufferedFrames());
-    for (IndexT i = 0; i < histogramState.histogramReadback.Size(); i++)
-    {
-        histogramState.histogramReadback[i] = CoreGraphics::CreateBuffer(bufInfo);
-    }
+    histogramState.histogramReadbackBuffers = std::move(CoreGraphics::BufferSet(bufInfo));
 
     bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants);
-    bufInfo.mode = CoreGraphics::HostCached; // lazy but meh
+    bufInfo.mode = CoreGraphics::DeviceAndHost;
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
@@ -219,7 +215,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
         {
             CoreGraphics::BufferBarrierInfo
             {
-                histogramState.histogramReadback[bufferIndex],
+                histogramState.histogramReadbackBuffers.buffers[bufferIndex],
                 CoreGraphics::BufferSubresourceInfo()
             },
         });
@@ -230,7 +226,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
         CoreGraphics::CmdCopy(
             cmdBuf,
             histogramState.histogramCounters, { from },
-            histogramState.histogramReadback[bufferIndex], { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
+            histogramState.histogramReadbackBuffers.buffers[bufferIndex], { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
 
         CoreGraphics::BarrierPop(cmdBuf);
     };
@@ -260,8 +256,8 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
 void
 HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
-    CoreGraphics::BufferInvalidate(histogramState.histogramReadback[ctx.bufferIndex], 0, NEBULA_WHOLE_BUFFER_SIZE);
-    int* buf = CoreGraphics::BufferMap<int>(histogramState.histogramReadback[ctx.bufferIndex]);
+    CoreGraphics::BufferInvalidate(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex], 0, NEBULA_WHOLE_BUFFER_SIZE);
+    int* buf = CoreGraphics::BufferMap<int>(histogramState.histogramReadbackBuffers.buffers[ctx.bufferIndex]);
 
     if (Core::CVarModified(histogramState.minLuminance))
         HistogramContext::UpdateConstants();
@@ -312,7 +308,6 @@ HistogramContext::UpdateConstants()
     constants.InvLogLuminanceRange = 1 / histogramState.logLuminanceRange;
     constants.MinLogLuminance = histogramState.logMinLuminance;
     CoreGraphics::BufferUpdate(histogramState.histogramConstants, constants, 0);
-    CoreGraphics::BufferFlush(histogramState.histogramConstants);
 }
 
 //------------------------------------------------------------------------------
