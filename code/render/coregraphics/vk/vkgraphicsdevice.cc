@@ -1852,6 +1852,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
 void
 UploadInternal(const uint offset, const void* data, SizeT size)
 {
+    BufferIdLock lock(state.uploadBuffer);
     CoreGraphics::BufferUpdate(state.uploadBuffer, data, size, offset);
 }
 
