@@ -86,25 +86,24 @@ private:
 };
 
 #define _DECL_ACQUIRE_RELEASE(ty) \
-    void ty##Acquire(const ty id); \
-    void ty##Release(const ty id);
+    bool ty##Acquire(const ty id); \
+    void ty##Release(const ty id); \
+    struct ty##Lock \
+    { \
+        ty##Lock(const ty element) : element(element) { this->didAcquire = ty##Acquire(this->element); } \
+        ~ty##Lock() { if (this->didAcquire) ty##Release(this->element); } \
+    private: \
+        bool didAcquire; \
+        ty element; \
+    };
 
 #define _IMPL_ACQUIRE_RELEASE(ty, allocator) \
-    void ty##Acquire(const ty id) { allocator.Acquire(id.id24); } \
+    bool ty##Acquire(const ty id) { return allocator.Acquire(id.id24); } \
     void ty##Release(const ty id) { allocator.Release(id.id24); }
 
 #define _IMPL_ACQUIRE_RELEASE_RESOURCE(ty, allocator) \
-    void ty##Acquire(const ty id) { allocator.Acquire(id.resourceId); } \
+    bool ty##Acquire(const ty id) { return allocator.Acquire(id.resourceId); } \
     void ty##Release(const ty id) { allocator.Release(id.resourceId); }
-
-#define _DECLARE_LOCK(name, allocator) \
-    struct name##Lock \
-    { \
-        name##Lock(name##Id element) : element(element) { allocator.Acquire(this->element.id24); } \
-        ~name##Lock() { allocator.Release(this->element.id24); } \
-    private: \
-        name##Id element; \
-    };
 
 template<int MAX_ALLOCS, class... TYPES>
 class IdAllocatorSafe : public Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>

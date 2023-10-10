@@ -15,6 +15,7 @@
 #include "coregraphics/config.h"
 #include "math/rectangle.h"
 #include "coregraphics/indextype.h"
+#include "ids/idallocator.h"
 
 namespace CoreGraphics
 {
@@ -140,8 +141,7 @@ struct CmdBufferMarkerBundle
 };
 
 ID_24_8_TYPE(CmdBufferId);
-void CmdBufferIdAcquire(const CmdBufferId id); 
-void CmdBufferIdRelease(const CmdBufferId id);
+_DECL_ACQUIRE_RELEASE(CmdBufferId);
 
 /// create new command buffer
 const CmdBufferId CreateCmdBuffer(const CmdBufferCreateInfo& info);

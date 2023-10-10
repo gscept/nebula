@@ -14,15 +14,14 @@
 #include "coregraphics/config.h"
 #include "coregraphics/commandbuffer.h"
 #include "gpubuffertypes.h"
+#include "ids/idallocator.h"
 
 namespace CoreGraphics
 {
 
 struct CmdBufferId;
 ID_24_8_TYPE(BufferId);
-
-void BufferIdAcquire(const BufferId id); 
-void BufferIdRelease(const BufferId id);;
+_DECL_ACQUIRE_RELEASE(BufferId);
 
 enum BufferAccessMode
 {
