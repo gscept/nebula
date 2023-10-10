@@ -33,10 +33,10 @@ namespace Nebula
             /// This is not trivial and can potentially be costly
             /// </summary>
             public bool Active
-            { 
+            {
                 get { return active; }
                 set
-                { 
+                {
                     if (active == value)
                     {
                         return;
@@ -78,11 +78,7 @@ namespace Nebula
                     }
                 }
             }
-            /// <remarks>
-            /// Override in subclass.
-            /// The property AcceptedEvents must return the Event code for this method to be called at all.
-            /// </remarks>
-            /// <seealso cref="AcceptedEvents()"/>
+
             /// <summary>
             /// Checks if the property is valid (attached to an entity)
             /// </summary>

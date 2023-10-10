@@ -16,6 +16,7 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
 #include "game/componentinspection.h"
+#include "basegamefeature/components/transform.h"
 
 namespace Game
 {
@@ -826,6 +827,17 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
 
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
+    bool hasOwner = false; 
+    bool hasTransform = false;
+
+    for (auto const& c : info.components)
+    {
+        if (c == Owner::ID())
+            hasOwner = true;
+        if (c == WorldTransform::ID())
+            hasOwner = true;
+    }
+
     if (info.components[0] != GameServer::Singleton->state.ownerId)
     {
         // push owner id into the component array
