@@ -27,7 +27,7 @@ namespace Nebula
         {
             private bool active = false;
             private Entity entity = null;
-
+            
             /// <summary>
             /// Activate or deactivate property
             /// This is not trivial and can potentially be costly

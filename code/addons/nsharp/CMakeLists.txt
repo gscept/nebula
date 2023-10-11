@@ -25,6 +25,8 @@ fips_begin_sharedlib(NebulaEngine)
 			PropertyManager.cs
             World.cs
             Msg.cs
+            MsgDispatcher.cs
+            MsgPort.cs
             ConsoleHook.cs
         )
     fips_dir(NebulaEngine/xna)

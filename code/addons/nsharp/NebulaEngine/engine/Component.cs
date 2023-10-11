@@ -79,6 +79,14 @@ namespace Nebula
             {
                 public Matrix value;
             }
+
+            [NativeCppClass]
+            [StructLayout(LayoutKind.Sequential)]
+            public struct PhysicsActor : NativeComponent
+            {
+                public uint actorId;
+                public ResourceDescriptor descriptor;
+            }
         }
     }
 }

@@ -23,7 +23,6 @@ struct float16
 
 //------------------------------------------------------------------------------
 /**
-	Check whether an entity id is valid.
 */
 NEBULA_EXPORT bool EntityIsValid(uint32_t worldId, uint32_t entity);
 

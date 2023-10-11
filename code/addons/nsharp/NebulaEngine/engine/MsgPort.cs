@@ -9,9 +9,10 @@ namespace Nebula
 {
     namespace Game
     {
-        public interface Msg
-        {
-            // Empty
+        public delegate void HandleMessage(in Msg msg);
+        public class MsgPort
+        {    
+            public HandleMessage OnMessage;
         }
     }
 }

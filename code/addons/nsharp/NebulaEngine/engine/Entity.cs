@@ -16,6 +16,7 @@ namespace Nebula
             private World world = null;
             private uint id = 0xFFFFFFFF;
             private List<Property> properties;
+            private MsgDispatcher dispatcher = new MsgDispatcher();
 
             /// <summary>
             /// The world that this entity belongs to
@@ -112,6 +113,8 @@ namespace Nebula
                 this.properties.Add(property);
                 PropertyManager.Instance.RegisterProperty(property);
                 property.Active = true;
+
+                this.dispatcher.AttachHandler(property.OnMessage, property.AcceptedMessages());
             }
 
             /// <summary>
@@ -154,11 +157,11 @@ namespace Nebula
 
             /// <summary>
             /// Sends this entity a message.
-            /// The message will be propagated into all Properties that this entity has.
+            /// The message will be propagated into all Properties that this entity has, that accepts the message.
             /// </summary>
-            public void Send(in Msg msg)
+            public void Send<T>(in T msg) where T : struct, Msg
             {
-                // TODO: Implement me!
+                this.dispatcher.Dispatch(msg);
             }
 
             /// <summary>

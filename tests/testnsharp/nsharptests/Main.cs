@@ -11,6 +11,16 @@ using NST;
 
 namespace NST
 {
+    public struct TestMsg : Msg
+    {
+        public float f;
+    }
+
+    public struct TestMsg2 : Msg
+    {
+        public float f;
+    }
+
     public class TestProperty : Property
     {
         public int i = 0;
@@ -22,6 +32,22 @@ namespace NST
         {
             i++;
             Console.WriteLine(String.Format("TestProperty OnBeginFrame() called {0} times", i));
+        }
+
+        public override void OnMessage(in Msg msg)
+        {
+            if (msg.GetType() == typeof(TestMsg))
+            {
+                Console.WriteLine("Received TestMsg : " + ((TestMsg)msg).f);
+            }
+        }
+
+        public override Type[] AcceptedMessages()
+        {
+            return new Type[]
+                {
+                    typeof(TestMsg)
+                };
         }
 
         public override FrameEvent[] AcceptedEvents()
@@ -147,6 +173,14 @@ namespace NST
             // TODO: Make sure our matrices in cpp and c# use the same coordinate system by default
             // Verify(transform.Forward == new Vector3(0, 32, 1));
             Verify(transform.Translation == new Vector3(41, 42, 43));
+
+            TestMsg testmsg = new TestMsg();
+            testmsg.f = 100.0f;
+            entity3.Send(testmsg);
+
+            TestMsg2 testmsg2 = new TestMsg2();
+            testmsg2.f = 200.0f;
+            entity3.Send(testmsg2);
 
             Verify(1 == 1);
         }
