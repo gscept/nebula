@@ -205,6 +205,9 @@ void                        ReleaseDatasets();
 ComponentId                  CreateComponent(ComponentCreateInfo const& info);
 /// Returns a component id
 ComponentId                  GetComponentId(Util::StringAtom name);
+/// Returns a component id, based on template type
+template <typename COMPONENT>
+ComponentId                  GetComponentId();
 /// Returns a blueprint id by name
 BlueprintId                 GetBlueprintId(Util::StringAtom name);
 /// Returns a template id by name
@@ -245,10 +248,30 @@ ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
+// -- Internal functions, Do not use --
+namespace Internal
+{
+
+// Do not use. This function generates a new component id.
+uint16_t GenerateNewComponentId();
+
+} // namespace Internal
+
 //------------------------------------------------------------------------------
 /**
     -- Beginning of template implementations --
 */
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename COMPONENT>
+ComponentId
+GetComponentId()
+{
+    static const uint16_t id = Game::Internal::GenerateNewComponentId();
+    return ComponentId(id);
+}
 
 //------------------------------------------------------------------------------
 /**

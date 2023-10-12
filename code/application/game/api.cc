@@ -175,4 +175,18 @@ GetTemplateId(Util::StringAtom name)
     return BlueprintManager::GetTemplateId(name);
 }
 
+namespace Internal
+{
+//------------------------------------------------------------------------------
+/**
+    Do not use. This function generates a new component id.
+*/
+uint16_t
+GenerateNewComponentId()
+{
+    static uint16_t idCounter = -1;
+    return ++idCounter;
+}
+}
+
 } // namespace Game
