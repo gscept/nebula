@@ -12,6 +12,8 @@ namespace Nebula
     {
         public class MsgDispatcher
         {
+            public delegate void HandleMessage(in Msg msg);
+
             class MsgEvent
             {
                 public event HandleMessage OnMessageEvent;
@@ -21,7 +23,6 @@ namespace Nebula
                 }
             }
 
-            private List<MsgPort> portList = new List<MsgPort>();
             private Dictionary<Type, MsgEvent> events = new Dictionary<Type, MsgEvent>();
 
             public void AttachHandler(HandleMessage handler, Type[] msgTypes)
