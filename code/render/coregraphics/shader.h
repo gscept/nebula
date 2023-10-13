@@ -46,6 +46,7 @@ struct ShaderRWBufferId;
 struct ResourceTableId;
 struct ResourceTableLayoutId;
 struct ResourcePipelineId;
+struct ResourceTableSet;
 
 RESOURCE_ID_TYPE(ShaderId);             
 ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programType, shaderId, shaderType);     // 32 bits shader, 24 bits program, 8 bits type
@@ -93,6 +94,8 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
+/// create resource table set from shader
+ResourceTableSet ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
 /// Returns true if there is a resource table for the given group in the shader
 const bool ShaderHasResourceTable(const ShaderId id, const IndexT group);
 /// create constant buffer from shader using name (don't use too frequently)
