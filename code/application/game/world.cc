@@ -829,11 +829,11 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
     tableInfo.name = info.name;
     tableInfo.numComponents = 0;
 
-    if (info.components[0] != Game::Owner::ID() && info.components[1] != Game::WorldTransform::ID())
+    if (info.components[0] != GetComponentId<Game::Owner>() && info.components[1] != GetComponentId<Game::WorldTransform>())
     {
         // always have owner and transform as first columns
-        components[0] = Game::Owner::ID();
-        components[1] = Game::WorldTransform::ID();
+        components[0] = GetComponentId<Owner>();
+        components[1] = GetComponentId<WorldTransform>();
         tableInfo.numComponents = 2 + info.components.Size();
 
         n_assert(tableInfo.numComponents < NUM_PROPS);

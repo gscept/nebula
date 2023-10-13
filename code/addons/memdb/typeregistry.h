@@ -49,6 +49,20 @@ private:
     Util::Dictionary<Util::StringAtom, AttributeId> registry;
 };
 
+/// Generates a new attribute id
+uint16_t GenerateNewAttributeId();
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename ATTRIBUTE>
+AttributeId
+GetAttributeId()
+{
+    static const uint16_t id = MemDb::GenerateNewAttributeId();
+    return AttributeId(id);
+}
+
 //------------------------------------------------------------------------------
 /**
     TYPE must be trivially copyable and destructible, and also standard layout.
@@ -76,11 +90,12 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
         // setup a state description with the default values from the type
         AttributeDescription* desc = new AttributeDescription(name, defaultValue, flags);
 
-        AttributeId descriptor = reg->componentDescriptions.Size();
-        reg->componentDescriptions.Append(desc);
-        reg->registry.Add(name, descriptor);
+        AttributeId descriptor = MemDb::GetAttributeId<TYPE>();
+        if (descriptor.id >= reg->componentDescriptions.Size())
+            reg->componentDescriptions.Resize(descriptor.id + 10);
 
-        TYPE::id = descriptor;
+        reg->componentDescriptions[descriptor.id] = desc;
+        reg->registry.Add(name, descriptor);
 
         return descriptor;
     }

@@ -1,0 +1,9 @@
+namespace Test;
+
+table TestComponent
+{
+    i: int;
+    f: float;
+    b: byte;
+    s: string;
+}

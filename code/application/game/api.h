@@ -248,15 +248,6 @@ ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
-// -- Internal functions, Do not use --
-namespace Internal
-{
-
-// Do not use. This function generates a new component id.
-uint16_t GenerateNewComponentId();
-
-} // namespace Internal
-
 //------------------------------------------------------------------------------
 /**
     -- Beginning of template implementations --
@@ -269,8 +260,7 @@ template <typename COMPONENT>
 ComponentId
 GetComponentId()
 {
-    static const uint16_t id = Game::Internal::GenerateNewComponentId();
-    return ComponentId(id);
+    return MemDb::GetAttributeId<COMPONENT>();
 }
 
 //------------------------------------------------------------------------------
@@ -343,7 +333,7 @@ AddComponent(World* world, Entity entity, TYPE* value)
     //n_assert(!state.asyncProcessing);
     Op::RegisterComponent op;
     op.entity = entity;
-    op.component = TYPE::ID();
+    op.component = GetComponentId<TYPE>();
     op.value = (void*)value;
     AddOp(WorldGetScratchOpBuffer(world), op);
 }
@@ -358,7 +348,7 @@ RemoveComponent(World* world, Entity entity)
     //n_assert(!state.asyncProcessing);
     Op::DeregisterComponent op;
     op.entity = entity;
-    op.component = TYPE::ID();
+    op.component = GetComponentId<TYPE>();
     AddOp(WorldGetScratchOpBuffer(world), op);
 }
 

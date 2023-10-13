@@ -90,7 +90,7 @@ private:
         int offset = info.numInclusive++;
         n_assert(offset < Dataset::MAX_COMPONENT_BUFFERS);
 
-        info.inclusive[offset] = UnqualifiedType::ID();
+        info.inclusive[offset] = GetComponentId<UnqualifiedType>();
         info.access[offset] = std::is_const<typename std::remove_reference<TYPE>::type>() ? Game::AccessMode::READ : Game::AccessMode::WRITE;
     }
 
@@ -106,7 +106,7 @@ private:
         using UnqualifiedType = typename std::remove_const<typename std::remove_reference<TYPE>::type>::type;
         int offset = info.numExclusive++;
         n_assert(offset < FilterCreateInfo::MAX_EXCLUSIVE_COMPONENTS);
-        info.exclusive[offset] = UnqualifiedType::ID();
+        info.exclusive[offset] = GetComponentId<UnqualifiedType>();
     }
 
     template<typename ... TYPES, std::size_t...Is>

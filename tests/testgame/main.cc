@@ -15,10 +15,21 @@
 #include "entitysystemtest.h"
 #include "scriptingtest.h"
 
+#include "testcomponents.h"
+
 ImplementNebulaApplication();
 
 using namespace Core;
 using namespace Test;
+
+template<typename T>
+void RegisterComponent()
+{
+    Util::StringAtom const name = T::TableType::Traits::name;
+    MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), 0);
+    //Game::ComponentSerialization::Register<Resources::ResourceName>(cid);
+    //Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<Resources::ResourceName>);
+}
 
 class GameAppTest : public App::GameApplication
 {
@@ -26,6 +37,7 @@ private:
     /// setup game features
     void SetupGameFeatures()
     {
+        RegisterComponent<TestComponentT>();
         // empty
     }
     /// cleanup game features

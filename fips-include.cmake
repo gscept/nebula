@@ -147,6 +147,27 @@ IF (USE_DOTNET)
     cmake_policy(POP)
 ENDIF (USE_DOTNET)
 
+macro(nebula_flatc_component)
+    foreach(fb ${ARGN})
+        set(target_has_flatc 1)
+        get_filename_component(f_abs ${CurDir}${fb} ABSOLUTE)
+        get_filename_component(f_dir ${f_abs} PATH)
+        STRING(REPLACE ".fbs" ".h" out_header ${fb})
+        STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
+        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
+        set(abs_output_folder "${CMAKE_BINARY_DIR}/generated_fbs/${CurTargetName}/${CurDir}")
+        add_custom_command(OUTPUT "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
+            PRE_BUILD COMMAND ${FLATC} -c --cpp-std c++17 --cpp-static-reflection --gen-object-api --cpp-str-flex-ctor --cpp-str-type Util::String --cpp-include "array" --cpp-include "util/stringatom.h" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${f_abs}"
+            WORKING_DIRECTORY "${NROOT}"
+            MAIN_DEPENDENCY "${f_abs}"
+            VERBATIM PRE_BUILD)
+        SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_header}" )
+        source_group("${CurGroup}" FILES ${f_abs})
+        target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}")
+    endforeach()
+    include_directories("${CMAKE_BINARY_DIR}/generated_fbs/${CurTargetName}")
+endmacro()
+
 macro(nebula_flatc root)
     string(COMPARE EQUAL ${root} "SYSTEM" use_system)
     set_nebula_export_dir()

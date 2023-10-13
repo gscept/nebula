@@ -73,14 +73,12 @@ class ComponentDefinition:
                 retVal += '    {} {};\n'.format(self.variables[0].type, "value")
             else:
                 retVal += '    {} {} = {};\n'.format(self.variables[0].type, "value", self.variables[0].defaultValue)
-            retVal += "    DECLARE_COMPONENT;\n"
             retVal += "};\n"
             return retVal
         else:
             retVal = 'struct {}\n{{\n'.format(self.componentName)
             for v in self.variables:
                 retVal += '    {}\n'.format(v.AsString())
-            retVal += "    DECLARE_COMPONENT;\n"
             retVal += "};\n"
             return retVal
     pass
@@ -174,9 +172,6 @@ def HasStructComponents():
 ##
 #
 def WriteComponentSourceDefinitions(f, document):
-    for comp in components:
-        if comp.isFlag is False:
-            f.WriteLine('DEFINE_COMPONENT({});'.format(comp.componentName))
     IDLDocument.BeginNamespaceOverride(f, document, "Details")
     f.WriteLine('const bool RegisterComponentLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
