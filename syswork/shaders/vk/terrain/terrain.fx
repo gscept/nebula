@@ -63,6 +63,8 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
     float WorldSizeX;
     float WorldSizeZ;
 
+    vec2 DataBufferSize;
+
     uint NumTilesX;
     uint NumTilesY;
     uint TileWidth;
@@ -139,11 +141,15 @@ group(SYSTEM_GROUP) rw_buffer       PageStatusBuffer [ string Visibility = "PS|C
     uint PageStatuses[];
 };
 
-group(DYNAMIC_OFFSET_GROUP) constant PatchUniforms [ string Visibility = "VS|PS"; ]
+struct TerrainPatch
 {
-    vec2 OffsetPatchPos;
-    vec2 OffsetPatchUV;
-    vec2 PatchUvScale;
+    vec2 PosOffset;
+    vec2 UvOffset;
+};
+
+group(SYSTEM_GROUP) rw_buffer TerrainPatchData [ string Visibility = "VS|PS"; ]
+{
+    TerrainPatch Patches[];
 };
 
 group(SYSTEM_GROUP) sampler_state TextureSampler
@@ -211,10 +217,11 @@ vsTerrain(
     , out float Tessellation
 ) 
 {
-    vec3 offsetPos = position + vec3(OffsetPatchPos.x, 0, OffsetPatchPos.y);
+    TerrainPatch terrainPatch = Patches[gl_InstanceID];
+    vec3 offsetPos = position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y);
     vec4 modelSpace = Transform * vec4(offsetPos, 1);
     Position = vec4(offsetPos, 1);
-    vec2 UV = uv + OffsetPatchUV;
+    vec2 UV = uv + terrainPatch.UvOffset;
 
     float vertexDistance = distance( Position.xyz, EyePos.xyz);
     float factor = 1.0f - saturate((MinLODDistance - vertexDistance) / (MinLODDistance - MaxLODDistance));
@@ -289,7 +296,7 @@ hsTerrain(
 )
 {
     Position[gl_InvocationID]   = Transform * position[gl_InvocationID];
-    Normal[gl_InvocationID]     = normal[gl_InvocationID];
+    Normal[gl_InvocationID] = normal[gl_InvocationID];
 
     // provoking vertex gets to decide tessellation factors
     if (gl_InvocationID == 0)
@@ -328,7 +335,6 @@ dsTerrain(
     in vec4 position[],
     in vec3 normal[],
     out vec2 UV,
-    out vec3 ViewPos,
     out vec3 Normal,
     out vec3 Position)
 {
@@ -336,19 +342,16 @@ dsTerrain(
         mix(position[0].xyz, position[1].xyz, gl_TessCoord.x),
         mix(position[2].xyz, position[3].xyz, gl_TessCoord.x),
         gl_TessCoord.y);
-        
+
     Normal = mix(
         mix(normal[0], normal[1], gl_TessCoord.x),
         mix(normal[2], normal[3], gl_TessCoord.x),
         gl_TessCoord.y);
-
+        
     UV = (Position.xz / vec2(WorldSizeX, WorldSizeZ)) - 0.5f;
 
     float heightValue = sample2DLod(HeightMap, TextureSampler, UV, 0).r;
     Position.y = MinHeight + heightValue * (MaxHeight - MinHeight);
-
-    // when we have height adjusted, calculate the view position
-    ViewPos = EyePos.xyz - Position.xyz;
 
     gl_Position = ViewProjection * vec4(Position, 1);
 }
@@ -497,19 +500,18 @@ CalculateTileCoords(in uint mip, in uint maxTiles, in vec2 relativePos, in uvec2
 shader
 void
 psTerrainPrepass(
-    in vec2 uv,
-    in vec3 viewPos,
-    in vec3 normal,
-    in vec3 worldPos,
+    in vec2 UV,
+    in vec3 Normal,
+    in vec3 WorldPos,
     [color0] out vec4 Pos)
 {
-    Pos.xy = worldPos.xz;
+    Pos.xy = WorldPos.xz;
     Pos.z = 0.0f;
-    Pos.w = query_lod2D(AlbedoLowresBuffer, TextureSampler, uv).y;
+    Pos.w = query_lod2D(AlbedoLowresBuffer, TextureSampler, UV).y;
 
     // convert world space to positive integer interval [0..WorldSize]
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-    vec2 unsignedPos = worldPos.xz + worldSize * 0.5f;
+    vec2 unsignedPos = WorldPos.xz + worldSize * 0.5f;
     ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
 
     if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
@@ -527,12 +529,12 @@ psTerrainPrepass(
     if (tiles != 1)
     {
         // calculate pixel position relative to the world coordinate for the subtexture
-        vec2 relativePos = worldPos.xz - subTexture.worldCoordinate;
+        vec2 relativePos = WorldPos.xz - subTexture.worldCoordinate;
         //float lod = (Pos.w / IndirectionNumMips) * maxMip;
         
         const float lodScale = 4 * tiles;
-        vec2 dy = dFdyFine(worldPos.xz * lodScale);
-        vec2 dx = dFdxFine(worldPos.xz * lodScale);
+        vec2 dy = dFdyFine(WorldPos.xz * lodScale);
+        vec2 dx = dFdxFine(WorldPos.xz * lodScale);
         float d = max(1.0f, max(dot(dx, dx), dot(dy, dy)));
         d = clamp(sqrt(d), 1.0f, pow(2, maxMip));
         float lod = log2(d);
@@ -647,7 +649,7 @@ vsScreenSpace(
 shader
 void
 psTerrainTileUpdate(
-    in vec2 uv,
+    in vec2 UV,
     [color0] out vec3 Albedo,
     [color1] out vec3 Normal,
     [color2] out vec4 Material)
@@ -655,7 +657,7 @@ psTerrainTileUpdate(
     // calculate 
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
     vec2 invWorldSize = 1.0f / worldSize;
-    vec2 worldPos2D = vec2(SparseTileWorldOffset + uv * MetersPerTile) + worldSize * 0.5f;
+    vec2 worldPos2D = vec2(SparseTileWorldOffset + UV * MetersPerTile) + worldSize * 0.5f;
     vec2 inputUv = worldPos2D;
 
     vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
@@ -769,6 +771,191 @@ psTerrainTileUpdate(
     Albedo = totalAlbedo;
     Normal = totalNormal;
     Material = totalMaterial;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+[early_depth]
+shader
+void
+psTerrainResolve(
+    in vec2 UV
+    , in vec3 Normal
+    , in vec3 WorldPos
+    , [color0] out vec4 OutColor)
+{
+    // sample position, lod and texture sampling mode from screenspace buffer
+    vec2 screenUv = gl_FragCoord.xy / DataBufferSize;
+    vec2 posBuf = sample2DLod(TerrainPosBuffer, TextureSampler, screenUv, 0).zw;
+    if (posBuf.y == 255.0f)
+        discard;
+
+    // calculate the subtexture coordinate
+    vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
+    vec2 worldUv = (WorldPos.xy + worldSize * 0.5f) / worldSize;
+    vec2 unsignedPos = WorldPos.xy + worldSize * 0.5f;
+    ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
+
+    vec3 albedo = sample2DLod(AlbedoLowresBuffer, TextureSampler, worldUv, posBuf.y).rgb;
+    vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, worldUv, posBuf.y).xyz;
+    vec4 material = sample2DLod(MaterialLowresBuffer, TextureSampler, worldUv, posBuf.y);
+
+    if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
+    {
+        vec3 viewVec = normalize(EyePos.xyz - WorldPos);
+        vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
+
+        vec3 light = vec3(0, 0, 0);
+        light += CalculateLight(WorldPos, gl_FragCoord.xyz, albedo.rgb, material, normal);
+        //light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+        //light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
+        //light += IBL(albedo, F0, normal, viewVec, material);
+        light += albedo.rgb * material[MAT_EMISSIVE];
+        OutColor = vec4(light, 1);
+    }
+    else
+    {
+        // get subtexture
+        uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
+        TerrainSubTexture subTexture = SubTextures[subTextureIndex];
+
+        uvec2 dummydummy, indirectionOffset;
+        uint maxMip, tiles, mipBias;
+        UnpackSubTexture(subTexture, dummydummy, indirectionOffset, maxMip, mipBias, tiles);
+
+        vec2 debugCoord = uvec2(0, 0);
+
+        if (tiles != 1)
+        {
+            int lowerMip = int(floor(posBuf.x));
+            int upperMip = int(ceil(posBuf.x));
+
+            vec2 cameraRelativePos = WorldPos.xz - EyePos.xz;
+            float distSquared = dot(cameraRelativePos, cameraRelativePos);
+            float blendWeight = (distSquared - LowresFadeStart) * LowresFadeDistance;
+            blendWeight = clamp(blendWeight, 0, 1);
+
+            vec2 relativePos = WorldPos.xz - subTexture.worldCoordinate;
+
+            // calculate lower mip page coord, page tile coord, and the fractional of the page tile
+            uvec2 pageCoordLower;
+            uvec2 dummy;
+            vec2 subTextureTileFractLower;
+            CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, pageCoordLower, dummy, subTextureTileFractLower);
+
+            // physicalUv represents the pixel offset for this pixel into that page, add padding to account for anisotropy
+            vec2 physicalUvLower = subTextureTileFractLower * PhysicalTileSize + PhysicalTilePadding;
+
+            vec3 albedo0;
+            vec3 normal0;
+            vec4 material0;
+
+            // if we need to sample two lods, do bilinear interpolation ourselves
+            if (upperMip != lowerMip)
+            {
+                uvec2 pageCoordUpper;
+                uvec2 dummy;
+                vec2 subTextureTileFractUpper;
+                CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
+                vec2 physicalUvUpper = subTextureTileFractUpper * (PhysicalTileSize)+PhysicalTilePadding;
+
+                // get the indirection coord and normalize it to the physical space
+                uvec3 indirectionUpper = fetchIndirection(ivec2(pageCoordUpper), int(upperMip), 0);
+                uvec3 indirectionLower = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
+                debugCoord = indirectionLower.xy / vec2(2048.0f);
+
+
+                vec3 albedo1;
+                vec3 normal1;
+                vec4 material1;
+
+                // if valid mip, sample from physical cache
+                if (indirectionUpper.z != 0xF)
+                {
+                    // convert from texture space to normalized space
+                    vec2 indirection = (indirectionUpper.xy + physicalUvUpper) * vec2(PhysicalInvPaddedTextureSize);
+                    albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
+                    normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
+                    material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+                }
+                else
+                {
+                    // otherwise, pick fallback texture
+                    albedo0 = albedo;
+                    normal0 = normal;
+                    material0 = material;
+                }
+
+                // same here
+                if (indirectionLower.z != 0xF)
+                {
+                    // convert from texture space to normalized space
+                    vec2 indirection = (indirectionLower.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
+                    albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
+                    normal1 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
+                    material1 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+                }
+                else
+                {
+                    albedo1 = albedo;
+                    normal1 = normal;
+                    material1 = material;
+                }
+
+                float weight = fract(posBuf.y);
+                albedo0 = lerp(albedo1, albedo0, weight);
+                normal0 = lerp(normal1, normal0, weight);
+                material0 = lerp(material1, material0, weight);
+            }
+            else
+            {
+                // do the cheap path and just do a single lookup
+                uvec3 indirection = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
+                debugCoord = indirection.xy;
+
+                // use physical cache if indirection is valid
+                if (indirection.z != 0xF)
+                {
+                    vec2 indir = (indirection.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
+                    albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indir.xy, 0).rgb;
+                    normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indir.xy, 0).xyz;
+                    material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indir.xy, 0);
+                }
+                else
+                {
+                    // otherwise, pick fallback texture
+                    albedo0 = albedo;
+                    normal0 = normal;
+                    material0 = material;
+                }
+            }
+
+            if (blendWeight >= 0.0f)
+            {
+                albedo = lerp(albedo0, albedo, blendWeight);
+                normal = lerp(normal0, normal, blendWeight);
+                material = lerp(material0, material, blendWeight);
+            }
+            else
+            {
+                albedo = albedo0;
+                normal = normal0;
+                material = material0;
+            }
+        }
+
+        vec3 viewVec = normalize(EyePos.xyz - WorldPos);
+        vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
+
+        vec3 light = vec3(0, 0, 0);
+        light += CalculateLight(WorldPos, gl_FragCoord.xyz, albedo.rgb, material, normal);
+        //light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+        //light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
+        //light += IBL(albedo, F0, normal, viewVec, material);
+        light += albedo.rgb * material[MAT_EMISSIVE];
+        OutColor = vec4(light, 1);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1177,6 +1364,12 @@ render_state TerrainState
     //FillMode = Line;
 };
 
+render_state ResolveState
+{
+    DepthEnabled = true;
+    DepthFunc = Equal;
+};
+
 render_state FinalState
 {
     DepthWrite = false;
@@ -1184,6 +1377,7 @@ render_state FinalState
 };
 
 TessellationTechnique(TerrainPrepass, "TerrainPrepass", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainPrepass(), TerrainState);
+TessellationTechnique(TerrainResolve, "TerrainResolve", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainResolve(), ResolveState);
 SimpleTechnique(TerrainVirtualScreenSpace, "TerrainVirtualScreenSpace", vsScreenSpace(), psScreenSpaceVirtual(), FinalState);
 SimpleTechnique(TerrainTileUpdate, "TerrainTileUpdate", vsScreenSpace(), psTerrainTileUpdate(), FinalState);
 SimpleTechnique(TerrainLowresFallback, "TerrainLowresFallback", vsScreenSpace(), psGenerateLowresFallback(), FinalState);
