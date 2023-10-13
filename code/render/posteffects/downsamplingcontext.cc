@@ -166,7 +166,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     state.depthBufferCounter = CoreGraphics::CreateBuffer(bufInfo);
 
     bufInfo.elementSize = sizeof(DownsampleCsDepth::DownsampleUniforms);
-    bufInfo.mode = CoreGraphics::HostCached;
+    bufInfo.mode = CoreGraphics::DeviceAndHost;
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
