@@ -52,10 +52,6 @@ psStandard(
     in vec3 WorldSpacePos,
     [color0] out vec4 OutColor)
 {
-    float viewDepth = CalculateViewDepth(View, WorldSpacePos);
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewDepth, InvZScale, InvZBias);
-    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
-
     vec4 albedo   = calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
     vec4 material = calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
     vec3 N        = normalize(calcBump(Tangent, Normal, Sign, sample2D(NormalMap, NormalSampler, UV)));

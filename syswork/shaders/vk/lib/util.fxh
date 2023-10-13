@@ -364,7 +364,8 @@ UnpackViewSpaceNormal(in vec4 packedDataValue)
     z: depth upper 8 bit
     w: depth lower 8 bit
 */
-vec4 PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
+vec4
+PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
 {
     vec4 packedData;
     packedData.x = ObjectId;
@@ -385,37 +386,10 @@ vec4 PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
     z: depth upper 8 bit
     w: depth lower 8 bit
 */
-float UnpackDepth(in vec4 packedData)
+float
+UnpackDepth(in vec4 packedData)
 {
     return unpack_u16(packedData.z, packedData.w) / depthScale;
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    Compute lighting with diffuse and specular from lightbuffer,
-    emissive and spec texture, optional add rim
-*/
-vec4
-psLightMaterial(in vec4 lightValues,
-               in vec4 diffColor,
-               in vec3 emsvColor,
-               in float emsvIntensity,
-               in vec3 specColor,
-               in float specIntensity)
-{
-    lightValues = DecodeHDR(lightValues);
-    vec4 color = diffColor;
-    // exagerate optional Rim
-    color.xyz *= lightValues.xyz;
-    color.xyz += emsvColor * emsvIntensity;
-    // color with diff color
-    vec3 normedColor = normalize(lightValues.xyz);
-    float maxColor = max(max(normedColor.x, normedColor.y), normedColor.z);
-    normedColor /= maxColor;
-    float spec = lightValues.w;
-    color.xyz += specColor * specIntensity * spec * normedColor;
-
-    return color;
 }
 
 #define PI 3.14159265
@@ -585,7 +559,6 @@ GetPosition(mat4x4 transform)
     return transform[2].xyz;
 }
 
-
 //------------------------------------------------------------------------------
 /**
     Unpack a 1D index into a 3D index
@@ -631,7 +604,8 @@ MortonCurve8x8(uint idx)
 //------------------------------------------------------------------------------
 /**
 */
-bool IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
+bool 
+IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
 {
     vec3 ab = lineEnd - lineStart;
     float t = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
@@ -690,7 +664,8 @@ const int m = 1540483477;
 /**
     Murmur hash function
 */
-float murmur(int k)
+float 
+murmur(int k)
 {
     int h = k ^ 1;
 
@@ -728,7 +703,8 @@ random3(vec3 c) {
 
 const float F3 = 0.3333333;
 const float G3 = 0.1666667;
-float simplex3D(vec3 p)
+float 
+simplex3D(vec3 p)
 {
     /* 1. find current tetrahedron T and it's four vertices */
     /* s, s+i1, s+i2, s+1.0 - absolute skewed (integer) coordinates of T vertices */
