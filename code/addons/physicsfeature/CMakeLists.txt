@@ -12,7 +12,7 @@ fips_files(
 			physicsmanager.cc
 		)
 	fips_dir(components)
-		nebula_add_nidl(
-			physics.nidl
+		nebula_flatc_component(
+			physicsfeature.fbs
 		)
 nebula_end_module()

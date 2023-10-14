@@ -248,10 +248,21 @@ ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
+
 //------------------------------------------------------------------------------
 /**
     -- Beginning of template implementations --
 */
+
+template <typename T>
+void
+RegisterComponent()
+{
+    Util::StringAtom const name = T::TableType::Traits::name;
+    MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), 0);
+    //Game::ComponentSerialization::Register<Resources::ResourceName>(cid);
+    //Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<Resources::ResourceName>);
+}
 
 //------------------------------------------------------------------------------
 /**

@@ -157,7 +157,23 @@ macro(nebula_flatc_component)
         STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
         set(abs_output_folder "${CMAKE_BINARY_DIR}/generated_fbs/${CurTargetName}/${CurDir}")
         add_custom_command(OUTPUT "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
-            PRE_BUILD COMMAND ${FLATC} -c --cpp-std c++17 --cpp-static-reflection --gen-object-api --cpp-str-flex-ctor --cpp-str-type Util::String --cpp-include "array" --cpp-include "util/stringatom.h" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${f_abs}"
+            PRE_BUILD 
+                COMMAND ${FLATC}
+                    -c
+                    --cpp-std c++17
+                    --cpp-static-reflection
+                    --gen-object-api
+                    --include-prefix flat
+                    --keep-prefix
+                    --cpp-include "nflatbuffer/nebula_flat.h"
+                    --cpp-str-flex-ctor
+                    --cpp-str-type Util::StringAtom
+                    --cpp-include "array"
+                    --cpp-include "util/stringatom.h"
+                    -I "${NROOT}/syswork/data/flatbuffer/"
+                    --filename-suffix ""
+                    -o "${abs_output_folder}" 
+                    "${f_abs}"
             WORKING_DIRECTORY "${NROOT}"
             MAIN_DEPENDENCY "${f_abs}"
             VERBATIM PRE_BUILD)

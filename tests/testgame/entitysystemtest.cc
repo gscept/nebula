@@ -7,10 +7,10 @@
 #include "timing/timer.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
-#include "testproperties.h"
 #include "framesync/framesynctimer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
+#include "testcomponents.h"
 
 using namespace Game;
 using namespace Math;
@@ -284,13 +284,13 @@ EntitySystemTest::Run()
         for (int v = 0; v < set.numViews; v++)
         {
             Game::Dataset::EntityTableView const& view = set.views[v];
-            TestHealth* healths = (TestHealth*)view.buffers[0];
-            TestStruct* strs = (TestStruct*)view.buffers[1];
+            TestHealthT* healths = (TestHealthT*)view.buffers[0];
+            TestStructT* strs = (TestStructT*)view.buffers[1];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
-                TestHealth& h = healths[i];
-                TestStruct& s = strs[i];
+                TestHealthT& h = healths[i];
+                TestStructT& s = strs[i];
 
                 VERIFY(s.foo == 1);
                 s.foo = h.value;
@@ -300,20 +300,20 @@ EntitySystemTest::Run()
         Game::DestroyFilter(filter);
     }
 
-    Game::Filter filter = Game::FilterBuilder().Including<const TestHealth, const TestStruct>().Build();
+    Game::Filter filter = Game::FilterBuilder().Including<const TestHealthT, const TestStructT>().Build();
 
     Game::Dataset set = Game::Query(world, filter);
 
     for (int v = 0; v < set.numViews; v++)
     {
         Game::Dataset::EntityTableView const& view = set.views[v];
-        TestHealth* healths = (TestHealth*)view.buffers[0];
-        TestStruct* strs = (TestStruct*)view.buffers[1];
+        TestHealthT* healths = (TestHealthT*)view.buffers[0];
+        TestStructT* strs = (TestStructT*)view.buffers[1];
 
         for (IndexT i = 0; i < view.numInstances; ++i)
         {
-            TestHealth& h = healths[i];
-            TestStruct& s = strs[i];
+            TestHealthT& h = healths[i];
+            TestStructT& s = strs[i];
 
             VERIFY(s.foo == h.value);
         }
@@ -321,13 +321,13 @@ EntitySystemTest::Run()
 
     VERIFY(set.numViews > 3);
 
-    Test::TestHealth* healths = (Test::TestHealth*)set.views[0].buffers[0];
-    Test::TestStruct* structs = (Test::TestStruct*)set.views[0].buffers[1];
+    Test::TestHealthT* healths = (Test::TestHealthT*)set.views[0].buffers[0];
+    Test::TestStructT* structs = (Test::TestStructT*)set.views[0].buffers[1];
 
     // add a component to an entity that does not already have it. This should
     // move the entity from one table to another, and in this case
     // creating a new table that contains only one instance (this one)
-    Game::AddComponent<TestVec4>(world, entities[1], nullptr);
+    Game::AddComponent<TestVec4T>(world, entities[1], nullptr);
 
     Game::DestroyFilter(filter);
     Game::ReleaseDatasets();
@@ -336,12 +336,12 @@ EntitySystemTest::Run()
 
     
     bool hasExecutedUpdateFunc = false;
-    std::function updateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
+    std::function updateFunc = [&](World* world, Test::TestHealthT const& testHealth, Test::TestStructT& testStruct)
     {
         hasExecutedUpdateFunc = true;
     };
 
-    Game::ProcessorBuilder("TestUpdateFunc").Func(updateFunc).Including<TestVec4>().Build();
+    Game::ProcessorBuilder("TestUpdateFunc").Func(updateFunc).Including<TestVec4T>().Build();
 
     StepFrame();
 
@@ -355,7 +355,7 @@ EntitySystemTest::Run()
     Game::CreateEntity(world, enemyInfo);
 
     int numActivateExecutions = 0;
-    std::function activateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
+    std::function activateFunc = [&](World* world, Test::TestHealthT const& testHealth, Test::TestStructT& testStruct)
     { 
         numActivateExecutions++;
     };

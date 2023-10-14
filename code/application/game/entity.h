@@ -32,11 +32,16 @@ struct Entity
     uint32_t index : 22;      // 4M concurrent entities
     uint32_t generation : 10; // 1024 generations per index
 
+    Entity() = default;
+    constexpr Entity(uint32_t id);
+    constexpr Entity(uint32_t generation, uint32_t index);
+
     static Entity FromId(Ids::Id32 id);
 
     explicit constexpr operator Ids::Id32() const;
     static constexpr Entity Invalid();
     constexpr uint32_t HashCode() const;
+    Entity& operator=(uint32_t rhs);
     const bool operator==(const Entity& rhs) const;
     const bool operator!=(const Entity& rhs) const;
     const bool operator<(const Entity& rhs) const;
@@ -52,6 +57,24 @@ struct EntityMapping
     MemDb::TableId table;
     MemDb::RowId instance;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline constexpr Entity::Entity(uint32_t id)
+{
+    this->index = id & 0x003FFFFF;
+    this->generation = (id & 0xFFC0000) >> 22;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline constexpr Entity::Entity(uint32_t generation, uint32_t index)
+{
+    this->index = index;
+    this->generation = generation;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -89,6 +112,17 @@ inline constexpr uint32_t
 Entity::HashCode() const
 {
     return index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Entity&
+Entity::operator=(uint32_t id)
+{
+    this->index = id & 0x003FFFFF;
+    this->generation = (id & 0xFFC0000) >> 22;
+    return *this;
 }
 
 //------------------------------------------------------------------------------

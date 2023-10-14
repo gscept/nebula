@@ -1,0 +1,20 @@
+include "foundation/math.fbs";
+
+namespace Game;
+
+table Owner
+{
+    entity: uint;
+}
+
+table Transform
+{
+    position: Flat.Vec3 (native_inline);
+    orientation: Flat.Quat (native_inline);
+    scale: Flat.Vec3 (native_inline);
+}
+
+table IsActive
+{
+    // Empty
+}

@@ -8,9 +8,9 @@
 #include "physicsinterface.h"
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
-#include "components/physics.h"
+#include "components/physicsfeature.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
-#include "basegamefeature/components/transform.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -27,7 +27,7 @@ namespace PhysicsFeature
 
 __ImplementSingleton(PhysicsManager)
 
-    //DEFINE_COMPONENT(PhysicsActor);
+    //DEFINE_COMPONENT(PhysicsActorT);
 
 //------------------------------------------------------------------------------
 /**
@@ -55,9 +55,9 @@ PhysicsManager::InitCreateActorProcessor()
         .On("OnActivate")
         .Func(
             [](Game::World* world,
-               Game::Owner const& owner,
-               Game::WorldTransform const& transform,
-               PhysicsFeature::PhysicsActor& actor)
+               Game::OwnerT const& owner,
+               Game::WorldTransformT const& transform,
+               PhysicsFeature::PhysicsActorT& actor)
             {
                 auto res = actor.resource;
                 if (res == "mdl:")
@@ -90,7 +90,7 @@ PhysicsManager::InitCreateActorProcessor()
         .Build();
 
     //Game::ProcessorBuilder("PhysicsManager.CreateActors"_atm)
-    //    .Excluding<PhysicsActor>()
+    //    .Excluding<PhysicsActorT>()
     //    .On("OnBeginFrame")
     //    .Func(&CreateActor)
     //    .Build();
@@ -102,8 +102,8 @@ PhysicsManager::InitCreateActorProcessor()
 void
 PhysicsManager::OnDecay()
 {
-    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(PhysicsActor::ID());
-    PhysicsFeature::PhysicsActor* data = (PhysicsFeature::PhysicsActor*)decayBuffer.buffer;
+    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(PhysicsActorT::ID());
+    PhysicsFeature::PhysicsActorT* data = (PhysicsFeature::PhysicsActorT*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
         Physics::DestroyActorInstance(data[i].value);
@@ -114,7 +114,7 @@ PhysicsManager::OnDecay()
 /**
 */
 void
-PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, PhysicsFeature::PhysicsActor const& actor)
+PollRigidbodyTransforms(Game::World* world, Game::WorldTransformT& transform, PhysicsFeature::PhysicsActorT const& actor)
 {
     transform.value = Physics::ActorContext::GetTransform(actor.value);
 }
@@ -124,7 +124,7 @@ PollRigidbodyTransforms(Game::World* world, Game::WorldTransform& transform, Phy
 */
 void
 PassKinematicTransforms(
-    Game::World* world, Game::WorldTransform const& transform, PhysicsFeature::PhysicsActor& actor, PhysicsFeature::IsKinematic
+    Game::World* world, Game::WorldTransformT const& transform, PhysicsFeature::PhysicsActorT& actor, PhysicsFeature::IsKinematic
 )
 {
     Physics::ActorContext::SetTransform(actor.value, transform.value);
@@ -188,7 +188,7 @@ PhysicsManager::OnCleanup(Game::World* world)
     n_assert(PhysicsManager::HasInstance());
 
     Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = PhysicsActor::ID();
+    filterInfo.inclusive[0] = PhysicsActorT::ID();
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 

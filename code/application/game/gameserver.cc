@@ -29,7 +29,6 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
     this->state.templateDatabase = MemDb::Database::Create();
-    this->state.ownerId = MemDb::TypeRegistry::GetComponentId("Owner"_atm);
     this->CreateWorld(WORLD_DEFAULT);
     // always attach the base game feature
     this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
@@ -73,9 +72,7 @@ GameServer::Open()
 
     for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
     {
-        Ptr<Game::FeatureUnit> const& feature = this->gameFeatures[i];
-        feature->SetCmdLineArgs(this->GetCmdLineArgs());
-        feature->OnActivate();
+        this->gameFeatures[i]->OnActivate();
     }
 
     return true;
@@ -91,7 +88,6 @@ GameServer::Close()
     n_assert(!this->isStarted);
     n_assert(this->isOpen);
 
-    // remove all gameFeatures
     for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
     {
         this->gameFeatures[i]->OnDeactivate();
@@ -108,6 +104,8 @@ GameServer::AttachGameFeature(const Ptr<FeatureUnit>& feature)
     n_assert(0 != feature);
     n_assert(InvalidIndex == this->gameFeatures.FindIndex(feature));
     this->gameFeatures.Append(feature);
+    feature->SetCmdLineArgs(this->GetCmdLineArgs());
+    feature->OnAttach();
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +117,7 @@ GameServer::RemoveGameFeature(const Ptr<FeatureUnit>& feature)
     n_assert(0 != feature);
     IndexT index = this->gameFeatures.FindIndex(feature);
     n_assert(InvalidIndex != index);
-    feature->OnDeactivate();
+    feature->OnRemove();
     this->gameFeatures.EraseIndex(index);
 }
 

@@ -5,6 +5,7 @@
 
 #include "processor.h"
 #include "gameserver.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace Game
 {
@@ -77,7 +78,7 @@ ProcessorBuilder::Build()
     else if (this->onEvent == "OnActivate")
     {
         info.OnActivate = this->func;
-        this->filterBuilder.Excluding<Game::IsActive>();
+        this->filterBuilder.Excluding<Game::IsActiveT>();
     }
     else
     {

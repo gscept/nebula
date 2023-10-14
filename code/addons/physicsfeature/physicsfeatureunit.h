@@ -28,6 +28,8 @@ public:
     /// destructor
     ~PhysicsFeatureUnit();
 
+    void OnAttach() override;
+
     /// Called upon activation of feature unit
     void OnActivate();
     /// Called upon deactivation of feature unit

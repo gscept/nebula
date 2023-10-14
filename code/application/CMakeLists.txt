@@ -61,9 +61,8 @@ nebula_begin_module(application)
                 timemanager.cc
             )
         fips_dir(basegamefeature/components)
-            nebula_add_nidl(
-                owner.nidl
-                transform.nidl
+            nebula_flatc_component(
+                basegamefeature.fbs
             )
     fips_dir(appgame)
         fips_files(

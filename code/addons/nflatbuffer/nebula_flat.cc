@@ -81,4 +81,24 @@ Math::vec4 UnPack(const Flat::Vec4& v)
     Math::vec4 m(v.x(), v.y(), v.z(), v.w());
     return m;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::Quat
+Pack(const Math::quat& v)
+{
+    Flat::Quat V(v.x, v.y, v.z, v.w);
+    return V;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::quat
+UnPack(const Flat::Quat& v)
+{
+    Math::quat m(v.x(), v.y(), v.z(), v.w());
+    return m;
+}
 }

@@ -22,23 +22,20 @@ ImplementNebulaApplication();
 using namespace Core;
 using namespace Test;
 
-template<typename T>
-void RegisterComponent()
-{
-    Util::StringAtom const name = T::TableType::Traits::name;
-    MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), 0);
-    //Game::ComponentSerialization::Register<Resources::ResourceName>(cid);
-    //Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<Resources::ResourceName>);
-}
-
 class GameAppTest : public App::GameApplication
 {
 private:
     /// setup game features
     void SetupGameFeatures()
     {
-        RegisterComponent<TestComponentT>();
-        // empty
+        // This should normally happen in a game feature constructor
+        Game::RegisterComponent<TestResourceT>();
+        Game::RegisterComponent<TestVec4T>();
+        Game::RegisterComponent<TestStructT>();
+        Game::RegisterComponent<TestHealthT>();
+        Game::RegisterComponent<MyFlag1T>();
+        Game::RegisterComponent<TestEmptyStructT>();
+        
     }
     /// cleanup game features
     void CleanupGameFeatures()

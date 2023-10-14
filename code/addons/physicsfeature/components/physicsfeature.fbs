@@ -1,0 +1,23 @@
+include "foundation/math.fbs";
+
+namespace PhysicsFeature;
+
+
+enum ActorType : byte
+{
+  Static,
+  Dynamic,
+  Kinematic
+}
+
+table PhysicsActor
+{
+  actor_id: uint;
+  resource: string;
+  actor_type: ActorType;
+}
+
+table IsKinematic
+{
+  // flag
+}

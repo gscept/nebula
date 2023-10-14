@@ -9,7 +9,7 @@
 #include "game/componentserialization.h"
 #include "util/arraystack.h"
 #include "game/gameserver.h"
-#include "basegamefeature/components/transform.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace Game
 {
@@ -333,8 +333,8 @@ BlueprintManager::SetupBlueprints()
         Util::StackArray<ComponentId, 32> columns;
 
         // append owner and transform, makes it a bit faster than letting entitymanager sort it out...
-        columns.Append(GetComponentId<Owner>());
-        columns.Append(GetComponentId<WorldTransform>());
+        columns.Append(GetComponentId<OwnerT>());
+        columns.Append(GetComponentId<TransformT>());
 
         // filter out invalid components
         for (int i = 0; i < numBlueprintComponents; i++)

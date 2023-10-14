@@ -30,6 +30,8 @@ public:
     /// construct from char ptr
     StringAtom(const char* ptr);
     /// construct from char ptr
+    StringAtom(const char* ptr, size_t len);
+    /// construct from char ptr
     StringAtom(unsigned char* ptr);
     /// construct from char ptr
     StringAtom(const unsigned char* ptr);
@@ -82,6 +84,12 @@ public:
     uint32_t HashCode() const;
     /// calculate persistent hash code (based on string content)
     uint32_t StringHashCode() const;
+
+    /// helpers to interface with libraries that expect std::string like apis
+    const char* c_str() const;
+    size_t length() const;
+    bool empty() const;
+
 private:
     /// setup the string atom from a string pointer
     void Setup(const char* str);
@@ -134,6 +142,22 @@ StringAtom::StringAtom(const char* str)
     if (nullptr != str)
     {
         this->Setup(str);
+    }
+    else
+    {
+        this->content = nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline StringAtom::StringAtom(const char* str, size_t len)
+{
+    if (nullptr != str)
+    {
+        Util::String string(str, len);
+        this->Setup(string.AsCharPtr());
     }
     else
     {
@@ -359,6 +383,34 @@ StringAtom::HashCode() const
     // FIXME, test this :D
     PtrT key = PtrT(this->content);
     return (uint32_t)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline const char*
+StringAtom::c_str() const
+{
+    return this->Value();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline size_t
+StringAtom::length() const
+{
+    return strlen(this->content);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+StringAtom::empty() const
+{
+    return (0 != this->content) && ('\0' != this->content[0]);
 }
 
 } // namespace Util

@@ -33,7 +33,7 @@
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/graphicsfeature/graphicsfeatureschema.h"
 #include "nflatbuffer/flatbufferinterface.h"
-
+#include "components/graphicsfeature.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -61,6 +61,16 @@ GraphicsFeatureUnit::GraphicsFeatureUnit() :
 GraphicsFeatureUnit::~GraphicsFeatureUnit()
 {
     __DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsFeatureUnit::OnAttach()
+{
+    Game::RegisterComponent<ModelT>();
+    Game::RegisterComponent<CameraT>();
 }
 
 //------------------------------------------------------------------------------

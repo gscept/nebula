@@ -9,6 +9,7 @@
 //------------------------------------------------------------------------------
 #include "componentdescription.h"
 #include "util/stringatom.h"
+#include "flatbuffers/flatbuffers.h"
 
 namespace MemDb
 {
@@ -59,6 +60,8 @@ template <typename ATTRIBUTE>
 AttributeId
 GetAttributeId()
 {
+    static_assert(std::is_trivially_destructible<ATTRIBUTE>());
+    static_assert(!std::is_base_of<flatbuffers::Table, ATTRIBUTE>());
     static const uint16_t id = MemDb::GenerateNewAttributeId();
     return AttributeId(id);
 }
@@ -92,7 +95,7 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
 
         AttributeId descriptor = MemDb::GetAttributeId<TYPE>();
         if (descriptor.id >= reg->componentDescriptions.Size())
-            reg->componentDescriptions.Resize(descriptor.id + 10);
+            reg->componentDescriptions.Resize(descriptor.id + 1);
 
         reg->componentDescriptions[descriptor.id] = desc;
         reg->registry.Add(name, descriptor);
@@ -119,8 +122,11 @@ TypeRegistry::Register(Util::StringAtom name, SizeT typeSize, void const* defaul
         // setup a state description with the default values from the type
         AttributeDescription* desc = new AttributeDescription(name, typeSize, defaultValue, flags);
 
-        AttributeId descriptor = reg->componentDescriptions.Size();
-        reg->componentDescriptions.Append(desc);
+        AttributeId descriptor = MemDb::GenerateNewAttributeId();
+        if (descriptor.id >= reg->componentDescriptions.Size())
+            reg->componentDescriptions.Resize(descriptor.id + 1);
+        
+        reg->componentDescriptions[descriptor.id] = desc;
         reg->registry.Add(name, descriptor);
         return descriptor;
     }
@@ -156,7 +162,12 @@ TypeRegistry::GetDescription(AttributeId descriptor)
 {
     auto* reg = Instance();
     if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
+    {
+        n_assert2(
+            reg->componentDescriptions[descriptor.id] != NULL, "Trying to get description of attribute that is not registered!"
+        );
         return reg->componentDescriptions[descriptor.id];
+    }
     
     return nullptr;
 }

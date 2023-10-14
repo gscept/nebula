@@ -5,7 +5,16 @@
 //    (C) 2020 Individual contributors, see AUTHORS file
 
 namespace Flat;
+
 struct Vec4 (native_type:"Math::vec4", force_align:16)
+{
+  x:float;
+  y:float;
+  z:float;
+  w:float;
+}
+
+struct Quat (native_type:"Math::quat", force_align:16)
 {
   x:float;
   y:float;
