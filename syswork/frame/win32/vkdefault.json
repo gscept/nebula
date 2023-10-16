@@ -327,12 +327,6 @@
                             "name": "Terrain Prepare"
                         }
                     },
-                    {
-                        "subgraph": {
-                            "name": "Terrain Update Caches"
-
-                        }
-                    },
 
                     {
                         "pass": {
@@ -367,7 +361,7 @@
                                 },
                                 {
                                     "name": "DepthPrepass",
-                                    "subpass_dependencies": ["TerrainPass"],
+                                    "subpass_dependencies": [ "TerrainPass" ],
                                     "attachments": [],
                                     "depth": "ZBuffer",
                                     "ops": [
@@ -383,11 +377,16 @@
                                         }
                                     ]
                                 }
-                            ],
+                            ]
 
                         }
                     },
+                    {
+                        "subgraph": {
+                            "name": "Terrain Update Caches"
 
+                        }
+                    },
                     {
                         "subgraph": {
                             "name": "Depth Extract"
