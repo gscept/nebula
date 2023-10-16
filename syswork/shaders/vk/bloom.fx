@@ -36,48 +36,6 @@ groupshared vec3 SampleLookup[KERNEL_SIZE][KERNEL_SIZE];
 //------------------------------------------------------------------------------
 /**
 */
-vec4 
-CubicWeights(float v)
-{
-    vec4 n = vec4(1, 2, 3, 4) - v;
-    vec4 s = n * n * n;
-    float x = s.x;
-    float y = s.y - 4 * s.x;
-    float z = s.z - 4 * s.y + 6 * s.x;
-    float w = 6 - x - y - z;
-    return vec4(x, y, z, w) / 6.0f;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-vec3
-Sample(vec2 pixel, int mip)
-{
-    vec2 coords = pixel * Resolutions[mip].xy - 0.5f;
-    vec2 fxy = fract(coords);
-    coords -= fxy;
-
-    vec4 xcubic = CubicWeights(fxy.x);
-    vec4 ycubic = CubicWeights(fxy.y);
-
-    vec4 c = coords.xxyy + vec2(-0.5f, 1.5f).xyxy;
-    vec4 s = vec4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
-    vec4 offset = c + vec4(xcubic.yw, ycubic.yw) / s;
-
-    offset *= Resolutions[mip].zzww;
-    vec3 sample0 = textureLod(sampler2D(Input, InputSampler), offset.xz, mip).rgb;
-    vec3 sample1 = textureLod(sampler2D(Input, InputSampler), offset.yz, mip).rgb;
-    vec3 sample2 = textureLod(sampler2D(Input, InputSampler), offset.xw, mip).rgb;
-    vec3 sample3 = textureLod(sampler2D(Input, InputSampler), offset.yw, mip).rgb;
-    float sx = s.x / (s.x + s.y);
-    float sy = s.z / (s.z + s.w);
-    return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 vec3
 LoadLDS(ivec2 pixel)
 {
@@ -141,7 +99,7 @@ csUpscale()
     for (int i = 0; i < Mips; i++)
     {
         // All waves load into LDS
-        SampleLookup[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = Sample(sampleUV, i);
+        SampleLookup[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = SampleCubic(Input, InputSampler, Resolutions[i], sampleUV, i);
         barrier();
 
         // Only the 14x14 kernel inside the padded one runs the tent filter

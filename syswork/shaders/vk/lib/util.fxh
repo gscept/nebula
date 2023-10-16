@@ -82,6 +82,50 @@ UnpackWeights(vec4 weights)
     return (weights / dot(weights, vec4(1.0, 1.0, 1.0, 1.0)));
 }
 
+//------------------------------------------------------------------------------
+/**
+    Calculate cubic weights
+*/
+vec4
+CubicWeights(float v)
+{
+    vec4 n = vec4(1, 2, 3, 4) - v;
+    vec4 s = n * n * n;
+    float x = s.x;
+    float y = s.y - 4 * s.x;
+    float z = s.z - 4 * s.y + 6 * s.x;
+    float w = 6 - x - y - z;
+    return vec4(x, y, z, w) / 6.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Sample texture using bicubic sampling
+*/
+vec3
+SampleCubic(texture2D tex, sampler samp, vec4 res, vec2 pixel, int mip)
+{
+    vec2 coords = pixel * res.xy - 0.5f;
+    vec2 fxy = fract(coords);
+    coords -= fxy;
+
+    vec4 xcubic = CubicWeights(fxy.x);
+    vec4 ycubic = CubicWeights(fxy.y);
+
+    vec4 c = coords.xxyy + vec2(-0.5f, 1.5f).xyxy;
+    vec4 s = vec4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+    vec4 offset = c + vec4(xcubic.yw, ycubic.yw) / s;
+
+    offset *= res.zzww;
+    vec3 sample0 = textureLod(sampler2D(tex, samp), offset.xz, mip).rgb;
+    vec3 sample1 = textureLod(sampler2D(tex, samp), offset.yz, mip).rgb;
+    vec3 sample2 = textureLod(sampler2D(tex, samp), offset.xw, mip).rgb;
+    vec3 sample3 = textureLod(sampler2D(tex, samp), offset.yw, mip).rgb;
+    float sx = s.x / (s.x + s.y);
+    float sy = s.z / (s.z + s.w);
+    return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
+}
+
 #define USE_SRGB 1
 #if USE_SRGB
 #define EncodeHDR(x) x
