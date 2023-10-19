@@ -1,0 +1,52 @@
+{
+	"namespace": "Test",
+	"enums": {
+		"TestEnumType": {
+			"Zero": 0,
+			"One": 1,
+			"Two": 2
+		}
+	},
+	"components":{
+		"TestResource": {
+			"resource": {
+				"type": "resource",
+				"default": "sys:foobar.resourcetype"
+			}
+		},
+		"TestVec4": {
+			"v4": {
+				"type": "vec4",
+				"default": [1,2,3,4]
+			}
+		},
+		"TestStruct": {
+			"pos": {
+				"type": "vec3",
+				"default": [1,2,3]
+			},
+			"cell": {
+				"type": "vec2",
+				"default": [1,2]
+			},
+			"foo": {
+				"type": "int",
+				"default": 1
+			},
+			"bar": {
+				"type": "float",
+				"default": 2.0
+			},
+			"gnyrf": "bool",
+			"enumerable": {
+				"type": "Test::TestEnumType",
+				"default": 2
+			}
+		},
+		"TestHealth": {
+			"value": "uint"
+		},
+		"MyFlag": {},
+		"TestEmptyStruct": {}
+	}
+}

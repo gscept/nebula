@@ -46,12 +46,6 @@ class IDLCodeGenerator:
 
         componentLibraries = []
 
-        # Add additional dependencies to document.
-        if "dependencies" in self.document:
-            for dependency in self.document["dependencies"]:
-                fileName = '{}.h'.format(os.path.splitext(dependency)[0]).lower()
-                componentLibraries.append(fileName)
-
         if "messages" in self.document:
             IDLDocument.AddInclude(f, "game/messaging/message.h")
             
@@ -67,8 +61,6 @@ class IDLCodeGenerator:
         IDLDocument.WriteIncludes(f, self.document)
         IDLDocument.WriteIncludes(f, componentLibraries)
         
-        IDLComponent.WriteComponentForwardDeclarations(f, self.document)
-        
         hasMessages = "messages" in self.document
         hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
@@ -76,33 +68,19 @@ class IDLCodeGenerator:
             IDLDocument.BeginNamespace(f, self.document)
             
             if hasEnums:
-                IDLComponent.WriteEnumeratedTypes(f, self.document)
+                IDLComponent.WriteEnumeratedCppTypes(f, self.document)
 
             if hasMessages:
                 IDLProtocol.WriteMessageDeclarations(f, self.document)
 
             if hasComponents:
                 IDLComponent.WriteComponentHeaderDeclarations(f, self.document)
-                IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
-                IDLComponent.WriteComponentHeaderDetails(f, self.document)
-                IDLDocument.EndNamespaceOverride(f, self.document, "Details")
                 f.WriteLine("")
-
-            # Add additional dependencies to document.
-            if "dependencies" in self.document:
-                for dependency in self.document["dependencies"]:
-                    fstream = open(dependency, 'r')
-                    depDocument = sjson.loads(fstream.read())
-                    deps = depDocument["components"]
-                    # Add all components to this document
-                    self.document["components"].update(deps)
-                    fstream.close()
 
             IDLDocument.EndNamespace(f, self.document)
 
         f.Close()
         return
-
 
     #------------------------------------------------------------------------------
     ##
@@ -128,41 +106,56 @@ class IDLCodeGenerator:
         
         hasMessages = "messages" in self.document
 
-        if hasMessages:            
-            IDLDocument.AddInclude(f, "scripting/python/conversion.h")
-
-        # Add additional dependencies to document.
-        if "dependencies" in self.document:
-            for dependency in self.document["dependencies"]:
-                fstream = open(dependency, 'r')
-                depDocument = sjson.loads(fstream.read())
-                deps = depDocument["components"]
-                # Add all components to this document
-                self.document["components"].update(deps)
-                fstream.close()
-
-        hasStructs = IDLComponent.HasStructComponents()
+        hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
 
-        if hasEnums or hasStructs:
+        if hasEnums or hasComponents:
             IDLDocument.AddInclude(f, "pjson/pjson.h");
             IDLDocument.BeginNamespaceOverride(f, self.document, "IO")
             if hasEnums:
                 IDLComponent.WriteEnumJsonSerializers(f, self.document);
-            if hasStructs:
+            if hasComponents:
                 IDLComponent.WriteStructJsonSerializers(f, self.document);
                 
             IDLDocument.EndNamespaceOverride(f, self.document, "IO")
 
-        hasComponents = "components" in self.document
-        if hasComponents or hasMessages:
+        if hasMessages:
             IDLDocument.BeginNamespace(f, self.document)
 
             if hasMessages:
                 IDLProtocol.WriteMessageImplementation(f, self.document)
 
-            if "components" in self.document:
-                IDLComponent.WriteComponentSourceDefinitions(f, self.document)
+            IDLDocument.EndNamespace(f, self.document)
+
+        f.Close()
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateCs(self, csPath) :
+        f = filewriter.FileWriter()
+        f.Open(csPath)        
+        f.WriteLine("// NIDL #version:{}#".format(self.version))              
+        
+        IDLComponent.ParseComponents(self.document)
+
+        IDLDocument.WriteCSHeader(f)        
+        f.WriteLine("using System;")
+        f.WriteLine("using System.Runtime.CompilerServices;")
+        f.WriteLine("using System.Runtime.InteropServices;")
+        f.WriteLine("using Nebula.Game;")
+
+        hasComponents = "components" in self.document
+        hasEnums = "enums" in self.document
+
+        if hasEnums or hasComponents:
+            IDLDocument.BeginNamespace(f, self.document)
+
+            if hasEnums:
+                IDLComponent.WriteEnumeratedCsTypes(f, self.document)
+
+            if hasComponents:
+                IDLComponent.WriteComponentCsDeclarations(f, self.document)
                 f.WriteLine("")
 
             IDLDocument.EndNamespace(f, self.document)

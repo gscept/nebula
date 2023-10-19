@@ -12,7 +12,7 @@ fips_files(
 			audiomanager.cc
 		)
 	fips_dir(components)
-		nebula_flatc_component(
-			audiofeature.fbs
+		nebula_idl_compile(
+			audiofeature.json
 		)
 nebula_end_module()

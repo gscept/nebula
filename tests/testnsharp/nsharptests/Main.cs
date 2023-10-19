@@ -126,7 +126,7 @@ namespace NST
         [UnmanagedCallersOnly]
         static public void PerformTests()
         {
-            World world = Nebula.Game.World.Get(World.DEFAULT_WORLD);
+            World world = World.Get(World.DEFAULT_WORLD);
 
             TestProperty testProp0 = new TestProperty();
             Entity entity = world.CreateEntity("Empty");
@@ -151,8 +151,8 @@ namespace NST
             Entity entity3 = world.CreateEntity("Empty");
             entity3.AddProperty(p1);
 
-            Nebula.Game.Component.Owner owner = entity3.GetComponent<Nebula.Game.Component.Owner>();
-            Verify(owner.entity == entity3.Id);
+            Game.Owner owner = entity3.GetComponent<Game.Owner>();
+            Verify(owner.entity.id == entity3.Id);
 
             Matrix transform = entity3.GetTransform();
             Verify(transform == Matrix.Identity);

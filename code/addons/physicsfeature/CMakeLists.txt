@@ -12,7 +12,7 @@ fips_files(
 			physicsmanager.cc
 		)
 	fips_dir(components)
-		nebula_flatc_component(
-			physicsfeature.fbs
+		nebula_idl_compile(
+			physicsfeature.json
 		)
 nebula_end_module()

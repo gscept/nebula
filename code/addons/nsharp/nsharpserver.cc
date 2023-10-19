@@ -255,14 +255,6 @@ NSharpServer::Open()
     bool res = this->LoadHostFxr();
     n_assert(res);
 
-    this->nebulaEngineAssemblyId = this->LoadAssembly("bin:NebulaEngine.dll");
-    n_assert(this->nebulaEngineAssemblyId != AssemblyId::Invalid());
-
-    // TODO: See if we can setup custom memory allocator functions for the runtime
-
-    int execRes = this->ExecUnmanagedCall(this->nebulaEngineAssemblyId, "NebulaEngine.AppEntry::Main()");
-    n_assert(execRes == 0);
-
     this->isOpen = true;
     return true;
 }
@@ -274,9 +266,6 @@ void
 NSharpServer::Close()
 {
     n_assert(this->IsOpen());
-
-    int res = this->ExecUnmanagedCall(this->nebulaEngineAssemblyId, "NebulaEngine.AppEntry::Shutdown()");
-    n_assert(res == 0);
 
     this->CloseHostFxr();
 

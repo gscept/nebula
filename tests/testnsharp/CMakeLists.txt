@@ -1,8 +1,15 @@
 IF(USE_DOTNET)
 
+nebula_idl_generate_cs_target(
+    components/nsharpcomponents.json
+)
+
 fips_begin_sharedlib(NSharpTests)
     enable_language(CSharp)
     fips_libs(NebulaEngine)
+
+    nebula_register_nidl_cs()
+
     fips_dir(nsharptests/)
         fips_files(
             Main.cs
@@ -24,14 +31,23 @@ IF(WIN32)
 ENDIF(WIN32)
 
 nebula_begin_app(testnsharp windowed)
-fips_src(. *.* GROUP test)
+    fips_dir(.)
+        fips_files(
+            main.cc
+            nsharptest.cc
+            nsharptest.h
+        )
+    
+    fips_dir(components)
+        nebula_idl_compile(nsharpcomponents.json)
 
-fips_deps(foundation testbase nsharp)
-target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]])
+    fips_dir(.)
 
-nebula_add_script_library(NSharpTests)
+    fips_deps(foundation testbase nsharp)
+    target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]])
+
+    nebula_add_script_library(NSharpTests)
 
 nebula_end_app()
-
 
 ENDIF(USE_DOTNET)

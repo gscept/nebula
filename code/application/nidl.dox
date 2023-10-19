@@ -20,9 +20,8 @@ C++ include:
 
 1. @ref NIDLNamespace
 2. @ref NIDLIncludes
-3. @ref NIDLDependencies
-4. @ref NIDLEnumeratedTypes
-5. @ref NIDLProperties
+3. @ref NIDLEnumeratedTypes
+4. @ref NIDLProperties
 
 @subsection NIDLNamespace Namespace
 
@@ -44,19 +43,6 @@ Generated types will use this namespace.
 @endcode
 
 Includes any header specified within the generated files.
-
-@subsection NIDLDependencies Dependencies
-
-@code{.json}
-"dependencies": [
-    "scripting/attributes.nidl"
-    "graphics/graphicsattr.nidl"
-]
-@endcode
-
-Every dependency declared will have its content exposed to this file.
-
-Dependencies are generated first.
 
 @subsection NIDLEnumeratedTypes Enumerated types
 

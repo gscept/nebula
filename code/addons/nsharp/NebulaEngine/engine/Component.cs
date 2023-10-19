@@ -23,6 +23,9 @@ namespace Nebula
                 // empty
             }
 
+            /// <summary>
+            /// Gets the manager instance
+            /// </summary>
             public static ComponentManager Instance
             {
                 get
@@ -31,6 +34,9 @@ namespace Nebula
                 }
             }
 
+            /// <summary>
+            /// Retrieve the component id for a given NativeComponent
+            /// </summary>
             public uint GetComponentId<T>() where T : NativeComponent
             {
                 uint id = 0xFFFFFFFF;
@@ -39,11 +45,13 @@ namespace Nebula
                 return id;
             }
 
+            /// <summary>
+            /// Registers a type to an id
+            /// </summary>
             public void RegisterComponent(Type type, uint id)
             {
                 this.componentRegistry[type] = id;
             }
-
         }
 
         /// <summary>
@@ -58,35 +66,12 @@ namespace Nebula
         /// Represents a native descriptor for a resource name. 
         /// You should only construct these by loading a descriptor from native/unmanaged api.
         /// </summary>
+        [NativeCppClass]
+        [StructLayout(LayoutKind.Sequential)]
         public struct ResourceDescriptor
         {
             // represented in native code as Util::StringAtom
             public readonly IntPtr descriptor;
-        }
-
-        namespace Component
-        {
-            [NativeCppClass]
-            [StructLayout(LayoutKind.Sequential)]
-            public struct Owner : NativeComponent
-            {
-                public uint entity;
-            }
-
-            [NativeCppClass]
-            [StructLayout(LayoutKind.Sequential)]
-            public struct WorldTransform : NativeComponent
-            {
-                public Matrix value;
-            }
-
-            [NativeCppClass]
-            [StructLayout(LayoutKind.Sequential)]
-            public struct PhysicsActor : NativeComponent
-            {
-                public uint actorId;
-                public ResourceDescriptor descriptor;
-            }
         }
     }
 }

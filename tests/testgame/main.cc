@@ -29,12 +29,12 @@ private:
     void SetupGameFeatures()
     {
         // This should normally happen in a game feature constructor
-        Game::RegisterComponent<TestResourceT>();
-        Game::RegisterComponent<TestVec4T>();
-        Game::RegisterComponent<TestStructT>();
-        Game::RegisterComponent<TestHealthT>();
-        Game::RegisterComponent<MyFlag1T>();
-        Game::RegisterComponent<TestEmptyStructT>();
+        Game::RegisterComponent<TestResource>();
+        Game::RegisterComponent<TestVec4>();
+        Game::RegisterComponent<TestStruct>();
+        Game::RegisterComponent<TestHealth>();
+        Game::RegisterComponent<MyFlag>();
+        Game::RegisterComponent<TestEmptyStruct>();
         
     }
     /// cleanup game features

@@ -15,8 +15,8 @@ fips_dir(managers)
 		cameramanager.cc
 	)
 fips_dir(components)
-	nebula_flatc_component(
-		graphicsfeature.fbs
+	nebula_idl_compile(
+		graphicsfeature.json
 	)
 nebula_end_module()
 

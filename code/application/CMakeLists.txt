@@ -61,15 +61,14 @@ nebula_begin_module(application)
                 timemanager.cc
             )
         fips_dir(basegamefeature/components)
-            nebula_flatc_component(
-                basegamefeature.fbs
-            )
+            nebula_idl_compile(basegamefeature.json)
     fips_dir(appgame)
         fips_files(
             gameapplication.h
             gameapplication.cc
         )
     fips_dir(.)
+
 nebula_end_module()
 
 if(FIPS_WINDOWS)

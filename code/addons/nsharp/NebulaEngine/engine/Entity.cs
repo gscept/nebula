@@ -11,6 +11,18 @@ namespace Nebula
 {
     namespace Game
     {
+        [NativeCppClass]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct EntityId
+        {
+            public uint id;
+        }
+
+        /// <summary>
+        /// Represents a game object that resides in a game world.
+        /// Contains properties and native components that make up the behaviour and logic of the entity.
+        /// Entities can receive messages which are propagated to all properties that listen for the message.
+        /// </summary>
         public class Entity
         {
             private World world = null;
@@ -47,7 +59,7 @@ namespace Nebula
             /// </summary>
             public bool HasComponent<T>() where T : struct, NativeComponent
             {
-                uint componentId = Nebula.Game.ComponentManager.Instance.GetComponentId<T>();
+                uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 return Api.HasComponent(this.world.Id, this.id, componentId);
             }
 
@@ -59,7 +71,7 @@ namespace Nebula
             /// </remarks>
             public void SetComponent<T>(in T component) where T : struct, NativeComponent
             {
-                uint componentId = Nebula.Game.ComponentManager.Instance.GetComponentId<T>();
+                uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 int size = Marshal.SizeOf<T>();
                 // HACK: there might be more efficient ways to avoid GC problems, if there are any...
                 IntPtr ptr = Marshal.AllocHGlobal(size);
@@ -76,7 +88,7 @@ namespace Nebula
             /// </remarks>
             public T GetComponent<T>() where T : struct, NativeComponent
             {
-                uint componentId = Nebula.Game.ComponentManager.Instance.GetComponentId<T>();
+                uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 int size = Marshal.SizeOf<T>();
                 IntPtr ptr = Marshal.AllocHGlobal(size);
                 Api.GetComponentData(this.world.Id, this.id, componentId, ptr, size);

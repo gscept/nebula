@@ -4,8 +4,18 @@
 
 IF (USE_DOTNET)
 
+nebula_idl_generate_cs_target(
+    ${CODE_ROOT}/addons/audiofeature/components/audiofeature.json
+    ${CODE_ROOT}/addons/graphicsfeature/components/graphicsfeature.json
+    ${CODE_ROOT}/addons/physicsfeature/components/physicsfeature.json
+    ${CODE_ROOT}/application/basegamefeature/components/basegamefeature.json
+)
+
 fips_begin_sharedlib(NebulaEngine)
     enable_language(CSharp)
+ 
+    nebula_register_nidl_cs()
+
     fips_dir(NebulaEngine/)
         fips_files(
             Main.cs

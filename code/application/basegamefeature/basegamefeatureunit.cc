@@ -45,9 +45,9 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<OwnerT>();
-    Game::RegisterComponent<TransformT>();
-    Game::RegisterComponent<Game::IsActiveT>();
+    Game::RegisterComponent<Owner>();
+    Game::RegisterComponent<Transform>();
+    Game::RegisterComponent<Game::IsActive>();
 }
 
 //------------------------------------------------------------------------------

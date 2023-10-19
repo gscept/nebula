@@ -15,6 +15,8 @@
 #include "memdb/table.h"
 #include "memdb/tablesignature.h"
 #include "memdb/typeregistry.h"
+#include "componentinspection.h"
+#include "componentserialization.h"
 #include "world.h"
 #include "filter.h"
 #include "dataset.h"
@@ -258,10 +260,10 @@ template <typename T>
 void
 RegisterComponent()
 {
-    Util::StringAtom const name = T::TableType::Traits::name;
+    Util::StringAtom const name = T::Traits::name;
     MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), 0);
-    //Game::ComponentSerialization::Register<Resources::ResourceName>(cid);
-    //Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<Resources::ResourceName>);
+    Game::ComponentSerialization::Register<T>(cid);
+    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<T>);
 }
 
 //------------------------------------------------------------------------------
@@ -297,10 +299,10 @@ inline void
 SetComponent(World* world, Game::Entity const entity, TYPE value)
 {
 #if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(GetComponentId<TYPE>()), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, TYPE::ID());
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, GetComponentId<TYPE>());
     *(ptr + mapping.instance.index) = value;
 }
 
@@ -327,10 +329,10 @@ inline TYPE
 GetComponent(World* world, Game::Entity const entity)
 {
 #if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(GetComponentId<TYPE>()), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, TYPE::ID());
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, GetComponentId<TYPE>());
     return *(ptr + mapping.instance.index);
 }
 

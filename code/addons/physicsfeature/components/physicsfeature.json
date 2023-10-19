@@ -1,0 +1,27 @@
+{
+	"namespace": "PhysicsFeature",
+	"enums": {
+		"ActorType": {
+			"Static": 0,
+			"Dynamic": 1,
+			"Kinematic": 2
+		}
+	},
+	"components": {
+		"PhysicsActor": {
+			"actorId": {
+				"type": "uint",
+				"default": -1
+			},
+			"resource": {
+				"type": "resource",
+				"default": "mdl:"
+			},
+			"actorType": {
+				"type": "PhysicsFeature::ActorType",
+				"default": 0
+			}
+		},
+		"IsKinematic": {}
+	}
+}

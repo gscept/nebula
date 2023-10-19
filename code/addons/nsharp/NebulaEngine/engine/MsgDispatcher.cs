@@ -13,16 +13,6 @@ namespace Nebula
         public class MsgDispatcher
         {
             public delegate void HandleMessage(in Msg msg);
-
-            class MsgEvent
-            {
-                public event HandleMessage OnMessageEvent;
-                public void Dispatch<T>(T msg) where T : struct, Msg
-                {
-                    OnMessageEvent?.Invoke((Msg)msg);
-                }
-            }
-
             private Dictionary<Type, MsgEvent> events = new Dictionary<Type, MsgEvent>();
 
             public void AttachHandler(HandleMessage handler, Type[] msgTypes)
@@ -46,6 +36,15 @@ namespace Nebula
                 if (events.ContainsKey(type))
                 {
                     events[type].Dispatch(msg);
+                }
+            }
+
+            private class MsgEvent
+            {
+                public event HandleMessage OnMessageEvent;
+                public void Dispatch<T>(T msg) where T : struct, Msg
+                {
+                    OnMessageEvent?.Invoke((Msg)msg);
                 }
             }
         }

@@ -21,7 +21,7 @@ add_custom_command(
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/blueprints_test.json
 )
 
-nebula_flatc_component(testcomponents.fbs)
+nebula_idl_compile(testcomponents.json)
 
 fips_deps(foundation application testbase scripting)
 target_precompile_headers(testgame PRIVATE [["foundation/stdneb.h"]] [["application/stdneb.h"]])

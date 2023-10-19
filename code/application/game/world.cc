@@ -102,8 +102,8 @@ World::World()
     this->scratchOpBuffer = Game::CreateOpBuffer(this);
 
     activateAllInstancesCallback.filter = Game::FilterBuilder()
-        .Including<Game::OwnerT>()
-        .Excluding<Game::IsActiveT>()
+        .Including<Game::Owner>()
+        .Excluding<Game::IsActive>()
         .Build();
     activateAllInstancesCallback.func = [](Game::World* world, Game::Dataset const& data)
     {
@@ -153,8 +153,8 @@ World::World()
                 // Move instance one by one
                 for (size_t instance = 0; instance < view.numInstances; instance++)
                 {
-                    Entity const& entity = ((Game::OwnerT*)view.buffers[0])[instance].entity;
-                    Game::AddComponent<Game::IsActiveT>(world, entity, nullptr);
+                    Entity const& entity = ((Game::Owner*)view.buffers[0])[instance].entity;
+                    Game::AddComponent<Game::IsActive>(world, entity, nullptr);
                 }
             }
         }
@@ -829,11 +829,11 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
     tableInfo.name = info.name;
     tableInfo.numComponents = 0;
 
-    if (info.components[0] != GetComponentId<Game::OwnerT>() && info.components[1] != GetComponentId<Game::TransformT>())
+    if (info.components[0] != GetComponentId<Game::Owner>() && info.components[1] != GetComponentId<Game::Transform>())
     {
         // always have owner and transform as first columns
-        components[0] = GetComponentId<OwnerT>();
-        components[1] = GetComponentId<TransformT>();
+        components[0] = GetComponentId<Owner>();
+        components[1] = GetComponentId<Transform>();
         tableInfo.numComponents = 2 + info.components.Size();
 
         n_assert(tableInfo.numComponents < NUM_PROPS);
@@ -1091,7 +1091,7 @@ Defragment(World* world, MemDb::TableId cat)
         return;
 
     MemDb::Table& table = db->GetTable(cat);
-    MemDb::ColumnIndex ownerColumnId = db->GetTable(cat).GetAttributeIndex(GetComponentId<OwnerT>());
+    MemDb::ColumnIndex ownerColumnId = db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
 
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.

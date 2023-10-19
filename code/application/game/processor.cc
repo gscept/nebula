@@ -78,7 +78,7 @@ ProcessorBuilder::Build()
     else if (this->onEvent == "OnActivate")
     {
         info.OnActivate = this->func;
-        this->filterBuilder.Excluding<Game::IsActiveT>();
+        this->filterBuilder.Excluding<Game::IsActive>();
     }
     else
     {
