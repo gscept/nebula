@@ -48,6 +48,7 @@ BaseGameFeatureUnit::OnAttach()
     Game::RegisterComponent<Owner>();
     Game::RegisterComponent<Transform>();
     Game::RegisterComponent<Game::IsActive>();
+    Game::RegisterComponent<Game::Static>();
 }
 
 //------------------------------------------------------------------------------

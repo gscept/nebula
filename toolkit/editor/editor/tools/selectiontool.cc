@@ -11,6 +11,7 @@
 #include "models/modelcontext.h"
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "dynui/im3d/im3dcontext.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 Util::Array<Editor::Entity> Tools::SelectionTool::selection = {};
 static bool isDirty = false;
@@ -51,7 +52,7 @@ SelectionTool::RenderGizmo()
 		if (isTransforming)
 		{
 			isDirty = true;
-			Game::SetComponent(Game::GetWorld(WORLD_DEFAULT), Editor::state.editables[selection[0].index].gameEntity, transformPid, tempTransform);
+			Game::SetComponent<Game::Transform>(Game::GetWorld(WORLD_DEFAULT), Editor::state.editables[selection[0].index].gameEntity, { .value = tempTransform } );
 		}
 		else if(isDirty)
 		{

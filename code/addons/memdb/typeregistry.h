@@ -21,6 +21,10 @@ public:
     template<typename TYPE>
     static AttributeId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
 
+    /// Check if a type is registered
+    template <typename TYPE>
+    static bool IsRegistered();
+
     /// register a POD, mem-copyable type
     static AttributeId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
 
@@ -35,7 +39,7 @@ public:
     /// get component default value pointer
     static void const* const DefaultValue(AttributeId descriptor);
     /// get an array of all component descriptions
-    static Util::Array<AttributeDescription*> const& GetAllComponents();
+    static Util::FixedArray<AttributeDescription*> const& GetAllComponents();
 
 private:
     static TypeRegistry* Instance();
@@ -46,7 +50,7 @@ private:
 
     static TypeRegistry* Singleton;
 
-    Util::Array<AttributeDescription*> componentDescriptions;
+    Util::FixedArray<AttributeDescription*> componentDescriptions;
     Util::Dictionary<Util::StringAtom, AttributeId> registry;
 };
 
@@ -64,6 +68,18 @@ GetAttributeId()
     static_assert(!std::is_base_of<flatbuffers::Table, ATTRIBUTE>());
     static const uint16_t id = MemDb::GenerateNewAttributeId();
     return AttributeId(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline bool
+TypeRegistry::IsRegistered()
+{
+    auto* reg = Instance();
+    AttributeId id = GetAttributeId<TYPE>();
+    return reg->componentDescriptions[id.id] != nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +111,12 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
 
         AttributeId descriptor = MemDb::GetAttributeId<TYPE>();
         if (descriptor.id >= reg->componentDescriptions.Size())
-            reg->componentDescriptions.Resize(descriptor.id + 1);
+        {
+            SizeT prevSize = reg->componentDescriptions.Size();
+            reg->componentDescriptions.Resize(descriptor.id + 1); // fixed increment
+            SizeT num = reg->componentDescriptions.Size() - prevSize;
+            reg->componentDescriptions.Fill(prevSize, num, nullptr); // make sure new entries are null, since we use this to check if attributes are registered or not.
+        }
 
         reg->componentDescriptions[descriptor.id] = desc;
         reg->registry.Add(name, descriptor);
@@ -124,7 +145,10 @@ TypeRegistry::Register(Util::StringAtom name, SizeT typeSize, void const* defaul
 
         AttributeId descriptor = MemDb::GenerateNewAttributeId();
         if (descriptor.id >= reg->componentDescriptions.Size())
+        {
             reg->componentDescriptions.Resize(descriptor.id + 1);
+
+        }
         
         reg->componentDescriptions[descriptor.id] = desc;
         reg->registry.Add(name, descriptor);
@@ -208,7 +232,7 @@ TypeRegistry::DefaultValue(AttributeId descriptor)
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::Array<AttributeDescription*> const&
+inline Util::FixedArray<AttributeDescription*> const&
 TypeRegistry::GetAllComponents()
 {
     auto* reg = Instance();

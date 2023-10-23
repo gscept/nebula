@@ -215,7 +215,7 @@ Inspector::ShowAddComponentMenu()
 
         Util::Array<const char*> cStrArray;
 
-        Util::Array<MemDb::AttributeDescription*> const& components = MemDb::TypeRegistry::GetAllComponents();
+        Util::FixedArray<MemDb::AttributeDescription*> const& components = MemDb::TypeRegistry::GetAllComponents();
         SizeT const numComponents = components.Size();
         Util::StringAtom const ownerAtom = "Owner"_atm;
         for (SizeT i = 0; i < numComponents; i++)

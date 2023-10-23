@@ -159,9 +159,6 @@ template<typename TYPE>
 void                        RemoveComponent(World*, Entity);
 /// typed set component
 template<typename TYPE>
-void                        SetComponent(World*, Game::Entity const entity, ComponentId const component, TYPE value);
-/// typed set component
-template<typename TYPE>
 void                        SetComponent(World*, Game::Entity const entity, TYPE value);
 /// typed get component
 template<typename TYPE>
@@ -273,22 +270,17 @@ template <typename COMPONENT>
 ComponentId
 GetComponentId()
 {
-    return MemDb::GetAttributeId<COMPONENT>();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<typename TYPE>
-inline void
-SetComponent(World* world, Game::Entity const entity, ComponentId const component, TYPE value)
-{
-#if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(component), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
+#if !PUBLIC_BUILD
+    if (!MemDb::TypeRegistry::IsRegistered<COMPONENT>())
+    {
+        n_error(
+            "Component '%s' is not registered! Make sure you call Game::RegisterComponent<T>() for all component types before "
+            "using them.",
+            COMPONENT::Traits::name
+        );
+    }
 #endif
-    EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, component);
-    *(ptr + mapping.instance.index) = value;
+    return MemDb::GetAttributeId<COMPONENT>();
 }
 
 //------------------------------------------------------------------------------

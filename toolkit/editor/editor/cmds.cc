@@ -8,6 +8,7 @@
 #include "util/random.h"
 #include "editor/tools/selectiontool.h"
 #include "graphicsfeature/managers/graphicsmanager.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace Edit
 {
@@ -64,7 +65,7 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     n_assert(gameTable != MemDb::InvalidTableId);
     MemDb::RowId instance = Game::AllocateInstance(gameWorld, entity, gameTable);
     Game::GetWorldDatabase(gameWorld)->GetTable(gameTable).DeserializeInstance(entityState, instance);
-    Game::SetComponent<Game::Entity>(gameWorld, entity, Game::GetComponentId("Owner"_atm), entity);
+    Game::SetComponent<Game::Owner>(gameWorld, entity, {.entity = entity});
 
     if (Game::HasInstance(Editor::state.editorWorld, editorEntity))
     {
@@ -75,12 +76,8 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     if (Editor::state.editables.Size() >= editorEntity.index)
         Editor::state.editables.Append({});
     MemDb::RowId editorInstance = Game::AllocateInstance(Editor::state.editorWorld, editorEntity, editorTable);
-    Game::GetWorldDatabase(Editor::state.editorWorld)
-        ->GetTable(editorTable)
-        .DeserializeInstance(entityState, editorInstance);
-    Game::SetComponent<Editor::Entity>(
-        Editor::state.editorWorld, editorEntity, Game::GetComponentId("Owner"_atm), editorEntity
-    );
+    Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(editorTable).DeserializeInstance(entityState, editorInstance);
+    Game::SetComponent<Game::Owner>(Editor::state.editorWorld, editorEntity, {.entity = editorEntity});
 
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
     edit.gameEntity = entity;
@@ -261,9 +258,8 @@ struct CMDDeleteEntity : public Edit::Command
         if (!this->initialized)
         {
             Game::EntityMapping mapping = Game::GetEntityMapping(Editor::state.editorWorld, this->id);
-            this->entityState = Game::GetWorldDatabase(Editor::state.editorWorld)
-                                    ->GetTable(mapping.table)
-                                    .SerializeInstance(mapping.instance);
+            this->entityState =
+                Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(mapping.table).SerializeInstance(mapping.instance);
             this->tid = mapping.table;
             this->initialized = true;
         }
