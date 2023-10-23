@@ -416,9 +416,11 @@ nebula_begin_module(foundation)
             byteorder.h
             cpu.h
             process.h
+            library.h
             systeminfo.h
             nebulasettings.h
             base/processbase.h
+            base/librarybase.h
         )
         fips_dir(app)
         fips_files(
@@ -588,6 +590,8 @@ nebula_begin_module(foundation)
                 win32/win32environment.h
                 win32/win32process.cc
                 win32/win32process.h
+                win32/win32library.cc
+                win32/win32library.h
                 win32/win32registry.cc
                 win32/win32registry.h
                 win32/win32systeminfo.cc

@@ -8,6 +8,8 @@
 #include "game/api.h"
 #include "audiofeature/managers/audiomanager.h"
 
+#include "components/audiofeature.h"
+
 namespace AudioFeature
 {
 __ImplementClass(AudioFeature::AudioFeatureUnit, 'AUFU' , Game::FeatureUnit);
@@ -27,6 +29,16 @@ AudioFeatureUnit::AudioFeatureUnit()
 AudioFeatureUnit::~AudioFeatureUnit()
 {
     __DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AudioFeatureUnit::OnAttach()
+{
+    Game::RegisterComponent<AudioEmitterT>();
+    Game::RegisterComponent<AudioListenerT>();
 }
 
 //------------------------------------------------------------------------------

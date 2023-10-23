@@ -15,6 +15,8 @@
 #include "memdb/table.h"
 #include "memdb/tablesignature.h"
 #include "memdb/typeregistry.h"
+#include "componentinspection.h"
+#include "componentserialization.h"
 #include "world.h"
 #include "filter.h"
 #include "dataset.h"
@@ -30,7 +32,7 @@ namespace Game
 
 //------------------------------------------------------------------------------
 
-#define WORLD_DEFAULT uint32_t('DWLD')
+#define WORLD_DEFAULT uint32_t('DWLD') // 0x44574C44
 
 //------------------------------------------------------------------------------
 //      Types
@@ -205,6 +207,9 @@ void                        ReleaseDatasets();
 ComponentId                  CreateComponent(ComponentCreateInfo const& info);
 /// Returns a component id
 ComponentId                  GetComponentId(Util::StringAtom name);
+/// Returns a component id, based on template type
+template <typename COMPONENT>
+ComponentId                  GetComponentId();
 /// Returns a blueprint id by name
 BlueprintId                 GetBlueprintId(Util::StringAtom name);
 /// Returns a template id by name
@@ -245,10 +250,31 @@ ComponentDecayBuffer const  GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
 
+
 //------------------------------------------------------------------------------
 /**
     -- Beginning of template implementations --
 */
+
+template <typename T>
+void
+RegisterComponent()
+{
+    Util::StringAtom const name = T::Traits::name;
+    MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), 0);
+    Game::ComponentSerialization::Register<T>(cid);
+    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<T>);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename COMPONENT>
+ComponentId
+GetComponentId()
+{
+    return MemDb::GetAttributeId<COMPONENT>();
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -273,10 +299,10 @@ inline void
 SetComponent(World* world, Game::Entity const entity, TYPE value)
 {
 #if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(GetComponentId<TYPE>()), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, TYPE::ID());
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, GetComponentId<TYPE>());
     *(ptr + mapping.instance.index) = value;
 }
 
@@ -303,10 +329,10 @@ inline TYPE
 GetComponent(World* world, Game::Entity const entity)
 {
 #if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(GetComponentId<TYPE>()), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, TYPE::ID());
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, GetComponentId<TYPE>());
     return *(ptr + mapping.instance.index);
 }
 
@@ -320,7 +346,7 @@ AddComponent(World* world, Entity entity, TYPE* value)
     //n_assert(!state.asyncProcessing);
     Op::RegisterComponent op;
     op.entity = entity;
-    op.component = TYPE::ID();
+    op.component = GetComponentId<TYPE>();
     op.value = (void*)value;
     AddOp(WorldGetScratchOpBuffer(world), op);
 }
@@ -335,7 +361,7 @@ RemoveComponent(World* world, Entity entity)
     //n_assert(!state.asyncProcessing);
     Op::DeregisterComponent op;
     op.entity = entity;
-    op.component = TYPE::ID();
+    op.component = GetComponentId<TYPE>();
     AddOp(WorldGetScratchOpBuffer(world), op);
 }
 

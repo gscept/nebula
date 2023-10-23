@@ -57,4 +57,15 @@ TypeRegistry::~TypeRegistry()
     // empty
 }
 
+//------------------------------------------------------------------------------
+/**
+    Do not use. This function generates a new attribute id.
+*/
+uint16_t
+GenerateNewAttributeId()
+{
+    static uint16_t idCounter = -1;
+    return ++idCounter;
+}
+
 } // namespace MemDb

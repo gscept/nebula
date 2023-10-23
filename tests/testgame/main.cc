@@ -15,6 +15,8 @@
 #include "entitysystemtest.h"
 #include "scriptingtest.h"
 
+#include "testcomponents.h"
+
 ImplementNebulaApplication();
 
 using namespace Core;
@@ -26,7 +28,14 @@ private:
     /// setup game features
     void SetupGameFeatures()
     {
-        // empty
+        // This should normally happen in a game feature constructor
+        Game::RegisterComponent<TestResource>();
+        Game::RegisterComponent<TestVec4>();
+        Game::RegisterComponent<TestStruct>();
+        Game::RegisterComponent<TestHealth>();
+        Game::RegisterComponent<MyFlag>();
+        Game::RegisterComponent<TestEmptyStruct>();
+        
     }
     /// cleanup game features
     void CleanupGameFeatures()

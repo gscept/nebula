@@ -16,6 +16,7 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
 #include "game/componentinspection.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace Game
 {
@@ -152,7 +153,7 @@ World::World()
                 // Move instance one by one
                 for (size_t instance = 0; instance < view.numInstances; instance++)
                 {
-                    Entity const& entity = ((Game::Owner*)view.buffers[0])[instance].value;
+                    Entity const& entity = ((Game::Owner*)view.buffers[0])[instance].entity;
                     Game::AddComponent<Game::IsActive>(world, entity, nullptr);
                 }
             }
@@ -826,26 +827,28 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
 
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
-    if (info.components[0] != GameServer::Singleton->state.ownerId)
-    {
-        // push owner id into the component array
-        const SizeT tableSize = 1 + info.components.Size();
-        n_assert(tableSize < NUM_PROPS);
-        tableInfo.numComponents = tableSize;
-        tableInfo.components = components;
+    tableInfo.numComponents = 0;
 
-        // always add owner as first column
-        components[0] = GameServer::Singleton->state.ownerId;
-        for (int i = 1; i < tableSize; i++)
+    if (info.components[0] != GetComponentId<Game::Owner>() && info.components[1] != GetComponentId<Game::Transform>())
+    {
+        // always have owner and transform as first columns
+        components[0] = GetComponentId<Owner>();
+        components[1] = GetComponentId<Transform>();
+        tableInfo.numComponents = 2 + info.components.Size();
+
+        n_assert(tableInfo.numComponents < NUM_PROPS);
+
+        for (int i = 0; i < info.components.Size(); i++)
         {
-            components[i] = info.components[i - 1];
+            components[i + 2] = info.components[i];
         }
+        tableInfo.components = components;
     }
     else
     {
-        const SizeT tableSize = info.components.Size();
-        tableInfo.numComponents = tableSize;
-        tableInfo.components = info.components.begin();
+        tableInfo.numComponents = info.components.Size();
+        n_assert(tableInfo.numComponents < NUM_PROPS);
+        tableInfo.components = &info.components[0];
     }
 
     // Create an instance table
@@ -1088,7 +1091,7 @@ Defragment(World* world, MemDb::TableId cat)
         return;
 
     MemDb::Table& table = db->GetTable(cat);
-    MemDb::ColumnIndex ownerColumnId = db->GetTable(cat).GetAttributeIndex(GameServer::Singleton->state.ownerId);
+    MemDb::ColumnIndex ownerColumnId = db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
 
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.

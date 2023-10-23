@@ -29,6 +29,8 @@ public:
     /// destructor
     ~AudioFeatureUnit();
 
+    void OnAttach();
+
     void OnActivate();
     void OnDeactivate();
     virtual void OnBeginFrame();

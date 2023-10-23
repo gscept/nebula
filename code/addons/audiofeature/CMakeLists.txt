@@ -12,7 +12,7 @@ fips_files(
 			audiomanager.cc
 		)
 	fips_dir(components)
-		nebula_add_nidl(
-			audio.nidl
+		nebula_idl_compile(
+			audiofeature.json
 		)
 nebula_end_module()

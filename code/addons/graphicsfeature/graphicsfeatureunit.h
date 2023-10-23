@@ -33,6 +33,8 @@ public:
     /// destructor
     ~GraphicsFeatureUnit();
 
+    void OnAttach();
+
     /// Called upon activation of feature unit
     void OnActivate() override;
     /// Called upon deactivation of feature unit

@@ -9,6 +9,7 @@
 #include "physicsfeature/managers/physicsmanager.h"
 #include "physics/actorcontext.h"
 #include "game/api.h"
+#include "components/physicsfeature.h"
 
 #define USE_SYNC_UPDATE 0
 
@@ -31,6 +32,16 @@ PhysicsFeatureUnit::PhysicsFeatureUnit() : simulating(false)
 PhysicsFeatureUnit::~PhysicsFeatureUnit()
 {
     __DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsFeatureUnit::OnAttach()
+{
+    Game::RegisterComponent<PhysicsActorT>();
+    Game::RegisterComponent<IsKinematicT>();
 }
 
 //------------------------------------------------------------------------------

@@ -39,9 +39,15 @@ public:
     virtual ~FeatureUnit();
 
     /// called from GameServer::AttachGameFeature()
-    virtual void OnActivate();
+    virtual void OnAttach();
     /// called from GameServer::RemoveGameFeature()
+    virtual void OnRemove();
+
+    /// called after GameServer::AttachGameFeature()
+    virtual void OnActivate();
+    /// called before GameServer::RemoveGameFeature()
     virtual void OnDeactivate();
+
     /// return true if featureunit is currently active
     bool IsActive() const;
 

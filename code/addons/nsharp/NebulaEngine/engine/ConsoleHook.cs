@@ -10,7 +10,7 @@ public class ConsoleEvents
 {
     public static void WriteLineFunc(object sender, ConsoleWriterEventArgs e)
     {
-        Debug.Log($"{e.Value}\n");
+        //Debug.Log($"{e.Value}\n");
     }
 
     public static void WriteFunc(object sender, ConsoleWriterEventArgs e)

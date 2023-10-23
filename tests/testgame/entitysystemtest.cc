@@ -7,10 +7,18 @@
 #include "timing/timer.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
-#include "testproperties.h"
 #include "framesync/framesynctimer.h"
 #include "profiling/profiling.h"
 #include "game/gameserver.h"
+#include "testcomponents.h"
+
+#include "flatbuffers/idl.h"
+#include "flatbuffers/util.h"
+
+#include "basegamefeature/components/basegamefeature.h"
+
+#include "io/textreader.h"
+#include "io/filestream.h"
 
 using namespace Game;
 using namespace Math;
@@ -41,6 +49,40 @@ struct ManagedTestProperty
     bool destroyed = false;
 };
 
+struct TestComponent
+{
+    int i;
+    float f;
+
+    // type traits and reflection
+    struct Traits;
+};
+
+struct TestComponent::Traits
+{
+    Traits() = delete;
+    using type = TestComponent;
+    static constexpr auto name = "TestComponent";    
+    static constexpr auto fully_qualified_name = "Test.TestComponent";
+    static constexpr size_t num_fields = 2;
+    static constexpr const char* field_names[num_fields] = {"i", "f"};
+    
+    template <size_t Index>
+    auto get_field() const
+    {
+        type t;
+        if constexpr (Index == 0)
+            return t.i;
+        if constexpr (Index == 1)
+            return t.f;
+        else
+            static_assert(Index != Index, "Invalid Field Index");
+    }
+
+    template<size_t Index>
+    using FieldType = decltype(std::declval<TestComponent::Traits>().get_field<Index>());
+};
+
 //------------------------------------------------------------------------------
 /**
     @todo   this test should be more thorough and make sure that instances retain
@@ -48,7 +90,7 @@ struct ManagedTestProperty
 */
 void
 EntitySystemTest::Run()
-{
+{    
 #if NEBULA_ENABLE_PROFILING
     Profiling::ProfilingRegisterThread();
 #endif

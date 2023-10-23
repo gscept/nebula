@@ -5,6 +5,7 @@
 
 #include "processor.h"
 #include "gameserver.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace Game
 {

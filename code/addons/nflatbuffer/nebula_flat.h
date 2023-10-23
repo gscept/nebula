@@ -11,6 +11,7 @@
 #include "math/vec3.h"
 #include "math/vec4.h"
 #include "math/mat4.h"
+#include "math/quat.h"
 #include "flat/foundation/math.h"
 
 namespace Flat
@@ -19,10 +20,15 @@ struct Vec2;
 struct Vec3;
 struct Vec4;
 struct Mat4;
+struct Quat;
 }
 
 namespace flatbuffers
 {
+///
+Flat::Quat Pack(const Math::quat& v);
+///
+Math::quat UnPack(const Flat::Quat& v);
 ///
 Flat::Vec4 Pack(const Math::vec4& v);
 ///

@@ -24,13 +24,11 @@ __ImplementClass(Test::DatabaseTest, 'MDBT', Test::TestCase);
 struct IntTest
 {
     int value = 1;
-    DECLARE_COMPONENT;
 };
 
 struct FloatTest
 {
     float value = 20.0f;
-    DECLARE_COMPONENT;
 };
 
 struct StructTest
@@ -38,12 +36,7 @@ struct StructTest
     int foo = 10;
     bool boo = true;
     Math::float4 f4 = {1, 2, 3, 4};
-    DECLARE_COMPONENT;
 };
-
-DEFINE_COMPONENT(IntTest);
-DEFINE_COMPONENT(FloatTest);
-DEFINE_COMPONENT(StructTest);
 
 //------------------------------------------------------------------------------
 /**

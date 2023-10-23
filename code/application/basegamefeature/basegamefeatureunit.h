@@ -30,6 +30,9 @@ public:
     /// destructor
     virtual ~BaseGameFeatureUnit();
 
+    /// called upon attaching the feature unit
+    void OnAttach() override;
+
     /// Called upon activation of feature unit
     void OnActivate() override;
     /// Called upon deactivation of feature unit

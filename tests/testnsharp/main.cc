@@ -5,9 +5,8 @@
 #include "stdneb.h"
 #include "system/appentry.h"
 #include "testbase/testrunner.h"
-#include "basegamefeature/basegamefeatureunit.h"
 #include "appgame/gameapplication.h"
-#include "basegamefeature/managers/blueprintmanager.h"
+#include "nsharp/scriptfeatureunit.h"
 
 // tests
 #include "nsharptest.h"
@@ -17,31 +16,58 @@ ImplementNebulaApplication();
 using namespace Core;
 using namespace Test;
 
+class GameAppTest : public App::GameApplication
+{
+private:
+    /// setup game features
+    void
+    SetupGameFeatures() override
+    {
+        scriptFeature = Scripting::ScriptFeatureUnit::Create();
+        scriptFeature->SetScriptAssembly("bin:NSharpTests.dll");
+        Game::GameServer::Instance()->AttachGameFeature(scriptFeature);
+    }
+
+    /// cleanup game features
+    void
+    CleanupGameFeatures() override
+    {
+        Game::GameServer::Instance()->RemoveGameFeature(scriptFeature);
+        scriptFeature = nullptr;
+    }
+
+    Ptr<Scripting::ScriptFeatureUnit> scriptFeature;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
 void
 NebulaMain(const Util::CommandLineArgs& args)
 {
-    // create Nebula runtime
-    Ptr<CoreServer> coreServer = CoreServer::Create();
-    coreServer->SetAppName(Util::StringAtom("Nebula NSharp tests"));
-    coreServer->Open();
+    GameAppTest gameApp;
+    gameApp.SetCompanyName("Test Company");
+    gameApp.SetAppTitle("NEBULA NSHARP-TESTS");
 
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
-    ioServer->MountStandardArchives();
-    Ptr<IO::IoInterface> ioInterface = IO::IoInterface::Create();
-    ioInterface->Open();
+    if (!gameApp.Open())
+    {
+        n_printf("Aborting game system test due to unrecoverable error...\n");
+        return;
+    }
 
     n_printf("NEBULA NSHARP-TESTS\n");
     n_printf("========================\n");
 
     Ptr<TestRunner> testRunner = TestRunner::Create();
-    testRunner->AttachTestCase(NSharpTest::Create());
-    
-    bool result = testRunner->Run(); 
+    Ptr<NSharpTest> test = NSharpTest::Create();
+    test->StepFrame = [&gameApp]() { gameApp.StepFrame(); };
+    testRunner->AttachTestCase(test);
+
+    bool result = testRunner->Run();
 
     testRunner = nullptr;
 
-    Core::SysFunc::Exit(result?0:-1);
+    gameApp.Close();
+
+    Core::SysFunc::Exit(result ? 0 : -1);
 }

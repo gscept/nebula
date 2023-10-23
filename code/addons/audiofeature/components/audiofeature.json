@@ -1,0 +1,18 @@
+{
+    "namespace": "AudioFeature",
+    "components": {
+        "AudioEmitter": {
+            "emitterId": {
+                "type": "uint",
+                "default": -1
+            },
+            "autoplay": {
+                "type": "bool"
+            },
+            "loop": {
+                "type": "bool"
+            }
+        },
+        "AudioListener": {},
+    }
+}

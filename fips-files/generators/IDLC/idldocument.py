@@ -9,6 +9,18 @@ def GetNamespace(document):
     return default_namespace
 
 #------------------------------------------------------------------------------
+## Write header for csharp file
+#
+def WriteCSHeader(f):
+    f.WriteLine("//------------------------------------------------------------------------------")
+    f.WriteLine("/**")
+    f.IncreaseIndent()
+    f.WriteLine("This file was generated with Nebula's IDL compiler tool.")
+    f.WriteLine("DO NOT EDIT")
+    f.DecreaseIndent()
+    f.WriteLine("*/")
+
+#------------------------------------------------------------------------------
 ## Write header for include file
 #
 def WriteIncludeHeader(f):

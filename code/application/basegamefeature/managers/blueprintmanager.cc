@@ -9,6 +9,7 @@
 #include "game/componentserialization.h"
 #include "util/arraystack.h"
 #include "game/gameserver.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace Game
 {
@@ -331,8 +332,9 @@ BlueprintManager::SetupBlueprints()
         const SizeT numBlueprintComponents = blueprint.components.Size();
         Util::StackArray<ComponentId, 32> columns;
 
-        // append owner, makes it a bit faster than letting entitymanager sort it out...
-        columns.Append(GameServer::Instance()->state.ownerId);
+        // append owner and transform, makes it a bit faster than letting entitymanager sort it out...
+        columns.Append(GetComponentId<Owner>());
+        columns.Append(GetComponentId<Transform>());
 
         // filter out invalid components
         for (int i = 0; i < numBlueprintComponents; i++)

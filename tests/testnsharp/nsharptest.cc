@@ -4,10 +4,11 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "nsharptest.h"
-#include "nsharp/monoserver.h"
-#include "nsharp/conversion/vector2.h"
-#include "nsharp/conversion/vector3.h"
-#include "nsharp/conversion/vector4.h"
+#include "nsharp/nsharpserver.h"
+#include "timing/timer.h"
+#include "profiling/profiling.h"
+#include "game/gameserver.h"
+#include "nsharp/scriptfeatureunit.h"
 
 using namespace Scripting;
 
@@ -20,36 +21,54 @@ static Math::vec3 reg_vec3;
 static Math::vec4 reg_vec4;
 static Util::String reg_string;
 static bool testArrayOfIntResult = false;
+static bool testArrayOfVec3Result = false;
+static bool testArrayOfVec4Result = false;
 
-void PassVec2(MonoObject* obj)
+typedef struct _Vector2
 {
-    reg_vec2 = Mono::Vector2::Convert(obj);
+    float x;
+    float y;
+} Vector2;
+
+static std::function<void(bool, const char*, int)> verifyManagedCallback;
+
+NEBULA_EXPORT void
+VerifyManaged(bool success, const char* filePath, int lineNumber)
+{
+    verifyManagedCallback(success, filePath, lineNumber);
 };
 
-void PassVec3(MonoObject* obj)
+NEBULA_EXPORT void
+PassVec2(Math::vec2 const& obj)
 {
-    reg_vec3 = Mono::Vector3::Convert(obj);
+    reg_vec2 = obj;
 };
 
-void PassVec4(MonoObject* obj)
+NEBULA_EXPORT void
+PassVec3(Math::vec3 const& obj)
 {
-    reg_vec4 = Mono::Vector4::Convert(obj);
+    reg_vec3 = obj;
 };
 
-NEBULA_EXPORT void PassString(Util::String const& string)
+NEBULA_EXPORT void
+PassVec4(Math::vec4 const& obj)
+{
+    reg_vec4 = obj;
+};
+
+NEBULA_EXPORT void
+PassString(Util::String const& string)
 {
     reg_string = string;
 }
 
-NEBULA_EXPORT void TestArrayOfInt(Util::Array<int> const& arr)
+NEBULA_EXPORT void
+TestArrayOfInt(int const* const arr, int size)
 {
-    testArrayOfIntResult = true;
-    int const values[10] =
-    {
-        1,2,3,4,5,6,7,8,9,10
-    };
+    testArrayOfIntResult = size == 10;
+    int const values[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-    for (IndexT i = 0; i < arr.size(); i++)
+    for (IndexT i = 0; i < size; i++)
     {
         if (arr[i] != values[i])
         {
@@ -58,15 +77,56 @@ NEBULA_EXPORT void TestArrayOfInt(Util::Array<int> const& arr)
     }
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetupInternalCalls()
+NEBULA_EXPORT void
+TestArrayOfVec3(Math::vec3* arr, int size)
 {
-    mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec2", &PassVec2);
-    mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec3", &PassVec3);
-    mono_add_internal_call("NST.Tests/InternalCalls::TestPassVec4", &PassVec4);
+    testArrayOfVec3Result = size == 10;
+    Math::vec3 const values[10] = {
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+        {1, 2, 3},
+    };
+
+    for (IndexT i = 0; i < 10; i++)
+    {
+        if (arr[i] != values[i])
+        {
+            testArrayOfVec3Result = false;
+        }
+    }
+}
+
+NEBULA_EXPORT void
+TestArrayOfVec4(Math::vec4* arr, int size)
+{
+    testArrayOfVec4Result = size == 10;
+    Math::vec4 const values[10] = {
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+        {1, 2, 3, 4},
+    };
+
+    for (IndexT i = 0; i < 10; i++)
+    {
+        if (arr[i] != values[i])
+        {
+            testArrayOfVec4Result = false;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -75,43 +135,45 @@ SetupInternalCalls()
 void
 NSharpTest::Run()
 {
-    Ptr<MonoServer> monoServer = MonoServer::Create();
-    monoServer->SetDebuggingEnabled(true);
-    monoServer->WaitForDebuggerToConnect(false);
-    monoServer->Open();
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingRegisterThread();
+#endif
 
-    Scripting::MonoAssemblyId assemblyId = monoServer->Load("bin:NSharpTests.dll");
-    bool assemblyLoaded = assemblyId != Scripting::MonoAssemblyId::Invalid();
-    VERIFY(assemblyLoaded);
-    if (!assemblyLoaded)
-    {
-        n_warning("Failed to load assembly. Cannot proceed with test!\n");
-        return;
-    }
+    verifyManagedCallback = [this](bool success, const char* filePath, int lineNumber)
+    { this->Verify(success, "<Managed Function Test>", filePath, lineNumber); };
 
-    VERIFY(0 == monoServer->Exec(assemblyId, "NST.AppEntry::Main()"));
+    Ptr<NSharpServer> nsServer = NSharpServer::Instance();
+    AssemblyId assemblyId = Scripting::ScriptFeatureUnit::Instance()->GetAssemblyId();
 
-    SetupInternalCalls();
-    VERIFY(0 == monoServer->Exec(assemblyId, "NST.Tests/InternalCalls::RunTests()"));
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+VariablePassing::RunTests()"));
 
-    Math::vec2 const v2 = { 1.0f, 2.0f };
+    Math::vec2 const v2 = {1.0f, 2.0f};
     VERIFY(reg_vec2 == v2);
 
-    Math::vec3 const v3 = { 1.0f, 2.0f, 3.0f };
+    Math::vec3 const v3 = {1.0f, 2.0f, 3.0f};
     VERIFY(reg_vec3 == v3);
 
-    Math::vec4 const v4 = { 1.0f, 2.0f, 3.0f, 4.0f };
+    Math::vec4 const v4 = {1.0f, 2.0f, 3.0f, 4.0f};
     VERIFY(reg_vec4 == v4);
 
-    VERIFY(0 == monoServer->Exec(assemblyId, "NST.Tests/DLLImportCalls::RunTests()"));
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests+DLLImportCalls::RunTests()"));
 
     VERIFY(reg_string == "This is a C# string!\n");
     VERIFY(reg_string.Length() == 21); // make sure we're not just reading from the heap pointer...
     n_printf(reg_string.AsCharPtr());
 
     VERIFY(testArrayOfIntResult);
+    VERIFY(testArrayOfVec3Result);
+    VERIFY(testArrayOfVec4Result);
 
+    VERIFY(0 == nsServer->ExecUnmanagedCall(assemblyId, "NST.Tests::PerformTests()"));
 
+    while(false)
+        StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
+    StepFrame();
 }
 
-}
+} // namespace Test

@@ -13,6 +13,7 @@
 #include "managers/blueprintmanager.h"
 #include "managers/timemanager.h"
 #include "imgui.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace BaseGameFeature
 {
@@ -36,6 +37,17 @@ BaseGameFeatureUnit::BaseGameFeatureUnit()
 BaseGameFeatureUnit::~BaseGameFeatureUnit()
 {
     __DestructSingleton;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseGameFeatureUnit::OnAttach()
+{
+    Game::RegisterComponent<Owner>();
+    Game::RegisterComponent<Transform>();
+    Game::RegisterComponent<Game::IsActive>();
 }
 
 //------------------------------------------------------------------------------

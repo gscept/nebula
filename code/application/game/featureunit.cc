@@ -31,6 +31,24 @@ FeatureUnit::~FeatureUnit()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+FeatureUnit::OnAttach()
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FeatureUnit::OnRemove()
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
     This method is called by Game::GameServer::AttachGameFeature().
     Use this method for one-time initializations of the FeatureUnit.
 */

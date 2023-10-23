@@ -137,15 +137,15 @@ endif()
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
-option(USE_MONO "Build with mono support" OFF)
+option(USE_DOTNET "Build with .NET support" OFF)
 
-IF (USE_MONO)
+IF (USE_DOTNET)
     cmake_policy(PUSH)
     # Ignore policy that disallows environment variables
     cmake_policy(SET CMP0074 NEW)
-    find_package(MONO REQUIRED)
+    find_package(Dotnet REQUIRED)
     cmake_policy(POP)
-ENDIF (USE_MONO)
+ENDIF (USE_DOTNET)
 
 macro(nebula_flatc root)
     string(COMPARE EQUAL ${root} "SYSTEM" use_system)
@@ -244,14 +244,21 @@ macro(add_shaders_intern)
     endif()
 endmacro()
 
-macro(nebula_add_nidl)
+macro(nebula_add_script_library target)
+    fips_deps(nsharp ${target})
+    IF(WIN32)
+        set_target_properties(${CurTargetName} PROPERTIES VS_GLOBAL_ResolveNuGetPackages "false")
+    ENDIF(WIN32)
+endmacro()
+
+macro(nebula_idl_compile)
     SOURCE_GROUP("NIDL Files" FILES ${ARGN})
     set(target_has_nidl 1)
     foreach(nidl ${ARGN})
         get_filename_component(f_abs ${CurDir}${nidl} ABSOLUTE)
         get_filename_component(f_dir ${f_abs} PATH)
-        STRING(REPLACE ".nidl" ".cc" out_source ${nidl})
-        STRING(REPLACE ".nidl" ".h" out_header ${nidl})
+        STRING(REPLACE ".json" ".cc" out_source ${nidl})
+        STRING(REPLACE ".json" ".h" out_header ${nidl})
         STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
         STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
         set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}/${CurDir}")
@@ -263,10 +270,70 @@ macro(nebula_add_nidl)
             VERBATIM PRE_BUILD)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
-        #target_sources(${target} PRIVATE "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
         target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
-        endforeach()
+        target_sources(${CurTargetName} PRIVATE "${f_abs}")
+    endforeach()
     include_directories("${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
+endmacro()
+
+# Call inside fips_sharedlib, after calling nebula_idl_generate_cs_target
+macro(nebula_register_nidl_cs)
+    add_dependencies(${CurTargetName} ${NIDL_Cs_Deps})
+        
+    if(WIN32)
+        foreach(ncsfile IN LISTS NIDL_Cs_Files)
+            # HACK:
+            # cmake doesn't group these when using source_group for some reason    
+            # override the csproj Link tag with custom link path.
+            # for some reason, the link gets set twice in the file. Doesn't seem to matter though...
+            get_filename_component(fileName ${ncsfile} NAME)
+            set_source_files_properties(
+                "${ncsfile}"
+                PROPERTIES VS_CSHARP_Link "NativeComponents\\${fileName}"
+            )
+        endforeach()
+    endif(WIN32)
+
+    target_sources(${CurTargetName} PRIVATE ${NIDL_Cs_Files})
+endmacro()
+
+macro(nebula_idl_generate_cs_target)
+    set(NIDL_Cs_Deps "")
+    set(NIDL_Cs_Files "")
+    foreach(nidl ${ARGN})
+        get_filename_component(f_abs ${CurDir}${nidl} ABSOLUTE)
+        get_filename_component(f_dir ${f_abs} PATH)
+        STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
+        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
+        
+        STRING(REPLACE ".json" "" nidlName ${nidl})
+        get_filename_component(nidlName ${nidlName} NAME)
+        
+        set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/cs/${nidlName}/")
+        get_filename_component(nidl ${nidl} NAME)
+        STRING(REPLACE ".json" ".cs" out_cs ${nidl})
+        
+        if (NOT EXISTS "${abs_output_folder}")
+            file(MAKE_DIRECTORY ${abs_output_folder})
+        endif()
+        if (NOT EXISTS "${abs_output_folder}${out_cs}")
+            file(TOUCH "${abs_output_folder}${out_cs}")
+        endif()
+        
+        add_custom_target(GenerateNIDL_${nidlName}
+            COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_cs}" "--csharp"
+            BYPRODUCTS "${abs_output_folder}${out_cs}"
+            COMMENT "IDLC: Generating ${out_cs}..."
+            DEPENDS ${NROOT}/fips-files/generators/NIDL.py
+            WORKING_DIRECTORY "${NROOT}"
+            VERBATIM
+            SOURCES "${f_abs}"
+        )
+        set_target_properties(GenerateNIDL_${nidlName} PROPERTIES FOLDER "NIDL")
+        set_target_properties(GenerateNIDL_${nidlName} PROPERTIES VS_GLOBAL_ResolveNuGetPackages "false")
+        list(APPEND NIDL_Cs_Files "${abs_output_folder}${out_cs}")
+        list(APPEND NIDL_Cs_Deps GenerateNIDL_${nidlName})
+    endforeach()
 endmacro()
 
 macro(add_frameshader_intern)
