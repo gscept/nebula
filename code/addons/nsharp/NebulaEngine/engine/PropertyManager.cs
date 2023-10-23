@@ -18,7 +18,9 @@ namespace Nebula
             private static readonly PropertyManager instance = new PropertyManager();
             // Explicit static constructor to tell C# compiler
             // not to mark type as beforefieldinit
-            static PropertyManager() { }
+            static PropertyManager()
+            {
+            }
             private PropertyManager()
             {
                 for (int i = 0; i < this.eventListeners.Length; i++)

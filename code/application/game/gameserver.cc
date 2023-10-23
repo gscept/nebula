@@ -106,6 +106,10 @@ GameServer::AttachGameFeature(const Ptr<FeatureUnit>& feature)
     this->gameFeatures.Append(feature);
     feature->SetCmdLineArgs(this->GetCmdLineArgs());
     feature->OnAttach();
+    if (this->isOpen)
+    {
+        feature->OnActivate();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -117,6 +121,10 @@ GameServer::RemoveGameFeature(const Ptr<FeatureUnit>& feature)
     n_assert(0 != feature);
     IndexT index = this->gameFeatures.FindIndex(feature);
     n_assert(InvalidIndex != index);
+    if (this->isOpen)
+    {
+        feature->OnDeactivate();
+    }
     feature->OnRemove();
     this->gameFeatures.EraseIndex(index);
 }

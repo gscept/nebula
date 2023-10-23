@@ -26,8 +26,6 @@ namespace Nebula
                 Entity entity = new Entity(this, id);
                 this.RegisterEntity(entity);
 
-                // TODO: Register a special flag ScriptComponent that is managed so that we can react to this entity being deleted from native code.
-
                 // TODO: Check what properties this entity should have, and add them to the entity.
                 return entity;
             }

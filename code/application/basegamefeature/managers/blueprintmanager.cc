@@ -333,8 +333,8 @@ BlueprintManager::SetupBlueprints()
         Util::StackArray<ComponentId, 32> columns;
 
         // append owner and transform, makes it a bit faster than letting entitymanager sort it out...
-        columns.Append(GetComponentId<OwnerT>());
-        columns.Append(GetComponentId<TransformT>());
+        columns.Append(GetComponentId<Owner>());
+        columns.Append(GetComponentId<Transform>());
 
         // filter out invalid components
         for (int i = 0; i < numBlueprintComponents; i++)

@@ -66,6 +66,21 @@ static DotNET_API api;
 //------------------------------------------------------------------------------
 /**
 */
+std::wstring
+ToWideString(Util::String const& str)
+{
+#ifdef _WIN32
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+#else
+#error "Not yet implemented on this platform! Assumptions have been made for Windows which cannot be made for other platforms.
+#endif
+    std::wstring ret = convert.from_bytes(str.AsCharPtr());
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 NSharpServer::NSharpServer()
     : isOpen(false),
       waitForDebugger(false),
@@ -172,17 +187,99 @@ NSharpServer::CloseHostFxr()
 
 //------------------------------------------------------------------------------
 /**
+    Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
 */
-std::wstring
-ToWideString(Util::String const& str)
+void*
+NSharpServer::GetDelegatePointer(AssemblyId assemblyId, Util::String const& function, Util::String const& delegateName)
 {
-#ifdef _WIN32
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-#else
-#error "Not yet implemented on this platform! Assumptions have been made for Windows which cannot be made for other platforms.
-#endif
-    std::wstring ret = convert.from_bytes(str.AsCharPtr());
-    return ret;
+    if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
+    {
+        n_warning("Invalid assembly id!");
+        return nullptr;
+    }
+
+    Assembly* assembly = this->assemblies.Get<0>(assemblyId.id);
+
+    // Separate class and namespace from string.
+    auto methodSeparatorIndex = function.FindCharIndex(':');
+    Util::String ns = function.ExtractRange(0, methodSeparatorIndex);
+    ns += ", ";
+    ns += assembly->name;
+    Util::String methodName = function.ExtractRange(methodSeparatorIndex + 2, function.Length() - methodSeparatorIndex - 4);
+
+    std::wstring dotnetType = ToWideString(ns);
+    std::wstring dotnetTypeMethod = ToWideString(methodName);
+    std::wstring delegateTypeName = ToWideString(delegateName);
+
+    void* func = nullptr;
+
+    int rc = assembly->GetExport(
+        assembly->dllPath.c_str(),
+        dotnetType.c_str(),
+        dotnetTypeMethod.c_str(),
+        delegateTypeName.c_str(),
+        nullptr,
+        &func
+    );
+
+    if (rc != 0 || func == nullptr)
+    {
+        n_warning("Could not find function delegate '%s' in assembly (%s)!", function.AsCharPtr(), assembly->name.AsCharPtr());
+        n_printf("\tPossible solutions:\n"
+                 "\t\tFunction name is correctly formatted (ex. Namespace.Namespace.Class+NestedClass::Function())?\n"
+                 "\t\tDelegate type name correctly formatted?");
+        return nullptr;
+    }
+
+    return func;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Function should be formatted as: "Namespace.Namespace.Class+NestedClass::Function()"
+*/
+void*
+NSharpServer::GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const& function)
+{
+    if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
+    {
+        n_warning("Invalid assembly id!");
+        return nullptr;
+    }
+
+    Assembly* assembly = this->assemblies.Get<0>(assemblyId.id);
+
+    // Separate class and namespace from string.
+    auto methodSeparatorIndex = function.FindCharIndex(':');
+    Util::String ns = function.ExtractRange(0, methodSeparatorIndex);
+    ns += ", ";
+    ns += assembly->name;
+    Util::String methodName = function.ExtractRange(methodSeparatorIndex + 2, function.Length() - methodSeparatorIndex - 4);
+
+    std::wstring dotnetType = ToWideString(ns);
+    std::wstring dotnetTypeMethod = ToWideString(methodName);
+
+    void* func = nullptr;
+
+    int rc = assembly->GetExport(
+        assembly->dllPath.c_str(),
+        dotnetType.c_str(),
+        dotnetTypeMethod.c_str(),
+        UNMANAGEDCALLERSONLY_METHOD,
+        nullptr,
+        &func
+    );
+
+    if (rc != 0 || func == nullptr)
+    {
+        n_warning("Could not find function '%s' in assembly (%s)!", function.AsCharPtr(), assembly->name.AsCharPtr());
+        n_printf("\tPossible solutions:\n"
+                 "\t\tFunction name is correctly formatted (ex. Namespace.Namespace.Class+NestedClass::Function())?\n"
+                 "\t\tFunction is declared with the [UnmanagedCallersOnly] attribute in C#?");
+        return nullptr;
+    }
+
+    return func;
 }
 
 //------------------------------------------------------------------------------
@@ -327,48 +424,16 @@ NSharpServer::LoadAssembly(IO::URI const& uri)
 int
 NSharpServer::ExecUnmanagedCall(AssemblyId assemblyId, Util::String const& function)
 {
-    if (assemblyId > this->assemblies.Size() || assemblyId == InvalidIndex)
-    {
-        n_warning("Invalid assembly id!");
-        return 1;
-    }
-
-    Assembly* assembly = this->assemblies.Get<0>(assemblyId.id);
-
-    // Separate class and namespace from string.
-    auto methodSeparatorIndex = function.FindCharIndex(':');
-    Util::String ns = function.ExtractRange(0, methodSeparatorIndex);
-    ns += ", ";
-    ns += assembly->name;
-    Util::String methodName = function.ExtractRange(methodSeparatorIndex + 2, function.Length() - methodSeparatorIndex - 4);
-
-    std::wstring dotnetType = ToWideString(ns);
-    std::wstring dotnetTypeMethod = ToWideString(methodName);
-
     typedef void(CORECLR_DELEGATE_CALLTYPE * custom_entry_point_fn)();
     custom_entry_point_fn func = nullptr;
-
-    int rc = assembly->GetExport(
-        assembly->dllPath.c_str(),
-        dotnetType.c_str(),
-        dotnetTypeMethod.c_str(),
-        UNMANAGEDCALLERSONLY_METHOD,
-        nullptr,
-        (void**)&func
-    );
-
-    if (rc != 0 || func == nullptr)
+    func = (custom_entry_point_fn)GetUnmanagedFuncPointer(assemblyId, function);
+    if (func != nullptr)
     {
-        n_warning("Could not find function '%s' in assembly (%s)!", function.AsCharPtr(), assembly->name.AsCharPtr());
-        n_printf("\tPossible solutions:\n"
-                 "\t\tFunction name is correctly formatted (ex. Namespace.Namespace.Class+NestedClass::Function())?\n"
-                 "\t\tFunction is declared with the [UnmanagedCallersOnly] attribute in C#?");
-        return 2;
+        func();
+        return 0;
     }
-
-    func();
-
-    return 0;
+    
+    return 1;
 }
 
 //------------------------------------------------------------------------------
@@ -378,15 +443,6 @@ bool const
 NSharpServer::IsOpen()
 {
     return this->isOpen;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-AssemblyId
-NSharpServer::GetCoreAssembly() const
-{
-    return this->nebulaEngineAssemblyId;
 }
 
 } // namespace Scripting

@@ -21,6 +21,7 @@
 #include "system/library.h"
 #include "nsconfig.h"
 #include "assemblyid.h"
+#include "util/delegate.h"
 
 //------------------------------------------------------------------------------
 namespace Scripting
@@ -43,13 +44,17 @@ public:
 	void SetDebuggingEnabled(bool enabled);
 	void WaitForDebuggerToConnect(bool enabled);
 	/// Load dotnet exe or DLL at path
-	AssemblyId LoadAssembly(IO::URI const& uri);
+    AssemblyId LoadAssembly(IO::URI const& uri);
 	/// Execute function in an assembly. This is not very efficient and should not be used in place of delegates
-	int ExecUnmanagedCall(AssemblyId assembly, Util::String const& function);
+    int ExecUnmanagedCall(AssemblyId assemblyId, Util::String const& function);
 	/// Check if server is open
 	bool const IsOpen();
-    /// Get the nebula engine api core assembly that contains the nebula C# runtime
-    AssemblyId GetCoreAssembly() const;
+    /// Get a delegate pointer from an assembly 
+    void* GetDelegatePointer(
+        AssemblyId assemblyId, Util::String const& assemblyQualifiedFunctionName, Util::String const& assemblyQualifiedDelegateName
+    );
+    /// Get a function pointer ([UnmanagedCallersOnly]) from an assembly
+    void* GetUnmanagedFuncPointer(AssemblyId assemblyId, Util::String const& assemblyQualifiedFunctionName);
 
 private:
     struct Assembly;
@@ -57,8 +62,6 @@ private:
     /// load the host fxr library and get exported function addresses
     bool LoadHostFxr();
     void CloseHostFxr();
-
-    AssemblyId nebulaEngineAssemblyId;
 
     Util::ArrayAllocator<Assembly*> assemblies;
 	Util::Dictionary<Util::String, uint32_t> assemblyTable;
@@ -69,6 +72,7 @@ private:
 	bool isOpen;
     System::Library hostfxr;
 };
+
 
 } // namespace Scripting
 //------------------------------------------------------------------------------

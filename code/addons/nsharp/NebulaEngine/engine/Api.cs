@@ -80,6 +80,9 @@ namespace Nebula
 
             public virtual void OnBeginFrame()
             {
+                // TODO: loop over all worlds and collect garbage
+                World.Get(World.DEFAULT_WORLD).CollectGarbage();
+
                 PropertyManager.Instance.OnBeginFrame();
             }
 

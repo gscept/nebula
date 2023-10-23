@@ -37,6 +37,7 @@ fips_begin_sharedlib(NebulaEngine)
             Msg.cs
             MsgDispatcher.cs
             ConsoleHook.cs
+            TemplateManager.cs
         )
     fips_dir(NebulaEngine/xna)
         fips_files(
