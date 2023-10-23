@@ -40,8 +40,8 @@ PhysicsFeatureUnit::~PhysicsFeatureUnit()
 void
 PhysicsFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<PhysicsActorT>();
-    Game::RegisterComponent<IsKinematicT>();
+    Game::RegisterComponent<PhysicsActor>();
+    Game::RegisterComponent<IsKinematic>();
 }
 
 //------------------------------------------------------------------------------

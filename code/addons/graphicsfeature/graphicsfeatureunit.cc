@@ -69,8 +69,8 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<ModelT>();
-    Game::RegisterComponent<CameraT>();
+    Game::RegisterComponent<Model>();
+    Game::RegisterComponent<Camera>();
 }
 
 //------------------------------------------------------------------------------

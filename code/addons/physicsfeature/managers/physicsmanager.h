@@ -13,11 +13,11 @@
 #include "game/category.h"
 #include "game/entity.h"
 #include "game/world.h"
-#include "basegamefeature/components/transform.h"
+#include "basegamefeature/components/basegamefeature.h"
 #include "physicsinterface.h"
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
-#include "components/physics.h"
+#include "components/physicsfeature.h"
 #include "game/api.h"
 
 namespace PhysicsFeature

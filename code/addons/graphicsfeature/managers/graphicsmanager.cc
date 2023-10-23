@@ -9,8 +9,8 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "game/gameserver.h"
-#include "graphicsfeature/components/graphics.h"
-#include "basegamefeature/components/transform.h"
+#include "graphicsfeature/components/graphicsfeature.h"
+#include "basegamefeature/components/basegamefeature.h"
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 
@@ -61,11 +61,11 @@ GraphicsManager::InitCreateModelProcessor()
         .Func(
             [](Game::World* world,
                Game::Owner const& owner,
-               Game::WorldTransform const& t,
+               Game::Transform const& t,
                GraphicsFeature::Model& model)
             {
                 auto res = model.resource;
-                model.graphicsEntityId = Graphics::CreateEntity();
+                model.graphicsEntityId = Graphics::CreateEntity().id;
                 RegisterModelEntity(model.graphicsEntityId, model.resource, t.value);
             }
         )
@@ -78,7 +78,7 @@ GraphicsManager::InitCreateModelProcessor()
 void
 GraphicsManager::OnDecay()
 {
-    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Model::ID());
+    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Game::GetComponentId<Model>());
     Model* data = (Model*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
@@ -96,8 +96,8 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 {
 
     Game::Filter filter = Game::FilterBuilder()
-        .Including({ {Game::AccessMode::READ, Model::ID()} })
-        .Including<Game::WorldTransform>()
+        .Including({{Game::AccessMode::READ, Game::GetComponentId<Model>()}})
+        .Including<Game::Transform>()
         .Excluding({ Game::GetComponentId("Static") })
         .Build();
 
@@ -134,8 +134,7 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 Game::ManagerAPI
 GraphicsManager::Create()
 {
-	n_assert(GraphicsFeature::Details::graphics_registered);
-    n_assert(!GraphicsManager::HasInstance());
+	n_assert(!GraphicsManager::HasInstance());
     GraphicsManager::Singleton = new GraphicsManager;
 
     Singleton->InitCreateModelProcessor();
@@ -168,7 +167,7 @@ GraphicsManager::OnCleanup(Game::World* world)
     n_assert(GraphicsManager::HasInstance());
     
     Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = GraphicsFeature::Model::ID();
+    filterInfo.inclusive[0] = Game::GetComponentId<Model>();
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 

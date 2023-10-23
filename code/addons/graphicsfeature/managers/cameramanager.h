@@ -14,7 +14,7 @@
 #include "game/manager.h"
 #include "ids/idgenerationpool.h"
 #include "graphics/graphicsentity.h"
-#include "graphicsfeature/components/graphics.h"
+#include "graphicsfeature/components/graphicsfeature.h"
 
 namespace Graphics
 {

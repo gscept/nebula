@@ -10,7 +10,7 @@
 #include "visibility/visibilitycontext.h"
 #include "game/gameserver.h"
 #include "graphics/view.h"
-#include "basegamefeature/components/transform.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 namespace GraphicsFeature
 {
@@ -83,7 +83,7 @@ UpdateCameraSettings(Graphics::GraphicsEntityId gid, Camera& settings, Camera co
 
     if (changed)
     {
-        if (change.projectionMode == ProjectionMode::PERSPECTIVE)
+        if (change.projectionMode == ProjectionMode::Perspective)
             Graphics::CameraContext::SetupProjectionFov(gid, change.aspectRatio, Math::deg2rad(change.fieldOfView), change.zNear, change.zFar);
         else
             Graphics::CameraContext::SetupOrthographic(gid, change.orthographicWidth, change.orthographicWidth * change.aspectRatio, change.zNear, change.zFar);
@@ -103,7 +103,7 @@ CameraManager::InitUpdateCameraProcessor()
 {
     // Setup processor that handles both worldtransform and camera (heirarchy)
     Game::ProcessorBuilder("CameraManager.UpdateCameraWorldTransform").Func(
-        [](Game::World*, Camera const& camera, Game::WorldTransform const& parentTransform)
+        [](Game::World*, Camera const& camera, Game::Transform const& parentTransform)
         {
             if (IsViewHandleValid(camera.viewHandle))
             {
@@ -127,7 +127,7 @@ CameraManager::InitUpdateCameraProcessor()
                 Graphics::CameraContext::SetView(gid, settings.localTransform);
             }
         })
-        .Excluding<Game::WorldTransform>()
+        .Excluding<Game::Transform>()
         .Build();
 }
 
