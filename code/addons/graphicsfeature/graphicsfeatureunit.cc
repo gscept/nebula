@@ -70,7 +70,7 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<Model>();
+    Game::RegisterComponent<Model>(Game::ComponentFlags::COMPONENTFLAG_DECAY);
     Game::RegisterComponent<Camera>();
 }
 

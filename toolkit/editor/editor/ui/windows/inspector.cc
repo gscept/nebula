@@ -221,7 +221,7 @@ Inspector::ShowAddComponentMenu()
         for (SizeT i = 0; i < numComponents; i++)
         {
             MemDb::AttributeDescription* component = components[i];
-            if (component->name == ownerAtom || (component->externalFlags & Game::COMPONENTFLAG_MANAGED))
+            if (component->name == ownerAtom || (component->externalFlags & Game::COMPONENTFLAG_DECAY))
                 continue;
 
             const char* name = component->name.Value();

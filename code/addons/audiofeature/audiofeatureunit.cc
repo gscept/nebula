@@ -37,8 +37,8 @@ AudioFeatureUnit::~AudioFeatureUnit()
 void
 AudioFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<AudioEmitterT>();
-    Game::RegisterComponent<AudioListenerT>();
+    Game::RegisterComponent<AudioEmitter>(Game::ComponentFlags::COMPONENTFLAG_DECAY);
+    Game::RegisterComponent<AudioListener>();
 }
 
 //------------------------------------------------------------------------------

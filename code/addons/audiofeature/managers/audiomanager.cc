@@ -5,7 +5,7 @@
 #include "application/stdneb.h"
 #include "audiomanager.h"
 #include "game/gameserver.h"
-#include "audiofeature/components/audio.h"
+#include "audiofeature/components/audiofeature.h"
 #include "audio/audiodevice.h"
 
 namespace AudioFeature

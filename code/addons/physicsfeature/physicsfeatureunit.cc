@@ -40,7 +40,7 @@ PhysicsFeatureUnit::~PhysicsFeatureUnit()
 void
 PhysicsFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<PhysicsActor>();
+    Game::RegisterComponent<PhysicsActor>(Game::ComponentFlags::COMPONENTFLAG_DECAY);
     Game::RegisterComponent<IsKinematic>();
 }
 

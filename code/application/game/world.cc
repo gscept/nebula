@@ -494,7 +494,7 @@ DecayComponent(
     Game::World* world, Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance
 )
 {
-    if (MemDb::TypeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_MANAGED)
+    if (MemDb::TypeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
     {
         if (component.id >= componentDecayTable.Size())
             componentDecayTable.Resize(

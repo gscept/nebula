@@ -21,6 +21,7 @@
 #include "filter.h"
 #include "dataset.h"
 #include "processor.h"
+#include "util/bitfield.h"
 
 namespace MemDb
 {
@@ -66,9 +67,9 @@ enum ComponentFlags : uint32_t
 {
     /// regular component
     COMPONENTFLAG_NONE = 0,
-    /// managed component. This will delay the deletion of this component by
+    /// Component will decay. This will delay the deletion of this component by
     /// one frame, allowing managers to clean up externally allocated resources
-    COMPONENTFLAG_MANAGED = 1 << 0
+    COMPONENTFLAG_DECAY = 1 << 0
 };
 
 //------------------------------------------------------------------------------
@@ -252,10 +253,10 @@ void                        ClearDecayBuffers();
 
 template <typename T>
 void
-RegisterComponent()
+RegisterComponent(ComponentFlags flags = ComponentFlags::COMPONENTFLAG_NONE)
 {
     Util::StringAtom const name = T::Traits::name;
-    MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), 0);
+    MemDb::AttributeId const cid = MemDb::TypeRegistry::Register<T>(name, T(), (uint32_t)flags);
     Game::ComponentSerialization::Register<T>(cid);
     Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<T>);
 }

@@ -183,7 +183,7 @@ SaveEntities(const char* filePath)
                     for (auto component : table.GetAttributes())
                     {
                         uint32_t const flags = MemDb::TypeRegistry::Flags(component);
-                        if (component != ownerPid && (flags & Game::ComponentFlags::COMPONENTFLAG_MANAGED) == 0)
+                        if (component != ownerPid && (flags & Game::ComponentFlags::COMPONENTFLAG_DECAY) == 0)
                         {
                             SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
                             if (typeSize > 0)
