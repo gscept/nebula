@@ -3,8 +3,8 @@
 	"enums": {
 		"ActorType": {
 			"Static": 0,
-			"Dynamic": 1,
-			"Kinematic": 2
+			"Kinematic": 1,
+			"Dynamic": 2,
 		}
 	},
 	"components": {
