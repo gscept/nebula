@@ -11,6 +11,8 @@
 namespace MemDb
 {
 
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -21,7 +23,7 @@ AllocateBuffer(AttributeDescription* desc, SizeT capacity, SizeT numRows)
     n_assert(desc->typeSize != 0);
 
     void* buffer = Memory::Alloc(Table::HEAP_MEMORY_TYPE, desc->typeSize * capacity);
-
+    
     for (IndexT i = 0; i < numRows; ++i)
     {
         void* val = (char*)buffer + (i * desc->typeSize);
@@ -45,34 +47,45 @@ Table::~Table()
 Table::Partition*
 Table::NewPartition()
 {
-
-    Partition* partition = new Partition();
-    partition->table = this;
+    Partition* partition = nullptr;
 
     if (freePartitions.IsEmpty())
     {
-        partition->partitionId = this->partitions.Size();
-        this->partitions.Append(partition);
+        partition = new Partition();
+        if (nullPartitions.IsEmpty())
+        {
+            partition->partitionId = this->partitions.Size();
+            this->partitions.Append(partition);
+        }
+        else
+        {
+            uint16_t pid = nullPartitions.PopBack();
+            this->partitions[pid] = partition;
+            partition->partitionId = pid;
+        }
+        
+        partition->table = this;
+
+        for (IndexT col = 0; col < this->attributes.Size(); col++)
+        {
+            AttributeId const& attr = this->attributes[col];
+
+            AttributeDescription const* const desc = TypeRegistry::GetDescription(attr);
+            partition->columns.Append(nullptr);
+            if (desc->typeSize > 0)
+            {
+                Table::ColumnBuffer& buffer = partition->columns[col];
+                buffer = AllocateBuffer(TypeRegistry::GetDescription(attr), partition->CAPACITY, partition->numRows);
+            }
+        }
     }
     else
     {
-        partition->partitionId = this->freePartitions.PopBack();
-        n_assert(this->partitions[partition->partitionId] == nullptr);
-        this->partitions[partition->partitionId] = partition;
+        partition = this->freePartitions.PopBack();
     }
 
-    for (IndexT col = 0; col < this->attributes.Size(); col++)
-    {
-        AttributeId const& attr = this->attributes[col];
+    
 
-        AttributeDescription const* const desc = TypeRegistry::GetDescription(attr);
-        partition->columns.Append(nullptr);
-        if (desc->typeSize > 0)
-        {
-            Table::ColumnBuffer& buffer = partition->columns[col];
-            buffer = AllocateBuffer(TypeRegistry::GetDescription(attr), partition->CAPACITY, partition->numRows);
-        }
-    }
 
     partition->next = this->firstActivePartition;
     if (this->firstActivePartition != nullptr)
@@ -217,8 +230,7 @@ void
 Table::RemoveRow(RowId row)
 {
     Partition* part = this->partitions[row.partition];
-    n_assert(row.index < part->numRows);
-    part->freeIds.InsertSorted(row.index);
+    part->FreeIndex(row.index);
 }
 
 //------------------------------------------------------------------------------
@@ -290,21 +302,42 @@ Table::Defragment(std::function<void(Partition*, MemDb::RowId, MemDb::RowId)> co
 
         if (part->numRows == 0 && part->partitionId != this->currentPartition->partitionId)
         {
-            // erase partition
+            // recycle partition
             if (part->next != nullptr)
                 part->next->previous = part->previous;
             if (part->previous != nullptr)
                 part->previous->next = part->next;
             Partition* nextPart = part->next;
-            this->partitions[part->partitionId] = nullptr;
-            this->freePartitions.Append(part->partitionId);
-            delete part;
+            this->freePartitions.Append(part);
+
+            part->validRows.Clear();
+            part->modifiedRows.Clear();
+            part->version++;
+
             this->numActivePartitions--;
             part = nextPart;
         }
         else
         {
             part = part->next;
+        }
+    }
+
+    // Lazily erase n partitions per frame, so that we clean up memory at some point
+    for (size_t i = 0; i < 2 && !this->freePartitions.IsEmpty(); i++)
+    {
+        Partition* part = this->freePartitions.PopBack();
+        n_assert(part != nullptr);
+
+        uint16_t pid = part->partitionId;
+        this->partitions[pid] = nullptr;
+        delete part;
+        this->nullPartitions.Append(pid);
+        if (this->freePartitions.IsEmpty())
+        {
+            // free up some memory once we hit zero free partitions in our buffer
+            this->freePartitions.Free();
+            break;
         }
     }
 
@@ -650,63 +683,6 @@ Table::DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& 
 
 //------------------------------------------------------------------------------
 /**
-    This should only be used for VERY specific purposes.
-*/
-uint16_t
-Table::MovePartition(MemDb::Table& srcTable, uint16_t srcPartIndex, MemDb::Table& dstTable)
-{
-#if _DEBUG
-    // Verify correct usage
-    for (int i = 0; i < srcTable.attributes.Size(); i++)
-    {
-        n_assert(srcTable.attributes[i] == dstTable.attributes[i]);
-    }
-#endif
-
-    Partition* partition = srcTable.partitions[srcPartIndex];
-    srcTable.partitions[srcPartIndex] = nullptr;
-    srcTable.freePartitions.Append(srcPartIndex);
-
-    srcTable.numActivePartitions--;
-
-    if (partition->previous != nullptr)
-        partition->previous->next = partition->next;
-    if (partition->next != nullptr)
-        partition->next->previous = partition->previous;
-
-    partition->table = &dstTable;
-
-    partition->next = dstTable.firstActivePartition;
-    if (dstTable.firstActivePartition != nullptr)
-    {
-        dstTable.firstActivePartition->previous = partition;
-    }
-    dstTable.firstActivePartition = partition;
-    dstTable.numActivePartitions++;
-    dstTable.currentPartition = partition;
-
-    uint16_t dstPartIndex;
-    if (dstTable.freePartitions.IsEmpty())
-    {
-        dstPartIndex = dstTable.partitions.Size();
-        dstTable.partitions.Append(partition);
-    }
-    else
-    {
-        dstPartIndex = dstTable.freePartitions.PopBack();
-    }
-
-    partition->partitionId = dstPartIndex;
-    srcTable.totalNumRows -= partition->numRows;
-    srcTable.numActivePartitions--;
-    dstTable.totalNumRows += partition->numRows;
-    dstTable.numActivePartitions++;
-
-    return dstPartIndex;
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 Table::Partition::~Partition()
 {
@@ -744,7 +720,19 @@ Table::Partition::AllocateRowIndex()
     n_assert(index >= 0 && index <= 0xFFFF);
 #endif
 
+    this->validRows.SetBit(index);
     return (uint16_t)index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Table::Partition::FreeIndex(uint16_t instance)
+{
+    n_assert(instance < this->numRows);
+    this->validRows.ClearBit(instance);
+    this->freeIds.Append(instance);
 }
 
 //------------------------------------------------------------------------------
@@ -770,6 +758,8 @@ Table::Partition::EraseSwapIndex(uint16_t instance)
             Memory::Copy((char*)buf + ((size_t)byteSize * end), (char*)buf + ((size_t)byteSize * instance), byteSize);
         }
     }
+
+    this->validRows.SetBitIf(instance, (uint64_t)this->validRows.IsSet(end));
 
     n_assert(this->numRows > 0);
     this->numRows--;

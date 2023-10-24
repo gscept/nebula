@@ -134,10 +134,29 @@ ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
         for (int v = 0; v < data.numViews; v++)
         {
             Game::Dataset::EntityTableView const& view = data.views[v];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
+            
+            uint32_t i = 0;
+            uint32_t section = 0;
+            while (i < view.numInstances)
             {
-                UpdateExpander<COMPONENTS...>(world, func, view, i, bufferStartOffset, std::make_index_sequence<sizeof...(COMPONENTS)>());
+                // check validity of instances in sections of 64 instances
+                if (!view.validInstances.SectionIsNull(section))
+                {
+                    uint32_t const end = Math::min(i + 64, view.numInstances);
+                    for (uint32_t instance = i; instance < end; ++instance)
+                    {
+                        // make sure the instance we're processing is valid
+                        if (view.validInstances.IsSet(instance))
+                        {
+                            UpdateExpander<COMPONENTS...>(
+                                world, func, view, instance, bufferStartOffset, std::make_index_sequence<sizeof...(COMPONENTS)>()
+                            );
+                        }
+                    }
+                }
+                // progress 64 instances, which corresponds to 1 section
+                i += 64;
+                section += 1;
             }
         }
     };

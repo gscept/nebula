@@ -21,6 +21,7 @@
 #include "util/queue.h"
 #include "ids/idgenerationpool.h"
 #include "tableid.h"
+#include "memory/sizeclassificationallocator.h"
 
 namespace MemDb
 {
@@ -77,11 +78,16 @@ public:
         /// check a bit if the row has been modified, and you need to track it.
         /// bits are reset when partition is defragged
         Util::BitField<CAPACITY> modifiedRows;
+        /// bits are set if the row is occupied. If the row is removed, the bit is set to zero.
+        /// this is kept up to date if defragging the partition.
+        Util::BitField<CAPACITY> validRows;
 
     private:
         friend Table;
         /// recycle free row or allocate new row
         uint16_t AllocateRowIndex();
+        /// Free an index.
+        void FreeIndex(uint16_t instance);
         /// erase row by swapping with last row and reducing number of rows in table
         void EraseSwapIndex(uint16_t instance);
     };
@@ -157,10 +163,6 @@ public:
     /// duplicate instance from one row into destination table.
     static void DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& dst, Util::FixedArray<RowId>& dstRows);
 
-    /// move an entire partition from one table to another. IMPORTANT: the destination tables signature, and attribute order must be the exact same as the source tables, for the first N attributes, N being the amount of attributes in the source table.
-    /// returns new partition id in dstTable
-    static uint16_t MovePartition(MemDb::Table& srcTable, uint16_t srcPart, MemDb::Table& dstTable);
-
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
 
@@ -179,11 +181,13 @@ private:
     uint32_t totalNumRows = 0;
 
     /// Current partition that we'll be using when allocating data.
-    Partition* currentPartition;
+    Partition* currentPartition = nullptr;
     /// All partitions, even null partitions
     Util::Array<Partition*> partitions;
-    /// free indices in the partitions array for reusing null partitions
-    Util::Array<uint16_t> freePartitions;
+    /// free partitions for recycling allocated partitions
+    Util::Array<Partition*> freePartitions;
+    /// indices to null partitions
+    Util::Array<uint16_t> nullPartitions;
     /// First partition that has entities. You can use this to iterate over all active partitions with entities by following the chain of partition->next.
     Partition* firstActivePartition = nullptr;
     /// number of active partitions
@@ -192,6 +196,8 @@ private:
     Util::Array<AttributeId> attributes;
     /// maps attr id -> index in columns array
     Util::HashTable<AttributeId, IndexT, 32, 1> columnRegistry;
+
+    uint64_t partitionCleanerCounter = 0;
 };
 
 } // namespace MemDb

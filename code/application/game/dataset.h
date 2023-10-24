@@ -32,6 +32,8 @@ struct Dataset
         uint32_t numInstances = 0;
         /// component buffers. @note Can be NULL if a queried component is a flag
         void* buffers[MAX_COMPONENT_BUFFERS];
+        /// which instances are valid in this buffer
+        decltype(MemDb::Table::Partition::validRows) validInstances;
     };
 
     /// number of views in views array
