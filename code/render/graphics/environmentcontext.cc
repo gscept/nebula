@@ -192,6 +192,8 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     tickParams.MaxLuminance = envState.maxEyeLuminance;
 
     // global resource parameters
+    CoreGraphics::TextureIdLock _1(envState.defaultEnvironmentMap);
+    CoreGraphics::TextureIdLock _2(envState.defaultIrradianceMap);
     tickParams.EnvironmentMap = CoreGraphics::TextureGetBindlessHandle(envState.defaultEnvironmentMap);
     tickParams.IrradianceMap = CoreGraphics::TextureGetBindlessHandle(envState.defaultIrradianceMap);
     tickParams.NumEnvMips = envState.numGlobalEnvironmentMips;
