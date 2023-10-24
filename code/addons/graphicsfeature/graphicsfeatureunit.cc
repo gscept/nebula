@@ -23,6 +23,7 @@
 #include "terrain/terraincontext.h"
 #include "vegetation/vegetationcontext.h"
 #include "posteffects/histogramcontext.h"
+#include "posteffects/downsamplingcontext.h"
 #include "particles/particlecontext.h"
 
 #include "graphics/globalconstants.h"
@@ -153,11 +154,13 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
+    PostEffects::DownsamplingContext::Create();
 
     PostEffects::BloomContext::Setup(frameScript);
     PostEffects::SSAOContext::Setup(frameScript);
     PostEffects::HistogramContext::Setup(frameScript);
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
+    PostEffects::DownsamplingContext::Setup(frameScript);
 
     Graphics::SetupBufferConstants(frameScript);
 
