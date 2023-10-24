@@ -221,7 +221,7 @@ TableSignature::FlipBit(AttributeId component)
     uint64_t bit = component.id % 128;
     partialMask[bit / 64] |= 1ull << bit;
     __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
-    this->mask[offset] = _mm_and_si128(this->mask[offset], temp);
+    this->mask[offset] = _mm_xor_si128(this->mask[offset], temp);
 }
 
 //------------------------------------------------------------------------------
