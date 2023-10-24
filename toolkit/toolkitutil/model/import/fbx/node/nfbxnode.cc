@@ -113,7 +113,13 @@ NFbxNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
         rotation[2] = rotationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Z, 0.0f);
     }
     else
+    {
         rotation = fbxNode->LclRotation.Get();
+        // Convert to radians
+        rotation[0] = Math::deg2rad(rotation[0]);
+        rotation[1] = Math::deg2rad(rotation[1]);
+        rotation[2] = Math::deg2rad(rotation[2]);
+    }
 
     FbxAnimCurveNode* scaleCurve = fbxNode->LclScaling.GetCurveNode();
     if (scaleCurve)

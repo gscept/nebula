@@ -22,13 +22,13 @@ SceneNode::Setup(const NodeType type)
 void 
 SceneNode::CalculateGlobalTransforms()
 {
-    Math::mat4 parentTransform;
+    Math::mat4 parentTransform = Math::mat4::identity;
     if (this->base.parent != nullptr)
     {
         parentTransform = this->base.parent->base.globalTransform;
     }
 
-    Math::mat4 transform = Math::affine(Math::vec3(1), Math::vec3(0), this->base.rotation, this->base.translation);
+    Math::mat4 transform = Math::affine(Math::vec3(1), this->base.rotation, this->base.translation);
     this->base.globalTransform = parentTransform * transform;
 
     for (int i = 0; i < this->base.children.Size(); i++)
