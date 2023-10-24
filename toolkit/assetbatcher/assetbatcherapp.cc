@@ -14,6 +14,7 @@
 #include "nflatbuffer/flatbufferinterface.h"
 #include "flat/physics/material.h"
 #include "jobs2/jobs2.h"
+#include "system/nebulasettings.h"
 
 #ifdef WIN32
 #include "io/win32/win32consolehandler.h"
@@ -192,6 +193,23 @@ AssetBatcherApp::DoWork()
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
     CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");
     */
+
+    // check to see if the assetbatcher has been updated, in that case, force all assets to be rebuilt.
+    IO::FileTime cmdBinModifiedTime = IO::IoServer::Instance()->GetFileWriteTime(this->args.GetCmdName());
+    if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "AssetBatcherTimeStamp"))
+    {
+        Util::String oldFileTime = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "AssetBatcherTimeStamp");
+        if (IO::FileTime(oldFileTime) < cmdBinModifiedTime)
+        {
+            System::NebulaSettings::WriteString("gscept", "ToolkitShared", "AssetBatcherTimeStamp", cmdBinModifiedTime.AsString());
+            force = true;
+        }
+    }
+    else
+    {
+        System::NebulaSettings::WriteString("gscept", "ToolkitShared", "AssetBatcherTimeStamp", cmdBinModifiedTime.AsString());
+        force = true;
+    }
 
     exporter->Open();
     exporter->SetExportMode(mode);
