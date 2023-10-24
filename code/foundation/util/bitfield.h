@@ -47,12 +47,19 @@ public:
     bool IsNull() const;
     /// set a bit by index
     constexpr void SetBit(const uint64_t bitIndex);
-    /// set a bit by index. Multiplies the bit with mul before OR-ing which means it won't set the bit if mul is 0, which makes it branchless.
-    constexpr void SetBit(const uint64_t bitIndex, uint64_t mul);
+    /// set a bit by index. Multiplies the bit with cond before OR-ing which means it won't set the bit if mul is 0, which makes it branchless.
+    constexpr void SetBitIf(const uint64_t bitIndex, uint64_t cond);
     /// set a bit by index
     template <uint64_t bitIndex> constexpr void SetBit();
     /// clear a bit by index
     void ClearBit(const uint64_t bitIndex);
+    
+    /// Check if a section of the bitfield is set.
+    /// The section size depends on the size of the bit field.
+    /// If the bitfield is 8, 16 or 32 bits large, the section size is
+    /// the same size as the bitfield, thus there's only one section.
+    /// If the bitfield is 64 bits or larger, the section size is 64 bits per section.
+    bool SectionIsNull(uint64_t section) const;
 
     /// set bitfield to OR combination
     static constexpr BitField<NUMBITS> Or(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1);
@@ -218,12 +225,12 @@ BitField<NUMBITS>::SetBit(const uint64_t i)
 */
 template <unsigned int NUMBITS>
 constexpr void
-BitField<NUMBITS>::SetBit(const uint64_t i, uint64_t mul)
+BitField<NUMBITS>::SetBitIf(const uint64_t i, uint64_t cond)
 {
     n_assert(i < NUMBITS);
     const TYPE index = i / BASE;
     const TYPE bit = (1ull << (i % BASE));
-    this->bits[index] |= bit * mul;
+    this->bits[index] |= bit * cond;
 }
 
 //------------------------------------------------------------------------------
@@ -248,9 +255,20 @@ void
 BitField<NUMBITS>::ClearBit(const uint64_t i)
 {
     n_assert(i < NUMBITS);
-    constexpr TYPE index = i / BASE;
-    constexpr TYPE bit = ~(1ull << (i % BASE));
+    const TYPE index = i / BASE;
+    const TYPE bit = ~(1ull << (i % BASE));
     this->bits[index] &= bit;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <unsigned int NUMBITS>
+bool
+BitField<NUMBITS>::SectionIsNull(uint64_t section) const
+{
+    n_assert(section < this->size);
+    return this->bits[section] == 0;
 }
 
 //------------------------------------------------------------------------------
