@@ -38,14 +38,14 @@ SelectionTool::RenderGizmo()
     if (selection.IsEmpty())
 		return;
 	
-	Game::ComponentId const transformPid = Game::GetComponentId("WorldTransform");
-	Game::ComponentId const mdlPid = Game::GetComponentId("ModelEntityData");
+	Game::ComponentId const transformPid = Game::GetComponentId("Transform");
+	Game::ComponentId const mdlPid = Game::GetComponentId("Model");
 
 	if (Game::HasComponent(Editor::state.editorWorld, selection[0], transformPid))
 	{
 		if (!isDirty)
 		{
-			tempTransform = Game::GetComponent<Math::mat4>(Editor::state.editorWorld, selection[0], transformPid);
+			tempTransform = Game::GetComponent<Game::Transform>(Editor::state.editorWorld, selection[0]).value;
 		}
 
 		bool isTransforming = Im3d::Gizmo("GizmoEntity", tempTransform);

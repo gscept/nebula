@@ -3,19 +3,19 @@
         "TestEntity": {
             "desc": "A test blueprint",
             "components": [
-                "WorldTransform"
+                "Transform"
             ]
         },
         "TestEntity2": {
             "desc": "A test blueprint 2",
             "components": [
-                "WorldTransform"
+                "Transform"
             ]
         },
         "Camera": {
             "desc": "A camera",
             "components": [
-                "WorldTransform",
+                "Transform",
                 "Camera"
             ]
         }
