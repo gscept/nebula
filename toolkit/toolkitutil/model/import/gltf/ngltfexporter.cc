@@ -52,7 +52,7 @@ NglTFExporter::ParseScene()
     this->gltfScene = Gltf::Document();
     this->exportedMeshes.Clear();
     bool res = this->gltfScene.Deserialize(this->path.LocalPath().AsCharPtr());
-
+    
     if (!res)
     {
         n_warning("WARNING: Failed to import '%s'\n\n", this->file.AsCharPtr());
@@ -103,7 +103,7 @@ NglTFExporter::ParseScene()
         }
         if (material.pbrMetallicRoughness.baseColorTexture.index != -1)
         {
-            // Set texture attrs for normal textures
+            // Set texture attrs for baseColorTexture textures
             TextureAttrs attrs;
             attrs.SetMipMapFilter(TextureAttrs::Filter::Kaiser);
             attrs.SetScaleFilter(TextureAttrs::Filter::Kaiser);
@@ -126,7 +126,7 @@ NglTFExporter::ParseScene()
         }
         if (material.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
         {
-            // Set texture attrs for normal textures
+            // Set texture attrs for metallicRoughnessTexture textures
             TextureAttrs attrs;
             attrs.SetScaleFilter(TextureAttrs::Kaiser);
             attrs.SetMipMapFilter(TextureAttrs::Kaiser);
@@ -135,7 +135,7 @@ NglTFExporter::ParseScene()
             if (image.embedded)
             {
                 Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.normalTexture.index).AsCharPtr());
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.pbrMetallicRoughness.metallicRoughnessTexture.index).AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
