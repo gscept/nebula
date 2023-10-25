@@ -63,33 +63,21 @@ void OpenScene()
         "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
         "systex:black.dds");
 
-    Terrain::BiomeSetupSettings biomeSettings =
+    Terrain::BiomeParameters biomeParams =
     {
-        0.5f, 900.0f, 64.0f
+        .slopeThreshold = 0.5f,
+        .heightThreshold = 900.0f,
+        .uvScaleFactor = 64.0f
     };
-    Terrain::TerrainContext::CreateBiome(biomeSettings,
-        {
-            "tex:terrain/base_material/brown_mud_leaves_01_diff_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/brown_mud_leaves_01_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/brown_mud_leaves_01_material_2k_PNG_BC7_1.dds"
-        },
-        {
-            "tex:terrain/base_material/dirt_aerial_02_diff_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/dirt_aerial_02_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/dirt_aerial_02_material_2k_PNG_BC7_1.dds"
-        },
-        {
-            "tex:terrain/base_material/snow_02_albedo_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/snow_02_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/snow_02_material_2k_PNG_BC7_1.dds"
-        },
-        {
-            "tex:terrain/base_material/rock_ground_02_albedo_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/rock_ground_02_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/rock_ground_02_material_2k_PNG_BC7_1.dds"
-        },
-        "systex:white.dds"
-    );
+    Terrain::BiomeSettings biomeParameters = Terrain::BiomeSettingsBuilder()
+        .Parameters(biomeParams)
+        .FlatMaterial(Terrain::BiomeMaterialBuilder().Finish())
+        .SlopeMaterial(Terrain::BiomeMaterialBuilder().Finish())
+        .HeightMaterial(Terrain::BiomeMaterialBuilder().Finish())
+        .HeightSlopeMaterial(Terrain::BiomeMaterialBuilder().Finish())
+        .Mask("tex:system/white.dds")
+        .Finish();
+    Terrain::TerrainContext::CreateBiome(biomeParameters);
 };
 
 //------------------------------------------------------------------------------

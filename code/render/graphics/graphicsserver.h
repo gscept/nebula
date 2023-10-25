@@ -85,13 +85,13 @@ public:
     void DiscardStage(const Ptr<Stage>& stage); 
 
     /// Setup pre game logic graphics calls
-    void SetupPreLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls);
+    void SetupPreLogicCalls(const Util::Array<ViewIndependentCall>& calls);
     /// Setup post game logic graphics calls
-    void SetupPostLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls);
+    void SetupPostLogicCalls(const Util::Array<ViewIndependentCall>& calls);
     /// Setup per-view calls
-    void SetupPreLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls);
+    void SetupPreLogicViewCalls(const Util::Array<ViewDependentCall>& calls);
     /// Setup per-view calls
-    void SetupPostLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls);
+    void SetupPostLogicViewCalls(const Util::Array<ViewDependentCall>& calls);
 
     /// Run pre-logic calls
     void RunPreLogic();
@@ -147,8 +147,8 @@ private:
     Ptr<CoreGraphics::TextRenderer> textRenderer;
     Ptr<Frame::FrameServer> frameServer;
 
-    Util::FixedArray<ViewIndependentCall> preLogicCalls, postLogicCalls;
-    Util::FixedArray<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
+    Util::Array<ViewIndependentCall> preLogicCalls, postLogicCalls;
+    Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
 
     bool isOpen;
 };
@@ -204,7 +204,7 @@ GraphicsServer::GetCurrentView() const
 /**
 */
 inline void
-GraphicsServer::SetupPreLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls)
+GraphicsServer::SetupPreLogicCalls(const Util::Array<ViewIndependentCall>& calls)
 {
     this->preLogicCalls = calls;
 }
@@ -213,7 +213,7 @@ GraphicsServer::SetupPreLogicCalls(const Util::FixedArray<ViewIndependentCall>& 
 /**
 */
 inline void
-GraphicsServer::SetupPostLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls)
+GraphicsServer::SetupPostLogicCalls(const Util::Array<ViewIndependentCall>& calls)
 {
     this->postLogicCalls = calls;
 }
@@ -222,7 +222,7 @@ GraphicsServer::SetupPostLogicCalls(const Util::FixedArray<ViewIndependentCall>&
 /**
 */
 inline void
-GraphicsServer::SetupPreLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls)
+GraphicsServer::SetupPreLogicViewCalls(const Util::Array<ViewDependentCall>& calls)
 {
     this->preLogicViewCalls = calls;
 }
@@ -231,7 +231,7 @@ GraphicsServer::SetupPreLogicViewCalls(const Util::FixedArray<ViewDependentCall>
 /**
 */
 inline void
-GraphicsServer::SetupPostLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls)
+GraphicsServer::SetupPostLogicViewCalls(const Util::Array<ViewDependentCall>& calls)
 {
     this->postLogicViewCalls = calls;
 }

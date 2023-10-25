@@ -24,7 +24,6 @@ namespace Vegetation
 VegetationContext::VegetationAllocator VegetationContext::vegetationAllocator;
 __ImplementContext(VegetationContext, VegetationContext::vegetationAllocator);
 
-
 struct
 {
     CoreGraphics::TextureId heightMap;

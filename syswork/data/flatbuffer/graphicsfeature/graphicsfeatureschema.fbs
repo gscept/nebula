@@ -8,6 +8,7 @@ include "foundation/math.fbs";
 namespace GraphicsFeature;
 table TerrainSettings
 {
+    use: bool = false;
     max_height: float = 128.0;
     min_height: float = 0.0;
     world_size_width: float = 1024.0;
@@ -15,7 +16,43 @@ table TerrainSettings
     tile_size_width: float = 64.0;
     tile_size_height: float = 64.0;
     quads_per_tile_width: float = 16.0;
-    quads_per_tile_height: float= 16.0;
+    quads_per_tile_height: float = 16.0;
+}
+
+table TerrainBiomeParameters
+{
+    slope_threshold: float = 0.5;
+    height_threshold: float = 1024.0;
+    uv_scale_factor: float = 64.0;
+    use_weights: bool = false;
+    weights: string;
+}
+
+table TerrainBiomeMaterial
+{
+    albedo: string;
+    normal: string;
+    material: string;
+}
+
+table TerrainBiomeSettings
+{
+    parameters: TerrainBiomeParameters;
+    flat_material: TerrainBiomeMaterial;
+    slope_material: TerrainBiomeMaterial;
+    height_material: TerrainBiomeMaterial;
+    height_slope_material: TerrainBiomeMaterial;
+    mask: string;
+}
+
+table TerrainBiomes
+{
+    biomes: [TerrainBiomeSettings];   
+}
+
+table VegetationSettings
+{
+    use: bool = false;
 }
 
 table ClusterSettings

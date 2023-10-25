@@ -1359,66 +1359,42 @@ TerrainContext::SetupTerrain(
 /**
 */
 TerrainBiomeId 
-TerrainContext::CreateBiome(
-    BiomeSetupSettings settings, 
-    BiomeMaterial flatMaterial, 
-    BiomeMaterial slopeMaterial, 
-    BiomeMaterial heightMaterial, 
-    BiomeMaterial heightSlopeMaterial,
-    const Resources::ResourceName& mask)
+TerrainContext::CreateBiome(const BiomeSettings& settings)
 {
     Ids::Id32 ret = terrainBiomeAllocator.Alloc();
     terrainBiomeAllocator.Set<TerrainBiome_Settings>(ret, settings);
 
-    Util::Array<BiomeMaterial> mats = { flatMaterial, slopeMaterial, heightMaterial, heightSlopeMaterial };
+    Util::Array<BiomeMaterial> mats =
+    {
+        settings.materials[BiomeSettings::BiomeMaterialLayer::Flat],
+        settings.materials[BiomeSettings::BiomeMaterialLayer::Slope],
+        settings.materials[BiomeSettings::BiomeMaterialLayer::Height],
+        settings.materials[BiomeSettings::BiomeMaterialLayer::HeightSlope]
+    };
     for (int i = 0; i < mats.Size(); i++)
     {
         CoreGraphics::TextureId albedo, normal, material;
-        Resources::CreateResource(mats[i].albedo.Value(), "terrain",
-        [&albedo](Resources::ResourceId id)
-        {
-            albedo = id;
-        },
-        [&albedo](Resources::ResourceId id)
-        {
-            albedo = Resources::CreateResource("tex:system/white.dds", "system", nullptr, nullptr, true);
-        }, true);
+        albedo = Resources::CreateResource(mats[i].albedo.Value(), "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialAlbedos[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(albedo);
         terrainState.biomeTextures.Append(albedo);
 
-        Resources::CreateResource(mats[i].normal.Value(), "terrain",
-        [&normal](Resources::ResourceId id)
-        {
-            normal = id;
-        },
-        [&normal](Resources::ResourceId id)
-        {
-            normal = Resources::CreateResource("tex:system/nobump.dds", "system", nullptr, nullptr, true);
-        }, true);
+        normal = Resources::CreateResource(mats[i].normal.Value(), "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialNormals[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(normal);
         terrainState.biomeTextures.Append(normal);
 
-        Resources::CreateResource(mats[i].material.Value(), "terrain",
-        [&material](Resources::ResourceId id)
-        {
-            material = id;
-        },
-        [&material](Resources::ResourceId id)
-        {
-            material = Resources::CreateResource("tex:system/default_material.dds", "system", nullptr, nullptr, true);
-        }, true);
+        material = Resources::CreateResource(mats[i].material.Value(), "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialPBRs[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(material);
         terrainState.biomeTextures.Append(material);
     }
 
-    CoreGraphics::TextureId maskTex = Resources::CreateResource(mask, "terrain", nullptr, nullptr, true);
+    CoreGraphics::TextureId maskTex = Resources::CreateResource(settings.biomeMask, "terrain", nullptr, nullptr, true);
     terrainState.biomeMaterials.MaterialMasks[terrainState.biomeCounter / 4][terrainState.biomeCounter % 4] = CoreGraphics::TextureGetBindlessHandle(maskTex);
     terrainState.biomeTextures.Append(maskTex);
     terrainState.biomeMasks[terrainState.biomeCounter] = maskTex;
 
-    if (settings.useMaterialWeights)
+    if (settings.biomeParameters.useMaterialWeights)
     {
-        CoreGraphics::TextureId weightsTex = Resources::CreateResource(settings.weights, "terrain", nullptr, nullptr, true);
+        CoreGraphics::TextureId weightsTex = Resources::CreateResource(settings.biomeParameters.weights, "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialWeights[terrainState.biomeCounter / 4][terrainState.biomeCounter % 4] = CoreGraphics::TextureGetBindlessHandle(weightsTex);
         terrainState.biomeTextures.Append(weightsTex);
         terrainState.biomeWeights[terrainState.biomeCounter] = weightsTex;
@@ -1438,7 +1414,7 @@ TerrainContext::CreateBiome(
 void 
 TerrainContext::SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold)
 {
-    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).slopeThreshold = threshold;
+    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).biomeParameters.slopeThreshold = threshold;
 }
 
 //------------------------------------------------------------------------------
@@ -1447,7 +1423,7 @@ TerrainContext::SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold)
 void 
 TerrainContext::SetBiomeHeightThreshold(TerrainBiomeId id, float threshold)
 {
-    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).heightThreshold = threshold;
+    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).biomeParameters.heightThreshold = threshold;
 }
 
 //------------------------------------------------------------------------------
@@ -1926,7 +1902,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 
     for (IndexT j = 0; j < terrainState.biomeCounter; j++)
     {
-        BiomeSetupSettings settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j);
+        BiomeParameters settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j).biomeParameters;
         systemUniforms.BiomeRules[j][0] = settings.slopeThreshold;
         systemUniforms.BiomeRules[j][1] = settings.heightThreshold;
         systemUniforms.BiomeRules[j][2] = settings.uvScaleFactor;

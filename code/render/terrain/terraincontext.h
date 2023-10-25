@@ -33,7 +33,7 @@ struct TerrainSetupSettings
     float quadsPerTileX, quadsPerTileY; // vertex density is vertices per meter
 };
 
-struct BiomeSetupSettings
+struct BiomeParameters
 {
     float slopeThreshold;
     float heightThreshold;
@@ -44,9 +44,134 @@ struct BiomeSetupSettings
 
 struct BiomeMaterial
 {
-    Resources::ResourceName albedo;
-    Resources::ResourceName normal;
-    Resources::ResourceName material;
+    Resources::ResourceName albedo = "tex:system/white.dds";
+    Resources::ResourceName normal = "tex:system/nobump.dds";
+    Resources::ResourceName material = "tex:system/default_material.dds";
+};
+
+struct BiomeMaterialBuilder
+{
+    /// Set albedo
+    BiomeMaterialBuilder& Albedo(const Resources::ResourceName& name)
+    {
+        this->material.albedo = name.IsValid() ? name : "tex:system/white.dds";
+        return *this;
+    }
+
+    /// Set normal
+    BiomeMaterialBuilder& Normal(const Resources::ResourceName& name)
+    {
+        this->material.normal = name.IsValid() ? name : "tex:system/nobump.dds";
+        return *this;
+    }
+
+    /// Set material
+    BiomeMaterialBuilder& Material(const Resources::ResourceName& name)
+    {
+        this->material.material = name.IsValid() ? name : "tex:system/default_material.dds";
+        return *this;
+    }
+
+    /// Finish
+    BiomeMaterial Finish()
+    {
+        return this->material;
+    }
+private:
+    BiomeMaterial material;
+};
+
+struct BiomeSettings
+{
+    enum BiomeMaterialLayer : uint8
+    {
+        Flat,         // Material to use on flat surfaces
+        Slope,        // Material to use on slanted surfaces
+        Height,       // Material to use for surfaces high up
+        HeightSlope,  // Material to sue for high up on slanted surface
+
+        NumLayers
+    };
+    BiomeParameters biomeParameters;
+    BiomeMaterial materials[BiomeMaterialLayer::NumLayers];
+    Resources::ResourceName biomeMask;
+};
+
+struct BiomeSettingsBuilder
+{
+private:
+    enum BuilderBits : uint8
+    {
+        NoBits = 0x0,
+        SettingsBit = 0x1,
+        FlatMaterialBit = 0x2,
+        SlopeMaterialBit = 0x4,
+        HeightMaterialBit = 0x8,
+        HeightSlopeMaterialBit = 0x10,
+        BiomeMask = 0x20,
+
+        AllBits = (BiomeMask << 1) - 1
+    };
+
+    uint8 bits = NoBits;
+    BiomeSettings settings;
+
+public:
+
+    /// Builder for settings
+    BiomeSettingsBuilder& Parameters(const BiomeParameters& settings)
+    {
+        this->bits |= BuilderBits::SettingsBit;
+        this->settings.biomeParameters = settings;
+        return *this;
+    }
+
+    /// Builder for flat material
+    BiomeSettingsBuilder& FlatMaterial(const BiomeMaterial& material)
+    {
+        this->bits |= BuilderBits::FlatMaterialBit;
+        this->settings.materials[BiomeSettings::BiomeMaterialLayer::Flat] = material;
+        return *this;
+    }
+
+    /// Builder for slope material
+    BiomeSettingsBuilder& SlopeMaterial(const BiomeMaterial& material)
+    {
+        this->bits |= BuilderBits::SlopeMaterialBit;
+        this->settings.materials[BiomeSettings::BiomeMaterialLayer::Slope] = material;
+        return *this;
+    }
+
+    /// Builder for height material
+    BiomeSettingsBuilder& HeightMaterial(const BiomeMaterial& material)
+    {
+        this->bits |= BuilderBits::HeightMaterialBit;
+        this->settings.materials[BiomeSettings::BiomeMaterialLayer::Height] = material;
+        return *this;
+    }
+
+    /// Builder for height slope material
+    BiomeSettingsBuilder& HeightSlopeMaterial(const BiomeMaterial& material)
+    {
+        this->bits |= BuilderBits::HeightSlopeMaterialBit;
+        this->settings.materials[BiomeSettings::BiomeMaterialLayer::HeightSlope] = material;
+        return *this;
+    }
+
+    /// Builder for biome mask
+    BiomeSettingsBuilder& Mask(const Resources::ResourceName& mask)
+    {
+        this->bits |= BuilderBits::BiomeMask;
+        this->settings.biomeMask = mask.IsValid() ? mask : "tex:system/white.dds";
+        return *this;
+    }
+
+    /// Finish
+    BiomeSettings Finish()
+    {
+        n_assert_msg(this->bits & AllBits, "BiomeSettinsBuilder: All fields must be set before calling finish");
+        return this->settings;
+    }
 };
 
 struct SubTextureUpdateJobUniforms
@@ -97,14 +222,7 @@ public:
         const Resources::ResourceName& decisionMap);
 
     /// setup a new biome
-    static TerrainBiomeId CreateBiome(
-        BiomeSetupSettings settings,
-        BiomeMaterial flatMaterial,
-        BiomeMaterial slopeMaterial,
-        BiomeMaterial heightMaterial,
-        BiomeMaterial heightSlopeMaterial,
-        const Resources::ResourceName& mask
-    );
+    static TerrainBiomeId CreateBiome(const BiomeSettings& settings);
 
     /// set biome slope threshold
     static void SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold);
@@ -183,7 +301,7 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        BiomeSetupSettings,
+        BiomeSettings,
         uint32_t
     > TerrainBiomeAllocator;
     static TerrainBiomeAllocator terrainBiomeAllocator;
