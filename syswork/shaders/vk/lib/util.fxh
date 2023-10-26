@@ -520,6 +520,30 @@ FlipY(vec2 uv)
     return vec2(uv.x, 1.0f - uv.y);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+mat3
+PlaneTBN(vec3 normal)
+{
+    vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
+    tangent = normalize(cross(normal.xyz, tangent));
+    vec3 binormal = normalize(cross(normal.xyz, tangent));
+    return mat3(tangent, binormal, normal.xyz);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+TangentSpaceNormal(vec2 normalMapComponents, mat3 tbn)
+{
+    vec3 normal = vec3(0, 0, 0);
+    normal.xy = (normalMapComponents * 2.0f) - 1.0f;
+    normal.z = saturate(sqrt(1.0f - dot(normal.xy, normal.xy)));
+    return tbn * normal;
+}
+
 //-------------------------------------------------------------------------------------------------------------
 /**
 */

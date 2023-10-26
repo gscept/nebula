@@ -508,9 +508,8 @@ psTerrainPrepass(
     in vec3 WorldPos,
     [color0] out vec4 Pos)
 {
-    Pos.xy = WorldPos.xz;
-    Pos.z = 0.0f;
-    Pos.w = query_lod2D(AlbedoLowresBuffer, TextureSampler, UV).y;
+    Pos.x = 100.0f;
+    Pos.y = query_lod2D(AlbedoLowresBuffer, TextureSampler, UV).y;
 
     // convert world space to positive integer interval [0..WorldSize]
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
@@ -598,7 +597,7 @@ psTerrainPrepass(
         }
 
         // if the position has w == 1, it means we found a page
-        Pos.z = lod + mipBias;
+        Pos.x = lod + mipBias;
     }
 }
 
@@ -674,10 +673,7 @@ psTerrainTileUpdate(
     //vec3 normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
 
     // setup the TBN
-    vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
-    tangent = normalize(cross(normal.xyz, tangent));
-    vec3 binormal = normalize(cross(normal.xyz, tangent));
-    mat3 tbn = mat3(tangent, binormal, normal.xyz);
+    mat3 tbn = PlaneTBN(normal);
 
     // calculate weights for triplanar mapping
     vec3 triplanarWeights = abs(normal.xyz);
@@ -723,9 +719,7 @@ psTerrainTileUpdate(
                 totalMaterial += material * triplanarWeights.z;
                 blendNormal += normal * triplanarWeights.z;
 
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
+                totalNormal = TangentSpaceNormal(blendNormal.xy, tbn) * mask;
             }
             else
             {
@@ -763,9 +757,7 @@ psTerrainTileUpdate(
                 totalMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
                 blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
 
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
+                totalNormal = TangentSpaceNormal(blendNormal.xy, tbn) * mask;
             }
         }
     }
@@ -790,14 +782,12 @@ psTerrainResolve(
 {
     // sample position, lod and texture sampling mode from screenspace buffer
     vec2 screenUv = gl_FragCoord.xy / DataBufferSize;
-    vec2 posBuf = sample2DLod(TerrainPosBuffer, TextureSampler, screenUv, 0).zw;
-    if (posBuf.y == 255.0f)
-        discard;
+    vec2 posBuf = sample2DLod(TerrainPosBuffer, TextureSampler, screenUv, 0).xy;
 
     // calculate the subtexture coordinate
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-    vec2 worldUv = (WorldPos.xy + worldSize * 0.5f) / worldSize;
-    vec2 unsignedPos = WorldPos.xy + worldSize * 0.5f;
+    vec2 worldUv = (WorldPos.xz + worldSize * 0.5f) / worldSize;
+    vec2 unsignedPos = WorldPos.xz + worldSize * 0.5f;
     ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
 
     vec3 albedo = sample2DLod(AlbedoLowresBuffer, TextureSampler, worldUv, posBuf.y).rgb;
@@ -897,7 +887,7 @@ psTerrainResolve(
                     material1 = material;
                 }
 
-                float weight = fract(posBuf.y);
+                float weight = fract(posBuf.x);
                 albedo0 = lerp(albedo1, albedo0, weight);
                 normal0 = lerp(normal1, normal0, weight);
                 material0 = lerp(material1, material0, weight);
@@ -943,12 +933,8 @@ psTerrainResolve(
     vec3 viewVec = normalize(EyePos.xyz - WorldPos);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
 
-    vec3 tNormal = vec3(0, 0, 0);
-    tNormal.xy = (normalize(normal.xy) * 2.0f) - 1.0f;
-    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
-
     vec3 light = vec3(0, 0, 0);
-    light += CalculateLight(WorldPos, gl_FragCoord.xyz, albedo.rgb, material, Normal);
+    light += CalculateLight(WorldPos, gl_FragCoord.xyz, albedo.rgb, material, normal);
     //light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
     //light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
     //light += IBL(albedo, F0, normal, viewVec, material);
