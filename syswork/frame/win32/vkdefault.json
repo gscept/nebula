@@ -166,7 +166,7 @@
             },
             {
                 "name": "TerrainPosBuffer",
-                "format": "R32G32B32A32F",
+                "format": "R16G16F",
                 "relative": true,
                 "usage": "Render",
                 "width": 1.0,
