@@ -45,10 +45,11 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<Owner>();
-    Game::RegisterComponent<Transform>();
-    Game::RegisterComponent<Game::IsActive>();
-    Game::RegisterComponent<Game::Static>();
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ComponentBuilder<Game::Owner>(world).Build();
+    Game::ComponentBuilder<Game::Transform>(world).Build();
+    Game::ComponentBuilder<Game::IsActive>(world).Build();
+    Game::ComponentBuilder<Game::Static>(world).Build();
 }
 
 //------------------------------------------------------------------------------

@@ -70,8 +70,9 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<Model>(Game::ComponentFlags::COMPONENTFLAG_DECAY);
-    Game::RegisterComponent<Camera>();
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ComponentBuilder<Model>(world).Decay(true).Build();
+    Game::ComponentBuilder<Camera>(world).Build();
 }
 
 //------------------------------------------------------------------------------

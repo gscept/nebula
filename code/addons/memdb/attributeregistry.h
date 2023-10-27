@@ -20,6 +20,9 @@ public:
     template<typename TYPE>
     static AttributeId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
 
+    template <typename TYPE>
+    static AttributeId Register(Attribute* attribute);
+
     /// Check if a type is registered
     template <typename TYPE>
     static bool IsRegistered();
@@ -129,6 +132,44 @@ AttributeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t f
     return AttributeId::Invalid();
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename TYPE>
+inline AttributeId
+AttributeRegistry::Register(Attribute* desc)
+{
+    static_assert(!std::is_polymorphic<TYPE>(), "TYPE must not be polymorpic.");
+    static_assert(!std::is_abstract<TYPE>(), "TYPE must not be abstract.");
+
+    auto* reg = Instance();
+    if (!reg->registry.Contains(desc->name))
+    {
+        AttributeId attrId = MemDb::GetAttributeId<TYPE>();
+        if (attrId.id >= reg->componentDescriptions.Size())
+        {
+            SizeT prevSize = reg->componentDescriptions.Size();
+            reg->componentDescriptions.Resize(attrId.id + 1); // fixed increment
+            SizeT num = reg->componentDescriptions.Size() - prevSize;
+            reg->componentDescriptions.Fill(
+                prevSize, num, nullptr
+            ); // make sure new entries are null, since we use this to check if attributes are registered or not.
+        }
+
+        reg->componentDescriptions[attrId.id] = desc;
+        reg->registry.Add(desc->name, attrId);
+
+        return attrId;
+    }
+    else
+    {
+        n_error("Tried to register component named %s: Cannot register two components with same name!", desc->name.Value());
+    }
+
+    return AttributeId::Invalid();
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -186,7 +227,7 @@ AttributeRegistry::GetAttribute(AttributeId descriptor)
     if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
     {
         n_assert2(
-            reg->componentDescriptions[descriptor.id] != NULL, "Trying to get description of attribute that is not registered!"
+            reg->componentDescriptions[descriptor.id] != nullptr, "Trying to get description of attribute that is not registered!"
         );
         return reg->componentDescriptions[descriptor.id];
     }

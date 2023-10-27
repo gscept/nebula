@@ -206,7 +206,7 @@ EntitySystemTest::Run()
 
     // Test managed properties
     {
-        Game::RegisterComponent<DecayTestComponent>(COMPONENTFLAG_DECAY);
+        Game::ComponentBuilder<DecayTestComponent>(world).Decay(true).Build();
         ComponentId decayComponentId = Game::GetComponentId<DecayTestComponent>();
         
         Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
@@ -225,16 +225,12 @@ EntitySystemTest::Run()
             );
         }
 
-        Game::Op::RegisterComponent regOp;
-        regOp.entity = enemies[0];
-        regOp.component = decayComponentId ;
-        world->Execute(regOp);
-        regOp.entity = enemies[1];
-        regOp.component = decayComponentId ;
-        world->Execute(regOp);
-        regOp.entity = enemies[2];
-        regOp.component = decayComponentId ;
-        world->Execute(regOp);
+        world->AddComponent<DecayTestComponent>(enemies[0]);
+        world->AddComponent<DecayTestComponent>(enemies[1]);
+        world->AddComponent<DecayTestComponent>(enemies[2]);
+
+        // add components are always delayed, thus step one frame to make sure they're created properly and the entity has been migrated
+        StepFrame();
 
         {
             VERIFY(
@@ -322,14 +318,43 @@ EntitySystemTest::Run()
     // add a component to an entity that does not already have it. This should
     // move the entity from one table to another, and in this case
     // creating a new table that contains only one instance (this one)
-    world->AddComponent<TestVec4>(entities[1], nullptr);
+    world->AddComponent<TestVec4>(entities[1]);
 
     Game::DestroyFilter(filter);
     Game::ReleaseDatasets();
 
     StepFrame();
 
-    
+    {
+        Entity entity = world->CreateEntity({.templateId = playerBlueprint, .immediate = true});
+
+        // create a temporary component.
+        // these are constructed directly if it has an OnStage delegate.
+        // This queues the component in a cmd buffer. all add commands should be sorted before execution, based on which entities they belong to.
+        // This way, we can move the entity once, even if it gets multiple components added in a single frame.
+        DecayTestComponent* testDecay = world->AddComponent<DecayTestComponent>(entity);
+
+        TestResource* testResource = world->AddComponent<TestResource>(entity);
+        // test that the OnInit function is actually executed correctly
+        VERIFY(testResource->resource == "gnyrf.res"_atm);
+
+        testResource->resource = "foobar.res"_atm;
+
+        // The component should not be added immediately, but instead it should be staged in a cmd buffer and added later.
+        VERIFY(!world->HasComponent<TestResource>(entity));
+        VERIFY(!world->HasComponent<DecayTestComponent>(entity));
+
+        StepFrame();
+        // The memory of testResource has been freed by the World, thus it's unsafe to use now.
+        testResource = nullptr;
+        testDecay = nullptr;
+
+        // the components should be added now
+        VERIFY(world->HasComponent<TestResource>(entity));
+        VERIFY(world->HasComponent<DecayTestComponent>(entity));
+
+        VERIFY(world->GetComponent<TestResource>(entity).resource == "foobar.res"_atm);
+    }
     bool hasExecutedUpdateFunc = false;
     std::function updateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
     {

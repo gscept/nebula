@@ -16,40 +16,12 @@
 #include "category.h"
 #include "processorid.h"
 #include "processor.h"
+#include "memory/arenaallocator.h"
 
 namespace MemDb { class Database; }
 
 namespace Game
 {
-
-using OpBuffer = uint32_t;
-
-namespace Op
-{
-
-//------------------------------------------------------------------------------
-/**
-    TODO: We should probably rewrite the entire op system, since it's a mess at the moment.
-          Also, try to clean up the world system, so that it makes more sense, and is less dependant on other systems and callsites to set things up...
-            Trying to setup a world manually right now is almost impossible.
-*/
-struct RegisterComponent
-{
-    Entity entity;
-    ComponentId component;
-    void const* value = nullptr;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct DeregisterComponent
-{
-    Entity entity;
-    ComponentId component;
-};
-
-} // namespace Op
 
 //------------------------------------------------------------------------------
 /**
@@ -70,9 +42,6 @@ class World
 public:
     ~World();
 
-    /// register a component event listener
-    void RegisterComponentEvent(ComponentEvent const& event);
-
     /// Create a new empty entity
     Game::Entity CreateEntity();
     /// Create a new entity from create info
@@ -87,11 +56,11 @@ public:
     EntityMapping GetEntityMapping(Game::Entity entity);
     /// Check if entity has a specific component. (SLOW!)
     bool HasComponent(Game::Entity const entity, ComponentId const component);
+    /// Check if entity has a specific component.
+    template <typename TYPE>
+    bool HasComponent(Game::Entity const entity);
     /// Get instance of entity
     MemDb::RowId GetInstance(Entity entity);
-    /// Add a component to an entity.
-    template <typename TYPE>
-    void AddComponent(Entity, TYPE* prop);
     /// Remove a component from an entity
     template <typename TYPE>
     void RemoveComponent(Entity);
@@ -101,21 +70,20 @@ public:
     /// Get an entitys component
     template <typename TYPE>
     TYPE GetComponent(Entity entity);
+    
+
+    // -----------
+    Memory::ArenaAllocator<4096_KB> componentStageAllocator;
+    
+    // Create a component.
+    // These are constructed directly if it has an OnStage delegate.
+    // This queues the component in a command buffer to be added later
+    template <typename TYPE>
+    TYPE* AddComponent(Entity entity);
 
     /// Get a decay buffer for the given component
     ComponentDecayBuffer const GetDecayBuffer(Game::ComponentId component);
     
-    // TODO: rewrite the op buffer system...
-    OpBuffer GetScratchOpBuffer();
-    OpBuffer CreateOpBuffer();
-    void Dispatch(OpBuffer buffer);
-    void DestroyOpBuffer(OpBuffer& buffer);
-    void AddOp(OpBuffer buffer, Op::RegisterComponent op);
-    void AddOp(OpBuffer buffer, Op::DeregisterComponent const& op);
-    void Execute(Op::RegisterComponent const& op);
-    void Execute(Op::DeregisterComponent const& op);
-    void ReleaseAllOps();
-
     /// Create a table in the entity database that has a specific set of components
     MemDb::TableId CreateEntityTable(CategoryCreateInfo const& info);
     /// Register a number of processors to the world
@@ -137,11 +105,35 @@ public:
 private:
     friend class GameServer;
     friend class BlueprintManager;
+    
+    struct AllocateInstanceCommand
+    {
+        Game::Entity entity;
+        TemplateId tid;
+    };
+    struct DeallocInstanceCommand
+    {
+        Game::Entity entity;
+    };
+    struct AddStagedComponentCommand
+    {
+        Game::Entity entity;
+        ComponentId componentId;
+        SizeT dataSize;
+        void* data;
+    };
+    struct RemoveComponentCommand
+    {
+        Entity entity;
+        ComponentId componentId;
+    };
 
-    // Only the game server can create worlds
+
+    // Only the game server should create worlds
     World(uint32_t hash);
 
     // These functions are called from game server
+    void Start();
     void BeginFrame();
     void SimFrame();
     void EndFrame();
@@ -155,6 +147,13 @@ private:
     bool Prefiltered() const;
     /// Clears all decay buffers. This is called by the game server automatically.
     void ClearDecayBuffers();
+
+    /// dispatches all staged components to be added to entities
+    void ExecuteAddComponentCommands();
+    void ExecuteRemoveComponentCommands();
+
+    void AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds);
+    void RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, SizeT numCmds);
 
     /// Get total number of instances in an entity table
     SizeT GetNumInstances(MemDb::TableId tid);
@@ -178,21 +177,12 @@ private:
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
+    void InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
+
     /// Defragment an entity table
     void Defragment(MemDb::TableId cat);
 
-
-    struct AllocateInstanceCommand
-    {
-        Game::Entity entity;
-        TemplateId tid;
-    };
-    struct DeallocInstanceCommand
-    {
-        Game::Entity entity;
-    };
-
-    /// used to allocate entity ids for this world
+/// used to allocate entity ids for this world
     EntityPool pool;
     /// Number of entities alive
     SizeT numEntities;
@@ -208,8 +198,10 @@ private:
     Util::Queue<AllocateInstanceCommand> allocQueue;
     ///
     Util::Queue<DeallocInstanceCommand> deallocQueue;
-    /// synchronous op buffer that can be used by any sync processor
-    OpBuffer scratchOpBuffer;
+    ///
+    Util::Array<AddStagedComponentCommand> addStagedQueue;
+    ///
+    Util::Array<RemoveComponentCommand> removeComponentQueue;
 
     /// add the table to any callback-caches that accepts it
     void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
@@ -276,28 +268,59 @@ World::GetComponent(Entity entity)
 */
 template <typename TYPE>
 inline void
-World::AddComponent(Entity entity, TYPE* value)
+World::RemoveComponent(Entity entity)
 {
-    //n_assert(!state.asyncProcessing);
-    Op::RegisterComponent op;
-    op.entity = entity;
-    op.component = Game::GetComponentId<TYPE>();
-    op.value = (void*)value;
-    this->AddOp(this->GetScratchOpBuffer(), op);
+    RemoveComponentCommand cmd = {
+        .entity = entity,
+        .componentId = Game::GetComponentId<TYPE>(),
+    };
+    this->removeComponentQueue.Append(cmd);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <typename TYPE>
-inline void
-World::RemoveComponent(Entity entity)
+inline bool
+World::HasComponent(Game::Entity const entity)
 {
-    //n_assert(!state.asyncProcessing);
-    Op::DeregisterComponent op;
-    op.entity = entity;
-    op.component = GetComponentId<TYPE>();
-    this->AddOp(this->GetScratchOpBuffer(), op);
+    return this->HasComponent(entity, Game::GetComponentId<TYPE>());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename TYPE>
+inline TYPE*
+World::AddComponent(Entity entity)
+{
+    Game::ComponentId id = Game::GetComponentId<TYPE>();
+#if _DEBUG
+    n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));
+#endif
+    TYPE* data = this->componentStageAllocator.Alloc<TYPE>();
+    const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);
+    Memory::Copy(defaultValue, data, sizeof(TYPE));
+
+    AddStagedComponentCommand cmd = {
+        .entity = entity,
+        .componentId = id,
+        .dataSize = sizeof(TYPE),
+        .data = data,
+    };
+    this->addStagedQueue.Append(cmd);
+
+    MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
+    ComponentInterface* cInterface;
+    cInterface = static_cast<ComponentInterface*>(attr);
+
+    if (cInterface->Init != nullptr)
+    {
+        // run initialization function if it exists.
+        cInterface->Init(this, entity, data);
+    }
+
+    return data;
 }
 
 } // namespace Game

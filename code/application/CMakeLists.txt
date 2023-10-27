@@ -19,6 +19,7 @@ nebula_begin_module(application)
             api.cc
 			filter.cc
 			filter.h
+			component.cc
 			component.h
 			componentid.h
 			processor.cc

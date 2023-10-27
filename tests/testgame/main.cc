@@ -25,31 +25,15 @@ using namespace Test;
 void
 InitializeTestResource(Game::World* world, Game::Entity entity, TestResource* testResource)
 {
-    // Create stuff
+    n_printf("Original resource: '%s'\n", testResource->resource.Value());
+    testResource->resource = "gnyrf.res";
+    n_printf("Changed resource to: '%s'\n", testResource->resource.Value());
 }
 
 void
-Foo()
+InitializeTestVec4(Game::World* world, Game::Entity entity, TestVec4* testVec)
 {
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-
-    // pre
-
-    Game::ComponentEvent event = Game::ComponentEvent()
-        .Type<TestResource>()
-        .OnInit(&InitializeTestResource)
-        .Decay(true);
-    world->RegisterComponentEvent(event);
-
-
-    // frame stuff
-    Game::Entity entity = world->CreateEntity(); // should be able to create entities without specifying a template.
-    
-    // create a temporary component.
-    // these are constructed directly if it has an OnStage delegate.
-    // This queues the component in a cmd buffer. all add commands should be sorted before execution, based on which entities they belong to.
-    // This way, we can move the entity once, even if it gets multiple components added in a single frame.
-    //TestResource* foo = world->StageComponent<TestResource>(entity);
+    testVec->v4 = Math::vec4(123, 123, 123, 123);
 }
 
 class GameAppTest : public App::GameApplication
@@ -59,14 +43,19 @@ private:
     void SetupGameFeatures()
     {
         // This should normally happen in a game feature constructor
-        Game::RegisterComponent<TestResource>();
-        Game::RegisterComponent<TestVec4>();
-        Game::RegisterComponent<TestStruct>();
-        Game::RegisterComponent<TestHealth>();
-        Game::RegisterComponent<MyFlag>();
-        Game::RegisterComponent<TestEmptyStruct>();
-        
+        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+        Game::ComponentBuilder<TestResource>(world)
+            .Decay(true)
+            .OnInit(&InitializeTestResource)
+            .Build();
+
+        Game::ComponentBuilder<TestVec4>(world).OnInit(&InitializeTestVec4).Build();
+        Game::ComponentBuilder<TestStruct>(world).Build();
+        Game::ComponentBuilder<TestHealth>(world).Build();
+        Game::ComponentBuilder<MyFlag>(world).Build();
+        Game::ComponentBuilder<TestEmptyStruct>(world).Build();
     }
+
     /// cleanup game features
     void CleanupGameFeatures()
     {

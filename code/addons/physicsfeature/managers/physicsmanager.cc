@@ -67,11 +67,7 @@ PhysicsManager::InitCreateActorProcessor()
 
                 if (actor.actorType == Physics::ActorType::Kinematic)
                 {
-                    Game::Op::RegisterComponent regOp;
-                    regOp.entity = owner.entity;
-                    regOp.component = Game::GetComponentId<PhysicsFeature::IsKinematic>();
-                    regOp.value = nullptr;
-                    world->AddOp(world->GetScratchOpBuffer(), regOp);
+                    world->AddComponent<PhysicsFeature::IsKinematic>(owner.entity);
                 }
             }
         )

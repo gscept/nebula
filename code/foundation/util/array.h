@@ -192,6 +192,8 @@ public:
     void QuickSort();
     /// sort with custom function
     void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
+    /// quick sort the array
+    void QuickSortWithFunc(int (*func)(const void* lhs, const void* rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
     /// do a binary search using a specific key type
@@ -1457,6 +1459,21 @@ void
 Util::Array<TYPE, SMALL_VECTOR_SIZE>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
 {
     std::sort(this->Begin(), this->End(), func);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, int SMALL_VECTOR_SIZE>
+void
+Array<TYPE, SMALL_VECTOR_SIZE>::QuickSortWithFunc(int (*func)(const void* lhs, const void* rhs))
+{
+    std::qsort(
+        this->Begin(),
+        this->Size(),
+        sizeof(TYPE),
+        func
+    );
 }
 
 //------------------------------------------------------------------------------

@@ -29,11 +29,11 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
 
-    // always attach the base game feature
-    this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
-
     this->state.templateDatabase = MemDb::Database::Create();
     this->CreateWorld(WORLD_DEFAULT);
+
+    // always attach the base game feature
+    this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -71,6 +71,14 @@ GameServer::Open()
     n_assert(!this->isOpen);
     n_assert(!this->isStarted);
     this->isOpen = true;
+
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            this->state.worlds[worldIndex]->Start();
+        }
+    }
 
     for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
     {
@@ -333,15 +341,6 @@ GameServer::OnEndFrame()
     }
     _stop_timer(GameServerManageEntities);
 
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
-    {
-        if (this->state.worlds[worldIndex] != nullptr)
-        {
-            World* world = this->state.worlds[worldIndex];
-            world->ReleaseAllOps();
-        }
-    }
-    
     for (i = 0; i < numFeatureUnits; i++)
     {
         this->gameFeatures[i]->OnDecay();

@@ -37,8 +37,9 @@ AudioFeatureUnit::~AudioFeatureUnit()
 void
 AudioFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<AudioEmitter>(Game::ComponentFlags::COMPONENTFLAG_DECAY);
-    Game::RegisterComponent<AudioListener>();
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ComponentBuilder<AudioEmitter>(world).Decay(true).Build();
+    Game::ComponentBuilder<AudioListener>(world).Build();
 }
 
 //------------------------------------------------------------------------------

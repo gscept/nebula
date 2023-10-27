@@ -31,55 +31,73 @@ enum ComponentFlags : uint32_t
     COMPONENTFLAG_DECAY = 1 << 0
 };
 
-/// Registers a component to the component registry, serializer and inspector
-template <typename T>
-void RegisterComponent(ComponentFlags flags = ComponentFlags::COMPONENTFLAG_NONE);
 /// Returns a component id
 ComponentId GetComponentId(Util::StringAtom name);
 /// Returns a component id, based on template type
 template <typename COMPONENT>
 ComponentId GetComponentId();
 
+using ComponentInitFunc = void (*)(Game::World*, Game::Entity, void*);
+
+class ComponentInterface : public MemDb::Attribute
+{
+public:
+    /// construct from template type, with default value.
+    template <typename T>
+    explicit ComponentInterface(Util::StringAtom name, T const& defaultValue, uint32_t flags)
+        : Attribute(name, defaultValue, flags)
+    {
+        // empty
+    }
+
+    ComponentInitFunc Init = nullptr;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
-class ComponentEvent
+template <typename TYPE>
+class ComponentBuilder
 {
 public:
-    // init function to run for the component, or nullptr if not needed.
-    template <typename TYPE>
-    ComponentEvent&
-    OnInit(void (*func)(Game::World*, Game::Entity, TYPE*))
+    ComponentBuilder(World* world)
+        : world(world)
     {
-        initFunc = reinterpret_cast<GenericCallback>(func);
-        return *this;
     }
 
-    // component type that the event should be attached to
-    template <typename TYPE>
-    ComponentEvent&
-    Type()
+    // initialization function to run for the component, or nullptr if not needed.
+    ComponentBuilder&
+    OnInit(void (*func)(Game::World*, Game::Entity, TYPE*))
     {
-        this->componentId = Game::GetComponentId<TYPE>();
+        initFunc = reinterpret_cast<ComponentInitFunc>(func);
         return *this;
     }
 
     // set to true if the component should end up in the decay buffer before being completely destroyed.
-    ComponentEvent&
-    Decay(bool value)
+    ComponentBuilder& Decay(bool value)
     {
         (uint32_t&)this->componentFlags |= (uint32_t)Game::ComponentFlags::COMPONENTFLAG_DECAY * (uint32_t)value;
         return *this;
     }
 
+    /// Builds and registers the component to the world.
+    ComponentId
+    Build()
+    {
+        n_assert(world != nullptr);
+
+        ComponentInterface* cInterface = new ComponentInterface(TYPE::Traits::name, TYPE(), (uint32_t)this->componentFlags);
+        cInterface->Init = this->initFunc;
+        Game::ComponentId const cid = MemDb::AttributeRegistry::Register<TYPE>(cInterface);
+        Game::ComponentSerialization::Register<TYPE>(cid);
+        Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<TYPE>);
+        return cid;
+    }
+
 private:
-    using GenericCallback = void (*)(Game::World*, Game::Entity, void*);
-
-    Game::ComponentId componentId;
-    Game::ComponentFlags componentFlags;
-    GenericCallback initFunc = nullptr;
-
-    Game::World* world;
+    Game::ComponentFlags componentFlags = COMPONENTFLAG_NONE;
+    ComponentInitFunc initFunc = nullptr;
+    Game::World* world = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -97,19 +115,6 @@ struct ComponentDecayBuffer
     -- Template implementations --
 */
 //------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <typename T>
-inline void
-RegisterComponent(ComponentFlags flags)
-{
-    Util::StringAtom const name = T::Traits::name;
-    Game::ComponentId const cid = MemDb::AttributeRegistry::Register<T>(name, T(), (uint32_t)flags);
-    Game::ComponentSerialization::Register<T>(cid);
-    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<T>);
-}
 
 //------------------------------------------------------------------------------
 /**
