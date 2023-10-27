@@ -31,12 +31,26 @@ uint PsuedoRand()
     return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 }
 
+template<size_t I>
 struct IntTest
 {
-    int value = 1;
-    DECLARE_COMPONENT;
+    int value = I;
 };
-DEFINE_COMPONENT(IntTest);
+
+template <typename T, T... ints>
+void
+RegisterAttributes(Util::Array<AttributeId>& attributes, std::integer_sequence<T, ints...> int_seq)
+{
+    (
+        attributes.Append(
+            AttributeRegistry::Register<IntTest<ints>>(
+                Util::String("BenchType_") + Util::String::FromInt(ints),
+                IntTest<ints>()
+            )
+        )
+    , ...);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -48,12 +62,8 @@ QueryBenchmark::Run(Timer& timer)
     
     // Setup a multitude of descriptors
     Util::Array<AttributeId> d;
-    const SizeT numDescs = 1024;
-    for (int i = 0; i < numDescs; i++)
-    {
-        Util::String name = "BenchType_" + Util::String::FromInt(i);
-        d.Append(AttributeRegistry::Register<IntTest>(name, IntTest()));
-    }
+    constexpr SizeT numDescs = 1024;
+    RegisterAttributes(d, std::make_index_sequence<numDescs> {});
 
     using DA = Util::FixedArray<AttributeId>;
 
@@ -99,6 +109,9 @@ QueryBenchmark::Run(Timer& timer)
         t.Stop();
         filters.Append(filter);
     }
+
+    n_printf("Number of queries: %i\n", numQueries);
+
 
     n_printf("Signature generation time: %f\n", t.GetTime());
 
