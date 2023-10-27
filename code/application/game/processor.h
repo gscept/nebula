@@ -8,14 +8,13 @@
 */
 //------------------------------------------------------------------------------
 #include "util/stringatom.h"
-#include "world.h"
 #include "filter.h"
+#include "processorid.h"
 
 namespace Game
 {
 
-/// Opaque processor handle
-typedef uint32_t ProcessorHandle;
+class World;
 
 /// per frame callback for processors
 using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
@@ -59,8 +58,6 @@ struct ProcessorCreateInfo
 
 /// Create a processor
 ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
-/// register processors to a world
-void RegisterProcessors(World*, std::initializer_list<ProcessorHandle>);
 
 class ProcessorBuilder
 {

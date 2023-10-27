@@ -9,13 +9,13 @@ fips_files(
     dataset.cc
     dataset.h
     filterset.h
-    componentdescription.h
-    componentid.h
+    attribute.h
+    attributeid.h
     tableid.h
     table.cc
     table.h
     tablesignature.h
-    typeregistry.h
-    typeregistry.cc
+    attributeregistry.h
+    attributeregistry.cc
 )
 fips_end_lib()

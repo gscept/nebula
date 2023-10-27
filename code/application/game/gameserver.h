@@ -32,6 +32,7 @@
 #include "entitypool.h"
 #include "memdb/database.h"
 #include "world.h"
+#include "processor.h"
 
 //------------------------------------------------------------------------------
 namespace Game

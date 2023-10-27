@@ -20,8 +20,10 @@ nebula_begin_module(application)
 			filter.cc
 			filter.h
 			component.h
+			componentid.h
 			processor.cc
 			processor.h
+			processorid.h
 			dataset.cc
 			dataset.h
             category.h

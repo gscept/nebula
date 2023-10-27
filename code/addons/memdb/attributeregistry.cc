@@ -3,23 +3,23 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "typeregistry.h"
+#include "attributeregistry.h"
 namespace MemDb
 {
 
-TypeRegistry* TypeRegistry::Singleton = 0;
+AttributeRegistry* AttributeRegistry::Singleton = 0;
 
 //------------------------------------------------------------------------------
 /**
     The registry's constructor is called by the Instance() method, and
     nobody else.
 */
-TypeRegistry*
-TypeRegistry::Instance()
+AttributeRegistry*
+AttributeRegistry::Instance()
 {
     if (0 == Singleton)
     {
-        Singleton = new TypeRegistry;
+        Singleton = new AttributeRegistry;
         n_assert(0 != Singleton);
     }
     return Singleton;
@@ -32,7 +32,7 @@ TypeRegistry::Instance()
     no accidential memory leaks are reported by the debug heap.
 */
 void
-TypeRegistry::Destroy()
+AttributeRegistry::Destroy()
 {
     if (0 != Singleton)
     {
@@ -44,7 +44,7 @@ TypeRegistry::Destroy()
 //------------------------------------------------------------------------------
 /**
 */
-TypeRegistry::TypeRegistry()
+AttributeRegistry::AttributeRegistry()
 {
     // empty
 }
@@ -52,7 +52,7 @@ TypeRegistry::TypeRegistry()
 //------------------------------------------------------------------------------
 /**
 */
-TypeRegistry::~TypeRegistry()
+AttributeRegistry::~AttributeRegistry()
 {
     // empty
 }

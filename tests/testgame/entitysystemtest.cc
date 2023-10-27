@@ -44,45 +44,6 @@ StepFrame()
     Game::GameServer::Instance()->OnEndFrame();
 }
 
-struct ManagedTestProperty
-{
-    bool destroyed = false;
-};
-
-struct TestComponent
-{
-    int i;
-    float f;
-
-    // type traits and reflection
-    struct Traits;
-};
-
-struct TestComponent::Traits
-{
-    Traits() = delete;
-    using type = TestComponent;
-    static constexpr auto name = "TestComponent";    
-    static constexpr auto fully_qualified_name = "Test.TestComponent";
-    static constexpr size_t num_fields = 2;
-    static constexpr const char* field_names[num_fields] = {"i", "f"};
-    
-    template <size_t Index>
-    auto get_field() const
-    {
-        type t;
-        if constexpr (Index == 0)
-            return t.i;
-        if constexpr (Index == 1)
-            return t.f;
-        else
-            static_assert(Index != Index, "Invalid Field Index");
-    }
-
-    template<size_t Index>
-    using FieldType = decltype(std::declval<TestComponent::Traits>().get_field<Index>());
-};
-
 //------------------------------------------------------------------------------
 /**
     @todo   this test should be more thorough and make sure that instances retain
@@ -114,13 +75,13 @@ EntitySystemTest::Run()
 
     for (int i = 0; i < 500; i++)
     {
-        Entity player = Game::CreateEntity(world, {playerBlueprint});
+        Entity player = world->CreateEntity({playerBlueprint});
     }
 
     Util::Array<Entity> enemies;
     for (int i = 0; i < 500; i++)
     {
-        Entity enemy = Game::CreateEntity(world, {enemyBlueprint});
+        Entity enemy = world->CreateEntity({enemyBlueprint});
         enemies.Append(enemy);
     }
 
@@ -128,7 +89,7 @@ EntitySystemTest::Run()
 
     for (int i = 0; i < 200; i++)
     {
-        Game::DeleteEntity(world, enemies[i]);
+        world->DeleteEntity(enemies[i]);
     }
 
     int i;
@@ -138,15 +99,15 @@ EntitySystemTest::Run()
 
         if (i % 5 == 1)
         {
-            Game::DeleteEntity(world, enemies[i + 200]);
+            world->DeleteEntity(enemies[i + 200]);
         }
     }
 
     // Delete all entities
     for (auto e : enemies)
     {
-        if (Game::IsValid(world, e))
-            Game::DeleteEntity(world, e);
+        if (world->IsValid(e))
+            world->DeleteEntity(e);
     }
 
     // Run a frame
@@ -155,7 +116,7 @@ EntitySystemTest::Run()
     Util::Queue<Game::Entity> queue;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity(world, {enemyBlueprint});
+        Entity enemy = world->CreateEntity({enemyBlueprint});
         queue.Enqueue(enemy);
     }
 
@@ -166,7 +127,7 @@ EntitySystemTest::Run()
     for (int i = 0; i < 5; i++)
     {
         auto e = queue.Dequeue();
-        Game::DeleteEntity(world, e);
+        world->DeleteEntity(e);
     }
 
     // run a frame
@@ -176,7 +137,7 @@ EntitySystemTest::Run()
     while (!queue.IsEmpty())
     {
         auto e = queue.Dequeue();
-        Game::DeleteEntity(world, e);
+        world->DeleteEntity(e);
     }
 
     // run a frame
@@ -185,7 +146,7 @@ EntitySystemTest::Run()
     Util::Stack<Game::Entity> stack;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity(world, {enemyBlueprint});
+        Entity enemy = world->CreateEntity({enemyBlueprint});
         stack.Push(enemy);
     }
 
@@ -196,7 +157,7 @@ EntitySystemTest::Run()
     for (int i = 0; i < 5; i++)
     {
         auto e = stack.Pop();
-        Game::DeleteEntity(world, e);
+        world->DeleteEntity(e);
     }
 
     // run a frame
@@ -206,37 +167,37 @@ EntitySystemTest::Run()
     while (!stack.IsEmpty())
     {
         auto e = stack.Pop();
-        Game::DeleteEntity(world, e);
+        world->DeleteEntity(e);
     }
 
     // run a frame
     StepFrame();
 
     Game::Entity entities[10] = {
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint}),
-        Game::CreateEntity(world, {playerBlueprint})};
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint}),
+        world->CreateEntity({playerBlueprint})};
 
     // run a frame
     StepFrame();
 
     // Delete the last entity only
-    Game::DeleteEntity(world, entities[9]);
+    world->DeleteEntity(entities[9]);
 
     // run a frame
     StepFrame();
 
     // Delete the last entity, and also another entity. This will cause
     // the entity to swap place with an invalid instance, which SHOULD be OK
-    Game::DeleteEntity(world, entities[8]);
-    Game::DeleteEntity(world, entities[4]);
+    world->DeleteEntity(entities[8]);
+    world->DeleteEntity(entities[4]);
 
     // run a frame
     StepFrame();
@@ -245,47 +206,39 @@ EntitySystemTest::Run()
 
     // Test managed properties
     {
-        ComponentId managedComponentDescriptor;
-        {
-            ManagedTestProperty defVal;
-            Game::ComponentCreateInfo componentInfo;
-            componentInfo.name = "ManagedTestProperty";
-            componentInfo.byteSize = sizeof(ManagedTestProperty);
-            componentInfo.defaultValue = &defVal;
-            componentInfo.flags = ComponentFlags::COMPONENTFLAG_MANAGED;
-            managedComponentDescriptor = Game::CreateComponent(componentInfo);
-        }
-
+        Game::RegisterComponent<DecayTestComponent>(COMPONENTFLAG_DECAY);
+        ComponentId decayComponentId = Game::GetComponentId<DecayTestComponent>();
+        
         Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
         Game::Entity enemies[] = {
-            Game::CreateEntity(world, enemyInfo),
-            Game::CreateEntity(world, enemyInfo),
-            Game::CreateEntity(world, enemyInfo),
-            Game::CreateEntity(world, enemyInfo),
-            Game::CreateEntity(world, enemyInfo),
+            world->CreateEntity(enemyInfo),
+            world->CreateEntity(enemyInfo),
+            world->CreateEntity(enemyInfo),
+            world->CreateEntity(enemyInfo),
+            world->CreateEntity(enemyInfo),
         };
 
         {
             VERIFY(
-                Game::GetWorldDatabase(world)->GetTable(Game::GetEntityMapping(world, enemies[0]).table).GetNumRows() ==
+                world->GetDatabase()->GetTable(world->GetEntityMapping(enemies[0]).table).GetNumRows() ==
                 5
             );
         }
 
         Game::Op::RegisterComponent regOp;
         regOp.entity = enemies[0];
-        regOp.component = managedComponentDescriptor;
-        Game::Execute(world, regOp);
+        regOp.component = decayComponentId ;
+        world->Execute(regOp);
         regOp.entity = enemies[1];
-        regOp.component = managedComponentDescriptor;
-        Game::Execute(world, regOp);
+        regOp.component = decayComponentId ;
+        world->Execute(regOp);
         regOp.entity = enemies[2];
-        regOp.component = managedComponentDescriptor;
-        Game::Execute(world, regOp);
+        regOp.component = decayComponentId ;
+        world->Execute(regOp);
 
         {
             VERIFY(
-                Game::GetWorldDatabase(world)->GetTable(Game::GetEntityMapping(world, enemies[0]).table).GetNumRows() ==
+                world->GetDatabase()->GetTable(world->GetEntityMapping(enemies[0]).table).GetNumRows() ==
                 3
             );
         }
@@ -293,20 +246,20 @@ EntitySystemTest::Run()
         StepFrame();
 
         // delete an entity
-        Game::DeleteEntity(world, enemies[2]);
+        world->DeleteEntity(enemies[2]);
 
         StepFrame();
 
         {
-            MemDb::TableId tid = Game::GetEntityMapping(world, enemies[0]).table;
-            VERIFY(Game::GetWorldDatabase(world)->GetTable(tid).GetNumRows() == 2);
+            MemDb::TableId tid = world->GetEntityMapping(enemies[0]).table;
+            VERIFY(world->GetDatabase()->GetTable(tid).GetNumRows() == 2);
         }
 
         StepFrame();
 
         {
-            MemDb::TableId tid = Game::GetEntityMapping(world, enemies[0]).table;
-            VERIFY(Game::GetWorldDatabase(world)->GetTable(tid).GetNumRows() == 2);
+            MemDb::TableId tid = world->GetEntityMapping(enemies[0]).table;
+            VERIFY(world->GetDatabase()->GetTable(tid).GetNumRows() == 2);
         }
     }
 
@@ -321,7 +274,7 @@ EntitySystemTest::Run()
         filterInfo.numInclusive = 2;
         Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
 
-        Game::Dataset set = Game::Query(world, filter);
+        Game::Dataset set = world->Query(filter);
 
         for (int v = 0; v < set.numViews; v++)
         {
@@ -344,7 +297,7 @@ EntitySystemTest::Run()
 
     Game::Filter filter = Game::FilterBuilder().Including<const TestHealth, const TestStruct>().Build();
 
-    Game::Dataset set = Game::Query(world, filter);
+    Game::Dataset set = world->Query(filter);
 
     for (int v = 0; v < set.numViews; v++)
     {
@@ -369,7 +322,7 @@ EntitySystemTest::Run()
     // add a component to an entity that does not already have it. This should
     // move the entity from one table to another, and in this case
     // creating a new table that contains only one instance (this one)
-    Game::AddComponent<TestVec4>(world, entities[1], nullptr);
+    world->AddComponent<TestVec4>(entities[1], nullptr);
 
     Game::DestroyFilter(filter);
     Game::ReleaseDatasets();
@@ -394,7 +347,7 @@ EntitySystemTest::Run()
     // Test on activate func
     // Create one entity, which will go through the on activate step, once and once only.
     Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
-    Game::CreateEntity(world, enemyInfo);
+    world->CreateEntity(enemyInfo);
 
     int numActivateExecutions = 0;
     std::function activateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)

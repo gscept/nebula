@@ -78,7 +78,9 @@ GraphicsManager::InitCreateModelProcessor()
 void
 GraphicsManager::OnDecay()
 {
-    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Game::GetComponentId<Model>());
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<Model>());
     Model* data = (Model*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
@@ -172,7 +174,7 @@ GraphicsManager::OnCleanup(Game::World* world)
     filterInfo.numInclusive = 1;
 
     Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-    Game::Dataset data = Game::Query(world, filter);
+    Game::Dataset data = world->Query(filter);
 
     for (int v = 0; v < data.numViews; v++)
     {

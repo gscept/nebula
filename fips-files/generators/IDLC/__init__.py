@@ -51,7 +51,7 @@ class IDLCodeGenerator:
             
         IDLComponent.ParseComponents(self.document)
 
-        IDLDocument.AddInclude(f, "game/category.h")
+        IDLDocument.AddInclude(f, "core/types.h")
         if (IDLComponent.ContainsResourceTypes()):
             IDLDocument.AddInclude(f, "resources/resource.h")
         if (IDLComponent.ContainsEntityTypes()):
@@ -100,7 +100,7 @@ class IDLCodeGenerator:
         IDLDocument.AddInclude(f, hdrInclude)
         IDLDocument.AddInclude(f, "core/sysfunc.h")
         IDLDocument.AddInclude(f, "util/stringatom.h")
-        IDLDocument.AddInclude(f, "memdb/typeregistry.h")
+        IDLDocument.AddInclude(f, "memdb/attributeregistry.h")
         IDLDocument.AddInclude(f, "game/componentserialization.h")
         IDLDocument.AddInclude(f, "game/componentinspection.h")
         

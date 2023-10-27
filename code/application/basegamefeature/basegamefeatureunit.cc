@@ -101,7 +101,7 @@ BaseGameFeatureUnit::OnRenderDebug()
 
 		if (world != nullptr)
         {
-            WorldRenderDebug(world);
+            //world->RenderDebug();
         }
         else
         {

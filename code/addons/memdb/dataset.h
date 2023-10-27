@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "componentid.h"
+#include "attributeid.h"
 #include "memdb/table.h"
 
 namespace MemDb

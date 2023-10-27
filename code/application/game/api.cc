@@ -38,37 +38,6 @@ ReleaseDatasets()
 
 //------------------------------------------------------------------------------
 /**
-    @returns    Dataset with category table views.
-
-    @note       The category table view buffer can be NULL if the filter contains
-                a non-typed/flag component.
-*/
-Dataset
-Query(World* world, Filter filter)
-{
-#if NEBULA_ENABLE_PROFILING
-    //N_COUNTER_INCR("Calls to Game::Query", 1);
-    N_SCOPE_ACCUM(QueryTime, EntitySystem);
-#endif
-    Ptr<MemDb::Database> db = Game::GetWorldDatabase(world);
-
-    Util::Array<MemDb::TableId> tids = db->Query(GetInclusiveTableMask(filter), GetExclusiveTableMask(filter));
-
-    return Query(world, tids, filter);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Dataset
-Query(World* world, Util::Array<MemDb::TableId>& tids, Filter filter)
-{
-    Ptr<MemDb::Database> db = Game::GetWorldDatabase(world);
-    return Query(db, tids, filter);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 Game::Dataset
 Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter filter)
@@ -137,25 +106,6 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
     }
 
     return data;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-ComponentId
-CreateComponent(ComponentCreateInfo const& info)
-{
-    ComponentId const component = MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
-    return component;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-ComponentId
-GetComponentId(Util::StringAtom name)
-{
-    return MemDb::TypeRegistry::GetComponentId(name);
 }
 
 //------------------------------------------------------------------------------

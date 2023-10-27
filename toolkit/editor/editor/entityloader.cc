@@ -87,7 +87,7 @@ LoadEntities(const char* filePath)
                     do
                     {
                         Util::StringAtom const componentName = reader->GetCurrentNodeName();
-                        MemDb::AttributeId descriptor = MemDb::TypeRegistry::GetComponentId(componentName);
+                        MemDb::AttributeId descriptor = MemDb::AttributeRegistry::GetAttributeId(componentName);
                         if (descriptor == MemDb::AttributeId::Invalid())
                         {
                             n_warning(
@@ -103,10 +103,10 @@ LoadEntities(const char* filePath)
                             Edit::AddComponent(editorEntity, descriptor);
                         }
 
-                        if (MemDb::TypeRegistry::TypeSize(descriptor) > 0)
+                        if (MemDb::AttributeRegistry::TypeSize(descriptor) > 0)
                         {
-                            if (scratchBuffer.Size() < MemDb::TypeRegistry::TypeSize(descriptor))
-                                scratchBuffer.Reserve(MemDb::TypeRegistry::TypeSize(descriptor));
+                            if (scratchBuffer.Size() < MemDb::AttributeRegistry::TypeSize(descriptor))
+                                scratchBuffer.Reserve(MemDb::AttributeRegistry::TypeSize(descriptor));
                             Game::ComponentSerialization::Deserialize(reader, descriptor, scratchBuffer.GetPtr());
                             Edit::SetComponent(editorEntity, descriptor, scratchBuffer.GetPtr());
                         }
@@ -122,7 +122,7 @@ LoadEntities(const char* filePath)
                 reader->Get<Util::Array<Util::String>>(values);
                 for (auto s : values)
                 {
-                    Game::ComponentId const component = MemDb::TypeRegistry::GetComponentId(s);
+                    Game::ComponentId const component = MemDb::AttributeRegistry::GetAttributeId(s);
                     if (component != Game::ComponentId::Invalid())
                         Edit::RemoveComponent(editorEntity, component);
                 }
@@ -182,10 +182,10 @@ SaveEntities(const char* filePath)
                     writer->BeginObject("components");
                     for (auto component : table.GetAttributes())
                     {
-                        uint32_t const flags = MemDb::TypeRegistry::Flags(component);
+                        uint32_t const flags = MemDb::AttributeRegistry::Flags(component);
                         if (component != ownerPid && (flags & Game::ComponentFlags::COMPONENTFLAG_DECAY) == 0)
                         {
-                            SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
+                            SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                             if (typeSize > 0)
                             {
                                 void* buffer = Game::GetInstanceBuffer(
@@ -195,12 +195,12 @@ SaveEntities(const char* filePath)
                                 Game::ComponentSerialization::Serialize(
                                     writer,
                                     component,
-                                    ((byte*)buffer) + MemDb::TypeRegistry::TypeSize(component) * mapping.instance.index
+                                    ((byte*)buffer) + MemDb::AttributeRegistry::TypeSize(component) * mapping.instance.index
                                 );
                             }
                             else
                             {
-                                writer->Add("null", MemDb::TypeRegistry::GetDescription(component)->name.Value());
+                                writer->Add("null", MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
                             }
                         }
 

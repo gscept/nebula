@@ -105,12 +105,12 @@ Inspector::Run()
     {
         auto component = components[i];
 
-        if (MemDb::TypeRegistry::GetDescription(component)->name == ownerAtom)
+        if (MemDb::AttributeRegistry::GetAttribute(component)->name == ownerAtom)
         {
             continue;
         }
         ImGui::PushID(0xA3FC + (int)component.id); // offset the ids with some magic number
-        ImGui::Text(MemDb::TypeRegistry::GetDescription(component)->name.Value());
+        ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
         ImGui::SameLine();
 
         if (ImGui::Button("Remove"))
@@ -129,7 +129,7 @@ Inspector::Run()
             continue;
         }
 
-        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
+        SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
         if (typeSize == 0)
         {
             // Type is flag type, just continue to the next one
@@ -215,12 +215,12 @@ Inspector::ShowAddComponentMenu()
 
         Util::Array<const char*> cStrArray;
 
-        Util::FixedArray<MemDb::AttributeDescription*> const& components = MemDb::TypeRegistry::GetAllComponents();
+        Util::FixedArray<MemDb::Attribute*> const& components = MemDb::AttributeRegistry::GetAllAttributes();
         SizeT const numComponents = components.Size();
         Util::StringAtom const ownerAtom = "Owner"_atm;
         for (SizeT i = 0; i < numComponents; i++)
         {
-            MemDb::AttributeDescription* component = components[i];
+            MemDb::Attribute* component = components[i];
             if (component->name == ownerAtom || (component->externalFlags & Game::COMPONENTFLAG_DECAY))
                 continue;
 

@@ -1,6 +1,7 @@
 {
     "namespace": "Game",
     "includes": [
+        "math/mat4.h",
         "math/vec3.h",
         "math/quat.h"
     ],

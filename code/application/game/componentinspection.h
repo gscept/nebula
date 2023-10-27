@@ -12,9 +12,9 @@
 */
 //------------------------------------------------------------------------------
 #include "util/delegate.h"
-#include "category.h"
 #include "util/stringatom.h"
 #include "game/entity.h"
+#include "game/componentid.h"
 
 namespace Game
 {
@@ -22,7 +22,7 @@ namespace Game
 class ComponentInspection
 {
 public:
-    using DrawFunc = void(*)(ComponentId, void*, bool*);
+    using DrawFunc = void(*)(Game::ComponentId, void*, bool*);
     
     static ComponentInspection* Instance();
     static void Destroy();

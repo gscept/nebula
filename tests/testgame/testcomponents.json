@@ -20,6 +20,12 @@
 				"default": [1,2,3,4]
 			}
 		},
+		"DecayTestComponent": {
+			"destroyed": {
+				"type": "bool",
+				"default": false
+			}
+		},
 		"TestStruct": {
 			"pos": {
 				"type": "vec3",

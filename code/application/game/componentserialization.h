@@ -19,7 +19,7 @@
 #include "util/stringatom.h"
 #include "util/dictionary.h"
 #include "util/delegate.h"
-#include "category.h"
+#include "game/componentid.h"
 
 namespace Game
 {
@@ -50,7 +50,7 @@ private:
 
     static ComponentSerialization* Singleton;
 
-    /// validate that the size of MemDb::TypeRegistry's component named 'name' has typesize of 'size'
+    /// validate that the size of MemDb::AttributeRegistry's component named 'name' has typesize of 'size'
     bool ValidateTypeSize(ComponentId component, uint32_t size);
 
     struct Serializer
@@ -88,7 +88,7 @@ ComponentSerialization::Register(ComponentId component)
     auto* reg = Instance();
     if (!reg->ValidateTypeSize(component, sizeof(TYPE)))
     {
-        n_error("Trying to add a serializer that works on different sized component compared to what is registered in the MemDb::TypeRegistry!");
+        n_error("Trying to add a serializer that works on different sized component compared to what is registered in the MemDb::AttributeRegistry!");
         return;
     }
 

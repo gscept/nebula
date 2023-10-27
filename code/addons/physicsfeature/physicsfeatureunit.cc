@@ -70,21 +70,21 @@ PhysicsFeatureUnit::OnActivate()
         //        This might not be true and we should allow multiple physics stages as well.
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
         Game::ComponentId staticPid = Game::GetComponentId("Static"_atm);
-        Game::OpBuffer buffer = Game::CreateOpBuffer(world);
+        Game::OpBuffer buffer = world->CreateOpBuffer();
         for (IndexT i = 0; i < num; i++)
         {
             n_assert(Physics::ActorContext::IsValid(actors[i]));
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
-            n_assert(Game::IsValid(world, entity) && Game::HasInstance(world, entity));
+            n_assert(world->IsValid(entity) && world->HasInstance(entity));
             Game::Op::RegisterComponent registerOp;
             registerOp.entity = entity;
             registerOp.component = staticPid;
             registerOp.value = nullptr; // no value since it's a flag property
-            Game::AddOp(buffer, registerOp);
+            world->AddOp(buffer, registerOp);
         }
-        Game::Dispatch(buffer);
-        Game::DestroyOpBuffer(buffer);
+        world->Dispatch(buffer);
+        world->DestroyOpBuffer(buffer);
     });
     Physics::SetOnWakeCallback([](Physics::ActorId* actors, SizeT num)
     {
@@ -92,23 +92,23 @@ PhysicsFeatureUnit::OnActivate()
         //        This might not be true and we should allow multiple physics stages as well.
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
         Game::ComponentId staticPid = Game::GetComponentId("Static"_atm);
-        Game::OpBuffer buffer = Game::CreateOpBuffer(world);
+        Game::OpBuffer buffer = world->CreateOpBuffer();
         for (IndexT i = 0; i < num; i++)
         {
             n_assert(Physics::ActorContext::IsValid(actors[i]));
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
-            n_assert(Game::IsValid(world, entity) && Game::HasInstance(world, entity));
-            if (Game::HasComponent(world, entity, staticPid))
+            n_assert(world->IsValid(entity) && world->HasInstance(entity));
+            if (world->HasComponent(entity, staticPid))
             {
                 Game::Op::DeregisterComponent deregisterOp;
                 deregisterOp.entity = entity;
                 deregisterOp.component = staticPid;
-                Game::AddOp(buffer, deregisterOp);
+                world->AddOp(buffer, deregisterOp);
             }
         }
-        Game::Dispatch(buffer);
-        Game::DestroyOpBuffer(buffer);
+        world->Dispatch(buffer);
+        world->DestroyOpBuffer(buffer);
     });
 }
 

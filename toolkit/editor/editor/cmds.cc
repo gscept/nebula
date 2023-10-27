@@ -396,7 +396,7 @@ struct CMDRemoveProperty : public Edit::Command
     bool
     Execute() override
     {
-        if (!value.IsValid() && MemDb::TypeRegistry::TypeSize(component) != 0)
+        if (!value.IsValid() && MemDb::AttributeRegistry::TypeSize(component) != 0)
         {
             Game::EntityMapping const mapping = Game::GetEntityMapping(Editor::state.editorWorld, id);
             MemDb::TableId const tid = mapping.table;
@@ -404,7 +404,7 @@ struct CMDRemoveProperty : public Edit::Command
             void* valuePtr = editorWorldDB->GetTable(tid).GetValuePointer(
                 editorWorldDB->GetTable(tid).GetAttributeIndex(component), mapping.instance
             );
-            value.Set(valuePtr, MemDb::TypeRegistry::TypeSize(component));
+            value.Set(valuePtr, MemDb::AttributeRegistry::TypeSize(component));
         }
         return InternalRemoveProperty(id, component);
     };
@@ -497,7 +497,7 @@ SetComponent(Editor::Entity entity, Game::ComponentId component, void* value)
     CMDSetProperty* cmd = new CMDSetProperty;
     cmd->id = entity;
     cmd->component = component;
-    cmd->newValue.Set(value, MemDb::TypeRegistry::TypeSize(component));
+    cmd->newValue.Set(value, MemDb::AttributeRegistry::TypeSize(component));
     CommandManager::Execute(cmd);
 }
 

@@ -5,7 +5,7 @@
 #include "stdneb.h"
 #include "querybenchmark.h"
 #include "memdb/table.h"
-#include "memdb/typeregistry.h"
+#include "memdb/attributeregistry.h"
 #include "memdb/database.h"
 #include "game/category.h"
 
@@ -52,7 +52,7 @@ QueryBenchmark::Run(Timer& timer)
     for (int i = 0; i < numDescs; i++)
     {
         Util::String name = "BenchType_" + Util::String::FromInt(i);
-        d.Append(TypeRegistry::Register<IntTest>(name, IntTest()));
+        d.Append(AttributeRegistry::Register<IntTest>(name, IntTest()));
     }
 
     using DA = Util::FixedArray<AttributeId>;
@@ -76,8 +76,8 @@ QueryBenchmark::Run(Timer& timer)
             da[a] = d[descriptorIndex];
         }
 
-        info.components = da.Begin();
-        info.numComponents = da.Size();
+        info.attributeIds = da.Begin();
+        info.numAttributes = da.Size();
         db->CreateTable(info);
     }
 

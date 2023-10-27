@@ -53,7 +53,7 @@ GameServer::~GameServer()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            Game::DeallocateWorld(this->state.worlds[worldIndex]);
+            delete this->state.worlds[worldIndex];
             this->state.worlds[worldIndex] = nullptr;
         }
     }
@@ -146,7 +146,7 @@ GameServer::Start()
 	{
 		if (this->state.worlds[worldIndex] != nullptr)
 		{
-			WorldPrefilterProcessors(this->state.worlds[worldIndex]);
+            this->state.worlds[worldIndex]->PrefilterProcessors();
 		}
 	}
 
@@ -233,9 +233,9 @@ GameServer::OnBeginFrame()
     {
 
         if (this->state.worlds[worldIndex] != nullptr &&
-            !WorldPrefiltered(this->state.worlds[worldIndex]))
+            !this->state.worlds[worldIndex]->Prefiltered())
         {
-            WorldPrefilterProcessors(this->state.worlds[worldIndex]);
+            this->state.worlds[worldIndex]->PrefilterProcessors();
         }
     }
 
@@ -245,7 +245,7 @@ GameServer::OnBeginFrame()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* w = this->state.worlds[worldIndex];
-            WorldBeginFrame(w);
+            w->BeginFrame();
         }
     }
 
@@ -281,7 +281,7 @@ GameServer::OnFrame()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* w = this->state.worlds[worldIndex];
-            WorldSimFrame(w);
+            w->SimFrame();
         }
     }
 
@@ -313,7 +313,7 @@ GameServer::OnEndFrame()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* w = this->state.worlds[worldIndex];
-            WorldEndFrame(w);
+            w->EndFrame();
         }
     }
 
@@ -328,19 +328,33 @@ GameServer::OnEndFrame()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* world = this->state.worlds[worldIndex];
-            WorldManageEntities(world);
+            world->ManageEntities();
         }
     }
     _stop_timer(GameServerManageEntities);
 
-    Game::ReleaseAllOps();
-
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            World* world = this->state.worlds[worldIndex];
+            world->ReleaseAllOps();
+        }
+    }
+    
     for (i = 0; i < numFeatureUnits; i++)
     {
         this->gameFeatures[i]->OnDecay();
     }
 
-    Game::ClearDecayBuffers();
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            World* world = this->state.worlds[worldIndex];
+            world->ClearDecayBuffers();
+        }
+    }
 
     _stop_timer(GameServerOnEndFrame);
 }
@@ -412,7 +426,7 @@ GameServer::NotifyGameLoad()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* w = this->state.worlds[worldIndex];
-            WorldOnLoad(w);
+            w->OnLoad();
         }
     }
 
@@ -444,7 +458,7 @@ GameServer::NotifyGameSave()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* w = this->state.worlds[worldIndex];
-            WorldOnSave(w);
+            w->OnSave();
         }
     }
 
@@ -511,7 +525,7 @@ GameServer::CreateProcessor(ProcessorCreateInfo const& info)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            RegisterProcessors(this->state.worlds[worldIndex], { handle });
+            this->state.worlds[worldIndex]->RegisterProcessors({handle});
         }
     }
     return handle;
@@ -537,7 +551,7 @@ void
 GameServer::CleanupWorld(World* world)
 {
     Game::GameServer::Instance()->NotifyBeforeCleanup();
-    WorldReset(world);
+    world->Reset();
 }
 
 //------------------------------------------------------------------------------
@@ -549,9 +563,7 @@ GameServer::CreateWorld(uint32_t hash)
     this->state.worldTable.Add(hash, this->state.numWorlds);
     n_assert(this->state.numWorlds < 32);
     World*& world = this->state.worlds[this->state.numWorlds++];
-    WorldCreateInfo info;
-    info.hash = hash;
-    world = Game::AllocateWorld(info);
+    world = new World(hash);
     return world;
 }
 
@@ -573,7 +585,7 @@ void
 GameServer::DestroyWorld(uint32_t worldHash)
 {
     uint32_t index = this->state.worldTable[worldHash];
-    Game::DeallocateWorld(this->state.worlds[index]);
+    delete this->state.worlds[index];
     this->state.worlds[index] = nullptr;
     this->state.worldTable.Erase(worldHash);
 }
