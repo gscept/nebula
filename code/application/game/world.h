@@ -34,6 +34,17 @@ struct EntityCreateInfo
     bool immediate = false;
 };
 
+template<typename COMPONENT_TYPE>
+struct ComponentRegisterInfo
+{
+    using OnInitFunc = void (*)(Game::World*, Game::Entity, COMPONENT_TYPE*);
+
+    /// Set to true if the component should end up in the decay buffer before being completely destroyed.
+    bool decay = false;
+    /// initialization function to run for the component, or nullptr if not needed.
+    OnInitFunc OnInit = nullptr;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -41,6 +52,10 @@ class World
 {
 public:
     ~World();
+
+    /// Register a component type
+    template <typename COMPONENT_TYPE>
+    ComponentId RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
 
     /// Create a new empty entity
     Game::Entity CreateEntity();
@@ -106,6 +121,21 @@ private:
     friend class GameServer;
     friend class BlueprintManager;
     
+    /// These are registered to the attribute registry so that we can add more functionality to attributes
+    class ComponentInterface : public MemDb::Attribute
+    {
+    public:
+        /// construct from template type, with default value.
+        template <typename T>
+        explicit ComponentInterface(Util::StringAtom name, T const& defaultValue, uint32_t flags)
+            : Attribute(name, defaultValue, flags)
+        {
+            // empty
+        }
+
+        ComponentInitFunc Init = nullptr;
+    };
+
     struct AllocateInstanceCommand
     {
         Game::Entity entity;
@@ -226,6 +256,25 @@ private:
     /// set to true if the caches for the callbacks are invalid
     bool cacheValid = false;
 };
+
+template <typename COMPONENT_TYPE>
+ComponentId 
+World::RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
+{
+    uint32_t componentFlags = 0;
+    componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
+
+    ComponentInterface* cInterface = new ComponentInterface(
+        COMPONENT_TYPE::Traits::name,
+        COMPONENT_TYPE(),
+        componentFlags
+    );
+    cInterface->Init = reinterpret_cast<ComponentInitFunc>(info.OnInit);
+    Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
+    Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
+    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);
+    return cid;
+}
 
 //------------------------------------------------------------------------------
 /**

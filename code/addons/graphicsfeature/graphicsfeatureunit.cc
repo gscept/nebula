@@ -71,8 +71,8 @@ void
 GraphicsFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    Game::ComponentBuilder<Model>(world).Decay(true).Build();
-    Game::ComponentBuilder<Camera>(world).Build();
+    world->RegisterType<Model>({ .decay = true });
+    world->RegisterType<Camera>();
 }
 
 //------------------------------------------------------------------------------

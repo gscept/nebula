@@ -44,16 +44,21 @@ private:
     {
         // This should normally happen in a game feature constructor
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-        Game::ComponentBuilder<TestResource>(world)
-            .Decay(true)
-            .OnInit(&InitializeTestResource)
-            .Build();
+        
+        world->RegisterType<TestResource>({
+            .decay = true,
+            .OnInit = &InitializeTestResource
+        });
 
-        Game::ComponentBuilder<TestVec4>(world).OnInit(&InitializeTestVec4).Build();
-        Game::ComponentBuilder<TestStruct>(world).Build();
-        Game::ComponentBuilder<TestHealth>(world).Build();
-        Game::ComponentBuilder<MyFlag>(world).Build();
-        Game::ComponentBuilder<TestEmptyStruct>(world).Build();
+        world->RegisterType<TestVec4>({
+            .decay = true,
+            .OnInit = &InitializeTestVec4
+        });
+        
+        world->RegisterType<TestStruct>();
+        world->RegisterType<TestHealth>();
+        world->RegisterType<MyFlag>();
+        world->RegisterType<TestEmptyStruct>();
     }
 
     /// cleanup game features

@@ -7,7 +7,7 @@
 #include "basegamefeature/managers/timemanager.h"
 #include "game/api.h"
 #include "audiofeature/managers/audiomanager.h"
-
+#include "game/world.h"
 #include "components/audiofeature.h"
 
 namespace AudioFeature
@@ -38,8 +38,8 @@ void
 AudioFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    Game::ComponentBuilder<AudioEmitter>(world).Decay(true).Build();
-    Game::ComponentBuilder<AudioListener>(world).Build();
+    world->RegisterType<AudioEmitter>({ .decay = true });
+    world->RegisterType<AudioListener>();
 }
 
 //------------------------------------------------------------------------------
