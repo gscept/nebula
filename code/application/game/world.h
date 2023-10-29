@@ -218,9 +218,6 @@ private:
     ///
     Util::Array<RemoveComponentCommand> removeComponentQueue;
 
-    /// add the table to any callback-caches that accepts it
-    void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
-
     /// allocator for staged components
     Memory::ArenaAllocator<4096_KB> componentStageAllocator;
     

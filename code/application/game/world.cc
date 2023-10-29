@@ -87,16 +87,6 @@ World::DeallocateEntity(Entity entity)
 
 //------------------------------------------------------------------------------
 /**
-    @todo When cleaning up the db, erase all tables from the cache.
-*/
-void
-World::CacheTable(MemDb::TableId tid, MemDb::TableSignature signature)
-{
-    this->pipeline.CacheTable(tid, signature);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 void
 World::Start()
@@ -634,9 +624,9 @@ World::GetInstance(Entity entity)
 MemDb::TableId
 World::CreateEntityTable(CategoryCreateInfo const& info)
 {
-    MemDb::TableSignature signature(info.components);
+    MemDb::TableSignature const oldSignature(info.components);
 
-    MemDb::TableId categoryId = this->db->FindTable(signature);
+    MemDb::TableId categoryId = this->db->FindTable(oldSignature);
     if (categoryId != MemDb::TableId::Invalid())
     {
         return categoryId;
@@ -675,8 +665,8 @@ World::CreateEntityTable(CategoryCreateInfo const& info)
     categoryId = this->db->CreateTable(tableInfo);
 
     // "Prefilter" the processors with the new table (insert the table in the cache that accepts it)
-    this->CacheTable(categoryId, this->db->GetTable(categoryId).GetSignature());
-
+    this->pipeline.CacheTable(categoryId, this->db->GetTable(categoryId).GetSignature());
+    
     return categoryId;
 }
 
