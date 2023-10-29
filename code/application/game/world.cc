@@ -459,14 +459,10 @@ World::RegisterFrameEvent(Util::StringAtom name, int order)
     {
         if (this->frameEvents[i]->order > fEvent->order)
         {
-            this->frameEvents.Insert(i, fEvent);
             break;
         }
     }
-    if (i == this->frameEvents.Size())
-    {
-        this->frameEvents.Append(fEvent);
-    }
+    this->frameEvents.Insert(i, fEvent);
 }
 
 //------------------------------------------------------------------------------

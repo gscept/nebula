@@ -71,7 +71,7 @@ class ProcessorBuilder
 {
 public:
     ProcessorBuilder() = delete;
-    ProcessorBuilder(Util::StringAtom processorName);
+    ProcessorBuilder(Game::World* world, Util::StringAtom processorName);
 
     /// which function to run with the processor
     template<typename LAMBDA>
@@ -98,8 +98,13 @@ public:
     /// processor should run async
     ProcessorBuilder& Async();
     
+    /// Set the sorting order for the processor
+    ProcessorBuilder& Order(int order);
+
     /// create and register the processor
     ProcessorHandle Build();
+
+    Processor* BuildP();
 
 private:
     template<typename...TYPES, std::size_t...Is>
@@ -108,11 +113,13 @@ private:
         func(world, *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...);
     }
 
+    World* world;
     Util::StringAtom name;
     Util::StringAtom onEvent;
     ProcessorFrameCallback func = nullptr;
     FilterBuilder filterBuilder;
     bool async = false;
+    int order = 100;
 };
 
 //------------------------------------------------------------------------------

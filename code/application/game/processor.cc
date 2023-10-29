@@ -22,11 +22,16 @@ CreateProcessor(ProcessorCreateInfo const& info)
 //------------------------------------------------------------------------------
 /**
 */
-ProcessorBuilder::ProcessorBuilder(Util::StringAtom processorName)
-    : name(processorName),
+ProcessorBuilder::ProcessorBuilder(World* world, Util::StringAtom processorName)
+    : world(world),
+      name(processorName),
       onEvent("OnBeginFrame")
 {
     this->filterBuilder = FilterBuilder();
+}
+
+ProcessorBuilder::ProcessorBuilder(Game::World* world, Util::StringAtom processorName)
+{
 }
 
 //------------------------------------------------------------------------------
@@ -62,6 +67,16 @@ ProcessorBuilder::Async()
 //------------------------------------------------------------------------------
 /**
 */
+ProcessorBuilder&
+ProcessorBuilder::Order(int order)
+{
+    this->order = order;
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ProcessorHandle
 ProcessorBuilder::Build()
 {
@@ -91,6 +106,20 @@ ProcessorBuilder::Build()
     info.filter = this->filterBuilder.Build();
 
     return CreateProcessor(info);
+}
+
+Processor*
+ProcessorBuilder::BuildP()
+{
+    Processor* processor = new Processor();
+    processor->name = this->name.AsString();
+    processor->async = this->async;
+    processor->order = this->order;
+    processor->filter = this->filterBuilder.Build();
+    processor->callback = this->func;
+    FrameEvent* frameEvent = world->GetFrameEvent(this->onEvent);
+    frameEvent->AddProcessor(processor);
+    return processor;
 }
 
 } // namespace Game

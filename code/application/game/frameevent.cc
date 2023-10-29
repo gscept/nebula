@@ -15,6 +15,8 @@ FrameEvent::AddProcessor(Processor* processor)
 {
     bool accepted = false;
     int i;
+
+    // try to insert into existing batches
     for (i = 0; i < this->batches.Size(); i++)
     {
         if (this->batches[i]->async == processor->async &&
@@ -24,23 +26,30 @@ FrameEvent::AddProcessor(Processor* processor)
             if (accepted)
                 break;
         }
-        if (this->batches[i]->order < processor->order)
+        if (this->batches[i]->order > processor->order)
         {
             break;
         }
     }
-    if (i == this->batches.Size() || !accepted)
+
+    if (!accepted)
     {
         FrameEventBatch* batch = new FrameEventBatch();
+        batch->async = processor->async;
+        batch->order = processor->order;
         batch->processors.Append(processor);
-
-        this->batches.Append(batch);
+        this->batches.Insert(i, batch);
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 FrameEventBatch::TryInsert(Processor* processor)
 {
+    // TODO: if the batch is async, check so that we don't
+    // have multiple writers to the same components
     this->processors.Append(processor);
     return true;
 }
