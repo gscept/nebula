@@ -111,7 +111,7 @@ GraphicsManager::InitUpdateModelTransformProcessor()
     {
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::EntityTableView const& view = data.views[v];
+            Game::Dataset::View const& view = data.views[v];
 
             // TODO: check if any entitys transform is modified in the partition, and skip otherwise.
 
@@ -178,7 +178,7 @@ GraphicsManager::OnCleanup(Game::World* world)
 
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::EntityTableView const& view = data.views[v];
+        Game::Dataset::View const& view = data.views[v];
         Model const* const modelData = (Model*)view.buffers[0];
         
         for (IndexT i = 0; i < view.numInstances; ++i)

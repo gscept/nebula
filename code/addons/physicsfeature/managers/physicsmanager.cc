@@ -174,7 +174,7 @@ PhysicsManager::OnCleanup(Game::World* world)
     Game::Dataset data = world->Query(filter);
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::EntityTableView const& view = data.views[v];
+        Game::Dataset::View const& view = data.views[v];
         Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
 
         for (IndexT i = 0; i < view.numInstances; ++i)

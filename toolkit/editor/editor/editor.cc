@@ -109,7 +109,7 @@ StopGame()
 
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::EntityTableView const& view = data.views[v];
+        Game::Dataset::View const& view = data.views[v];
         Editor::Entity const* const entities = (Editor::Entity*)view.buffers[0];
 
         for (IndexT i = 0; i < view.numInstances; ++i)

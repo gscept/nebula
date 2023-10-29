@@ -19,6 +19,21 @@ class World;
 /// per frame callback for processors
 using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
 
+class Processor
+{
+public:
+    /// name of the processor
+    Util::String name;
+    /// sorting order within frame event (same as batch order).
+    int order = 100;
+    /// set if this processor should run as a job.
+    bool async = false;
+    /// filter used for creating the dataset
+    Filter filter;
+    /// function that this processor runs
+    std::function<void(World*, Dataset)> callback;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -32,13 +47,6 @@ struct ProcessorCreateInfo
     bool async = false;
     /// filter used for creating the dataset
     Filter filter;
-
-    /// called when attached to world
-    //void(*OnActivate)() = nullptr;
-    ///// called when removed from world
-    //void(*OnDeactivate)() = nullptr;
-    ///// called by Game::Server::Start()
-    //void(*OnStart)() = nullptr;
 
     /// called before frame by the game server
     ProcessorFrameCallback OnBeginFrame = nullptr;
@@ -95,7 +103,7 @@ public:
 
 private:
     template<typename...TYPES, std::size_t...Is>
-    static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
+    static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::View const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
     {
         func(world, *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...);
     }
@@ -130,7 +138,7 @@ ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
     {
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::EntityTableView const& view = data.views[v];
+            Game::Dataset::View const& view = data.views[v];
             
             uint32_t i = 0;
             uint32_t section = 0;

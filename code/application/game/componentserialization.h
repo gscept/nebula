@@ -3,9 +3,9 @@
 /**
     @class Game::ComponentSerialization
     
-    Property serialization functions.
+    Component serialization functions.
 
-    Implements various serialization functions for different types of properties
+    Implements various serialization functions for different types of components
     
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file

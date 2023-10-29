@@ -30,7 +30,11 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
 
     this->state.templateDatabase = MemDb::Database::Create();
-    this->CreateWorld(WORLD_DEFAULT);
+    World* defaultWorld = this->CreateWorld(WORLD_DEFAULT);
+
+    defaultWorld->RegisterFrameEvent("OnBeginFrame", 10);
+    defaultWorld->RegisterFrameEvent("OnFrame", 100);
+    defaultWorld->RegisterFrameEvent("OnEndFrame", 200);
 
     // always attach the base game feature
     this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());

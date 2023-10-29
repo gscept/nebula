@@ -19,6 +19,8 @@ nebula_begin_module(application)
             api.cc
 			filter.cc
 			filter.h
+			frameevent.cc
+			frameevent.h
 			component.cc
 			component.h
 			componentid.h

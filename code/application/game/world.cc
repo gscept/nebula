@@ -440,6 +440,54 @@ World::GetDecayBuffer(Game::ComponentId component)
 //------------------------------------------------------------------------------
 /**
 */
+FrameEvent*
+World::RegisterFrameEvent(Util::StringAtom name, int order)
+{
+    FrameEvent* fEvent = new FrameEvent();
+    fEvent->name = name;
+    fEvent->order = order;
+
+#if NEBULA_DEBUG
+    for (int i = 0; i < this->frameEvents.Size(); i++)
+    {
+        n_assert2(this->frameEvents[i]->name != fEvent->name, "FrameEvent already registered!");
+    }
+#endif
+
+    int i;
+    for (i = 0; i < this->frameEvents.Size(); i++)
+    {
+        if (this->frameEvents[i]->order > fEvent->order)
+        {
+            this->frameEvents.Insert(i, fEvent);
+            break;
+        }
+    }
+    if (i == this->frameEvents.Size())
+    {
+        this->frameEvents.Append(fEvent);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameEvent*
+World::GetFrameEvent(Util::StringAtom name)
+{
+    for (int i = 0; i < this->frameEvents.Size(); i++)
+    {
+        if (this->frameEvents[i]->name == name)
+            return this->frameEvents[i];
+    }
+
+    n_error("FrameEvent `%s` not found!", name.Value());
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 World::ClearDecayBuffers()
 {

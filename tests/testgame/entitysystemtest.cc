@@ -274,7 +274,7 @@ EntitySystemTest::Run()
 
         for (int v = 0; v < set.numViews; v++)
         {
-            Game::Dataset::EntityTableView const& view = set.views[v];
+            Game::Dataset::View const& view = set.views[v];
             TestHealth* healths = (TestHealth*)view.buffers[0];
             TestStruct* strs = (TestStruct*)view.buffers[1];
 
@@ -297,7 +297,7 @@ EntitySystemTest::Run()
 
     for (int v = 0; v < set.numViews; v++)
     {
-        Game::Dataset::EntityTableView const& view = set.views[v];
+        Game::Dataset::View const& view = set.views[v];
         TestHealth* healths = (TestHealth*)view.buffers[0];
         TestStruct* strs = (TestStruct*)view.buffers[1];
 

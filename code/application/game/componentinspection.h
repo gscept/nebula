@@ -3,9 +3,9 @@
 /**
     @class Game::ComponentInspection
     
-    Property serialization functions.
+    Component inspection functions.
 
-    Implements various serialization functions for different types of properties
+    Implements various inspection functions for different types of components
     
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file

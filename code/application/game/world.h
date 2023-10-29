@@ -17,6 +17,7 @@
 #include "processorid.h"
 #include "processor.h"
 #include "memory/arenaallocator.h"
+#include "frameevent.h"
 
 namespace MemDb { class Database; }
 
@@ -32,17 +33,6 @@ struct EntityCreateInfo
     TemplateId templateId = TemplateId::Invalid();
     /// set if the entity should be instantiated immediately or deferred until end of frame.
     bool immediate = false;
-};
-
-template<typename COMPONENT_TYPE>
-struct ComponentRegisterInfo
-{
-    using OnInitFunc = void (*)(Game::World*, Game::Entity, COMPONENT_TYPE*);
-
-    /// Set to true if the component should end up in the decay buffer before being completely destroyed.
-    bool decay = false;
-    /// initialization function to run for the component, or nullptr if not needed.
-    OnInitFunc OnInit = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -85,22 +75,12 @@ public:
     /// Get an entitys component
     template <typename TYPE>
     TYPE GetComponent(Entity entity);
-    
-
-    // -----------
-    Memory::ArenaAllocator<4096_KB> componentStageAllocator;
-    
-    // Create a component.
-    // These are constructed directly if it has an OnStage delegate.
-    // This queues the component in a command buffer to be added later
+    // Create a component. This queues the component in a command buffer to be added later
     template <typename TYPE>
     TYPE* AddComponent(Entity entity);
-
     /// Get a decay buffer for the given component
     ComponentDecayBuffer const GetDecayBuffer(Game::ComponentId component);
-    
-    /// Create a table in the entity database that has a specific set of components
-    MemDb::TableId CreateEntityTable(CategoryCreateInfo const& info);
+
     /// Register a number of processors to the world
     void RegisterProcessors(std::initializer_list<ProcessorHandle> handles);
     /// Set the value of a component by providing a pointer and type size
@@ -114,9 +94,12 @@ public:
 
     /// Get the entity database. Be careful when directly modifying the database, as some information is only kept track of via the World.
     Ptr<MemDb::Database> GetDatabase();
+    /// Create a table in the entity database that has a specific set of components
+    MemDb::TableId CreateEntityTable(CategoryCreateInfo const& info);
 
     /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
     static void Override(World* src, World* dst);
+
 private:
     friend class GameServer;
     friend class BlueprintManager;
@@ -133,6 +116,7 @@ private:
             // empty
         }
 
+        using ComponentInitFunc = void (*)(Game::World*, Game::Entity, void*);
         ComponentInitFunc Init = nullptr;
     };
 
@@ -253,8 +237,24 @@ private:
     Util::Array<CallbackInfo> onActivateCallbacks;
     CallbackInfo activateAllInstancesCallback;
 
+    Memory::ArenaAllocator<4096_KB> componentStageAllocator;
+    
     /// set to true if the caches for the callbacks are invalid
     bool cacheValid = false;
+
+
+    //-----------------------------
+    // Frame events
+
+    Util::Array<FrameEvent*> frameEvents;
+
+public:
+    FrameEvent* RegisterFrameEvent(Util::StringAtom name, int order);
+    FrameEvent* GetFrameEvent(Util::StringAtom name);
+
+    //------------------------------
+
+
 };
 
 template <typename COMPONENT_TYPE>
@@ -269,7 +269,7 @@ World::RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
         COMPONENT_TYPE(),
         componentFlags
     );
-    cInterface->Init = reinterpret_cast<ComponentInitFunc>(info.OnInit);
+    cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
     Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
     Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
     Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);

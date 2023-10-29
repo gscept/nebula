@@ -16,7 +16,7 @@
 namespace Game
 {
 
-static Memory::ArenaAllocator<sizeof(Dataset::EntityTableView) * 256> viewAllocator;
+static Memory::ArenaAllocator<sizeof(Dataset::View) * 256> viewAllocator;
 
 //------------------------------------------------------------------------------
 /**
@@ -62,7 +62,7 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
         return data;
     }
 
-    data.views = (Dataset::EntityTableView*)viewAllocator.Alloc(sizeof(Dataset::EntityTableView) * data.numViews);
+    data.views = (Dataset::View*)viewAllocator.Alloc(sizeof(Dataset::View) * data.numViews);
     data.numViews = 0;
 
     Util::FixedArray<ComponentId> const& components = ComponentsInFilter(filter);
@@ -78,7 +78,7 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
                 MemDb::Table::Partition* part = tbl.GetFirstActivePartition();
                 while (part != nullptr)
                 {
-                    Dataset::EntityTableView* view = data.views + data.numViews;
+                    Dataset::View* view = data.views + data.numViews;
                     view->tableId = tids[tableIndex];
                     view->validInstances = part->validRows;
 
