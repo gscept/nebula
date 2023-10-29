@@ -63,7 +63,7 @@ private:
                 while (i < view.numInstances)
                 {
                     // check validity of instances in sections of 64 instances
-                    if (!view.validInstances.SectionIsNull(i % 64))
+                    if (!view.validInstances.SectionIsNull(i / 64))
                     {
                         uint32_t const end = Math::min(i + 64, view.numInstances);
                         for (uint32_t instance = i; instance < end; ++instance)
