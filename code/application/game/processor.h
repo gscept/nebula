@@ -16,6 +16,8 @@ namespace Game
 
 class World;
 
+class ProcessorBuilder;
+
 class Processor
 {
 public:
@@ -33,6 +35,59 @@ public:
     Util::Array<MemDb::TableId> cache;
     /// set to false if the cache is invalid
     bool cacheValid = false;
+
+private:
+    friend ProcessorBuilder;
+
+    template <typename... TYPES, std::size_t... Is>
+    static void
+    UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::View const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
+    {
+        func(
+            world,
+            *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...
+        );
+    }
+
+    template <typename... COMPONENTS>
+    static std::function<void(World*, Dataset)>
+    ForEach(std::function<void(World*, COMPONENTS...)> func, uint8_t bufferStartOffset)
+    {
+        return [func, bufferStartOffset](World* world, Game::Dataset data)
+        {
+            for (int v = 0; v < data.numViews; v++)
+            {
+                Game::Dataset::View const& view = data.views[v];
+
+                uint32_t i = 0;
+                while (i < view.numInstances)
+                {
+                    // check validity of instances in sections of 64 instances
+                    if (!view.validInstances.SectionIsNull(i % 64))
+                    {
+                        uint32_t const end = Math::min(i + 64, view.numInstances);
+                        for (uint32_t instance = i; instance < end; ++instance)
+                        {
+                            // make sure the instance we're processing is valid
+                            if (view.validInstances.IsSet(instance))
+                            {
+                                UpdateExpander<COMPONENTS...>(
+                                    world,
+                                    func,
+                                    view,
+                                    instance,
+                                    bufferStartOffset,
+                                    std::make_index_sequence<sizeof...(COMPONENTS)>()
+                                );
+                            }
+                        }
+                    }
+                    // progress 64 instances, which corresponds to 1 section
+                    i += 64;
+                }
+            }
+        };
+    }
 };
 
 class ProcessorBuilder
@@ -73,12 +128,6 @@ public:
     Processor* Build();
 
 private:
-    template<typename...TYPES, std::size_t...Is>
-    static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::View const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
-    {
-        func(world, *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...);
-    }
-
     World* world;
     Util::StringAtom name;
     Util::StringAtom onEvent;
@@ -107,37 +156,7 @@ ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
 {
     uint8_t const bufferStartOffset = this->filterBuilder.GetNumInclusive();
     this->filterBuilder.Including<COMPONENTS...>();
-    this->func = [func, bufferStartOffset](World* world, Game::Dataset data)
-    {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::View const& view = data.views[v];
-            
-            uint32_t i = 0;
-            uint32_t section = 0;
-            while (i < view.numInstances)
-            {
-                // check validity of instances in sections of 64 instances
-                if (!view.validInstances.SectionIsNull(section))
-                {
-                    uint32_t const end = Math::min(i + 64, view.numInstances);
-                    for (uint32_t instance = i; instance < end; ++instance)
-                    {
-                        // make sure the instance we're processing is valid
-                        if (view.validInstances.IsSet(instance))
-                        {
-                            UpdateExpander<COMPONENTS...>(
-                                world, func, view, instance, bufferStartOffset, std::make_index_sequence<sizeof...(COMPONENTS)>()
-                            );
-                        }
-                    }
-                }
-                // progress 64 instances, which corresponds to 1 section
-                i += 64;
-                section += 1;
-            }
-        }
-    };
+    this->func = Processor::ForEach(func, bufferStartOffset);
     return *this;
 }
 
