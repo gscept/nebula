@@ -30,11 +30,7 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
 
     this->state.templateDatabase = MemDb::Database::Create();
-    World* defaultWorld = this->CreateWorld(WORLD_DEFAULT);
-
-    defaultWorld->RegisterFrameEvent("OnBeginFrame", 10);
-    defaultWorld->RegisterFrameEvent("OnFrame", 100);
-    defaultWorld->RegisterFrameEvent("OnEndFrame", 200);
+    this->CreateWorld(WORLD_DEFAULT);
 
     // always attach the base game feature
     this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
@@ -244,8 +240,7 @@ GameServer::OnBeginFrame()
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
 
-        if (this->state.worlds[worldIndex] != nullptr &&
-            !this->state.worlds[worldIndex]->Prefiltered())
+        if (this->state.worlds[worldIndex] != nullptr)
         {
             this->state.worlds[worldIndex]->PrefilterProcessors();
         }
@@ -507,31 +502,6 @@ Util::Array<Ptr<FeatureUnit>> const&
 GameServer::GetGameFeatures() const
 {
     return this->gameFeatures;
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   we should handle the registering of the world processors manually
-*/
-ProcessorHandle
-GameServer::CreateProcessor(ProcessorCreateInfo const& info)
-{
-    ProcessorInfo processor = info;
-    
-    ProcessorHandle handle;
-    if (this->processorHandlePool.Allocate(handle))
-        this->processors.Append(std::move(processor));
-    else
-        this->processors[Ids::Index(handle)] = std::move(processor);
-
-    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
-    {
-        if (this->state.worlds[worldIndex] != nullptr)
-        {
-            this->state.worlds[worldIndex]->RegisterProcessors({handle});
-        }
-    }
-    return handle;
 }
 
 //------------------------------------------------------------------------------

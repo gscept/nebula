@@ -28,9 +28,17 @@ static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 */
 World::World(uint32_t hash)
     : numEntities(0),
-      hash(hash)
+      hash(hash),
+      pipeline(this)
 {
     this->db = MemDb::Database::Create();
+    // clang-format off
+    this->pipeline.RegisterFrameEvent( 5,    "OnActivate");
+    this->pipeline.RegisterFrameEvent( 8,    "ActivateEntities");
+    this->pipeline.RegisterFrameEvent( 10,   "OnBeginFrame");
+    this->pipeline.RegisterFrameEvent( 100,  "OnFrame");
+    this->pipeline.RegisterFrameEvent( 200,  "OnEndFrame");
+    // clang-format on
 }
 
 //------------------------------------------------------------------------------
@@ -84,43 +92,7 @@ World::DeallocateEntity(Entity entity)
 void
 World::CacheTable(MemDb::TableId tid, MemDb::TableSignature signature)
 {
-    // this is just to compress the code a bit
-    const Util::Array<CallbackInfo>* cbArrays[] = {
-        &this->onBeginFrameCallbacks,
-        &this->onFrameCallbacks,
-        &this->onEndFrameCallbacks,
-        &this->onLoadCallbacks,
-        &this->onSaveCallbacks,
-        &this->onActivateCallbacks,
-    };
-
-    auto const FillCache = [signature, tid](CallbackInfo& cbInfo)
-    {
-        if (MemDb::TableSignature::CheckBits(signature, GetInclusiveTableMask(cbInfo.filter)))
-        {
-            MemDb::TableSignature const& exclusive = GetExclusiveTableMask(cbInfo.filter);
-            if (exclusive.IsValid())
-            {
-                if (!MemDb::TableSignature::HasAny(signature, exclusive))
-                    cbInfo.cache.Append(tid);
-            }
-            else
-            {
-                cbInfo.cache.Append(tid);
-            }
-        }
-    };
-
-    for (auto arrPtr : cbArrays)
-    {
-        auto const& arr = *arrPtr;
-        for (auto& cbInfo : arr)
-        {
-            FillCache(cbInfo);
-        }
-    }
-
-    FillCache(activateAllInstancesCallback);
+    this->pipeline.CacheTable(tid, signature);
 }
 
 //------------------------------------------------------------------------------
@@ -129,20 +101,19 @@ World::CacheTable(MemDb::TableId tid, MemDb::TableSignature signature)
 void
 World::Start()
 {
-    activateAllInstancesCallback.filter = Game::FilterBuilder().Including<Game::Owner>().Excluding<Game::IsActive>().Build();
-    activateAllInstancesCallback.func = [](Game::World* world, Game::Dataset const& data)
+    auto const ActivateEntities =
+    [](World* world, Game::Owner const& entity)
     {
-        // Move all partitions to their respective counterpart
-        for (size_t i = 0; i < data.numViews; i++)
-        {
-            auto const& view = data.views[i];
-            for (size_t instance = 0; instance < view.numInstances; instance++)
-            {
-                Entity const& entity = ((Game::Owner*)view.buffers[0])[instance].entity;
-                world->AddComponent<Game::IsActive>(entity);
-            }
-        }
+        world->AddComponent<Game::IsActive>(entity.entity);
     };
+
+    ProcessorBuilder builder(this, "AddIsActiveComponentToNewEntities");
+    builder.On("ActivateEntities")
+        .Excluding<Game::IsActive>()
+        .Func(ActivateEntities)
+        .Build();
+
+    this->pipeline.Begin();
 }
 
 //------------------------------------------------------------------------------
@@ -151,30 +122,13 @@ World::Start()
 void
 World::BeginFrame()
 {
-    int const numActiveCallBacks = this->onActivateCallbacks.Size();
-    for (int i = 0; i < numActiveCallBacks; i++)
-    {
-        Dataset data = this->Query(this->onActivateCallbacks[i].filter, this->onActivateCallbacks[i].cache);
-        this->onActivateCallbacks[i].func(this, data);
-    }
-
+    this->pipeline.RunThru("OnActivate");
     ExecuteAddComponentCommands();
 
-    {
-        // Move all newly created partitions to their respective table with IsActive flag included
-        Dataset data = this->Query(this->activateAllInstancesCallback.filter, this->activateAllInstancesCallback.cache);
-        this->activateAllInstancesCallback.func(this, data);
-    }
-
+    this->pipeline.RunThru("ActivateEntities");
     ExecuteAddComponentCommands();
 
-    int const num = this->onBeginFrameCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = this->Query(this->onBeginFrameCallbacks[i].filter, this->onBeginFrameCallbacks[i].cache);
-        this->onBeginFrameCallbacks[i].func(this, data);
-    }
-
+    this->pipeline.RunThru("OnBeginFrame");
     ExecuteAddComponentCommands();
 }
 
@@ -184,12 +138,7 @@ World::BeginFrame()
 void
 World::SimFrame()
 {
-    int const num = this->onFrameCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = this->Query(this->onFrameCallbacks[i].filter, this->onFrameCallbacks[i].cache);
-        this->onFrameCallbacks[i].func(this, data);
-    }
+    this->pipeline.RunThru("OnFrame");
     ExecuteAddComponentCommands();
 }
 
@@ -199,16 +148,14 @@ World::SimFrame()
 void
 World::EndFrame()
 {
-    int const num = this->onEndFrameCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = this->Query(this->onEndFrameCallbacks[i].filter, this->onEndFrameCallbacks[i].cache);
-        this->onEndFrameCallbacks[i].func(this, data);
-    }
+    this->pipeline.RunThru("OnEndFrame");
 
     // remove first, then add
     ExecuteRemoveComponentCommands();
     ExecuteAddComponentCommands();
+
+    this->pipeline.RunRemaining();
+    this->pipeline.Reset();
 }
 
 //------------------------------------------------------------------------------
@@ -217,12 +164,7 @@ World::EndFrame()
 void
 World::OnLoad()
 {
-    int num = this->onLoadCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = this->Query(this->onLoadCallbacks[i].filter, this->onLoadCallbacks[i].cache);
-        this->onLoadCallbacks[i].func(this, data);
-    }
+    // TODO: Implement me
 }
 
 //------------------------------------------------------------------------------
@@ -231,12 +173,7 @@ World::OnLoad()
 void
 World::OnSave()
 {
-    int num = this->onSaveCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = this->Query(this->onSaveCallbacks[i].filter, this->onSaveCallbacks[i].cache);
-        this->onSaveCallbacks[i].func(this, data);
-    }
+    // TODO: Implement me
 }
 
 //------------------------------------------------------------------------------
@@ -245,25 +182,7 @@ World::OnSave()
 void
 World::PrefilterProcessors()
 {
-    // this is just to compress the code a bit
-    const Util::Array<World::CallbackInfo>* cbArrays[] = {
-        &this->onBeginFrameCallbacks,
-        &this->onFrameCallbacks,
-        &this->onEndFrameCallbacks,
-        &this->onLoadCallbacks,
-        &this->onSaveCallbacks,
-        &this->onActivateCallbacks,
-    };
-
-    for (auto arrPtr : cbArrays)
-    {
-        auto const& arr = *arrPtr;
-        for (auto& cbinfo : arr)
-        {
-            cbinfo.cache = this->db->Query(GetInclusiveTableMask(cbinfo.filter), GetExclusiveTableMask(cbinfo.filter));
-        }
-    }
-
+    this->pipeline.Prefilter(!this->cacheValid);
     this->cacheValid = true;
 }
 
@@ -372,7 +291,7 @@ void
 World::DeleteEntity(Game::Entity entity)
 {
     n_assert(this->IsValid(entity));
-    
+
     if (this->HasInstance(entity))
     {
         World::DeallocInstanceCommand cmd;
@@ -435,50 +354,6 @@ World::GetDecayBuffer(Game::ComponentId component)
         return componentDecayTable[component.id];
     else
         return ComponentDecayBuffer();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-FrameEvent*
-World::RegisterFrameEvent(Util::StringAtom name, int order)
-{
-    FrameEvent* fEvent = new FrameEvent();
-    fEvent->name = name;
-    fEvent->order = order;
-
-#if NEBULA_DEBUG
-    for (int i = 0; i < this->frameEvents.Size(); i++)
-    {
-        n_assert2(this->frameEvents[i]->name != fEvent->name, "FrameEvent already registered!");
-    }
-#endif
-
-    int i;
-    for (i = 0; i < this->frameEvents.Size(); i++)
-    {
-        if (this->frameEvents[i]->order > fEvent->order)
-        {
-            break;
-        }
-    }
-    this->frameEvents.Insert(i, fEvent);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-FrameEvent*
-World::GetFrameEvent(Util::StringAtom name)
-{
-    for (int i = 0; i < this->frameEvents.Size(); i++)
-    {
-        if (this->frameEvents[i]->name == name)
-            return this->frameEvents[i];
-    }
-
-    n_error("FrameEvent `%s` not found!", name.Value());
-    return nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -555,7 +430,7 @@ World::ExecuteAddComponentCommands()
         Game::Entity arg2 = ((const AddStagedComponentCommand*)rhs)->entity;
         return (arg1 > arg2) - (arg1 < arg2);
     };
-    
+
     this->addStagedQueue.QuickSortWithFunc(sortFunc);
 
     SizeT i = 0;
@@ -611,7 +486,7 @@ World::ExecuteRemoveComponentCommands()
         }
         RemoveComponentsFromEntity(currentEntity, firstCmdOfEntity, numEntityCmds);
     }
-    
+
     removeComponentQueue.Clear();
 }
 
@@ -629,10 +504,13 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
     for (i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
-        n_assert2(!signature.IsSet(cmd->componentId), "Tried to add a staged component to an entity that already has the given component!");
+        n_assert2(
+            !signature.IsSet(cmd->componentId),
+            "Tried to add a staged component to an entity that already has the given component!"
+        );
         signature.FlipBit(cmd->componentId);
     }
-    
+
     MemDb::TableId newCategoryId = this->db->FindTable(signature);
     if (newCategoryId == MemDb::InvalidTableId)
     {
@@ -650,7 +528,7 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
         {
             info.components[i] = cmds[cmdIndex].componentId;
         }
-        
+
         newCategoryId = this->CreateEntityTable(info);
     }
 
@@ -801,8 +679,6 @@ World::CreateEntityTable(CategoryCreateInfo const& info)
 
     return categoryId;
 }
-
-
 
 //------------------------------------------------------------------------------
 /**
@@ -1025,39 +901,6 @@ World::Migrate(
 /**
 */
 void
-World::RegisterProcessors(std::initializer_list<ProcessorHandle> handles)
-{
-    for (auto handle : handles)
-    {
-        ProcessorInfo const& info = Game::GameServer::Instance()->GetProcessorInfo(handle);
-
-        // Setup frame callbacks
-        if (info.OnBeginFrame != nullptr)
-            this->onBeginFrameCallbacks.Append({handle, info.filter, info.OnBeginFrame});
-
-        if (info.OnFrame != nullptr)
-            this->onFrameCallbacks.Append({handle, info.filter, info.OnFrame});
-
-        if (info.OnEndFrame != nullptr)
-            this->onEndFrameCallbacks.Append({handle, info.filter, info.OnEndFrame});
-
-        if (info.OnLoad != nullptr)
-            this->onLoadCallbacks.Append({handle, info.filter, info.OnLoad});
-
-        if (info.OnSave != nullptr)
-            this->onSaveCallbacks.Append({handle, info.filter, info.OnSave});
-
-        if (info.OnActivate != nullptr)
-            this->onActivateCallbacks.Append({handle, info.filter, info.OnActivate});
-    }
-
-    this->cacheValid = false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 World::Defragment(MemDb::TableId cat)
 {
     if (!this->db->IsValid(cat))
@@ -1098,8 +941,6 @@ World::Defragment(MemDb::TableId cat)
     );
 }
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -1124,6 +965,7 @@ World::SetComponentValue(World* world, Game::Entity entity, Game::ComponentId co
 void
 World::RenderDebug()
 {
+    /*
     ImGui::Text("World Hash: %s", Util::FourCC(this->hash).AsString().AsCharPtr());
     ImGui::Separator();
     static bool showProcessors = true;
@@ -1231,6 +1073,7 @@ World::RenderDebug()
         }
     }
     ImGui::EndChild();
+    */
 }
 
 //------------------------------------------------------------------------------
@@ -1250,6 +1093,14 @@ World::Override(World* src, World* dst)
     dst->PrefilterProcessors();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+FramePipeline&
+World::GetFramePipeline()
+{
+    return this->pipeline;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -1261,10 +1112,10 @@ World::Override(World* src, World* dst)
 Dataset
 World::Query(Filter filter)
 {
-//#if NEBULA_ENABLE_PROFILING
-//    //N_COUNTER_INCR("Calls to Game::Query", 1);
-//    N_SCOPE_ACCUM(QueryTime, EntitySystem);
-//#endif
+    //#if NEBULA_ENABLE_PROFILING
+    //    //N_COUNTER_INCR("Calls to Game::Query", 1);
+    //    N_SCOPE_ACCUM(QueryTime, EntitySystem);
+    //#endif
     Util::Array<MemDb::TableId> tids = this->db->Query(GetInclusiveTableMask(filter), GetExclusiveTableMask(filter));
 
     return this->Query(filter, tids);

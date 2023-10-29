@@ -361,7 +361,7 @@ EntitySystemTest::Run()
         hasExecutedUpdateFunc = true;
     };
 
-    Game::ProcessorBuilder("TestUpdateFunc").Func(updateFunc).Including<TestVec4>().Build();
+    Game::ProcessorBuilder(world, "TestUpdateFunc").Func(updateFunc).Including<TestVec4>().Build();
 
     StepFrame();
 
@@ -380,7 +380,7 @@ EntitySystemTest::Run()
         numActivateExecutions++;
     };
 
-    Game::ProcessorBuilder("TestActivateFunc").On("OnActivate").Func(activateFunc).Build();
+    Game::ProcessorBuilder(world, "TestActivateFunc").On("OnActivate").Func(activateFunc).Build();
 
     StepFrame();
     VERIFY(numActivateExecutions == 1);

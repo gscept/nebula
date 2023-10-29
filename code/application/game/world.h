@@ -81,8 +81,6 @@ public:
     /// Get a decay buffer for the given component
     ComponentDecayBuffer const GetDecayBuffer(Game::ComponentId component);
 
-    /// Register a number of processors to the world
-    void RegisterProcessors(std::initializer_list<ProcessorHandle> handles);
     /// Set the value of a component by providing a pointer and type size
     void SetComponentValue(World* world, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size);
     
@@ -99,6 +97,9 @@ public:
 
     /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
     static void Override(World* src, World* dst);
+
+    /// Get the frame pipeline
+    FramePipeline& GetFramePipeline();
 
 private:
     friend class GameServer;
@@ -220,43 +221,19 @@ private:
     /// add the table to any callback-caches that accepts it
     void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
 
-    struct CallbackInfo
-    {
-        ProcessorHandle handle;
-        Filter filter;
-        ProcessorFrameCallback func;
-        /// cached tables that we've filtered out.
-        Util::Array<MemDb::TableId> cache;
-    };
-
-    Util::Array<CallbackInfo> onBeginFrameCallbacks;
-    Util::Array<CallbackInfo> onFrameCallbacks;
-    Util::Array<CallbackInfo> onEndFrameCallbacks;
-    Util::Array<CallbackInfo> onLoadCallbacks;
-    Util::Array<CallbackInfo> onSaveCallbacks;
-    Util::Array<CallbackInfo> onActivateCallbacks;
-    CallbackInfo activateAllInstancesCallback;
-
+    /// allocator for staged components
     Memory::ArenaAllocator<4096_KB> componentStageAllocator;
     
-    /// set to true if the caches for the callbacks are invalid
+    /// set to true if the caches for the frame pipeline is valid
     bool cacheValid = false;
 
-
-    //-----------------------------
-    // Frame events
-
-    Util::Array<FrameEvent*> frameEvents;
-
-public:
-    FrameEvent* RegisterFrameEvent(Util::StringAtom name, int order);
-    FrameEvent* GetFrameEvent(Util::StringAtom name);
-
-    //------------------------------
-
-
+    /// the frame pipeline for this world
+    FramePipeline pipeline;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
 template <typename COMPONENT_TYPE>
 ComponentId 
 World::RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
@@ -285,6 +262,13 @@ World::SetComponent(Entity entity, TYPE value)
 {
 #if NEBULA_DEBUG
     n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Settings components in arbitrary entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+#if NEBULA_DEBUG
+    n_assert2(
         sizeof(TYPE) == MemDb::AttributeRegistry::TypeSize(Game::GetComponentId<TYPE>()),
         "SetComponent: Provided value's type is not the correct size for the given ComponentId."
     );
@@ -303,6 +287,12 @@ World::GetComponent(Entity entity)
 {
 #if NEBULA_DEBUG
     n_assert2(
+        !this->pipeline.IsRunningAsync(), "Getting components from entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+#if NEBULA_DEBUG
+    n_assert2(
         sizeof(TYPE) == MemDb::AttributeRegistry::TypeSize(Game::GetComponentId<TYPE>()),
         "GetComponent: Provided value's type is not the correct size for the given ComponentId."
     );
@@ -319,6 +309,12 @@ template <typename TYPE>
 inline void
 World::RemoveComponent(Entity entity)
 {
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Removing components from entities while executing an async processor is currently not supported!"
+    );
+#endif
     RemoveComponentCommand cmd = {
         .entity = entity,
         .componentId = Game::GetComponentId<TYPE>(),
@@ -343,6 +339,15 @@ template <typename TYPE>
 inline TYPE*
 World::AddComponent(Entity entity)
 {
+    /*
+        We could possibly support this by either having thread local allocators and
+        staged queues and gathering after the processors have finished (must clear
+        allocators by issuing a separate job for this at the end of the frame), or by
+        just introducing a simple mutex.
+    */
+#if NEBULA_DEBUG
+    n_assert2(!this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!");
+#endif
     Game::ComponentId id = Game::GetComponentId<TYPE>();
 #if _DEBUG
     n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));

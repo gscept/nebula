@@ -39,7 +39,8 @@ PhysicsManager::~PhysicsManager()
 void
 PhysicsManager::InitCreateActorProcessor()
 {
-    Game::ProcessorBuilder("PhysicsManager.CreateActors"_atm)
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ProcessorBuilder(world, "PhysicsManager.CreateActors"_atm)
         .On("OnActivate")
         .Func(
             [](Game::World* world,
@@ -115,14 +116,15 @@ PassKinematicTransforms(
 void
 PhysicsManager::InitPollTransformProcessor()
 {
-    Game::ProcessorBuilder("PhysicsManager.PollRigidbodyTransforms"_atm)
-        .Excluding({Game::GetComponentId("Static"), Game::GetComponentId<IsKinematic>()})
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ProcessorBuilder(world, "PhysicsManager.PollRigidbodyTransforms"_atm)
+        .Excluding<Game::Static, IsKinematic>()
         .On("OnFrame")
         .Func(&PollRigidbodyTransforms)
         .Build();
 
-    Game::ProcessorBuilder("PhysicsManager.PassKinematicTransforms"_atm)
-        .Excluding({Game::GetComponentId("Static")})
+    Game::ProcessorBuilder(world, "PhysicsManager.PassKinematicTransforms"_atm)
+        .Excluding<Game::Static>()
         .On("OnFrame")
         .Func(&PassKinematicTransforms)
         .Build();

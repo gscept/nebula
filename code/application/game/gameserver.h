@@ -38,8 +38,6 @@
 namespace Game
 {
 
-typedef ProcessorCreateInfo ProcessorInfo;
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -94,12 +92,6 @@ public:
     /// access to all attached features units
     Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
 
-    /// create a processor
-    ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
-
-    /// get info about a processor
-    ProcessorInfo const& GetProcessorInfo(ProcessorHandle handle);
-
     /// set command line args
     void SetCmdLineArgs(const Util::CommandLineArgs& a);
     /// get command line args
@@ -137,9 +129,6 @@ protected:
     Util::CommandLineArgs args;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
     
-    Util::Array<ProcessorInfo> processors;
-    Ids::IdGenerationPool processorHandlePool;
-
 #if NEBULA_ENABLE_PROFILING
     _declare_timer(GameServerOnBeginFrame);
     _declare_timer(GameServerOnFrame);
@@ -167,16 +156,6 @@ inline const Util::CommandLineArgs&
 GameServer::GetCmdLineArgs() const
 {
     return this->args;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline ProcessorInfo const&
-GameServer::GetProcessorInfo(ProcessorHandle handle)
-{
-    n_assert(this->processorHandlePool.IsValid(handle));
-    return this->processors[Ids::Index(handle)];
 }
 
 }; // namespace Game

@@ -16,9 +16,6 @@ namespace Game
 
 class World;
 
-/// per frame callback for processors
-using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
-
 class Processor
 {
 public:
@@ -32,40 +29,11 @@ public:
     Filter filter;
     /// function that this processor runs
     std::function<void(World*, Dataset)> callback;
+    /// cached tables that fulfill the requirements of the filter
+    Util::Array<MemDb::TableId> cache;
+    /// set to false if the cache is invalid
+    bool cacheValid = false;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct ProcessorCreateInfo
-{
-    /// name of the processor
-    Util::StringAtom name;
-
-    /// set if this processor should run as a job.
-    /// TODO: this is currently not used
-    bool async = false;
-    /// filter used for creating the dataset
-    Filter filter;
-
-    /// called before frame by the game server
-    ProcessorFrameCallback OnBeginFrame = nullptr;
-    /// called per-frame by the game server
-    ProcessorFrameCallback OnFrame = nullptr;
-    /// called after frame by the game server
-    ProcessorFrameCallback OnEndFrame = nullptr;
-    /// called after loading game state
-    ProcessorFrameCallback OnLoad = nullptr;
-    /// called before saving game state
-    ProcessorFrameCallback OnSave = nullptr;
-    /// render a debug visualization 
-    ProcessorFrameCallback OnRenderDebug = nullptr;
-    /// called on new partitions at beginning of frame
-    ProcessorFrameCallback OnActivate = nullptr;
-};
-
-/// Create a processor
-ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
 
 class ProcessorBuilder
 {
@@ -101,10 +69,8 @@ public:
     /// Set the sorting order for the processor
     ProcessorBuilder& Order(int order);
 
-    /// create and register the processor
-    ProcessorHandle Build();
-
-    Processor* BuildP();
+    /// Build the processor and attach it to the world
+    Processor* Build();
 
 private:
     template<typename...TYPES, std::size_t...Is>
@@ -116,7 +82,7 @@ private:
     World* world;
     Util::StringAtom name;
     Util::StringAtom onEvent;
-    ProcessorFrameCallback func = nullptr;
+    std::function<void(World*, Dataset)> func = nullptr;
     FilterBuilder filterBuilder;
     bool async = false;
     int order = 100;
