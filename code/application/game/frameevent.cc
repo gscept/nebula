@@ -6,6 +6,7 @@
 #include "frameevent.h"
 #include "world.h"
 #include "memdb/database.h"
+#include "jobs2/jobs2.h"
 
 namespace Game
 {
@@ -35,6 +36,11 @@ FrameEvent::Run(World* world)
         }
 
         this->batches[i]->Execute(world);
+
+        Threading::Event event;
+        Jobs2::JobDispatch(MeshPrimitiveFunc, gltfMesh->primitives.Size(), 1, jobContext, nullptr, nullptr, &event);
+
+        event.Wait();
 
         this->pipeline->inAsync = false;
     }
@@ -119,7 +125,11 @@ FrameEventBatch::Execute(World* world)
 {
     if (this->async)
     {
-        this->ExecuteAsync(world);
+        Threading::AtomicCounter jobCounter = 0;
+        
+        this->ExecuteAsync(jobCounter, world);
+        // Wait for job counter
+       Threading::Interlocked::
     }
     else
     {
@@ -192,6 +202,13 @@ FrameEventBatch::ExecuteAsync(World* world)
     //       2. queue one job per table view, for every callback,
     //       3. wait until all jobs finish executing
     //       4. return
+
+    for (SizeT i = 0; i < this->processors.Size(); i++)
+    {
+        Processor* processor = this->processors[i];
+        Dataset data = world->Query(processor->filter, processor->cache);
+        processor->ExecuteParallel(world, data);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -204,7 +221,7 @@ FrameEventBatch::ExecuteSequential(World* world)
     {
         Processor* processor = this->processors[i];
         Dataset data = world->Query(processor->filter, processor->cache);
-        processor->callback(world, data);
+        processor->ExecuteSequential(world, data);
     }
 }
 

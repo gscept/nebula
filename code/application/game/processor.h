@@ -30,11 +30,14 @@ public:
     /// filter used for creating the dataset
     Filter filter;
     /// function that this processor runs
-    std::function<void(World*, Dataset)> callback;
+    std::function<void(World*, Dataset::View const&)> callback;
     /// cached tables that fulfill the requirements of the filter
     Util::Array<MemDb::TableId> cache;
     /// set to false if the cache is invalid
     bool cacheValid = false;
+
+    void ExecuteParallel(World* world, Dataset data);
+    void ExecuteSequential(World* world, Dataset data);
 
 private:
     friend ProcessorBuilder;
@@ -50,41 +53,36 @@ private:
     }
 
     template <typename... COMPONENTS>
-    static std::function<void(World*, Dataset)>
+    static std::function<void(World*, Dataset::View const&)>
     ForEach(std::function<void(World*, COMPONENTS...)> func, uint8_t bufferStartOffset)
     {
-        return [func, bufferStartOffset](World* world, Game::Dataset data)
+        return [func, bufferStartOffset](World* world, Game::Dataset::View const& view)
         {
-            for (int v = 0; v < data.numViews; v++)
+            uint32_t i = 0;
+            while (i < view.numInstances)
             {
-                Game::Dataset::View const& view = data.views[v];
-
-                uint32_t i = 0;
-                while (i < view.numInstances)
+                // check validity of instances in sections of 64 instances
+                if (!view.validInstances.SectionIsNull(i / 64))
                 {
-                    // check validity of instances in sections of 64 instances
-                    if (!view.validInstances.SectionIsNull(i / 64))
+                    uint32_t const end = Math::min(i + 64, view.numInstances);
+                    for (uint32_t instance = i; instance < end; ++instance)
                     {
-                        uint32_t const end = Math::min(i + 64, view.numInstances);
-                        for (uint32_t instance = i; instance < end; ++instance)
+                        // make sure the instance we're processing is valid
+                        if (view.validInstances.IsSet(instance))
                         {
-                            // make sure the instance we're processing is valid
-                            if (view.validInstances.IsSet(instance))
-                            {
-                                UpdateExpander<COMPONENTS...>(
-                                    world,
-                                    func,
-                                    view,
-                                    instance,
-                                    bufferStartOffset,
-                                    std::make_index_sequence<sizeof...(COMPONENTS)>()
-                                );
-                            }
+                            UpdateExpander<COMPONENTS...>(
+                                world,
+                                func,
+                                view,
+                                instance,
+                                bufferStartOffset,
+                                std::make_index_sequence<sizeof...(COMPONENTS)>()
+                            );
                         }
                     }
-                    // progress 64 instances, which corresponds to 1 section
-                    i += 64;
                 }
+                // progress 64 instances, which corresponds to 1 section
+                i += 64;
             }
         };
     }
@@ -131,7 +129,7 @@ private:
     World* world;
     Util::StringAtom name;
     Util::StringAtom onEvent;
-    std::function<void(World*, Dataset)> func = nullptr;
+    std::function<void(World*, Dataset::View const&)> func = nullptr;
     FilterBuilder filterBuilder;
     bool async = false;
     int order = 100;
