@@ -105,7 +105,7 @@ public:
         RowId srcRow,
         Table& dst,
         bool defragment = true,
-        std::function<void(Partition*, IndexT, IndexT)> const& moveCallback = nullptr
+        std::function<void(Partition*, RowId, RowId)> const& moveCallback = nullptr
     );
     /// duplicate instance from one row into destination table.
     static RowId DuplicateInstance(Table const& src, RowId srcRow, Table& dst);

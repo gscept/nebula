@@ -529,7 +529,7 @@ Table::MigrateInstance(
     RowId srcRow,
     Table& dst,
     bool defragment,
-    std::function<void(Partition*, IndexT, IndexT)> const& moveCallback
+    std::function<void(Partition*, RowId, RowId)> const& moveCallback
 )
 {
     n_assert(src.tid != dst.tid);
@@ -539,8 +539,8 @@ Table::MigrateInstance(
         Partition* srcPart = src.partitions[srcRow.partition];
         if (moveCallback != nullptr)
         {
-            IndexT lastIndex = srcPart->numRows - 1;
-            moveCallback(srcPart, lastIndex, srcRow.index);
+            RowId lastRow = { .partition = srcPart->partitionId, .index = (uint16_t)(srcPart->numRows - 1)};
+            moveCallback(srcPart, lastRow, srcRow);
         }
         srcPart->EraseSwapIndex(srcRow.index);
     }

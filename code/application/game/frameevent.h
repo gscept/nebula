@@ -14,6 +14,18 @@ namespace Game
 
 class FramePipeline;
 
+struct ProcessorJobInput
+{
+    Game::Dataset::View* view;
+    Processor* processor;
+};
+
+struct ProcessorJobContext
+{
+    Game::World* world;
+    ProcessorJobInput* inputs;
+};
+
 //------------------------------------------------------------------------------
 /**
     A batch of frame callbacks

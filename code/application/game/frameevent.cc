@@ -14,6 +14,24 @@ namespace Game
 //------------------------------------------------------------------------------
 /**
 */
+void
+FrameBatchJob(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+{
+    ProcessorJobContext* context = static_cast<ProcessorJobContext*>(ctx);
+    for (uint i = 0; i < groupSize; i++)
+    {
+        IndexT index = i + invocationOffset;
+        if (index >= totalJobs)
+            return;
+
+        ProcessorJobInput const& input = context->inputs[index];
+        input.processor->callback(context->world, *input.view);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FrameEvent::~FrameEvent()
 {
     for (SizeT i = 0; i < this->batches.Size(); i++)
@@ -36,11 +54,6 @@ FrameEvent::Run(World* world)
         }
 
         this->batches[i]->Execute(world);
-
-        Threading::Event event;
-        Jobs2::JobDispatch(MeshPrimitiveFunc, gltfMesh->primitives.Size(), 1, jobContext, nullptr, nullptr, &event);
-
-        event.Wait();
 
         this->pipeline->inAsync = false;
     }
@@ -125,11 +138,7 @@ FrameEventBatch::Execute(World* world)
 {
     if (this->async)
     {
-        Threading::AtomicCounter jobCounter = 0;
-        
-        this->ExecuteAsync(jobCounter, world);
-        // Wait for job counter
-       Threading::Interlocked::
+        this->ExecuteAsync(world);
     }
     else
     {
@@ -197,18 +206,38 @@ FrameEventBatch::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& sig
 void
 FrameEventBatch::ExecuteAsync(World* world)
 {
-    n_error("NOT YET IMPLEMENTED");
-    // TODO: 1. Do query
-    //       2. queue one job per table view, for every callback,
-    //       3. wait until all jobs finish executing
-    //       4. return
+    Util::FixedArray<Dataset> datasets(this->processors.Size());
 
-    for (SizeT i = 0; i < this->processors.Size(); i++)
+    uint32_t numJobs = 0;
+
+    for (IndexT i = 0; i < this->processors.Size(); i++)
     {
         Processor* processor = this->processors[i];
-        Dataset data = world->Query(processor->filter, processor->cache);
-        processor->ExecuteParallel(world, data);
+        datasets[i] = world->Query(processor->filter, processor->cache);
+        numJobs += datasets[i].numViews;
     }
+
+    ProcessorJobContext context;
+    context.world = world;
+    context.inputs = new ProcessorJobInput[numJobs];
+
+    IndexT inputIndex = 0;
+    for (IndexT i = 0; i < datasets.Size(); i++)
+    {
+        for (IndexT v = 0; v < datasets[i].numViews; v++, inputIndex++)
+        {
+            context.inputs[inputIndex].processor = this->processors[i];
+            context.inputs[inputIndex].view = datasets[i].views + v;
+        }
+    }
+
+    Threading::Event event;
+    Jobs2::JobDispatch(FrameBatchJob, numJobs, 1, context, nullptr, nullptr, &event);
+    event.Wait();
+
+    delete[] context.inputs;
+
+    Jobs2::JobNewFrame();
 }
 
 //------------------------------------------------------------------------------
@@ -221,7 +250,10 @@ FrameEventBatch::ExecuteSequential(World* world)
     {
         Processor* processor = this->processors[i];
         Dataset data = world->Query(processor->filter, processor->cache);
-        processor->ExecuteSequential(world, data);
+        for (int v = 0; v < data.numViews; v++)
+        {
+            processor->callback(world, data.views[v]);
+        }
     }
 }
 

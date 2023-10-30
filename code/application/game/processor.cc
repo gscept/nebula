@@ -84,30 +84,5 @@ ProcessorBuilder::Build()
     return processor;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Processor::ExecuteParallel(World* world, Dataset data)
-{
-    // TODO: Parallelize
-    for (int v = 0; v < data.numViews; v++)
-    {
-        this->callback(world, data.views[v]);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Processor::ExecuteSequential(World* world, Dataset data)
-{
-    for (int v = 0; v < data.numViews; v++)
-    {
-        this->callback(world, data.views[v]);
-    }
-}
-
 } // namespace Game
 

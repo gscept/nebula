@@ -55,7 +55,6 @@ EntitySystemTest::Run()
 #if NEBULA_ENABLE_PROFILING
     Profiling::ProfilingRegisterThread();
 #endif
-
     bool setupFrameSync = !FrameSync::FrameSyncTimer::HasInstance();
     Ptr<FrameSync::FrameSyncTimer> t;
     if (setupFrameSync)
@@ -361,8 +360,17 @@ EntitySystemTest::Run()
         hasExecutedUpdateFunc = true;
     };
 
-    Game::ProcessorBuilder(world, "TestUpdateFunc").Func(updateFunc).Including<TestVec4>().Build();
+    std::function updateFuncAsync = [](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct, Test::TestAsyncComponent)
+    {
+        testStruct.enumerable = Test::TestEnumType::Two;
+        for (int i = 0; i < 100; i++)
+        {
+            testStruct.bar = Math::sqrt(10 + testStruct.bar);
+        }
+    };
 
+    Game::ProcessorBuilder(world, "TestUpdateFunc").Func(updateFunc).Including<TestVec4>().Build();
+    
     StepFrame();
 
     // make sure update func is actually executed
@@ -388,6 +396,27 @@ EntitySystemTest::Run()
     // Doublecheck so that we don't execute the activate func twice for the same entity
     StepFrame();
     VERIFY(numActivateExecutions == 1);
+
+    // Test async processors
+    Game::EntityCreateInfo asyncEntityInfo = {Game::GetTemplateId("AsyncTestEntity"), true};
+    
+    for (int i = 0; i < 1000000; i++)
+    {
+        world->CreateEntity(asyncEntityInfo);
+    }
+
+    StepFrame();
+    
+    Game::ProcessorBuilder(world, "TestUpdateFuncAsync").Func(updateFuncAsync).Async().Build();
+    
+    while (true)
+    {
+        Timing::Timer timer;
+        timer.Start();
+        StepFrame();
+        timer.Stop();
+        n_printf("Execution time: %f ms\n", timer.GetTime() * 1000.0f);
+    }
 
     t->StopTime();
 }

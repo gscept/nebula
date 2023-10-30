@@ -59,6 +59,7 @@ private:
         world->RegisterType<TestHealth>();
         world->RegisterType<MyFlag>();
         world->RegisterType<TestEmptyStruct>();
+        world->RegisterType<TestAsyncComponent>();
     }
 
     /// cleanup game features

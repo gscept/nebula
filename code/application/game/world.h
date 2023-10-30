@@ -192,6 +192,8 @@ private:
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
+    void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);
+
     void InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
 
     /// Defragment an entity table

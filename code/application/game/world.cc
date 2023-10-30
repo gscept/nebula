@@ -836,9 +836,6 @@ World::Migrate(Entity entity, MemDb::TableId newCategory)
         this->db->GetTable(mapping.table), mapping.instance, this->db->GetTable(newCategory), false
     );
 
-    // Defrag here to avoid entities existing in multiple tables
-    this->Defragment(mapping.table);
-
     this->entityMap[entity.index] = {newCategory, newInstance};
     return newInstance;
 }
@@ -891,42 +888,54 @@ World::Migrate(
 /**
 */
 void
+World::MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
+{
+    Game::Entity fromEntity = ((Game::Entity*)partition->columns[0])[from.index];
+    Game::Entity toEntity = ((Game::Entity*)partition->columns[0])[to.index];
+    if (!this->IsValid(fromEntity))
+    {
+        // we need to add these instances new index to the to the freeids list, since it's been deleted.
+        // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
+        // and it will automatically be defragged
+        partition->freeIds.Append(to.index);
+    }
+    else if (this->entityMap[fromEntity.index].table == this->entityMap[toEntity.index].table)
+    {
+        // just swap the instances
+        this->entityMap[fromEntity.index].instance = to;
+        this->entityMap[toEntity.index].instance = from;
+    }
+    else
+    {
+        // if the entities does not belong to the same table, only update the
+        // instance of the one that has been moved.
+        // This is most likely due to an entity migration
+        this->entityMap[fromEntity.index].instance = to;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 World::Defragment(MemDb::TableId cat)
 {
     if (!this->db->IsValid(cat))
         return;
 
     MemDb::Table& table = this->db->GetTable(cat);
-    MemDb::ColumnIndex ownerColumnId = this->db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
 
+#if NEBULA_DEBUG
+    MemDb::ColumnIndex ownerColumnId = this->db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
+    n_assert(ownerColumnId == 0);
+#endif
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.
     // The move callback is signaled BEFORE the swap has happened.
     SizeT numErased = this->db->GetTable(cat).Defragment(
-        [this, ownerColumnId](MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
+        [this](MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
         {
-            Game::Entity fromEntity = ((Game::Entity*)partition->columns[ownerColumnId.id])[from.index];
-            Game::Entity toEntity = ((Game::Entity*)partition->columns[ownerColumnId.id])[to.index];
-            if (!this->IsValid(fromEntity))
-            {
-                // we need to add these instances new index to the to the freeids list, since it's been deleted.
-                // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
-                // and it will automatically be defragged
-                partition->freeIds.Append(to.index);
-            }
-            else if (this->entityMap[fromEntity.index].table == this->entityMap[toEntity.index].table)
-            {
-                // just swap the instances
-                this->entityMap[fromEntity.index].instance = to;
-                this->entityMap[toEntity.index].instance = from;
-            }
-            else
-            {
-                // if the entities does not belong to the same table, only update the
-                // instance of the one that has been moved.
-                // This is most likely due to an entity migration
-                this->entityMap[fromEntity.index].instance = to;
-            }
+            this->MoveInstance(partition, from, to);
         }
     );
 }

@@ -36,9 +36,6 @@ public:
     /// set to false if the cache is invalid
     bool cacheValid = false;
 
-    void ExecuteParallel(World* world, Dataset data);
-    void ExecuteSequential(World* world, Dataset data);
-
 private:
     friend ProcessorBuilder;
 
