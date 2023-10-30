@@ -400,7 +400,7 @@ EntitySystemTest::Run()
     // Test async processors
     Game::EntityCreateInfo asyncEntityInfo = {Game::GetTemplateId("AsyncTestEntity"), true};
     
-    for (int i = 0; i < 1000000; i++)
+    for (int i = 0; i < 100000; i++)
     {
         world->CreateEntity(asyncEntityInfo);
     }
@@ -409,14 +409,11 @@ EntitySystemTest::Run()
     
     Game::ProcessorBuilder(world, "TestUpdateFuncAsync").Func(updateFuncAsync).Async().Build();
     
-    while (true)
-    {
-        Timing::Timer timer;
-        timer.Start();
-        StepFrame();
-        timer.Stop();
-        n_printf("Execution time: %f ms\n", timer.GetTime() * 1000.0f);
-    }
+    Timing::Timer timer;
+    timer.Start();
+    StepFrame();
+    timer.Stop();
+    n_printf("Execution time: %f ms\n", timer.GetTime() * 1000.0f);
 
     t->StopTime();
 }
