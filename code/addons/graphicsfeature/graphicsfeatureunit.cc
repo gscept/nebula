@@ -33,8 +33,12 @@
 
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/graphicsfeature/graphicsfeatureschema.h"
+#include "flat/graphicsfeature/terrainschema.h"
+#include "flat/graphicsfeature/vegetationschema.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "components/graphicsfeature.h"
+
+#include "terrain/terraincontext.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -90,20 +94,22 @@ GraphicsFeatureUnit::OnActivate()
     this->inputServer = Input::InputServer::Create();
     this->gfxServer->Open();
     this->inputServer->Open();
-
-    const IO::URI graphicsFeaturePath("data:tables/graphicsfeature/graphicsfeature.json");
     Util::String contents;
 
-    GraphicsFeature::TerrainSettingsT terrainSettings;
-    GraphicsFeature::TerrainBiomesT biomeSettings;
-    GraphicsFeature::VegetationSettingsT vegetationSettings;
-    if (IO::IoServer::Instance()->ReadFile(graphicsFeaturePath, contents))
+    const IO::URI terrainSetupPath("data:tables/graphicsfeature/terrain.pter");
+    GraphicsFeature::TerrainSetupT terrainSettings;
+    if (IO::IoServer::Instance()->ReadFile(terrainSetupPath, contents))
     {
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::TerrainSettings>(terrainSettings, (byte*)contents.AsCharPtr());
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::TerrainBiomes>(biomeSettings, (byte*)contents.AsCharPtr());
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::VegetationSettings>(vegetationSettings, (byte*)contents.AsCharPtr());
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::TerrainSetup>(terrainSettings, (byte*)contents.AsCharPtr());
     }
 
+    const IO::URI vegetationSetupPath("data:tables/graphicsfeature/vegetation.pveg");
+    GraphicsFeature::VegetationSetupT vegetationSettings;
+    if (IO::IoServer::Instance()->ReadFile(vegetationSetupPath, contents))
+    {
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::VegetationSetup>(vegetationSettings, (byte*)contents.AsCharPtr());
+    }
+    
     SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
     SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
 
@@ -137,24 +143,28 @@ GraphicsFeatureUnit::OnActivate()
     ParticleContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    if (terrainSettings.use)
+    if (terrainSettings.config->use)
     {
         Terrain::TerrainSetupSettings settings {
-            terrainSettings.min_height,
-            terrainSettings.max_height, // Min/max height
-            terrainSettings.world_size_width,
-            terrainSettings.world_size_height, // World size in meters
-            terrainSettings.tile_size_width,
-            terrainSettings.tile_size_height, // Tile size in meters
-            terrainSettings.quads_per_tile_width,
-            terrainSettings.quads_per_tile_height, // Amount of quads per tile
+            terrainSettings.config->min_height,
+            terrainSettings.config->max_height, // Min/max height
+            terrainSettings.config->world_size_width,
+            terrainSettings.config->world_size_height, // World size in meters
+            terrainSettings.config->tile_size_width,
+            terrainSettings.config->tile_size_height, // Tile size in meters
+            terrainSettings.config->quads_per_tile_width,
+            terrainSettings.config->quads_per_tile_height, // Amount of quads per tile
         };
         Terrain::TerrainContext::Create(settings);
         Terrain::TerrainContext::SetSun(this->globalLight);
 
-        for (IndexT i = 0; i < biomeSettings.biomes.size(); i++)
+        this->terrain.entity = Graphics::CreateEntity();
+        Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
+        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision);
+
+        for (IndexT i = 0; i < terrainSettings.biomes.size(); i++)
         {
-            const std::unique_ptr<TerrainBiomeSettingsT>& settings = biomeSettings.biomes[i];
+            const std::unique_ptr<TerrainBiomeSettingsT>& settings = terrainSettings.biomes[i];
 
             Terrain::BiomeParameters biomeParams =
             {
@@ -190,16 +200,17 @@ GraphicsFeatureUnit::OnActivate()
                 )
                 .Mask(settings->mask)
                 .Finish();
+
             Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(biomeSettings);
-            this->biomes.Append(biome);
+            this->terrain.biomes.Append(biome);
         }
 
         if (vegetationSettings.use)
         {
             Vegetation::VegetationSetupSettings vegSettings {
-                terrainSettings.min_height,
-                terrainSettings.max_height, // min/max height
-                Math::vec2 {terrainSettings.world_size_width, terrainSettings.world_size_height}};
+                terrainSettings.config->min_height,
+                terrainSettings.config->max_height, // min/max height
+                Math::vec2 {terrainSettings.config->world_size_width, terrainSettings.config->world_size_height}};
             Vegetation::VegetationContext::Create(vegSettings);
         }
     }    
@@ -272,7 +283,7 @@ GraphicsFeatureUnit::OnActivate()
     {
     };
     
-    if (terrainSettings.use)
+    if (terrainSettings.config->use)
     {
         preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
         preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);

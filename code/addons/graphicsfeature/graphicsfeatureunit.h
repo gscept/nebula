@@ -96,7 +96,11 @@ private:
     Game::ManagerHandle graphicsManagerHandle;
     Game::ManagerHandle cameraManagerHandle;
 
-    Util::Array<Terrain::TerrainBiomeId> biomes;
+    struct TerrainInstance
+    {
+        Graphics::GraphicsEntityId entity;
+        Util::Array<Terrain::TerrainBiomeId> biomes;
+    } terrain;
     ViewHandle defaultViewHandle;
 
     Core::CVar* r_debug;
