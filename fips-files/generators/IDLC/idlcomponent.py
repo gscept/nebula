@@ -141,20 +141,6 @@ def WriteComponentHeaderDeclarations(f, document):
             for v in c.variables:
                 f.WriteLine('    "{}"'.format(v.name))
             f.WriteLine('};')
-            f.WriteLine('')
-            f.WriteLine('template <size_t Index>')
-            f.WriteLine('auto get_field() const')
-            f.WriteLine('{')
-            f.IncreaseIndent()
-            f.WriteLine('type t;')
-            for index, v in enumerate(c.variables):
-                f.WriteLine('if constexpr (Index == {}) return t.{};'.format(index, v.name))
-            f.WriteLine('else static_assert(Index != Index, "Invalid Field Index");')
-            f.DecreaseIndent()
-            f.WriteLine('}')
-            f.WriteLine('')
-            f.WriteLine('template <size_t Index>')
-            f.WriteLine('using FieldType = decltype(std::declval<{}::Traits>().get_field<Index>());'.format(c.componentName))
         f.DecreaseIndent()
         f.WriteLine("};")
 
