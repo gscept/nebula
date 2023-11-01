@@ -98,7 +98,7 @@ LoadEntities(const char* filePath)
                             continue;
                         }
 
-                        if (!Game::HasComponent(Editor::state.editorWorld, editorEntity, descriptor))
+                        if (!Editor::state.editorWorld->HasComponent(editorEntity, descriptor))
                         {
                             Edit::AddComponent(editorEntity, descriptor);
                         }
@@ -156,7 +156,7 @@ SaveEntities(const char* filePath)
         filterInfo.numInclusive = 1;
 
         Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-        Game::Dataset data = Game::Query(state.editorWorld, filter);
+        Game::Dataset data = state.editorWorld->Query(filter);
         Game::ComponentId ownerPid = Game::GetComponentId("Owner"_atm);
 
         for (int v = 0; v < data.numViews; v++)
@@ -168,14 +168,14 @@ SaveEntities(const char* filePath)
             {
                 Editor::Entity const& editorEntity = entities[i];
                 Editable& edit = state.editables[editorEntity.index];
-                Game::EntityMapping const mapping = Game::GetEntityMapping(Editor::state.editorWorld, editorEntity);
+                Game::EntityMapping const mapping = Editor::state.editorWorld->GetEntityMapping(editorEntity);
                 writer->BeginObject(edit.guid.AsString().AsCharPtr());
                 writer->Add(edit.name, "name");
                 if (edit.templateId != Game::TemplateId::Invalid())
                 {
                     writer->Add(Game::BlueprintManager::GetTemplateName(edit.templateId).Value(), "template");
                 }
-                MemDb::Table const& table = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(view.tableId);
+                MemDb::Table const& table = Editor::state.editorWorld->GetDatabase()->GetTable(view.tableId);
                 IndexT col = 0;
                 if (table.GetAttributes().Size() > 1)
                 {
@@ -188,8 +188,8 @@ SaveEntities(const char* filePath)
                             SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                             if (typeSize > 0)
                             {
-                                void* buffer = Game::GetInstanceBuffer(
-                                    Editor::state.editorWorld, view.tableId, mapping.instance.partition, component
+                                void* buffer = Editor::state.editorWorld->GetInstanceBuffer(
+                                    view.tableId, mapping.instance.partition, component
                                 );
                                 n_assert(buffer != nullptr);
                                 Game::ComponentSerialization::Serialize(

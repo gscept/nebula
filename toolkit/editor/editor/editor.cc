@@ -40,8 +40,6 @@ Create()
 
     Game::TimeManager::SetGlobalTimeFactor(0.0f);
 
-    Game::WorldCreateInfo worldInfo;
-    worldInfo.hash = WORLD_EDITOR;
     state.editorWorld = Game::GameServer::Instance()->CreateWorld(WORLD_EDITOR);
 
     Game::GameServer::Instance()->SetupEmptyWorld(state.editorWorld);
@@ -96,7 +94,7 @@ StopGame()
     Game::GameServer::Instance()->CleanupWorld(gameWorld);
     Game::GameServer::Instance()->SetupEmptyWorld(gameWorld);
     
-    Game::WorldOverride(state.editorWorld, gameWorld);
+    Game::World::Override(state.editorWorld, gameWorld);
 
     // update the editables so that they point to the correct game entities.
     Game::FilterBuilder::FilterCreateInfo filterInfo;
@@ -105,7 +103,7 @@ StopGame()
     filterInfo.numInclusive = 1;
 
     Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-    Game::Dataset data = Game::Query(state.editorWorld, filter);
+    Game::Dataset data = state.editorWorld->Query(filter);
 
     for (int v = 0; v < data.numViews; v++)
     {

@@ -337,6 +337,60 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
 //------------------------------------------------------------------------------
 /**
 */
+void
+World::AddComponent(Entity entity, Game::ComponentId id)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!"
+    );
+#endif
+    SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(id);
+    void* data = this->componentStageAllocator.Alloc(typeSize);
+    const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);
+    Memory::Copy(defaultValue, data, typeSize);
+
+    AddStagedComponentCommand cmd = {
+        .entity = entity,
+        .componentId = id,
+        .dataSize = typeSize,
+        .data = data,
+    };
+    this->addStagedQueue.Append(cmd);
+
+    MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
+    ComponentInterface* cInterface;
+    cInterface = static_cast<ComponentInterface*>(attr);
+
+    if (cInterface->Init != nullptr)
+    {
+        // run initialization function if it exists.
+        cInterface->Init(this, entity, data);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::RemoveComponent(Entity entity, ComponentId component)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Removing components from entities while executing an async processor is currently not supported!"
+    );
+#endif
+    RemoveComponentCommand cmd = {
+        .entity = entity,
+        .componentId = component,
+    };
+    this->removeComponentQueue.Append(cmd);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ComponentDecayBuffer const
 World::GetDecayBuffer(Game::ComponentId component)
 {
@@ -944,7 +998,7 @@ World::Defragment(MemDb::TableId cat)
 /**
 */
 void
-World::SetComponentValue(World* world, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size)
+World::SetComponentValue(Game::Entity entity, Game::ComponentId component, void* value, uint64_t size)
 {
 #if NEBULA_DEBUG
     n_assert2(

@@ -61,9 +61,9 @@ Inspector::Run()
 
     Editor::Entity const entity = selection[0];
     static Game::EntityMapping lastEntityMapping;
-    Game::EntityMapping const entityMapping = Game::GetEntityMapping(Editor::state.editorWorld, entity);
+    Game::EntityMapping const entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
 
-    if (!Game::IsValid(Editor::state.editorWorld, entity) || !Game::HasInstance(Editor::state.editorWorld, entity))
+    if (!Editor::state.editorWorld->IsValid(entity) || !Editor::state.editorWorld->HasInstance(entity))
         return;
 
     Editor::Editable& edit = Editor::state.editables[entity.index];
@@ -89,7 +89,7 @@ Inspector::Run()
     MemDb::TableId const table = entityMapping.table;
     MemDb::RowId const row = entityMapping.instance;
 
-    auto const& components = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(table).GetAttributes();
+    auto const& components = Editor::state.editorWorld->GetDatabase()->GetTable(table).GetAttributes();
     while (this->tempComponents.Size() < components.Size())
     {
         this->tempComponents.Append({}); // fill up with empty intermediates
@@ -98,7 +98,7 @@ Inspector::Run()
     // We need to double check the entity again here, since the add component function will change the entitys signature
     bool const entityChanged =
         (entityMapping.table != lastEntityMapping.table || entityMapping.instance != lastEntityMapping.instance);
-    lastEntityMapping = Game::GetEntityMapping(Editor::state.editorWorld, entity);
+    lastEntityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
 
     Util::StringAtom const ownerAtom = "Owner"_atm;
     for (int i = 0; i < components.Size(); i++)
@@ -138,7 +138,7 @@ Inspector::Run()
             continue;
         }
 
-        void* data = Game::GetInstanceBuffer(Editor::state.editorWorld, table, row.partition, component);
+        void* data = Editor::state.editorWorld->GetInstanceBuffer(table, row.partition, component);
         data = (byte*)data + (row.index * typeSize);
         if (typeSize > tempComponent.bufferSize)
         {
@@ -232,7 +232,7 @@ Inspector::ShowAddComponentMenu()
             if (ImGui::Button(name))
             {
                 Editor::Entity const selectedEntity = Tools::SelectionTool::Selection()[0];
-                if (!Game::IsValid(Editor::state.editorWorld, selectedEntity))
+                if (!Editor::state.editorWorld->IsValid(selectedEntity))
                 {
                     return;
                 }

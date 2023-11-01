@@ -104,7 +104,7 @@ Outline::Run()
         filterInfo.numInclusive = 1;
 
         Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-        Game::Dataset data = Game::Query(state.editorWorld, filter);
+        Game::Dataset data = state.editorWorld->Query(filter);
         
         bool contextMenuOpened = false;
         ImGui::NewLine();
@@ -122,7 +122,7 @@ Outline::Run()
                 Editor::Entity const& entity = entities[i];
                 Editable& edit = state.editables[entity.index];
 
-                if (!Game::IsValid(state.editorWorld, entity))
+                if (!state.editorWorld->IsValid(entity))
                     continue;
 
                 if (!nameFilter.PassFilter(edit.name.AsCharPtr()))

@@ -12,6 +12,7 @@
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "graphicsfeature/components/graphicsfeature.h"
 
 Util::Array<Editor::Entity> Tools::SelectionTool::selection = {};
 static bool isDirty = false;
@@ -38,21 +39,21 @@ SelectionTool::RenderGizmo()
     if (selection.IsEmpty())
 		return;
 	
-	Game::ComponentId const transformPid = Game::GetComponentId("Transform");
-	Game::ComponentId const mdlPid = Game::GetComponentId("Model");
+	Game::ComponentId const transformPid = Game::GetComponentId<Game::Transform>();
+	Game::ComponentId const mdlPid = Game::GetComponentId<GraphicsFeature::Model>();
 
-	if (Game::HasComponent(Editor::state.editorWorld, selection[0], transformPid))
+	if (Editor::state.editorWorld->HasComponent(selection[0], transformPid))
 	{
 		if (!isDirty)
 		{
-			tempTransform = Game::GetComponent<Game::Transform>(Editor::state.editorWorld, selection[0]).value;
+            tempTransform = Editor::state.editorWorld->GetComponent<Game::Transform>(selection[0]).value;
 		}
 
 		bool isTransforming = Im3d::Gizmo("GizmoEntity", tempTransform);
 		if (isTransforming)
 		{
 			isDirty = true;
-			Game::SetComponent<Game::Transform>(Game::GetWorld(WORLD_DEFAULT), Editor::state.editables[selection[0].index].gameEntity, { .value = tempTransform } );
+            Game::GetWorld(WORLD_DEFAULT)->SetComponent<Game::Transform>(Editor::state.editables[selection[0].index].gameEntity, { .value = tempTransform } );
 		}
 		else if(isDirty)
 		{
@@ -66,7 +67,7 @@ SelectionTool::RenderGizmo()
 	for (auto const editorEntity : selection)
 	{
 		Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
-		if (Game::HasComponent(Game::GetWorld(WORLD_DEFAULT), gameEntity, mdlPid))
+		if (Game::GetWorld(WORLD_DEFAULT)->HasComponent(gameEntity, mdlPid))
 		{
 			// TODO: Fixme!
 			//Graphics::GraphicsEntityId const gfxEntity = Game::GetComponent<GraphicsFeature::ModelEntityData>(Game::GetWorld(WORLD_DEFAULT), gameEntity, mdlPid).gid;

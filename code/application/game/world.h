@@ -48,41 +48,45 @@ public:
     ComponentId RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
 
     /// Create a new empty entity
-    Game::Entity CreateEntity();
+    Entity CreateEntity();
     /// Create a new entity from create info
-    Game::Entity CreateEntity(EntityCreateInfo const& info);
+    Entity CreateEntity(EntityCreateInfo const& info);
     /// Delete entity
-    void DeleteEntity(Game::Entity entity);
+    void DeleteEntity(Entity entity);
     /// Check if an entity ID is still valid.
     bool IsValid(Entity e);
     /// Check if an entity has an instance. It might be valid, but not have received an instance just after it has been created.
     bool HasInstance(Entity e);
     /// Returns the entity mapping of an entity
-    EntityMapping GetEntityMapping(Game::Entity entity);
+    EntityMapping GetEntityMapping(Entity entity);
     /// Check if entity has a specific component. (SLOW!)
-    bool HasComponent(Game::Entity const entity, ComponentId const component);
+    bool HasComponent(Entity const entity, ComponentId const component);
     /// Check if entity has a specific component.
     template <typename TYPE>
-    bool HasComponent(Game::Entity const entity);
+    bool HasComponent(Entity const entity);
     /// Get instance of entity
     MemDb::RowId GetInstance(Entity entity);
     /// Remove a component from an entity
     template <typename TYPE>
     void RemoveComponent(Entity);
+    /// Remove a component from an entity
+    void RemoveComponent(Entity, ComponentId);
     /// Set the value of an entitys component
     template <typename TYPE>
     void SetComponent(Entity entity, TYPE value);
     /// Get an entitys component
     template <typename TYPE>
     TYPE GetComponent(Entity entity);
-    // Create a component. This queues the component in a command buffer to be added later
+    /// Create a component. This queues the component in a command buffer to be added later
     template <typename TYPE>
     TYPE* AddComponent(Entity entity);
+    /// Add a component to an entity. This queues the component in a command buffer to be added later.
+    void AddComponent(Entity entity, ComponentId component);
     /// Get a decay buffer for the given component
-    ComponentDecayBuffer const GetDecayBuffer(Game::ComponentId component);
+    ComponentDecayBuffer const GetDecayBuffer(ComponentId component);
 
     /// Set the value of a component by providing a pointer and type size
-    void SetComponentValue(World* world, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size);
+    void SetComponentValue(Entity entity, ComponentId component, void* value, uint64_t size);
     
     /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
     Dataset Query(Filter filter);
@@ -100,6 +104,27 @@ public:
 
     /// Get the frame pipeline
     FramePipeline& GetFramePipeline();
+
+    // -- Internal methods -- Use with caution! --
+
+    /// Allocate an entity id. Use this with caution!
+    Entity AllocateEntity();
+    /// Deallocate an entity id. Use this with caution!
+    void DeallocateEntity(Entity entity);
+    /// Allocate an entity instance in a table. Use this with caution!
+    MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table);
+    /// Allocate an entity instance from a blueprint. Use this with caution!
+    MemDb::RowId AllocateInstance(Entity entity, BlueprintId blueprint);
+    /// Allocate an entity instance from a template. Use this with caution!
+    MemDb::RowId AllocateInstance(Entity entity, TemplateId templateId);
+    /// Deallocate an entity instance. Use this with caution!
+    void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance);
+    /// Deallocate an entity instance. Use this with caution!
+    void DeallocateInstance(Entity entity);
+    /// Defragment an entity table
+    void Defragment(MemDb::TableId cat);
+    /// Get a pointer to the first instance of a component in a partition of an entity table. Use with caution!
+    void* GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, ComponentId const component);
 
 private:
     friend class GameServer;
@@ -143,7 +168,6 @@ private:
         ComponentId componentId;
     };
 
-
     // Only the game server should create worlds
     World(uint32_t hash);
 
@@ -172,18 +196,7 @@ private:
 
     /// Get total number of instances in an entity table
     SizeT GetNumInstances(MemDb::TableId tid);
-    /// Get a pointer to the first instance of a component in a partition of an entity table.
-    void* GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, ComponentId const component);
-
-    Entity AllocateEntity();
-    void DeallocateEntity(Entity entity);
-    void DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance);
-
-    MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table);
-    MemDb::RowId AllocateInstance(Entity entity, BlueprintId blueprint);
-    MemDb::RowId AllocateInstance(Entity entity, TemplateId templateId);
-    void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance);
-    void DeallocateInstance(Entity entity);
+    
     MemDb::RowId Migrate(Entity entity, MemDb::TableId newCategory);
     void Migrate(
         Util::Array<Entity> const& entities,
@@ -192,19 +205,18 @@ private:
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
+    void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance);
+
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);
 
     void InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
-
-    /// Defragment an entity table
-    void Defragment(MemDb::TableId cat);
 
 /// used to allocate entity ids for this world
     EntityPool pool;
     /// Number of entities alive
     SizeT numEntities;
     /// maps entity index to table+instanceid pair
-    Util::Array<Game::EntityMapping> entityMap;
+    Util::Array<EntityMapping> entityMap;
     /// contains all entity instances
     Ptr<MemDb::Database> db;
     /// world hash
