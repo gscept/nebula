@@ -104,7 +104,7 @@ Outline::Run()
         filterInfo.numInclusive = 1;
 
         Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-        Game::Dataset data = Game::Query(state.editorWorld, filter);
+        Game::Dataset data = state.editorWorld->Query(filter);
         
         bool contextMenuOpened = false;
         ImGui::NewLine();
@@ -114,7 +114,7 @@ Outline::Run()
 
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::EntityTableView const& view = data.views[v];
+            Game::Dataset::View const& view = data.views[v];
             Editor::Entity const* const entities = (Editor::Entity*)view.buffers[0];
             
             for (IndexT i = 0; i < view.numInstances; ++i)
@@ -122,7 +122,7 @@ Outline::Run()
                 Editor::Entity const& entity = entities[i];
                 Editable& edit = state.editables[entity.index];
 
-                if (!Game::IsValid(state.editorWorld, entity))
+                if (!state.editorWorld->IsValid(entity))
                     continue;
 
                 if (!nameFilter.PassFilter(edit.name.AsCharPtr()))

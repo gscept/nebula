@@ -9,13 +9,13 @@
     The id is split into two parts: the upper 10 bits are used as a generation
     counter, so that we can easily reuse the lower 22 bits as an index.
     
-    @see    Game::IsValid
+    @see    Game::World::IsValid
     @see    api.h
     @see    component.h
-    @see    memdb/typeregistry.h
+    @see    world.h
 
     @copyright
-    (C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2023 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

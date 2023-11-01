@@ -22,6 +22,20 @@ ImplementNebulaApplication();
 using namespace Core;
 using namespace Test;
 
+void
+InitializeTestResource(Game::World* world, Game::Entity entity, TestResource* testResource)
+{
+    n_printf("Original resource: '%s'\n", testResource->resource.Value());
+    testResource->resource = "gnyrf.res";
+    n_printf("Changed resource to: '%s'\n", testResource->resource.Value());
+}
+
+void
+InitializeTestVec4(Game::World* world, Game::Entity entity, TestVec4* testVec)
+{
+    testVec->v4 = Math::vec4(123, 123, 123, 123);
+}
+
 class GameAppTest : public App::GameApplication
 {
 private:
@@ -29,14 +43,25 @@ private:
     void SetupGameFeatures()
     {
         // This should normally happen in a game feature constructor
-        Game::RegisterComponent<TestResource>();
-        Game::RegisterComponent<TestVec4>();
-        Game::RegisterComponent<TestStruct>();
-        Game::RegisterComponent<TestHealth>();
-        Game::RegisterComponent<MyFlag>();
-        Game::RegisterComponent<TestEmptyStruct>();
+        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
         
+        world->RegisterType<TestResource>({
+            .decay = true,
+            .OnInit = &InitializeTestResource
+        });
+
+        world->RegisterType<TestVec4>({
+            .decay = true,
+            .OnInit = &InitializeTestVec4
+        });
+        
+        world->RegisterType<TestStruct>();
+        world->RegisterType<TestHealth>();
+        world->RegisterType<MyFlag>();
+        world->RegisterType<TestEmptyStruct>();
+        world->RegisterType<TestAsyncComponent>();
     }
+
     /// cleanup game features
     void CleanupGameFeatures()
     {

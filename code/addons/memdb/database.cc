@@ -51,14 +51,14 @@ Database::CreateTable(TableCreateInfo const& info)
     table.tid = id;
     table.name = info.name;
 
-    const SizeT numColumns = info.numComponents;
+    const SizeT numColumns = info.numAttributes;
     for (IndexT i = 0; i < numColumns; i++)
     {
-        table.AddAttribute(info.components[i], false);
+        table.AddAttribute(info.attributeIds[i], false);
     }
 
     TableSignature& signature = this->tables[Ids::Index(id.id)].signature;
-    signature = TableSignature(info.components, info.numComponents);
+    signature = TableSignature(info.attributeIds, info.numAttributes);
 
     this->numTables = (Ids::Index(id.id) + 1 > this->numTables ? Ids::Index(id.id) + 1 : this->numTables);
 
@@ -235,8 +235,8 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
         {
             TableCreateInfo info;
             info.name = srcTable.name.Value();
-            info.numComponents = srcTable.attributes.Size();
-            info.components = srcTable.attributes.Begin();
+            info.numAttributes = srcTable.attributes.Size();
+            info.attributeIds = srcTable.attributes.Begin();
             dstTid = dst->CreateTable(info);
         }
 
@@ -267,7 +267,7 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
                 void*& dstBuffer = dstPart->columns[p];
 
                 AttributeId const descriptor = srcTable.attributes[p];
-                AttributeDescription const* const desc = TypeRegistry::GetDescription(descriptor);
+                Attribute const* const desc = AttributeRegistry::GetAttribute(descriptor);
                 uint32_t const byteSize = desc->typeSize;
                 uint32_t const numBytes = byteSize * srcPart->CAPACITY;
 

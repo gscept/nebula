@@ -7,7 +7,7 @@
 			"Two": 2
 		}
 	},
-	"components":{
+	"components": {
 		"TestResource": {
 			"resource": {
 				"type": "resource",
@@ -17,17 +17,24 @@
 		"TestVec4": {
 			"v4": {
 				"type": "vec4",
-				"default": [1,2,3,4]
+				"default": [ 1, 2, 3, 4 ]
+			}
+		},
+		"TestAsyncComponent": {},
+		"DecayTestComponent": {
+			"destroyed": {
+				"type": "bool",
+				"default": false
 			}
 		},
 		"TestStruct": {
 			"pos": {
 				"type": "vec3",
-				"default": [1,2,3]
+				"default": [ 1, 2, 3 ]
 			},
 			"cell": {
 				"type": "vec2",
-				"default": [1,2]
+				"default": [ 1, 2 ]
 			},
 			"foo": {
 				"type": "int",

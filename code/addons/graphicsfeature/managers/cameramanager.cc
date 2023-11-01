@@ -101,8 +101,10 @@ UpdateCameraSettings(Graphics::GraphicsEntityId gid, Camera& settings, Camera co
 void
 CameraManager::InitUpdateCameraProcessor()
 {
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
     // Setup processor that handles both worldtransform and camera (heirarchy)
-    Game::ProcessorBuilder("CameraManager.UpdateCameraWorldTransform").Func(
+    Game::ProcessorBuilder(world, "CameraManager.UpdateCameraWorldTransform")
+        .Func(
         [](Game::World*, Camera const& camera, Game::Transform const& parentTransform)
         {
             if (IsViewHandleValid(camera.viewHandle))
@@ -116,7 +118,7 @@ CameraManager::InitUpdateCameraProcessor()
     ).Build();
 
     // Setup processor that handles just a regular old camera
-    Game::ProcessorBuilder("CameraManager.UpdateCamera")
+    Game::ProcessorBuilder(world, "CameraManager.UpdateCamera")
         .Func([](Game::World* world, Camera const& camera)
         {
             if (IsViewHandleValid(camera.viewHandle))

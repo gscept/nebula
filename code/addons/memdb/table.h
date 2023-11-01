@@ -15,13 +15,12 @@
 #include "util/string.h"
 #include "util/stringatom.h"
 #include "util/hashtable.h"
-#include "componentid.h"
+#include "attributeid.h"
 #include "tablesignature.h"
 #include "util/bitfield.h"
 #include "util/queue.h"
 #include "ids/idgenerationpool.h"
 #include "tableid.h"
-#include "memory/sizeclassificationallocator.h"
 
 namespace MemDb
 {
@@ -31,10 +30,10 @@ struct TableCreateInfo
 {
     /// name to be given to the table
     Util::String name;
-    /// array of components the table should initially have
-    AttributeId const* components;
+    /// array of attributes the table should initially have
+    AttributeId const* attributeIds;
     /// number of columns
-    SizeT numComponents;
+    SizeT numAttributes;
 };
 
 //------------------------------------------------------------------------------
@@ -50,47 +49,7 @@ private:
     ~Table();
 
 public:
-    class Partition
-    {
-    private:
-        Partition() = default;
-        ~Partition();
-
-    public:
-        // total capacity (in elements) that the partition can contain
-        static constexpr uint CAPACITY = 256;
-        // The table that this partition is part of
-        Table* table = nullptr;
-        // next active partition that has entities, or null if end of chain
-        Partition* next = nullptr;
-        // previous active partition that has entities, or null if first in chain
-        Partition* previous = nullptr;
-        // The id of the partition
-        uint16_t partitionId = 0xFFFF;
-        /// number of rows
-        uint32_t numRows = 0;
-        // bump the version if you change anything about the partition
-        uint64_t version = 0;
-        // holds freed indices/rows to be reused in the partition.
-        Util::Array<uint16_t> freeIds;
-        /// holds all the column buffers. This excludes non-typed components
-        Util::Array<ColumnBuffer> columns;
-        /// check a bit if the row has been modified, and you need to track it.
-        /// bits are reset when partition is defragged
-        Util::BitField<CAPACITY> modifiedRows;
-        /// bits are set if the row is occupied. If the row is removed, the bit is set to zero.
-        /// this is kept up to date if defragging the partition.
-        Util::BitField<CAPACITY> validRows;
-
-    private:
-        friend Table;
-        /// recycle free row or allocate new row
-        uint16_t AllocateRowIndex();
-        /// Free an index.
-        void FreeIndex(uint16_t instance);
-        /// erase row by swapping with last row and reducing number of rows in table
-        void EraseSwapIndex(uint16_t instance);
-    };
+    class Partition;
 
     /// Check if a column exists in the table
     bool HasAttribute(AttributeId attribute) const;
@@ -119,7 +78,7 @@ public:
     SizeT Defragment(std::function<void(Partition*, RowId, RowId)> const& moveCallback);
     /// Clean table. Does not deallocate anything; just sets the size of the table to zero.
     void Clean();
-    /// Reset table. Deallocated all data
+    /// Reset table. Deallocate all data
     void Reset();
 
     /// Get first active partition with entities
@@ -146,7 +105,7 @@ public:
         RowId srcRow,
         Table& dst,
         bool defragment = true,
-        std::function<void(Partition*, IndexT, IndexT)> const& moveCallback = nullptr
+        std::function<void(Partition*, RowId, RowId)> const& moveCallback = nullptr
     );
     /// duplicate instance from one row into destination table.
     static RowId DuplicateInstance(Table const& src, RowId srcRow, Table& dst);
@@ -198,6 +157,51 @@ private:
     Util::HashTable<AttributeId, IndexT, 32, 1> columnRegistry;
 
     uint64_t partitionCleanerCounter = 0;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+class Table::Partition
+{
+private:
+    Partition() = default;
+    ~Partition();
+
+public:
+    // total capacity (in elements) that the partition can contain
+    static constexpr uint CAPACITY = 256;
+    // The table that this partition is part of
+    Table* table = nullptr;
+    // next active partition that has entities, or null if end of chain
+    Partition* next = nullptr;
+    // previous active partition that has entities, or null if first in chain
+    Partition* previous = nullptr;
+    // The id of the partition
+    uint16_t partitionId = 0xFFFF;
+    /// number of rows
+    uint32_t numRows = 0;
+    // bump the version if you change anything about the partition
+    uint64_t version = 0;
+    // holds freed indices/rows to be reused in the partition.
+    Util::Array<uint16_t> freeIds;
+    /// holds all the column buffers. This excludes non-typed attributes
+    Util::Array<ColumnBuffer> columns;
+    /// check a bit if the row has been modified, and you need to track it.
+    /// bits are reset when partition is defragged
+    Util::BitField<CAPACITY> modifiedRows;
+    /// bits are set if the row is occupied. If the row is removed, the bit is set to zero.
+    /// this is kept up to date if defragging the partition.
+    Util::BitField<CAPACITY> validRows;
+
+private:
+    friend Table;
+    /// recycle free row or allocate new row
+    uint16_t AllocateRowIndex();
+    /// Free an index.
+    void FreeIndex(uint16_t instance);
+    /// erase row by swapping with last row and reducing number of rows in table
+    void EraseSwapIndex(uint16_t instance);
 };
 
 } // namespace MemDb

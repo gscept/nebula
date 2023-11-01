@@ -45,10 +45,11 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<Owner>();
-    Game::RegisterComponent<Transform>();
-    Game::RegisterComponent<Game::IsActive>();
-    Game::RegisterComponent<Game::Static>();
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    world->RegisterType<Game::Owner>();
+    world->RegisterType<Game::Transform>();
+    world->RegisterType<Game::IsActive>();
+    world->RegisterType<Game::Static>();
 }
 
 //------------------------------------------------------------------------------
@@ -101,7 +102,7 @@ BaseGameFeatureUnit::OnRenderDebug()
 
 		if (world != nullptr)
         {
-            WorldRenderDebug(world);
+            //world->RenderDebug();
         }
         else
         {

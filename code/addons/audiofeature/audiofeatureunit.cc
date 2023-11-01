@@ -7,7 +7,7 @@
 #include "basegamefeature/managers/timemanager.h"
 #include "game/api.h"
 #include "audiofeature/managers/audiomanager.h"
-
+#include "game/world.h"
 #include "components/audiofeature.h"
 
 namespace AudioFeature
@@ -37,8 +37,9 @@ AudioFeatureUnit::~AudioFeatureUnit()
 void
 AudioFeatureUnit::OnAttach()
 {
-    Game::RegisterComponent<AudioEmitter>(Game::ComponentFlags::COMPONENTFLAG_DECAY);
-    Game::RegisterComponent<AudioListener>();
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    world->RegisterType<AudioEmitter>({ .decay = true });
+    world->RegisterType<AudioListener>();
 }
 
 //------------------------------------------------------------------------------

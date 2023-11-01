@@ -4,9 +4,9 @@
 //------------------------------------------------------------------------------
 
 #include "componentserialization.h"
-#include "memdb/typeregistry.h"
+#include "memdb/attributeregistry.h"
 #include "game/entity.h"
-#include "memdb/componentid.h"
+#include "memdb/attributeid.h"
 
 namespace Game
 {
@@ -52,7 +52,7 @@ void
 ComponentSerialization::Deserialize(Ptr<IO::JsonReader> const& reader, ComponentId component, void* ptr)
 {
     n_assert(Singleton != nullptr);
-    const char* name = MemDb::TypeRegistry::GetDescription(component)->name.Value();
+    const char* name = MemDb::AttributeRegistry::GetAttribute(component)->name.Value();
     Singleton->serializers[component.id].deserializeJson(reader, name, ptr);
 }
 
@@ -63,7 +63,7 @@ void
 ComponentSerialization::Serialize(Ptr<IO::JsonWriter> const& writer, ComponentId component, void* ptr)
 {
     n_assert(Singleton != nullptr);
-    const char* name = MemDb::TypeRegistry::GetDescription(component)->name.Value();
+    const char* name = MemDb::AttributeRegistry::GetAttribute(component)->name.Value();
     Singleton->serializers[component.id].serializeJson(writer, name, ptr);
 }
 
@@ -89,7 +89,7 @@ ComponentSerialization::~ComponentSerialization()
 bool
 ComponentSerialization::ValidateTypeSize(MemDb::AttributeId component, uint32_t size)
 {
-    if (!MemDb::TypeRegistry::TypeSize(component) == size)
+    if (!MemDb::AttributeRegistry::TypeSize(component) == size)
     {
         return false;
     }

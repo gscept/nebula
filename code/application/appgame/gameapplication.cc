@@ -63,7 +63,7 @@ GameApplication::Open()
         this->SetupAppFromCmdLineArgs();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
-        jobSystemInfo.numThreads = 8;
+        jobSystemInfo.numThreads = System::NumCpuCores;
         jobSystemInfo.name = "JobSystem";
         jobSystemInfo.scratchMemorySize = 16_MB;
         Jobs2::JobSystemInit(jobSystemInfo);

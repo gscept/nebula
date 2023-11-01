@@ -21,103 +21,24 @@
 namespace Game
 {
 
-//------------------------------------------------------------------------------
-using RegCidQueue = Util::Queue<Op::RegisterComponent>;
-using DeregCidQueue = Util::Queue<Op::DeregisterComponent>;
-
-static Ids::IdAllocator<World*, RegCidQueue, DeregCidQueue> opBufferAllocator;
-static Memory::ArenaAllocator<1024> opAllocator;
-
 static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 
 //------------------------------------------------------------------------------
 /**
 */
-class World
-{
-public:
-    World();
-    ~World();
-
-    struct AllocateInstanceCommand
-    {
-        Game::Entity entity;
-        TemplateId tid;
-    };
-    struct DeallocInstanceCommand
-    {
-        Game::Entity entity;
-    };
-
-    /// used to allocate entity ids for this world
-    EntityPool pool;
-    /// Number of entities alive
-    SizeT numEntities;
-    /// maps entity index to table+instanceid pair
-    Util::Array<Game::EntityMapping> entityMap;
-    /// contains all entity instances
-    Ptr<MemDb::Database> db;
-    /// world hash
-    uint32_t hash;
-    /// maps from blueprint to a table that has the same signature
-    Util::HashTable<BlueprintId, MemDb::TableId> blueprintCatMap;
-    ///
-    Util::Queue<AllocateInstanceCommand> allocQueue;
-    ///
-    Util::Queue<DeallocInstanceCommand> deallocQueue;
-    /// synchronous op buffer that can be used by any sync processor
-    OpBuffer scratchOpBuffer;
-
-    /// add the table to any callback-caches that accepts it
-    void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
-
-    struct CallbackInfo
-    {
-        ProcessorHandle handle;
-        Filter filter;
-        ProcessorFrameCallback func;
-        /// cached tables that we've filtered out.
-        Util::Array<MemDb::TableId> cache;
-    };
-
-    Util::Array<CallbackInfo> onBeginFrameCallbacks;
-    Util::Array<CallbackInfo> onFrameCallbacks;
-    Util::Array<CallbackInfo> onEndFrameCallbacks;
-    Util::Array<CallbackInfo> onLoadCallbacks;
-    Util::Array<CallbackInfo> onSaveCallbacks;
-    Util::Array<CallbackInfo> onActivateCallbacks;
-    CallbackInfo activateAllInstancesCallback;
-
-    /// set to true if the caches for the callbacks are invalid
-    bool cacheValid = false;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-World::World()
-    : numEntities(0)
+World::World(uint32_t hash)
+    : numEntities(0),
+      hash(hash),
+      pipeline(this)
 {
     this->db = MemDb::Database::Create();
-    this->scratchOpBuffer = Game::CreateOpBuffer(this);
-
-    activateAllInstancesCallback.filter = Game::FilterBuilder()
-        .Including<Game::Owner>()
-        .Excluding<Game::IsActive>()
-        .Build();
-    activateAllInstancesCallback.func = [](Game::World* world, Game::Dataset const& data)
-    {
-        // Move all partitions to their respective counterpart
-        for (size_t i = 0; i < data.numViews; i++)
-        {
-            auto const& view = data.views[i];   
-            for (size_t instance = 0; instance < view.numInstances; instance++)
-            {
-                Entity const& entity = ((Game::Owner*)view.buffers[0])[instance].entity;
-                Game::AddComponent<Game::IsActive>(world, entity, nullptr);
-            }
-        }
-    };
+    // clang-format off
+    this->pipeline.RegisterFrameEvent( 5,    "OnActivate");
+    this->pipeline.RegisterFrameEvent( 8,    "ActivateEntities");
+    this->pipeline.RegisterFrameEvent( 10,   "OnBeginFrame");
+    this->pipeline.RegisterFrameEvent( 100,  "OnFrame");
+    this->pipeline.RegisterFrameEvent( 200,  "OnEndFrame");
+    // clang-format on
 }
 
 //------------------------------------------------------------------------------
@@ -130,234 +51,177 @@ World::~World()
 
 //------------------------------------------------------------------------------
 /**
-    @todo When cleaning up the db, erase all tables from the cache.
+*/
+Game::Entity
+World::CreateEntity()
+{
+    Entity const entity = this->AllocateEntity();
+    return entity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Entity
+World::AllocateEntity()
+{
+    Entity entity;
+    if (this->pool.Allocate(entity))
+    {
+        this->entityMap.Append({MemDb::InvalidTableId, MemDb::InvalidRow});
+    }
+    this->numEntities++;
+    return entity;
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void
-World::CacheTable(MemDb::TableId tid, MemDb::TableSignature signature)
+World::DeallocateEntity(Entity entity)
 {
-    // this is just to compress the code a bit
-    const Util::Array<CallbackInfo>* cbArrays[] = {
-        &this->onBeginFrameCallbacks,
-        &this->onFrameCallbacks,
-        &this->onEndFrameCallbacks,
-        &this->onLoadCallbacks,
-        &this->onSaveCallbacks,
-        &this->onActivateCallbacks,
+    n_assert(!this->HasInstance(entity));
+    this->pool.Deallocate(entity);
+    this->numEntities--;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::Start()
+{
+    auto const ActivateEntities =
+    [](World* world, Game::Owner const& entity)
+    {
+        world->AddComponent<Game::IsActive>(entity.entity);
     };
 
-    auto const FillCache = [signature, tid](CallbackInfo& cbInfo)
-    {
-        if (MemDb::TableSignature::CheckBits(signature, GetInclusiveTableMask(cbInfo.filter)))
-        {
-            MemDb::TableSignature const& exclusive = GetExclusiveTableMask(cbInfo.filter);
-            if (exclusive.IsValid())
-            {
-                if (!MemDb::TableSignature::HasAny(signature, exclusive))
-                    cbInfo.cache.Append(tid);
-            }
-            else
-            {
-                cbInfo.cache.Append(tid);
-            }
-        }
-    };
+    ProcessorBuilder builder(this, "AddIsActiveComponentToNewEntities");
+    builder.On("ActivateEntities")
+        .Excluding<Game::IsActive>()
+        .Func(ActivateEntities)
+        .Build();
 
-    for (auto arrPtr : cbArrays)
-    {
-        auto const& arr = *arrPtr;
-        for (auto& cbInfo : arr)
-        {
-            FillCache(cbInfo);
-        }
-    }
-
-    FillCache(activateAllInstancesCallback);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-World*
-AllocateWorld(WorldCreateInfo const& info)
-{
-    World* world = new World;
-    world->hash = info.hash;
-    return world;
+    this->pipeline.Begin();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DeallocateWorld(World* world)
+World::BeginFrame()
 {
-    delete world;
+    this->pipeline.RunThru("OnActivate");
+    ExecuteAddComponentCommands();
+
+    this->pipeline.RunThru("ActivateEntities");
+    ExecuteAddComponentCommands();
+
+    this->pipeline.RunThru("OnBeginFrame");
+    ExecuteAddComponentCommands();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldBeginFrame(World* world)
+World::SimFrame()
 {
-    int const numActiveCallBacks = world->onActivateCallbacks.Size();
-    for (int i = 0; i < numActiveCallBacks; i++)
-    {
-        Dataset data = Game::Query(world, world->onActivateCallbacks[i].cache, world->onActivateCallbacks[i].filter);
-        world->onActivateCallbacks[i].func(world, data);
-    }
-
-    Game::Dispatch(world->scratchOpBuffer);
-
-    {
-        // Move all newly created partitions to their respective table with IsActive flag included
-        Dataset data = Game::Query(world, world->activateAllInstancesCallback.cache, world->activateAllInstancesCallback.filter);
-        world->activateAllInstancesCallback.func(world, data);
-    }
-
-    Game::Dispatch(world->scratchOpBuffer);
-
-    int const num = world->onBeginFrameCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = Game::Query(world, world->onBeginFrameCallbacks[i].cache, world->onBeginFrameCallbacks[i].filter);
-        world->onBeginFrameCallbacks[i].func(world, data);
-    }
-    Game::Dispatch(world->scratchOpBuffer);
+    this->pipeline.RunThru("OnFrame");
+    ExecuteAddComponentCommands();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldSimFrame(World* world)
+World::EndFrame()
 {
-    int const num = world->onFrameCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = Game::Query(world, world->onFrameCallbacks[i].cache, world->onFrameCallbacks[i].filter);
-        world->onFrameCallbacks[i].func(world, data);
-    }
-    Game::Dispatch(world->scratchOpBuffer);
+    this->pipeline.RunThru("OnEndFrame");
+
+    // remove first, then add
+    ExecuteRemoveComponentCommands();
+    ExecuteAddComponentCommands();
+
+    this->pipeline.RunRemaining();
+    this->pipeline.Reset();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldEndFrame(World* world)
+World::OnLoad()
 {
-    int const num = world->onEndFrameCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = Game::Query(world, world->onEndFrameCallbacks[i].cache, world->onEndFrameCallbacks[i].filter);
-        world->onEndFrameCallbacks[i].func(world, data);
-    }
-    Game::Dispatch(world->scratchOpBuffer);
+    // TODO: Implement me
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldOnLoad(World* world)
+World::OnSave()
 {
-    int num = world->onLoadCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = Game::Query(world, world->onLoadCallbacks[i].cache, world->onLoadCallbacks[i].filter);
-        world->onLoadCallbacks[i].func(world, data);
-    }
+    // TODO: Implement me
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldOnSave(World* world)
+World::PrefilterProcessors()
 {
-    int num = world->onSaveCallbacks.Size();
-    for (int i = 0; i < num; i++)
-    {
-        Dataset data = Game::Query(world, world->onSaveCallbacks[i].cache, world->onSaveCallbacks[i].filter);
-        world->onSaveCallbacks[i].func(world, data);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-WorldPrefilterProcessors(World* world)
-{
-    // this is just to compress the code a bit
-    const Util::Array<World::CallbackInfo>* cbArrays[] = {
-        &world->onBeginFrameCallbacks,
-        &world->onFrameCallbacks,
-        &world->onEndFrameCallbacks,
-        &world->onLoadCallbacks,
-        &world->onSaveCallbacks,
-        &world->onActivateCallbacks,
-    };
-
-    for (auto arrPtr : cbArrays)
-    {
-        auto const& arr = *arrPtr;
-        for (auto& cbinfo : arr)
-        {
-            cbinfo.cache = world->db->Query(GetInclusiveTableMask(cbinfo.filter), GetExclusiveTableMask(cbinfo.filter));
-        }
-    }
-
-    world->cacheValid = true;
+    this->pipeline.Prefilter(!this->cacheValid);
+    this->cacheValid = true;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-WorldPrefiltered(World* world)
+World::Prefiltered() const
 {
-    return world->cacheValid;
+    return this->cacheValid;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldManageEntities(World* world)
+World::ManageEntities()
 {
     // NOTE: The order of the following loops are important!
 
     // Clean up entities
-    while (!world->deallocQueue.IsEmpty())
+    while (!this->deallocQueue.IsEmpty())
     {
-        auto const cmd = world->deallocQueue.Dequeue();
-        if (Game::IsValid(world, cmd.entity))
+        auto const cmd = this->deallocQueue.Dequeue();
+        if (this->IsValid(cmd.entity))
         {
-            MemDb::TableId const table = world->entityMap[cmd.entity.index].table;
-            MemDb::RowId const row = world->entityMap[cmd.entity.index].instance;
-            DeallocateInstance(world, table, row);
-            world->entityMap[cmd.entity.index].table = MemDb::InvalidTableId;
-            world->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
-            DeallocateEntity(world, cmd.entity);
+            MemDb::TableId const table = this->entityMap[cmd.entity.index].table;
+            MemDb::RowId const row = this->entityMap[cmd.entity.index].instance;
+            this->DeallocateInstance(table, row);
+            this->entityMap[cmd.entity.index].table = MemDb::InvalidTableId;
+            this->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
+            this->DeallocateEntity(cmd.entity);
         }
     }
 
     // Allocate instances for new entities, reuse invalid instances if possible
-    while (!world->allocQueue.IsEmpty())
+    while (!this->allocQueue.IsEmpty())
     {
-        auto const cmd = world->allocQueue.Dequeue();
-        n_assert(IsValid(world, cmd.entity));
-        AllocateInstance(world, cmd.entity, cmd.tid);
+        auto const cmd = this->allocQueue.Dequeue();
+        n_assert(this->IsValid(cmd.entity));
+        this->AllocateInstance(cmd.entity, cmd.tid);
     }
 
     // Delete all remaining invalid instances
-    Ptr<MemDb::Database> const& db = world->db;
+    Ptr<MemDb::Database> const& db = this->db;
 
     if (db.isvalid())
     {
-        db->ForEachTable([world](MemDb::TableId tid) { Defragment(world, tid); });
+        db->ForEachTable([this](MemDb::TableId tid) { this->Defragment(tid); });
     }
 }
 
@@ -365,38 +229,26 @@ WorldManageEntities(World* world)
 /**
 */
 void
-WorldReset(World* world)
+World::Reset()
 {
-    world->db->Reset();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-OpBuffer
-WorldGetScratchOpBuffer(World* world)
-{
-    return world->scratchOpBuffer;
+    this->db->Reset();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 Ptr<MemDb::Database>
-GetWorldDatabase(World* world)
+World::GetDatabase()
 {
-    return world->db;
+    return this->db;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 Game::Entity
-CreateEntity(World* world, EntityCreateInfo const& info)
+World::CreateEntity(EntityCreateInfo const& info)
 {
-    n_assert(GameServer::HasInstance());
-    GameServer::State* const state = &GameServer::Singleton->state;
-
     World::AllocateInstanceCommand cmd;
     if (info.templateId != TemplateId::Invalid())
     {
@@ -407,16 +259,16 @@ CreateEntity(World* world, EntityCreateInfo const& info)
         n_warning("Trying to instantiate an invalid template!");
         return Game::Entity::Invalid();
     }
-    Entity const entity = AllocateEntity(world);
+    Entity const entity = this->AllocateEntity();
     cmd.entity = entity;
 
     if (!info.immediate)
     {
-        world->allocQueue.Enqueue(std::move(cmd));
+        this->allocQueue.Enqueue(std::move(cmd));
     }
     else
     {
-        AllocateInstance(world, cmd.entity, cmd.tid);
+        this->AllocateInstance(cmd.entity, cmd.tid);
     }
 
     return entity;
@@ -426,22 +278,21 @@ CreateEntity(World* world, EntityCreateInfo const& info)
 /**
 */
 void
-DeleteEntity(World* world, Game::Entity entity)
+World::DeleteEntity(Game::Entity entity)
 {
-    n_assert(IsValid(world, entity));
-    n_assert(GameServer::HasInstance());
+    n_assert(this->IsValid(entity));
 
-    if (HasInstance(world, entity))
+    if (this->HasInstance(entity))
     {
         World::DeallocInstanceCommand cmd;
         cmd.entity = entity;
 
-        world->deallocQueue.Enqueue(std::move(cmd));
+        this->deallocQueue.Enqueue(std::move(cmd));
     }
     else
     {
         // entity hasn't been instantiated, can just delete the id straight away.
-        DeallocateEntity(world, entity);
+        this->DeallocateEntity(entity);
     }
 }
 
@@ -449,47 +300,99 @@ DeleteEntity(World* world, Game::Entity entity)
 /**
 */
 void
-DecayComponent(
-    Game::World* world, Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance
-)
+World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance)
 {
-    if (MemDb::TypeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
+    if (MemDb::AttributeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
     {
         if (component.id >= componentDecayTable.Size())
             componentDecayTable.Resize(
                 component.id + 16
             ); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
-        ComponentDecayBuffer& pdb = componentDecayTable[component.id];
+        ComponentDecayBuffer& decayBuffer = componentDecayTable[component.id];
 
-        uint64_t const typeSize = (uint64_t)MemDb::TypeRegistry::TypeSize(component);
+        uint64_t const typeSize = (uint64_t)MemDb::AttributeRegistry::TypeSize(component);
 
-        if (pdb.capacity == 0)
+        if (decayBuffer.capacity == 0)
         {
-            pdb.size = 0;
-            pdb.capacity = 64;
-            pdb.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, pdb.capacity * typeSize);
+            decayBuffer.size = 0;
+            decayBuffer.capacity = 64;
+            decayBuffer.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, decayBuffer.capacity * typeSize);
         }
 
-        if (pdb.capacity == pdb.size)
+        if (decayBuffer.capacity == decayBuffer.size)
         {
-            void* oldBuffer = pdb.buffer;
-            pdb.capacity *= 2;
-            pdb.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, pdb.capacity * typeSize);
-            Memory::Copy(oldBuffer, pdb.buffer, typeSize * (uint64_t)pdb.size);
+            void* oldBuffer = decayBuffer.buffer;
+            decayBuffer.capacity *= 2;
+            decayBuffer.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, decayBuffer.capacity * typeSize);
+            Memory::Copy(oldBuffer, decayBuffer.buffer, typeSize * (uint64_t)decayBuffer.size);
             Memory::Free(Memory::HeapType::DefaultHeap, oldBuffer);
         }
 
-        void* dst = ((byte*)pdb.buffer) + (typeSize * (uint64_t)pdb.size);
-        pdb.size++;
-        Memory::Copy(world->db->GetTable(tableId).GetValuePointer(column, instance), dst, typeSize);
+        void* dst = ((byte*)decayBuffer.buffer) + (typeSize * (uint64_t)decayBuffer.size);
+        decayBuffer.size++;
+        Memory::Copy(this->db->GetTable(tableId).GetValuePointer(column, instance), dst, typeSize);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
+void
+World::AddComponent(Entity entity, Game::ComponentId id)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!"
+    );
+#endif
+    SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(id);
+    void* data = this->componentStageAllocator.Alloc(typeSize);
+    const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);
+    Memory::Copy(defaultValue, data, typeSize);
+
+    AddStagedComponentCommand cmd = {
+        .entity = entity,
+        .componentId = id,
+        .dataSize = typeSize,
+        .data = data,
+    };
+    this->addStagedQueue.Append(cmd);
+
+    MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
+    ComponentInterface* cInterface;
+    cInterface = static_cast<ComponentInterface*>(attr);
+
+    if (cInterface->Init != nullptr)
+    {
+        // run initialization function if it exists.
+        cInterface->Init(this, entity, data);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::RemoveComponent(Entity entity, ComponentId component)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Removing components from entities while executing an async processor is currently not supported!"
+    );
+#endif
+    RemoveComponentCommand cmd = {
+        .entity = entity,
+        .componentId = component,
+    };
+    this->removeComponentQueue.Append(cmd);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ComponentDecayBuffer const
-GetDecayBuffer(Game::ComponentId component)
+World::GetDecayBuffer(Game::ComponentId component)
 {
     if (component < componentDecayTable.Size())
         return componentDecayTable[component.id];
@@ -501,7 +404,7 @@ GetDecayBuffer(Game::ComponentId component)
 /**
 */
 void
-ClearDecayBuffers()
+World::ClearDecayBuffers()
 {
     for (auto& cdb : componentDecayTable)
     {
@@ -512,205 +415,31 @@ ClearDecayBuffers()
 
 //------------------------------------------------------------------------------
 /**
-    @todo   There should be better and more clean ways of doing this.
-            It's ugly and inefficient...
 */
-OpBuffer
-CreateOpBuffer(World* world)
+bool
+World::IsValid(Entity e)
 {
-    OpBuffer id = opBufferAllocator.Alloc();
-    opBufferAllocator.Get<0>(id) = world;
-    return id;
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   We can bundle all add and remove components for each entity into one
-            migration.
-            We can also batch them based on their new table, so we won't
-            need to do as many column id lookups.
-    @note   This is not thread safe. We cannot make it sync since it might read/write from arbitrary tables.
-*/
-void
-Dispatch(OpBuffer buffer)
-{
-    World* world = opBufferAllocator.Get<0>(buffer);
-    RegCidQueue& registerComponentQueue = opBufferAllocator.Get<1>(buffer);
-    DeregCidQueue& deregisterComponentQueue = opBufferAllocator.Get<2>(buffer);
-
-    while (!registerComponentQueue.IsEmpty())
-    {
-        auto op = registerComponentQueue.Dequeue();
-        Game::Execute(world, op);
-    }
-
-    while (!deregisterComponentQueue.IsEmpty())
-    {
-        auto op = deregisterComponentQueue.Dequeue();
-        Game::Execute(world, op);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DestroyOpBuffer(OpBuffer& buffer)
-{
-    opBufferAllocator.Dealloc(buffer);
-    buffer = InvalidIndex;
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   optimize
-*/
-void
-AddOp(OpBuffer buffer, Op::RegisterComponent op)
-{
-    if (op.value != nullptr)
-    {
-        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(op.component);
-        void* value = opAllocator.Alloc(typeSize);
-        Memory::Copy(op.value, value, typeSize);
-        op.value = value;
-    }
-    opBufferAllocator.Get<1>(buffer).Enqueue(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AddOp(OpBuffer buffer, Op::DeregisterComponent const& op)
-{
-    opBufferAllocator.Get<2>(buffer).Enqueue(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   Optimize me
-*/
-void
-Execute(World* world, Op::RegisterComponent const& op)
-{
-    EntityMapping const mapping = GetEntityMapping(world, op.entity);
-
-    MemDb::TableSignature signature = world->db->GetTable(mapping.table).GetSignature();
-    if (signature.IsSet(op.component))
-        return;
-
-    bool foobar = signature.IsSet(op.component);
-    signature.FlipBit(op.component);
-
-    foobar = signature.IsSet(op.component);
-
-
-
-    MemDb::TableId newCategoryId = world->db->FindTable(signature);
-    if (newCategoryId == MemDb::InvalidTableId)
-    {
-        CategoryCreateInfo info;
-        auto const& cols = world->db->GetTable(mapping.table).GetAttributes();
-        info.components.SetSize(cols.Size() + 1);
-        IndexT i;
-        for (i = 0; i < cols.Size(); ++i)
-        {
-            info.components[i] = cols[i];
-        }
-        info.components[i] = op.component;
-
-        newCategoryId = CreateEntityTable(world, info);
-    }
-
-    MemDb::RowId newInstance = Migrate(world, op.entity, newCategoryId);
-
-    if (op.value == nullptr)
-        return; // default value should already be set
-
-    MemDb::Table& tbl = world->db->GetTable(newCategoryId);
-    auto attrIndex = tbl.GetAttributeIndex(op.component);
-    void* ptr = tbl.GetValuePointer(attrIndex, newInstance);
-    Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.component));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Execute(World* world, Op::DeregisterComponent const& op)
-{
-#if NEBULA_DEBUG
-    n_assert(Game::HasComponent(world, op.entity, op.component));
-#endif
-    EntityMapping const mapping = GetEntityMapping(world, op.entity);
-    MemDb::Table& tbl = world->db->GetTable(mapping.table);
-    MemDb::TableSignature signature = tbl.GetSignature();
-    if (!signature.IsSet(op.component))
-        return;
-
-    signature.FlipBit(op.component);
-
-    MemDb::TableId newCategoryId = world->db->FindTable(signature);
-    if (newCategoryId == MemDb::InvalidTableId)
-    {
-        CategoryCreateInfo info;
-        auto const& cols = tbl.GetAttributes();
-        SizeT const num = cols.Size();
-        info.components.SetSize(num - 1);
-        int col = 0;
-        for (int i = 0; i < num; ++i)
-        {
-            if (cols[i] == op.component)
-                continue;
-
-            info.components[col++] = cols[i];
-        }
-
-        newCategoryId = CreateEntityTable(world, info);
-    }
-
-    DecayComponent(world, op.component, mapping.table, tbl.GetAttributeIndex(op.component), mapping.instance);
-
-    Migrate(world, op.entity, newCategoryId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ReleaseAllOps()
-{
-    opAllocator.Release();
+    return this->pool.IsValid(e);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-IsValid(World* world, Entity e)
+World::HasInstance(Entity e)
 {
-    return world->pool.IsValid(e);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool
-HasInstance(World* world, Entity e)
-{
-    n_assert(IsValid(world, e));
-    return world->entityMap[e.index].instance != MemDb::InvalidRow;
+    n_assert(this->IsValid(e));
+    return this->entityMap[e.index].instance != MemDb::InvalidRow;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 EntityMapping
-GetEntityMapping(World* world, Game::Entity entity)
+World::GetEntityMapping(Game::Entity entity)
 {
-    n_assert(HasInstance(world, entity));
-    return world->entityMap[entity.index];
+    n_assert(this->HasInstance(entity));
+    return this->entityMap[entity.index];
 }
 
 //------------------------------------------------------------------------------
@@ -718,29 +447,212 @@ GetEntityMapping(World* world, Game::Entity entity)
    TODO: This is not thread safe!
 */
 bool
-HasComponent(World* world, Game::Entity const entity, ComponentId const component)
+World::HasComponent(Game::Entity const entity, ComponentId const component)
 {
-    EntityMapping mapping = GetEntityMapping(world, entity);
-    return world->db->GetTable(mapping.table).HasAttribute(component);
+    EntityMapping mapping = this->GetEntityMapping(entity);
+    return this->db->GetTable(mapping.table).HasAttribute(component);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 SizeT
-GetNumInstances(World* world, MemDb::TableId tid)
+World::GetNumInstances(MemDb::TableId tid)
 {
-    return world->db->GetTable(tid).GetNumRows();
+    return this->db->GetTable(tid).GetNumRows();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::ExecuteAddComponentCommands()
+{
+    auto sortFunc = [](const void* lhs, const void* rhs) -> int
+    {
+        Game::Entity arg1 = ((const AddStagedComponentCommand*)lhs)->entity;
+        Game::Entity arg2 = ((const AddStagedComponentCommand*)rhs)->entity;
+        return (arg1 > arg2) - (arg1 < arg2);
+    };
+
+    this->addStagedQueue.QuickSortWithFunc(sortFunc);
+
+    SizeT i = 0;
+    SizeT count = this->addStagedQueue.Size();
+
+    auto* currentCmd = this->addStagedQueue.Begin();
+    auto* end = this->addStagedQueue.End();
+    while (currentCmd != end)
+    {
+        Entity currentEntity = currentCmd->entity;
+        auto* firstCmdOfEntity = currentCmd;
+        SizeT numEntityCmds = 0;
+        while (currentCmd->entity == currentEntity && currentCmd != end)
+        {
+            numEntityCmds++;
+            currentCmd++;
+        }
+        AddStagedComponentsToEntity(currentEntity, firstCmdOfEntity, numEntityCmds);
+    }
+    // release all memory of the staged components
+    componentStageAllocator.Release();
+    addStagedQueue.Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::ExecuteRemoveComponentCommands()
+{
+    auto sortFunc = [](const void* lhs, const void* rhs) -> int
+    {
+        Game::Entity arg1 = ((const RemoveComponentCommand*)lhs)->entity;
+        Game::Entity arg2 = ((const RemoveComponentCommand*)rhs)->entity;
+        return (arg1 > arg2) - (arg1 < arg2);
+    };
+
+    this->removeComponentQueue.QuickSortWithFunc(sortFunc);
+
+    SizeT i = 0;
+    SizeT count = this->removeComponentQueue.Size();
+
+    auto* currentCmd = this->removeComponentQueue.Begin();
+    while (currentCmd != this->removeComponentQueue.End())
+    {
+        Entity currentEntity = currentCmd->entity;
+        auto* firstCmdOfEntity = currentCmd;
+        SizeT numEntityCmds = 0;
+        while (currentCmd->entity == currentEntity)
+        {
+            numEntityCmds++;
+            currentCmd++;
+        }
+        RemoveComponentsFromEntity(currentEntity, firstCmdOfEntity, numEntityCmds);
+    }
+
+    removeComponentQueue.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds)
+{
+    EntityMapping const mapping = this->GetEntityMapping(entity);
+    MemDb::Table const& tbl = this->db->GetTable(mapping.table);
+    MemDb::TableSignature signature = tbl.GetSignature();
+
+    SizeT i;
+    for (i = 0; i < numCmds; i++)
+    {
+        auto const* cmd = cmds + i;
+        n_assert2(
+            !signature.IsSet(cmd->componentId),
+            "Tried to add a staged component to an entity that already has the given component!"
+        );
+        signature.FlipBit(cmd->componentId);
+    }
+
+    MemDb::TableId newCategoryId = this->db->FindTable(signature);
+    if (newCategoryId == MemDb::InvalidTableId)
+    {
+        CategoryCreateInfo info;
+        auto const& cols = tbl.GetAttributes();
+        info.components.SetSize(cols.Size() + numCmds);
+        IndexT i;
+        for (i = 0; i < cols.Size(); ++i)
+        {
+            info.components[i] = cols[i];
+        }
+        SizeT end = i + numCmds;
+        IndexT cmdIndex = 0;
+        for (; i < end; ++i, ++cmdIndex)
+        {
+            info.components[i] = cmds[cmdIndex].componentId;
+        }
+
+        newCategoryId = this->CreateEntityTable(info);
+    }
+
+    MemDb::RowId newInstance = this->Migrate(entity, newCategoryId);
+
+    MemDb::Table& newTable = this->db->GetTable(newCategoryId);
+
+    for (i = 0; i < numCmds; i++)
+    {
+        auto const* cmd = cmds + i;
+
+        auto attrIndex = newTable.GetAttributeIndex(cmd->componentId);
+        void* ptr = newTable.GetValuePointer(attrIndex, newInstance);
+        Memory::Copy(cmd->data, ptr, cmd->dataSize);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, SizeT numCmds)
+{
+    EntityMapping const mapping = this->GetEntityMapping(entity);
+    MemDb::Table& tbl = this->db->GetTable(mapping.table);
+    MemDb::TableSignature signature = this->db->GetTable(mapping.table).GetSignature();
+
+    SizeT i;
+    for (i = 0; i < numCmds; i++)
+    {
+        auto const* cmd = cmds + i;
+#if NEBULA_DEBUG
+        n_assert2(
+            signature.IsSet(cmd->componentId),
+            "Tried to remove a component from an entity that does not have the given component!"
+        );
+#endif
+        signature.FlipBit(cmd->componentId);
+    }
+
+    MemDb::TableId newCategoryId = this->db->FindTable(signature);
+    if (newCategoryId == MemDb::InvalidTableId)
+    {
+        CategoryCreateInfo info;
+        auto const& cols = tbl.GetAttributes();
+        info.components.SetSize(cols.Size() - numCmds);
+        IndexT cIndex = 0;
+        for (IndexT i = 0; i < cols.Size(); ++i)
+        {
+            IndexT k = 0;
+            for (k = 0; k < numCmds; k++)
+            {
+                // check if the component should remain in the entity
+                if (cols[i] == cmds[k].componentId)
+                    break;
+            }
+            if (k == numCmds) // keep the component, otherwise discard it
+                info.components[cIndex++] = cols[i];
+        }
+
+        newCategoryId = this->CreateEntityTable(info);
+    }
+
+    for (i = 0; i < numCmds; i++)
+    {
+        auto const* cmd = cmds + i;
+        this->DecayComponent(cmd->componentId, mapping.table, tbl.GetAttributeIndex(cmd->componentId), mapping.instance);
+    }
+
+    this->Migrate(entity, newCategoryId);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void*
-GetInstanceBuffer(World* world, MemDb::TableId const tid, uint16_t partitionId, ComponentId const component)
+World::GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, ComponentId const component)
 {
-    Ptr<MemDb::Database> db = world->db;
-    auto attrIndex = db->GetTable(tid).GetAttributeIndex(component);
+    MemDb::Table& tbl = this->db->GetTable(tid);
+    auto attrIndex = tbl.GetAttributeIndex(component);
 #if NEBULA_DEBUG
     n_assert_fmt(
         attrIndex != MemDb::ColumnIndex::Invalid(),
@@ -748,27 +660,27 @@ GetInstanceBuffer(World* world, MemDb::TableId const tid, uint16_t partitionId, 
         component.id
     );
 #endif
-    return db->GetTable(tid).GetBuffer(partitionId, attrIndex);
+    return tbl.GetBuffer(partitionId, attrIndex);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 MemDb::RowId
-GetInstance(World* world, Entity entity)
+World::GetInstance(Entity entity)
 {
-    return GetEntityMapping(world, entity).instance;
+    return this->GetEntityMapping(entity).instance;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 MemDb::TableId
-CreateEntityTable(World* world, CategoryCreateInfo const& info)
+World::CreateEntityTable(CategoryCreateInfo const& info)
 {
-    MemDb::TableSignature signature(info.components);
+    MemDb::TableSignature const oldSignature(info.components);
 
-    MemDb::TableId categoryId = world->db->FindTable(signature);
+    MemDb::TableId categoryId = this->db->FindTable(oldSignature);
     if (categoryId != MemDb::TableId::Invalid())
     {
         return categoryId;
@@ -779,36 +691,36 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
 
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
-    tableInfo.numComponents = 0;
+    tableInfo.numAttributes = 0;
 
     if (info.components[0] != GetComponentId<Game::Owner>() && info.components[1] != GetComponentId<Game::Transform>())
     {
         // always have owner and transform as first columns
         components[0] = GetComponentId<Owner>();
         components[1] = GetComponentId<Transform>();
-        tableInfo.numComponents = 2 + info.components.Size();
+        tableInfo.numAttributes = 2 + info.components.Size();
 
-        n_assert(tableInfo.numComponents < NUM_PROPS);
+        n_assert(tableInfo.numAttributes < NUM_PROPS);
 
         for (int i = 0; i < info.components.Size(); i++)
         {
             components[i + 2] = info.components[i];
         }
-        tableInfo.components = components;
+        tableInfo.attributeIds = components;
     }
     else
     {
-        tableInfo.numComponents = info.components.Size();
-        n_assert(tableInfo.numComponents < NUM_PROPS);
-        tableInfo.components = &info.components[0];
+        tableInfo.numAttributes = info.components.Size();
+        n_assert(tableInfo.numAttributes < NUM_PROPS);
+        tableInfo.attributeIds = &info.components[0];
     }
 
     // Create an instance table
-    categoryId = world->db->CreateTable(tableInfo);
+    categoryId = this->db->CreateTable(tableInfo);
 
     // "Prefilter" the processors with the new table (insert the table in the cache that accepts it)
-    world->CacheTable(categoryId, world->db->GetTable(categoryId).GetSignature());
-
+    this->pipeline.CacheTable(categoryId, this->db->GetTable(categoryId).GetSignature());
+    
     return categoryId;
 }
 
@@ -816,29 +728,34 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
 /**
 */
 MemDb::RowId
-AllocateInstance(World* world, Entity entity, MemDb::TableId table)
+World::AllocateInstance(Entity entity, MemDb::TableId table)
 {
-    n_assert(world->pool.IsValid(entity));
-    n_assert(world->entityMap[entity.index].instance == MemDb::InvalidRow);
+    n_assert(this->pool.IsValid(entity));
+    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
 
-    if (entity.index < world->entityMap.Size() && world->entityMap[entity.index].instance != MemDb::InvalidRow)
+    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
     {
         n_warning("Entity already registered!\n");
         return MemDb::InvalidRow;
     }
 
-    MemDb::RowId instance = world->db->GetTable(table).AddRow();
+    MemDb::Table& tbl = this->db->GetTable(table);
 
-    world->entityMap[entity.index] = {table, instance};
+    MemDb::RowId instance = tbl.AddRow();
+
+    this->entityMap[entity.index] = {table, instance};
 
 #if _DEBUG
     // make sure the first column in always owner
-    n_assert(world->db->GetTable(table).GetAttributeIndex(GameServer::Singleton->state.ownerId) == 0);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Owner>()) == 0);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Transform>()) == 1);
 #endif
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)world->db->GetTable(table).GetBuffer(instance.partition, 0);
+    Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, 0);
     owners[instance.index] = entity;
+
+    InitializeAllComponents(entity, table, instance);
 
     return instance;
 }
@@ -846,29 +763,54 @@ AllocateInstance(World* world, Entity entity, MemDb::TableId table)
 //------------------------------------------------------------------------------
 /**
 */
-MemDb::RowId
-AllocateInstance(World* world, Entity entity, BlueprintId blueprint)
+void
+World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row)
 {
-    n_assert(world->pool.IsValid(entity));
-    n_assert(world->entityMap[entity.index].instance == MemDb::InvalidRow);
+    MemDb::Table& tbl = this->db->GetTable(tableId);
+    auto const& attributes = tbl.GetAttributes();
+    for (IndexT i = 2; i < attributes.Size(); i++) // skip first two, since they're always owner and transform
+    {
+        MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(attributes[i]);
+        ComponentInterface* cInterface;
+        cInterface = static_cast<ComponentInterface*>(attr);
 
-    if (entity.index < world->entityMap.Size() && world->entityMap[entity.index].instance != MemDb::InvalidRow)
+        if (cInterface->Init != nullptr)
+        {
+            void* data = tbl.GetValuePointer(i, row);
+            cInterface->Init(this, entity, data);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+MemDb::RowId
+World::AllocateInstance(Entity entity, BlueprintId blueprint)
+{
+    n_assert(this->pool.IsValid(entity));
+    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
+
+    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
     {
         n_warning("Entity already registered!\n");
         return MemDb::InvalidRow;
     }
 
-    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(world, blueprint);
-    world->entityMap[entity.index] = mapping;
+    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(this, blueprint);
+    this->entityMap[entity.index] = mapping;
 
 #if _DEBUG
     // make sure the first column in always owner
-    n_assert(world->db->GetTable(mapping.table).GetAttributeIndex(GameServer::Singleton->state.ownerId) == 0);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(GameServer::Singleton->state.ownerId) == 0);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Transform>()) == 1);
 #endif
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)world->db->GetTable(mapping.table).GetBuffer(mapping.instance.partition, 0);
+    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table).GetBuffer(mapping.instance.partition, 0);
     owners[mapping.instance.index] = entity;
+
+    InitializeAllComponents(entity, mapping.table, mapping.instance);
 
     return mapping.instance;
 }
@@ -877,23 +819,25 @@ AllocateInstance(World* world, Entity entity, BlueprintId blueprint)
 /**
 */
 MemDb::RowId
-AllocateInstance(World* world, Entity entity, TemplateId templateId)
+World::AllocateInstance(Entity entity, TemplateId templateId)
 {
-    n_assert(world->pool.IsValid(entity));
-    n_assert(world->entityMap[entity.index].instance == MemDb::InvalidRow);
+    n_assert(this->pool.IsValid(entity));
+    n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
 
-    if (entity.index < world->entityMap.Size() && world->entityMap[entity.index].instance != MemDb::InvalidRow)
+    if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
     {
         n_warning("Entity instance already allocated!\n");
         return MemDb::InvalidRow;
     }
 
-    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(world, templateId);
-    world->entityMap[entity.index] = mapping;
+    EntityMapping mapping = BlueprintManager::Instance()->Instantiate(this, templateId);
+    this->entityMap[entity.index] = mapping;
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)world->db->GetTable(mapping.table).GetBuffer(mapping.instance.partition, 0);
+    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table).GetBuffer(mapping.instance.partition, 0);
     owners[mapping.instance.index] = entity;
+
+    InitializeAllComponents(entity, mapping.table, mapping.instance);
 
     return mapping.instance;
 }
@@ -902,33 +846,33 @@ AllocateInstance(World* world, Entity entity, TemplateId templateId)
 /**
 */
 void
-DeallocateInstance(World* world, MemDb::TableId table, MemDb::RowId instance)
+World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
 {
     n_assert(instance != MemDb::InvalidRow);
 
     // migrate managed properies to decay buffers so that we can allow the managers
     // to clean up any externally allocated resources.
-    Util::Array<ComponentId> const& pids = world->db->GetTable(table).GetAttributes();
+    Util::Array<ComponentId> const& pids = this->db->GetTable(table).GetAttributes();
     const MemDb::ColumnIndex numColumns = pids.Size();
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
         Game::ComponentId component = pids[column.id];
-        DecayComponent(world, component, table, column, instance);
+        this->DecayComponent(component, table, column, instance);
     }
 
-    world->db->GetTable(table).RemoveRow(instance);
+    this->db->GetTable(table).RemoveRow(instance);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DeallocateInstance(World* world, Entity entity)
+World::DeallocateInstance(Entity entity)
 {
-    MemDb::TableId& table = world->entityMap[entity.index].table;
-    MemDb::RowId& instance = world->entityMap[entity.index].instance;
+    MemDb::TableId& table = this->entityMap[entity.index].table;
+    MemDb::RowId& instance = this->entityMap[entity.index].instance;
 
-    DeallocateInstance(world, table, instance);
+    this->DeallocateInstance(table, instance);
 
     table = MemDb::InvalidTableId;
     instance = MemDb::InvalidRow;
@@ -938,15 +882,15 @@ DeallocateInstance(World* world, Entity entity)
 /**
 */
 MemDb::RowId
-Migrate(World* world, Entity entity, MemDb::TableId newCategory)
+World::Migrate(Entity entity, MemDb::TableId newCategory)
 {
-    n_assert(HasInstance(world, entity));
-    EntityMapping mapping = GetEntityMapping(world, entity);
+    n_assert(this->HasInstance(entity));
+    EntityMapping mapping = this->GetEntityMapping(entity);
     MemDb::RowId newInstance = MemDb::Table::MigrateInstance(
-        world->db->GetTable(mapping.table), mapping.instance, world->db->GetTable(newCategory), false
+        this->db->GetTable(mapping.table), mapping.instance, this->db->GetTable(newCategory), false
     );
 
-    world->entityMap[entity.index] = {newCategory, newInstance};
+    this->entityMap[entity.index] = {newCategory, newInstance};
     return newInstance;
 }
 
@@ -956,8 +900,7 @@ Migrate(World* world, Entity entity, MemDb::TableId newCategory)
     @note   This assumes ALL entities in the entity array is of same table!
 */
 void
-Migrate(
-    World* world,
+World::Migrate(
     Util::Array<Entity> const& entities,
     MemDb::TableId fromCategory,
     MemDb::TableId newCategory,
@@ -975,7 +918,7 @@ Migrate(
 
     for (auto entity : entities)
     {
-        EntityMapping mapping = GetEntityMapping(world, entity);
+        EntityMapping mapping = this->GetEntityMapping(entity);
 #ifdef NEBULA_DEBUG
         n_assert(mapping.table == fromCategory);
 #endif // NEBULA_DEBUG
@@ -983,13 +926,15 @@ Migrate(
     }
 
     MemDb::Table::MigrateInstances(
-        world->db->GetTable(fromCategory), instances, world->db->GetTable(newCategory), newInstances, false
+        this->db->GetTable(fromCategory), instances, this->db->GetTable(newCategory), newInstances, false
     );
 
+    // Defrag here to avoid entities existing in multiple tables
+    this->Defragment(fromCategory);
 
     for (IndexT i = 0; i < num; i++)
     {
-        world->entityMap[entities[i].index] = {newCategory, newInstances[i]};
+        this->entityMap[entities[i].index] = {newCategory, newInstances[i]};
     }
 }
 
@@ -997,77 +942,54 @@ Migrate(
 /**
 */
 void
-RegisterProcessors(World* world, std::initializer_list<ProcessorHandle> handles)
+World::MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
 {
-    for (auto handle : handles)
+    Game::Entity fromEntity = ((Game::Entity*)partition->columns[0])[from.index];
+    Game::Entity toEntity = ((Game::Entity*)partition->columns[0])[to.index];
+    if (!this->IsValid(fromEntity))
     {
-        ProcessorInfo const& info = Game::GameServer::Instance()->GetProcessorInfo(handle);
-
-        // Setup frame callbacks
-        if (info.OnBeginFrame != nullptr)
-            world->onBeginFrameCallbacks.Append({handle, info.filter, info.OnBeginFrame});
-
-        if (info.OnFrame != nullptr)
-            world->onFrameCallbacks.Append({handle, info.filter, info.OnFrame});
-
-        if (info.OnEndFrame != nullptr)
-            world->onEndFrameCallbacks.Append({handle, info.filter, info.OnEndFrame});
-
-        if (info.OnLoad != nullptr)
-            world->onLoadCallbacks.Append({handle, info.filter, info.OnLoad});
-
-        if (info.OnSave != nullptr)
-            world->onSaveCallbacks.Append({handle, info.filter, info.OnSave});
-
-        if (info.OnActivate != nullptr)
-            world->onActivateCallbacks.Append({handle, info.filter, info.OnActivate});
+        // we need to add these instances new index to the to the freeids list, since it's been deleted.
+        // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
+        // and it will automatically be defragged
+        partition->freeIds.Append(to.index);
     }
-
-    world->cacheValid = false;
+    else if (this->entityMap[fromEntity.index].table == this->entityMap[toEntity.index].table)
+    {
+        // just swap the instances
+        this->entityMap[fromEntity.index].instance = to;
+        this->entityMap[toEntity.index].instance = from;
+    }
+    else
+    {
+        // if the entities does not belong to the same table, only update the
+        // instance of the one that has been moved.
+        // This is most likely due to an entity migration
+        this->entityMap[fromEntity.index].instance = to;
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-Defragment(World* world, MemDb::TableId cat)
+World::Defragment(MemDb::TableId cat)
 {
-    Ptr<MemDb::Database> db = world->db;
-
-    if (!db->IsValid(cat))
+    if (!this->db->IsValid(cat))
         return;
 
-    MemDb::Table& table = db->GetTable(cat);
-    MemDb::ColumnIndex ownerColumnId = db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
+    MemDb::Table& table = this->db->GetTable(cat);
 
+#if NEBULA_DEBUG
+    MemDb::ColumnIndex ownerColumnId = this->db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
+    n_assert(ownerColumnId == 0);
+#endif
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.
     // The move callback is signaled BEFORE the swap has happened.
-    SizeT numErased = db->GetTable(cat).Defragment(
-        [world, ownerColumnId](MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
+    SizeT numErased = this->db->GetTable(cat).Defragment(
+        [this](MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
         {
-            Game::Entity fromEntity = ((Game::Entity*)partition->columns[ownerColumnId.id])[from.index];
-            Game::Entity toEntity = ((Game::Entity*)partition->columns[ownerColumnId.id])[to.index];
-            if (!IsValid(world, fromEntity))
-            {
-                // we need to add these instances new index to the to the freeids list, since it's been deleted.
-                // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
-                // and it will automatically be defragged
-                partition->freeIds.Append(to.index);
-            }
-            else if (world->entityMap[fromEntity.index].table == world->entityMap[toEntity.index].table)
-            {
-                // just swap the instances
-                world->entityMap[fromEntity.index].instance = to;
-                world->entityMap[toEntity.index].instance = from;
-            }
-            else
-            {
-                // if the entities does not belong to the same table, only update the
-                // instance of the one that has been moved.
-                // This is most likely due to an entity migration
-                world->entityMap[fromEntity.index].instance = to;
-            }
+            this->MoveInstance(partition, from, to);
         }
     );
 }
@@ -1075,43 +997,17 @@ Defragment(World* world, MemDb::TableId cat)
 //------------------------------------------------------------------------------
 /**
 */
-Entity
-AllocateEntity(World* world)
-{
-    Entity entity;
-    if (world->pool.Allocate(entity))
-    {
-        world->entityMap.Append({MemDb::InvalidTableId, MemDb::InvalidRow});
-    }
-    world->numEntities++;
-    return entity;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-DeallocateEntity(World* world, Entity entity)
-{
-    n_assert(!HasInstance(world, entity));
-    world->pool.Deallocate(entity);
-    world->numEntities--;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetComponent(World* world, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size)
+World::SetComponentValue(Game::Entity entity, Game::ComponentId component, void* value, uint64_t size)
 {
 #if NEBULA_DEBUG
     n_assert2(
-        size == MemDb::TypeRegistry::TypeSize(component),
+        size == MemDb::AttributeRegistry::TypeSize(component),
         "SetComponent: Provided value's type is not the correct size for the given ComponentId."
     );
 #endif
-    EntityMapping mapping = GetEntityMapping(world, entity);
-    byte* const ptr = (byte*)GetInstanceBuffer(world, mapping.table, mapping.instance.partition, component);
+    EntityMapping mapping = this->GetEntityMapping(entity);
+    byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);
     byte* valuePtr = ptr + (mapping.instance.index * size);
     Memory::Copy(value, valuePtr, size);
 }
@@ -1119,82 +1015,11 @@ SetComponent(World* world, Game::Entity entity, Game::ComponentId component, voi
 //------------------------------------------------------------------------------
 /**
 */
-EntityMapping
-BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
-{
-    GameServer::State& gsState = GameServer::Instance()->state;
-    Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(blueprint);
-
-    if (categoryIndex != InvalidIndex)
-    {
-        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
-        MemDb::RowId const instance = world->db->GetTable(cid).AddRow();
-        return {cid, instance};
-    }
-    return {MemDb::InvalidTableId, MemDb::InvalidRow};
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-EntityMapping
-BlueprintManager::Instantiate(World* const world, TemplateId templateId)
-{
-    n_assert(Singleton->templateIdPool.IsValid(templateId.id));
-    GameServer::State& gsState = GameServer::Instance()->state;
-    Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    Template& tmpl = Singleton->templates[Ids::Index(templateId.id)];
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(tmpl.bid);
-
-    if (categoryIndex != InvalidIndex)
-    {
-        MemDb::TableId const tid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
-        MemDb::RowId const instance = MemDb::Table::DuplicateInstance(
-            tdb->GetTable(Singleton->blueprints[tmpl.bid.id].tableId), tmpl.row, world->db->GetTable(tid)
-        );
-        return {tid, instance};
-    }
-    else
-    {
-        // Create the table, and then create the instance
-        MemDb::TableId const tid = this->CreateCategory(world, tmpl.bid);
-        MemDb::RowId const instance = MemDb::Table::DuplicateInstance(
-            tdb->GetTable(Singleton->blueprints[tmpl.bid.id].tableId), tmpl.row, world->db->GetTable(tid)
-        );
-        return {tid, instance};
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   this can be optimized
-*/
-MemDb::TableId
-BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
-{
-    CategoryCreateInfo info;
-    info.name = blueprints[bid.id].name.Value();
-
-    auto const& components = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).GetAttributes();
-    info.components.Resize(components.Size());
-    for (int i = 0; i < components.Size(); i++)
-    {
-        info.components[i] = components[i];
-    }
-
-    MemDb::TableId tid = CreateEntityTable(world, info);
-    world->blueprintCatMap.Add(bid, tid);
-    return tid;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-WorldRenderDebug(World* world)
+World::RenderDebug()
 {
-    ImGui::Text("World Hash: %s", Util::FourCC(world->hash).AsString().AsCharPtr());
+    /*
+    ImGui::Text("World Hash: %s", Util::FourCC(this->hash).AsString().AsCharPtr());
     ImGui::Separator();
     static bool showProcessors = true;
     ImGui::Checkbox("Show processors", &showProcessors);
@@ -1217,27 +1042,27 @@ WorldRenderDebug(World* world)
         };
 
         ImGui::TextDisabled("-- OnBeginFrame --");
-        for (auto const& callback : world->onBeginFrameCallbacks)
+        for (auto const& callback : this->onBeginFrameCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnFrame --");
-        for (auto const& callback : world->onFrameCallbacks)
+        for (auto const& callback : this->onFrameCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnEndFrame --");
-        for (auto const& callback : world->onEndFrameCallbacks)
+        for (auto const& callback : this->onEndFrameCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnSave --");
-        for (auto const& callback : world->onSaveCallbacks)
+        for (auto const& callback : this->onSaveCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnLoad --");
-        for (auto const& callback : world->onLoadCallbacks)
+        for (auto const& callback : this->onLoadCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::TextDisabled("-- OnActivate --");
-        for (auto const& callback : world->onActivateCallbacks)
+        for (auto const& callback : this->onActivateCallbacks)
             PrintCallbackInfo(callback);
 
         ImGui::Separator();
@@ -1250,9 +1075,9 @@ WorldRenderDebug(World* world)
         "ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar
     );
     {
-        for (uint entityIndex = 0; entityIndex < world->entityMap.Size(); entityIndex++)
+        for (uint entityIndex = 0; entityIndex < this->entityMap.Size(); entityIndex++)
         {
-            Game::EntityMapping entity = world->entityMap[entityIndex];
+            Game::EntityMapping entity = this->entityMap[entityIndex];
 
             if (!listInactive && (entity.table == MemDb::InvalidTableId || entity.instance == MemDb::InvalidRow))
                 continue;
@@ -1263,27 +1088,27 @@ WorldRenderDebug(World* world)
             ImGui::TextColored({1, 0.3f, 0, 1}, "tid:%i, row:%i", entity.table, entity.instance);
             if (entity.table != MemDb::TableId::Invalid())
             {
-                ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.table).name.Value());
+                ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());
                 ImGui::EndGroup();
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::BeginTooltip();
-                    ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.table).name.Value());
+                    ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());
                     MemDb::TableId const table = entity.table;
                     MemDb::RowId const row = entity.instance;
 
-                    auto const& components = Game::GetWorldDatabase(world)->GetTable(table).GetAttributes();
+                    auto const& components = this->db->GetTable(table).GetAttributes();
                     for (auto component : components)
                     {
-                        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
+                        SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                         if (typeSize == 0)
                         {
                             // Type is flag type, just print the name, and then continue
-                            ImGui::Text("_flag_: %s", MemDb::TypeRegistry::GetDescription(component)->name.Value());
+                            ImGui::Text("_flag_: %s", MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
                             ImGui::Separator();
                             continue;
                         }
-                        void* data = Game::GetInstanceBuffer(world, table, row.partition, component);
+                        void* data = this->GetInstanceBuffer(table, row.partition, component);
                         data = (byte*)data + (row.index * typeSize);
                         bool commitChange = false;
                         Game::ComponentInspection::DrawInspector(component, data, &commitChange);
@@ -1301,13 +1126,14 @@ WorldRenderDebug(World* world)
         }
     }
     ImGui::EndChild();
+    */
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-WorldOverride(World* src, World* dst)
+World::Override(World* src, World* dst)
 {
     dst->blueprintCatMap = src->blueprintCatMap;
     dst->entityMap = src->entityMap;
@@ -1317,7 +1143,44 @@ WorldOverride(World* src, World* dst)
     dst->db = MemDb::Database::Create();
     src->db->Copy(dst->db);
 
-    WorldPrefilterProcessors(dst);
+    dst->PrefilterProcessors();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FramePipeline&
+World::GetFramePipeline()
+{
+    return this->pipeline;
+}
+
+//------------------------------------------------------------------------------
+/**
+    @returns    Dataset with category table views.
+
+    @note       The category table view buffer can be NULL if the filter contains
+                a non-typed/flag component.
+*/
+Dataset
+World::Query(Filter filter)
+{
+    //#if NEBULA_ENABLE_PROFILING
+    //    //N_COUNTER_INCR("Calls to Game::Query", 1);
+    //    N_SCOPE_ACCUM(QueryTime, EntitySystem);
+    //#endif
+    Util::Array<MemDb::TableId> tids = this->db->Query(GetInclusiveTableMask(filter), GetExclusiveTableMask(filter));
+
+    return this->Query(filter, tids);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Dataset
+World::Query(Filter filter, Util::Array<MemDb::TableId>& tids)
+{
+    return Game::Query(this->db, tids, filter);
 }
 
 } // namespace Game

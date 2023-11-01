@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    AttributeDescription
+    Attribute
 
     Describes an attributes's type and default value.
     The attributes type can be omitted by registering it with a size of zero bytes.
@@ -20,30 +20,30 @@
 #include "util/stringatom.h"
 #include "util/hashtable.h"
 #include "table.h"
-#include "componentid.h"
+#include "attributeid.h"
 
 namespace MemDb
 {
 
-class AttributeDescription
+class Attribute
 {
 public:
     /// construct from template type, with default value.
     template<typename T>
-    explicit AttributeDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags);
+    explicit Attribute(Util::StringAtom name, T const& defaultValue, uint32_t flags);
     /// construct from type size in bytes, with default value from void*.
-    explicit AttributeDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags);
+    explicit Attribute(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags);
     /// default constructor
-    AttributeDescription() = default;
+    Attribute() = default;
     /// move constructor
-    AttributeDescription(AttributeDescription&& desc) noexcept;
+    Attribute(Attribute&& desc) noexcept;
     /// desctructor
-    ~AttributeDescription();
+    ~Attribute();
     
     /// move assignment operator
-    void operator=(AttributeDescription&& rhs) noexcept;
+    void operator=(Attribute&& rhs) noexcept;
     /// assignment operator
-    void operator=(AttributeDescription& rhs);
+    void operator=(Attribute& rhs);
 
     /// name of attribute
     Util::StringAtom name;
@@ -59,7 +59,7 @@ public:
 /**
 */
 template<typename T> inline
-AttributeDescription::AttributeDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags) :
+Attribute::Attribute(Util::StringAtom name, T const& defaultValue, uint32_t flags) :
     name(name),
     typeSize(sizeof(T)),
     externalFlags(flags)
@@ -72,7 +72,7 @@ AttributeDescription::AttributeDescription(Util::StringAtom name, T const& defau
 /**
 */
 inline
-AttributeDescription::AttributeDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags) :
+Attribute::Attribute(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags) :
     name(name),
     typeSize(typeSizeBytes),
     externalFlags(flags)
@@ -96,7 +96,7 @@ AttributeDescription::AttributeDescription(Util::StringAtom name, SizeT typeSize
 /**
 */
 inline
-AttributeDescription::AttributeDescription(AttributeDescription&& desc) noexcept :
+Attribute::Attribute(Attribute&& desc) noexcept :
     defVal(desc.defVal), typeSize(desc.typeSize), name(desc.name)
 {
     desc.defVal = nullptr;
@@ -108,7 +108,7 @@ AttributeDescription::AttributeDescription(AttributeDescription&& desc) noexcept
 /**
 */
 inline
-AttributeDescription::~AttributeDescription()
+Attribute::~Attribute()
 {
     if (this->defVal != nullptr)
     {
@@ -120,7 +120,7 @@ AttributeDescription::~AttributeDescription()
 /**
 */
 inline void
-AttributeDescription::operator=(AttributeDescription&& rhs) noexcept
+Attribute::operator=(Attribute&& rhs) noexcept
 {
     this->typeSize = rhs.typeSize;
     this->defVal = rhs.defVal;
@@ -135,7 +135,7 @@ AttributeDescription::operator=(AttributeDescription&& rhs) noexcept
 /**
 */
 inline void
-AttributeDescription::operator=(AttributeDescription& rhs)
+Attribute::operator=(Attribute& rhs)
 {
     this->typeSize = rhs.typeSize;
     this->defVal = rhs.defVal;

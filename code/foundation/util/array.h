@@ -188,8 +188,12 @@ public:
     ArrayT Difference(const Array<TYPE, SMALL_VECTOR_SIZE>& rhs);
     /// sort the array
     void Sort();
+    /// quick sort the array
+    void QuickSort();
     /// sort with custom function
     void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
+    /// quick sort the array
+    void QuickSortWithFunc(int (*func)(const void* lhs, const void* rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
     /// do a binary search using a specific key type
@@ -1428,12 +1432,48 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Sort()
 
 //------------------------------------------------------------------------------
 /**
+    Sorts the array using quick sort. This just calls the STL sort algorithm.
+*/
+template <class TYPE, int SMALL_VECTOR_SIZE>
+void
+Array<TYPE, SMALL_VECTOR_SIZE>::QuickSort()
+{
+    std::qsort(
+        this->Begin(),
+        this->Size(),
+        sizeof(TYPE),
+        [](const void* a, const void* b)
+        {
+            TYPE arg1 = *static_cast<const TYPE*>(a);
+            TYPE arg2 = *static_cast<const TYPE*>(b);
+            return (arg1 > arg2) - (arg1 < arg2);
+        }
+    );
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 template<class TYPE, int SMALL_VECTOR_SIZE> 
 void
 Util::Array<TYPE, SMALL_VECTOR_SIZE>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
 {
     std::sort(this->Begin(), this->End(), func);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class TYPE, int SMALL_VECTOR_SIZE>
+void
+Array<TYPE, SMALL_VECTOR_SIZE>::QuickSortWithFunc(int (*func)(const void* lhs, const void* rhs))
+{
+    std::qsort(
+        this->Begin(),
+        this->Size(),
+        sizeof(TYPE),
+        func
+    );
 }
 
 //------------------------------------------------------------------------------

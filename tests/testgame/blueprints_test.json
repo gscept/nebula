@@ -1,20 +1,28 @@
 {
-	"blueprints": {
-		"Enemy": {
-            "desc": "A test enemy blueprint",
-            "components": [
-                "TestVec4",
-                "TestHealth",
-                "TestStruct"
-            ]
-        },
-		"Player": {
-            "desc": "A test player blueprint",
-            "components": [
-                "TestHealth",
-                "TestStruct",
-                "TestEmptyStruct"
-            ]
-        }
-	}
+  "blueprints": {
+    "Enemy": {
+      "desc": "A test enemy blueprint",
+      "components": [
+        "TestVec4",
+        "TestHealth",
+        "TestStruct"
+      ]
+    },
+    "Player": {
+      "desc": "A test player blueprint",
+      "components": [
+        "TestHealth",
+        "TestStruct",
+        "TestEmptyStruct"
+      ]
+    },
+    "AsyncTestEntity": {
+      "components": [
+        "TestHealth",
+        "TestStruct",
+        "TestEmptyStruct",
+        "TestAsyncComponent"
+      ]
+    }
+  }
 }

@@ -8,65 +8,88 @@
 */
 //------------------------------------------------------------------------------
 #include "util/stringatom.h"
-#include "world.h"
 #include "filter.h"
+#include "processorid.h"
 
 namespace Game
 {
 
-/// Opaque processor handle
-typedef uint32_t ProcessorHandle;
+class World;
 
-/// per frame callback for processors
-using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
+class ProcessorBuilder;
 
-//------------------------------------------------------------------------------
-/**
-*/
-struct ProcessorCreateInfo
+class Processor
 {
+public:
     /// name of the processor
-    Util::StringAtom name;
-
+    Util::String name;
+    /// sorting order within frame event (same as batch order).
+    int order = 100;
     /// set if this processor should run as a job.
-    /// TODO: this is currently not used
     bool async = false;
     /// filter used for creating the dataset
     Filter filter;
+    /// function that this processor runs
+    std::function<void(World*, Dataset::View const&)> callback;
+    /// cached tables that fulfill the requirements of the filter
+    Util::Array<MemDb::TableId> cache;
+    /// set to false if the cache is invalid
+    bool cacheValid = false;
 
-    /// called when attached to world
-    //void(*OnActivate)() = nullptr;
-    ///// called when removed from world
-    //void(*OnDeactivate)() = nullptr;
-    ///// called by Game::Server::Start()
-    //void(*OnStart)() = nullptr;
+private:
+    friend ProcessorBuilder;
 
-    /// called before frame by the game server
-    ProcessorFrameCallback OnBeginFrame = nullptr;
-    /// called per-frame by the game server
-    ProcessorFrameCallback OnFrame = nullptr;
-    /// called after frame by the game server
-    ProcessorFrameCallback OnEndFrame = nullptr;
-    /// called after loading game state
-    ProcessorFrameCallback OnLoad = nullptr;
-    /// called before saving game state
-    ProcessorFrameCallback OnSave = nullptr;
-    /// render a debug visualization 
-    ProcessorFrameCallback OnRenderDebug = nullptr;
-    /// called on new partitions at beginning of frame
-    ProcessorFrameCallback OnActivate = nullptr;
+    template <typename... TYPES, std::size_t... Is>
+    static void
+    UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::View const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
+    {
+        func(
+            world,
+            *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...
+        );
+    }
+
+    template <typename... COMPONENTS>
+    static std::function<void(World*, Dataset::View const&)>
+    ForEach(std::function<void(World*, COMPONENTS...)> func, uint8_t bufferStartOffset)
+    {
+        return [func, bufferStartOffset](World* world, Game::Dataset::View const& view)
+        {
+            uint32_t i = 0;
+            while (i < view.numInstances)
+            {
+                // check validity of instances in sections of 64 instances
+                if (!view.validInstances.SectionIsNull(i / 64))
+                {
+                    uint32_t const end = Math::min(i + 64, view.numInstances);
+                    for (uint32_t instance = i; instance < end; ++instance)
+                    {
+                        // make sure the instance we're processing is valid
+                        if (view.validInstances.IsSet(instance))
+                        {
+                            UpdateExpander<COMPONENTS...>(
+                                world,
+                                func,
+                                view,
+                                instance,
+                                bufferStartOffset,
+                                std::make_index_sequence<sizeof...(COMPONENTS)>()
+                            );
+                        }
+                    }
+                }
+                // progress 64 instances, which corresponds to 1 section
+                i += 64;
+            }
+        };
+    }
 };
-
-/// Create a processor
-ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
-/// register processors to a world
-void RegisterProcessors(World*, std::initializer_list<ProcessorHandle>);
 
 class ProcessorBuilder
 {
 public:
     ProcessorBuilder() = delete;
-    ProcessorBuilder(Util::StringAtom processorName);
+    ProcessorBuilder(Game::World* world, Util::StringAtom processorName);
 
     /// which function to run with the processor
     template<typename LAMBDA>
@@ -93,21 +116,20 @@ public:
     /// processor should run async
     ProcessorBuilder& Async();
     
-    /// create and register the processor
-    ProcessorHandle Build();
+    /// Set the sorting order for the processor
+    ProcessorBuilder& Order(int order);
+
+    /// Build the processor and attach it to the world
+    Processor* Build();
 
 private:
-    template<typename...TYPES, std::size_t...Is>
-    static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, uint8_t const bufferStartOffset, std::index_sequence<Is...>)
-    {
-        func(world, *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...);
-    }
-
+    World* world;
     Util::StringAtom name;
     Util::StringAtom onEvent;
-    ProcessorFrameCallback func = nullptr;
+    std::function<void(World*, Dataset::View const&)> func = nullptr;
     FilterBuilder filterBuilder;
     bool async = false;
+    int order = 100;
 };
 
 //------------------------------------------------------------------------------
@@ -129,37 +151,7 @@ ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
 {
     uint8_t const bufferStartOffset = this->filterBuilder.GetNumInclusive();
     this->filterBuilder.Including<COMPONENTS...>();
-    this->func = [func, bufferStartOffset](World* world, Game::Dataset data)
-    {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-            
-            uint32_t i = 0;
-            uint32_t section = 0;
-            while (i < view.numInstances)
-            {
-                // check validity of instances in sections of 64 instances
-                if (!view.validInstances.SectionIsNull(section))
-                {
-                    uint32_t const end = Math::min(i + 64, view.numInstances);
-                    for (uint32_t instance = i; instance < end; ++instance)
-                    {
-                        // make sure the instance we're processing is valid
-                        if (view.validInstances.IsSet(instance))
-                        {
-                            UpdateExpander<COMPONENTS...>(
-                                world, func, view, instance, bufferStartOffset, std::make_index_sequence<sizeof...(COMPONENTS)>()
-                            );
-                        }
-                    }
-                }
-                // progress 64 instances, which corresponds to 1 section
-                i += 64;
-                section += 1;
-            }
-        }
-    };
+    this->func = Processor::ForEach(func, bufferStartOffset);
     return *this;
 }
 

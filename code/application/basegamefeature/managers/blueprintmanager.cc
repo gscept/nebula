@@ -228,7 +228,7 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                     Util::Array<ComponentId> const&  columns = table.GetAttributes();
                     for (ComponentId id : columns)
                     {
-                        MemDb::AttributeDescription * descriptor = MemDb::TypeRegistry::GetDescription(id);
+                        MemDb::Attribute * descriptor = MemDb::AttributeRegistry::GetAttribute(id);
                         if (descriptor != nullptr)
                         {
                             Util::StringAtom compName = descriptor->name;
@@ -339,7 +339,7 @@ BlueprintManager::SetupBlueprints()
         // filter out invalid components
         for (int i = 0; i < numBlueprintComponents; i++)
         {
-            auto descriptor = MemDb::TypeRegistry::GetComponentId(blueprint.components[i].name);
+            auto descriptor = MemDb::AttributeRegistry::GetAttributeId(blueprint.components[i].name);
             if (descriptor != ComponentId::Invalid())
             {
                 // append to dynamically resizable array
@@ -364,8 +364,8 @@ BlueprintManager::SetupBlueprints()
             // Create the blueprint's template table
             MemDb::TableCreateInfo tableInfo;
             tableInfo.name = "blueprint:" + info.name;
-            tableInfo.numComponents = info.components.Size();
-            tableInfo.components = info.components.Begin();
+            tableInfo.numAttributes = info.components.Size();
+            tableInfo.attributeIds = info.components.Begin();
             Ptr<MemDb::Database> templateDatabase = GameServer::Instance()->state.templateDatabase;
             MemDb::TableId tid = templateDatabase->CreateTable(tableInfo);
 
@@ -409,6 +409,78 @@ Util::Array<BlueprintManager::Template> const&
 BlueprintManager::ListTemplates()
 {
     return Singleton->templates;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+EntityMapping
+BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
+{
+    GameServer::State& gsState = GameServer::Instance()->state;
+    Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
+    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(blueprint);
+
+    if (categoryIndex != InvalidIndex)
+    {
+        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
+        MemDb::RowId const instance = world->db->GetTable(cid).AddRow();
+        return {cid, instance};
+    }
+    return {MemDb::InvalidTableId, MemDb::InvalidRow};
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+EntityMapping
+BlueprintManager::Instantiate(World* const world, TemplateId templateId)
+{
+    n_assert(Singleton->templateIdPool.IsValid(templateId.id));
+    GameServer::State& gsState = GameServer::Instance()->state;
+    Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
+    Template& tmpl = Singleton->templates[Ids::Index(templateId.id)];
+    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(tmpl.bid);
+
+    if (categoryIndex != InvalidIndex)
+    {
+        MemDb::TableId const tid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
+        MemDb::RowId const instance = MemDb::Table::DuplicateInstance(
+            tdb->GetTable(Singleton->blueprints[tmpl.bid.id].tableId), tmpl.row, world->db->GetTable(tid)
+        );
+        return {tid, instance};
+    }
+    else
+    {
+        // Create the table, and then create the instance
+        MemDb::TableId const tid = this->CreateCategory(world, tmpl.bid);
+        MemDb::RowId const instance = MemDb::Table::DuplicateInstance(
+            tdb->GetTable(Singleton->blueprints[tmpl.bid.id].tableId), tmpl.row, world->db->GetTable(tid)
+        );
+        return {tid, instance};
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    @todo   this can be optimized
+*/
+MemDb::TableId
+BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
+{
+    CategoryCreateInfo info;
+    info.name = blueprints[bid.id].name.Value();
+
+    auto const& components = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).GetAttributes();
+    info.components.Resize(components.Size());
+    for (int i = 0; i < components.Size(); i++)
+    {
+        info.components[i] = components[i];
+    }
+
+    MemDb::TableId tid = world->CreateEntityTable(info);
+    world->blueprintCatMap.Add(bid, tid);
+    return tid;
 }
 
 } // namespace Game

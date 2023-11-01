@@ -4,8 +4,8 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "table.h"
-#include "componentdescription.h"
-#include "typeregistry.h"
+#include "attribute.h"
+#include "attributeregistry.h"
 #include "util/blob.h"
 
 namespace MemDb
@@ -17,7 +17,7 @@ namespace MemDb
 /**
 */
 void*
-AllocateBuffer(AttributeDescription* desc, SizeT capacity, SizeT numRows)
+AllocateBuffer(Attribute* desc, SizeT capacity, SizeT numRows)
 {
     n_assert(desc->defVal != nullptr);
     n_assert(desc->typeSize != 0);
@@ -70,12 +70,12 @@ Table::NewPartition()
         {
             AttributeId const& attr = this->attributes[col];
 
-            AttributeDescription const* const desc = TypeRegistry::GetDescription(attr);
+            Attribute const* const desc = AttributeRegistry::GetAttribute(attr);
             partition->columns.Append(nullptr);
             if (desc->typeSize > 0)
             {
                 Table::ColumnBuffer& buffer = partition->columns[col];
-                buffer = AllocateBuffer(TypeRegistry::GetDescription(attr), partition->CAPACITY, partition->numRows);
+                buffer = AllocateBuffer(AttributeRegistry::GetAttribute(attr), partition->CAPACITY, partition->numRows);
             }
         }
     }
@@ -178,7 +178,7 @@ Table::AddAttribute(AttributeId attribute, bool updateSignature)
         signature.FlipBit(attribute);
     }
 
-    AttributeDescription const* const desc = TypeRegistry::GetDescription(attribute);
+    Attribute const* const desc = AttributeRegistry::GetAttribute(attribute);
 
     for (Partition* part : this->partitions)
     {
@@ -186,7 +186,7 @@ Table::AddAttribute(AttributeId attribute, bool updateSignature)
         if (desc->typeSize > 0)
         {
             Table::ColumnBuffer& buffer = part->columns[col];
-            buffer = AllocateBuffer(TypeRegistry::GetDescription(attribute), part->CAPACITY, part->numRows);
+            buffer = AllocateBuffer(AttributeRegistry::GetAttribute(attribute), part->CAPACITY, part->numRows);
         }
         return col;
     }
@@ -213,7 +213,7 @@ Table::AddRow()
     for (IndexT i = 0; i < numColumns; ++i)
     {
         AttributeId attribute = this->attributes[i];
-        AttributeDescription* desc = TypeRegistry::GetDescription(attribute.id);
+        Attribute* desc = AttributeRegistry::GetAttribute(attribute.id);
 
         void*& buf = this->currentPartition->columns[i];
         void* val = (char*)buf + ((size_t)index * desc->typeSize);
@@ -255,7 +255,7 @@ Table::SetToDefault(RowId row)
     for (IndexT i = 0; i < numAttributes; ++i)
     {
         AttributeId attribute = this->attributes[i];
-        AttributeDescription* desc = TypeRegistry::GetDescription(attribute.id);
+        Attribute* desc = AttributeRegistry::GetAttribute(attribute.id);
         void*& buf = part->columns[i];
         void* val = (char*)buf + ((size_t)row.index * desc->typeSize);
         Memory::Copy(desc->defVal, val, desc->typeSize);
@@ -276,6 +276,11 @@ Table::Defragment(std::function<void(Partition*, MemDb::RowId, MemDb::RowId)> co
     Partition* part = this->firstActivePartition;
     while (part != nullptr)
     {
+        // Very important that this is sorted, since we defragment by swapping values.
+        // This means i.e. if we swap index 1 before 2, and index 2 is also in the
+        // reeids array, we won't be able to clean it up because we cannot keep track if it's been moved.
+        part->freeIds.QuickSort();
+
         // Pack arrays
         while (part->freeIds.Size() != 0)
         {
@@ -433,7 +438,7 @@ Table::GetValuePointer(ColumnIndex cid, RowId row)
 
     Partition* part = this->partitions[row.partition];
     AttributeId attribute = this->attributes[cid.id];
-    AttributeDescription* desc = MemDb::TypeRegistry::GetDescription(attribute);
+    Attribute* desc = MemDb::AttributeRegistry::GetAttribute(attribute);
     if (desc->typeSize > 0)
         return ((byte*)part->columns[cid.id]) + (desc->typeSize * row.index);
 
@@ -465,7 +470,7 @@ Table::SerializeInstance(RowId row)
     for (uint32_t i = 0; i < this->attributes.Size(); i++)
     {
         AttributeId const attribute = this->attributes[i];
-        SizeT const typeSize = TypeRegistry::TypeSize(attribute);
+        SizeT const typeSize = AttributeRegistry::TypeSize(attribute);
         instanceSize += typeSize;
     }
     blob.Reserve(instanceSize);
@@ -476,7 +481,7 @@ Table::SerializeInstance(RowId row)
         AttributeId const attribute = this->attributes[i];
         blob.SetChunk(&attribute, sizeof(AttributeId), offset);
         offset += sizeof(AttributeId);
-        SizeT const typeSize = TypeRegistry::TypeSize(attribute);
+        SizeT const typeSize = AttributeRegistry::TypeSize(attribute);
         byte const* const valuePtr = (byte*)part->columns[i] + (row.index * (size_t)typeSize);
         blob.SetChunk(valuePtr, typeSize, offset);
         offset += typeSize;
@@ -503,7 +508,7 @@ Table::DeserializeInstance(Util::Blob const& data, RowId row)
     {
         AttributeId const attribute = *reinterpret_cast<AttributeId const*>(ptr);
         ptr += sizeof(AttributeId);
-        SizeT const typeSize = TypeRegistry::TypeSize(attribute);
+        SizeT const typeSize = AttributeRegistry::TypeSize(attribute);
         IndexT const bucket = this->columnRegistry.FindIndex(attribute);
         if (bucket != InvalidIndex)
         {
@@ -524,7 +529,7 @@ Table::MigrateInstance(
     RowId srcRow,
     Table& dst,
     bool defragment,
-    std::function<void(Partition*, IndexT, IndexT)> const& moveCallback
+    std::function<void(Partition*, RowId, RowId)> const& moveCallback
 )
 {
     n_assert(src.tid != dst.tid);
@@ -534,8 +539,8 @@ Table::MigrateInstance(
         Partition* srcPart = src.partitions[srcRow.partition];
         if (moveCallback != nullptr)
         {
-            IndexT lastIndex = srcPart->numRows - 1;
-            moveCallback(srcPart, lastIndex, srcRow.index);
+            RowId lastRow = { .partition = srcPart->partitionId, .index = (uint16_t)(srcPart->numRows - 1)};
+            moveCallback(srcPart, lastRow, srcRow);
         }
         srcPart->EraseSwapIndex(srcRow.index);
     }
@@ -565,7 +570,7 @@ Table::DuplicateInstance(Table const& src, RowId srcRow, Table& dst)
     for (IndexT i = 0; i < numDstAttrs; ++i)
     {
         AttributeId attribute = dstAttrs[i];
-        AttributeDescription const* const desc = TypeRegistry::GetDescription(attribute.id);
+        Attribute const* const desc = AttributeRegistry::GetAttribute(attribute.id);
         void*& dstBuf = dstBuffers[i];
         SizeT const byteSize = desc->typeSize;
 
@@ -644,7 +649,7 @@ Table::DuplicateInstances(Table& src, Util::Array<RowId> const& srcRows, Table& 
     for (IndexT i = 0; i < numDstAttrs; ++i)
     {
         AttributeId attribute = dstAttrs[i];
-        AttributeDescription const* const desc = TypeRegistry::GetDescription(attribute.id);
+        Attribute const* const desc = AttributeRegistry::GetAttribute(attribute.id);
         SizeT const byteSize = desc->typeSize;
         ColumnIndex const srcColId = src.GetAttributeIndex(attribute);
 
@@ -752,7 +757,7 @@ Table::Partition::EraseSwapIndex(uint16_t instance)
         for (IndexT i = 0; i < numColumns; ++i)
         {
             AttributeId descriptor = attributes[i];
-            AttributeDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+            Attribute* desc = AttributeRegistry::GetAttribute(descriptor.id);
             void*& buf = this->columns[i];
             const SizeT byteSize = desc->typeSize;
             Memory::Copy((char*)buf + ((size_t)byteSize * end), (char*)buf + ((size_t)byteSize * instance), byteSize);

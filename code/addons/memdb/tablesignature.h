@@ -17,7 +17,7 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "util/fixedarray.h"
-#include "componentid.h"
+#include "attributeid.h"
 
 namespace MemDb
 {

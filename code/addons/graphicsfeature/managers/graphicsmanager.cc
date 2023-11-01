@@ -19,10 +19,10 @@ namespace GraphicsFeature
 
 __ImplementSingleton(GraphicsManager)
 
-//------------------------------------------------------------------------------
-/**
+    //------------------------------------------------------------------------------
+    /**
 */
-GraphicsManager::GraphicsManager()
+    GraphicsManager::GraphicsManager()
 {
     // empty
 }
@@ -43,11 +43,16 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 {
     Models::ModelContext::RegisterEntity(gid);
     Visibility::ObservableContext::RegisterEntity(gid);
-    Models::ModelContext::Setup(gid, res, "NONE", [gid, t]()
-    {
-        Models::ModelContext::SetTransform(gid, t);
-        Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
-    });
+    Models::ModelContext::Setup(
+        gid,
+        res,
+        "NONE",
+        [gid, t]()
+        {
+            Models::ModelContext::SetTransform(gid, t);
+            Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
+        }
+    );
 }
 
 //------------------------------------------------------------------------------
@@ -56,13 +61,11 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 void
 GraphicsManager::InitCreateModelProcessor()
 {
-    Game::ProcessorBuilder("GraphicsManager.CreateModels"_atm)
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ProcessorBuilder(world, "GraphicsManager.CreateModels"_atm)
         .On("OnActivate")
         .Func(
-            [](Game::World* world,
-               Game::Owner const& owner,
-               Game::Transform const& t,
-               GraphicsFeature::Model& model)
+            [](Game::World* world, Game::Owner const& owner, Game::Transform const& t, GraphicsFeature::Model& model)
             {
                 auto res = model.resource;
                 model.graphicsEntityId = Graphics::CreateEntity().id;
@@ -78,7 +81,9 @@ GraphicsManager::InitCreateModelProcessor()
 void
 GraphicsManager::OnDecay()
 {
-    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Game::GetComponentId<Model>());
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<Model>());
     Model* data = (Model*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
@@ -94,38 +99,17 @@ GraphicsManager::OnDecay()
 void
 GraphicsManager::InitUpdateModelTransformProcessor()
 {
-
-    Game::Filter filter = Game::FilterBuilder()
-        .Including({{Game::AccessMode::READ, Game::GetComponentId<Model>()}})
-        .Including<Game::Transform>()
-        .Excluding({ Game::GetComponentId("Static") })
-        .Build();
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "GraphicsManager.UpdateModelTransforms"_atm;
-    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
-    {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-
-            // TODO: check if any entitys transform is modified in the partition, and skip otherwise.
-
-            Model const* const modelData = (Model*)view.buffers[0];
-            Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateModelTransforms"_atm)
+        .Excluding<Game::Static>()
+        // .Async(true) // Should be able to be async
+        .Func(
+            [](Game::World* world, Game::Transform const& transform, GraphicsFeature::Model const& model)
             {
-                Model const& model = modelData[i];
-                Math::mat4 const& transform = transforms[i];
-                Models::ModelContext::SetTransform(model.graphicsEntityId, transform);
+                Models::ModelContext::SetTransform(model.graphicsEntityId, transform.value);
             }
-        }
-    };
-
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+        )
+        .Build();
 }
 
 //------------------------------------------------------------------------------
@@ -134,14 +118,14 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 Game::ManagerAPI
 GraphicsManager::Create()
 {
-	n_assert(!GraphicsManager::HasInstance());
+    n_assert(!GraphicsManager::HasInstance());
     GraphicsManager::Singleton = new GraphicsManager;
 
     Singleton->InitCreateModelProcessor();
     Singleton->InitUpdateModelTransformProcessor();
 
     Game::ManagerAPI api;
-    api.OnCleanup    = &OnCleanup;
+    api.OnCleanup = &OnCleanup;
     api.OnDeactivate = &Destroy;
     api.OnDecay = &OnDecay;
     return api;
@@ -165,24 +149,24 @@ void
 GraphicsManager::OnCleanup(Game::World* world)
 {
     n_assert(GraphicsManager::HasInstance());
-    
+
     Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Game::GetComponentId<Model>();
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 
     Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-    Game::Dataset data = Game::Query(world, filter);
+    Game::Dataset data = world->Query(filter);
 
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::EntityTableView const& view = data.views[v];
+        Game::Dataset::View const& view = data.views[v];
         Model const* const modelData = (Model*)view.buffers[0];
-        
+
         for (IndexT i = 0; i < view.numInstances; ++i)
         {
             Model const& model = modelData[i];
-            
+
             if (Models::ModelContext::IsEntityRegistered(model.graphicsEntityId))
             {
                 if (Visibility::ObservableContext::IsEntityRegistered(model.graphicsEntityId))
@@ -190,7 +174,7 @@ GraphicsManager::OnCleanup(Game::World* world)
 
                 Models::ModelContext::DeregisterEntity(model.graphicsEntityId);
             }
-            
+
             Graphics::DestroyEntity(model.graphicsEntityId);
         }
     }
@@ -198,7 +182,7 @@ GraphicsManager::OnCleanup(Game::World* world)
     Game::DestroyFilter(filter);
 }
 
-} // namespace Game
+} // namespace GraphicsFeature
 
 template <>
 void

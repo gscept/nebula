@@ -50,10 +50,10 @@ DatabaseTest::Run()
     TableId table2;
     TableId table3;
 
-    AttributeId TestIntId = TypeRegistry::Register<IntTest>("TestIntId", IntTest());
-    AttributeId TestFloatId = TypeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
-    AttributeId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
-    AttributeId TestNonTypedComponent = TypeRegistry::Register("TestNonTypedComponent", 0, nullptr);
+    AttributeId TestIntId = AttributeRegistry::Register<IntTest>("TestIntId", IntTest());
+    AttributeId TestFloatId = AttributeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
+    AttributeId TestStructId = AttributeRegistry::Register<StructTest>("TestStructId", StructTest());
+    AttributeId TestNonTypedComponent = AttributeRegistry::Register("TestNonTypedComponent", 0, nullptr);
 
     for (int i = 0; i < 2; i++)
     {
@@ -63,8 +63,8 @@ DatabaseTest::Run()
             TableCreateInfo info;
             info.name = "Table0";
             AttributeId const cids[] = {TestIntId, TestFloatId, TestStructId};
-            info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(AttributeId);
+            info.attributeIds = cids;
+            info.numAttributes = sizeof(cids) / sizeof(AttributeId);
             table0 = db->CreateTable(info);
         }
 
@@ -72,8 +72,8 @@ DatabaseTest::Run()
             TableCreateInfo info;
             info.name = "Table1";
             AttributeId const cids[] = {TestIntId, TestFloatId};
-            info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(AttributeId);
+            info.attributeIds = cids;
+            info.numAttributes = sizeof(cids) / sizeof(AttributeId);
             table1 = db->CreateTable(info);
         };
 
@@ -81,8 +81,8 @@ DatabaseTest::Run()
             TableCreateInfo info;
             info.name = "Table2";
             AttributeId const cids[] = {TestStructId, TestIntId, TestNonTypedComponent};
-            info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(AttributeId);
+            info.attributeIds = cids;
+            info.numAttributes = sizeof(cids) / sizeof(AttributeId);
             table2 = db->CreateTable(info);
         };
 
@@ -90,8 +90,8 @@ DatabaseTest::Run()
             TableCreateInfo info;
             info.name = "Table3";
             AttributeId const cids[] = {TestNonTypedComponent};
-            info.components = cids;
-            info.numComponents = sizeof(cids) / sizeof(AttributeId);
+            info.attributeIds = cids;
+            info.numAttributes = sizeof(cids) / sizeof(AttributeId);
             table3 = db->CreateTable(info);
         };
 
@@ -144,8 +144,8 @@ DatabaseTest::Run()
                 SizeT const numRows = partition->numRows;
                 for (size_t i = 0; i < numRows; i++)
                 {
-                    passed |= (intData[i] == *(int*)TypeRegistry::GetDescription(TestIntId)->defVal);
-                    passed |= (floatData[i] == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
+                    passed |= (intData[i] == *(int*)AttributeRegistry::GetAttribute(TestIntId)->defVal);
+                    passed |= (floatData[i] == *(float*)AttributeRegistry::GetAttribute(TestFloatId)->defVal);
                 }
             }
             VERIFY(passed);
@@ -187,7 +187,7 @@ DatabaseTest::Run()
             // Verify default values are set correctly
             VERIFY(
                 *((float*)tbl1.GetValuePointer(tbl1cid, i)) ==
-                *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal
+                *(float*)AttributeRegistry::GetAttribute(TestFloatId)->defVal
             );
         }
 

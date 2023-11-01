@@ -61,9 +61,9 @@ Inspector::Run()
 
     Editor::Entity const entity = selection[0];
     static Game::EntityMapping lastEntityMapping;
-    Game::EntityMapping const entityMapping = Game::GetEntityMapping(Editor::state.editorWorld, entity);
+    Game::EntityMapping const entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
 
-    if (!Game::IsValid(Editor::state.editorWorld, entity) || !Game::HasInstance(Editor::state.editorWorld, entity))
+    if (!Editor::state.editorWorld->IsValid(entity) || !Editor::state.editorWorld->HasInstance(entity))
         return;
 
     Editor::Editable& edit = Editor::state.editables[entity.index];
@@ -89,7 +89,7 @@ Inspector::Run()
     MemDb::TableId const table = entityMapping.table;
     MemDb::RowId const row = entityMapping.instance;
 
-    auto const& components = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(table).GetAttributes();
+    auto const& components = Editor::state.editorWorld->GetDatabase()->GetTable(table).GetAttributes();
     while (this->tempComponents.Size() < components.Size())
     {
         this->tempComponents.Append({}); // fill up with empty intermediates
@@ -98,19 +98,19 @@ Inspector::Run()
     // We need to double check the entity again here, since the add component function will change the entitys signature
     bool const entityChanged =
         (entityMapping.table != lastEntityMapping.table || entityMapping.instance != lastEntityMapping.instance);
-    lastEntityMapping = Game::GetEntityMapping(Editor::state.editorWorld, entity);
+    lastEntityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
 
     Util::StringAtom const ownerAtom = "Owner"_atm;
     for (int i = 0; i < components.Size(); i++)
     {
         auto component = components[i];
 
-        if (MemDb::TypeRegistry::GetDescription(component)->name == ownerAtom)
+        if (MemDb::AttributeRegistry::GetAttribute(component)->name == ownerAtom)
         {
             continue;
         }
         ImGui::PushID(0xA3FC + (int)component.id); // offset the ids with some magic number
-        ImGui::Text(MemDb::TypeRegistry::GetDescription(component)->name.Value());
+        ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
         ImGui::SameLine();
 
         if (ImGui::Button("Remove"))
@@ -129,7 +129,7 @@ Inspector::Run()
             continue;
         }
 
-        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
+        SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
         if (typeSize == 0)
         {
             // Type is flag type, just continue to the next one
@@ -138,7 +138,7 @@ Inspector::Run()
             continue;
         }
 
-        void* data = Game::GetInstanceBuffer(Editor::state.editorWorld, table, row.partition, component);
+        void* data = Editor::state.editorWorld->GetInstanceBuffer(table, row.partition, component);
         data = (byte*)data + (row.index * typeSize);
         if (typeSize > tempComponent.bufferSize)
         {
@@ -215,12 +215,12 @@ Inspector::ShowAddComponentMenu()
 
         Util::Array<const char*> cStrArray;
 
-        Util::FixedArray<MemDb::AttributeDescription*> const& components = MemDb::TypeRegistry::GetAllComponents();
+        Util::FixedArray<MemDb::Attribute*> const& components = MemDb::AttributeRegistry::GetAllAttributes();
         SizeT const numComponents = components.Size();
         Util::StringAtom const ownerAtom = "Owner"_atm;
         for (SizeT i = 0; i < numComponents; i++)
         {
-            MemDb::AttributeDescription* component = components[i];
+            MemDb::Attribute* component = components[i];
             if (component->name == ownerAtom || (component->externalFlags & Game::COMPONENTFLAG_DECAY))
                 continue;
 
@@ -232,7 +232,7 @@ Inspector::ShowAddComponentMenu()
             if (ImGui::Button(name))
             {
                 Editor::Entity const selectedEntity = Tools::SelectionTool::Selection()[0];
-                if (!Game::IsValid(Editor::state.editorWorld, selectedEntity))
+                if (!Editor::state.editorWorld->IsValid(selectedEntity))
                 {
                     return;
                 }
