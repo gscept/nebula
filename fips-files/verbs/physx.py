@@ -70,12 +70,13 @@ def run(fips_dir, proj_dir, args) :
                 subprocess.run(["make", "-j", "10"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
                 subprocess.run(["make", "install"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
     else:
+        help()
         def run(fips_dir,proj_dir,args):
             log.error("Not supported") 
 
 def help():
     """print 'physx' help"""
     log.info(log.YELLOW +
-             "fips physx build [linux, vc15, vc16, vc17] [debug, checked, release]\n"
+             "fips physx [build, deploy] [linux, vc15, vc16, vc17] [debug, checked, release]\n"
              "  builds PhysX dlls with the given toolchain\n"
              )
