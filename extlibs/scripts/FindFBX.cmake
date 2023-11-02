@@ -17,22 +17,34 @@
 # adapted from https://github.com/ufz-vislab/VtkFbxConverter/blob/master/FindFBX.cmake
 # which uses the MIT license (https://github.com/ufz-vislab/VtkFbxConverter/blob/master/LICENSE.txt)
 
+if (WIN32)
+  string(REGEX REPLACE "\\\\" "/" WIN_PROGRAM_FILES_X64_DIRECTORY $ENV{ProgramW6432})
+endif()
+
+set(FBX_WIN_LOCATION_ROOT "${WIN_PROGRAM_FILES_X64_DIRECTORY}/Autodesk/FBX/FBX SDK")
+file(GLOB FBX_VERSIONS_AVAILABLE LIST_DIRECTORIES true ${FBX_WIN_LOCATION_ROOT}/*)
+list(SORT FBX_VERSIONS_AVAILABLE)
+list(REVERSE FBX_VERSIONS_AVAILABLE)
+list(GET FBX_VERSIONS_AVAILABLE 0 FBX_VERSION)
+
+get_filename_component(FBX_VERSION ${FBX_VERSION} NAME)
+
 if (NOT FBX_VERSION)
-  set(FBX_VERSION 2020.3.2)
+  set(FBX_VERSION 2020.3.4)
 endif()
 
 string(REGEX REPLACE "^([0-9]+).*$" "\\1" FBX_VERSION_MAJOR "${FBX_VERSION}")
 string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*$" "\\1" FBX_VERSION_MINOR  "${FBX_VERSION}")
 string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*$" "\\1" FBX_VERSION_PATCH "${FBX_VERSION}")
 
+if (${FBX_VERSION_MAJOR} LESS 2020 OR ${FBX_VERSION_MINOR} LESS 3)
+    MESSAGE(ERROR "Could not find compatible FBX version. Requires versions 2020.3+.")
+endif()
+
 set(FBX_MAC_LOCATIONS "/Applications/Autodesk/FBX\ SDK/${FBX_VERSION}")
 set(FBX_LINUX_LOCATIONS "/usr/local/lib/gcc4/x64/debug/")
 
-if (WIN32)
-  string(REGEX REPLACE "\\\\" "/" WIN_PROGRAM_FILES_X64_DIRECTORY $ENV{ProgramW6432})
-endif()
-
-set(FBX_WIN_LOCATIONS "${WIN_PROGRAM_FILES_X64_DIRECTORY}/Autodesk/FBX/FBX SDK/${FBX_VERSION}")
+set(FBX_WIN_LOCATIONS "${FBX_WIN_LOCATION_ROOT}/${FBX_VERSION}")
 
 set(FBX_SEARCH_LOCATIONS $ENV{FBX_ROOT} ${FBX_ROOT} ${FBX_MAC_LOCATIONS} ${FBX_WIN_LOCATIONS} ${FBX_LINUX_LOCATIONS})
 
@@ -53,7 +65,9 @@ elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 endif()
 
 function(_fbx_find_library _name _lib _suffix)
-    if (MSVC_VERSION GREATER_EQUAL 1920)
+    if (MSVC_VERSION GREATER_EQUAL 1930)
+        set(VS_PREFIX vs2022)
+    elseif (MSVC_VERSION GREATER_EQUAL 1920)
         set(VS_PREFIX vs2019)
     elseif (MSVC_VERSION GREATER_EQUAL 1910)
         set(VS_PREFIX vs2017)
@@ -71,7 +85,9 @@ function(_fbx_find_library _name _lib _suffix)
 endfunction()
 
 function(_fbx_find_dll _name _lib _suffix)
-    if (MSVC_VERSION GREATER_EQUAL 1920)
+    if (MSVC_VERSION GREATER_EQUAL 1930)
+        set(VS_PREFIX vs2022)
+    elseif (MSVC_VERSION GREATER_EQUAL 1920)
         set(VS_PREFIX vs2019)
     elseif (MSVC_VERSION GREATER_EQUAL 1910)
         set(VS_PREFIX vs2017)
@@ -113,6 +129,7 @@ include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(FBX DEFAULT_MSG FBX_LIBRARY FBX_INCLUDE_DIR)
 
 if (FBX_FOUND)
+  MESSAGE("-- Using FBX version: ${FBX_VERSION}")
   set(FBX_INCLUDE_DIRS ${FBX_INCLUDE_DIR})
   _fbx_append_debugs(FBX_LIBRARIES FBX_LIBRARY)
   add_definitions(-DFBXSDK_NEW_API)
