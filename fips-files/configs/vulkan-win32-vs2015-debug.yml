@@ -1,9 +1,0 @@
----
-platform: win32 
-generator: Visual Studio 14
-build_tool: cmake
-build_type: Debug
-defines:
-    N_USE_VULKAN: ON
-    __X64__: OFF
-    N_DEBUG_SYMBOLS: ON

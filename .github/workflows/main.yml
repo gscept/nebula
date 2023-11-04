@@ -24,7 +24,7 @@ jobs:
         include:
           - name: windows-latest
             os: windows-latest
-            config: vulkan-win64-vs2022-debug
+            config: win64-vstudio-debug
             physx: vc17
             physxkey: vc17
             anyfx: anyfxcompiler-windows

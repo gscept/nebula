@@ -13,7 +13,8 @@ if (EXISTS "${NROOT}/syswork/export.zip")
 endif()
 
 nebula_begin_module(foundation)
-
+    
+    target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h)
     if(FIPS_LINUX)
         fips_libs(uuid cjson stdc++fs)
     endif()
@@ -687,4 +688,3 @@ nebula_begin_module(foundation)
 nebula_end_module()
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})
-target_precompile_headers(foundation PRIVATE [["foundation/stdneb.h"]] "core/ptr.h" "core/rtti.h" "core/refcounted.h")
