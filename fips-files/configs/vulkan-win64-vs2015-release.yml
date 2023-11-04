@@ -1,8 +1,0 @@
----
-platform: win64 
-generator: Visual Studio 14 Win64
-build_tool: cmake
-build_type: Release
-defines:
-    N_USE_VULKAN: ON
-    __X64__: ON

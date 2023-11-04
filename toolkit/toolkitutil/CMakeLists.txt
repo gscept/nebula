@@ -5,7 +5,7 @@
 find_package(FBX REQUIRED)
 
 fips_begin_lib(toolkitutil)
-    target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED)
+    target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED FBXSDK_NEW_API)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
