@@ -648,6 +648,95 @@ vsScreenSpace(
 //------------------------------------------------------------------------------
 /**
 */
+void
+SampleTerrain(
+    uint biome
+    , mat3 tbn
+    , float angle
+    , float heightCutoff
+    , float mask
+    , vec2 tilingFactor
+    , vec3 worldPos
+    , vec3 triplanarWeights
+    , inout vec3 outAlbedo
+    , inout vec4 outMaterial
+    , inout vec3 outNormal
+)
+{
+    if (mask > 0.0f)
+    {
+        vec3 blendNormal = vec3(0, 0, 0);
+        if (heightCutoff == 0.0f)
+        {
+            vec3 albedo = vec3(0, 0, 0);
+            vec3 normal = vec3(0, 0, 0);
+            vec4 material = vec4(0, 0, 0, 0);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.x;
+            outMaterial += material * triplanarWeights.x;
+            blendNormal += normal * triplanarWeights.x;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.y;
+            outMaterial += material * triplanarWeights.y;
+            blendNormal += normal * triplanarWeights.y;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.z;
+            outMaterial += material * triplanarWeights.z;
+            blendNormal += normal * triplanarWeights.z;
+
+            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
+            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
+            outNormal += (tbn * blendNormal) * mask;
+        }
+        else
+        {
+            vec3 albedo = vec3(0, 0, 0);
+            vec3 normal = vec3(0, 0, 0);
+            vec4 material = vec4(0, 0, 0, 0);
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.x * heightCutoff;
+            outMaterial += material * triplanarWeights.x * heightCutoff;
+            blendNormal += normal * triplanarWeights.x * heightCutoff;
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.y * heightCutoff;
+            outMaterial += material * triplanarWeights.y * heightCutoff;
+            blendNormal += normal * triplanarWeights.y * heightCutoff;
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.z * heightCutoff;
+            outMaterial += material * triplanarWeights.z * heightCutoff;
+            blendNormal += normal * triplanarWeights.z * heightCutoff;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
+            outMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
+            outMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
+            outMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
+
+            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
+            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
+            outNormal += (tbn * blendNormal) * mask;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 psTerrainTileUpdate(
@@ -662,15 +751,15 @@ psTerrainTileUpdate(
     vec2 worldPos2D = vec2(SparseTileWorldOffset + UV * MetersPerTile) + worldSize * 0.5f;
     vec2 inputUv = worldPos2D;
 
-    vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
+    //vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
     float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
     float height = MinHeight + heightValue * (MaxHeight - MinHeight);
 
     vec3 worldPos = vec3(worldPos2D.x, height, worldPos2D.y);
 
     // calculate normals by grabbing pixels around our UV
-    //ivec3 offset = ivec3(-1, 1, 0.0f);
-    //vec3 normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
+    ivec3 offset = ivec3(-1, 1, 0.0f);
+    vec3 normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
 
     // setup the TBN
     mat3 tbn = PlaneTBN(normal);
@@ -693,73 +782,9 @@ psTerrainTileUpdate(
         float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
         float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
 
-        const vec2 tilingFactor = vec2(64);
+        vec2 tilingFactor = vec2(rules.z);
 
-        if (mask > 0.0f)
-        {
-            vec3 blendNormal = vec3(0, 0, 0);
-            if (heightCutoff == 0.0f)
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x;
-                totalMaterial += material * triplanarWeights.x;
-                blendNormal += normal * triplanarWeights.x;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y;
-                totalMaterial += material * triplanarWeights.y;
-                blendNormal += normal * triplanarWeights.y;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z;
-                totalMaterial += material * triplanarWeights.z;
-                blendNormal += normal * triplanarWeights.z;
-
-                totalNormal = TangentSpaceNormal(blendNormal.xy, tbn) * mask;
-            }
-            else
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * heightCutoff;
-                totalMaterial += material * triplanarWeights.x * heightCutoff;
-                blendNormal += normal * triplanarWeights.x * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * heightCutoff;
-                totalMaterial += material * triplanarWeights.y * heightCutoff;
-                blendNormal += normal * triplanarWeights.y * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * heightCutoff;
-                totalMaterial += material * triplanarWeights.z * heightCutoff;
-                blendNormal += normal * triplanarWeights.z * heightCutoff;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
-
-                totalNormal = TangentSpaceNormal(blendNormal.xy, tbn) * mask;
-            }
-        }
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
     }
 
     // write output to virtual textures
@@ -992,77 +1017,9 @@ psGenerateLowresFallback(
         float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
         float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
 
-        const vec2 tilingFactor = vec2(64.0f);
+        vec2 tilingFactor = vec2(rules.z);
 
-        if (mask > 0.0f)
-        {
-            vec3 blendNormal = vec3(0, 0, 0);
-            if (heightCutoff == 0.0f)
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x;
-                totalMaterial += material * triplanarWeights.x;
-                blendNormal += normal * triplanarWeights.x;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y;
-                totalMaterial += material * triplanarWeights.y;
-                blendNormal += normal * triplanarWeights.y;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z;
-                totalMaterial += material * triplanarWeights.z;
-                blendNormal += normal * triplanarWeights.z;
-
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
-            }
-            else
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * heightCutoff;
-                totalMaterial += material * triplanarWeights.x * heightCutoff;
-                blendNormal += normal * triplanarWeights.x * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * heightCutoff;
-                totalMaterial += material * triplanarWeights.y * heightCutoff;
-                blendNormal += normal * triplanarWeights.y * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * heightCutoff;
-                totalMaterial += material * triplanarWeights.z * heightCutoff;
-                blendNormal += normal * triplanarWeights.z * heightCutoff;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
-
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
-            }
-        }
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
     }
 
     Albedo = totalAlbedo;
