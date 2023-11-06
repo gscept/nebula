@@ -53,6 +53,15 @@ ComponentsInFilter(Filter filter)
 //------------------------------------------------------------------------------
 /**
 */
+Util::FixedArray<AccessMode> const&
+AccessModesInFilter(Filter filter)
+{
+    return filterAllocator.Get<3>(filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FilterBuilder::FilterBuilder()
     : info(FilterCreateInfo())
 {

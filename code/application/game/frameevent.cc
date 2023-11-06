@@ -86,7 +86,7 @@ FrameEvent::AddProcessor(Processor* processor)
 
     if (!accepted)
     {
-        FrameEventBatch* batch = new FrameEventBatch();
+        FrameEvent::Batch* batch = new FrameEvent::Batch();
         batch->async = processor->async;
         batch->order = processor->order;
         bool res = batch->TryInsert(processor);
@@ -122,7 +122,7 @@ FrameEvent::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& signatur
 //------------------------------------------------------------------------------
 /**
 */
-FrameEventBatch::~FrameEventBatch()
+FrameEvent::Batch::~Batch()
 {
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
@@ -134,7 +134,7 @@ FrameEventBatch::~FrameEventBatch()
 /**
 */
 void
-FrameEventBatch::Execute(World* world)
+FrameEvent::Batch::Execute(World* world)
 {
     if (this->async)
     {
@@ -150,10 +150,37 @@ FrameEventBatch::Execute(World* world)
 /**
 */
 bool
-FrameEventBatch::TryInsert(Processor* processor)
+FrameEvent::Batch::TryInsert(Processor* processor)
 {
-    // TODO: if the batch is async, check so that we don't
+    // if the batch is async, check so that we don't
     // have multiple writers to the same components
+    if (processor->async)
+    {
+        Util::FixedArray<ComponentId> const& components = Game::ComponentsInFilter(processor->filter);
+        Util::FixedArray<AccessMode> const& access = Game::AccessModesInFilter(processor->filter);
+        for (IndexT i = 0; i < components.Size(); i++)
+        {
+            for (auto other : this->processors)
+            {
+                auto const& otherComponents = Game::ComponentsInFilter(other->filter);
+                auto const& otherAccess = Game::AccessModesInFilter(other->filter);
+                for (IndexT k = 0; k < otherComponents.Size(); k++)
+                {
+                    if (otherComponents[k] == components[i])
+                    {
+                        if (otherAccess[k] == AccessMode::WRITE || access[i] == AccessMode::WRITE)
+                        {
+                            // Some processor is already writing to this component, or we're trying to write, and some other is already reading.
+                            // Either way, we cannot add the processor since it will cause races.
+                            return false;
+                        }
+                        break; // we can break because a component should never exist twice in the filter
+                    }
+                }
+            }
+        }
+    }   
+    
     this->processors.Append(processor);
     return true;
 }
@@ -162,7 +189,7 @@ FrameEventBatch::TryInsert(Processor* processor)
 /**
 */
 void
-FrameEventBatch::Prefilter(World* world, bool force)
+FrameEvent::Batch::Prefilter(World* world, bool force)
 {
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
@@ -179,7 +206,7 @@ FrameEventBatch::Prefilter(World* world, bool force)
 /**
 */
 void
-FrameEventBatch::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& signature)
+FrameEvent::Batch::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& signature)
 {
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
@@ -204,7 +231,7 @@ FrameEventBatch::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& sig
 /**
 */
 void
-FrameEventBatch::ExecuteAsync(World* world)
+FrameEvent::Batch::ExecuteAsync(World* world)
 {
     Util::FixedArray<Dataset> datasets(this->processors.Size());
 
@@ -244,7 +271,7 @@ FrameEventBatch::ExecuteAsync(World* world)
 /**
 */
 void
-FrameEventBatch::ExecuteSequential(World* world)
+FrameEvent::Batch::ExecuteSequential(World* world)
 {
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
