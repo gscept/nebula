@@ -45,13 +45,23 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 
         // Load directly, since the model is already loaded on a thread, this is fine
         //this->primitiveGroupIndex = 0;
-        this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, true);
+        this->res = Resources::CreateResource(
+            meshName,
+            tag,
+            [this](Resources::ResourceId)
+            {
+                this->loadSuccess = true;
+            },
+            nullptr,
+            true
+        );
 
     }
     else if (FourCC('MSHI') == fourcc)
     {
         CoreGraphics::MeshResourceId meshRes = this->res;
-        IndexT meshIndex = reader->ReadUInt();
+        uint index = reader->ReadUInt();
+        IndexT meshIndex = this->loadSuccess ? index : 0;
         this->mesh = MeshResourceGetMesh(meshRes, meshIndex);
 
         this->vbo = CoreGraphics::MeshGetVertexBuffer(this->mesh, 0);
@@ -66,7 +76,8 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     else if (FourCC('PGRI') == fourcc)
     {
         // primitive group index
-        this->primitiveGroupIndex = reader->ReadUInt();
+        uint index = reader->ReadUInt();
+        this->primitiveGroupIndex = this->loadSuccess ? index : 0;
         this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->mesh)[this->primitiveGroupIndex];
     }
     else
