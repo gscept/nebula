@@ -281,8 +281,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->vertexComponents.Size() > 0);
 
     // Get upload buffer
-    uint offset = CoreGraphics::Upload(this->vertexDataPtr, this->vertexDataSize);
-    CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
+    auto [offset, buffer] = CoreGraphics::Upload(this->vertexDataPtr, this->vertexDataSize);
 
     // Get main vertex buffer
     this->vbo = CoreGraphics::GetVertexBuffer();
@@ -296,7 +295,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     from.offset = offset;
     to.offset = this->vertexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-    CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, this->vbo, { to }, this->vertexDataSize);
+    CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, this->vbo, {to}, this->vertexDataSize);
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 }
 
@@ -313,8 +312,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     n_assert(this->numIndices > 0);
 
     // Get upload buffer
-    uint offset = CoreGraphics::Upload(this->indexDataPtr, this->indexDataSize);
-    CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
+    auto [offset, buffer] = CoreGraphics::Upload(this->indexDataPtr, this->indexDataSize);
 
     // Get main index buffer
     this->ibo = CoreGraphics::GetIndexBuffer();
@@ -327,7 +325,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     from.offset = offset;
     to.offset = this->indexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-    CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, this->ibo, { to }, this->indexDataSize);
+    CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, this->ibo, {to}, this->indexDataSize);
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 }
 

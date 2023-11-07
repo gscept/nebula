@@ -180,6 +180,9 @@ struct
     Util::Array<Terrain::TerrainTileUpdateUniforms>                 pageUniforms;
     Util::Array<Math::uint2>                                        tileOffsets;
     Util::Array<PhysicalTileUpdate>                                 pageUpdatesThisFrame;
+
+    CoreGraphics::BufferId                                          uploadClearBufferThisFrame;
+    CoreGraphics::BufferId                                          uploadUpdateBufferThisFrame;
     Util::Array<CoreGraphics::BufferCopy>                           indirectionBufferUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureFromCopiesThisFrame;
@@ -653,7 +656,12 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 {
                     BufferBarrierInfo
                     {
-                        CoreGraphics::GetUploadBuffer(),
+                        terrainVirtualTileState.uploadClearBufferThisFrame,
+                        CoreGraphics::BufferSubresourceInfo()
+                    },
+                    BufferBarrierInfo
+                    {
+                        terrainVirtualTileState.uploadUpdateBufferThisFrame,
                         CoreGraphics::BufferSubresourceInfo()
                     },
                 });
@@ -663,7 +671,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             {
                 // perform the moves and clears of indirection pixels
                 CmdCopy(cmdBuf,
-                    CoreGraphics::GetUploadBuffer(), terrainVirtualTileState.indirectionBufferClearsThisFrame,
+                    terrainVirtualTileState.uploadClearBufferThisFrame, terrainVirtualTileState.indirectionBufferClearsThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureClearsThisFrame);
             }
 
@@ -680,7 +688,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             {
                 // update the new pixels
                 CmdCopy(cmdBuf,
-                    CoreGraphics::GetUploadBuffer(), terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
+                    terrainVirtualTileState.uploadUpdateBufferThisFrame, terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureUpdatesThisFrame);
             }
 
@@ -692,7 +700,12 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 {
                     BufferBarrierInfo
                     {
-                        CoreGraphics::GetUploadBuffer(),
+                        terrainVirtualTileState.uploadClearBufferThisFrame,
+                        CoreGraphics::BufferSubresourceInfo()
+                    },
+                    BufferBarrierInfo
+                    {
+                        terrainVirtualTileState.uploadUpdateBufferThisFrame,
                         CoreGraphics::BufferSubresourceInfo()
                     },
                 });
@@ -1837,18 +1850,17 @@ IndirectionClear(
         uint width = tiles >> i;
         uint dataSize = width * width * sizeof(IndirectionEntry);
 
-        uint offset = CoreGraphics::AllocateUpload(dataSize, 4);
+        // create buffer of invalid indirection entry pixels
+        Util::FixedArray<IndirectionEntry> pixels(width * width);
+        pixels.Fill(IndirectionEntry {0xFFFFFFFF});
+
+        // update upload buffer
+        auto [offset, buffer] = CoreGraphics::Upload(pixels.Begin(), pixels.Size());
+        terrainVirtualTileState.uploadClearBufferThisFrame = buffer;
 
         // add copy commands
         terrainVirtualTileState.indirectionBufferClearsThisFrame.Append(CoreGraphics::BufferCopy{ offset });
         terrainVirtualTileState.indirectionTextureClearsThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedCoord.x, mippedCoord.y, mippedCoord.x + width, mippedCoord.y + width), i, 0 });
-
-        // create buffer of invalid indirection entry pixels
-        Util::FixedArray<IndirectionEntry> pixels(width * width);
-        pixels.Fill(IndirectionEntry{ 0xFFFFFFFF });
-
-        // update upload buffer
-        CoreGraphics::Upload(offset, pixels.Begin(), pixels.Size());
 
         // Update CPU buffer
         uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[i];
@@ -2089,13 +2101,13 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 
     // Update buffers for indirection pixel uploads
     numPagesThisFrame = Math::min(NumPagesPerFrame, terrainVirtualTileState.indirectionEntryUpdates.Size());
+    auto [offset, buffer] = CoreGraphics::Upload(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size());
+    terrainVirtualTileState.uploadUpdateBufferThisFrame = buffer;
     for (i = 0; i < numPagesThisFrame; i++)
     {
         // setup indirection update
-        uint offset = CoreGraphics::AllocateUpload(sizeof(Terrain::IndirectionEntry), 4);
-        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append({ offset });
+        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append({ offset + i * sizeof(Terrain::IndirectionEntry) });
         terrainVirtualTileState.indirectionTextureUpdatesThisFrame.Append(terrainVirtualTileState.indirectionTextureCopies[i]);
-        CoreGraphics::Upload(offset, terrainVirtualTileState.indirectionEntryUpdates[i]);
     }
     if (i > 0)
     {

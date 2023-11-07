@@ -118,10 +118,7 @@ void
 TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
 {
     SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(TextureGetPixelFormat(tex));
-    CoreGraphics::BufferId buf = CoreGraphics::GetUploadBuffer();
-    BufferIdAcquire(buf);
-
-    uint offset = CoreGraphics::Upload(data, size, alignment);
+    auto [offset, buffer] = CoreGraphics::Upload(data, size, alignment);
 
     // Then run a copy on the command buffer
     CoreGraphics::BufferCopy bufCopy;
@@ -132,9 +129,7 @@ TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue
     texCopy.layer = layer;
     texCopy.mip = mip;
     texCopy.region.set(0, 0, width, height);
-    CoreGraphics::CmdCopy(cmd, buf, { bufCopy }, tex, { texCopy });
-
-    BufferIdRelease(buf);
+    CoreGraphics::CmdCopy(cmd, buffer, {bufCopy}, tex, {texCopy});
 }
 
 //------------------------------------------------------------------------------

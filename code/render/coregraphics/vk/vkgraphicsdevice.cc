@@ -64,6 +64,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     struct UploadRingBuffer
     {
+        CoreGraphics::BufferCreateInfo createInfo;
+        Util::Array<CoreGraphics::BufferId> buffers;
+        Threading::CriticalSection lock;
+
+        // OLD
         Threading::AtomicCounter uploadStartAddress;
         Threading::AtomicCounter uploadEndAddress;
     };
@@ -1032,12 +1037,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
-    state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
+    //state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
     state.uploadRingBuffers.Resize(info.numBufferedFrames);
     state.globalUploadBufferMaxValue = info.globalUploadMemorySize;
 
     for (i = 0; i < info.numBufferedFrames; i++)
     {
+        state.uploadRingBuffers[i].createInfo = uploadInfo;
         state.uploadRingBuffers[i].uploadStartAddress = state.uploadRingBuffers[i].uploadEndAddress = 0;
     }
 
@@ -1821,7 +1827,8 @@ GetIndexBuffer()
 //------------------------------------------------------------------------------
 /**
 */
-uint
+thread_local uint UploadBufferIndex = 0;
+std::pair<uint, CoreGraphics::BufferId>
 AllocateUpload(const SizeT numBytes, const SizeT alignment)
 {
     Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
@@ -1832,28 +1839,36 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
 
     // Allocate the memory range, overallocate based on alignment
     int ret = Threading::Interlocked::Add(&ring.uploadEndAddress, alignedBytes);
+    UploadBufferIndex = ring.buffers.Size();
 
-    // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+    // If size is exceeded, allocate new buffer
+    n_assert(numBytes < state.globalConstantBufferMaxValue);
     if (ret + alignedBytes >= state.globalUploadBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
     {
-        n_error("Over allocation of upload memory! Memory will be overwritten!\n");
+        ring.lock.Enter();
+        ring.uploadStartAddress = ring.uploadEndAddress = 0;
+        ret = 0;
 
-        // Return dummy value
-        return UINT_MAX;
+        // Create new buffer
+        ring.buffers.Append(CoreGraphics::CreateBuffer(ring.createInfo));
+        UploadBufferIndex = ring.buffers.Size() - 1;
+        ring.lock.Leave();
     }
 
+    const CoreGraphics::BufferId buffer = ring.buffers[UploadBufferIndex];
+
     // Return offset aligned up
-    return Math::align(ret, alignment);
+    return std::make_pair(Math::align(ret, alignment), buffer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-UploadInternal(const uint offset, const void* data, SizeT size)
+UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const void* data, SizeT size)
 {
-    BufferIdLock lock(state.uploadBuffer);
-    CoreGraphics::BufferUpdate(state.uploadBuffer, data, size, offset);
+    BufferIdLock lock(buffer);
+    CoreGraphics::BufferUpdate(buffer, data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1863,6 +1878,40 @@ void
 FlushUpload()
 {
     Vulkan::GraphicsDeviceState::UploadRingBuffer uploadBuffer = state.uploadRingBuffers[state.currentBufferedFrameIndex];
+
+    Util::Array<VkMappedMemoryRange> ranges;
+    IndexT i = 0;
+    for (; i < uploadBuffer.buffers.Size() - 1; i++)
+    {
+        VkMappedMemoryRange range;
+        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.pNext = nullptr;
+        range.offset = 0;
+        range.size = VK_WHOLE_SIZE;
+        range.memory = BufferGetVkMemory(uploadBuffer.buffers[i]);
+        ranges.Append(range);
+
+        CoreGraphics::DelayedDeleteBuffer(uploadBuffer.buffers[i]);
+    }
+    uint64_t size = uploadBuffer.uploadEndAddress - uploadBuffer.uploadStartAddress;
+    if (size > 0)
+    {
+        VkMappedMemoryRange range;
+        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.pNext = nullptr;
+        range.offset = uploadBuffer.uploadStartAddress;
+        range.size = Math::align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+        range.memory = BufferGetVkMemory(uploadBuffer.buffers.Back());
+        ranges.Append(range);
+
+        CoreGraphics::DelayedDeleteBuffer(uploadBuffer.buffers.Back());
+    }
+
+    uploadBuffer.buffers.Clear();
+
+    /*
+    VkResult res = vkFlushMappedMemoryRanges(state.devices[state.currentDevice], ranges.Size(), ranges.Begin());
+    n_assert(res == VK_SUCCESS);
 
     // Flush mapped memory for the previous submission
     uint64_t size = uploadBuffer.uploadEndAddress - uploadBuffer.uploadStartAddress;
@@ -1882,15 +1931,7 @@ FlushUpload()
 
         BufferIdRelease(state.uploadBuffer);
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::BufferId
-GetUploadBuffer()
-{
-    return state.uploadBuffer;
+    */
 }
 
 //------------------------------------------------------------------------------

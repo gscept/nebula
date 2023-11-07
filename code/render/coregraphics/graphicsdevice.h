@@ -103,7 +103,7 @@ struct GraphicsDeviceState
     CoreGraphics::BufferId indexBuffer;
 
     int globalUploadBufferMaxValue;
-    CoreGraphics::BufferId uploadBuffer;
+    //CoreGraphics::BufferId uploadBuffer;
 
     uint maxNumBufferedFrames = 1;
     uint32_t currentBufferedFrameIndex = 0;
@@ -220,25 +220,23 @@ void DeallocateIndices(const VertexAlloc& alloc);
 const CoreGraphics::BufferId GetIndexBuffer();
 
 /// Allocate upload memory
-uint AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
+std::pair<uint, CoreGraphics::BufferId> AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
 /// Upload single item to GPU source buffer
-template<class TYPE> uint Upload(const TYPE& data);
+template<class TYPE> std::pair<uint, CoreGraphics::BufferId> Upload(const TYPE& data);
 /// Upload array of items to GPU source buffer
-template<class TYPE> uint Upload(const TYPE* data, SizeT elements);
+template<class TYPE> std::pair<uint, CoreGraphics::BufferId> Upload(const TYPE* data, SizeT elements);
 /// Upload item to GPU source buffer with preallocated memory
-template<class TYPE> void Upload(uint offset, const TYPE& data);
+template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE& data);
 /// Upload array of items GPU source buffer with preallocated memory
-template<class TYPE> void Upload(uint offset, const TYPE* data, SizeT elements);
+template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE* data, SizeT elements);
 /// Upload memory to upload buffer, return offset
-uint Upload(const void* data, SizeT numBytes);
+std::pair<uint, CoreGraphics::BufferId> Upload(const void* data, SizeT numBytes);
 /// Upload memory to upload buffer with alignment, return offset
-uint Upload(const void* data, SizeT numBytes, SizeT alignment);
+std::pair<uint, CoreGraphics::BufferId> Upload(const void* data, SizeT numBytes, SizeT alignment);
 /// Upload memory to upload buffer with given offset, return offset
-void UploadInternal(uint offset, const void* data, SizeT size);
+void UploadInternal(const CoreGraphics::BufferId buffer, uint offset, const void* data, SizeT size);
 /// Flush upload buffer
 void FlushUpload();
-/// Get upload buffer
-const CoreGraphics::BufferId GetUploadBuffer();
 
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
@@ -363,26 +361,26 @@ SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements)
 /**
 */
 template<class TYPE>
-inline uint 
+inline std::pair<uint, CoreGraphics::BufferId>
 Upload(const TYPE& data)
 {
     const uint uploadSize = sizeof(TYPE);
-    uint offset = AllocateUpload(uploadSize);
-    UploadInternal(offset, &data, uploadSize);
-    return offset;
+    auto [offset, buffer] = AllocateUpload(uploadSize);
+    UploadInternal(buffer, offset, &data, uploadSize);
+    return std::make_pair(offset, buffer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline uint
+inline std::pair<uint, CoreGraphics::BufferId>
 Upload(const TYPE* data, SizeT numElements)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
-    uint offset = AllocateUpload(uploadSize);
-    UploadInternal(offset, data, uploadSize);
-    return offset;
+    auto [offset, buffer] = AllocateUpload(uploadSize);
+    UploadInternal(buffer, offset, data, uploadSize);
+    return std::make_pair(offset, buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -390,10 +388,10 @@ Upload(const TYPE* data, SizeT numElements)
 */
 template<class TYPE>
 inline void
-Upload(const uint offset, const TYPE& data)
+Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE& data)
 {
     const uint uploadSize = sizeof(TYPE);
-    UploadInternal(offset, &data, uploadSize);
+    UploadInternal(buffer, offset, &data, uploadSize);
 }
 
 //------------------------------------------------------------------------------
@@ -401,32 +399,32 @@ Upload(const uint offset, const TYPE& data)
 */
 template<class TYPE>
 inline void
-Upload(const uint offset, const TYPE* data, SizeT numElements)
+Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE* data, SizeT numElements)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
-    UploadInternal(offset, data, uploadSize);
+    UploadInternal(buffer, offset, data, uploadSize);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint
+inline std::pair<uint, CoreGraphics::BufferId>
 Upload(const void* data, SizeT numBytes)
 {
-    uint offset = AllocateUpload(numBytes);
-    UploadInternal(offset, data, numBytes);
-    return offset;
+    auto [offset, buffer] = AllocateUpload(numBytes);
+    UploadInternal(buffer, offset, data, numBytes);
+    return std::make_pair(offset, buffer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline uint 
+inline std::pair<uint, CoreGraphics::BufferId>
 Upload(const void* data, SizeT numBytes, SizeT alignment)
 {
-    uint offset = AllocateUpload(numBytes, alignment);
-    UploadInternal(offset, data, numBytes);
-    return offset;
+    auto [offset, buffer] = AllocateUpload(numBytes);
+    UploadInternal(buffer, offset, data, numBytes);
+    return std::make_pair(offset, buffer);
 }
 
 } // namespace CoreGraphics
