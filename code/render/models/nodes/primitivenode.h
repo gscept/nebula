@@ -39,6 +39,7 @@ protected:
     Resources::ResourceId res;
     CoreGraphics::MeshId mesh;
     uint16_t primitiveGroupIndex;
+    bool loadSuccess = false;
 
     CoreGraphics::BufferId vbo, ibo;
     IndexT baseVboOffset, attributesVboOffset, iboOffset;

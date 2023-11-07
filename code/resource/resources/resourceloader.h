@@ -184,7 +184,7 @@ protected:
     Util::FixedArray<_PlaceholderResource> placeholders;
 
     /// get placeholder based on resource name
-    virtual Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
+    Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
 
     /// these types need to be properly initiated in a subclass Setup function
     Util::StringAtom placeholderResourceName;

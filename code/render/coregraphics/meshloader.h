@@ -37,7 +37,6 @@ private:
 
     /// setup mesh from nvx3 file in memory
     void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId entry);
-
 };
 
 } // namespace CoreGraphics
