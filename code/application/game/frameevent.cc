@@ -244,6 +244,9 @@ FrameEvent::Batch::ExecuteAsync(World* world)
         numJobs += datasets[i].numViews;
     }
 
+    if (numJobs == 0)
+        return;
+
     ProcessorJobContext context;
     context.world = world;
     context.inputs = new ProcessorJobInput[numJobs];
