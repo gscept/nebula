@@ -11,7 +11,7 @@
 #include "core/refcounted.h"
 #include "math/vec4.h"
 #include "math/mat4.h"
-#include "foundation/timing/time.h"
+#include "timing/time.h"
 
 #include <fbxsdk.h>
 
