@@ -93,5 +93,14 @@ to_euler(const quat& q)
     return vec3(x, y, z);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+quat
+from_euler(const vec3& v)
+{
+    return quatyawpitchroll(v.x,v.y,v.z);
+}
+
 } // namespace Math
 

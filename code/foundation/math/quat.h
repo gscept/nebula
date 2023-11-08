@@ -22,6 +22,7 @@ quat slerp(const quat& q1, const quat& q2, scalar t);
 
 quat rotationmatrix(const mat4& m);
 vec3 to_euler(const quat& q);
+quat from_euler(const vec3& v);
 quat quatyawpitchroll(scalar y, scalar x, scalar z);
 
 struct NEBULA_ALIGN16 quat
