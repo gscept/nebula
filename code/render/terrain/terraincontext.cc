@@ -2106,7 +2106,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     for (i = 0; i < numPagesThisFrame; i++)
     {
         // setup indirection update
-        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append({ offset + i * sizeof(Terrain::IndirectionEntry) });
+        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append({ static_cast<uint>(offset + i * sizeof(Terrain::IndirectionEntry)) });
         terrainVirtualTileState.indirectionTextureUpdatesThisFrame.Append(terrainVirtualTileState.indirectionTextureCopies[i]);
     }
     if (i > 0)
