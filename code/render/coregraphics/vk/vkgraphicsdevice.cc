@@ -1922,7 +1922,7 @@ try_alloc:
     }
 
     // Return offset aligned up
-    return Util::Pair{Math::align(ret.handle.bytesWritten, alignment), ret.handle.buffer};
+    return Util::MakePair(Math::align(ret.handle.bytesWritten, alignment), ret.handle.buffer);
 }
 
 //------------------------------------------------------------------------------
