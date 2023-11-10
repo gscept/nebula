@@ -252,6 +252,8 @@ void CmdResetClipToPass(const CmdBufferId id);
 /// Draw primitives
 void CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw primitives instanced
+void CmdDraw(const CmdBufferId id, SizeT numInstances, const CoreGraphics::PrimitiveGroup& pg);
+/// Draw primitives instanced with base instance
 void CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
 void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride);

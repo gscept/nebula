@@ -63,6 +63,8 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
     float WorldSizeX;
     float WorldSizeZ;
 
+    vec2 DataBufferSize;
+
     uint NumTilesX;
     uint NumTilesY;
     uint TileWidth;
@@ -139,11 +141,15 @@ group(SYSTEM_GROUP) rw_buffer       PageStatusBuffer [ string Visibility = "PS|C
     uint PageStatuses[];
 };
 
-group(DYNAMIC_OFFSET_GROUP) constant PatchUniforms [ string Visibility = "VS|PS"; ]
+struct TerrainPatch
 {
-    vec2 OffsetPatchPos;
-    vec2 OffsetPatchUV;
-    vec2 PatchUvScale;
+    vec2 PosOffset;
+    vec2 UvOffset;
+};
+
+group(SYSTEM_GROUP) rw_buffer TerrainPatchData [ string Visibility = "VS|PS"; ]
+{
+    TerrainPatch Patches[];
 };
 
 group(SYSTEM_GROUP) sampler_state TextureSampler
@@ -211,10 +217,11 @@ vsTerrain(
     , out float Tessellation
 ) 
 {
-    vec3 offsetPos = position + vec3(OffsetPatchPos.x, 0, OffsetPatchPos.y);
+    TerrainPatch terrainPatch = Patches[gl_InstanceID];
+    vec3 offsetPos = position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y);
     vec4 modelSpace = Transform * vec4(offsetPos, 1);
     Position = vec4(offsetPos, 1);
-    vec2 UV = uv + OffsetPatchUV;
+    vec2 UV = uv + terrainPatch.UvOffset;
 
     float vertexDistance = distance( Position.xyz, EyePos.xyz);
     float factor = 1.0f - saturate((MinLODDistance - vertexDistance) / (MinLODDistance - MaxLODDistance));
@@ -222,12 +229,6 @@ vsTerrain(
     Tessellation = MinTessellation + factor * (MaxTessellation - MinTessellation) * decision;
 
     vec2 sampleUV = (Position.xz / vec2(WorldSizeX, WorldSizeZ)) - 0.5f;
-
-    vec2 pixelSize = textureSize(basic2D(HeightMap), 0);
-    pixelSize = vec2(1.0f) / pixelSize;
-
-    vec3 offset = vec3(-pixelSize.x, pixelSize.x, 0.0f);
-    Normal = CalculateNormalFromHeight(UV, offset);
 
     gl_Position = modelSpace;
 }
@@ -328,7 +329,6 @@ dsTerrain(
     in vec4 position[],
     in vec3 normal[],
     out vec2 UV,
-    out vec3 ViewPos,
     out vec3 Normal,
     out vec3 Position)
 {
@@ -336,19 +336,25 @@ dsTerrain(
         mix(position[0].xyz, position[1].xyz, gl_TessCoord.x),
         mix(position[2].xyz, position[3].xyz, gl_TessCoord.x),
         gl_TessCoord.y);
-        
+
+    /*
     Normal = mix(
         mix(normal[0], normal[1], gl_TessCoord.x),
         mix(normal[2], normal[3], gl_TessCoord.x),
         gl_TessCoord.y);
-
+        */
+        
     UV = (Position.xz / vec2(WorldSizeX, WorldSizeZ)) - 0.5f;
+
+    
+    vec2 pixelSize = textureSize(basic2D(HeightMap), 0);
+    pixelSize = vec2(1.0f) / pixelSize;
+
+    vec3 offset = vec3(-pixelSize.x, pixelSize.x, 0.0f);
+    Normal = CalculateNormalFromHeight(UV, offset);
 
     float heightValue = sample2DLod(HeightMap, TextureSampler, UV, 0).r;
     Position.y = MinHeight + heightValue * (MaxHeight - MinHeight);
-
-    // when we have height adjusted, calculate the view position
-    ViewPos = EyePos.xyz - Position.xyz;
 
     gl_Position = ViewProjection * vec4(Position, 1);
 }
@@ -497,19 +503,17 @@ CalculateTileCoords(in uint mip, in uint maxTiles, in vec2 relativePos, in uvec2
 shader
 void
 psTerrainPrepass(
-    in vec2 uv,
-    in vec3 viewPos,
-    in vec3 normal,
-    in vec3 worldPos,
+    in vec2 UV,
+    in vec3 Normal,
+    in vec3 WorldPos,
     [color0] out vec4 Pos)
 {
-    Pos.xy = worldPos.xz;
-    Pos.z = 0.0f;
-    Pos.w = query_lod2D(AlbedoLowresBuffer, TextureSampler, uv).y;
+    Pos.x = 100.0f;
+    Pos.y = query_lod2D(AlbedoLowresBuffer, TextureSampler, UV).y;
 
     // convert world space to positive integer interval [0..WorldSize]
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-    vec2 unsignedPos = worldPos.xz + worldSize * 0.5f;
+    vec2 unsignedPos = WorldPos.xz + worldSize * 0.5f;
     ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
 
     if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
@@ -527,12 +531,12 @@ psTerrainPrepass(
     if (tiles != 1)
     {
         // calculate pixel position relative to the world coordinate for the subtexture
-        vec2 relativePos = worldPos.xz - subTexture.worldCoordinate;
+        vec2 relativePos = WorldPos.xz - subTexture.worldCoordinate;
         //float lod = (Pos.w / IndirectionNumMips) * maxMip;
         
         const float lodScale = 4 * tiles;
-        vec2 dy = dFdyFine(worldPos.xz * lodScale);
-        vec2 dx = dFdxFine(worldPos.xz * lodScale);
+        vec2 dy = dFdyFine(WorldPos.xz * lodScale);
+        vec2 dx = dFdxFine(WorldPos.xz * lodScale);
         float d = max(1.0f, max(dot(dx, dx), dot(dy, dy)));
         d = clamp(sqrt(d), 1.0f, pow(2, maxMip));
         float lod = log2(d);
@@ -593,7 +597,7 @@ psTerrainPrepass(
         }
 
         // if the position has w == 1, it means we found a page
-        Pos.z = lod + mipBias;
+        Pos.x = lod + mipBias;
     }
 }
 
@@ -644,10 +648,99 @@ vsScreenSpace(
 //------------------------------------------------------------------------------
 /**
 */
+void
+SampleTerrain(
+    uint biome
+    , mat3 tbn
+    , float angle
+    , float heightCutoff
+    , float mask
+    , vec2 tilingFactor
+    , vec3 worldPos
+    , vec3 triplanarWeights
+    , inout vec3 outAlbedo
+    , inout vec4 outMaterial
+    , inout vec3 outNormal
+)
+{
+    if (mask > 0.0f)
+    {
+        vec3 blendNormal = vec3(0, 0, 0);
+        if (heightCutoff == 0.0f)
+        {
+            vec3 albedo = vec3(0, 0, 0);
+            vec3 normal = vec3(0, 0, 0);
+            vec4 material = vec4(0, 0, 0, 0);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.x;
+            outMaterial += material * triplanarWeights.x;
+            blendNormal += normal * triplanarWeights.x;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.y;
+            outMaterial += material * triplanarWeights.y;
+            blendNormal += normal * triplanarWeights.y;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.z;
+            outMaterial += material * triplanarWeights.z;
+            blendNormal += normal * triplanarWeights.z;
+
+            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
+            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
+            outNormal += (tbn * blendNormal) * mask;
+        }
+        else
+        {
+            vec3 albedo = vec3(0, 0, 0);
+            vec3 normal = vec3(0, 0, 0);
+            vec4 material = vec4(0, 0, 0, 0);
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.x * heightCutoff;
+            outMaterial += material * triplanarWeights.x * heightCutoff;
+            blendNormal += normal * triplanarWeights.x * heightCutoff;
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.y * heightCutoff;
+            outMaterial += material * triplanarWeights.y * heightCutoff;
+            blendNormal += normal * triplanarWeights.y * heightCutoff;
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.z * heightCutoff;
+            outMaterial += material * triplanarWeights.z * heightCutoff;
+            blendNormal += normal * triplanarWeights.z * heightCutoff;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
+            outMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
+            outMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
+            outAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
+            outMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
+
+            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
+            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
+            outNormal += (tbn * blendNormal) * mask;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 shader
 void
 psTerrainTileUpdate(
-    in vec2 uv,
+    in vec2 UV,
     [color0] out vec3 Albedo,
     [color1] out vec3 Normal,
     [color2] out vec4 Material)
@@ -655,24 +748,21 @@ psTerrainTileUpdate(
     // calculate 
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
     vec2 invWorldSize = 1.0f / worldSize;
-    vec2 worldPos2D = vec2(SparseTileWorldOffset + uv * MetersPerTile) + worldSize * 0.5f;
+    vec2 worldPos2D = vec2(SparseTileWorldOffset + UV * MetersPerTile) + worldSize * 0.5f;
     vec2 inputUv = worldPos2D;
 
-    vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
+    //vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
     float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
     float height = MinHeight + heightValue * (MaxHeight - MinHeight);
 
     vec3 worldPos = vec3(worldPos2D.x, height, worldPos2D.y);
 
     // calculate normals by grabbing pixels around our UV
-    //ivec3 offset = ivec3(-1, 1, 0.0f);
-    //vec3 normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
+    ivec3 offset = ivec3(-1, 1, 0.0f);
+    vec3 normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
 
     // setup the TBN
-    vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
-    tangent = normalize(cross(normal.xyz, tangent));
-    vec3 binormal = normalize(cross(normal.xyz, tangent));
-    mat3 tbn = mat3(tangent, binormal, normal.xyz);
+    mat3 tbn = PlaneTBN(normal);
 
     // calculate weights for triplanar mapping
     vec3 triplanarWeights = abs(normal.xyz);
@@ -692,77 +782,9 @@ psTerrainTileUpdate(
         float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
         float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
 
-        const vec2 tilingFactor = vec2(64);
+        vec2 tilingFactor = vec2(rules.z);
 
-        if (mask > 0.0f)
-        {
-            vec3 blendNormal = vec3(0, 0, 0);
-            if (heightCutoff == 0.0f)
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x;
-                totalMaterial += material * triplanarWeights.x;
-                blendNormal += normal * triplanarWeights.x;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y;
-                totalMaterial += material * triplanarWeights.y;
-                blendNormal += normal * triplanarWeights.y;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z;
-                totalMaterial += material * triplanarWeights.z;
-                blendNormal += normal * triplanarWeights.z;
-
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
-            }
-            else
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * heightCutoff;
-                totalMaterial += material * triplanarWeights.x * heightCutoff;
-                blendNormal += normal * triplanarWeights.x * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * heightCutoff;
-                totalMaterial += material * triplanarWeights.y * heightCutoff;
-                blendNormal += normal * triplanarWeights.y * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * heightCutoff;
-                totalMaterial += material * triplanarWeights.z * heightCutoff;
-                blendNormal += normal * triplanarWeights.z * heightCutoff;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
-
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
-            }
-        }
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
     }
 
     // write output to virtual textures
@@ -773,197 +795,176 @@ psTerrainTileUpdate(
 
 //------------------------------------------------------------------------------
 /**
-    Calculate pixel color
 */
+[early_depth]
 shader
 void
-psScreenSpaceVirtual(
-    in vec2 ScreenUV,
-    [color0] out vec4 Color)
+psTerrainResolve(
+    in vec2 UV
+    , in vec3 Normal
+    , in vec3 WorldPos
+    , [color0] out vec4 OutColor)
 {
     // sample position, lod and texture sampling mode from screenspace buffer
-    vec4 pos = sample2DLod(TerrainPosBuffer, TextureSampler, ScreenUV, 0);
-    if (pos.w == 255.0f)
-        discard;
+    vec2 screenUv = gl_FragCoord.xy / DataBufferSize;
+    vec2 posBuf = sample2DLod(TerrainPosBuffer, TextureSampler, screenUv, 0).xy;
 
     // calculate the subtexture coordinate
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-    vec2 worldPos = pos.xy;
-    vec2 worldUv = (worldPos + worldSize * 0.5f) / worldSize;
-    vec2 unsignedPos = worldPos + worldSize * 0.5f;
+    vec2 worldUv = (WorldPos.xz + worldSize * 0.5f) / worldSize;
+    vec2 unsignedPos = WorldPos.xz + worldSize * 0.5f;
     ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
 
-    vec3 albedo = sample2DLod(AlbedoLowresBuffer, TextureSampler, worldUv, pos.w).rgb;
-    vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, worldUv, pos.w).xyz;
-    vec4 material = sample2DLod(MaterialLowresBuffer, TextureSampler, worldUv, pos.w);
+    vec3 albedo = sample2DLod(AlbedoLowresBuffer, TextureSampler, worldUv, posBuf.y).rgb;
+    vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, worldUv, posBuf.y).xyz;
+    vec4 material = sample2DLod(MaterialLowresBuffer, TextureSampler, worldUv, posBuf.y);
 
     if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
     {
-        vec3 viewVec = normalize(EyePos.xyz - pos.xyz);
-        vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
-        vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
-        vec4 viewPos = (View * vec4(pos.xyz, 1));
-
-        uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, pos.z, InvZScale, InvZBias);
-        uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
-
-        vec3 light = vec3(0, 0, 0);
-        light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
-        light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
-        //light += IBL(albedo, F0, normal, viewVec, material);
-        light += albedo.rgb * material[MAT_EMISSIVE];
-        Color = vec4(light, 1);
-        return;
+        // Skip virtual texture lookup
     }
-
-    // get subtexture
-    uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
-    TerrainSubTexture subTexture = SubTextures[subTextureIndex];
-
-    uvec2 dummydummy, indirectionOffset;
-    uint maxMip, tiles, mipBias;
-    UnpackSubTexture(subTexture, dummydummy, indirectionOffset, maxMip, mipBias, tiles);
-
-    vec2 debugCoord = uvec2(0,0);
-
-    if (tiles != 1)
+    else
     {
-        int lowerMip = int(floor(pos.z));
-        int upperMip = int(ceil(pos.z));
+        // get subtexture
+        uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
+        TerrainSubTexture subTexture = SubTextures[subTextureIndex];
 
-        vec2 cameraRelativePos = worldPos.xy - EyePos.xz;
-        float distSquared = dot(cameraRelativePos, cameraRelativePos);
-        float blendWeight = (distSquared - LowresFadeStart) * LowresFadeDistance;
-        blendWeight = clamp(blendWeight, 0, 1);
+        uvec2 dummydummy, indirectionOffset;
+        uint maxMip, tiles, mipBias;
+        UnpackSubTexture(subTexture, dummydummy, indirectionOffset, maxMip, mipBias, tiles);
 
-        vec2 relativePos = worldPos - subTexture.worldCoordinate;
+        vec2 debugCoord = uvec2(0, 0);
 
-        // calculate lower mip page coord, page tile coord, and the fractional of the page tile
-        uvec2 pageCoordLower;
-        uvec2 dummy;
-        vec2 subTextureTileFractLower;
-        CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, pageCoordLower, dummy, subTextureTileFractLower);
-
-        // physicalUv represents the pixel offset for this pixel into that page, add padding to account for anisotropy
-        vec2 physicalUvLower = subTextureTileFractLower * PhysicalTileSize + PhysicalTilePadding;
-
-        vec3 albedo0;
-        vec3 normal0;
-        vec4 material0;
-
-        // if we need to sample two lods, do bilinear interpolation ourselves
-        if (upperMip != lowerMip)
+        if (tiles != 1)
         {
-            uvec2 pageCoordUpper;
+            int lowerMip = int(floor(posBuf.x));
+            int upperMip = int(ceil(posBuf.x));
+
+            vec2 cameraRelativePos = WorldPos.xz - EyePos.xz;
+            float distSquared = dot(cameraRelativePos, cameraRelativePos);
+            float blendWeight = (distSquared - LowresFadeStart) * LowresFadeDistance;
+            blendWeight = clamp(blendWeight, 0, 1);
+
+            vec2 relativePos = WorldPos.xz - subTexture.worldCoordinate;
+
+            // calculate lower mip page coord, page tile coord, and the fractional of the page tile
+            uvec2 pageCoordLower;
             uvec2 dummy;
-            vec2 subTextureTileFractUpper;
-            CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
-            vec2 physicalUvUpper = subTextureTileFractUpper * (PhysicalTileSize) + PhysicalTilePadding;
+            vec2 subTextureTileFractLower;
+            CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, pageCoordLower, dummy, subTextureTileFractLower);
 
-            // get the indirection coord and normalize it to the physical space
-            uvec3 indirectionUpper = fetchIndirection(ivec2(pageCoordUpper), int(upperMip), 0);
-            uvec3 indirectionLower = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
-            debugCoord = indirectionLower.xy / vec2(2048.0f);
+            // physicalUv represents the pixel offset for this pixel into that page, add padding to account for anisotropy
+            vec2 physicalUvLower = subTextureTileFractLower * PhysicalTileSize + PhysicalTilePadding;
 
+            vec3 albedo0;
+            vec3 normal0;
+            vec4 material0;
 
-            vec3 albedo1;
-            vec3 normal1;
-            vec4 material1;
-
-            // if valid mip, sample from physical cache
-            if (indirectionUpper.z != 0xF)
+            // if we need to sample two lods, do bilinear interpolation ourselves
+            if (upperMip != lowerMip)
             {
-                // convert from texture space to normalized space
-                vec2 indirection = (indirectionUpper.xy + physicalUvUpper) * vec2(PhysicalInvPaddedTextureSize);
-                albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
-                normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
-                material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+                uvec2 pageCoordUpper;
+                uvec2 dummy;
+                vec2 subTextureTileFractUpper;
+                CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
+                vec2 physicalUvUpper = subTextureTileFractUpper * (PhysicalTileSize)+PhysicalTilePadding;
+
+                // get the indirection coord and normalize it to the physical space
+                uvec3 indirectionUpper = fetchIndirection(ivec2(pageCoordUpper), int(upperMip), 0);
+                uvec3 indirectionLower = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
+                debugCoord = indirectionLower.xy / vec2(2048.0f);
+
+
+                vec3 albedo1;
+                vec3 normal1;
+                vec4 material1;
+
+                // if valid mip, sample from physical cache
+                if (indirectionUpper.z != 0xF)
+                {
+                    // convert from texture space to normalized space
+                    vec2 indirection = (indirectionUpper.xy + physicalUvUpper) * vec2(PhysicalInvPaddedTextureSize);
+                    albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
+                    normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
+                    material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+                }
+                else
+                {
+                    // otherwise, pick fallback texture
+                    albedo0 = albedo;
+                    normal0 = normal;
+                    material0 = material;
+                }
+
+                // same here
+                if (indirectionLower.z != 0xF)
+                {
+                    // convert from texture space to normalized space
+                    vec2 indirection = (indirectionLower.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
+                    albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
+                    normal1 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
+                    material1 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+                }
+                else
+                {
+                    albedo1 = albedo;
+                    normal1 = normal;
+                    material1 = material;
+                }
+
+                float weight = fract(posBuf.x);
+                albedo0 = lerp(albedo1, albedo0, weight);
+                normal0 = lerp(normal1, normal0, weight);
+                material0 = lerp(material1, material0, weight);
             }
             else
             {
-                // otherwise, pick fallback texture
-                albedo0 = albedo;
-                normal0 = normal;
-                material0 = material;
+                // do the cheap path and just do a single lookup
+                uvec3 indirection = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
+                debugCoord = indirection.xy;
+
+                // use physical cache if indirection is valid
+                if (indirection.z != 0xF)
+                {
+                    vec2 indir = (indirection.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
+                    albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indir.xy, 0).rgb;
+                    normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indir.xy, 0).xyz;
+                    material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indir.xy, 0);
+                }
+                else
+                {
+                    // otherwise, pick fallback texture
+                    albedo0 = albedo;
+                    normal0 = normal;
+                    material0 = material;
+                }
             }
 
-            // same here
-            if (indirectionLower.z != 0xF)
+            if (blendWeight >= 0.0f)
             {
-                // convert from texture space to normalized space
-                vec2 indirection = (indirectionLower.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
-                albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).rgb;
-                normal1 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
-                material1 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+                albedo = lerp(albedo0, albedo, blendWeight);
+                normal = lerp(normal0, normal, blendWeight);
+                material = lerp(material0, material, blendWeight);
             }
             else
             {
-                albedo1 = albedo;
-                normal1 = normal;
-                material1 = material;
+                albedo = albedo0;
+                normal = normal0;
+                material = material0;
             }
-
-            float weight = fract(pos.z);
-            albedo0 = lerp(albedo1, albedo0, weight);
-            normal0 = lerp(normal1, normal0, weight);
-            material0 = lerp(material1, material0, weight);
-        }
-        else
-        {
-            // do the cheap path and just do a single lookup
-            uvec3 indirection = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
-            debugCoord = indirection.xy;
-
-            // use physical cache if indirection is valid
-            if (indirection.z != 0xF)
-            {
-                vec2 indir = (indirection.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
-                albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indir.xy, 0).rgb;
-                normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indir.xy, 0).xyz;
-                material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indir.xy, 0);
-            }
-            else
-            {
-                // otherwise, pick fallback texture
-                albedo0 = albedo;
-                normal0 = normal;
-                material0 = material;
-            }
-        }
-
-        if (blendWeight >= 0.0f)
-        {
-            albedo = lerp(albedo0, albedo, blendWeight);
-            normal = lerp(normal0, normal, blendWeight);
-            material = lerp(material0, material, blendWeight);
-        }
-        else
-        {
-            albedo = albedo0;
-            normal = normal0;
-            material = material0;
         }
     }
 
-    vec3 viewVec = normalize(EyePos.xyz - pos.xyz);
+    vec3 viewVec = normalize(EyePos.xyz - WorldPos);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
-    vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
-    vec4 viewPos = (View * vec4(pos.xyz, 1));
-
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, pos.z, InvZScale, InvZBias);
-    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
-    light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, viewNormal, gl_FragCoord.z);
+    light += CalculateLight(WorldPos, gl_FragCoord.xyz, albedo.rgb, material, normal);
+    //light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, normal, pos.xxy);
+    //light += LocalLights(idx, albedo.rgb, material, F0, pos.xyz, normal, gl_FragCoord.z);
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];
-
-    //Color = vec4(debugCoord.xy, 0, 1);
-    Color = vec4(light.rgb, 1);
-    //Color.rgb = vec3(debugCoord.xy, 0) + light.rgb;
-    //Color.a = 1.0f;
-    //Color = albedo;
+    OutColor = vec4(light.rgb, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -978,6 +979,9 @@ psGenerateLowresFallback(
     [color2] out vec4 Material)
 {
     // calculate 
+    vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
+    vec2 invWorldSize = 1.0f / worldSize;
+
     vec2 texelSize = RenderTargetDimensions[0].zw;
     vec2 pixel = vec2(gl_FragCoord.xy);
     vec2 uv = pixel * texelSize;
@@ -990,7 +994,7 @@ psGenerateLowresFallback(
 
     // calculate normals by grabbing pixels around our UV
     ivec3 offset = ivec3(-1, 1, 0.0f);
-    vec3 normal = CalculateNormalFromHeight(pixel, offset, texelSize);
+    vec3 normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
 
     // setup the TBN
     vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
@@ -1016,77 +1020,9 @@ psGenerateLowresFallback(
         float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
         float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
 
-        const vec2 tilingFactor = vec2(64.0f);
+        vec2 tilingFactor = vec2(rules.z);
 
-        if (mask > 0.0f)
-        {
-            vec3 blendNormal = vec3(0, 0, 0);
-            if (heightCutoff == 0.0f)
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x;
-                totalMaterial += material * triplanarWeights.x;
-                blendNormal += normal * triplanarWeights.x;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y;
-                totalMaterial += material * triplanarWeights.y;
-                blendNormal += normal * triplanarWeights.y;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z;
-                totalMaterial += material * triplanarWeights.z;
-                blendNormal += normal * triplanarWeights.z;
-
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
-            }
-            else
-            {
-                vec3 albedo = vec3(0, 0, 0);
-                vec3 normal = vec3(0, 0, 0);
-                vec4 material = vec4(0, 0, 0, 0);
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * heightCutoff;
-                totalMaterial += material * triplanarWeights.x * heightCutoff;
-                blendNormal += normal * triplanarWeights.x * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * heightCutoff;
-                totalMaterial += material * triplanarWeights.y * heightCutoff;
-                blendNormal += normal * triplanarWeights.y * heightCutoff;
-
-                SampleSlopeRule(i, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * heightCutoff;
-                totalMaterial += material * triplanarWeights.z * heightCutoff;
-                blendNormal += normal * triplanarWeights.z * heightCutoff;
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
-
-                SampleSlopeRule(i, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
-                totalAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
-                totalMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
-                blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
-
-                blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-                blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-                totalNormal += (tbn * blendNormal) * mask;
-            }
-        }
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
     }
 
     Albedo = totalAlbedo;
@@ -1177,6 +1113,12 @@ render_state TerrainState
     //FillMode = Line;
 };
 
+render_state ResolveState
+{
+    DepthEnabled = true;
+    DepthFunc = Equal;
+};
+
 render_state FinalState
 {
     DepthWrite = false;
@@ -1184,7 +1126,7 @@ render_state FinalState
 };
 
 TessellationTechnique(TerrainPrepass, "TerrainPrepass", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainPrepass(), TerrainState);
-SimpleTechnique(TerrainVirtualScreenSpace, "TerrainVirtualScreenSpace", vsScreenSpace(), psScreenSpaceVirtual(), FinalState);
+TessellationTechnique(TerrainResolve, "TerrainResolve", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainResolve(), ResolveState);
 SimpleTechnique(TerrainTileUpdate, "TerrainTileUpdate", vsScreenSpace(), psTerrainTileUpdate(), FinalState);
 SimpleTechnique(TerrainLowresFallback, "TerrainLowresFallback", vsScreenSpace(), psGenerateLowresFallback(), FinalState);
 

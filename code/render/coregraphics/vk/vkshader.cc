@@ -739,6 +739,26 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
 //------------------------------------------------------------------------------
 /**
 */
+ResourceTableSet
+ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize)
+{
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
+    if (idx == InvalidIndex) return std::move(CoreGraphics::ResourceTableSet());
+    else
+    {
+        ResourceTableCreateInfo crInfo =
+        {
+            Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
+            overallocationSize
+        };
+        return std::move(CoreGraphics::ResourceTableSet(crInfo));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const bool
 ShaderHasResourceTable(const ShaderId id, const IndexT group)
 {

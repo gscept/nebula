@@ -24,7 +24,6 @@ namespace Vegetation
 VegetationContext::VegetationAllocator VegetationContext::vegetationAllocator;
 __ImplementContext(VegetationContext, VegetationContext::vegetationAllocator);
 
-
 struct
 {
     CoreGraphics::TextureId heightMap;
@@ -169,7 +168,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     CoreGraphics::BufferCreateInfo cboInfo;
     cboInfo.name = "Vegetation System Uniforms";
     cboInfo.usageFlags = CoreGraphics::ConstantBuffer;
-    cboInfo.mode = CoreGraphics::HostCached;
+    cboInfo.mode = CoreGraphics::DeviceAndHost;
     cboInfo.byteSize = sizeof(VegetationGenerateUniforms);
     cboInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
     vegetationState.systemUniforms = CoreGraphics::CreateBuffer(cboInfo);
@@ -283,7 +282,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     materialUniformInfo.name = "Vegetation Materials Buffer";
     materialUniformInfo.elementSize = sizeof(Vegetation::VegetationMaterialUniforms);
     materialUniformInfo.usageFlags = CoreGraphics::ConstantBuffer;
-    materialUniformInfo.mode = CoreGraphics::HostCached;
+    materialUniformInfo.mode = CoreGraphics::DeviceAndHost;
     vegetationState.materialUniformsBuffer = CoreGraphics::CreateBuffer(materialUniformInfo);
     memset(&vegetationState.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms));
 
@@ -862,7 +861,6 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
     vegetationState.materialUniforms.VegetationMasks[textureIndex / 4][textureIndex % 4]     = CoreGraphics::TextureGetBindlessHandle(mask);
 
     CoreGraphics::BufferUpdate(vegetationState.materialUniformsBuffer, vegetationState.materialUniforms);
-    CoreGraphics::BufferFlush(vegetationState.materialUniformsBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -993,7 +991,6 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     vegetationState.materialUniforms.VegetationMasks[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(mask);
 
     CoreGraphics::BufferUpdate(vegetationState.materialUniformsBuffer, vegetationState.materialUniforms);
-    CoreGraphics::BufferFlush(vegetationState.materialUniformsBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -1050,7 +1047,6 @@ VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 
     // update uniform buffer
     CoreGraphics::BufferUpdate(vegetationState.systemUniforms, uniforms);
-    CoreGraphics::BufferFlush(vegetationState.systemUniforms);
 
     // update mesh and grass info buffer
     CoreGraphics::BufferUpdateArray(vegetationState.meshInfoBuffer, vegetationState.meshInfos, Vegetation::MAX_MESH_INFOS);

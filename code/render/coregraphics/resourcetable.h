@@ -349,6 +349,33 @@ void ResourceTableCommitChanges(const ResourceTableId id);
 
 //------------------------------------------------------------------------------
 /**
+    Set of buffers which creates a resource table per each buffered frame
+*/
+struct ResourceTableSet
+{
+    /// Default constructor
+    ResourceTableSet() {};
+    /// Constructor
+    ResourceTableSet(const ResourceTableCreateInfo& createInfo);
+    /// Move constructor
+    ResourceTableSet(ResourceTableSet&& rhs);
+    /// Destructor
+    ~ResourceTableSet();
+
+    /// Run a for each function per table
+    void ForEach(std::function<void(const ResourceTableId, const IndexT)> func);
+
+    /// Move assignment
+    void operator=(ResourceTableSet&& rhs);
+
+    /// Get buffer for this frame
+    const CoreGraphics::ResourceTableId Get();
+
+    Util::FixedArray<CoreGraphics::ResourceTableId> tables;
+};
+
+//------------------------------------------------------------------------------
+/**
 */
 
 ID_24_8_TYPE(ResourcePipelineId);

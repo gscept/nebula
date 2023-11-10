@@ -168,6 +168,7 @@ ENDIF()
                 rendereventhandler.h
                 rendershape.cc
                 rendershape.h
+                resourcetable.cc
                 resourcetable.h
                 sampler.h
                 semaphore.h

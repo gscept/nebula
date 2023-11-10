@@ -17,6 +17,8 @@
 #include "managers/cameramanager.h"
 #include "core/cvar.h"
 
+#include "terrain/terraincontext.h"
+
 //------------------------------------------------------------------------------
 namespace GraphicsFeature
 {
@@ -69,6 +71,9 @@ public:
     /// set framescript. must be done before OnActivate!
     void SetFrameScript(IO::URI const& uri);
 
+    /// Setup terrain biome, run before OnActivate
+    void SetupTerrainBiome(const Terrain::BiomeSettings& biomeParameters);
+
     using UIRenderFunc = std::function<void()>;
     /// add a custom UI render function
     void AddRenderUICallback(UIRenderFunc func);
@@ -91,6 +96,11 @@ private:
     Game::ManagerHandle graphicsManagerHandle;
     Game::ManagerHandle cameraManagerHandle;
 
+    struct TerrainInstance
+    {
+        Graphics::GraphicsEntityId entity;
+        Util::Array<Terrain::TerrainBiomeId> biomes;
+    } terrain;
     ViewHandle defaultViewHandle;
 
     Core::CVar* r_debug;

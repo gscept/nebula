@@ -64,10 +64,39 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     struct UploadRingBuffer
     {
-        Threading::AtomicCounter uploadStartAddress;
-        Threading::AtomicCounter uploadEndAddress;
+        CoreGraphics::BufferCreateInfo createInfo;
+
+        union AtomicHandle
+        {
+            AtomicHandle()
+                : handle { .bytesWritten = 0, .buffer = CoreGraphics::InvalidBufferId }
+            {
+            }
+
+            ~AtomicHandle()
+            {
+            }
+            struct BufferBytes
+            {
+                ~BufferBytes()
+                {
+
+                }
+                uint bytesWritten;
+                CoreGraphics::BufferId buffer;
+            } handle;
+            volatile uint64 bits;
+        } atomicHandle;
+
+        Util::Array<CoreGraphics::BufferId> retiredBuffers;
+        Util::Array<Threading::AtomicCounter> retiredBufferBytesWritten;
+        //Threading::CriticalSection lock;
+
+        // OLD
+        //CoreGraphics::BufferId buffer;
+        //Threading::AtomicCounter uploadBytesWritten;
     };
-    Util::FixedArray<UploadRingBuffer> uploadRingBuffers;
+    UploadRingBuffer uploadRingBuffer;
 
     struct PendingDeletes
     {
@@ -1032,14 +1061,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
-    state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
-    state.uploadRingBuffers.Resize(info.numBufferedFrames);
-    state.globalUploadBufferMaxValue = info.globalUploadMemorySize;
-
-    for (i = 0; i < info.numBufferedFrames; i++)
-    {
-        state.uploadRingBuffers[i].uploadStartAddress = state.uploadRingBuffers[i].uploadEndAddress = 0;
-    }
+    
+    state.globalUploadBufferPoolSize = info.globalUploadMemorySize;
+    state.uploadRingBuffer.createInfo = uploadInfo;
+    state.uploadRingBuffer.atomicHandle.handle.buffer = CoreGraphics::InvalidBufferId;
+    state.uploadRingBuffer.atomicHandle.handle.bytesWritten = 0;
 
     _setup_grouped_timer(state.DebugTimer, "GraphicsDevice");
     _setup_grouped_counter(state.NumImageBytesAllocated, "GraphicsDevice");
@@ -1818,42 +1844,97 @@ GetIndexBuffer()
     return state.indexBuffer;
 }
 
+volatile Threading::ThreadId UploadBufferUpdaterThread = Threading::InvalidThreadId;
+//------------------------------------------------------------------------------
+/**
+    Create new upload buffer by allowing the first thread to set things up, retire
+    the old buffer, and then release the lock.
+
+    Other threads just wait for this thread to finish.
+*/
+void
+NewUploadBuffer(Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle handle)
+{
+    Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffer;
+
+    // Race the threads, only the first thread gets to add a buffer and set the index
+    Threading::ThreadId myThread = Threading::Thread::GetMyThreadId();
+    if (Threading::Interlocked::CompareExchange((volatile int*)&UploadBufferUpdaterThread, myThread, Threading::InvalidThreadId))
+    {
+        // Retire old buffer and queue it for flushing,
+        // use the last used end address as flush range
+        if (handle.handle.buffer != CoreGraphics::InvalidBufferId)
+        {
+            ring.retiredBuffers.Append(handle.handle.buffer);
+            ring.retiredBufferBytesWritten.Append(handle.handle.bytesWritten);
+        }       
+
+        // Setup a new buffer
+        Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle newHandle;
+        newHandle.handle.buffer = CoreGraphics::CreateBuffer(ring.createInfo);
+
+        Threading::Interlocked::Exchange((volatile int64*)&ring.atomicHandle.bits, newHandle.bits);
+        Threading::Interlocked::Exchange((volatile int*)&UploadBufferUpdaterThread, Threading::InvalidThreadId);
+    }
+    else
+    {
+        // Wait for winning thread to finish
+        while (UploadBufferUpdaterThread != Threading::InvalidThreadId)
+        {
+            Threading::Thread::YieldThread();
+        }
+    }
+}
+
 //------------------------------------------------------------------------------
 /**
 */
-uint
+Util::Pair<uint, CoreGraphics::BufferId>
 AllocateUpload(const SizeT numBytes, const SizeT alignment)
 {
-    Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
+    Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffer;
+
+    if (ring.atomicHandle.handle.buffer == CoreGraphics::InvalidBufferId)
+    {
+        NewUploadBuffer(Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle());
+    }
 
     // Calculate aligned upper bound
     const SizeT alignedBytes = numBytes + alignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
-    // Allocate the memory range, overallocate based on alignment
-    int ret = Threading::Interlocked::Add(&ring.uploadEndAddress, alignedBytes);
+try_alloc:
+    // Create mask for the lower bits to increment the byte offset
+    uint64 mask = uint64(numBytes) & 0x00000000FFFFFFFF;
+    uint64 prev = Threading::Interlocked::Add((volatile int64*)&ring.atomicHandle.bits, mask);
+    Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle ret;
+    ret.bits = prev;
 
-    // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-    if (ret + alignedBytes >= state.globalUploadBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
+    // If pool is full, allocate new buffer
+    int alignedOffset = Math::align(ret.handle.bytesWritten, alignment);
+
+    n_assert(alignedBytes < state.globalUploadBufferPoolSize);
+    if (alignedOffset + numBytes >= state.globalUploadBufferPoolSize)
     {
-        n_error("Over allocation of upload memory! Memory will be overwritten!\n");
+        // Move to the next upload buffer
+        NewUploadBuffer(ret);
 
-        // Return dummy value
-        return UINT_MAX;
+        // Then try to allocate again
+        goto try_alloc;
     }
 
     // Return offset aligned up
-    return Math::align(ret, alignment);
+    return Util::MakePair(alignedOffset, ret.handle.buffer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-UploadInternal(const uint offset, const void* data, SizeT size)
+UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const void* data, SizeT size)
 {
-    BufferIdLock lock(state.uploadBuffer);
-    CoreGraphics::BufferUpdate(state.uploadBuffer, data, size, offset);
+    // For upload, we don't make any attempts acquiring the buffer
+    CoreGraphics::BufferUpdate(buffer, data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1862,7 +1943,40 @@ UploadInternal(const uint offset, const void* data, SizeT size)
 void
 FlushUpload()
 {
-    Vulkan::GraphicsDeviceState::UploadRingBuffer uploadBuffer = state.uploadRingBuffers[state.currentBufferedFrameIndex];
+    Vulkan::GraphicsDeviceState::UploadRingBuffer& uploadBuffer = state.uploadRingBuffer;
+
+    Util::Array<VkMappedMemoryRange> ranges;
+    for (IndexT i = 0; i < uploadBuffer.retiredBuffers.Size(); i++)
+    {
+        VkMappedMemoryRange range;
+        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.pNext = nullptr;
+        range.offset = 0;
+        range.size = uploadBuffer.retiredBufferBytesWritten[i];
+        range.memory = BufferGetVkMemory(uploadBuffer.retiredBuffers[i]);
+        ranges.Append(range);
+
+        CoreGraphics::DestroyBuffer(uploadBuffer.retiredBuffers[i]);
+    }
+
+    uint64_t size = uploadBuffer.atomicHandle.handle.bytesWritten;
+    if (size > 0)
+    {
+        VkMappedMemoryRange range;
+        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.pNext = nullptr;
+        range.offset = uploadBuffer.atomicHandle.handle.bytesWritten;
+        range.size = Math::align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+        range.memory = BufferGetVkMemory(uploadBuffer.atomicHandle.handle.buffer);
+        ranges.Append(range);
+    }
+
+    uploadBuffer.atomicHandle.handle.bytesWritten = 0;
+    uploadBuffer.retiredBuffers.Clear();
+
+    /*
+    VkResult res = vkFlushMappedMemoryRanges(state.devices[state.currentDevice], ranges.Size(), ranges.Begin());
+    n_assert(res == VK_SUCCESS);
 
     // Flush mapped memory for the previous submission
     uint64_t size = uploadBuffer.uploadEndAddress - uploadBuffer.uploadStartAddress;
@@ -1882,15 +1996,7 @@ FlushUpload()
 
         BufferIdRelease(state.uploadBuffer);
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::BufferId
-GetUploadBuffer()
-{
-    return state.uploadBuffer;
+    */
 }
 
 //------------------------------------------------------------------------------
@@ -1990,10 +2096,6 @@ NewFrame()
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
     nextCboRing.endAddress = 0;
     nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.endAddress;
-
-    Vulkan::GraphicsDeviceState::UploadRingBuffer& nextUploadRing = state.uploadRingBuffers[state.currentBufferedFrameIndex];
-    nextUploadRing.uploadStartAddress = state.globalUploadBufferMaxValue * state.currentBufferedFrameIndex;
-    nextUploadRing.uploadEndAddress = state.globalUploadBufferMaxValue * state.currentBufferedFrameIndex;
 
     N_BUDGET_COUNTER_RESET(N_CONSTANT_MEMORY);
     N_BUDGET_COUNTER_RESET(N_UPLOAD_MEMORY);

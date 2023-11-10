@@ -32,24 +32,9 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, "Mipmap");
     SizeT numMips = CoreGraphics::TextureGetNumMips(id);
 
-    // insert initial barrier for texture
-    CoreGraphics::CmdBarrier(
-        cmdBuf,
-        CoreGraphics::PipelineStage::GraphicsShadersRead,
-        CoreGraphics::PipelineStage::TransferRead,
-        CoreGraphics::BarrierDomain::Global,
-        {
-            {
-                id,
-                CoreGraphics::TextureSubresourceInfo::Texture(ImageBits::ColorBits, id),
-            },
-        });
-
     // calculate number of mips
     TextureDimensions dims = TextureGetDimensions(id);
 
-    CoreGraphics::ImageLayout prevLayout = CoreGraphics::ImageLayout::TransferSource;
-    CoreGraphics::PipelineStage prevStageSrc = CoreGraphics::PipelineStage::TransferRead;
     IndexT mip;
     for (mip = 0; mip < numMips - 1; mip++)
     {
@@ -72,7 +57,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
         // Transition source to source
         CoreGraphics::CmdBarrier(
             cmdBuf,
-            prevStageSrc,
+            CoreGraphics::PipelineStage::AllShadersRead,
             CoreGraphics::PipelineStage::TransferRead,
             CoreGraphics::BarrierDomain::Global,
             {
@@ -85,7 +70,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
 
         CoreGraphics::CmdBarrier(
             cmdBuf,
-            CoreGraphics::PipelineStage::TransferRead,
+            CoreGraphics::PipelineStage::AllShadersRead,
             CoreGraphics::PipelineStage::TransferWrite,
             CoreGraphics::BarrierDomain::Global,
             {
@@ -97,24 +82,33 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
             nullptr);
         CoreGraphics::CmdBlit(cmdBuf, id, fromRegion, CoreGraphics::ImageBits::ColorBits, mip, 0, id, toRegion, CoreGraphics::ImageBits::ColorBits, mip + 1, 0);
 
-        // The previous textuer will be in write, so it needs to pingpong from transfer write/read, with the first being shader read
-        prevStageSrc = CoreGraphics::PipelineStage::TransferWrite;
-    }
-
-    // At the end, only the last mip will be in transfer write, so lets just transition that one
-    CoreGraphics::CmdBarrier(
-        cmdBuf,
-        CoreGraphics::PipelineStage::TransferWrite,
-        CoreGraphics::PipelineStage::AllShadersRead,
-        CoreGraphics::BarrierDomain::Global,
-        {
-            CoreGraphics::TextureBarrierInfo
+        CoreGraphics::CmdBarrier(
+            cmdBuf,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::PipelineStage::AllShadersRead,
+            CoreGraphics::BarrierDomain::Global,
             {
-                id,
-                CoreGraphics::TextureSubresourceInfo::Texture(ImageBits::ColorBits, id)
-            }
-        },
-        nullptr);
+                {
+                    id,
+                    CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip + 1, 1, 0, 1 },
+                }
+            },
+            nullptr);
+
+        // Transition source to source
+        CoreGraphics::CmdBarrier(
+            cmdBuf,
+            CoreGraphics::PipelineStage::TransferRead,
+            CoreGraphics::PipelineStage::AllShadersRead,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                {
+                    id,
+                    CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip, 1, 0, 1 },
+                }
+            },
+            nullptr);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -124,10 +118,7 @@ void
 TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
 {
     SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(TextureGetPixelFormat(tex));
-    CoreGraphics::BufferId buf = CoreGraphics::GetUploadBuffer();
-    BufferIdAcquire(buf);
-
-    uint offset = CoreGraphics::Upload(data, size, alignment);
+    auto [offset, buffer] = CoreGraphics::UploadArray(data, size, alignment);
 
     // Then run a copy on the command buffer
     CoreGraphics::BufferCopy bufCopy;
@@ -138,9 +129,7 @@ TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue
     texCopy.layer = layer;
     texCopy.mip = mip;
     texCopy.region.set(0, 0, width, height);
-    CoreGraphics::CmdCopy(cmd, buf, { bufCopy }, tex, { texCopy });
-
-    BufferIdRelease(buf);
+    CoreGraphics::CmdCopy(cmd, buffer, {bufCopy}, tex, {texCopy});
 }
 
 //------------------------------------------------------------------------------

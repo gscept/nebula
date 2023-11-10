@@ -6,17 +6,6 @@
 
 include "foundation/math.fbs";
 namespace GraphicsFeature;
-table TerrainSettings
-{
-    max_height: float = 128.0;
-    min_height: float = 0.0;
-    world_size_width: float = 1024.0;
-    world_size_height: float = 1024.0;
-    tile_size_width: float = 64.0;
-    tile_size_height: float = 64.0;
-    quads_per_tile_width: float = 16.0;
-    quads_per_tile_height: float= 16.0;
-}
 
 table ClusterSettings
 {

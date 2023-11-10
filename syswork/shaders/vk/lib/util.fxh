@@ -82,6 +82,50 @@ UnpackWeights(vec4 weights)
     return (weights / dot(weights, vec4(1.0, 1.0, 1.0, 1.0)));
 }
 
+//------------------------------------------------------------------------------
+/**
+    Calculate cubic weights
+*/
+vec4
+CubicWeights(float v)
+{
+    vec4 n = vec4(1, 2, 3, 4) - v;
+    vec4 s = n * n * n;
+    float x = s.x;
+    float y = s.y - 4 * s.x;
+    float z = s.z - 4 * s.y + 6 * s.x;
+    float w = 6 - x - y - z;
+    return vec4(x, y, z, w) / 6.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Sample texture using bicubic sampling
+*/
+vec3
+SampleCubic(texture2D tex, sampler samp, vec4 res, vec2 pixel, int mip)
+{
+    vec2 coords = pixel * res.xy - 0.5f;
+    vec2 fxy = fract(coords);
+    coords -= fxy;
+
+    vec4 xcubic = CubicWeights(fxy.x);
+    vec4 ycubic = CubicWeights(fxy.y);
+
+    vec4 c = coords.xxyy + vec2(-0.5f, 1.5f).xyxy;
+    vec4 s = vec4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+    vec4 offset = c + vec4(xcubic.yw, ycubic.yw) / s;
+
+    offset *= res.zzww;
+    vec3 sample0 = textureLod(sampler2D(tex, samp), offset.xz, mip).rgb;
+    vec3 sample1 = textureLod(sampler2D(tex, samp), offset.yz, mip).rgb;
+    vec3 sample2 = textureLod(sampler2D(tex, samp), offset.xw, mip).rgb;
+    vec3 sample3 = textureLod(sampler2D(tex, samp), offset.yw, mip).rgb;
+    float sx = s.x / (s.x + s.y);
+    float sy = s.z / (s.z + s.w);
+    return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
+}
+
 #define USE_SRGB 1
 #if USE_SRGB
 #define EncodeHDR(x) x
@@ -364,7 +408,8 @@ UnpackViewSpaceNormal(in vec4 packedDataValue)
     z: depth upper 8 bit
     w: depth lower 8 bit
 */
-vec4 PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
+vec4
+PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
 {
     vec4 packedData;
     packedData.x = ObjectId;
@@ -385,37 +430,10 @@ vec4 PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
     z: depth upper 8 bit
     w: depth lower 8 bit
 */
-float UnpackDepth(in vec4 packedData)
+float
+UnpackDepth(in vec4 packedData)
 {
     return unpack_u16(packedData.z, packedData.w) / depthScale;
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    Compute lighting with diffuse and specular from lightbuffer,
-    emissive and spec texture, optional add rim
-*/
-vec4
-psLightMaterial(in vec4 lightValues,
-               in vec4 diffColor,
-               in vec3 emsvColor,
-               in float emsvIntensity,
-               in vec3 specColor,
-               in float specIntensity)
-{
-    lightValues = DecodeHDR(lightValues);
-    vec4 color = diffColor;
-    // exagerate optional Rim
-    color.xyz *= lightValues.xyz;
-    color.xyz += emsvColor * emsvIntensity;
-    // color with diff color
-    vec3 normedColor = normalize(lightValues.xyz);
-    float maxColor = max(max(normedColor.x, normedColor.y), normedColor.z);
-    normedColor /= maxColor;
-    float spec = lightValues.w;
-    color.xyz += specColor * specIntensity * spec * normedColor;
-
-    return color;
 }
 
 #define PI 3.14159265
@@ -502,6 +520,30 @@ FlipY(vec2 uv)
     return vec2(uv.x, 1.0f - uv.y);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+mat3
+PlaneTBN(vec3 normal)
+{
+    vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
+    tangent = normalize(cross(normal.xyz, tangent));
+    vec3 binormal = normalize(cross(normal.xyz, tangent));
+    return mat3(tangent, binormal, normal.xyz);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+TangentSpaceNormal(vec2 normalMapComponents, mat3 tbn)
+{
+    vec3 normal = vec3(0, 0, 0);
+    normal.xy = (normalMapComponents * 2.0f) - 1.0f;
+    normal.z = saturate(sqrt(1.0f - dot(normal.xy, normal.xy)));
+    return tbn * normal;
+}
+
 //-------------------------------------------------------------------------------------------------------------
 /**
 */
@@ -585,7 +627,6 @@ GetPosition(mat4x4 transform)
     return transform[2].xyz;
 }
 
-
 //------------------------------------------------------------------------------
 /**
     Unpack a 1D index into a 3D index
@@ -631,7 +672,8 @@ MortonCurve8x8(uint idx)
 //------------------------------------------------------------------------------
 /**
 */
-bool IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
+bool 
+IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
 {
     vec3 ab = lineEnd - lineStart;
     float t = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
@@ -690,7 +732,8 @@ const int m = 1540483477;
 /**
     Murmur hash function
 */
-float murmur(int k)
+float 
+murmur(int k)
 {
     int h = k ^ 1;
 
@@ -728,7 +771,8 @@ random3(vec3 c) {
 
 const float F3 = 0.3333333;
 const float G3 = 0.1666667;
-float simplex3D(vec3 p)
+float 
+simplex3D(vec3 p)
 {
     /* 1. find current tetrahedron T and it's four vertices */
     /* s, s+i1, s+i2, s+1.0 - absolute skewed (integer) coordinates of T vertices */

@@ -80,6 +80,9 @@ operator"" _GB(const unsigned long long val)
     return val * 1024 * 1024 * 1024;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 #define N_BIT(x) (1 << x)
 template <class MASK, class BITS>
 constexpr MASK
@@ -88,6 +91,9 @@ SetBits(const MASK mask, const BITS bit)
     return MASK(uint(mask) | uint(bit));
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template <class MASK, class BITS>
 constexpr MASK
 UnsetBits(const MASK mask, const BITS bit)

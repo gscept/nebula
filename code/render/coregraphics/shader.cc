@@ -2,7 +2,6 @@
 //  shader.cc
 //  (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include "shader.h"
 #include "shaderserver.h"
 namespace CoreGraphics
