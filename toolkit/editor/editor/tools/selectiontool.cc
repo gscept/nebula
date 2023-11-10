@@ -13,6 +13,9 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "graphicsfeature/components/graphicsfeature.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
 
 Util::Array<Editor::Entity> Tools::SelectionTool::selection = {};
 static bool isDirty = false;
@@ -39,35 +42,46 @@ SelectionTool::RenderGizmo()
     if (selection.IsEmpty())
 		return;
 	
-	Game::ComponentId const transformPid = Game::GetComponentId<Game::Transform>();
-	Game::ComponentId const mdlPid = Game::GetComponentId<GraphicsFeature::Model>();
-
-	if (Editor::state.editorWorld->HasComponent(selection[0], transformPid))
+	if (!isDirty)
 	{
-		if (!isDirty)
-		{
-            tempTransform = Editor::state.editorWorld->GetComponent<Game::Transform>(selection[0]).value;
-		}
+		auto pos = Editor::state.editorWorld->GetComponent<Game::Position>(selection[0]);
+		auto orientation = Editor::state.editorWorld->GetComponent<Game::Orientation>(selection[0]);
+		auto scale = Editor::state.editorWorld->GetComponent<Game::Scale>(selection[0]);
 
-		bool isTransforming = Im3d::Gizmo("GizmoEntity", tempTransform);
-		if (isTransforming)
-		{
-			isDirty = true;
-            Game::GetWorld(WORLD_DEFAULT)->SetComponent<Game::Transform>(Editor::state.editables[selection[0].index].gameEntity, { .value = tempTransform } );
-		}
-		else if(isDirty)
-		{
-			// User has release gizmo, we can set real transform and add to undo queue
-			Edit::SetComponent(selection[0], transformPid, &tempTransform);
-			isTransforming = false;
-			isDirty = false;
-		}
+		tempTransform = Math::trs(pos, orientation, scale);
+	}
+
+	Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+	bool isTransforming = Im3d::Gizmo("GizmoEntity", tempTransform);
+	Math::vec3 pos;
+	Math::quat rot;
+	Math::vec3 scale;
+	Math::decompose(tempTransform, scale, rot, pos);
+
+	if (isTransforming)
+	{
+		isDirty = true;
+		world->SetComponent<Game::Position>(Editor::state.editables[selection[0].index].gameEntity, { pos });
+        world->SetComponent<Game::Orientation>(Editor::state.editables[selection[0].index].gameEntity, { rot } );
+        world->SetComponent<Game::Scale>(Editor::state.editables[selection[0].index].gameEntity, { scale } );
+	}
+	else if(isDirty)
+	{
+		// User has release gizmo, we can set real transform and add to undo queue
+		Edit::CommandManager::BeginMacro("Set Transform");
+		Edit::SetComponent(selection[0], Game::GetComponentId<Game::Position>(), &pos);
+		Edit::SetComponent(selection[0], Game::GetComponentId<Game::Orientation>(), &rot);
+		Edit::SetComponent(selection[0], Game::GetComponentId<Game::Scale>(), &scale);
+		Edit::CommandManager::EndMacro();
+		isTransforming = false;
+		isDirty = false;
 	}
 
 	for (auto const editorEntity : selection)
 	{
 		Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
-		if (Game::GetWorld(WORLD_DEFAULT)->HasComponent(gameEntity, mdlPid))
+		if (world->HasComponent<GraphicsFeature::Model>(gameEntity))
 		{
 			// TODO: Fixme!
 			//Graphics::GraphicsEntityId const gfxEntity = Game::GetComponent<GraphicsFeature::ModelEntityData>(Game::GetWorld(WORLD_DEFAULT), gameEntity, mdlPid).gid;
