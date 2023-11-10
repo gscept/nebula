@@ -35,6 +35,7 @@ private:
     /// destructor
     ~GraphicsManager();
 
+    void InitCreatePointLightProcessor();
     void InitCreateModelProcessor();
     void InitUpdateModelTransformProcessor();
     static void OnDecay();

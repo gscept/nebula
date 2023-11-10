@@ -362,6 +362,7 @@ World::AddComponent(Entity entity)
     Game::ComponentId id = Game::GetComponentId<TYPE>();
 #if _DEBUG
     n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));
+    //n_assert(!this->HasComponent<TYPE>(entity));
 #endif
     TYPE* data = this->componentStageAllocator.Alloc<TYPE>();
     const void* defaultValue = MemDb::AttributeRegistry::DefaultValue(id);

@@ -16,6 +16,7 @@
 #include "basegamefeature/components/scale.h"
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
+#include "lighting/lightcontext.h"
 
 namespace GraphicsFeature
 {
@@ -56,6 +57,28 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
         }
     );
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitCreatePointLightProcessor()
+{
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ProcessorBuilder(world, "GraphicsManager.CreatePointLights"_atm)
+        .On("OnActivate")
+        .Func(
+            [](Game::World* world, Game::Entity const& owner, Game::Position const& position, GraphicsFeature::PointLight& light)
+            {
+                light.graphicsEntityId = Graphics::CreateEntity().id;
+
+                // TODO: This is not finished, and needs revisiting
+                Lighting::LightContext::RegisterEntity(light.graphicsEntityId);
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, position);
+            }
+        )
+        .Build();
 }
 
 //------------------------------------------------------------------------------

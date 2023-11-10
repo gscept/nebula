@@ -521,12 +521,13 @@ World::ExecuteRemoveComponentCommands()
     SizeT count = this->removeComponentQueue.Size();
 
     auto* currentCmd = this->removeComponentQueue.Begin();
-    while (currentCmd != this->removeComponentQueue.End())
+    auto* end = this->removeComponentQueue.End();
+    while (currentCmd != end)
     {
         Entity currentEntity = currentCmd->entity;
         auto* firstCmdOfEntity = currentCmd;
         SizeT numEntityCmds = 0;
-        while (currentCmd->entity == currentEntity)
+        while (currentCmd->entity == currentEntity && currentCmd != end)
         {
             numEntityCmds++;
             currentCmd++;
@@ -551,11 +552,7 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
     for (i = 0; i < numCmds; i++)
     {
         auto const* cmd = cmds + i;
-        n_assert2(
-            !signature.IsSet(cmd->componentId),
-            "Tried to add a staged component to an entity that already has the given component!"
-        );
-        signature.FlipBit(cmd->componentId);
+        signature.SetBit(cmd->componentId);
     }
 
     MemDb::TableId newCategoryId = this->db->FindTable(signature);
@@ -608,12 +605,15 @@ World::RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, S
     {
         auto const* cmd = cmds + i;
 #if NEBULA_DEBUG
-        n_assert2(
-            signature.IsSet(cmd->componentId),
-            "Tried to remove a component from an entity that does not have the given component!"
-        );
+        /*
+        if (!signature.IsSet(cmd->componentId))
+        {
+            Util::String errorMsg = Util::String::Sprintf("Tried to remove component '%s' from an entity does not have the given component!", MemDb::AttributeRegistry::GetAttribute(cmd->componentId)->name.Value());
+            n_error(errorMsg.AsCharPtr());
+        }
+        */
 #endif
-        signature.FlipBit(cmd->componentId);
+        signature.ClearBit(cmd->componentId);
     }
 
     MemDb::TableId newCategoryId = this->db->FindTable(signature);

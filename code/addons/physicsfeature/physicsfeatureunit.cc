@@ -92,10 +92,7 @@ PhysicsFeatureUnit::OnActivate()
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
             n_assert(world->IsValid(entity) && world->HasInstance(entity));
-            if (world->HasComponent(entity, staticPid))
-            {
-                world->RemoveComponent<Game::Static>(entity);
-            }
+            world->RemoveComponent<Game::Static>(entity);
         }
     });
 }

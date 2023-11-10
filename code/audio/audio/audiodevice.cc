@@ -12,18 +12,14 @@
 namespace Audio
 {
 
-__ImplementClass(Audio::AudioDevice, 'AIOD', Core::RefCounted)
-__ImplementSingleton(Audio::AudioDevice)
+__ImplementClass(Audio::AudioDevice, 'AIOD', Core::RefCounted) __ImplementSingleton(Audio::AudioDevice)
 
-static SoLoud::Soloud* soloud;
+    static SoLoud::Soloud* soloud;
 
 //------------------------------------------------------------------------------
 /**
 */
-AudioDevice::AudioDevice()
-{
-    __ConstructSingleton
-}
+AudioDevice::AudioDevice() {__ConstructSingleton}
 
 //------------------------------------------------------------------------------
 /**
@@ -58,7 +54,7 @@ AudioDevice::Close()
 {
     soloud->deinit();
     delete soloud;
-    
+
     _discard_timer(AudioOnFrameTime);
 
     return true;
@@ -83,6 +79,60 @@ AudioDevice::OnFrame()
 //------------------------------------------------------------------------------
 /**
 */
+ClipId
+AudioDevice::LoadClip(Resources::ResourceName const& name)
+{
+    if (!name.IsValid())
+    {
+        return ClipId::Invalid();
+    }
+
+    ClipId clip;
+
+    // load resource if we haven't already.
+    IndexT index = this->clipMap.FindIndex(name);
+    if (index != InvalidIndex)
+    {
+        clip = this->clipMap.ValueAtIndex(index);
+    }
+    else
+    {
+        clip = this->wavs.Alloc();
+        IO::URI uri(name.Value());
+        auto result = this->wavs.Get<WavAllocator::WAV>(clip.id).load(uri.LocalPath().AsCharPtr());
+        if (result != SoLoud::SOLOUD_ERRORS::SO_NO_ERROR)
+        {
+            this->wavs.Dealloc(clip.id);
+            return ClipId::Invalid();
+        }
+
+        this->clipMap.Add(name, clip);
+        this->wavs.Get<WavAllocator::REFCOUNT>(clip.id) = 0;
+    }
+
+    this->wavs.Get<WavAllocator::REFCOUNT>(clip.id)++;
+    this->wavs.Get<WavAllocator::WAV>(clip.id).set3dAttenuation(SoLoud::AudioSource::ATTENUATION_MODELS::LINEAR_DISTANCE, 1.0f);
+
+    return clip;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AudioDevice::UnloadClip(ClipId const clip)
+{
+    uint& refCount = this->wavs.Get<WavAllocator::REFCOUNT>(clip.id);
+    refCount--;
+    if (refCount == 0)
+    {
+        this->wavs.Dealloc(clip.id);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 AudioEmitterId
 AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
 {
@@ -92,7 +142,7 @@ AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
     }
 
     ClipId clip;
-    
+
     // first, load resource if we haven't already.
     IndexT index = this->clipMap.FindIndex(name);
     if (index != InvalidIndex)
@@ -141,8 +191,62 @@ AudioDevice::DestroyAudioEmitter(AudioEmitterId const id)
     {
         this->wavs.Dealloc(clip.id);
     }
-    
+
     this->emitterAllocator.Dealloc(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ClipInstanceId
+AudioDevice::Play(ClipId clip, float volume, float pan, bool loop, float clock)
+{
+    ClipInstanceId instance;
+    auto& wav = this->wavs.Get<WavAllocator::WAV>(clip.id);
+
+    if (clock == 0.0f)
+    {
+        instance.id = soloud->play(wav, volume, pan);
+    }
+    else
+    {
+        instance.id = soloud->playClocked(clock, wav, volume, pan);
+    }
+
+    soloud->setLooping(instance.id, loop);
+    return instance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ClipInstanceId
+AudioDevice::PlaySpatial(
+    ClipId clip,
+    float volume,
+    Math::vec3 const& pos,
+    Math::vec3 const& vel,
+    float minDistance,
+    float maxDistance,
+    bool loop,
+    float clock
+)
+{
+    ClipInstanceId instance;
+    auto& wav = this->wavs.Get<WavAllocator::WAV>(clip.id);
+
+    if (clock > 0)
+    {
+        instance.id = soloud->play3dClocked(clock, wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, volume);
+    }
+    else
+    {
+        instance.id = soloud->play3d(wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, volume);
+    }
+    soloud->set3dSourceMinMaxDistance(instance.id, minDistance, maxDistance);
+    soloud->setLooping(instance.id, loop);
+    // TODO: Attenuation model!
+    return instance;
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +268,7 @@ AudioDevice::Play(AudioEmitterId id, bool loop)
         auto& vel = this->emitterAllocator.Get<EmitterSlot::VELOCITY>(id.id);
         auto& min = this->emitterAllocator.Get<EmitterSlot::MINDISTANCE>(id.id);
         auto& max = this->emitterAllocator.Get<EmitterSlot::MAXDISTANCE>(id.id);
-        
+
         if (clock > 0)
         {
             instance.id = soloud->play3dClocked(clock, wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
@@ -187,7 +291,7 @@ AudioDevice::Play(AudioEmitterId id, bool loop)
             instance.id = soloud->playClocked(clock, wav, vol, pan);
         }
     }
-    
+
     soloud->setLooping(instance.id, loop);
     return instance;
 }
@@ -223,7 +327,7 @@ AudioDevice::SetSpatialize(AudioEmitterId id, bool value)
 /**
 */
 void
-AudioDevice::SetPosition(AudioEmitterId id, Math::point const & pos)
+AudioDevice::SetPosition(AudioEmitterId id, Math::point const& pos)
 {
     this->emitterAllocator.Get<EmitterSlot::POSITION>(id.id) = pos;
 }
@@ -232,7 +336,7 @@ AudioDevice::SetPosition(AudioEmitterId id, Math::point const & pos)
 /**
 */
 void
-AudioDevice::SetVelocity(AudioEmitterId id, Math::vector const & vel)
+AudioDevice::SetVelocity(AudioEmitterId id, Math::vector const& vel)
 {
     this->emitterAllocator.Get<EmitterSlot::VELOCITY>(id.id) = vel;
 }
@@ -277,7 +381,7 @@ AudioDevice::SetPan(AudioEmitterId id, float value)
 /**
 */
 void
-AudioDevice::UpdatePosition(ClipInstanceId id, Math::point const & pos)
+AudioDevice::UpdatePosition(ClipInstanceId id, Math::point const& pos)
 {
     soloud->set3dSourcePosition(id.id, pos.x, pos.y, pos.z);
 }
@@ -286,7 +390,7 @@ AudioDevice::UpdatePosition(ClipInstanceId id, Math::point const & pos)
 /**
 */
 void
-AudioDevice::UpdateVelocity(ClipInstanceId id, Math::vector const & vel)
+AudioDevice::UpdateVelocity(ClipInstanceId id, Math::vector const& vel)
 {
     soloud->set3dSourceVelocity(id.id, vel.x, vel.y, vel.z);
 }
@@ -295,7 +399,7 @@ AudioDevice::UpdateVelocity(ClipInstanceId id, Math::vector const & vel)
 /**
 */
 void
-AudioDevice::SetListenerTransform(Math::mat4 const & transform)
+AudioDevice::SetListenerTransform(Math::mat4 const& transform)
 {
     auto& pos = transform.position;
     auto& fw = transform.z_axis;
@@ -330,7 +434,7 @@ AudioDevice::SetListenerTransform(Math::mat4 const & transform)
 /**
 */
 void
-AudioDevice::SetListenerVelocity(Math::vector const & vel)
+AudioDevice::SetListenerVelocity(Math::vector const& vel)
 {
     this->listener.velocity[0] = vel.x;
     this->listener.velocity[0] = vel.y;

@@ -71,6 +71,7 @@ void
 GraphicsFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    world->RegisterType<PointLight>({ .decay = true });
     world->RegisterType<Model>({ .decay = true });
     world->RegisterType<Camera>();
 }
@@ -133,20 +134,20 @@ GraphicsFeatureUnit::OnActivate()
     ParticleContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    Terrain::TerrainSetupSettings settings{
-        terrainSettings.min_height, terrainSettings.max_height,                         // Min/max height 
-        terrainSettings.world_size_width, terrainSettings.world_size_height,            // World size in meters
-        terrainSettings.tile_size_width, terrainSettings.tile_size_height,              // Tile size in meters
-        terrainSettings.quads_per_tile_width, terrainSettings.quads_per_tile_height,    // Amount of quads per tile
-    };
-    Terrain::TerrainContext::Create(settings);
-    Terrain::TerrainContext::SetSun(this->globalLight);
+    //Terrain::TerrainSetupSettings settings{
+    //    terrainSettings.min_height, terrainSettings.max_height,                         // Min/max height 
+    //    terrainSettings.world_size_width, terrainSettings.world_size_height,            // World size in meters
+    //    terrainSettings.tile_size_width, terrainSettings.tile_size_height,              // Tile size in meters
+    //    terrainSettings.quads_per_tile_width, terrainSettings.quads_per_tile_height,    // Amount of quads per tile
+    //};
+    //Terrain::TerrainContext::Create(settings);
+    //Terrain::TerrainContext::SetSun(this->globalLight);
 
-    Vegetation::VegetationSetupSettings vegSettings{
-        terrainSettings.min_height, terrainSettings.max_height,      // min/max height 
-        Math::vec2{ terrainSettings.world_size_width, terrainSettings.world_size_height }
-    };
-    Vegetation::VegetationContext::Create(vegSettings);
+    //Vegetation::VegetationSetupSettings vegSettings{
+    //    terrainSettings.min_height, terrainSettings.max_height,      // min/max height 
+    //    Math::vec2{ terrainSettings.world_size_width, terrainSettings.world_size_height }
+    //};
+    //Vegetation::VegetationContext::Create(vegSettings);
 
     Lighting::LightContext::Create(frameScript);
     Decals::DecalContext::Create();

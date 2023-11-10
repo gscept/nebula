@@ -17,6 +17,7 @@
 #include "components/position.h"
 #include "components/orientation.h"
 #include "components/scale.h"
+#include "components/velocity.h"
 
 namespace BaseGameFeature
 {
@@ -55,6 +56,8 @@ BaseGameFeatureUnit::OnAttach()
     world->RegisterType<Game::Scale>();
     world->RegisterType<Game::IsActive>();
     world->RegisterType<Game::Static>();
+    world->RegisterType<Game::Velocity>();
+    world->RegisterType<Game::AngularVelocity>();
 }
 
 //------------------------------------------------------------------------------

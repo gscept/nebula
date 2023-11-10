@@ -73,6 +73,8 @@ nebula_begin_module(application)
 				orientation.cc
 				scale.h
 				scale.cc
+				velocity.h
+				velocity.cc
 			)
             nebula_idl_compile(basegamefeature.json)
     fips_dir(appgame)

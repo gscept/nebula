@@ -14,6 +14,7 @@
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
+#include "basegamefeature/components/velocity.h"
 
 namespace PhysicsFeature
 {
@@ -76,6 +77,15 @@ PhysicsManager::InitCreateActorProcessor()
                 if (actor.actorType == Physics::ActorType::Kinematic)
                 {
                     world->AddComponent<PhysicsFeature::IsKinematic>(owner);
+                }
+
+                if (world->HasComponent(owner, Game::GetComponentId<Game::Velocity>()))
+                {
+                    Physics::ActorContext::SetLinearVelocity(actorid, world->GetComponent<Game::Velocity>(owner));
+                }
+                if (world->HasComponent(owner, Game::GetComponentId<Game::AngularVelocity>()))
+                {
+                    Physics::ActorContext::SetAngularVelocity(actorid, world->GetComponent<Game::AngularVelocity>(owner));
                 }
             }
         )
