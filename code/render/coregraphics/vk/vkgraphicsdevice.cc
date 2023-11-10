@@ -1905,14 +1905,16 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
 
 try_alloc:
     // Create mask for the lower bits to increment the byte offset
-    uint64 mask = uint64(alignedBytes) & 0x00000000FFFFFFFF;
+    uint64 mask = uint64(numBytes) & 0x00000000FFFFFFFF;
     uint64 prev = Threading::Interlocked::Add((volatile int64*)&ring.atomicHandle.bits, mask);
     Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle ret;
     ret.bits = prev;
 
     // If pool is full, allocate new buffer
+    int alignedOffset = Math::align(ret.handle.bytesWritten, alignment);
+
     n_assert(alignedBytes < state.globalUploadBufferPoolSize);
-    if (ret.handle.bytesWritten + alignedBytes >= state.globalUploadBufferPoolSize)
+    if (alignedOffset + numBytes >= state.globalUploadBufferPoolSize)
     {
         // Move to the next upload buffer
         NewUploadBuffer(ret);
@@ -1922,7 +1924,7 @@ try_alloc:
     }
 
     // Return offset aligned up
-    return Util::MakePair(Math::align(ret.handle.bytesWritten, alignment), ret.handle.buffer);
+    return Util::MakePair(alignedOffset, ret.handle.buffer);
 }
 
 //------------------------------------------------------------------------------
