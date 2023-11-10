@@ -10,6 +10,12 @@
 */
 #include "core/types.h"
 
+namespace Threading
+{
+
+namespace Interlocked
+{
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -118,5 +124,6 @@ CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand)
     return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
 
-} // namespace Gcc
-//------------------------------------------------------------------------------
+} // namespace Interlocked
+
+} // namespace Threading
