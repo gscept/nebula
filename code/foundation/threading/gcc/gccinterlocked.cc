@@ -142,8 +142,6 @@ CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand)
     return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
 
-} // namespace Interlocked
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -165,7 +163,7 @@ Decrement(int volatile* var)
 //------------------------------------------------------------------------------
 /**
 */
-long
+int64
 Increment(int64 volatile* var)
 {
     return __sync_add_and_fetch(var, 1);
@@ -174,10 +172,12 @@ Increment(int64 volatile* var)
 //------------------------------------------------------------------------------
 /**
 */
-long
+int64
 Decrement(int64 volatile* var)
 {
     return __sync_sub_and_fetch(var, 1);
 }
+
+} // namespace Interlocked
 
 } // namespace Threading
