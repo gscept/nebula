@@ -979,6 +979,9 @@ psGenerateLowresFallback(
     [color2] out vec4 Material)
 {
     // calculate 
+    vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
+    vec2 invWorldSize = 1.0f / worldSize;
+
     vec2 texelSize = RenderTargetDimensions[0].zw;
     vec2 pixel = vec2(gl_FragCoord.xy);
     vec2 uv = pixel * texelSize;
@@ -991,7 +994,7 @@ psGenerateLowresFallback(
 
     // calculate normals by grabbing pixels around our UV
     ivec3 offset = ivec3(-1, 1, 0.0f);
-    vec3 normal = CalculateNormalFromHeight(pixel, offset, texelSize);
+    vec3 normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
 
     // setup the TBN
     vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
