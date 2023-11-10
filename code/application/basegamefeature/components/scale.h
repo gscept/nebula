@@ -8,6 +8,16 @@ namespace Game
 
 struct Scale : public Math::vec3
 {
+    Scale()
+    {
+        this->set(1.0f,1.0f,1.0f);
+    }
+
+    Scale(Math::vec3 const& v)
+    {
+        this->load(&v.x);
+    }
+
     struct Traits;
 };
 

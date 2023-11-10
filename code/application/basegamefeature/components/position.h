@@ -8,6 +8,12 @@ namespace Game
 
 struct Position : public Math::vec3
 {
+    using Math::vec3::vec3; // default constructor
+    Position(Math::vec3 const& v)
+    {
+        this->load(&v.x);
+    }
+
     struct Traits;
 };
 

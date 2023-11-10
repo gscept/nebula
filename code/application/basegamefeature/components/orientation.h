@@ -8,6 +8,12 @@ namespace Game
 
 struct Orientation : public Math::quat
 {
+    using Math::quat::quat; // default constructor
+    Orientation(Math::quat const& q)
+    {
+        this->load(&q.x);
+    }
+
     struct Traits;
 };
 
