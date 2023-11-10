@@ -1873,7 +1873,7 @@ NewUploadBuffer(Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle hand
         Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle newHandle;
         newHandle.handle.buffer = CoreGraphics::CreateBuffer(ring.createInfo);
 
-        Threading::Interlocked::Exchange((volatile long long*)&ring.atomicHandle.bits, newHandle.bits);
+        Threading::Interlocked::Exchange((volatile int64*)&ring.atomicHandle.bits, newHandle.bits);
         Threading::Interlocked::Exchange((volatile int*)&UploadBufferUpdaterThread, Threading::InvalidThreadId);
     }
     else
@@ -1906,7 +1906,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
 try_alloc:
     // Create mask for the lower bits to increment the byte offset
     uint64 mask = uint64(alignedBytes) & 0x00000000FFFFFFFF;
-    uint64 prev = Threading::Interlocked::Add((volatile long long*)&ring.atomicHandle.bits, mask);
+    uint64 prev = Threading::Interlocked::Add((volatile int64*)&ring.atomicHandle.bits, mask);
     Vulkan::GraphicsDeviceState::UploadRingBuffer::AtomicHandle ret;
     ret.bits = prev;
 
@@ -1922,7 +1922,7 @@ try_alloc:
     }
 
     // Return offset aligned up
-    return Util::Pair(Math::align(ret.handle.bytesWritten, alignment), ret.handle.buffer);
+    return Util::Pair{Math::align(ret.handle.bytesWritten, alignment), ret.handle.buffer};
 }
 
 //------------------------------------------------------------------------------
