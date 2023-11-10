@@ -11,6 +11,10 @@
 #include "components/physicsfeature.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
+#include "basegamefeature/components/velocity.h"
 
 namespace PhysicsFeature
 {
@@ -44,15 +48,17 @@ PhysicsManager::InitCreateActorProcessor()
         .On("OnActivate")
         .Func(
             [](Game::World* world,
-               Game::Owner const& owner,
-               Game::Transform const& transform,
+               Game::Entity const& owner,
+               Game::Position const& position,
+               Game::Orientation const& orientation,
+               Game::Scale const& scale,
                PhysicsFeature::PhysicsActor& actor)
             {
                 auto res = actor.resource;
                 if (res == "mdl:")
                 {
-                    n_assert(world->HasComponent(owner.entity, Game::GetComponentId<GraphicsFeature::Model>()));
-                    Util::String modelRes = world->GetComponent<GraphicsFeature::Model>(owner.entity).resource.Value();
+                    n_assert(world->HasComponent(owner, Game::GetComponentId<GraphicsFeature::Model>()));
+                    Util::String modelRes = world->GetComponent<GraphicsFeature::Model>(owner).resource.Value();
                     Util::String fileName = modelRes.ExtractFileName();
                     fileName.StripFileExtension();
                     res = Util::String::Sprintf(
@@ -61,14 +67,25 @@ PhysicsManager::InitCreateActorProcessor()
                     actor.resource = res;
                 }
 
+                Math::mat4 worldTransform = Math::trs(position, orientation, scale);
+
                 Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
                 Physics::ActorId actorid =
-                    Physics::CreateActorInstance(resId, transform.value, (Physics::ActorType)actor.actorType, Ids::Id32(owner.entity));
+                    Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor.actorType, Ids::Id32(owner));
                 actor.actorId = actorid.id;
 
                 if (actor.actorType == Physics::ActorType::Kinematic)
                 {
-                    world->AddComponent<PhysicsFeature::IsKinematic>(owner.entity);
+                    world->AddComponent<PhysicsFeature::IsKinematic>(owner);
+                }
+
+                if (world->HasComponent(owner, Game::GetComponentId<Game::Velocity>()))
+                {
+                    Physics::ActorContext::SetLinearVelocity(actorid, world->GetComponent<Game::Velocity>(owner));
+                }
+                if (world->HasComponent(owner, Game::GetComponentId<Game::AngularVelocity>()))
+                {
+                    Physics::ActorContext::SetAngularVelocity(actorid, world->GetComponent<Game::AngularVelocity>(owner));
                 }
             }
         )
@@ -94,9 +111,9 @@ PhysicsManager::OnDecay()
 /**
 */
 void
-PollRigidbodyTransforms(Game::World* world, Game::Transform& transform, PhysicsFeature::PhysicsActor const& actor)
+PollRigidbodyTransforms(Game::World* world, Game::Position& position, Game::Orientation& orientation, PhysicsFeature::PhysicsActor const& actor)
 {
-    transform.value = Physics::ActorContext::GetTransform(actor.actorId);
+    Physics::ActorContext::GetPositionOrientation(actor.actorId, position, orientation);
 }
 
 //------------------------------------------------------------------------------
@@ -104,10 +121,10 @@ PollRigidbodyTransforms(Game::World* world, Game::Transform& transform, PhysicsF
 */
 void
 PassKinematicTransforms(
-    Game::World* world, Game::Transform const& transform, PhysicsFeature::PhysicsActor& actor, PhysicsFeature::IsKinematic
+    Game::World* world, Game::Position const& position, Game::Orientation const& orientation, PhysicsFeature::PhysicsActor& actor, PhysicsFeature::IsKinematic
 )
 {
-    Physics::ActorContext::SetTransform(actor.actorId, transform.value);
+    Physics::ActorContext::SetPositionOrientation(actor.actorId, position, orientation);
 }
 
 //------------------------------------------------------------------------------

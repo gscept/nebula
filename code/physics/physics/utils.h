@@ -106,6 +106,15 @@ Neb2PxTrans(const Math::mat4& mat)
 //------------------------------------------------------------------------------
 /**
 */
+inline physx::PxTransform
+Neb2PxTrans(const Math::vec3& position, const Math::quat& orientation)
+{
+    return physx::PxTransform(Neb2PxVec(position), Neb2PxQuat(orientation));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline Math::mat4
 Px2NebMat(const physx::PxTransform& mat)
 {

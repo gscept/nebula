@@ -1,53 +1,63 @@
 {
-    "namespace": "GraphicsFeature",
-    "enums": {
-        "ProjectionMode": {
-            "Perspective": 0,
-            "Orthographic": 1,
-        }
-    },
-    "components": {
-        "Model": {
-            "resource": {
-                "type": "resource",
-                "default": "mdl:system/placeholder.n3"
-            },
-            "graphicsEntityId": {
-                "type": "uint",
-                "default": -1
-            }
-        },
-        "Camera": {
-            "viewHandle": {
-                "type": "uint",
-                "default": -1
-            },
-            "localTransform": {
-                "type": "mat4"
-            },
-            "fieldOfView": {
-                "type": "float",
-                "default": 70.0
-            },
-            "aspectRatio": {
-                "type": "float"
-            },
-            "zNear": {
-                "type": "float",
-                "default": 0.01
-            },
-            "zFar": {
-                "type": "float",
-                "default": 1000.0
-            },
-            "orthographicWidth": {
-                "type": "float",
-                "default": 1.0
-            },
-            "projectionMode": {
-                "type": "GraphicsFeature::ProjectionMode",
-                "default": 0
-            }
-        }
+  "namespace": "GraphicsFeature",
+  "enums": {
+    "ProjectionMode": {
+      "Perspective": 0,
+      "Orthographic": 1,
     }
+  },
+  "components": {
+    "PointLight": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1
+      },
+      "color": "vec3",
+      "intensity": "float",
+      "range": "float",
+      "castShadows": "bool"
+    },
+    "Model": {
+      "resource": {
+        "type": "resource",
+        "default": "mdl:system/placeholder.n3"
+      },
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1
+      }
+    },
+    "Camera": {
+      "viewHandle": {
+        "type": "uint",
+        "default": -1
+      },
+      "localTransform": {
+        "type": "mat4"
+      },
+      "fieldOfView": {
+        "type": "float",
+        "default": 70.0
+      },
+      "aspectRatio": {
+        "type": "float"
+      },
+      "zNear": {
+        "type": "float",
+        "default": 0.01
+      },
+      "zFar": {
+        "type": "float",
+        "default": 1000.0
+      },
+      "orthographicWidth": {
+        "type": "float",
+        "default": 1.0
+      },
+      "projectionMode": {
+        "type": "GraphicsFeature::ProjectionMode",
+        "default": 0
+      }
+    }
+  }
 }

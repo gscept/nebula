@@ -80,7 +80,11 @@ AttributeRegistry::IsRegistered()
 {
     auto* reg = Instance();
     AttributeId id = MemDb::GetAttributeId<TYPE>();
-    return reg->componentDescriptions[id.id] != nullptr;
+    if (id < reg->componentDescriptions.Size())
+    {
+        return reg->componentDescriptions[id.id] != nullptr;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------

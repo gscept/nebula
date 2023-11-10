@@ -20,6 +20,10 @@
 #include "io/textreader.h"
 #include "io/filestream.h"
 
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
+
 using namespace Game;
 using namespace Math;
 using namespace Util;
@@ -216,6 +220,12 @@ EntitySystemTest::Run()
             world->CreateEntity(enemyInfo),
             world->CreateEntity(enemyInfo),
         };
+
+        // All entities should have these components
+        VERIFY(world->HasComponent<Game::Entity>(enemies[0]));
+        VERIFY(world->HasComponent<Game::Position>(enemies[0]));
+        VERIFY(world->HasComponent<Game::Orientation>(enemies[0]));
+        VERIFY(world->HasComponent<Game::Scale>(enemies[0]));
 
         {
             VERIFY(

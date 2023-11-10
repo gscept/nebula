@@ -75,6 +75,7 @@ void
 GraphicsFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    world->RegisterType<PointLight>({ .decay = true });
     world->RegisterType<Model>({ .decay = true });
     world->RegisterType<Camera>();
 }
@@ -214,7 +215,7 @@ GraphicsFeatureUnit::OnActivate()
             Vegetation::VegetationContext::Create(vegSettings);
         }
     }    
-
+  
     Lighting::LightContext::Create(frameScript);
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();

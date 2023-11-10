@@ -11,6 +11,8 @@
 #include "game/gameserver.h"
 #include "graphics/view.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
 
 namespace GraphicsFeature
 {
@@ -105,32 +107,18 @@ CameraManager::InitUpdateCameraProcessor()
     // Setup processor that handles both worldtransform and camera (heirarchy)
     Game::ProcessorBuilder(world, "CameraManager.UpdateCameraWorldTransform")
         .Func(
-        [](Game::World*, Camera const& camera, Game::Transform const& parentTransform)
+        [](Game::World*, Camera const& camera, Game::Position const& parentPosition, Game::Orientation const& parentOrientation)
         {
             if (IsViewHandleValid(camera.viewHandle))
             {
                 Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
                 Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
                 UpdateCameraSettings(gid, settings, camera);
-                Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform.value);
+                Math::mat4 parentTransform = Math::translation(parentPosition) * Math::rotationquat(parentOrientation);
+                Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform);
             }
         }
     ).Build();
-
-    // Setup processor that handles just a regular old camera
-    Game::ProcessorBuilder(world, "CameraManager.UpdateCamera")
-        .Func([](Game::World* world, Camera const& camera)
-        {
-            if (IsViewHandleValid(camera.viewHandle))
-            {
-                Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
-                Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
-                UpdateCameraSettings(gid, settings, camera);
-                Graphics::CameraContext::SetView(gid, settings.localTransform);
-            }
-        })
-        .Excluding<Game::Transform>()
-        .Build();
 }
 
 //------------------------------------------------------------------------------

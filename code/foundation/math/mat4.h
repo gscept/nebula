@@ -1120,6 +1120,17 @@ translation(const vec3& t)
 
 //------------------------------------------------------------------------------
 /**
+    A short hand for creating a TRS (translation, rotation, scale) matrix from
+    pos, rot and scale
+*/
+__forceinline mat4
+trs(const vec3& position, const quat& rotation, const vec3& scale)
+{
+    return Math::translation(position) * Math::rotationquat(rotation) * Math::scaling(scale);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 __forceinline mat4
 transpose(const mat4& m)
@@ -1137,6 +1148,9 @@ transpose(const mat4& m)
     return ret;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline mat4
 skewsymmetric(const vec3& v)
 {

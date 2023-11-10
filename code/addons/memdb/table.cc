@@ -532,7 +532,12 @@ Table::MigrateInstance(
     std::function<void(Partition*, RowId, RowId)> const& moveCallback
 )
 {
-    n_assert(src.tid != dst.tid);
+    if (src.tid == dst.tid)
+    {
+        // we're not actually migrating anything, just return the original row
+        return srcRow;
+    }
+
     RowId dstRow = Table::DuplicateInstance(src, srcRow, dst);
     if (defragment)
     {

@@ -66,7 +66,7 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     n_assert(gameTable != MemDb::InvalidTableId);
     MemDb::RowId instance = gameWorld->AllocateInstance(entity, gameTable);
     gameWorld->GetDatabase()->GetTable(gameTable).DeserializeInstance(entityState, instance);
-    gameWorld->SetComponent<Game::Owner>(entity, {.entity = entity});
+    gameWorld->SetComponent<Game::Entity>(entity, entity);
 
     if (Editor::state.editorWorld->HasInstance(editorEntity))
     {
@@ -78,7 +78,7 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
         Editor::state.editables.Append({});
     MemDb::RowId editorInstance = Editor::state.editorWorld->AllocateInstance(editorEntity, editorTable);
     Editor::state.editorWorld->GetDatabase()->GetTable(editorTable).DeserializeInstance(entityState, editorInstance);
-    Editor::state.editorWorld->SetComponent<Game::Owner>(editorEntity, {.entity = editorEntity});
+    Editor::state.editorWorld->SetComponent<Game::Entity>(editorEntity, editorEntity);
 
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
     edit.gameEntity = entity;

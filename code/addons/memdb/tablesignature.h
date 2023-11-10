@@ -47,6 +47,10 @@ public:
     bool const IsSet(AttributeId component) const;
     /// flip a bit.
     void FlipBit(AttributeId component);
+    /// set a bit.
+    void SetBit(AttributeId component);
+    /// clear a bit.
+    void ClearBit(AttributeId component);
 
     /// (src & mask) == mask
     static bool const CheckBits(TableSignature const& src, TableSignature const& mask);
@@ -222,6 +226,36 @@ TableSignature::FlipBit(AttributeId component)
     partialMask[bit / 64] |= 1ull << bit;
     __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
     this->mask[offset] = _mm_xor_si128(this->mask[offset], temp);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+TableSignature::SetBit(AttributeId component)
+{
+    int offset = component.id / 128;
+    n_assert(offset < this->size); // currently, we can't set a bit that is outside the signatures size.
+    alignas(16) uint64_t partialMask[2] = {0, 0};
+    uint64_t bit = component.id % 128;
+    partialMask[bit / 64] |= 1ull << bit;
+    __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
+    this->mask[offset] = _mm_or_si128(this->mask[offset], temp);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+TableSignature::ClearBit(AttributeId component)
+{
+    int offset = component.id / 128;
+    n_assert(offset < this->size); // currently, we can't set a bit that is outside the signatures size.
+    alignas(16) uint64_t partialMask[2] = {0, 0};
+    uint64_t bit = component.id % 128;
+    partialMask[bit / 64] |= 1ull << bit;
+    __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
+    this->mask[offset] = _mm_andnot_si128(temp, this->mask[offset]);
 }
 
 //------------------------------------------------------------------------------

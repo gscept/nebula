@@ -10,6 +10,9 @@
 #include "util/arraystack.h"
 #include "game/gameserver.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
 
 namespace Game
 {
@@ -333,8 +336,10 @@ BlueprintManager::SetupBlueprints()
         Util::StackArray<ComponentId, 32> columns;
 
         // append owner and transform, makes it a bit faster than letting entitymanager sort it out...
-        columns.Append(GetComponentId<Owner>());
-        columns.Append(GetComponentId<Transform>());
+        columns.Append(GetComponentId<Entity>());
+        columns.Append(GetComponentId<Position>());
+        columns.Append(GetComponentId<Orientation>());
+        columns.Append(GetComponentId<Scale>());
 
         // filter out invalid components
         for (int i = 0; i < numBlueprintComponents; i++)
