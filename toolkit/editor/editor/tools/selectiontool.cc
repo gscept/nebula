@@ -69,7 +69,7 @@ SelectionTool::RenderGizmo()
 	else if(isDirty)
 	{
 		// User has release gizmo, we can set real transform and add to undo queue
-		Edit::CommandManager::BeginMacro("Set Transform");
+		Edit::CommandManager::BeginMacro("Modify transform", false);
 		Edit::SetComponent(selection[0], Game::GetComponentId<Game::Position>(), &pos);
 		Edit::SetComponent(selection[0], Game::GetComponentId<Game::Orientation>(), &rot);
 		Edit::SetComponent(selection[0], Game::GetComponentId<Game::Scale>(), &scale);
