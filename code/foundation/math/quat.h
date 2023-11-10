@@ -24,6 +24,7 @@ quat rotationmatrix(const mat4& m);
 vec3 to_euler(const quat& q);
 quat from_euler(const vec3& v);
 quat quatyawpitchroll(scalar y, scalar x, scalar z);
+vec3 rotate(quat const& q, vec3 const& v);
 
 struct NEBULA_ALIGN16 quat
 {
@@ -56,6 +57,13 @@ public:
     void storeu(scalar* ptr) const;
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
+
+    /// get the x axis of the cartesian coordinate system that this quaternion represents
+    vec3 x_axis() const;
+    /// get the y axis of the cartesian coordinate system that this quaternion represents
+    vec3 y_axis() const;
+    /// get the z axis of the cartesian coordinate system that this quaternion represents
+    vec3 z_axis() const;
 
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
@@ -184,6 +192,36 @@ __forceinline void
 quat::stream(scalar* ptr) const
 {
     this->store(ptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec3
+quat::x_axis() const
+{
+    vec3 const v = vec3(1, 0, 0);
+    return rotate(*this, v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec3
+quat::y_axis() const
+{
+    vec3 const v = vec3(0, 1, 0);
+    return rotate(*this, v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec3
+quat::z_axis() const
+{
+    vec3 const v = vec3(0, 0, 1);
+    return rotate(*this, v);
 }
 
 //------------------------------------------------------------------------------
@@ -497,6 +535,22 @@ to_axisangle(const quat& q, vec4& outAxis, scalar& outAngle)
     outAxis.w = 0;
     outAngle = 2.0f * Math::acos(q.w);
     outAxis.w = 0.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Rotate a vector by a quaternion
+
+    https://blog.molecular-matters.com/2013/05/24/a-faster-quaternion-vector-multiplication/
+*/
+__forceinline vec3
+rotate(quat const& q, vec3 const& v)
+{
+    vec3 const i = q.vec; // xyz values of q
+    vec3 const qxv = cross(i, v);
+    vec3 const rv = v * q.w;
+    vec3 const rot = cross(i, qxv + rv) * 2.0f;
+    return v + rot;
 }
 
 } // namespace Math
