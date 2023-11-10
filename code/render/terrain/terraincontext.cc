@@ -648,31 +648,41 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             || terrainVirtualTileState.indirectionTextureFromCopiesThisFrame.Size() > 0)
         {
             CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Shuffle Indirection Regions");
-            CmdBarrier(cmdBuf,
-                PipelineStage::HostWrite,
-                PipelineStage::TransferRead,
-                BarrierDomain::Global,
-                nullptr,
-                {
-                    BufferBarrierInfo
-                    {
-                        terrainVirtualTileState.uploadClearBufferThisFrame,
-                        CoreGraphics::BufferSubresourceInfo()
-                    },
-                    BufferBarrierInfo
-                    {
-                        terrainVirtualTileState.uploadUpdateBufferThisFrame,
-                        CoreGraphics::BufferSubresourceInfo()
-                    },
-                });
 
             // Perform clears
             if (terrainVirtualTileState.indirectionBufferClearsThisFrame.Size() > 0)
             {
+                CmdBarrier(cmdBuf,
+                    PipelineStage::HostWrite,
+                    PipelineStage::TransferRead,
+                    BarrierDomain::Global,
+                    nullptr,
+                    {
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadClearBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+
+                    });
+
                 // perform the moves and clears of indirection pixels
                 CmdCopy(cmdBuf,
                     terrainVirtualTileState.uploadClearBufferThisFrame, terrainVirtualTileState.indirectionBufferClearsThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureClearsThisFrame);
+
+                CmdBarrier(cmdBuf,
+                    PipelineStage::TransferRead,
+                    PipelineStage::HostWrite,
+                    BarrierDomain::Global,
+                    nullptr,
+                    {
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadClearBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+                    });
             }
 
             // Perform mip shifts
@@ -686,29 +696,38 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             // Perform CPU side updates
             if (terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Size() > 0)
             {
+                CmdBarrier(cmdBuf,
+                    PipelineStage::HostWrite,
+                    PipelineStage::TransferRead,
+                    BarrierDomain::Global,
+                    nullptr,
+                    {
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadUpdateBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+
+                    });
+
                 // update the new pixels
                 CmdCopy(cmdBuf,
                     terrainVirtualTileState.uploadUpdateBufferThisFrame, terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureUpdatesThisFrame);
-            }
 
-            CmdBarrier(cmdBuf,
-                PipelineStage::TransferRead,
-                PipelineStage::HostWrite,
-                BarrierDomain::Global,
-                nullptr,
-                {
-                    BufferBarrierInfo
+                CmdBarrier(cmdBuf,
+                    PipelineStage::TransferRead,
+                    PipelineStage::HostWrite,
+                    BarrierDomain::Global,
+                    nullptr,
                     {
-                        terrainVirtualTileState.uploadClearBufferThisFrame,
-                        CoreGraphics::BufferSubresourceInfo()
-                    },
-                    BufferBarrierInfo
-                    {
-                        terrainVirtualTileState.uploadUpdateBufferThisFrame,
-                        CoreGraphics::BufferSubresourceInfo()
-                    },
-                });
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadUpdateBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+                    });
+            }
 
             // Clear pending updates
             terrainVirtualTileState.indirectionTextureFromCopiesThisFrame.Clear();
@@ -1042,7 +1061,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 for (int j = 0; j < terrainVirtualTileState.pageUpdatesThisFrame.Size(); j++)
                 {
                     PhysicalTileUpdate& pageUpdate = terrainVirtualTileState.pageUpdatesThisFrame[j];
-                    CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, pageUpdate.constantBufferOffsets);
+                    CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 1, pageUpdate.constantBufferOffsets);
 
                     // update viewport rectangle
                     Math::rectangle<int> rect;
@@ -1843,23 +1862,24 @@ IndirectionClear(
     , uint tiles
     , const Math::uint2& coord)
 {
+    uint width = tiles;
+    uint dataSize = width * width * sizeof(IndirectionEntry);
+
+    // Grab the largest mip and fill with 0 pixels
+    Util::FixedArray<IndirectionEntry> pixels(width * width);
+    pixels.Fill(IndirectionEntry{ 0xFFFFFFFF });
+
+    // Upload to GPU, the lowest mip will have enough values to cover all mips
+    auto [offset, buffer] = CoreGraphics::UploadArray(pixels.Begin(), pixels.Size(), 4);
+    terrainVirtualTileState.uploadClearBufferThisFrame = buffer;
+
     // go through old region and reset indirection pixels
     for (uint i = 0; i <= mips; i++)
     {
         Math::uint2 mippedCoord{ coord.x >> i, coord.y >> i };
         uint width = tiles >> i;
-        uint dataSize = width * width * sizeof(IndirectionEntry);
 
-        // create buffer of invalid indirection entry pixels
-        Util::FixedArray<IndirectionEntry> pixels(width * width);
-        pixels.Fill(IndirectionEntry {0xFFFFFFFF});
-
-        // update upload buffer
-        auto [offset, buffer] = CoreGraphics::UploadArray(pixels.Begin(), pixels.Size(), 4);
-        terrainVirtualTileState.uploadClearBuffersThisFrame.Add(buffer);
-
-        // add copy commands
-        terrainVirtualTileState.indirectionBufferClearsThisFrame.Append(CoreGraphics::BufferCopy{ offset });
+        terrainVirtualTileState.indirectionBufferClearsThisFrame.Append(CoreGraphics::BufferCopy{ static_cast<uint>(offset) });
         terrainVirtualTileState.indirectionTextureClearsThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedCoord.x, mippedCoord.y, mippedCoord.x + width, mippedCoord.y + width), i, 0 });
 
         // Update CPU buffer
@@ -2107,7 +2127,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     for (i = 0; i < numPagesThisFrame; i++)
     {
         // setup indirection update
-        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append({ static_cast<uint>(offset + i * sizeof(Terrain::IndirectionEntry)) });
+        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append(CoreGraphics::BufferCopy{ static_cast<uint>(offset + i * sizeof(Terrain::IndirectionEntry)) });
         terrainVirtualTileState.indirectionTextureUpdatesThisFrame.Append(terrainVirtualTileState.indirectionTextureCopies[i]);
     }
     if (i > 0)
