@@ -124,8 +124,10 @@ struct SubTextureCompressed
 struct
 {
     CoreGraphics::ShaderProgramId                                   terrainPrepassProgram;
+    CoreGraphics::PipelineId                                        terrainPrepassPipeline;
     CoreGraphics::ShaderProgramId                                   terrainPageClearUpdateBufferProgram;
-    CoreGraphics::ShaderProgramId                                   terrainScreenspacePass;
+    CoreGraphics::ShaderProgramId                                   terrainResolveProgram;
+    CoreGraphics::PipelineId                                        terrainResolvePipeline;
     CoreGraphics::ShaderProgramId                                   terrainTileUpdateProgram;
     CoreGraphics::ShaderProgramId                                   terrainTileFallbackProgram;
 
@@ -140,7 +142,8 @@ struct
     CoreGraphics::BufferId                                          pageUpdateListBuffer;
     CoreGraphics::BufferId                                          pageStatusBuffer;
 
-
+    Threading::AtomicCounter                                        numPatchesThisFrame;
+    CoreGraphics::BufferSet                                         patchConstants;
     CoreGraphics::BufferId                                          runtimeConstants;
 
     CoreGraphics::TextureId                                         physicalAlbedoCache;
@@ -151,7 +154,7 @@ struct
     CoreGraphics::TextureId                                         lowresMaterial;
     bool                                                            updateLowres = false;
 
-    CoreGraphics::ResourceTableId                                   virtualTerrainSystemResourceTable;
+    CoreGraphics::ResourceTableSet                                  virtualTerrainSystemResourceTable;
     CoreGraphics::ResourceTableId                                   virtualTerrainRuntimeResourceTable;
     Util::FixedArray<CoreGraphics::ResourceTableId>                 virtualTerrainDynamicResourceTable;
 
@@ -177,6 +180,9 @@ struct
     Util::Array<Terrain::TerrainTileUpdateUniforms>                 pageUniforms;
     Util::Array<Math::uint2>                                        tileOffsets;
     Util::Array<PhysicalTileUpdate>                                 pageUpdatesThisFrame;
+
+    CoreGraphics::BufferId                                          uploadClearBufferThisFrame;
+    CoreGraphics::BufferId                                          uploadUpdateBufferThisFrame;
     Util::Array<CoreGraphics::BufferCopy>                           indirectionBufferUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureFromCopiesThisFrame;
@@ -273,7 +279,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     sysBufInfo.name = "VirtualSystemBuffer"_atm;
     sysBufInfo.size = 1;
     sysBufInfo.elementSize = sizeof(Terrain::TerrainSystemUniforms);
-    sysBufInfo.mode = CoreGraphics::HostCached;
+    sysBufInfo.mode = CoreGraphics::DeviceAndHost;
     sysBufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     terrainState.systemConstants = CoreGraphics::CreateBuffer(sysBufInfo);
 
@@ -281,7 +287,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     biomeBufferInfo.name = "BiomeBuffer"_atm;
     biomeBufferInfo.size = 1;
     biomeBufferInfo.elementSize = sizeof(Terrain::MaterialLayers);
-    biomeBufferInfo.mode = CoreGraphics::HostCached;
+    biomeBufferInfo.mode = CoreGraphics::DeviceAndHost;
     biomeBufferInfo.usageFlags = CoreGraphics::ConstantBuffer;
     terrainState.biomeBuffer = CoreGraphics::CreateBuffer(biomeBufferInfo);
 
@@ -320,11 +326,11 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
     terrainVirtualTileState.terrainPageClearUpdateBufferProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainPageClearUpdateBuffer"));
     terrainVirtualTileState.terrainPrepassProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainPrepass"));
-    terrainVirtualTileState.terrainScreenspacePass = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainVirtualScreenSpace"));
+    terrainVirtualTileState.terrainResolveProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainResolve"));
     terrainVirtualTileState.terrainTileUpdateProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainTileUpdate"));
     terrainVirtualTileState.terrainTileFallbackProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureFromString("TerrainLowresFallback"));
 
-    terrainVirtualTileState.virtualTerrainSystemResourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
+    terrainVirtualTileState.virtualTerrainSystemResourceTable = ShaderCreateResourceTableSet(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
     terrainVirtualTileState.virtualTerrainRuntimeResourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_BATCH_GROUP);
     terrainVirtualTileState.virtualTerrainDynamicResourceTable.Resize(CoreGraphics::GetNumBufferedFrames());
     for (auto& table : terrainVirtualTileState.virtualTerrainDynamicResourceTable)
@@ -334,7 +340,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     bufInfo.name = "VirtualRuntimeBuffer"_atm;
     bufInfo.size = 1;
     bufInfo.elementSize = sizeof(Terrain::TerrainRuntimeUniforms);
-    bufInfo.mode = CoreGraphics::HostCached;
+    bufInfo.mode = CoreGraphics::DeviceAndHost;
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     terrainVirtualTileState.runtimeConstants = CoreGraphics::CreateBuffer(bufInfo);
 
@@ -511,60 +517,53 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     //terrainVirtualTileState.physicalTextureTileOccupancy.Setup(PhysicalTexturePaddedSize, PhysicalTexturePaddedSize, PhysicalTextureTilePaddedSize);
     terrainVirtualTileState.physicalTextureTileCache.Setup(PhysicalTextureTilePaddedSize, PhysicalTexturePaddedSize);
 
-    ResourceTableSetConstantBuffer(terrainVirtualTileState.virtualTerrainSystemResourceTable, 
-        {
-            terrainState.biomeBuffer,
-            Terrain::Table_System::MaterialLayers::SLOT,
-            0,
-            NEBULA_WHOLE_BUFFER_SIZE,
-            0
-        });
+    terrainVirtualTileState.virtualTerrainSystemResourceTable.ForEach([](const ResourceTableId table, const IndexT i)
+    {
+        ResourceTableSetConstantBuffer(table,
+                                    {
+                                        terrainState.biomeBuffer,
+                                        Terrain::Table_System::MaterialLayers::SLOT,
+                                        NEBULA_WHOLE_BUFFER_SIZE,
+                                    }
+        );
 
-    ResourceTableSetConstantBuffer(terrainVirtualTileState.virtualTerrainSystemResourceTable, 
-        {
-            terrainState.systemConstants,
-            Terrain::Table_System::TerrainSystemUniforms::SLOT,
-            0,
-            NEBULA_WHOLE_BUFFER_SIZE,
-            0
-        });
+        ResourceTableSetConstantBuffer(table,
+            {
+                terrainState.systemConstants,
+                Terrain::Table_System::TerrainSystemUniforms::SLOT,
+                NEBULA_WHOLE_BUFFER_SIZE,
+            });
 
-    ResourceTableSetRWBuffer(terrainVirtualTileState.virtualTerrainSystemResourceTable,
-        {
-            terrainVirtualTileState.subTextureBuffer,
-            Terrain::Table_System::TerrainSubTexturesBuffer::SLOT,
-            0, 
-            NEBULA_WHOLE_BUFFER_SIZE,
-            0
-        });
+        ResourceTableSetRWBuffer(table,
+            {
+                terrainVirtualTileState.subTextureBuffer,
+                Terrain::Table_System::TerrainSubTexturesBuffer::SLOT,
+                NEBULA_WHOLE_BUFFER_SIZE,
+            });
 
-    ResourceTableSetRWBuffer(terrainVirtualTileState.virtualTerrainSystemResourceTable,
-        {
-            terrainVirtualTileState.pageUpdateListBuffer,
-            Terrain::Table_System::PageUpdateListBuffer::SLOT,
-            0,
-            NEBULA_WHOLE_BUFFER_SIZE,
-            0
-        });
+        ResourceTableSetRWBuffer(table,
+            {
+                terrainVirtualTileState.pageUpdateListBuffer,
+                Terrain::Table_System::PageUpdateListBuffer::SLOT,
+                NEBULA_WHOLE_BUFFER_SIZE,
+            });
 
-    ResourceTableSetRWBuffer(terrainVirtualTileState.virtualTerrainSystemResourceTable,
-        {
-            terrainVirtualTileState.pageStatusBuffer,
-            Terrain::Table_System::PageStatusBuffer::SLOT,
-            0,
-            NEBULA_WHOLE_BUFFER_SIZE,
-            0
-        });
+        ResourceTableSetRWBuffer(table,
+            {
+                terrainVirtualTileState.pageStatusBuffer,
+                Terrain::Table_System::PageStatusBuffer::SLOT,
+                NEBULA_WHOLE_BUFFER_SIZE,
+            });
 
-    ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainSystemResourceTable);
+        ResourceTableCommitChanges(table);
+    });
+    
 
     ResourceTableSetConstantBuffer(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
         {
             terrainVirtualTileState.runtimeConstants,
             Terrain::Table_Batch::TerrainRuntimeUniforms::SLOT,
-            0,
-            sizeof(Terrain::TerrainRuntimeUniforms),
-            0
+            Terrain::Table_Batch::TerrainRuntimeUniforms::SIZE,
         });
     ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainRuntimeResourceTable);
 
@@ -576,7 +575,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++),
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SLOT,
             0,
-            sizeof(Terrain::TerrainTileUpdateUniforms),
+            Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SIZE,
             0,
             false, true
         });
@@ -608,7 +607,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     lowresUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Lowres Albedo Cache View", terrainVirtualTileState.lowresAlbedo, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresAlbedo) }));
     lowresUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Lowres Normal Cache View", terrainVirtualTileState.lowresNormal, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresNormal) }));
     lowresUpdatePassCreate.attachments.Append(CreateTextureView({ "Terrain Lowres Material Cache View", terrainVirtualTileState.lowresMaterial, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresMaterial) }));
-    bits = AttachmentFlagBits::Store;
+    bits = AttachmentFlagBits::Store | AttachmentFlagBits::Clear;
     lowresUpdatePassCreate.attachmentFlags.Append(bits, bits, bits);
     lowresUpdatePassCreate.attachmentDepthStencil.Append(false, false, false);
     lowresUpdatePassCreate.attachmentClears.Append(Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0));
@@ -648,26 +647,42 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             || terrainVirtualTileState.indirectionBufferClearsThisFrame.Size() > 0
             || terrainVirtualTileState.indirectionTextureFromCopiesThisFrame.Size() > 0)
         {
-            CmdBarrier(cmdBuf,
-                PipelineStage::HostWrite,
-                PipelineStage::TransferRead,
-                BarrierDomain::Global,
-                nullptr,
-                {
-                    BufferBarrierInfo
-                    {
-                        CoreGraphics::GetUploadBuffer(),
-                        CoreGraphics::BufferSubresourceInfo()
-                    },
-                });
+            CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Shuffle Indirection Regions");
 
             // Perform clears
             if (terrainVirtualTileState.indirectionBufferClearsThisFrame.Size() > 0)
             {
+                CmdBarrier(cmdBuf,
+                    PipelineStage::HostWrite,
+                    PipelineStage::TransferRead,
+                    BarrierDomain::Global,
+                    nullptr,
+                    {
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadClearBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+
+                    });
+
                 // perform the moves and clears of indirection pixels
                 CmdCopy(cmdBuf,
-                    CoreGraphics::GetUploadBuffer(), terrainVirtualTileState.indirectionBufferClearsThisFrame,
+                    terrainVirtualTileState.uploadClearBufferThisFrame, terrainVirtualTileState.indirectionBufferClearsThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureClearsThisFrame);
+
+                CmdBarrier(cmdBuf,
+                    PipelineStage::TransferRead,
+                    PipelineStage::HostWrite,
+                    BarrierDomain::Global,
+                    nullptr,
+                    {
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadClearBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+                    });
             }
 
             // Perform mip shifts
@@ -681,24 +696,38 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             // Perform CPU side updates
             if (terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Size() > 0)
             {
+                CmdBarrier(cmdBuf,
+                    PipelineStage::HostWrite,
+                    PipelineStage::TransferRead,
+                    BarrierDomain::Global,
+                    nullptr,
+                    {
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadUpdateBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+
+                    });
+
                 // update the new pixels
                 CmdCopy(cmdBuf,
-                    CoreGraphics::GetUploadBuffer(), terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
+                    terrainVirtualTileState.uploadUpdateBufferThisFrame, terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureUpdatesThisFrame);
-            }
 
-            CmdBarrier(cmdBuf,
-                PipelineStage::TransferRead,
-                PipelineStage::HostWrite,
-                BarrierDomain::Global,
-                nullptr,
-                {
-                    BufferBarrierInfo
+                CmdBarrier(cmdBuf,
+                    PipelineStage::TransferRead,
+                    PipelineStage::HostWrite,
+                    BarrierDomain::Global,
+                    nullptr,
                     {
-                        CoreGraphics::GetUploadBuffer(),
-                        CoreGraphics::BufferSubresourceInfo()
-                    },
-                });
+                        BufferBarrierInfo
+                        {
+                            terrainVirtualTileState.uploadUpdateBufferThisFrame,
+                            CoreGraphics::BufferSubresourceInfo()
+                        },
+                    });
+            }
 
             // Clear pending updates
             terrainVirtualTileState.indirectionTextureFromCopiesThisFrame.Clear();
@@ -709,11 +738,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
             terrainVirtualTileState.indirectionBufferClearsThisFrame.Clear();
             terrainVirtualTileState.indirectionTextureClearsThisFrame.Clear();
+            CmdEndMarker(cmdBuf);
         }
 
         // If we have subtexture updates, make sure to copy them too
         if (terrainVirtualTileState.virtualSubtextureBufferUpdate)
         {
+            CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Copy SubTextures from Host Buffer");
             CmdBarrier(cmdBuf,
                 PipelineStage::HostWrite,
                 PipelineStage::TransferRead,
@@ -749,6 +780,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 });
 
             terrainVirtualTileState.virtualSubtextureBufferUpdate = false;
+            CmdEndMarker(cmdBuf);
         }
     };
 
@@ -768,6 +800,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                             });
     indirectionCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
+        CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Copy Indirection Mips");
+
         // Copy this frame of indirection to copy
         TextureDimensions dims = TextureGetDimensions(terrainVirtualTileState.indirectionTexture);
         for (IndexT mip = 0; mip < TextureGetNumMips(terrainVirtualTileState.indirectionTexture); mip++)
@@ -779,26 +813,11 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             CmdCopy(cmdBuf,
                     terrainVirtualTileState.indirectionTexture, { cp }, terrainVirtualTileState.indirectionTextureCopy, { cp });
         }
+
+        CmdEndMarker(cmdBuf);
     };
 
-    Frame::FrameCode* pageClear = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    pageClear->domain = CoreGraphics::BarrierDomain::Global;
-    pageClear->bufferDeps.Add(terrainVirtualTileState.pageUpdateListBuffer,
-                        {
-                            "Page Update List",
-                            CoreGraphics::PipelineStage::ComputeShaderWrite,
-                            CoreGraphics::BufferSubresourceInfo()
-                        });
-    pageClear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainPageClearUpdateBufferProgram);
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
-
-        // run a single compute shader to clear the number of page entries
-        uint numDispatches = Math::divandroundup(Terrain::MAX_PAGE_UPDATES, 64);
-        CmdDispatch(cmdBuf, numDispatches, 1, 1);
-    };
-    Frame::AddSubgraph("Terrain Prepare", { terrainPrepare, indirectionCopy, pageClear });
+    Frame::AddSubgraph("Terrain Prepare", { terrainPrepare, indirectionCopy });
 
     Frame::FrameCode* terrainPrepass = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
     terrainPrepass->domain = CoreGraphics::BarrierDomain::Pass;
@@ -814,22 +833,43 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                         CoreGraphics::PipelineStage::PixelShaderRead,
                         CoreGraphics::BufferSubresourceInfo()
                     });
+    terrainPrepass->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
+    {
+        terrainVirtualTileState.terrainPrepassPipeline = CreatePipeline(
+            {
+                .shader = terrainVirtualTileState.terrainPrepassProgram,
+                .pass = pass,
+                .subpass = subpass,
+                .inputAssembly = InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::PatchList, .primRestart = false } }
+            });
+    };
     terrainPrepass->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainState.renderToggle == false)
             return;
 
         // setup shader state, set shader before we set the vertex layout
-        CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainPrepassProgram);
+        CmdSetGraphicsPipeline(cmdBuf, terrainVirtualTileState.terrainPrepassPipeline);
         CmdSetVertexLayout(cmdBuf, terrainState.vlo);
-        CmdSetPrimitiveTopology(cmdBuf, PrimitiveTopology::PatchList);
-        CmdSetGraphicsPipeline(cmdBuf);
+        CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::PatchList);
 
         // set shared resources
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
 
         // Draw terrains
         Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
+
+        SizeT numQuadsX = terrainState.settings.quadsPerTileX;
+        SizeT numQuadsY = terrainState.settings.quadsPerTileY;
+        SizeT numVertsX = numQuadsX + 1;
+        SizeT numVertsY = numQuadsY + 1;
+        SizeT numTris = numVertsX * numVertsY;
+
+        CoreGraphics::PrimitiveGroup group;
+        group.SetBaseIndex(0);
+        group.SetBaseVertex(0);
+        group.SetNumIndices(numTris * 4);
+        group.SetNumVertices(0);
 
         // go through and render terrain instances
         for (IndexT i = 0; i < runtimes.Size(); i++)
@@ -837,16 +877,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             TerrainRuntimeInfo& rt = runtimes[i];
             CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
-            for (IndexT j = 0; j < rt.sectionBoxes.Size(); j++)
-            {
-                if (rt.sectorVisible[j])
-                {
-                    CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
-                    CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
-                    CmdSetResourceTable(cmdBuf, rt.patchTables[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, &rt.sectorUniformOffsets[j][0]);
-                    CmdDraw(cmdBuf, rt.sectorPrimGroups[j]);
-                }
-            }
+            CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
+            CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
+            CmdDraw(cmdBuf, terrainVirtualTileState.numPatchesThisFrame, group);
         }
     };
     Frame::AddSubgraph("Terrain Prepass", { terrainPrepass });
@@ -886,6 +919,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 });
     pageExtract->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
+        CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Copy Pages to Readback");
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
@@ -894,6 +928,29 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainVirtualTileState.pageUpdateListBuffer, { from }, terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[bufferIndex], { to },
             sizeof(Terrain::PageUpdateList)
         );
+        CmdEndMarker(cmdBuf);
+    };
+
+    Frame::FrameCode* pageClear = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    pageClear->domain = CoreGraphics::BarrierDomain::Global;
+    pageClear->bufferDeps.Add(terrainVirtualTileState.pageUpdateListBuffer,
+                        {
+                            "Page Update List",
+                            CoreGraphics::PipelineStage::ComputeShaderWrite,
+                            CoreGraphics::BufferSubresourceInfo()
+                        });
+    pageClear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdBeginMarker(cmdBuf, NEBULA_MARKER_COMPUTE, "Clear Page Status Buffer");
+
+        CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainPageClearUpdateBufferProgram);
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+
+        // run a single compute shader to clear the number of page entries
+        uint numDispatches = Math::divandroundup(Terrain::MAX_PAGE_UPDATES, 64);
+        CmdDispatch(cmdBuf, numDispatches, 1, 1);
+
+        CmdEndMarker(cmdBuf);
     };
 
     Frame::FrameCode* cacheUpdate = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -922,12 +979,14 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         {
             terrainVirtualTileState.updateLowres = false;
 
+            CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, "Update Lowres caches");
+
             CmdBeginPass(cmdBuf, terrainVirtualTileState.tileFallbackPass);
 
             // Setup state for update
             CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainTileFallbackProgram);
             CmdSetResourceTable(cmdBuf, PassGetResourceTable(terrainVirtualTileState.tileFallbackPass), NEBULA_PASS_GROUP, GraphicsPipeline, nullptr);
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
             CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
             Math::rectangle<int> rect;
@@ -948,14 +1007,40 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
             CmdEndPass(cmdBuf);
 
+            // Transition rendered to mips to be shader read
+            CoreGraphics::CmdBarrier(
+                cmdBuf,
+                CoreGraphics::PipelineStage::ColorWrite,
+                CoreGraphics::PipelineStage::AllShadersRead,
+                CoreGraphics::BarrierDomain::Global,
+                {
+                    {
+                        terrainVirtualTileState.lowresAlbedo,
+                        CoreGraphics::TextureSubresourceInfo(),
+                    },
+                    {
+                        terrainVirtualTileState.lowresMaterial,
+                        CoreGraphics::TextureSubresourceInfo(),
+                    },
+                    {
+                        terrainVirtualTileState.lowresNormal,
+                        CoreGraphics::TextureSubresourceInfo(),
+                    }
+                },
+                nullptr);
+
             // Now generate mipmaps
             CoreGraphics::TextureGenerateMipmaps(cmdBuf, terrainVirtualTileState.lowresAlbedo);
             CoreGraphics::TextureGenerateMipmaps(cmdBuf, terrainVirtualTileState.lowresMaterial);
             CoreGraphics::TextureGenerateMipmaps(cmdBuf, terrainVirtualTileState.lowresNormal);
+
+            CmdEndMarker(cmdBuf);
         }
 
         if (terrainVirtualTileState.pageUpdatesThisFrame.Size() > 0)
         {
+            CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, "Update Texture Caches");
+
             // start the pass
             CmdBeginPass(cmdBuf, terrainVirtualTileState.tileUpdatePass);
 
@@ -964,7 +1049,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             // apply the mesh for all quads
             RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
             CmdSetResourceTable(cmdBuf, PassGetResourceTable(terrainVirtualTileState.tileUpdatePass), NEBULA_PASS_GROUP, GraphicsPipeline, nullptr);
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
             Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
             // go through pending page updates and render into the physical texture caches
@@ -976,7 +1061,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 for (int j = 0; j < terrainVirtualTileState.pageUpdatesThisFrame.Size(); j++)
                 {
                     PhysicalTileUpdate& pageUpdate = terrainVirtualTileState.pageUpdatesThisFrame[j];
-                    CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 2, pageUpdate.constantBufferOffsets);
+                    CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 1, pageUpdate.constantBufferOffsets);
 
                     // update viewport rectangle
                     Math::rectangle<int> rect;
@@ -998,46 +1083,87 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             }
 
             CmdEndPass(cmdBuf);
+
+            CmdEndMarker(cmdBuf);
         }
     };
-    Frame::AddSubgraph("Terrain Update Caches", { pageExtract, cacheUpdate });
+    Frame::AddSubgraph("Terrain Update Caches", { pageExtract, cacheUpdate, pageClear });
 
-    Frame::FrameCode* screenSpace = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    screenSpace->domain = CoreGraphics::BarrierDomain::Pass;
-    screenSpace->textureDeps.Add(terrainVirtualTileState.physicalAlbedoCache,
+    Frame::FrameCode* resolve = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    resolve->domain = CoreGraphics::BarrierDomain::Pass;
+    resolve->textureDeps.Add(terrainVirtualTileState.physicalAlbedoCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::PixelShaderRead,
                                 TextureSubresourceInfo::Color(terrainVirtualTileState.physicalAlbedoCache)
                             });
-    screenSpace->textureDeps.Add(terrainVirtualTileState.physicalMaterialCache,
+    resolve->textureDeps.Add(terrainVirtualTileState.physicalMaterialCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::PixelShaderRead,
                                 TextureSubresourceInfo::Color(terrainVirtualTileState.physicalMaterialCache)
                             });
-    screenSpace->textureDeps.Add(terrainVirtualTileState.physicalNormalCache,
+    resolve->textureDeps.Add(terrainVirtualTileState.physicalNormalCache,
                             {
                                 "Terrain Albedo Cache",
                                 CoreGraphics::PipelineStage::PixelShaderRead,
                                 TextureSubresourceInfo::Color(terrainVirtualTileState.physicalNormalCache)
                             });
-    screenSpace->textureDeps.Add(terrainVirtualTileState.indirectionTexture,
-                        {
-                            "Indirection Texture",
-                            CoreGraphics::PipelineStage::PixelShaderRead,
-                            TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
-                        });
-    screenSpace->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    resolve->textureDeps.Add(terrainVirtualTileState.indirectionTexture,
+                            {
+                                "Indirection Texture",
+                                CoreGraphics::PipelineStage::PixelShaderRead,
+                                TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
+                            });
+    resolve->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
     {
-        CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainScreenspacePass);
-
-        RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
-        CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
+        terrainVirtualTileState.terrainResolvePipeline = CoreGraphics::CreatePipeline(
+            {
+                .shader = terrainVirtualTileState.terrainResolveProgram,
+                .pass = pass,
+                .subpass = subpass,
+                .inputAssembly = InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::PatchList, .primRestart = false } }
+            });
     };
-    Frame::AddSubgraph("Terrain Resolve", { screenSpace });
+    resolve->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetGraphicsPipeline(cmdBuf, terrainVirtualTileState.terrainResolvePipeline);
+        CmdSetVertexLayout(cmdBuf, terrainState.vlo);
+        CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::PatchList);
+
+        // set shared resources
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+
+        if (terrainState.renderToggle == false)
+            return;
+
+        // Draw terrains
+        Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
+
+        SizeT numQuadsX = terrainState.settings.quadsPerTileX;
+        SizeT numQuadsY = terrainState.settings.quadsPerTileY;
+        SizeT numVertsX = numQuadsX + 1;
+        SizeT numVertsY = numQuadsY + 1;
+        SizeT numTris = numVertsX * numVertsY;
+
+        CoreGraphics::PrimitiveGroup group;
+        group.SetBaseIndex(0);
+        group.SetBaseVertex(0);
+        group.SetNumIndices(numTris * 4);
+        group.SetNumVertices(0);
+
+        // go through and render terrain instances
+        for (IndexT i = 0; i < runtimes.Size(); i++)
+        {
+            TerrainRuntimeInfo& rt = runtimes[i];
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+
+            CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
+            CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
+            CmdDraw(cmdBuf, terrainVirtualTileState.numPatchesThisFrame, group);
+        }
+    };
+    Frame::AddSubgraph("Terrain Resolve", { resolve });
 
     // create vlo
     terrainState.layers = 1;
@@ -1066,7 +1192,7 @@ TerrainContext::Discard()
 */
 void 
 TerrainContext::SetupTerrain(
-    const Graphics::GraphicsEntityId entity, 
+    const Graphics::GraphicsEntityId entity,
     const Resources::ResourceName& heightMap, 
     const Resources::ResourceName& decisionMap)
 {
@@ -1101,15 +1227,24 @@ TerrainContext::SetupTerrain(
     SizeT vertDistanceY = terrainState.settings.tileHeight / terrainState.settings.quadsPerTileY;
     SizeT numBufferedFrame = CoreGraphics::GetNumBufferedFrames();
 
-    // setup resource tables, one for the per-chunk draw arguments, and one for the whole terrain
-    runtimeInfo.patchTables.Resize(CoreGraphics::GetNumBufferedFrames());
-    IndexT bufferIndex = 0;
-    for (auto& table : runtimeInfo.patchTables)
+    CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.name = "TerrainPerPatchData"_atm;
+    bufInfo.size = runtimeInfo.numTilesX * runtimeInfo.numTilesY;
+    bufInfo.elementSize = sizeof(Terrain::TerrainPatch);
+    bufInfo.mode = CoreGraphics::DeviceAndHost;
+    bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
+    terrainVirtualTileState.patchConstants = CoreGraphics::BufferSet(bufInfo);
+
+    terrainVirtualTileState.virtualTerrainSystemResourceTable.ForEach([](const ResourceTableId table, IndexT i)
     {
-        table = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
-        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++), Terrain::Table_DynamicOffset::PatchUniforms::SLOT, 0, Terrain::Table_DynamicOffset::PatchUniforms::SIZE, 0, false, true });
+        ResourceTableSetRWBuffer(
+            table
+            , ResourceTableBuffer(terrainVirtualTileState.patchConstants.buffers[i], Terrain::Table_System::TerrainPatchData::SLOT)
+            );
+
         ResourceTableCommitChanges(table);
-    }
+    });
+    
 
     // allocate a tile vertex buffer
     Util::FixedArray<TerrainVert> verts(numVertsX * numVertsY);
@@ -1117,8 +1252,10 @@ TerrainContext::SetupTerrain(
     // allocate terrain index buffer, every fourth pixel will generate two triangles 
     SizeT numTris = numVertsX * numVertsY;
     Util::FixedArray<TerrainQuad> quads(numQuadsX * numQuadsY);
+    Util::FixedArray<Terrain::TerrainPatch> patchData(runtimeInfo.numTilesY * runtimeInfo.numTilesX);
 
     // setup sections
+    uint patchCounter = 0;
     for (uint y = 0; y < runtimeInfo.numTilesY; y++)
     {
         for (uint x = 0; x < runtimeInfo.numTilesX; x++)
@@ -1141,14 +1278,15 @@ TerrainContext::SetupTerrain(
             runtimeInfo.sectorTextureTileSize.Append(Math::uint2{ 0, 0 });
             runtimeInfo.sectorUv.Append({ x * terrainState.settings.tileWidth / terrainState.settings.worldSizeX, y * terrainState.settings.tileHeight / terrainState.settings.worldSizeZ });
 
-            CoreGraphics::PrimitiveGroup group;
-            group.SetBaseIndex(0);
-            group.SetBaseVertex(0);
-            group.SetNumIndices(numTris * 4);
-            group.SetNumVertices(0);
-            runtimeInfo.sectorPrimGroups.Append(group);
+            Terrain::TerrainPatch patch;
+            patch.PosOffset[0] = box.pmin.x;
+            patch.PosOffset[1] = box.pmin.z;
+            patch.UvOffset[0] = runtimeInfo.sectorUv.Back().x;
+            patch.UvOffset[1] = runtimeInfo.sectorUv.Back().y;
+            patchData[patchCounter++] = patch;
         }
     }
+    //CoreGraphics::BufferUpdate(terrainVirtualTileState.patchConstants, patchData.Begin(), patchData.ByteSize(), 0);
 
     // walk through and set up sections, oriented around origo, so half of the sections are in the negative
     uint quad = 0;
@@ -1253,48 +1391,48 @@ TerrainContext::SetupTerrain(
 /**
 */
 TerrainBiomeId 
-TerrainContext::CreateBiome(
-    BiomeSetupSettings settings, 
-    BiomeMaterial flatMaterial, 
-    BiomeMaterial slopeMaterial, 
-    BiomeMaterial heightMaterial, 
-    BiomeMaterial heightSlopeMaterial,
-    const Resources::ResourceName& mask)
+TerrainContext::CreateBiome(const BiomeSettings& settings)
 {
     Ids::Id32 ret = terrainBiomeAllocator.Alloc();
     terrainBiomeAllocator.Set<TerrainBiome_Settings>(ret, settings);
 
-    Util::Array<BiomeMaterial> mats = { flatMaterial, slopeMaterial, heightMaterial, heightSlopeMaterial };
+    Util::Array<BiomeMaterial> mats =
+    {
+        settings.materials[BiomeSettings::BiomeMaterialLayer::Flat],
+        settings.materials[BiomeSettings::BiomeMaterialLayer::Slope],
+        settings.materials[BiomeSettings::BiomeMaterialLayer::Height],
+        settings.materials[BiomeSettings::BiomeMaterialLayer::HeightSlope]
+    };
     for (int i = 0; i < mats.Size(); i++)
     {
-        CoreGraphics::TextureId albedo = Resources::CreateResource(mats[i].albedo.Value(), "terrain", nullptr, nullptr, true);
+        CoreGraphics::TextureId albedo, normal, material;
+        albedo = Resources::CreateResource(mats[i].albedo.Value(), "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialAlbedos[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(albedo);
         terrainState.biomeTextures.Append(albedo);
 
-        CoreGraphics::TextureId normal = Resources::CreateResource(mats[i].normal.Value(), "terrain", nullptr, nullptr, true);
+        normal = Resources::CreateResource(mats[i].normal.Value(), "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialNormals[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(normal);
         terrainState.biomeTextures.Append(normal);
 
-        CoreGraphics::TextureId material = Resources::CreateResource(mats[i].material.Value(), "terrain", nullptr, nullptr, true);
+        material = Resources::CreateResource(mats[i].material.Value(), "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialPBRs[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(material);
         terrainState.biomeTextures.Append(material);
     }
 
-    CoreGraphics::TextureId maskTex = Resources::CreateResource(mask, "terrain", nullptr, nullptr, true);
+    CoreGraphics::TextureId maskTex = Resources::CreateResource(settings.biomeMask, "terrain", nullptr, nullptr, true);
     terrainState.biomeMaterials.MaterialMasks[terrainState.biomeCounter / 4][terrainState.biomeCounter % 4] = CoreGraphics::TextureGetBindlessHandle(maskTex);
     terrainState.biomeTextures.Append(maskTex);
     terrainState.biomeMasks[terrainState.biomeCounter] = maskTex;
 
-    if (settings.useMaterialWeights)
+    if (settings.biomeParameters.useMaterialWeights)
     {
-        CoreGraphics::TextureId weightsTex = Resources::CreateResource(settings.weights, "terrain", nullptr, nullptr, true);
+        CoreGraphics::TextureId weightsTex = Resources::CreateResource(settings.biomeParameters.weights, "terrain", nullptr, nullptr, true);
         terrainState.biomeMaterials.MaterialWeights[terrainState.biomeCounter / 4][terrainState.biomeCounter % 4] = CoreGraphics::TextureGetBindlessHandle(weightsTex);
         terrainState.biomeTextures.Append(weightsTex);
         terrainState.biomeWeights[terrainState.biomeCounter] = weightsTex;
     }
 
     CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
-    CoreGraphics::BufferFlush(terrainState.biomeBuffer);
     terrainVirtualTileState.updateLowres = true;
 
     terrainBiomeAllocator.Set<TerrainBiome_Index>(ret, terrainState.biomeCounter);
@@ -1308,7 +1446,7 @@ TerrainContext::CreateBiome(
 void 
 TerrainContext::SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold)
 {
-    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).slopeThreshold = threshold;
+    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).biomeParameters.slopeThreshold = threshold;
 }
 
 //------------------------------------------------------------------------------
@@ -1317,7 +1455,7 @@ TerrainContext::SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold)
 void 
 TerrainContext::SetBiomeHeightThreshold(TerrainBiomeId id, float threshold)
 {
-    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).heightThreshold = threshold;
+    terrainBiomeAllocator.Get<TerrainBiome_Settings>(id.id).biomeParameters.heightThreshold = threshold;
 }
 
 //------------------------------------------------------------------------------
@@ -1461,6 +1599,8 @@ skipResolution:
         Math::vec4 m_col_w[4];
         Math::bbox* boundingBoxes;
         bool* visibilities;
+        Threading::AtomicCounter* instanceCounter;
+        Terrain::TerrainPatch* patchData;
     };
     TileCullCtx cullCtx;
     cullCtx.m_col_x[0] = Math::splat_x(viewProj.r[0]);
@@ -1482,6 +1622,11 @@ skipResolution:
     cullCtx.m_col_w[1] = Math::splat_w(viewProj.r[1]);
     cullCtx.m_col_w[2] = Math::splat_w(viewProj.r[2]);
     cullCtx.m_col_w[3] = Math::splat_w(viewProj.r[3]);
+
+    terrainVirtualTileState.numPatchesThisFrame = 0;
+    cullCtx.instanceCounter = &terrainVirtualTileState.numPatchesThisFrame;
+    cullCtx.patchData = (Terrain::TerrainPatch*)CoreGraphics::BufferMap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
+
     sectionCullDoneCounter = runtimes.Size();
     for (IndexT i = 0; i < runtimes.Size(); i++)
     {
@@ -1502,10 +1647,27 @@ skipResolution:
                 if (index >= totalJobs)
                     return;
 
-                context->visibilities[index] = context->boundingBoxes[index].clipstatus(context->m_col_x, context->m_col_y, context->m_col_z, context->m_col_w) != Math::ClipStatus::Outside;
+                const Math::ClipStatus::Type clip = context->boundingBoxes[index].clipstatus(context->m_col_x, context->m_col_y, context->m_col_z, context->m_col_w);
+                if (clip != Math::ClipStatus::Outside)
+                {
+                    uint offset = Threading::Interlocked::Add(context->instanceCounter, 1);
+
+                    Terrain::TerrainPatch patch;
+                    patch.PosOffset[0] = context->boundingBoxes[index].pmin.x;
+                    patch.PosOffset[1] = context->boundingBoxes[index].pmin.z;
+                    patch.UvOffset[0] = 0.0f;
+                    patch.UvOffset[1] = 0.0f;
+                    context->patchData[offset] = patch;
+                    context->visibilities[index] = true;
+                }
+                else
+                {
+                    context->visibilities[index] = false;
+                }
             }
         }, rt.sectionBoxes.Size(), 256, cullCtx, {}, & sectionCullDoneCounter, & sectionCullFinishedEvent);
     }
+    CoreGraphics::BufferUnmap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
     if (runtimes.IsEmpty())
         sectionCullFinishedEvent.Signal();
 }
@@ -1700,25 +1862,25 @@ IndirectionClear(
     , uint tiles
     , const Math::uint2& coord)
 {
+    uint width = tiles;
+    uint dataSize = width * width * sizeof(IndirectionEntry);
+
+    // Grab the largest mip and fill with 0 pixels
+    Util::FixedArray<IndirectionEntry> pixels(width * width);
+    pixels.Fill(IndirectionEntry{ 0xFFFFFFFF });
+
+    // Upload to GPU, the lowest mip will have enough values to cover all mips
+    auto [offset, buffer] = CoreGraphics::UploadArray(pixels.Begin(), pixels.Size(), 4);
+    terrainVirtualTileState.uploadClearBufferThisFrame = buffer;
+
     // go through old region and reset indirection pixels
     for (uint i = 0; i <= mips; i++)
     {
         Math::uint2 mippedCoord{ coord.x >> i, coord.y >> i };
         uint width = tiles >> i;
-        uint dataSize = width * width * sizeof(IndirectionEntry);
 
-        uint offset = CoreGraphics::AllocateUpload(dataSize, 4);
-
-        // add copy commands
-        terrainVirtualTileState.indirectionBufferClearsThisFrame.Append(CoreGraphics::BufferCopy{ offset });
+        terrainVirtualTileState.indirectionBufferClearsThisFrame.Append(CoreGraphics::BufferCopy{ static_cast<uint>(offset) });
         terrainVirtualTileState.indirectionTextureClearsThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedCoord.x, mippedCoord.y, mippedCoord.x + width, mippedCoord.y + width), i, 0 });
-
-        // create buffer of invalid indirection entry pixels
-        Util::FixedArray<IndirectionEntry> pixels(width * width);
-        pixels.Fill(IndirectionEntry{ 0xFFFFFFFF });
-
-        // update upload buffer
-        CoreGraphics::Upload(offset, pixels.Begin(), pixels.Size());
 
         // Update CPU buffer
         uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[i];
@@ -1772,14 +1934,13 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 
     for (IndexT j = 0; j < terrainState.biomeCounter; j++)
     {
-        BiomeSetupSettings settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j);
+        BiomeParameters settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j).biomeParameters;
         systemUniforms.BiomeRules[j][0] = settings.slopeThreshold;
         systemUniforms.BiomeRules[j][1] = settings.heightThreshold;
         systemUniforms.BiomeRules[j][2] = settings.uvScaleFactor;
         systemUniforms.BiomeRules[j][3] = CoreGraphics::TextureGetNumMips(terrainState.biomeMasks[j]);
     }
     BufferUpdate(terrainState.systemConstants, systemUniforms, 0);
-    BufferFlush(terrainState.systemConstants);
 
     struct PendingDelete
     {
@@ -1787,11 +1948,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         uint oldTiles;
         Math::uint2 oldCoord;
     };
-
-    // Handle readback from the GPU
-    CoreGraphics::BufferInvalidate(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
-    Terrain::PageUpdateList* updateList = (Terrain::PageUpdateList*)CoreGraphics::BufferMap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
-    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.indirectionTexture);
 
     // Wait for subtextures job to finish this frame
     subtexturesFinishedEvent.Wait();
@@ -1848,6 +2004,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         }
     }
 
+    // Handle readback from the GPU
+    CoreGraphics::BufferInvalidate(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
+    Terrain::PageUpdateList* updateList = (Terrain::PageUpdateList*)CoreGraphics::BufferMap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
     terrainVirtualTileState.numPixels = updateList->NumEntries;
     n_assert(terrainVirtualTileState.numPixels < Terrain::MAX_PAGE_UPDATES);
     for (uint i = 0; i < updateList->NumEntries; i++)
@@ -1961,14 +2120,15 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     }
 
     // Update buffers for indirection pixel uploads
+
     numPagesThisFrame = Math::min(NumPagesPerFrame, terrainVirtualTileState.indirectionEntryUpdates.Size());
+    auto [offset, buffer] = CoreGraphics::UploadArray(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
+    terrainVirtualTileState.uploadUpdateBufferThisFrame = buffer;
     for (i = 0; i < numPagesThisFrame; i++)
     {
         // setup indirection update
-        uint offset = CoreGraphics::AllocateUpload(sizeof(Terrain::IndirectionEntry), 4);
-        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append({ offset });
+        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append(CoreGraphics::BufferCopy{ static_cast<uint>(offset + i * sizeof(Terrain::IndirectionEntry)) });
         terrainVirtualTileState.indirectionTextureUpdatesThisFrame.Append(terrainVirtualTileState.indirectionTextureCopies[i]);
-        CoreGraphics::Upload(offset, terrainVirtualTileState.indirectionEntryUpdates[i]);
     }
     if (i > 0)
     {
@@ -1993,27 +2153,13 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     {
         TerrainRuntimeInfo& rt = runtimes[i];
 
-        for (IndexT j = 0; j < rt.sectorVisible.Size(); j++)
-        {
-            if (rt.sectorVisible[j])
-            {
-                const Math::bbox& box = rt.sectionBoxes[j];
-                Terrain::PatchUniforms uniforms;
-                uniforms.OffsetPatchPos[0] = box.pmin.x;
-                uniforms.OffsetPatchPos[1] = box.pmin.z;
-                uniforms.OffsetPatchUV[0] = rt.sectorUv[j].x;
-                uniforms.OffsetPatchUV[1] = rt.sectorUv[j].y;
-                rt.sectorUniformOffsets[j][0] = 0;
-                rt.sectorUniformOffsets[j][1] = CoreGraphics::SetConstants(uniforms);
-            }
-        }
-
         TerrainRuntimeUniforms uniforms;
         Math::mat4().store(uniforms.Transform);
         uniforms.DecisionMap = TextureGetBindlessHandle(CoreGraphics::TextureId(rt.decisionMap));
         uniforms.HeightMap = TextureGetBindlessHandle(CoreGraphics::TextureId(rt.heightMap));
 
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(rt.heightMap);
+        CoreGraphics::TextureDimensions dataBufferDims = CoreGraphics::TextureGetDimensions(posBuffer);
         uniforms.VirtualTerrainTextureSize[0] = dims.width;
         uniforms.VirtualTerrainTextureSize[1] = dims.height;
         uniforms.VirtualTerrainTextureSize[2] = 1.0f / dims.width;
@@ -2022,6 +2168,8 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         uniforms.MinHeight = rt.minHeight;
         uniforms.WorldSizeX = rt.worldWidth;
         uniforms.WorldSizeZ = rt.worldHeight;
+        uniforms.DataBufferSize[0] = dataBufferDims.width;
+        uniforms.DataBufferSize[1] = dataBufferDims.height;
         uniforms.NumTilesX = rt.numTilesX;
         uniforms.NumTilesY = rt.numTilesY;
         uniforms.TileWidth = rt.tileWidth;
@@ -2059,7 +2207,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         uniforms.VirtualPageBufferNumPages = CoreGraphics::BufferGetSize(terrainVirtualTileState.pageStatusBuffer);
 
         BufferUpdate(terrainVirtualTileState.runtimeConstants, uniforms, 0);
-        BufferFlush(terrainVirtualTileState.runtimeConstants);
     }
 }
 

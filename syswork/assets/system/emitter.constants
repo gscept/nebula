@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/emitter" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="0.281888,0.000000,0.281888,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pPlane1" path="root/pPlane1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="0.281888,0.000000,0.281888,0.000000" mesh="sysmsh:emitter.nvx" mid="0" primitive="0" />
+            <ShapeNode name="pPlane1" path="root/pPlane1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="0.281888,0.000000,0.281888,0.000000" mesh="msh:system/emitter.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

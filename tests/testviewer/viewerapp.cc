@@ -31,7 +31,7 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
-int currentScene = SponzaSceneId;
+int currentScene = TerrainSceneId;
 
 namespace Tests
 {
@@ -223,7 +223,7 @@ SimpleViewerApplication::Open()
 
         Physics::Setup();
 
-        Util::FixedArray<Graphics::ViewIndependentCall> preLogicCalls = 
+        Util::Array<Graphics::ViewIndependentCall> preLogicCalls = 
         {
             Im3d::Im3dContext::NewFrame,
             Dynui::ImguiContext::NewFrame,
@@ -237,7 +237,7 @@ SimpleViewerApplication::Open()
             Terrain::TerrainContext::RenderUI
         };
 
-        Util::FixedArray<Graphics::ViewDependentCall> preLogicViewCalls =
+        Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
         {
             Lighting::LightContext::OnPrepareView,
             Particles::ParticleContext::OnPrepareView,
@@ -250,7 +250,7 @@ SimpleViewerApplication::Open()
             Terrain::TerrainContext::CullPatches
         };
 
-        Util::FixedArray<Graphics::ViewIndependentCall> postLogicCalls = 
+        Util::Array<Graphics::ViewIndependentCall> postLogicCalls = 
         {
             Clustering::ClusterContext::UpdateResources,
             ObserverContext::RunVisibilityTests,
@@ -264,7 +264,7 @@ SimpleViewerApplication::Open()
             ObserverContext::WaitForVisibility,
         };
 
-        Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls = 
+        Util::Array<Graphics::ViewDependentCall> postLogicViewCalls = 
         {
 
             Terrain::TerrainContext::UpdateLOD,

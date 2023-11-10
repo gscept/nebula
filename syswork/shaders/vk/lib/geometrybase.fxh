@@ -141,10 +141,8 @@ subroutine (CalculateBump) vec3 NormalMapFunctorDXT5NM(
     vec3 norm = normalize(normal);
     vec3 bin = cross(norm, tan) * sign;
     mat3 tangentViewMatrix = mat3(tan, bin, norm);
-    vec3 tNormal = vec3(0,0,0);
-    tNormal.xy = (bumpData.ag * 2.0f) - 1.0f;
-    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
-    return tangentViewMatrix * tNormal;
+    vec3 tNormal = TangentSpaceNormal(bumpData.ag, tangentViewMatrix);
+    return tNormal;
 }
 
 subroutine (CalculateBump) vec3 NormalMapFunctor(
@@ -157,10 +155,8 @@ subroutine (CalculateBump) vec3 NormalMapFunctor(
     vec3 norm = normalize(normal);
     vec3 bin = cross(norm, tan) * sign;
     mat3 tangentViewMatrix = mat3(tan, bin, norm);
-    vec3 tNormal = vec3(0,0,0);
-    tNormal.xy = (bumpData.xy * 2.0f) - 1.0f;
-    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
-    return tangentViewMatrix * tNormal;
+    vec3 tNormal = TangentSpaceNormal(bumpData.xy, tangentViewMatrix);
+    return tNormal;
 }
 
 subroutine (CalculateBump) vec3 FlatNormalFunctor(

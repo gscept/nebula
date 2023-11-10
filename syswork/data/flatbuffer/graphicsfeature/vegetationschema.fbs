@@ -1,0 +1,16 @@
+//------------------------------------------------------------------------------
+//    Vegetation settings for flatbuffer
+//
+//    (C) 2023 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+namespace GraphicsFeature;
+
+table VegetationSetup
+{
+    use: bool = false;
+}
+
+root_type VegetationSetup;
+file_identifier "PVEG";
+file_extension "pveg";

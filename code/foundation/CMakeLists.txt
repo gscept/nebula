@@ -656,7 +656,7 @@ nebula_begin_module(foundation)
             win32criticalsection.cc
             win32criticalsection.h
             win32event.h
-            win32interlocked.h
+            win32interlocked.cc
             win32readwritelock.cc
             win32readwritelock.h
             win32thread.cc
@@ -672,7 +672,7 @@ nebula_begin_module(foundation)
             linuxthread.h
         )
         fips_dir(threading/gcc GROUP "threading/gcc")
-        fips_files(interlocked.h)
+        fips_files(gccinterlocked.cc)
     else()
         fips_dir(threading/posix GROUP "threading/posix")
         fips_files(

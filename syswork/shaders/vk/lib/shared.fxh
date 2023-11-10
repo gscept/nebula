@@ -46,17 +46,17 @@ group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; AddressU = Cla
 #define fetchCube(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetchArray(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetch3D(handle, sampler, uvw, lod)					    texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
-#define fetchStencil(handle, sampler, uv, lod)				(floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
+#define fetchStencil(handle, sampler, uv, lod)				    (floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
 
-#define basic2D(handle)										Textures2D[handle]
-#define basic2DMS(handle)									Textures2DMS[handle]
-#define basicCube(handle)									TexturesCube[handle]
-#define basic3D(handle)										Textures3D[handle]
+#define basic2D(handle)										    Textures2D[handle]
+#define basic2DMS(handle)									    Textures2DMS[handle]
+#define basicCube(handle)									    TexturesCube[handle]
+#define basic3D(handle)										    Textures3D[handle]
 
-#define make_sampler2D(handle, sampler)						sampler2D(Textures2D[handle], sampler)
-#define make_sampler2DMS(handle, sampler)					sampler2DMS(Textures2DMS[handle], sampler)
-#define make_sampler2DArray(handle, sampler)				sampler2DArray(Textures2DArray[handle], sampler)
-#define make_sampler3D(handle, sampler)						sampler3D(Textures3D[handle], sampler)
+#define make_sampler2D(handle, sampler)						    sampler2D(Textures2D[handle], sampler)
+#define make_sampler2DMS(handle, sampler)					    sampler2DMS(Textures2DMS[handle], sampler)
+#define make_sampler2DArray(handle, sampler)				    sampler2DArray(Textures2DArray[handle], sampler)
+#define make_sampler3D(handle, sampler)						    sampler3D(Textures3D[handle], sampler)
 
 #define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
 

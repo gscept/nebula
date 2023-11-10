@@ -73,9 +73,16 @@ DirectXTexConversionJob::Convert()
         URI dstPathUri(this->dstPath);
         URI tmpDirUri(this->tmpDir);
 
+        enum TextureDataType
+        {
+            None,
+            NormalMap,
+            HeightMap
+        };
+        TextureDataType type = TextureDataType::None;
+
         // build command line args for TexConv
         String args = " -y -sepalpha -dx10 -nologo -timing ";
-        bool isNormalMap = false;
         const TextureAttrs& attrs = this->textureAttrs;
         if ((attrs.GetPixelFormat() == TextureAttrs::DXT5NM) ||
             (attrs.GetPixelFormat() == TextureAttrs::BC5) ||
@@ -83,11 +90,14 @@ DirectXTexConversionJob::Convert()
             (String::MatchPattern(this->srcPath, "*normal.*")) ||
             (String::MatchPattern(this->srcPath, "*bump.*")))
         {
-            isNormalMap = true;
-            if (attrs.GetFlipNormalY())
-            {
-                args.Append(" -inverty ");
-            }
+            this->logger->Print("   [Conversion] '%s' -> Normal Map (BC5 UNORM).\n", this->srcPath.AsCharPtr());
+            type = TextureDataType::NormalMap;
+        }
+
+        if (String::MatchPattern(this->srcPath, "*height.*"))
+        {
+            this->logger->Print("   [Conversion] '%s' -> Height Map (R16 UNORM).\n", this->srcPath.AsCharPtr());
+            type = TextureDataType::HeightMap;
         }
         /*
                 args.Append(" -w ");
@@ -108,25 +118,31 @@ DirectXTexConversionJob::Convert()
         {
             args.Append(" -m 1 ");
         }
-        if (!isNormalMap)
+        switch (type)
         {
-            if (attrs.GetColorSpace() == TextureAttrs::sRGB)
-            {
-                args.Append(" -srgb ");
-            }
-            else
-            {
-                args.Append(" -srgbo ");
-            }
-            args.Append(" -f ");
-            args.Append(GetTexConvFormat(attrs));
+            case None:
+                if (attrs.GetColorSpace() == TextureAttrs::sRGB)
+                {
+                    args.Append(" -srgb ");
+                }
+                else
+                {
+                    args.Append(" -srgbo ");
+                }
+                args.Append(" -f ");
+                args.Append(GetTexConvFormat(attrs));
+                break;
+            case NormalMap:
+                if (attrs.GetFlipNormalY())
+                {
+                    args.Append(" -inverty ");
+                }
+                args.Append(" -f BC5_UNORM ");
+                break;
+            case HeightMap:
+                args.Append(" -f R16_UNORM ");
+                break;
         }
-        else
-        {
-            // force normalmaps to bc5 and dont perform any gamma handling
-            args.Append(" -f BC5_UNORM ");
-        }
-
 
         args.Append(" \"");
         Util::String srcPath = IO::IoServer::NativePath(srcPathUri.LocalPath());

@@ -157,12 +157,10 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
 
         // Upload vertex data
         {
-            CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
-            BufferIdAcquire(uploadBuf);
             BufferIdAcquire(vbo);
 
             // Get upload buffer
-            uint offset = CoreGraphics::Upload(vertexData, header->vertexDataSize);           
+            auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
 
             // Allocate vertices from global repository
             vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
@@ -173,21 +171,18 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             from.offset = offset;
             to.offset = baseVertexOffset;
             CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-            CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, vbo, { to }, header->vertexDataSize);
+            CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, vbo, {to}, header->vertexDataSize);
             CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
-            BufferIdRelease(uploadBuf);
             BufferIdRelease(vbo);
         }
 
         // Upload index data
         {
-            CoreGraphics::BufferId uploadBuf = CoreGraphics::GetUploadBuffer();
-            BufferIdAcquire(uploadBuf);
             BufferIdAcquire(ibo);
 
             // Get upload buffer
-            uint offset = CoreGraphics::Upload(indexData, header->indexDataSize);
+            auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
 
             // Allocate vertices from global repository
             indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
@@ -198,10 +193,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             from.offset = offset;
             to.offset = baseIndexOffset;
             CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-            CoreGraphics::CmdCopy(cmdBuf, uploadBuf, { from }, ibo, { to }, header->indexDataSize);
+            CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, ibo, {to}, header->indexDataSize);
             CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
-            BufferIdRelease(uploadBuf);
             BufferIdRelease(ibo);
         }
 

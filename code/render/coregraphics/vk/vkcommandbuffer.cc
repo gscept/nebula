@@ -852,6 +852,19 @@ CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg)
 /**
 */
 void
+CmdDraw(const CmdBufferId id, SizeT numInstances, const CoreGraphics::PrimitiveGroup& pg)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    if (pg.GetNumIndices() > 0)
+        vkCmdDrawIndexed(cmdBuf, pg.GetNumIndices(), numInstances, pg.GetBaseIndex(), pg.GetBaseVertex(), 0);
+    else
+        vkCmdDraw(cmdBuf, pg.GetNumVertices(), numInstances, pg.GetBaseVertex(), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, const CoreGraphics::PrimitiveGroup& pg)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
