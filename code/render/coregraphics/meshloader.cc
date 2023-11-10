@@ -160,7 +160,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             BufferIdAcquire(vbo);
 
             // Get upload buffer
-            auto [offset, buffer] = CoreGraphics::Upload(vertexData, header->vertexDataSize);           
+            auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
 
             // Allocate vertices from global repository
             vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
@@ -182,7 +182,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
             BufferIdAcquire(ibo);
 
             // Get upload buffer
-            auto [offset, buffer] = CoreGraphics::Upload(indexData, header->indexDataSize);
+            auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
 
             // Allocate vertices from global repository
             indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);

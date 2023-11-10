@@ -1855,8 +1855,8 @@ IndirectionClear(
         pixels.Fill(IndirectionEntry {0xFFFFFFFF});
 
         // update upload buffer
-        auto [offset, buffer] = CoreGraphics::Upload(pixels.Begin(), pixels.Size());
-        terrainVirtualTileState.uploadClearBufferThisFrame = buffer;
+        auto [offset, buffer] = CoreGraphics::UploadArray(pixels.Begin(), pixels.Size(), 4);
+        terrainVirtualTileState.uploadClearBuffersThisFrame.Add(buffer);
 
         // add copy commands
         terrainVirtualTileState.indirectionBufferClearsThisFrame.Append(CoreGraphics::BufferCopy{ offset });
@@ -2100,8 +2100,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     }
 
     // Update buffers for indirection pixel uploads
+
     numPagesThisFrame = Math::min(NumPagesPerFrame, terrainVirtualTileState.indirectionEntryUpdates.Size());
-    auto [offset, buffer] = CoreGraphics::Upload(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size());
+    auto [offset, buffer] = CoreGraphics::UploadArray(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
     terrainVirtualTileState.uploadUpdateBufferThisFrame = buffer;
     for (i = 0; i < numPagesThisFrame; i++)
     {
