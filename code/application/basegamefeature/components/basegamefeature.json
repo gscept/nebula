@@ -1,36 +1,10 @@
 {
-    "namespace": "Game",
-    "includes": [
-        "math/mat4.h",
-        "math/vec3.h",
-        "math/quat.h"
-    ],
-    "components":
-    {
-        "Owner": {
-            "entity": {
-                "type": "entity",
-                "default": -1
-            }
-        },
-        "Transform": {
-            "value": {
-                "type": "mat4"
-            }
-            //"position": {
-            //    "type": "vec3",
-            //    "default": [0,0,0]
-            //},
-            //"orientation":{
-            //    "type": "quat",
-            //    "default": [0,0,0,1]
-            //},
-            //"scale": {
-            //    "type": "vec3",
-            //    "default": [1,1,1]
-            //}
-        },
-        "IsActive": {},
-        "Static": {}
-    }
+  "namespace": "Game",
+  "includes": [
+    "math/mat4.h"
+  ],
+  "components": {
+    "IsActive": {},
+    "Static": {}
+  }
 }

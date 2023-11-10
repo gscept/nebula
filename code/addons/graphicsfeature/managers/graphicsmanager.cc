@@ -11,6 +11,9 @@
 #include "game/gameserver.h"
 #include "graphicsfeature/components/graphicsfeature.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 
@@ -65,11 +68,12 @@ GraphicsManager::InitCreateModelProcessor()
     Game::ProcessorBuilder(world, "GraphicsManager.CreateModels"_atm)
         .On("OnActivate")
         .Func(
-            [](Game::World* world, Game::Owner const& owner, Game::Transform const& t, GraphicsFeature::Model& model)
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model& model)
             {
                 auto res = model.resource;
                 model.graphicsEntityId = Graphics::CreateEntity().id;
-                RegisterModelEntity(model.graphicsEntityId, model.resource, t.value);
+                Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+                RegisterModelEntity(model.graphicsEntityId, model.resource, worldTransform);
             }
         )
         .Build();
@@ -102,11 +106,12 @@ GraphicsManager::InitUpdateModelTransformProcessor()
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
     Game::ProcessorBuilder(world, "GraphicsManager.UpdateModelTransforms"_atm)
         .Excluding<Game::Static>()
-        // .Async(true) // Should be able to be async
+        // .Async(true) // TODO: Should be able to be async, since two entities should not share transforms in model context
         .Func(
-            [](Game::World* world, Game::Transform const& transform, GraphicsFeature::Model const& model)
+            [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
             {
-                Models::ModelContext::SetTransform(model.graphicsEntityId, transform.value);
+                Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+                Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
             }
         )
         .Build();

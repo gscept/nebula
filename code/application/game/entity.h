@@ -46,6 +46,24 @@ struct Entity
     const bool operator!=(const Entity& rhs) const;
     const bool operator<(const Entity& rhs) const;
     const bool operator>(const Entity& rhs) const;
+
+    struct Traits;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct Entity::Traits
+{
+    Traits() = delete;
+    using type = Entity;
+    static constexpr auto name = "Entity";
+    static constexpr auto fully_qualified_name = "Game.Entity";
+    static constexpr size_t num_fields = 2;
+    static constexpr const char* field_names[num_fields] = {
+        "index",
+        "generation"
+    };
 };
 
 //------------------------------------------------------------------------------

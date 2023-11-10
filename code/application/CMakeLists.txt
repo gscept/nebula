@@ -66,6 +66,14 @@ nebula_begin_module(application)
                 timemanager.cc
             )
         fips_dir(basegamefeature/components)
+			fips_files (
+				position.h
+				position.cc
+				orientation.h
+				orientation.cc
+				scale.h
+				scale.cc
+			)
             nebula_idl_compile(basegamefeature.json)
     fips_dir(appgame)
         fips_files(

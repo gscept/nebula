@@ -197,6 +197,36 @@ ActorContext::GetTransform(ActorId id)
 /**
 */
 void
+ActorContext::SetPositionOrientation(ActorId id, Math::vec3 const& position, Math::quat const& orientation)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    auto* actor = GET_DYNAMIC(id);
+    if (actor->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+    {
+        actor->setKinematicTarget(Neb2PxTrans(position, orientation));
+    }
+    else
+    {
+        actor->setGlobalPose(Neb2PxTrans(position, orientation));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ActorContext::GetPositionOrientation(ActorId id, Math::vec3& pos, Math::quat& orientation)
+{
+    n_assert(ActorContext::actorPool.IsValid(id.id));
+    auto const pxTrans = GET_DYNAMIC(id)->getGlobalPose();
+    pos = Px2NebVec(pxTrans.p);
+    orientation = Px2NebQuat(pxTrans.q);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ActorContext::SetLinearVelocity(ActorId id, Math::vector speed)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));

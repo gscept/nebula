@@ -13,6 +13,7 @@
 #include "math/vector.h"
 #include "math/plane.h"
 #include "math/mat4.h"
+#include "util/tupleutility.h"
 
 namespace Physics
 {
@@ -39,6 +40,10 @@ public:
     static void SetTransform(ActorId id, Math::mat4 const & transform);
     ///
     static Math::mat4 GetTransform(ActorId id);
+    ///
+    static void SetPositionOrientation(ActorId id, Math::vec3 const& position, Math::quat const& orientation);
+    ///
+    static void GetPositionOrientation(ActorId id, Math::vec3& position, Math::quat& orientation);
 
     ///
     static void SetLinearVelocity(ActorId id, Math::vector speed);

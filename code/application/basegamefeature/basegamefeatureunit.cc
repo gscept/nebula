@@ -14,6 +14,9 @@
 #include "managers/timemanager.h"
 #include "imgui.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "components/position.h"
+#include "components/orientation.h"
+#include "components/scale.h"
 
 namespace BaseGameFeature
 {
@@ -46,8 +49,10 @@ void
 BaseGameFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    world->RegisterType<Game::Owner>();
-    world->RegisterType<Game::Transform>();
+    world->RegisterType<Game::Entity>();
+    world->RegisterType<Game::Position>();
+    world->RegisterType<Game::Orientation>();
+    world->RegisterType<Game::Scale>();
     world->RegisterType<Game::IsActive>();
     world->RegisterType<Game::Static>();
 }

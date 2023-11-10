@@ -17,6 +17,9 @@
 #include "imgui.h"
 #include "game/componentinspection.h"
 #include "basegamefeature/components/basegamefeature.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
 
 namespace Game
 {
@@ -92,9 +95,9 @@ void
 World::Start()
 {
     auto const ActivateEntities =
-    [](World* world, Game::Owner const& entity)
+    [](World* world, Game::Entity const& entity)
     {
-        world->AddComponent<Game::IsActive>(entity.entity);
+        world->AddComponent<Game::IsActive>(entity);
     };
 
     ProcessorBuilder builder(this, "AddIsActiveComponentToNewEntities");
@@ -693,18 +696,25 @@ World::CreateEntityTable(CategoryCreateInfo const& info)
     tableInfo.name = info.name;
     tableInfo.numAttributes = 0;
 
-    if (info.components[0] != GetComponentId<Game::Owner>() && info.components[1] != GetComponentId<Game::Transform>())
+    if (info.components[0] != GetComponentId<Game::Entity>() &&
+        info.components[1] != GetComponentId<Game::Position>() &&
+        info.components[2] != GetComponentId<Game::Orientation>() &&
+        info.components[3] != GetComponentId<Game::Scale>()
+        )
     {
         // always have owner and transform as first columns
-        components[0] = GetComponentId<Owner>();
-        components[1] = GetComponentId<Transform>();
-        tableInfo.numAttributes = 2 + info.components.Size();
+        components[0] = GetComponentId<Entity>();
+        components[1] = GetComponentId<Position>();
+        components[2] = GetComponentId<Orientation>();
+        components[3] = GetComponentId<Scale>();
+
+        tableInfo.numAttributes = 4 + info.components.Size();
 
         n_assert(tableInfo.numAttributes < NUM_PROPS);
 
         for (int i = 0; i < info.components.Size(); i++)
         {
-            components[i + 2] = info.components[i];
+            components[i + 4] = info.components[i];
         }
         tableInfo.attributeIds = components;
     }
@@ -747,8 +757,10 @@ World::AllocateInstance(Entity entity, MemDb::TableId table)
 
 #if _DEBUG
     // make sure the first column in always owner
-    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Owner>()) == 0);
-    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Transform>()) == 1);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == 0);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Position>()) == 1);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == 2);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == 3);
 #endif
 
     // Set the owner of this instance
@@ -802,8 +814,10 @@ World::AllocateInstance(Entity entity, BlueprintId blueprint)
 
 #if _DEBUG
     // make sure the first column in always owner
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(GameServer::Singleton->state.ownerId) == 0);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Transform>()) == 1);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == 0);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) == 1);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == 2);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == 3);
 #endif
 
     // Set the owner of this instance
@@ -980,7 +994,7 @@ World::Defragment(MemDb::TableId cat)
     MemDb::Table& table = this->db->GetTable(cat);
 
 #if NEBULA_DEBUG
-    MemDb::ColumnIndex ownerColumnId = this->db->GetTable(cat).GetAttributeIndex(GetComponentId<Owner>());
+    MemDb::ColumnIndex ownerColumnId = this->db->GetTable(cat).GetAttributeIndex(GetComponentId<Game::Entity>());
     n_assert(ownerColumnId == 0);
 #endif
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
