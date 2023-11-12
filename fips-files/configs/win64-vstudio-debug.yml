@@ -6,5 +6,8 @@ build_type: Debug
 defines:
     N_USE_VULKAN: ON
     __X64__: ON
+    FIPS_MSVC_LTCG: OFF
     N_DEBUG_SYMBOLS: ON
     PX_TARGET: win.x86_64.vc143.mt
+    SOLOUD_BACKEND_WASAPI: ON
+    SOLOUD_BACKEND_NULL: OFF

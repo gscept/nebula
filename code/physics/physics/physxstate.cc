@@ -275,9 +275,14 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 
     n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
     Physics::Scene& scene = this->activeScenes[sceneId];
+    n_assert(scene.isSimulating == false);
     scene.time -= delta;
+
+    if (scene.time < -PHYSICS_RATE)
+    {
+        scene.isSimulating = scene.scene->simulate(PHYSICS_RATE);
+    }
     
-    scene.scene->simulate(PHYSICS_RATE);
     N_MARKER_END();
 }
 
@@ -287,11 +292,17 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 void
 PhysxState::EndSimulating(IndexT sceneId)
 {
-    N_MARKER_BEGIN(EndSimulating, Physics);
     n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
     Physics::Scene& scene = this->activeScenes[sceneId];
 
+    if (!scene.isSimulating)
+    {
+        return;
+    }
+
+    N_MARKER_BEGIN(EndSimulating, Physics);
     scene.scene->fetchResults(true);
+    scene.time += PHYSICS_RATE;
 
     Util::Set<Ids::Id32> modifiedActors;
     if (scene.updateFunction != nullptr)
@@ -301,7 +312,7 @@ PhysxState::EndSimulating(IndexT sceneId)
 
     // we limit the simulation to 5 frames
     scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
-    while (scene.time < PHYSICS_RATE)
+    while (scene.time < 0.0f)
     {
         // simulate synchronously until we are in sync again
         scene.scene->simulate(PHYSICS_RATE);
@@ -318,6 +329,7 @@ PhysxState::EndSimulating(IndexT sceneId)
             (*scene.updateFunction)(actor);
         }
     }
+    scene.isSimulating = false;
     N_MARKER_END();
 }
 
