@@ -949,6 +949,30 @@ template<> void JsonReader::Get<Math::vec2>(Math::vec2& ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template <>
+void
+JsonReader::Get<uint64_t>(uint64_t& ret, const char* attr)
+{
+    const value_variant* node = this->GetChild(attr);
+    n_assert(node->is_int());
+    int64_t val = node->as_int64();
+
+#if NEBULA_DEBUG
+    if (val < 0)
+    {
+        n_warning("JsonReader::Get<uint64_t>: unsigned integer underflow! ('%s': %i)\n", attr, val);
+    }
+#endif
+#if NEBULA_BOUNDSCHECKS
+    n_assert(val >= 0 && val <= UINT_MAX)
+#endif
+
+        ret = (uint64_t)val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 {
     const value_variant* node = this->GetChild(attr);

@@ -41,7 +41,7 @@ AudioFeatureUnit::OnAttach()
     world->RegisterType<AudioEmitter>({ .decay = true });
     world->RegisterType<SpatialAudioEmission>();
     world->RegisterType<AudioListener>();
-    world->RegisterType<ClipInstance>({.decay = true});
+    world->RegisterType<ClipInstance>();
     world->RegisterType<PlayAudioEvent>();
 }
 

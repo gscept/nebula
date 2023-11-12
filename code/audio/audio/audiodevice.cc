@@ -126,6 +126,7 @@ AudioDevice::UnloadClip(ClipId const clip)
     refCount--;
     if (refCount == 0)
     {
+        this->wavs.Get<WavAllocator::WAV>(clip.id).~Wav();
         this->wavs.Dealloc(clip.id);
     }
 }
