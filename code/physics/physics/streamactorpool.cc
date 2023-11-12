@@ -16,6 +16,7 @@
 #include "flat/physics/actor.h"
 #include "coregraphics/nvx3fileformatstructs.h"
 #include "coregraphics/primitivegroup.h"
+#include "coregraphics/load/glimltypes.h"
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceLoader);
 
@@ -363,6 +364,68 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const&
     nvx3Reader->Close();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::mat4 const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, ActorInfo& targetActor)
+{
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(colliderNode->file));
+    stream->SetAccessMode(IO::Stream::ReadAccess);
+    if (stream->Open())
+    {
+        void* heightData = stream->MemoryMap();
+        uint heightSize = stream->GetSize();
+        n_assert(heightData != nullptr);
+
+        gliml::context ctx;
+        if (ctx.load_dds(heightData, heightSize))
+        {
+            int depth = ctx.image_depth(0, 0);
+            int width = ctx.image_width(0, 0);
+            int height = ctx.image_height(0, 0);
+
+            CoreGraphics::PixelFormat::Code format = CoreGraphics::Gliml::ToPixelFormat(ctx);
+            n_assert(format == CoreGraphics::PixelFormat::R16);
+
+            PxHeightFieldSample* heightSamples = (PxHeightFieldSample*)Memory::Alloc(Memory::PhysicsHeap, width * height * sizeof(PxHeightFieldSample));
+            n_assert(heightSamples != nullptr);
+            Memory::Clear(heightSamples, width * height * sizeof(PxHeightFieldSample));
+
+            uint16_t* heightBuffer = (uint16_t*)ctx.image_data(0, 0);
+
+            // need to flip to be in same orientation with rendering
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    heightSamples[i * width + j].height = heightBuffer[j * width + i];
+                }
+            }
+
+            PxHeightFieldDesc hfDesc;
+            hfDesc.format = PxHeightFieldFormat::eS16_TM;
+            hfDesc.nbColumns = width;
+            hfDesc.nbRows = height;
+            hfDesc.samples.data = heightSamples;
+            hfDesc.samples.stride = sizeof(PxHeightFieldSample);
+
+            PxHeightField* physxHeightField = PxCreateHeightField(hfDesc);
+
+            float sh = colliderNode->height_range / 65536.0f;
+            float sx = colliderNode->target_size_x / (float)width;
+            float sy = colliderNode->target_size_y / (float)height;
+            PxHeightFieldGeometry hfGeom(physxHeightField, PxMeshGeometryFlags(), sh, sx, sy);
+            Math::mat4 offsetTransform = Math::mat4::identity;
+            offsetTransform.position = Math::vec4(-0.5f * colliderNode->target_size_x, 0.0f, -0.5f * colliderNode->target_size_y, 1.0f);
+            physx::PxGeometryHolder holder = hfGeom;
+            AddCollider(holder, materialIdx, offsetTransform, colliderNode->file.AsCharPtr(), nodeName, targetActor, tag, entry);
+            Memory::Free(Memory::HeapType::PhysicsHeap, heightSamples);
+        }
+        stream->MemoryUnmap();
+        stream->Close();
+    }
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -435,8 +498,13 @@ StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & 
                 */
             }
             break;
+            case ColliderType_HeightField:
+            {
+                AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, tag, entry, actorInfo);
+            }
+            break;
             default:
-                n_assert("unknown collider type")
+                n_error("unknown collider type");
         }        
     }
 

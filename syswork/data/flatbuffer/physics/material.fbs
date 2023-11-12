@@ -19,8 +19,7 @@ enum MeshTopology :  byte
     Convex = 0,    
     ConvexHull = 1,
     Triangles = 2,
-    HeightField = 3,
-    ApproxSkin = 4,
+    ApproxSkin = 3
 }
 
 enum ColliderType : byte
@@ -29,7 +28,8 @@ enum ColliderType : byte
     Cube = 1,    
     Capsule = 2,
     Plane = 3,
-    Mesh = 4
+    Mesh = 4,
+    HeightField = 5
 }
 
 table MaterialDefinition
