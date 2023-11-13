@@ -38,7 +38,7 @@ TextureLoader::~TextureLoader()
 /**
 */
 Resources::ResourceUnknownId
-TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+TextureLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     N_SCOPE_ACCUM(CreateAndLoad, TextureStream);
     n_assert(stream.isvalid());
@@ -49,6 +49,8 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
     uint srcDataSize = stream->GetSize();
 
     const int NumBasicLods = immediate ? 1000 : 5;
+
+    Resources::ResourceUnknownId ret = InvalidResourceUnknownId;
 
     // load using gliml
     gliml::context ctx;
@@ -62,9 +64,6 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
 
         // The lowest mip is halfway down the mip chain, so [5..9]
         int lowestMip = Math::max(0, maxMip - NumBasicLods);
-
-        // This means we should load 10 - 5 = 5 mips
-        int mipsToLoad = numMips - lowestMip;
 
         int depth = ctx.image_depth(0, 0);
         int width = ctx.image_width(0, 0);
@@ -95,104 +94,147 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
         textureInfo.format = format;
         CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
 
-        CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, streamData->lowestLod, mipsToLoad, 0, textureInfo.layers);
-
-        // use resource submission
-        CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
-
-        // Transition to transfer
-        CoreGraphics::CmdBarrier(cmdBuf,
-            CoreGraphics::PipelineStage::ImageInitial,
-            CoreGraphics::PipelineStage::TransferWrite,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                TextureBarrierInfo
-                {
-                    texture,
-                    subres
-                }
-            },
-            nullptr);
-
-        // now load texture by walking through all images and mips
-        for (int i = 0; i < ctx.num_faces(); i++)
-        {
-            for (int j = streamData->lowestLod; j < ctx.num_mipmaps(i) - streamData->lowestLod; j++)
-            {
-                // Perform a texture update
-                CoreGraphics::TextureUpdate(
-                    cmdBuf
-                    , QueueType::TransferQueueType
-                    , texture
-                    , ctx.image_width(i, j)
-                    , ctx.image_height(i, j)
-                    , j
-                    , subres.layer + i
-                    , ctx.image_size(i, j)
-                    , (byte*)ctx.image_data(i, j));
-            }
-        }
-
-        // Transition back to read, and exchange queue ownership with the graphics queue
-        CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, stream->GetURI().LocalPath().AsCharPtr());
-        CoreGraphics::CmdBarrier(cmdBuf,
-            CoreGraphics::PipelineStage::TransferWrite,
-            CoreGraphics::PipelineStage::TransferWrite,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                TextureBarrierInfo
-                {
-                    texture,
-                    subres
-                }
-            },
-            nullptr,
-            CoreGraphics::GetQueueIndex(QueueType::TransferQueueType),
-            CoreGraphics::GetQueueIndex(QueueType::GraphicsQueueType));
-        CoreGraphics::CmdEndMarker(cmdBuf);
-        CoreGraphics::UnlockTransferSetupCommandBuffer();
-
-        // Do the same barrier on the handover buffer, and exchange queue ownership with the graphics queue
-        CoreGraphics::CmdBufferId handoverCmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-
-        CoreGraphics::CmdBeginMarker(handoverCmdBuf, NEBULA_MARKER_TRANSFER, stream->GetURI().LocalPath().AsCharPtr());
-
-        // First duplicate the transfer queue barrier
-        CoreGraphics::CmdBarrier(handoverCmdBuf,
-            CoreGraphics::PipelineStage::TransferWrite,
-            CoreGraphics::PipelineStage::TransferWrite,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                TextureBarrierInfo
-                {
-                    texture,
-                    subres
-                }
-            },
-            nullptr,
-            CoreGraphics::GetQueueIndex(QueueType::TransferQueueType),
-            CoreGraphics::GetQueueIndex(QueueType::GraphicsQueueType));
-
-        // Then perform the actual image layout change
-        CoreGraphics::CmdBarrier(handoverCmdBuf,
-            CoreGraphics::PipelineStage::TransferWrite,
-            CoreGraphics::PipelineStage::AllShadersRead,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                TextureBarrierInfo
-                {
-                    texture,
-                    subres
-                }
-            });
-        CoreGraphics::CmdEndMarker(handoverCmdBuf);
-        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
         TextureIdRelease(texture);
         return texture;
     }
+
     stream->MemoryUnmap();
-    return Resources::InvalidResourceUnknownId;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceLoader::SubresourceLoadStatus
+TextureLoader::StreamResource(const Resources::ResourceId entry)
+{
+    // Setup texture id
+    TextureId texture;
+    texture.resourceId = entry.resourceId;
+    texture.resourceType = entry.resourceType;
+    TextureIdAcquire(texture);
+    SizeT numLayers = TextureGetNumLayers(texture);
+
+    // Get resource data
+    ResourceLoader::StreamData& stream = this->streams[entry.cacheInstanceId];
+    TextureStreamData* streamData = static_cast<TextureStreamData*>(stream.data);
+    ResourceName name = this->names[entry.cacheInstanceId];
+
+    // Prepare return state
+    SubresourceLoadStatus ret = SubresourceLoadStatus::Full;
+
+    const int NumBasicLods = 5;
+
+     // We have a total amount of mip maps, say 10
+    int numMips = streamData->ctx.num_mipmaps(0);
+
+    // This means we should load mips [5..10] and omit [0..4] for now
+    int mipsToLoad = numMips - streamData->lowestLod;
+
+    CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, streamData->lowestLod, mipsToLoad, 0, numLayers);
+
+    // use resource submission
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
+
+    // Transition to transfer
+    CoreGraphics::CmdBarrier(cmdBuf,
+        CoreGraphics::PipelineStage::ImageInitial,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+                {
+                    texture,
+                    subres
+                }
+        },
+        nullptr);
+
+    // now load texture by walking through all images and mips
+    for (int i = 0; i < streamData->ctx.num_faces(); i++)
+    {
+        for (int j = streamData->lowestLod; j < streamData->ctx.num_mipmaps(i) - streamData->lowestLod; j++)
+        {
+            // Perform a texture update
+            bool result = CoreGraphics::TextureUpdate(
+                cmdBuf
+                , QueueType::TransferQueueType
+                , texture
+                , streamData->ctx.image_width(i, j)
+                , streamData->ctx.image_height(i, j)
+                , j
+                , subres.layer + i
+                , streamData->ctx.image_size(i, j)
+                , (byte*)streamData->ctx.image_data(i, j));
+
+            if (!result)
+            {
+                // Inform that upload is partial and break the loop
+                ret = SubresourceLoadStatus::Partial;
+                i = j = 0xFFFFFFFF;
+                break;
+            }
+        }
+    }
+
+    // Transition back to read, and exchange queue ownership with the graphics queue
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, name.Value());
+    CoreGraphics::CmdBarrier(cmdBuf,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+                {
+                    texture,
+                    subres
+                }
+        },
+        nullptr,
+        CoreGraphics::GetQueueIndex(QueueType::TransferQueueType),
+        CoreGraphics::GetQueueIndex(QueueType::GraphicsQueueType));
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::UnlockTransferSetupCommandBuffer();
+
+    // Do the same barrier on the handover buffer, and exchange queue ownership with the graphics queue
+    CoreGraphics::CmdBufferId handoverCmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+
+    CoreGraphics::CmdBeginMarker(handoverCmdBuf, NEBULA_MARKER_TRANSFER, name.Value());
+
+    // First duplicate the transfer queue barrier
+    CoreGraphics::CmdBarrier(handoverCmdBuf,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+                {
+                    texture,
+                    subres
+                }
+        },
+        nullptr,
+        CoreGraphics::GetQueueIndex(QueueType::TransferQueueType),
+        CoreGraphics::GetQueueIndex(QueueType::GraphicsQueueType));
+
+    // Then perform the actual image layout change
+    CoreGraphics::CmdBarrier(handoverCmdBuf,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::PipelineStage::AllShadersRead,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+                {
+                    texture,
+                    subres
+                }
+        });
+    CoreGraphics::CmdEndMarker(handoverCmdBuf);
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+    TextureIdRelease(texture);
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------

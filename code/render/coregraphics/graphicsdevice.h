@@ -364,7 +364,8 @@ Upload(const TYPE& data, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE);
     auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
-    UploadInternal(buffer, offset, &data, uploadSize);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        UploadInternal(buffer, offset, &data, uploadSize);
     return Util::MakePair(offset, buffer);
 }
 
@@ -377,7 +378,8 @@ UploadArray(const TYPE* data, SizeT numElements, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
     auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
-    UploadInternal(buffer, offset, data, uploadSize);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        UploadInternal(buffer, offset, data, uploadSize);
     return Util::MakePair(offset, buffer);
 }
 
@@ -411,7 +413,8 @@ inline Util::Pair<uint, CoreGraphics::BufferId>
 UploadArray(const void* data, SizeT numBytes, SizeT alignment)
 {
     auto [offset, buffer] = AllocateUpload(numBytes, alignment);
-    UploadInternal(buffer, offset, data, numBytes);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        UploadInternal(buffer, offset, data, numBytes);
     return Util::MakePair(offset, buffer);
 }
 

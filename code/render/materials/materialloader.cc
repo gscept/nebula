@@ -30,7 +30,7 @@ MaterialLoader::Setup()
 /**
 */
 Resources::ResourceUnknownId
-MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
     reader->SetStream(stream);
@@ -40,7 +40,7 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
         if (!reader->HasNode("/Nebula/Surface"))
         {
             n_error("MaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
-            return Failed;
+            return Resources::InvalidResourceUnknownId;
         }
 
         // send to first node

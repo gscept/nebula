@@ -114,11 +114,13 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
 //------------------------------------------------------------------------------
 /**
 */
-void
+bool
 TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
 {
     SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(TextureGetPixelFormat(tex));
     auto [offset, buffer] = CoreGraphics::UploadArray(data, size, alignment);
+    if (buffer == CoreGraphics::InvalidBufferId)
+        return false;
 
     // Then run a copy on the command buffer
     CoreGraphics::BufferCopy bufCopy;
@@ -130,6 +132,7 @@ TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue
     texCopy.mip = mip;
     texCopy.region.set(0, 0, width, height);
     CoreGraphics::CmdCopy(cmd, buffer, {bufCopy}, tex, {texCopy});
+    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -31,7 +31,7 @@ public:
 private:
     
     /// perform load
-    Resources::ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
 

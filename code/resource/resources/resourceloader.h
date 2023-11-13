@@ -108,6 +108,7 @@ protected:
         Util::StringAtom tag;
         bool inflight;
         bool immediate;
+        bool reload;
 
         _PendingResourceLoad() : entry(-1) {};
     };
@@ -141,26 +142,21 @@ protected:
         SizeT size;
     };
 
-    enum LoadStatus
+    enum SubresourceLoadStatus
     {
-        Success,        /// resource is properly loaded
-        Failed,         /// resource loading failed
-        Delay,          /// resource is loaded at some later point
-        Threaded        /// resource is loaded from a thread, which is like Delay, but is no longer pending
-    };
-
-    struct _InternalLoadResult
-    {
-        LoadStatus status;
-        ResourceId id;
+        Full,       // All requested subresources were loaded
+        Partial,    // Some of the requested subresources could be loaded, but not all
+        Rejected    // None of the requested subresources were loaded, loader out of budget
     };
 
     static const uint32_t ResourceIndexGrow = 512;
 
-    /// perform actual load, override in subclass
-    virtual ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
+    /// Initialize and create the resource, optionally load if no subresource management is necessary
+    virtual ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
+    /// Stream resource
+    virtual SubresourceLoadStatus StreamResource(const ResourceId entry);
     /// perform a reload
-    virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
+    virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
     /// perform a lod update
     virtual void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
@@ -169,12 +165,17 @@ protected:
     /// update the resource loader, this is done every frame
     virtual void Update(IndexT frameIndex);
 
+    /// Construct resource ID based on loader entry
+    void SetupIdFromEntry(const Ids::Id32 entry, ResourceId& cacheEntry);
+
     /// Load immediately
-    _InternalLoadResult LoadImmediate(_PendingResourceLoad& res);
+    Resource::State LoadImmediate(_PendingResourceLoad& res);
     /// Load async
-    LoadStatus LoadDeferred(_PendingResourceLoad& res);
+    Resource::State LoadAsync(_PendingResourceLoad& res);
     /// run callbacks
-    void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
+    void RunCallbacks(Resource::State status, const Resources::ResourceId id);
+
+    friend Resource::State _LoadInternal(ResourceLoader* loader, const _PendingResourceLoad& res);
 
     struct _PlaceholderResource
     {

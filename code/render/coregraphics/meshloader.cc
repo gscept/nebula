@@ -79,7 +79,7 @@ MeshLoader::~MeshLoader()
 /**
 */
 Resources::ResourceUnknownId
-MeshLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());
     String resIdExt = this->names[entry].AsString().GetFileExtension();
