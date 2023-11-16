@@ -66,7 +66,7 @@ public:
     virtual void LoadFallbackResources();
 
     /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-    Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
+    Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag

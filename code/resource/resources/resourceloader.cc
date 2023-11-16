@@ -71,21 +71,21 @@ ResourceLoader::LoadFallbackResources()
     // load all placeholders
     for (IndexT i = 0; i < this->placeholders.Size(); i++)
     {
-        this->placeholders[i].placeholderId = this->CreateResource(this->placeholders[i].placeholderName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+        this->placeholders[i].placeholderId = this->CreateResource(this->placeholders[i].placeholderName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->placeholders[i].placeholderId != Resources::InvalidResourceId);
     }
 
     // load placeholder, don't load it async
     if (this->placeholderResourceName.IsValid())
     {
-        this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+        this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->placeholderResourceId != Resources::InvalidResourceId);
     }
 
     // load error, don't load it async
     if (this->failResourceName.IsValid())
     {
-        this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+        this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true, false);
         n_assert(this->failResourceId != Resources::InvalidResourceId);
     }
 }
@@ -383,7 +383,7 @@ ResourceLoader::LoadAsync(_PendingResourceLoad& res)
 /**
 */
 Resources::ResourceId
-Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
+Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream)
 {
     // this assert should maybe be removed in favor of putting things on a queue if called from another thread
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
@@ -447,7 +447,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         pending.inflight = false;
         pending.immediate = immediate;
         pending.reload = false;
-        pending.lod = 1.0f;
+        pending.lod = stream ? 1.0f : 0.0f;
         this->loads[instanceId] = pending;
 
         // add mapping between resource name and resource being loaded
@@ -529,7 +529,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             pending.inflight = false;
             pending.immediate = immediate;
             pending.reload = false;
-            pending.lod = 1.0f;
+            pending.lod = stream ? 1.0f : 0.0f;
             this->states[instanceId] = Resource::Initial;
             this->loads[instanceId] = pending;
 
