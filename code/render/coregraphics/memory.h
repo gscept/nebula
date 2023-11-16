@@ -53,6 +53,11 @@ struct AllocRange
     DeviceSize size;
 };
 
+struct MemoryHeap
+{
+    DeviceSize space;
+};
+
 struct MemoryPool
 {
     // make a new allocation
@@ -78,6 +83,8 @@ struct MemoryPool
     DeviceSize maxSize;
     bool mapMemory;
 
+    MemoryHeap* heap;
+
 private:
 
     static constexpr uint DedicatedBlockNodeIndex = 0xFFFFFFFF;
@@ -93,6 +100,7 @@ private:
 };
 
 extern Util::Array<MemoryPool> Pools;
+extern Util::Array<MemoryHeap> Heaps;
 extern Threading::CriticalSection AllocationLock;
 
 /// setup memory pools

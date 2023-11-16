@@ -9,6 +9,7 @@ namespace CoreGraphics
 {
 
 Util::Array<MemoryPool> Pools;
+Util::Array<MemoryHeap> Heaps;
 Threading::CriticalSection AllocationLock;
 
 //------------------------------------------------------------------------------

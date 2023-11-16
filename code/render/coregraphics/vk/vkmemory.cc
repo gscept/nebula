@@ -30,16 +30,26 @@ SetupMemoryPools(
     // setup a pool for every memory type
     CoreGraphics::Pools.Resize(VK_MAX_MEMORY_TYPES);
     bool deviceLocalFound = false, hostLocalFound = false, hostAndDeviceFound = false, hostCachedFound = false;
+    for (uint32 i = 0; i < props.memoryHeapCount; i++)
+    {
+        CoreGraphics::MemoryHeap heap;
+        heap.space = props.memoryHeaps[i].size;
+        CoreGraphics::Heaps.Append(heap);
+    }
     for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
     {
         CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[i];
-        pool.maxSize = props.memoryHeaps[props.memoryTypes[i].heapIndex].size;
+        VkMemoryType type = props.memoryTypes[i];
+        VkMemoryHeap heap = props.memoryHeaps[type.heapIndex];
+        
+        pool.heap = &CoreGraphics::Heaps[type.heapIndex];
+        pool.maxSize = heap.size;
         pool.memoryType = i;
         pool.mapMemory = false;
         pool.blockSize = 0;
         pool.size = 0;
 
-        if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !deviceLocalFound)
+        if (AllBits(type.propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !deviceLocalFound)
         {
             // device memory is persistent, allocate conservatively
             pool.mapMemory = false;
@@ -48,7 +58,7 @@ SetupMemoryPools(
             pool.budgetCounter = N_DEVICE_ONLY_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_DEVICE_ONLY_GPU_MEMORY, pool.maxSize);
         }
-        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !hostLocalFound)
+        else if (AllBits(type.propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !hostLocalFound)
         {
             // host memory is used for transient transfer buffers, make it allocate and deallocate fast
             pool.mapMemory = true;
@@ -57,7 +67,7 @@ SetupMemoryPools(
             pool.budgetCounter = N_HOST_ONLY_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_HOST_ONLY_GPU_MEMORY, pool.maxSize);
         }
-        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !hostCachedFound)
+        else if (AllBits(type.propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !hostCachedFound)
         {
             // memory used to read from the GPU should also be conservative
             pool.mapMemory = true;
@@ -66,7 +76,7 @@ SetupMemoryPools(
             pool.budgetCounter = N_DEVICE_TO_HOST_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_DEVICE_TO_HOST_GPU_MEMORY, pool.maxSize);
         }
-        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostAndDeviceFound)
+        else if (AllBits(type.propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostAndDeviceFound)
         {
             // memory used to directly write to the device with a flush should be allocated conservatively
             pool.mapMemory = true;
@@ -122,6 +132,9 @@ GetMappedMemory(const CoreGraphics::Alloc& alloc)
 DeviceMemory 
 MemoryPool::CreateBlock(void** outMappedPtr)
 {
+    n_assert(this->heap->space >= this->blockSize);
+    this->heap->space -= this->blockSize;
+
     VkDevice dev = GetCurrentDevice();
     VkMemoryAllocateInfo allocInfo =
     {
