@@ -188,4 +188,33 @@ struct BufferSet
     Util::FixedArray<CoreGraphics::BufferId> buffers;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
+struct BufferWithStaging
+{
+    /// Default constructor
+    BufferWithStaging() {};
+    /// Constructor
+    BufferWithStaging(const BufferCreateInfo& createInfo);
+    /// Move constructor
+    BufferWithStaging(BufferWithStaging&& rhs);
+    /// Move assignment
+    void operator=(BufferWithStaging&& rhs);
+
+    /// Get device buffer
+    const CoreGraphics::BufferId DeviceBuffer();
+    /// Get staging buffer for this frame
+    const CoreGraphics::BufferId HostBuffer();
+
+    /// Flush changes on staging buffer to device
+    void Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes);
+    
+    /// Destructor
+    ~BufferWithStaging();
+
+    CoreGraphics::BufferId deviceBuffer;
+    BufferSet hostBuffers;
+};
+
 } // namespace CoreGraphics
