@@ -24,10 +24,11 @@ public:
 
     enum State
     {
-        Pending,    /// resource is being loaded
-        Loaded,     /// resource is done loading, and is successful
-        Failed,     /// resource loading failed
-        Unloaded    /// resource has been unloaded
+        Initial,    /// Resource has not been initialized
+        Pending,    /// Resource is initialized and is pending to load
+        Loaded,     /// Resource is done loading all of its subresources
+        Failed,     /// Resource loading failed
+        Unloaded    /// Resource has been unloaded and deinitialized
     };
     /// constructor
     Resource();

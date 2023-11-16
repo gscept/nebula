@@ -178,6 +178,9 @@ struct BufferSet
     BufferSet(BufferSet&& rhs);
     /// Move assignment
     void operator=(BufferSet&& rhs);
+
+    /// Get current buffer
+    const CoreGraphics::BufferId Buffer();
     
     /// Destructor
     ~BufferSet();

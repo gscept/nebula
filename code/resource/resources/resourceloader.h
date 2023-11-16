@@ -109,6 +109,7 @@ protected:
         bool inflight;
         bool immediate;
         bool reload;
+        float lod;
 
         _PendingResourceLoad() : entry(-1) {};
     };
@@ -154,11 +155,16 @@ protected:
     /// Initialize and create the resource, optionally load if no subresource management is necessary
     virtual ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
     /// Stream resource
-    virtual SubresourceLoadStatus StreamResource(const ResourceId entry);
+    virtual uint StreamResource(const ResourceId entry, uint requestedBits);
     /// perform a reload
     virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
     /// perform a lod update
-    virtual void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
+    virtual SubresourceLoadStatus StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
+
+    /// Create load mask based on LOD
+    virtual uint LodMask(const Ids::Id32 entry, float lod) const;
+    /// Set lod factor for resource
+    virtual void RequestLOD(const Ids::Id32 entry, float lod) const;
 
     /// unload resource (overload to implement resource deallocation)
     virtual void Unload(const Resources::ResourceId id) = 0;
@@ -171,7 +177,7 @@ protected:
     /// Load immediately
     Resource::State LoadImmediate(_PendingResourceLoad& res);
     /// Load async
-    Resource::State LoadAsync(_PendingResourceLoad& res);
+    void LoadAsync(_PendingResourceLoad& res);
     /// run callbacks
     void RunCallbacks(Resource::State status, const Resources::ResourceId id);
 
@@ -217,6 +223,8 @@ protected:
     Util::FixedArray<uint32_t> usage;
     Util::FixedArray<Util::StringAtom> tags;
     Util::FixedArray<Resource::State> states;
+    Util::FixedArray<uint> requestedBits;
+    Util::FixedArray<uint> loadedBits;
     Util::FixedArray<ResourceId> resources;
     Util::FixedArray<Util::Array<_Callbacks>> callbacks;
     Util::FixedArray<_PendingResourceLoad> loads;

@@ -93,11 +93,11 @@ ResourceLoader::LoadFallbackResources()
 //------------------------------------------------------------------------------
 /**
 */
-ResourceLoader::SubresourceLoadStatus
-ResourceLoader::StreamResource(const ResourceId entry)
+uint
+ResourceLoader::StreamResource(const ResourceId entry, uint requestedBits)
 {
     // Assume the loader doesn't support streaming, whereby all data is loaded on initialize
-    return SubresourceLoadStatus::Full;
+    return 0xFFFFFFFF;
 }
 
 //------------------------------------------------------------------------------
@@ -113,10 +113,28 @@ ResourceLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::S
 //------------------------------------------------------------------------------
 /**
 */
-void 
+ResourceLoader::SubresourceLoadStatus
 ResourceLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
 {
-    // implement in subclass
+    return SubresourceLoadStatus::Full;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+ResourceLoader::LodMask(const Ids::Id32 entry, float lod) const
+{
+    return 0xFFFFFFFF;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceLoader::RequestLOD(const Ids::Id32 entry, float lod) const
+{
+    // Do nothing
 }
 
 //------------------------------------------------------------------------------
@@ -131,50 +149,38 @@ ResourceLoader::Update(IndexT frameIndex)
         // get pending element
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
 
-        // load resource, get status from load function
-        Resource::State result = this->LoadAsync(resourceLoad);
-        if (result == Resource::Loaded)
+        // If already loaded, just return
+        uint requestedBits = this->requestedBits[resourceLoad.entry];
+        uint loadedBits = this->loadedBits[resourceLoad.entry];
+        if (AllBits(loadedBits, requestedBits))
+        {
             this->pendingLoads.EraseIndexSwap(i);
+            continue;
+        }
+
+        // Load resource async
+        this->LoadAsync(resourceLoad);
     }
 
     // go through pending lod streams
     this->pendingStreamQueue.DequeueAll(this->pendingStreamLods);
-    for (i = this->pendingStreamLods.Size() - 1; i >= 0; i--)
+    for (i = 0; i < this->pendingStreamLods.Size(); i++)
     {
         const _PendingStreamLod& streamLod = this->pendingStreamLods[i];
+        this->loads[streamLod.id.cacheInstanceId].lod = streamLod.lod;
+        this->pendingLoads.Append(streamLod.id.cacheInstanceId);
 
-        // skip this resource if not loaded, but keep it in the list
         this->asyncSection.Enter();
-        bool resourceNotLoaded = this->states[streamLod.id.cacheInstanceId] != Resource::Loaded;
+        this->requestedBits[streamLod.id.cacheInstanceId] = 0xFFFFFFFF;
         this->asyncSection.Leave();
-        if (resourceNotLoaded)
-            continue;
-
-        // if async is supported, put the stream job on a thread!
-        if (this->async && !streamLod.immediate)
-        {
-            auto streamFunc = [this, streamLod]()
-            {
-                this->StreamMaxLOD(streamLod.id, streamLod.lod, streamLod.immediate);
-            };
-            this->streamerThread->jobs.Enqueue(streamFunc);
-
-            this->pendingStreamLods.EraseIndex(i);
-        }
-        else
-        {
-            // load immediately
-            this->StreamMaxLOD(streamLod.id, streamLod.lod, streamLod.immediate);
-
-            this->pendingStreamLods.EraseIndex(i);
-        }
     }
 
     // go through pending unloads
     for (i = this->pendingUnloads.Size() - 1; i >= 0; i--)
     {
         const _PendingResourceUnload& unload = this->pendingUnloads[i];
-        if (this->states[unload.resourceId.cacheInstanceId] != Resource::Pending)
+        if (this->states[unload.resourceId.cacheInstanceId] != Resource::Pending
+            && this->states[unload.resourceId.cacheInstanceId] != Resource::Initial)
         {
             if (this->states[unload.resourceId.cacheInstanceId] == Resource::Loaded)
             {
@@ -209,6 +215,7 @@ ResourceLoader::SetupIdFromEntry(const Ids::Id32 entry, ResourceId& cacheEntry)
             cacheEntry.resourceId = this->failResourceId.resourceId;
             cacheEntry.resourceType = this->failResourceId.resourceType;
             break;
+        case Resource::State::Initial:
         case Resource::State::Pending:
         case Resource::State::Unloaded:
             cacheEntry.resourceId = this->placeholderResourceId.resourceId;
@@ -258,77 +265,72 @@ ResourceLoader::GetPlaceholder(const Resources::ResourceName& name)
 Resource::State
 _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad& res)
 {
-    Resource::State state = Resource::Failed;
+    loader->asyncSection.Enter();
+    Resource::State state = loader->states[res.entry];
+    ResourceId originalResource = loader->resources[res.entry];
+    ResourceName name = loader->names[res.entry];
+    loader->asyncSection.Leave();
 
-     // construct stream
-    Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(loader->names[res.entry].Value());
-    stream->SetAccessMode(Stream::ReadAccess);
     ResourceLoader::_LoadMetaData& metaData = loader->metaData[res.entry];
 
-    ResourceId resource;
-    resource.cacheIndex = loader->uniqueId;
-    resource.cacheInstanceId = res.entry;
-    resource.resourceId = loader->failResourceId.resourceId;
-    resource.resourceType = loader->failResourceId.resourceType;
+    n_assert(originalResource.cacheInstanceId == res.entry);
 
-    if (stream->Open())
+    ResourceId resource = originalResource;
+    uint requestedBits = 0x0;
+    uint loadedBits = 0x0;
+
+    if (state == Resource::State::Initial)
     {
-        ResourceUnknownId internalResource = InvalidResourceUnknownId;
-        if (!res.reload)
+        // construct stream
+        Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(name.Value());
+        stream->SetAccessMode(Stream::ReadAccess);
+        if (stream->Open())
         {
-            // If resource is new, initialize it
-            internalResource = loader->InitializeResource(res.entry, res.tag, stream, res.immediate);
+            // If new resource, initialize it
+            ResourceUnknownId internalResource = loader->InitializeResource(res.entry, res.tag, stream, res.immediate);
             resource.resourceId = internalResource.resourceId;
             resource.resourceType = internalResource.resourceType;
-        }
-        else
-        {
-            // If reloading, reuse previous resource
-            ResourceId reloadResource = loader->resources[res.entry];
-            internalResource.resourceId = reloadResource.resourceId;
-            internalResource.resourceType = reloadResource.resourceType;
-        }
 
-        if (internalResource == InvalidResourceUnknownId)
-        {
-            // If the initialize failed, it means the file is invalid or can't be found
-            state = Resource::Failed;
-            n_printf("[RESOURCE LOADER] Failed to load resource %s\n", loader->names[res.entry].Value());
-        }
-        else
-        {
-            // If successful, begin streaming its data
-            ResourceLoader::SubresourceLoadStatus status = loader->StreamResource(resource);
-
-            switch (status)
+            if (internalResource == InvalidResourceUnknownId)
             {
-                case ResourceLoader::SubresourceLoadStatus::Full:
-                    state = Resource::Loaded;
-                    break;
-                case ResourceLoader::SubresourceLoadStatus::Partial:
-                    state = Resource::Pending;
-                    break;
-                case ResourceLoader::SubresourceLoadStatus::Rejected:
-                    state = Resource::Failed;
-                    break;
+                // If the initialize failed, it means the file is invalid or can't be found
+                state = Resource::Failed;
+                resource.resourceId = loader->failResourceId.resourceId;
+                resource.resourceType = loader->failResourceId.resourceType;
+                n_printf("[RESOURCE LOADER] Failed to load resource %s\n", loader->names[res.entry].Value());
+                goto skip_stream;
             }
         }
+        else
+        {
+            resource.resourceId = loader->failResourceId.resourceId;
+            resource.resourceType = loader->failResourceId.resourceType;
+            n_printf("[RESOURCE LOADER] Failed to open resource %s\n", loader->names[res.entry].Value());
+            state = Resource::Failed;
+            goto skip_stream;
+        }
+    }
+    requestedBits = loader->LodMask(res.entry, res.lod);
 
-        loader->asyncSection.Enter();
-        loader->states[res.entry] = state;
-        loader->RunCallbacks(state, resource);
-        loader->resources[res.entry] = resource;
-        loader->asyncSection.Leave();
+    // If successful, begin streaming its data
+    loadedBits = loader->StreamResource(resource, requestedBits);
+    if (AllBits(loadedBits, requestedBits))
+    {
+        n_printf("Finished loading %s %d\n", name.Value(), requestedBits);
+        state = Resource::Loaded;
     }
     else
     {
-        // Not being able to open the stream constitutes a failure too
-        loader->asyncSection.Enter();
-        loader->RunCallbacks(Resource::Failed, resource);
-        loader->states[res.entry] = Resource::Failed;
-        n_printf("[RESOURCE LOADER] Failed to load resource %s\n", loader->names[res.entry].Value());
-        loader->asyncSection.Leave();
+        state = Resource::Pending;
     }
+
+skip_stream:
+    loader->asyncSection.Enter();
+    loader->requestedBits[res.entry] = requestedBits;
+    loader->loadedBits[res.entry] = loadedBits;
+    loader->states[res.entry] = state;
+    loader->RunCallbacks(state, resource);
+    loader->resources[res.entry] = resource;
 
     // free metadata
     if (metaData.data != nullptr)
@@ -337,6 +339,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
         metaData.data = nullptr;
         metaData.size = 0;
     }
+    loader->asyncSection.Leave();
 
     return state;
 }
@@ -357,13 +360,9 @@ ResourceLoader::LoadImmediate(_PendingResourceLoad& res)
 //------------------------------------------------------------------------------
 /**
 */
-Resource::State
+void
 ResourceLoader::LoadAsync(_PendingResourceLoad& res)
 {
-    // If already loaded, just return
-    if (this->states[res.entry] == Resource::Loaded)
-        return Resource::Loaded;
-
     // Create callable function
     auto loadFunc = std::bind(_LoadInternal, this, res);
 
@@ -372,13 +371,11 @@ ResourceLoader::LoadAsync(_PendingResourceLoad& res)
     {
         res.inflight = true;
         this->streamerThread->jobs.Enqueue(loadFunc);
-        return Resource::Pending;
     }
     else
     {
         // Otherwise, run immediately
         loadFunc();
-        return this->states[res.entry];
     }
 }
 
@@ -408,6 +405,8 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             this->usage.Resize(this->usage.Size() + ResourceIndexGrow);
             this->tags.Resize(this->tags.Size() + ResourceIndexGrow);
             this->states.Resize(this->states.Size() + ResourceIndexGrow);
+            this->requestedBits.Resize(this->requestedBits.Size() + ResourceIndexGrow);
+            this->loadedBits.Resize(this->loadedBits.Size() + ResourceIndexGrow);
             this->resources.Resize(this->resources.Size() + ResourceIndexGrow);
             this->callbacks.Resize(this->callbacks.Size() + ResourceIndexGrow);
             this->loads.Resize(this->loads.Size() + ResourceIndexGrow);
@@ -419,7 +418,9 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         this->names[instanceId] = res;
         this->usage[instanceId] = 1;
         this->tags[instanceId] = tag;
-        this->states[instanceId] = Resource::Pending;
+        this->states[instanceId] = Resource::Initial;
+        this->loadedBits[instanceId] = 0x0;
+        this->requestedBits[instanceId] = 0xFFFFFFFF;
 
         // allocate metadata if present
         _LoadMetaData metaData;
@@ -446,6 +447,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         pending.inflight = false;
         pending.immediate = immediate;
         pending.reload = false;
+        pending.lod = 1.0f;
         this->loads[instanceId] = pending;
 
         // add mapping between resource name and resource being loaded
@@ -477,24 +479,24 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         ret = this->resources[instanceId];
 
         // bump usage
-        this->usage[ret.cacheInstanceId]++;
+        this->usage[instanceId]++;
 
         // start the async section, the loader might change the resource state
         this->asyncSection.Enter();
         
         // If the resource isn't pending, call the fail or success callback immediately
-        const Resource::State state = this->states[ret.cacheInstanceId];
+        const Resource::State state = this->states[instanceId];
         if (state == Resource::Loaded && success != nullptr)
             success(ret);
         else if (state == Resource::Failed && failed != nullptr)
             failed(ret);
-        else if (state == Resource::Pending)
+        else if (state == Resource::Pending || state == Resource::Initial)
         {
             // this resource should now be in the pending list
             n_assert(i != InvalidIndex);
 
             // pending resource may not be in-flight in thread
-            _PendingResourceLoad& pend = this->loads[ret.cacheInstanceId];
+            _PendingResourceLoad& pend = this->loads[instanceId];
             if (!pend.inflight)
             {
                 // flip the immediate flag, this is in case we decide to perform a later load using immediate override
@@ -519,7 +521,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
                 metaData.data = nullptr;
                 metaData.size = 0;
             }
-            this->metaData[ret.cacheInstanceId] = metaData;
+            this->metaData[instanceId] = metaData;
 
             _PendingResourceLoad pending;
             pending.entry = instanceId;
@@ -527,8 +529,9 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             pending.inflight = false;
             pending.immediate = immediate;
             pending.reload = false;
-            this->states[ret.cacheInstanceId] = Resource::Pending;
-            this->loads[ret.cacheInstanceId] = pending;
+            pending.lod = 1.0f;
+            this->states[instanceId] = Resource::Initial;
+            this->loads[instanceId] = pending;
 
             if (immediate)
             {
@@ -546,11 +549,11 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             }
             else
             {
-                this->pendingLoads.Append(ret.cacheInstanceId);
+                this->pendingLoads.Append(instanceId);
                 if (success != nullptr || failed != nullptr)
                 {
                     // if unloaded, the callbacks array can safetly be assumed to be empty
-                    this->callbacks[ret.cacheInstanceId].Append({ ret, success, failed });
+                    this->callbacks[instanceId].Append({ ret, success, failed });
                 }
             }
         }
@@ -637,10 +640,11 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.inflight = false;
         pending.immediate = false;
         pending.reload = true;
+        pending.lod = 1.0f;
 
         this->asyncSection.Enter();
         this->loads[ret.cacheInstanceId] = pending;
-        this->states[ret.cacheInstanceId] = Resource::Pending;
+        this->states[ret.cacheInstanceId] = Resource::Initial;
         this->callbacks[ret.cacheInstanceId].Append({ ret, success, failed });
         this->asyncSection.Leave();
     }
@@ -665,10 +669,11 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
     pending.inflight = false;
     pending.immediate = false;
     pending.reload = true;
+    pending.lod = 1.0f;
 
     this->asyncSection.Enter();
     this->loads[id.cacheInstanceId] = pending;
-    this->states[id.cacheInstanceId] = Resource::Pending;
+    this->states[id.cacheInstanceId] = Resource::Initial;
     this->callbacks[id.cacheInstanceId].Append({ id, success, failed });
     this->asyncSection.Leave();
 }
@@ -679,17 +684,25 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
 void 
 ResourceLoader::SetMinLod(const Resources::ResourceId& id, const float lod, bool immediate)
 {
-    if (immediate)
+    _PendingResourceLoad& pending = this->loads[id.cacheInstanceId];
+    if (pending.inflight)
     {
-        this->StreamMaxLOD(id, lod, immediate);
+        pending.lod = lod;
     }
     else
     {
-        _PendingStreamLod pending;
-        pending.id = id;
-        pending.lod = lod;
-        pending.immediate = immediate;
-        this->pendingStreamQueue.Enqueue(pending);
+        if (immediate)
+        {
+            this->StreamMaxLOD(id, lod, immediate);
+        }
+        else
+        {
+            _PendingStreamLod pending;
+            pending.id = id;
+            pending.lod = lod;
+            pending.immediate = immediate;
+            this->pendingStreamQueue.Enqueue(pending);
+        }
     }
 }
 

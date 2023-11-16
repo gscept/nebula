@@ -12,6 +12,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/types.h"
+#include "util/bit.h"
 #include "util/array.h"
 #include <utility>
 namespace Memory
@@ -21,10 +22,6 @@ namespace Memory
 uint BucketFromSize(uint size);
 /// Get bin from index
 uint BinFromSize(uint size, uint bucket);
-/// Get least significant bit from mask
-uint Lsb(uint mask, byte bit);
-/// Get first one in mask
-uint FirstOne(uint value);
 
 struct SizeClassificationAllocation
 {
@@ -202,13 +199,13 @@ SizeClassificationAllocator::Alloc(uint size, uint alignment)
 
     if (this->bucketUsageMask & (1 << bucket))
     {
-        bin = Lsb(this->binMasks[bucket], minIndex.bin);
+        bin = Util::Lsb(this->binMasks[bucket], minIndex.bin);
     }
 
     if (bin == 0xFFFFFFFF)
     {
         // Find next bit set after bucket in the usage mask
-        bucket = Lsb(this->bucketUsageMask, bucket + 1);
+        bucket = Util::Lsb(this->bucketUsageMask, bucket + 1);
 
         // If this means we get 32, it means we're out of buckets that fit
         if (bucket == 0xFFFFFFFF)
@@ -217,7 +214,7 @@ SizeClassificationAllocator::Alloc(uint size, uint alignment)
         }
 
         // Find any bit, since this bucket has to fit
-        bin = FirstOne(this->binMasks[bucket]);
+        bin = Util::FirstOne(this->binMasks[bucket]);
     }
 
     BinIndex binIndex;
@@ -475,37 +472,6 @@ BinFromSize(uint size, uint bucket)
 {
     uint mask = (size >> (bucket - 4)) & (NUM_BINS_PER_BUCKET - 1u);
     return mask;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline uint
-Lsb(uint value, byte bit)
-{
-    uint mask = value & ~((1 << bit) - 1);
-#if __WIN32__
-    DWORD count = 0;
-    _BitScanForward(&count, mask);
-#else
-    int count = __builtin_ctz(mask);
-#endif
-    return mask ? count : 0xFFFFFFFF;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline uint
-FirstOne(uint value)
-{
-#if __WIN32__
-    DWORD count = 0;
-    _BitScanForward(&count, value);
-#else
-    int count = __builtin_ctz(value);
-#endif
-    return count;
 }
 
 //------------------------------------------------------------------------------

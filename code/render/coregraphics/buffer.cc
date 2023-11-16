@@ -42,6 +42,15 @@ BufferSet::operator=(BufferSet&& rhs)
 //------------------------------------------------------------------------------
 /**
 */
+const CoreGraphics::BufferId
+BufferSet::Buffer()
+{
+    return this->buffers[CoreGraphics::GetBufferedFrameIndex()];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 BufferSet::~BufferSet()
 {
     for (IndexT i = 0; i < this->buffers.Size(); i++)

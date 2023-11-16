@@ -97,20 +97,20 @@ VkShaderServer::UpdateResources()
     {
         const _PendingView& pend = pendingViewsThisFrame[i];
 
-        textureAllocator.Acquire(pend.tex.resourceId);
+        TextureIdLock _0(pend.tex);
         VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.resourceId);
         VkImageView oldView = info.view;
         VkResult res = vkCreateImageView(GetCurrentDevice(), &pend.createInfo, nullptr, &info.view);
         n_assert(res == VK_SUCCESS);
-        textureAllocator.Release(pend.tex.resourceId);
+
+        // update texture entries for all tables
+        Graphics::ReregisterTexture(pend.tex, info.type, info.bind);
 
         _PendingViewDelete pendingDelete;
         pendingDelete.view = oldView;
         pendingDelete.replaceCounter = bufferedFrameIndex;
         pendingViewDeletes.Append(pendingDelete);
 
-        // update texture entries for all tables
-        Graphics::ReregisterTexture(pend.tex, info.type, info.bind);
     }
 }
 

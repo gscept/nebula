@@ -88,7 +88,7 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
 
     if (resIdExt == "nvx")
     {
-        this->SetupMeshFromNvx(stream, ret);
+        this->SetupMeshFromNvx(stream, entry, ret);
         return ret;
     }
     else
@@ -96,6 +96,75 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
         n_error("StreamMeshCache::SetupMeshFromStream(): unrecognized file extension in '%s'\n", resIdExt.AsCharPtr());
         return InvalidMeshResourceId;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits)
+{
+    ResourceLoader::StreamData& stream = this->streams[entry.cacheInstanceId];
+
+    MeshStreamData* streamData = (MeshStreamData*)stream.data;
+    auto header = (Nvx3Header*)streamData->mappedData;
+
+    n_assert(header->magic == NEBULA_NVX_MAGICNUMBER);
+    n_assert(header->numMeshes > 0);
+    auto vertexRanges = (Nvx3VertexRange*)(header + 1);
+    auto groups = (Nvx3Group*)(vertexRanges + header->numMeshes);
+    auto vertexData = (ubyte*)(groups + header->numGroups);
+    auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
+    auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
+
+    CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
+    CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
+    
+    int loadBits = 0;
+
+    // Upload vertices
+    {
+        auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
+        if (buffer != CoreGraphics::InvalidBufferId)
+        {
+            BufferIdAcquire(vbo);
+            SizeT baseVertexOffset = streamData->vertexAllocationOffset.offset;
+
+            // Copy from host mappable buffer to device local buffer
+            CoreGraphics::BufferCopy from, to;
+            from.offset = offset;
+            to.offset = baseVertexOffset;
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, vbo, { to }, header->vertexDataSize);
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+            BufferIdRelease(vbo);
+
+            loadBits |= 1 << 0;
+        }
+    }
+
+    // Upload indices
+    {
+        auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
+        if (buffer != CoreGraphics::InvalidBufferId)
+        {
+            BufferIdAcquire(ibo);
+            SizeT baseIndexOffset = streamData->indexAllocationOffset.offset;
+
+            // Copy from host mappable buffer to device local buffer
+            CoreGraphics::BufferCopy from, to;
+            from.offset = offset;
+            to.offset = baseIndexOffset;
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, ibo, { to }, header->indexDataSize);
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+            BufferIdRelease(ibo);
+
+            loadBits |= 1 << 1;
+        }
+    }
+
+    return loadBits;
 }
 
 //------------------------------------------------------------------------------
@@ -109,11 +178,20 @@ MeshLoader::Unload(const Resources::ResourceId id)
 
 //------------------------------------------------------------------------------
 /**
+*/
+uint
+MeshLoader::LodMask(const Ids::Id32 entry, float lod) const
+{
+    return 0x2;
+}
+
+//------------------------------------------------------------------------------
+/**
     Setup the mesh resource from a nvx3 file (Nebula's
     native binary mesh file format).
 */
 void
-MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId entry)
+MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource)
 {
     n_assert(stream.isvalid());
 
@@ -150,53 +228,28 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
 
         meshes.Resize(header->numMeshes);
 
-        SizeT baseVertexOffset, baseIndexOffset;
+        MeshStreamData* streamData = (MeshStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(MeshStreamData));
+        streamData->mappedData = mapPtr;
+
+        this->streams[entry].stream = stream;
+        this->streams[entry].data = streamData;
+
         CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
         CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
         CoreGraphics::VertexAlloc vertexAllocation, indexAllocation = { .size = 0xFFFFFFFF, .offset = 0xFFFFFFFF, .node = 0xFFFFFFFF };
 
         // Upload vertex data
         {
-            BufferIdAcquire(vbo);
-
-            // Get upload buffer
-            auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
-
             // Allocate vertices from global repository
             vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
-            baseVertexOffset = vertexAllocation.offset;
-
-            // Copy from host mappable buffer to device local buffer
-            CoreGraphics::BufferCopy from, to;
-            from.offset = offset;
-            to.offset = baseVertexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-            CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, vbo, {to}, header->vertexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-            BufferIdRelease(vbo);
+            streamData->vertexAllocationOffset = vertexAllocation;
         }
 
         // Upload index data
         {
-            BufferIdAcquire(ibo);
-
-            // Get upload buffer
-            auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
-
             // Allocate vertices from global repository
             indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
-            baseIndexOffset = indexAllocation.offset;
-
-            // Copy from host mappable buffer to device local buffer
-            CoreGraphics::BufferCopy from, to;
-            from.offset = offset;
-            to.offset = baseIndexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-            CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, ibo, {to}, header->indexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-            BufferIdRelease(ibo);
+            streamData->indexAllocationOffset = indexAllocation;
         }
 
         for (IndexT i = 0; i < header->numGroups; i++)
@@ -210,9 +263,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
         for (IndexT i = 0; i < header->numMeshes; i++)
         {
             MeshCreateInfo mshInfo;
-            mshInfo.streams.Append({ vbo, baseVertexOffset + (SizeT)vertexRanges[i].baseVertexByteOffset, 0 });
-            mshInfo.streams.Append({ vbo, baseVertexOffset + (SizeT)vertexRanges[i].attributesVertexByteOffset, 1 });
-            mshInfo.indexBufferOffset = baseIndexOffset + (SizeT)vertexRanges[i].indexByteOffset;
+            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + vertexRanges[i].baseVertexByteOffset), 0 });
+            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + vertexRanges[i].attributesVertexByteOffset), 1 });
+            mshInfo.indexBufferOffset = streamData->indexAllocationOffset.offset + (SizeT)vertexRanges[i].indexByteOffset;
             mshInfo.indexBuffer = ibo;
             mshInfo.topology = PrimitiveTopology::TriangleList;
             mshInfo.indexType = vertexRanges[i].indexType;
@@ -228,7 +281,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId
     }
 
     // Update mesh allocator
-    meshResourceAllocator.Set<0>(entry.resourceId, meshes);
+    meshResourceAllocator.Set<0>(meshResource.resourceId, meshes);
 }
 
 } // namespace CoreGraphics

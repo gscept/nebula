@@ -77,7 +77,7 @@ GraphicsServer::Open()
         .maxTimestampQueries = 0x100,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
-        .enableValidation = false
+        .enableValidation = true
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 

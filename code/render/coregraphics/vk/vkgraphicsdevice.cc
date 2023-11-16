@@ -65,7 +65,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct UploadRingBuffer
     {
         CoreGraphics::BufferId buffer;
-        Threading::AtomicCounter uploadBytesWritten;
+        Threading::AtomicCounter64 uploadBytesWritten;
     };
     Util::FixedArray<UploadRingBuffer> uploadRingBuffers;
 
@@ -1831,13 +1831,14 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     const SizeT alignedBytes = numBytes + alignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
-    int offset = Threading::Interlocked::Add((volatile int*)&ring.uploadBytesWritten, alignedBytes);
-    if (offset + numBytes >= state.globalUploadBufferPoolSize)
+    int offset = Threading::Interlocked::Add((volatile int64*)&ring.uploadBytesWritten, alignedBytes);
+    int alignedOffset = Math::align(offset, alignment);
+    if (alignedOffset + numBytes >= state.globalUploadBufferPoolSize)
     {
         return Util::MakePair(0xFFFFFFFF, InvalidBufferId);
     }
 
-    return Util::MakePair(offset, ring.buffer);
+    return Util::MakePair(alignedOffset, ring.buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -1858,21 +1859,19 @@ FlushUpload()
 {
     Vulkan::GraphicsDeviceState::UploadRingBuffer& uploadBuffer = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
-    uint64_t size = uploadBuffer.uploadBytesWritten;
+    uint64_t size = Math::min((int)uploadBuffer.uploadBytesWritten, state.globalUploadBufferPoolSize);
     if (size > 0)
     {
         VkMappedMemoryRange range;
         range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         range.pNext = nullptr;
-        range.offset = uploadBuffer.uploadBytesWritten;
+        range.offset = 0;
         range.size = Math::align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
         range.memory = BufferGetVkMemory(uploadBuffer.buffer);
 
         VkResult res = vkFlushMappedMemoryRanges(state.devices[state.currentDevice], 1, &range);
         n_assert(res == VK_SUCCESS);
     }
-
-    uploadBuffer.uploadBytesWritten = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -1972,6 +1971,7 @@ NewFrame()
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
     nextCboRing.endAddress = 0;
     nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.endAddress;
+    state.uploadRingBuffers[state.currentBufferedFrameIndex].uploadBytesWritten = 0;
 
     N_BUDGET_COUNTER_RESET(N_CONSTANT_MEMORY);
     N_BUDGET_COUNTER_RESET(N_UPLOAD_MEMORY);

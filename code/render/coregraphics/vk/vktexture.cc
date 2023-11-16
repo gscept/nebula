@@ -1117,7 +1117,7 @@ TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT
     VkSparseImageMemoryBind binding;
     binding.subresource =
     {
-        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT, // TODO, allow for depth and stencil aspects as well
         (uint32_t)mip,
         (uint32_t)layer
     };
