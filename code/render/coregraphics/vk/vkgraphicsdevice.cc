@@ -901,7 +901,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
         auto cmpCboInfo = cboInfo;
         cmpCboInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
-        state.globalComputeConstantBuffer[i] = CreateBuffer(cmpCboInfo);
+        //state.globalComputeConstantBuffer[i] = CreateBuffer(cmpCboInfo);
     }
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
@@ -1115,7 +1115,7 @@ DestroyGraphicsDevice()
         for (IndexT i = 0; i < state.maxNumBufferedFrames; i++)
         {
             DestroyBuffer(state.globalGraphicsConstantBuffer[i]);
-            DestroyBuffer(state.globalComputeConstantBuffer[i]);
+            //DestroyBuffer(state.globalComputeConstantBuffer[i]);
         }
     }
 
@@ -1420,7 +1420,7 @@ void
 SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
 {
     BufferUpdate(state.globalGraphicsConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
-    BufferUpdate(state.globalComputeConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
+    //BufferUpdate(state.globalComputeConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1465,7 +1465,7 @@ GetGraphicsConstantBuffer(IndexT i)
 CoreGraphics::BufferId
 GetComputeConstantBuffer(IndexT i)
 {
-    return state.globalComputeConstantBuffer[i];
+    return state.globalGraphicsConstantBuffer[i];
 }
 
 //------------------------------------------------------------------------------
