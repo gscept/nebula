@@ -146,6 +146,7 @@ UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstants)
 void
 FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue)
 {
+    /*
     IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
     switch (queue)
     {
@@ -235,6 +236,7 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType 
             }
             break;
     }
+    */
 }
 
 //------------------------------------------------------------------------------
