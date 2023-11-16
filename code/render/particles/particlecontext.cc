@@ -116,7 +116,7 @@ ParticleContext::Create()
     vboInfo.name = "Single Point Particle Emitter VBO";
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
-    vboInfo.mode = CoreGraphics::DeviceAndHost;
+    vboInfo.mode = CoreGraphics::DeviceLocal;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = vertex;
     vboInfo.dataSize = sizeof(vertex);
@@ -127,7 +127,7 @@ ParticleContext::Create()
     iboInfo.name = "Single Point Particle Emitter IBO";
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.mode = CoreGraphics::DeviceAndHost;
+    iboInfo.mode = CoreGraphics::DeviceLocal;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
@@ -207,7 +207,6 @@ ParticleContext::Create()
     state.primGroup.SetNumIndices(6);
     state.primGroup.SetBaseVertex(0);
     state.primGroup.SetNumVertices(4);
-
 }
 
 //------------------------------------------------------------------------------
