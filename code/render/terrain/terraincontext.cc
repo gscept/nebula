@@ -1442,6 +1442,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
         terrainState.biomeLowresGenerated[i] = false;
         Resources::CreateResource(mats[i].albedo.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
+            CoreGraphics::TextureIdLock _0(id);
             terrainState.biomeMaterials.MaterialAlbedos[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
@@ -1451,6 +1452,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
 
         Resources::CreateResource(mats[i].normal.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
+            CoreGraphics::TextureIdLock _0(id);
             terrainState.biomeMaterials.MaterialNormals[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
@@ -1460,6 +1462,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
 
         Resources::CreateResource(mats[i].material.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
+            CoreGraphics::TextureIdLock _0(id);
             terrainState.biomeMaterials.MaterialPBRs[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
@@ -1470,6 +1473,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
 
     Resources::CreateResource(settings.biomeMask, "terrain", [biomeIndex](Resources::ResourceId id)
     {
+        CoreGraphics::TextureIdLock _0(id);
         terrainState.biomeMaterials.MaterialMasks[biomeIndex / 4][biomeIndex % 4] = CoreGraphics::TextureGetBindlessHandle(id);
         terrainState.biomeTextures.Append(id);
         terrainState.biomeMasks[terrainState.biomeCounter] = id;
@@ -1482,6 +1486,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
     {
         Resources::CreateResource(settings.biomeParameters.weights, "terrain", [biomeIndex](Resources::ResourceId id)
         {
+            CoreGraphics::TextureIdLock _0(id);
             terrainState.biomeMaterials.MaterialWeights[biomeIndex / 4][biomeIndex % 4] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             terrainState.biomeWeights[terrainState.biomeCounter] = id;
