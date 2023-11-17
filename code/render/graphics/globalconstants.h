@@ -33,7 +33,7 @@ void UpdateViewConstants(const Shared::ViewConstants& viewConstants);
 /// Set camera params
 void UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstants);
 /// Flush constants by recording update command to command buffer
-void FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue);
+void FlushUpdates(const CoreGraphics::CmdBufferId buf);
 
 /// Get tick params constant buffer
 const Shared::PerTickParams& GetTickParams();
@@ -48,12 +48,8 @@ void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const Core
 void SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript);
 
 /// Get per-tick resource table for graphics
-const CoreGraphics::ResourceTableId GetFrameResourceTableGraphics(uint32_t bufferIndex);
-/// Get per-tick resource table for compute
-const CoreGraphics::ResourceTableId GetFrameResourceTableCompute(uint32_t bufferIndex);
+const CoreGraphics::ResourceTableId GetFrameResourceTable(uint32_t bufferIndex);
 
 /// Get per-tick resource table for graphics
-const CoreGraphics::ResourceTableId GetTickResourceTableGraphics(uint32_t bufferIndex);
-/// Get per-tick resource table for compute
-const CoreGraphics::ResourceTableId GetTickResourceTableCompute(uint32_t bufferIndex);
+const CoreGraphics::ResourceTableId GetTickResourceTable(uint32_t bufferIndex);
 }
