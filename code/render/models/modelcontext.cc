@@ -684,6 +684,10 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 box.affine_transform(transform);
                 NodeInstances.renderable.nodeBoundingBoxes[j] = box;
 
+                Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
+                NodeInstances.renderable.nodeMeshes[j] = primitiveNode->GetMesh();
+                NodeInstances.renderable.nodePrimitiveGroupIndex[j] = primitiveNode->GetPrimitiveGroupIndex();
+
                 // calculate view vector to calculate LOD
                 Math::vec4 viewVector = context->cameraTransform.position - transform.position;
                 float viewDistance = length(viewVector);
