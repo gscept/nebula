@@ -111,6 +111,14 @@ protected:
         bool reload;
         float lod;
 
+        enum Mode
+        {
+            None = 0x0,
+            Create = 0x1,
+            Update = 0x2
+        };
+        uint mode;
+
         _PendingResourceLoad() : entry(-1) {};
     };
 

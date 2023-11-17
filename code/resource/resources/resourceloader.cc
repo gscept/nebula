@@ -151,9 +151,10 @@ ResourceLoader::Update(IndexT frameIndex)
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
 
         // If already loaded, just return
-        uint requestedBits = this->requestedBits[resourceLoad.entry];
-        uint loadedBits = this->loadedBits[resourceLoad.entry];
-        if (AllBits(loadedBits, requestedBits))
+        this->asyncSection.Enter();
+        Resource::State state = this->states[resourceLoad.entry];
+        this->asyncSection.Leave();
+        if ((resourceLoad.mode == _PendingResourceLoad::None) && (state == Resource::Loaded || state == Resource::Failed))
         {
             this->pendingLoads.EraseIndexSwap(i);
             continue;
@@ -161,6 +162,7 @@ ResourceLoader::Update(IndexT frameIndex)
 
         // Load resource async
         this->LoadAsync(resourceLoad);
+        resourceLoad.mode = _PendingResourceLoad::None;
     }
 
     // go through pending lod streams
@@ -168,15 +170,14 @@ ResourceLoader::Update(IndexT frameIndex)
     for (i = 0; i < this->pendingStreamLods.Size(); i++)
     {
         const _PendingStreamLod& streamLod = this->pendingStreamLods[i];
-        this->loads[streamLod.id.loaderInstanceId].lod = streamLod.lod;
 
         this->asyncSection.Enter();
+        _PendingResourceLoad& load = this->loads[streamLod.id.loaderInstanceId];
+        load.lod = streamLod.lod;
+        load.mode |= _PendingResourceLoad::Update;
 
-        // TODO, if resource is initial, this won't work because the mask needs us to know the lods.
-        // The solution here is to postpone the requestedBits being updated inside the loader instead.
-        this->requestedBits[streamLod.id.loaderInstanceId] = this->LodMask(streamLod.id.loaderInstanceId, streamLod.lod); 
+        // Update state to continue streaming
         this->pendingLoads.Append(streamLod.id.loaderInstanceId);
-        //this->requestedBits[streamLod.id.cacheInstanceId] = 0xFFFFFFFF;
         this->asyncSection.Leave();
     }
 
@@ -184,8 +185,7 @@ ResourceLoader::Update(IndexT frameIndex)
     for (i = this->pendingUnloads.Size() - 1; i >= 0; i--)
     {
         const _PendingResourceUnload& unload = this->pendingUnloads[i];
-        if (this->states[unload.resourceId.loaderInstanceId] != Resource::Pending
-            && this->states[unload.resourceId.loaderInstanceId] != Resource::Initial)
+        if (this->states[unload.resourceId.loaderInstanceId] != Resource::Pending)
         {
             if (this->states[unload.resourceId.loaderInstanceId] == Resource::Loaded)
             {
@@ -220,7 +220,6 @@ ResourceLoader::SetupIdFromEntry(const Ids::Id32 entry, ResourceId& cacheEntry)
             cacheEntry.resourceId = this->failResourceId.resourceId;
             cacheEntry.resourceType = this->failResourceId.resourceType;
             break;
-        case Resource::State::Initial:
         case Resource::State::Pending:
         case Resource::State::Unloaded:
             cacheEntry.resourceId = this->placeholderResourceId.resourceId;
@@ -280,7 +279,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
     uint requestedBits = loader->requestedBits[res.entry];
     uint loadedBits = 0x0;
 
-    if (state == Resource::State::Initial)
+    if (AllBits(res.mode, ResourceLoader::_PendingResourceLoad::Create))
     {
         // construct stream
         Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(name.Value());
@@ -313,6 +312,11 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
         }
     }
 
+    if (AllBits(res.mode, ResourceLoader::_PendingResourceLoad::Update))
+    {
+        requestedBits |= loader->LodMask(res.entry, res.lod);
+    }
+
     // If successful, begin streaming its data
     loadedBits = loader->StreamResource(resource, requestedBits);
     if (AllBits(loadedBits, requestedBits))
@@ -329,12 +333,11 @@ skip_stream:
     loader->requestedBits[res.entry] = requestedBits;
     loader->loadedBits[res.entry] = loadedBits;
     loader->states[res.entry] = state;
+    loader->resources[res.entry] = resource;
 
     // We run the callbacks if the resource loaded or failed
     if (state == Resource::Loaded || state == Resource::Failed)
         loader->RunCallbacks(state, resource);
-
-    loader->resources[res.entry] = resource;
 
     // free metadata
     if (metaData.data != nullptr)
@@ -422,7 +425,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         this->names[instanceId] = res;
         this->usage[instanceId] = 1;
         this->tags[instanceId] = tag;
-        this->states[instanceId] = Resource::Initial;
+        this->states[instanceId] = Resource::Pending;
         this->loadedBits[instanceId] = 0x0;
         this->requestedBits[instanceId] = 0xFFFFFFFF;
 
@@ -452,6 +455,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         pending.immediate = immediate;
         pending.reload = false;
         pending.lod = stream ? 1.0f : 0.0f;
+        pending.mode = _PendingResourceLoad::Create;
         this->loads[instanceId] = pending;
 
         // add mapping between resource name and resource being loaded
@@ -494,7 +498,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             success(ret);
         else if (state == Resource::Failed && failed != nullptr)
             failed(ret);
-        else if (state == Resource::Pending || state == Resource::Initial)
+        else if (state == Resource::Pending)
         {
             // this resource should now be in the pending list
             n_assert(i != InvalidIndex);
@@ -534,7 +538,8 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
             pending.immediate = immediate;
             pending.reload = false;
             pending.lod = stream ? 1.0f : 0.0f;
-            this->states[instanceId] = Resource::Initial;
+            pending.mode = _PendingResourceLoad::Create;
+            this->states[instanceId] = Resource::Pending;
             this->loads[instanceId] = pending;
 
             if (immediate)
@@ -645,10 +650,11 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         pending.immediate = false;
         pending.reload = true;
         pending.lod = 1.0f;
+        pending.mode = _PendingResourceLoad::Create;
 
         this->asyncSection.Enter();
         this->loads[ret.loaderInstanceId] = pending;
-        this->states[ret.loaderInstanceId] = Resource::Initial;
+        this->states[ret.loaderInstanceId] = Resource::Pending;
         this->callbacks[ret.loaderInstanceId].Append({ ret, success, failed });
         this->asyncSection.Leave();
     }
@@ -674,10 +680,11 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
     pending.immediate = false;
     pending.reload = true;
     pending.lod = 1.0f;
+    pending.mode = _PendingResourceLoad::Create;
 
     this->asyncSection.Enter();
     this->loads[id.loaderInstanceId] = pending;
-    this->states[id.loaderInstanceId] = Resource::Initial;
+    this->states[id.loaderInstanceId] = Resource::Pending;
     this->callbacks[id.loaderInstanceId].Append({ id, success, failed });
     this->asyncSection.Leave();
 }
@@ -688,7 +695,6 @@ ResourceLoader::ReloadResource(const Resources::ResourceId& id, std::function<vo
 void 
 ResourceLoader::SetMinLod(const Resources::ResourceId& id, const float lod, bool immediate)
 {
-    _PendingResourceLoad& pending = this->loads[id.loaderInstanceId];
     if (immediate)
     {
         this->StreamMaxLOD(id, lod, immediate);

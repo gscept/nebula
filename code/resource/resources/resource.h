@@ -24,9 +24,8 @@ public:
 
     enum State
     {
-        Initial,    /// Resource has not been initialized
-        Pending,    /// Resource is initialized and is pending to load
-        Loaded,     /// Resource is done loading all of its subresources
+        Pending,    /// Resource has some loading to be performed
+        Loaded,     /// Resource is done loading all of its requested subresources
         Failed,     /// Resource loading failed
         Unloaded    /// Resource has been unloaded and deinitialized
     };
