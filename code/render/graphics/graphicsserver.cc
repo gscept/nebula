@@ -63,7 +63,7 @@ GraphicsServer::Open()
     this->displayDevice->Open();
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo {
-        .globalConstantBufferMemorySize = 32_MB,
+        .globalConstantBufferMemorySize = 16_MB,
         .globalVertexBufferMemorySize = 64_MB,
         .globalIndexBufferMemorySize = 64_MB,
         .globalUploadMemorySize = 32_MB,
