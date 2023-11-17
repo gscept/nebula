@@ -40,11 +40,23 @@ namespace Nebula
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
             public static extern void DeleteEntity(uint worldId, uint entityId);
 
-            [DllImport("__Internal", EntryPoint = "EntityGetTransform")]
-            public static extern Matrix GetTransform(uint worldId, uint entityId);
+            [DllImport("__Internal", EntryPoint = "EntityGetPosition")]
+            public static extern Vector3 GetPosition(uint worldId, uint entityId);
 
-            [DllImport("__Internal", EntryPoint = "EntitySetTransform")]
-            public static extern void SetTransform(uint worldId, uint entityId, Matrix transform);
+            [DllImport("__Internal", EntryPoint = "EntitySetPosition")]
+            public static extern void SetPosition(uint worldId, uint entityId, Vector3 position);
+
+            [DllImport("__Internal", EntryPoint = "EntityGetOrientation")]
+            public static extern Quaternion GetOrientation(uint worldId, uint entityId);
+
+            [DllImport("__Internal", EntryPoint = "EntitySetOrientation")]
+            public static extern void SetOrientation(uint worldId, uint entityId, Quaternion orientation);
+
+            [DllImport("__Internal", EntryPoint = "EntityGetScale")]
+            public static extern Vector3 GetScale(uint worldId, uint entityId);
+
+            [DllImport("__Internal", EntryPoint = "EntitySetScale")]
+            public static extern void SetScale(uint worldId, uint entityId, Vector3 position);
 
             [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
             public static extern bool HasComponent(uint worldId, uint entityId, uint componentId);
