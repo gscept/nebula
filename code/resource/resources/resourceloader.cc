@@ -317,7 +317,6 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
     loadedBits = loader->StreamResource(resource, requestedBits);
     if (AllBits(loadedBits, requestedBits))
     {
-        n_printf("Finished loading %s mip %d\n", name.Value(), Util::LastOne(loadedBits) + 1);
         state = Resource::Loaded;
     }
     else
