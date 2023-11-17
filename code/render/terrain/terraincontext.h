@@ -272,8 +272,14 @@ private:
         uint numTilesX, numTilesY;
         uint tileWidth, tileHeight;
         Resources::ResourceId heightMap;
-        Resources::ResourceId normalMap;
         Resources::ResourceId decisionMap;
+        enum TextureLoadBits
+        {
+            HeightMapLoaded = 0x1,
+            DecisionMapLoaded = 0x2
+        };
+        uint loadBits;
+        uint lowresGenerated;
 
         Util::FixedArray<CoreGraphics::ResourceTableId> patchTables;
 
