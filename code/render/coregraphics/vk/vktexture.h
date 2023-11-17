@@ -28,7 +28,6 @@ struct VkTextureLoadInfo : CoreGraphics::TextureCreateInfoAdjusted
     VkDevice dev;
     VkImage img;
     CoreGraphics::Alloc mem;
-    CoreGraphics::TextureDimensions dims;
     CoreGraphics::TextureRelativeDimensions relativeDims;
     Ids::Id32 swapExtension;
     Ids::Id32 stencilExtension;

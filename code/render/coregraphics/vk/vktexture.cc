@@ -123,9 +123,9 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
         for (SizeT mip = 0; mip < (SizeT)sparseMemoryRequirement.imageMipTailFirstLod; mip++)
         {
             VkExtent3D extent;
-            extent.width = Math::max(info.dims.width >> mip, 1);
-            extent.height = Math::max(info.dims.height >> mip, 1);
-            extent.depth = Math::max(info.dims.depth >> mip, 1);
+            extent.width = Math::max((SizeT)info.width >> mip, 1);
+            extent.height = Math::max((SizeT)info.height >> mip, 1);
+            extent.depth = Math::max((SizeT)info.depth >> mip, 1);
 
             VkImageSubresource subres;
             subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -246,9 +246,9 @@ SetupTexture(const TextureId id)
     vkGetPhysicalDeviceFormatProperties(physicalDev, vkformat, &formatProps);
     VkExtent3D extents;
 
-    extents.width = loadInfo.dims.width;
-    extents.height = loadInfo.dims.height;
-    extents.depth = loadInfo.dims.depth;
+    extents.width = loadInfo.width;
+    extents.height = loadInfo.height;
+    extents.depth = loadInfo.depth;
 
     bool isDepthFormat = VkTypes::IsDepthFormat(loadInfo.format);
 
@@ -318,7 +318,6 @@ SetupTexture(const TextureId id)
         viewRange.baseArrayLayer = 0;
         viewRange.layerCount = loadInfo.layers;
 
-
         // if we have a sparse texture, don't allocate any memory or load any pixels
         if (loadInfo.sparse)
         {
@@ -370,7 +369,7 @@ SetupTexture(const TextureId id)
                     nullptr);
 
                 uint32_t size = PixelFormat::ToSize(loadInfo.format);
-                CoreGraphics::TextureUpdate(cmdBuf, TransferQueueType, id, extents.width, extents.height, 0, 0, loadInfo.dims.width * loadInfo.dims.height * loadInfo.dims.depth * size, loadInfo.buffer);
+                CoreGraphics::TextureUpdate(cmdBuf, TransferQueueType, id, extents.width, extents.height, 0, 0, loadInfo.width * loadInfo.height * loadInfo.depth * size, loadInfo.buffer);
 
                 CoreGraphics::CmdBarrier(cmdBuf,
                     CoreGraphics::PipelineStage::TransferWrite,
@@ -650,9 +649,9 @@ CreateTexture(const TextureCreateInfo& info)
 
     loadInfo.dev = dev;
     loadInfo.name = adjustedInfo.name;
-    loadInfo.dims.width = adjustedInfo.width;
-    loadInfo.dims.height = adjustedInfo.height;
-    loadInfo.dims.depth = adjustedInfo.depth;
+    loadInfo.width = adjustedInfo.width;
+    loadInfo.height = adjustedInfo.height;
+    loadInfo.depth = adjustedInfo.depth;
     loadInfo.relativeDims.width = adjustedInfo.widthScale;
     loadInfo.relativeDims.height = adjustedInfo.heightScale;
     loadInfo.relativeDims.depth = adjustedInfo.depthScale;
@@ -792,7 +791,8 @@ DestroyTexture(const TextureId id)
 CoreGraphics::TextureDimensions
 TextureGetDimensions(const CoreGraphics::TextureId id)
 {
-    return textureAllocator.ConstGet<Texture_LoadInfo>(id.resourceId).dims;
+    const VkTextureLoadInfo& loadInfo = textureAllocator.ConstGet<Texture_LoadInfo>(id.resourceId);
+    return CoreGraphics::TextureDimensions { .width = (SizeT)loadInfo.width, .height = (SizeT)loadInfo.height, .depth = (SizeT)loadInfo.depth };
 }
 
 //------------------------------------------------------------------------------
@@ -961,9 +961,9 @@ TextureWindowResized(const TextureId id)
 
         // if the window has been resized, we need to update our dimensions based on relative size
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(windowInfo.window);
-        loadInfo.dims.width = SizeT(mode.GetWidth() * loadInfo.relativeDims.width);
-        loadInfo.dims.height = SizeT(mode.GetHeight() * loadInfo.relativeDims.height);
-        loadInfo.dims.depth = 1;
+        loadInfo.width = mode.GetWidth() * loadInfo.relativeDims.width;
+        loadInfo.height = mode.GetHeight() * loadInfo.relativeDims.height;
+        loadInfo.depth = 1;
 
         runtimeInfo.bind = tmp;
         SetupTexture(id);
@@ -1273,11 +1273,11 @@ void
 TextureSparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, const CoreGraphics::TextureId source)
 {
     __Lock(textureAllocator, id.resourceId);
-    TextureDimensions dims = textureAllocator.Get<Texture_LoadInfo>(source.resourceId).dims;
+    const VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(source.resourceId);
 
     VkImageBlit blit;
     blit.srcOffsets[0] = { 0, 0, 0 };
-    blit.srcOffsets[1] = { dims.width, dims.height, dims.depth };
+    blit.srcOffsets[1] = { (SizeT)loadInfo.width, (SizeT)loadInfo.height, (SizeT)loadInfo.depth };
     blit.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
     blit.dstOffsets[0] = { (int32_t)region.left, (int32_t)region.top, 0 };
     blit.dstOffsets[1] = { (int32_t)region.right, (int32_t)region.bottom, 1 };
