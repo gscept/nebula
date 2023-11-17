@@ -104,7 +104,7 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
 uint
 MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits)
 {
-    ResourceLoader::StreamData& stream = this->streams[entry.cacheInstanceId];
+    ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
 
     MeshStreamData* streamData = (MeshStreamData*)stream.data;
     auto header = (Nvx3Header*)streamData->mappedData;
@@ -182,7 +182,7 @@ MeshLoader::Unload(const Resources::ResourceId id)
 uint
 MeshLoader::LodMask(const Ids::Id32 entry, float lod) const
 {
-    return 0x2;
+    return 0x3;
 }
 
 //------------------------------------------------------------------------------

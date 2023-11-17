@@ -201,7 +201,7 @@ inline void
 ResourceServer::SetMinLod(const ResourceId& id, float lod, bool immediate)
 {
     // get id of loader
-    const Ids::Id8 loaderid = id.cacheIndex;
+    const Ids::Id8 loaderid = id.loaderIndex;
 
     // get resource loader by extension
     n_assert(this->loaders.Size() > loaderid);
@@ -219,7 +219,7 @@ inline void
 ResourceServer::DiscardResource(const Resources::ResourceId id)
 {
     // get id of loader
-    const Ids::Id8 loaderid = id.cacheIndex;
+    const Ids::Id8 loaderid = id.loaderIndex;
 
     // get resource loader by extension
     n_assert(this->loaders.Size() > loaderid);
@@ -236,8 +236,8 @@ inline const Resources::ResourceName
 ResourceServer::GetName(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->loaders.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.loaderIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
     return loader->GetName(id);
 }
 
@@ -248,8 +248,8 @@ inline const Util::StringAtom
 ResourceServer::GetTag(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->loaders.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.loaderIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
     return loader->GetTag(id);
 }
 
@@ -260,8 +260,8 @@ inline const Resources::Resource::State
 ResourceServer::GetState(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->loaders.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.loaderIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
     return loader->GetState(id);
 }
 
@@ -272,8 +272,8 @@ inline const SizeT
 ResourceServer::GetUsage(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->loaders.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.loaderIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
     return loader->GetUsage(id);
 }
 
@@ -283,9 +283,9 @@ ResourceServer::GetUsage(const Resources::ResourceId id) const
 inline bool
 ResourceServer::HasResource(const Resources::ResourceId id) const
 {
-    if (this->loaders.Size() <= id.cacheIndex) return false;
+    if (this->loaders.Size() <= id.loaderIndex) return false;
     {
-        const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
+        const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
         if (loader->HasResource(id)) return true;
         return false;		
     }
@@ -328,9 +328,16 @@ ResourceServer::GetStreamPool() const
 /**
 */
 inline Resources::ResourceId
-CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false)
+CreateResource(
+    const ResourceName& res
+    , const Util::StringAtom& tag
+    , std::function<void(const Resources::ResourceId)> success = nullptr
+    , std::function<void(const Resources::ResourceId)> failed = nullptr
+    , bool immediate = false
+    , bool stream = true
+)
 {
-    return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate);
+    return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate, stream);
 }
 
 //------------------------------------------------------------------------------
@@ -338,9 +345,17 @@ CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::functi
 */
 template <class METADATA>
 inline Resources::ResourceId
-CreateResource(const ResourceName& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false)
+CreateResource(
+    const ResourceName& res
+    , const METADATA& metaData
+    , const Util::StringAtom& tag
+    , std::function<void(const Resources::ResourceId)> success = nullptr
+    , std::function<void(const Resources::ResourceId)> failed = nullptr
+    , bool immediate = false
+    , bool stream = true
+)
 {
-    return ResourceServer::Instance()->CreateResource(res, metaData, tag, success, failed, immediate);
+    return ResourceServer::Instance()->CreateResource(res, metaData, tag, success, failed, immediate, stream);
 }
 
 //------------------------------------------------------------------------------

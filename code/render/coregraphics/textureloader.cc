@@ -229,14 +229,14 @@ uint
 TextureLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits)
 {
     // Get resource data
-    ResourceLoader::StreamData& stream = this->streams[entry.cacheInstanceId];
-    uint loadedBits = this->loadedBits[entry.cacheInstanceId];
+    ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
+    uint loadedBits = this->loadedBits[entry.loaderInstanceId];
     uint bitsToLoad = requestedBits ^ loadedBits;
     uint ret = loadedBits;
     if (bitsToLoad != 0x0)
     {
         TextureStreamData* streamData = static_cast<TextureStreamData*>(stream.data);
-        ResourceName name = this->names[entry.cacheInstanceId];
+        ResourceName name = this->names[entry.loaderInstanceId];
 
         // Setup texture id
         TextureId texture;
@@ -263,8 +263,8 @@ inline void
 TextureLoader::Unload(const Resources::ResourceId id)
 {
     // Free streamer alloc
-    this->streams[id.cacheInstanceId].stream->MemoryUnmap();
-    Memory::Free(Memory::ScratchHeap, this->streams[id.cacheInstanceId].data);
+    this->streams[id.loaderInstanceId].stream->MemoryUnmap();
+    Memory::Free(Memory::ScratchHeap, this->streams[id.loaderInstanceId].data);
     TextureId tex;
     tex.resourceId = id.resourceId;
     tex.resourceType = id.resourceType;

@@ -246,7 +246,7 @@ protected:
 inline const Resources::ResourceName&
 ResourceLoader::GetName(const Resources::ResourceId id) const
 {
-    return this->names[id.cacheInstanceId];
+    return this->names[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ ResourceLoader::GetName(const Resources::ResourceId id) const
 inline const uint32_t
 ResourceLoader::GetUsage(const Resources::ResourceId id) const
 {
-    return this->usage[id.cacheInstanceId];
+    return this->usage[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ ResourceLoader::GetUsage(const Resources::ResourceId id) const
 inline const Util::StringAtom
 ResourceLoader::GetTag(const Resources::ResourceId id) const
 {
-    return this->tags[id.cacheInstanceId];
+    return this->tags[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ ResourceLoader::GetTag(const Resources::ResourceId id) const
 inline const Resources::Resource::State
 ResourceLoader::GetState(const Resources::ResourceId id) const
 {
-    return this->states[id.cacheInstanceId];
+    return this->states[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -302,7 +302,7 @@ ResourceLoader::GetResources() const
 inline const bool
 ResourceLoader::HasResource(const Resources::ResourceId id) const
 {
-    return this->names.Size() > (SizeT)id.cacheInstanceId;
+    return this->names.Size() > (SizeT)id.loaderInstanceId;
 }
 
 //------------------------------------------------------------------------------
