@@ -86,8 +86,6 @@ struct GraphicsDeviceState
 
     uint globalConstantBufferMaxValue;
     Util::FixedArray<CoreGraphics::BufferId> globalGraphicsConstantBuffer;
-    Util::FixedArray<CoreGraphics::BufferId> globalComputeConstantBuffer;
-
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
@@ -191,10 +189,6 @@ ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetGraphicsConstantBuffer(IndexT i);
-/// Return buffer used for compute constants
-CoreGraphics::BufferId GetComputeConstantBuffer(IndexT i);
-/// Flush constants for queue type, do this before recording any commands doing draw or dispatch
-void FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue);
 
 struct VertexAlloc
 {

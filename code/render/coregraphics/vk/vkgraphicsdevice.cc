@@ -887,21 +887,16 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         
     state.globalConstantBufferMaxValue = info.globalConstantBufferMemorySize;
 
-    cboInfo.name = "Global Staging Constant Buffer";
+    cboInfo.name = "Global Constant Buffer";
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
     cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
     state.globalGraphicsConstantBuffer.Resize(info.numBufferedFrames);
-    state.globalComputeConstantBuffer.Resize(info.numBufferedFrames);
     for (IndexT i = 0; i < info.numBufferedFrames; i++)
     {
         auto gfxCboInfo = cboInfo;
-        gfxCboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+        gfxCboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         state.globalGraphicsConstantBuffer[i] = CreateBuffer(gfxCboInfo);
-
-        auto cmpCboInfo = cboInfo;
-        cmpCboInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
-        //state.globalComputeConstantBuffer[i] = CreateBuffer(cmpCboInfo);
     }
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
@@ -1115,7 +1110,6 @@ DestroyGraphicsDevice()
         for (IndexT i = 0; i < state.maxNumBufferedFrames; i++)
         {
             DestroyBuffer(state.globalGraphicsConstantBuffer[i]);
-            //DestroyBuffer(state.globalComputeConstantBuffer[i]);
         }
     }
 
@@ -1420,7 +1414,6 @@ void
 SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
 {
     BufferUpdate(state.globalGraphicsConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
-    //BufferUpdate(state.globalComputeConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1466,54 +1459,6 @@ CoreGraphics::BufferId
 GetComputeConstantBuffer(IndexT i)
 {
     return state.globalGraphicsConstantBuffer[i];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue)
-{
-    /*
-    // Flush constants, should be the first command on the queue
-    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
-    CoreGraphics::BufferId buf = queue == CoreGraphics::GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
-    VkDevice dev = state.devices[state.currentDevice];
-    Vulkan::GraphicsDeviceState::ConstantsRingBuffer::FlushedRanges& ranges = queue == CoreGraphics::GraphicsQueueType ? sub.gfx : sub.cmp;
-
-    VkDeviceSize size = sub.endAddress - ranges.flushedStart;
-    if (size > 0)
-    {
-        // And then copy from staging buffer to GPU buffer
-        VkBufferCopy copy;
-        copy.srcOffset = copy.dstOffset = ranges.flushedStart;
-        copy.size = size;
-        vkCmdCopyBuffer(
-            CmdBufferGetVk(cmds),
-            BufferGetVk(state.globalConstantStagingBuffer[state.currentBufferedFrameIndex]),
-            BufferGetVk(buf), 1, &copy);
-
-        // make sure to put a barrier after the copy so that subsequent calls may wait for the copy to finish
-        VkBufferMemoryBarrier barrier =
-        {
-            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            nullptr,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT,
-            VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-            BufferGetVk(buf), (VkDeviceSize)ranges.flushedStart, size
-        };
-
-        VkPipelineStageFlagBits bits = queue == CoreGraphics::GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        vkCmdPipelineBarrier(
-            CmdBufferGetVk(cmds),
-            VK_PIPELINE_STAGE_TRANSFER_BIT, bits, 0,
-            0, nullptr,
-            1, &barrier,
-            0, nullptr
-        );
-    }
-    ranges.flushedStart = sub.endAddress;
-    */
 }
 
 //------------------------------------------------------------------------------
