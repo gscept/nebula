@@ -22,9 +22,11 @@ public:
     /// destructor
     virtual ~PrimitiveNode();
 
-    /// get the nodes primitive group index
+    /// Get the nodes primitive group index
     uint32_t GetPrimitiveGroupIndex() const { return this->loadContext.primIndex; }
-    /// get primitives mesh id
+    /// Get primitive group
+    const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup() const { return this->primGroup; }
+    /// Get primitives mesh id
     CoreGraphics::MeshId GetMesh() const { return this->mesh; }
 
 

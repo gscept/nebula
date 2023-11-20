@@ -168,7 +168,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.nodeTypes.Resize(stateRange.end);
             NodeInstances.renderable.nodes.Resize(stateRange.end);
             NodeInstances.renderable.nodeMeshes.Resize(stateRange.end);
-            NodeInstances.renderable.nodePrimitiveGroupIndex.Resize(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroup.Resize(stateRange.end);
             NodeInstances.renderable.nodeDrawModifiers.Resize(stateRange.end); // Base 1 instance 0 offset
             NodeInstances.renderable.nodeSortId.Resize(stateRange.end);
 
@@ -227,7 +227,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.nodeTypes[index] = sNode->GetType();
             NodeInstances.renderable.nodes[index] = sNode;
             NodeInstances.renderable.nodeMeshes[index] = sNode->GetMesh();
-            NodeInstances.renderable.nodePrimitiveGroupIndex[index] = sNode->GetPrimitiveGroupIndex();
+            NodeInstances.renderable.nodePrimitiveGroup[index] = sNode->GetPrimitiveGroup();
             NodeInstances.renderable.nodeDrawModifiers[index] = Util::MakeTuple(1, 0); // Base 1 instance 0 offset
 
             modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(sNode->GetName(), i);
@@ -317,7 +317,7 @@ ModelContext::Setup(
     NodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
     NodeInstances.renderable.nodes.Append(nullptr);
     NodeInstances.renderable.nodeMeshes.Append(mesh);
-    NodeInstances.renderable.nodePrimitiveGroupIndex.Append(primitiveGroup);
+    NodeInstances.renderable.nodePrimitiveGroup.Append(MeshGetPrimitiveGroup(mesh, primitiveGroup));
     NodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
 
     modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(debugName, 0);
@@ -686,7 +686,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
                 Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
                 NodeInstances.renderable.nodeMeshes[j] = primitiveNode->GetMesh();
-                NodeInstances.renderable.nodePrimitiveGroupIndex[j] = primitiveNode->GetPrimitiveGroupIndex();
+                NodeInstances.renderable.nodePrimitiveGroup[j] = primitiveNode->GetPrimitiveGroup();
 
                 // calculate view vector to calculate LOD
                 Math::vec4 viewVector = context->cameraTransform.position - transform.position;

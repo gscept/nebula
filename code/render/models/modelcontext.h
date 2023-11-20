@@ -150,7 +150,7 @@ public:
             Util::PinnedArray<0xFFFF, Models::NodeType> nodeTypes;
             Util::PinnedArray<0xFFFF, Models::ModelNode*> nodes;
             Util::PinnedArray<0xFFFF, CoreGraphics::MeshId> nodeMeshes;
-            Util::PinnedArray<0xFFFF, IndexT> nodePrimitiveGroupIndex;
+            Util::PinnedArray<0xFFFF, CoreGraphics::PrimitiveGroup> nodePrimitiveGroup;
             Util::PinnedArray<0xFFFF, Util::Tuple<uint32, uint32>> nodeDrawModifiers;
 
             Util::PinnedArray<0xFFFF, void*> nodeSpecialData;
