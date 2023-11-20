@@ -273,6 +273,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             mshInfo.vertexLayout = layouts[(uint)vertexRanges[i].layout];
             mshInfo.vertexBufferAllocation = vertexAllocation;
             mshInfo.indexBufferAllocation = indexAllocation;
+            mshInfo.name = this->names[entry];
             MeshId mesh = CreateMesh(mshInfo);
             meshes[i] = mesh;
         }
