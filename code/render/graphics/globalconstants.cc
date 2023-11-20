@@ -126,13 +126,21 @@ UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstants)
 /**
 */
 void
-FlushUpdates(const CoreGraphics::CmdBufferId buf)
+FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue)
 {
+    CoreGraphics::PipelineStage sourceStage = queue == CoreGraphics::GraphicsQueueType ? CoreGraphics::PipelineStage::AllShadersRead : CoreGraphics::PipelineStage::ComputeShaderRead;
     IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
     if (state.tickParamsDirty.graphicsDirty)
     {
+        CoreGraphics::CmdBarrier(buf, sourceStage, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+        {
+            {
+                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::BufferSubresourceInfo(state.tickCboOffset, sizeof(state.tickParams))
+            }
+        });
         CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), state.tickCboOffset, sizeof(state.tickParams), &state.tickParams);
-        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, sourceStage, CoreGraphics::BarrierDomain::Global,
         {
             {
                 CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
@@ -144,7 +152,7 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf)
     }
     if (state.viewConstantsDirty.graphicsDirty)
     {
-        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+        CoreGraphics::CmdBarrier(buf, sourceStage, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
         {
             {
                 CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
@@ -152,7 +160,7 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf)
             }
         });
         CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), state.viewCboOffset, sizeof(state.viewConstants), &state.viewConstants);
-        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, sourceStage, CoreGraphics::BarrierDomain::Global,
         {
             {
                 CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
@@ -163,8 +171,15 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf)
     }
     if (state.shadowViewConstantsDirty.graphicsDirty)
     {
+        CoreGraphics::CmdBarrier(buf, sourceStage, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+        {
+            {
+                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::BufferSubresourceInfo(state.shadowViewCboOffset, sizeof(state.shadowViewConstants))
+            }
+        });
         CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), state.shadowViewCboOffset, sizeof(state.shadowViewConstants), &state.shadowViewConstants);
-        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+        CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, sourceStage, CoreGraphics::BarrierDomain::Global,
         {
             {
                 CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),

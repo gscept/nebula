@@ -81,7 +81,7 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
     CoreGraphics::FlushUpload();
 
     // Before starting the submission, flush updates
-    Graphics::FlushUpdates(submissionBuffer);
+    Graphics::FlushUpdates(submissionBuffer, this->queue);
 
     for (IndexT i = 0; i < this->compiled.Size(); i++)
     {

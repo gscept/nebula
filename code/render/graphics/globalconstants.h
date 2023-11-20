@@ -33,7 +33,7 @@ void UpdateViewConstants(const Shared::ViewConstants& viewConstants);
 /// Set camera params
 void UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstants);
 /// Flush constants by recording update command to command buffer
-void FlushUpdates(const CoreGraphics::CmdBufferId buf);
+void FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue);
 
 /// Get tick params constant buffer
 const Shared::PerTickParams& GetTickParams();
