@@ -56,16 +56,11 @@ SizeClassificationAllocatorTest::Run()
     alloc3 = allocator.Alloc(64, 128);
     VERIFY(alloc3.offset == 128);
 
-    // We should be able to fit two more allocs, if they are not aligned (fill alignment gap)
+    // One more alloc should fit, the allocation above should be 128 in size due to alignment
     alloc4 = allocator.Alloc(64);
     VERIFY(alloc4.offset == 64);
     alloc5 = allocator.Alloc(64);
-    VERIFY(alloc5.offset == 192);
-
-    // However, allocating another with 128 padding should fail
-    allocator.Dealloc(alloc5);
-    alloc5 = allocator.Alloc(64, 128);
-    VERIFY(alloc5.offset = alloc5.OOM);
+    VERIFY(alloc5.offset == alloc5.OOM);
 }
 
 }; // namespace Test
