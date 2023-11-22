@@ -144,17 +144,22 @@ psMain(in vec2 UV,
     
     vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
     //vec4 godray = subpassLoad(InputAttachment1);
-    c = lerp(c, bloom, BloomIntensity);
-    //c.rgb += godray.rgb;
-    //c.rgb += godray.rgb;
+    c.rgb = lerp(c.rgb, bloom.rgb, bloom.a);
+
     vec4 grey = vec4(dot(c.xyz, Luminance.xyz));
     c = Balance * lerp(grey, c, Saturation);
     c.rgb *= FadeValue;
 
-    // tonemap before presenting to screen
+    // Convert color to luminance
     float lumAvg = Time_Random_Luminance_X.z;
-    c = ToneMap(c, lumAvg, MaxLuminance);
-    color = c;	
+    vec3 xyY = RGBToXYY(c.rgb);
+    float lp = (xyY.z / (9.6 * lumAvg + 0.0001f)) / max(0.01f, MaxLuminance);
+
+    // Tonemap in luma space
+    xyY = ToneMap(xyY, lp, MaxLuminance);
+
+    // Convert back to RGB
+    color = vec4(XYYToRGB(xyY), 1);
 }
 
 //------------------------------------------------------------------------------

@@ -230,7 +230,7 @@ XYYToRGB(vec3 xyY)
 
 const float MiddleGrey = 0.5f;
 const float Key = 0.3f;
-const vec4 Luminance = vec4(0.2126f, 0.7152f, 0.0722f, 0.0f);
+const vec3 Luminance = vec3(0.2126f, 0.7152f, 0.0722f);
 //const vec4 Luminance = vec4(0.299f, 0.587f, 0.114f, 0.0f);
 
 
@@ -238,23 +238,15 @@ const vec4 Luminance = vec4(0.2126f, 0.7152f, 0.0722f, 0.0f);
 /**
     Calculates HDR tone mapping
 */
-vec4
-ToneMap(vec4 color, float lumAvg, float maxLum)
+vec3
+ToneMap(vec3 xyY, float lp, float maxLum)
 {
-
-    // convert to xyY color space
-    vec3 xyY = RGBToXYY(color.rgb);
-    float whitePoint = 2.0f;
-    float lp = xyY.z / (9.6 * lumAvg + 0.0001f);
+    const float WhitePoint = 4.0;
 
     // apply reinhard2 tonemapping
-    xyY.z = (lp * (1.0f + lp / (whitePoint * whitePoint))) / (1.0f + lp);
+    xyY.z = (lp * (1.0f + lp / (WhitePoint * WhitePoint))) / (1.0f + lp);
 
-    // convert back to rgb
-    vec3 rgb = XYYToRGB(xyY);
-
-    return vec4(rgb, 1.0f);
-
+    return xyY;
 }
 
 //------------------------------------------------------------------------------
