@@ -12,7 +12,7 @@
 #include "ids/idallocator.h"
 #include "resources/resourceid.h"
 #include "core/rttimacros.h"
-#include "memory/sizeclassificationallocator.h"
+#include "memory/rangeallocator.h"
 #include <functional>
 namespace Models
 {
@@ -43,7 +43,7 @@ __ImplementEnumBitOperators(NodeBits);
 
 struct NodeInstanceRange
 {
-    Memory::SCAlloc allocation;
+    Memory::RangeAllocation allocation;
     SizeT begin, end;
 };
 
