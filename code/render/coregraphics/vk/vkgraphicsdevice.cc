@@ -1317,8 +1317,7 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         AddSubmissionEvent(transferWait);
 
         // Delete command buffer
-        CoreGraphics::DelayedDeleteCommandBuffer(state.setupTransferCommandBuffer);
-
+        DestroyCmdBuffer(state.setupTransferCommandBuffer);
         CmdBufferIdRelease(state.setupTransferCommandBuffer);
 
         // Reset command buffer id for the next frame
@@ -1345,8 +1344,7 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         AddSubmissionEvent(graphicsWait);
 
         // Delete command buffer
-        CoreGraphics::DelayedDeleteCommandBuffer(state.setupGraphicsCommandBuffer);
-
+        DestroyCmdBuffer(state.setupGraphicsCommandBuffer);
         CmdBufferIdRelease(state.setupGraphicsCommandBuffer);
 
         // Reset command buffer id for the next frame
