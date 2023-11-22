@@ -12,7 +12,7 @@
 #include "threading/criticalsection.h"
 #include "util/array.h"
 #include "ids/idpool.h"
-#include "memory/sizeclassificationallocator.h"
+#include "memory/rangeallocator.h"
 
 
 #if __VULKAN__
@@ -75,7 +75,7 @@ struct MemoryPool
     uint memoryType;
     Ids::IdPool blockPool;
     Util::Array<DeviceMemory> blocks;
-    Util::Array<Memory::SCAllocator> allocators;
+    Util::Array<Memory::RangeAllocator> allocators;
     Util::Array<void*> blockMappedPointers;
     DeviceSize size;
 

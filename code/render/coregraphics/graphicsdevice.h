@@ -94,13 +94,14 @@ struct GraphicsDeviceState
 
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 
-    Memory::SCAllocator vertexAllocator;
+    Memory::RangeAllocator vertexAllocator;
     CoreGraphics::BufferId vertexBuffer;
 
-    Memory::SCAllocator indexAllocator;
+    Memory::RangeAllocator indexAllocator;
     CoreGraphics::BufferId indexBuffer;
 
     int globalUploadBufferPoolSize;
+    Memory::RangeAllocator uploadAllocator;
     //CoreGraphics::BufferId uploadBuffer;
 
     uint maxNumBufferedFrames = 1;

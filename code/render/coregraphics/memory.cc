@@ -28,10 +28,10 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
         if (this->blocks[blockIndex] == DeviceMemory(0))
             break;
 
-        Memory::SCAlloc alloc = this->allocators[blockIndex].Alloc(size, alignment);
+        Memory::RangeAllocation alloc = this->allocators[blockIndex].Alloc(size, alignment);
 
         // If block can't fit our memory, go to next block
-        if (alloc.offset == Memory::SCAlloc::OOM)
+        if (alloc.offset == Memory::RangeAllocation::OOM)
             continue;
      
         Alloc ret{ this->blocks[blockIndex], alloc.offset, size, alloc.node, this->memoryType, (uint)blockIndex };
@@ -47,7 +47,7 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
     {
         // Block is completely new, make space in our arrays for the data
         this->blockMappedPointers.Append(nullptr);
-        this->allocators.Append(Memory::SCAllocator{(uint)this->blockSize, (SizeT)(this->blockSize / 16)});
+        this->allocators.Append(Memory::RangeAllocator{(uint)this->blockSize, (SizeT)(this->blockSize / 16)});
 
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
         this->blocks.Append(mem);
@@ -55,10 +55,10 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
     else
     {
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
-        this->allocators[id] = Memory::SCAllocator{ (uint)this->blockSize, (SizeT)(this->blockSize / 16) };
+        this->allocators[id] = Memory::RangeAllocator{ (uint)this->blockSize, (SizeT)(this->blockSize / 16) };
         this->blocks[id] = mem;
     }
-    Memory::SCAlloc alloc = this->allocators[id].Alloc(size);
+    Memory::RangeAllocation alloc = this->allocators[id].Alloc(size);
     Alloc ret{ this->blocks[id], alloc.offset, size, alloc.node, this->memoryType, id };
     return ret;
 }
@@ -75,8 +75,8 @@ MemoryPool::DeallocateMemory(const Alloc& alloc)
     // Dedicated blocks will use nodeIndex 0xFFFFFFFF only
     if (alloc.nodeIndex != DedicatedBlockNodeIndex)
     {
-        Memory::SCAllocator& allocator = this->allocators[alloc.blockIndex];
-        allocator.Dealloc(Memory::SCAlloc{ (uint)alloc.offset, alloc.nodeIndex });
+        Memory::RangeAllocator& allocator = this->allocators[alloc.blockIndex];
+        allocator.Dealloc(Memory::RangeAllocation{ (uint)alloc.offset, alloc.nodeIndex });
         deleteBlock = allocator.Empty();
     }
     if (deleteBlock)
@@ -130,7 +130,7 @@ MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
         this->blocks.Append(mem);
-        this->allocators.Append(Memory::SCAllocator{ 0, 0 });
+        this->allocators.Append(Memory::RangeAllocator{ 0, 0 });
     }
     else
     {
@@ -138,7 +138,7 @@ MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
         this->blocks[id] = mem;
-        this->allocators[id] = Memory::SCAllocator{ 0, 0 };
+        this->allocators[id] = Memory::RangeAllocator{ 0, 0 };
     }
     this->blockSize = oldSize;
 

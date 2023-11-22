@@ -191,7 +191,7 @@ private:
     friend class VisibilityContext;
 
     static ModelInstance NodeInstances;
-    static Memory::SCAllocator TransformInstanceAllocator, RenderInstanceAllocator;
+    static Memory::RangeAllocator TransformInstanceAllocator, RenderInstanceAllocator;
 
     enum
     {

@@ -33,7 +33,7 @@ __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 Threading::AtomicCounter ModelContext::ConstantsUpdateCounter = 0;
 Threading::AtomicCounter ModelContext::TransformsUpdateCounter = 0;
 
-Memory::SCAllocator ModelContext::TransformInstanceAllocator, ModelContext::RenderInstanceAllocator;
+Memory::RangeAllocator ModelContext::TransformInstanceAllocator, ModelContext::RenderInstanceAllocator;
 
 Util::Dictionary<Models::ModelNode*, ModelContext::MaterialInstanceContext> ModelContext::materialInstanceContexts;
 
@@ -72,8 +72,8 @@ ModelContext::Create()
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    TransformInstanceAllocator = Memory::SCAllocator(0xFFFF, 0xFFFF);
-    RenderInstanceAllocator = Memory::SCAllocator(0xFFFF, 0xFFFF);
+    TransformInstanceAllocator = Memory::RangeAllocator(0xFFFF, 0xFFFF);
+    RenderInstanceAllocator = Memory::RangeAllocator(0xFFFF, 0xFFFF);
 }
 
 //------------------------------------------------------------------------------
