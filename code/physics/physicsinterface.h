@@ -73,6 +73,7 @@ struct Scene
     physx::PxDefaultCpuDispatcher *dispatcher;
     UpdateFunctionType updateFunction = nullptr;
     Timing::Time time;
+    bool isSimulating = false;
 };
 
 /// initialize the physics subsystem and create a default scene

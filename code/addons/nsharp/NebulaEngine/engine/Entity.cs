@@ -152,19 +152,51 @@ namespace Nebula
             }
 
             /// <summary>
-            /// Gets the transform from the entity.
+            /// Gets the position of the entity.
             /// </summary>
-            public Matrix GetTransform()
+            public Vector3 GetPosition()
             {
-                return Api.GetTransform(this.world.Id, this.id);
+                return Api.GetPosition(this.world.Id, this.id);
             }
 
             /// <summary>
-            /// Sets the transform of the entity.
+            /// Sets the position of the entity.
             /// </summary>
-            public void SetTransform(Matrix matrix)
+            public void SetPosition(Vector3 position)
             {
-                Api.SetTransform(this.world.Id, this.id, matrix);
+                Api.SetPosition(this.world.Id, this.id, position);
+            }
+
+            /// <summary>
+            /// Gets the orientation of the entity.
+            /// </summary>
+            public Quaternion GetOrientation()
+            {
+                return Api.GetOrientation(this.world.Id, this.id);
+            }
+
+            /// <summary>
+            /// Sets the orientation of the entity.
+            /// </summary>
+            public void SetOrientation(Quaternion orientation)
+            {
+                Api.SetOrientation(this.world.Id, this.id, orientation);
+            }
+
+            /// <summary>
+            /// Gets the scale of the entity.
+            /// </summary>
+            public Vector3 GetScale()
+            {
+                return Api.GetScale(this.world.Id, this.id);
+            }
+
+            /// <summary>
+            /// Sets the scale of the entity.
+            /// </summary>
+            public void SetScale(Vector3 scale)
+            {
+                Api.SetScale(this.world.Id, this.id, scale);
             }
 
             /// <summary>

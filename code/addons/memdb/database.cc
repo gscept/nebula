@@ -104,8 +104,12 @@ Database::FindTable(TableSignature const& signature) const
 {
     for (IndexT tableIndex = 0; tableIndex < this->numTables; tableIndex++)
     {
-        if (signature == this->tables[tableIndex].signature)
-            return this->tables[tableIndex].tid;
+        Table const& tbl = this->tables[tableIndex];
+        if (this->IsValid(tbl.tid))
+        {
+            if (signature == tbl.signature)
+                return tbl.tid;
+        }
     }
     return TableId::Invalid();
 }

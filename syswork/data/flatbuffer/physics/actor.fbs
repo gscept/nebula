@@ -38,9 +38,17 @@ table BoxCollider
      extents : Flat.Vec3 (native_inline);
 }
 
+table HeightFieldCollider
+{
+    height_range : float;
+    target_size_x : float;
+    target_size_y : float;
+    file : string;
+}
+
 union ColliderData
 {
-    BoxCollider, SphereCollider, CapsuleCollider, MeshCollider
+    BoxCollider, SphereCollider, CapsuleCollider, MeshCollider, HeightFieldCollider
 }
 
 table Collider

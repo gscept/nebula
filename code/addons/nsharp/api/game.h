@@ -16,11 +16,6 @@ namespace Scripting
 namespace Api
 {
 
-struct float16
-{
-    float f[16];
-};
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -44,12 +39,32 @@ NEBULA_EXPORT bool EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT float16 EntityGetTransform(uint32_t worldId, uint32_t entity);
+NEBULA_EXPORT Math::vec3 EntityGetPosition(uint32_t worldId, uint32_t entity);
 
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT void EntitySetTransform(uint32_t worldId, uint32_t entity, Math::mat4 transform);
+NEBULA_EXPORT void EntitySetPosition(uint32_t worldId, uint32_t entity, Math::vec3 pos);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT Math::quat EntityGetOrientation(uint32_t worldId, uint32_t entity);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT void EntitySetOrientation(uint32_t worldId, uint32_t entity, Math::quat orientation);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT Math::vec3 EntityGetScale(uint32_t worldId, uint32_t entity);
+
+//------------------------------------------------------------------------------
+/**
+*/
+NEBULA_EXPORT void EntitySetScale(uint32_t worldId, uint32_t entity, Math::vec3 scale);
 
 //------------------------------------------------------------------------------
 /**

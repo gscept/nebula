@@ -607,6 +607,19 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Material>>(Util::Array<Gltf::Material>&
             this->GetOpt(item.occlusionTexture, "occlusionTexture");
             this->GetOpt(item.pbrMetallicRoughness, "pbrMetallicRoughness");
 
+            // Support KHR_materials_emissive_strength
+            if (this->SetToFirstChild("extensions"))
+            {
+                if (this->SetToFirstChild("KHR_materials_emissive_strength"))
+                {
+                    float emissiveStrength = 1.0f;
+                    this->GetOpt(emissiveStrength, "emissiveStrength");
+                    item.emissiveFactor *= emissiveStrength;
+                    this->SetToParent();
+                }
+                this->SetToParent();
+            }
+            
             ReadExtensionsAndExtras(item, this->curNode);
         } while (this->SetToNextChild());
         this->SetToParent();

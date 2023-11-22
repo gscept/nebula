@@ -5,10 +5,10 @@
 IF (USE_DOTNET)
 
 nebula_idl_generate_cs_target(
-    ${CODE_ROOT}/addons/audiofeature/components/audiofeature.json
-    ${CODE_ROOT}/addons/graphicsfeature/components/graphicsfeature.json
-    ${CODE_ROOT}/addons/physicsfeature/components/physicsfeature.json
-    ${CODE_ROOT}/application/basegamefeature/components/basegamefeature.json
+    ${NROOT}/code/addons/audiofeature/components/audiofeature.json
+    ${NROOT}/code/addons/graphicsfeature/components/graphicsfeature.json
+    ${NROOT}/code/addons/physicsfeature/components/physicsfeature.json
+    ${NROOT}/code/application/basegamefeature/components/basegamefeature.json
 )
 
 fips_begin_sharedlib(NebulaEngine)
