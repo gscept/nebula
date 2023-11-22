@@ -239,8 +239,8 @@ void TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer
 /// commit texture sparse page updates
 void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
 
-/// Update texture from data buffer
-void TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data);
+/// Update texture from data buffer, returns true if there is enough upload heap space
+bool TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data);
 
 /// clear texture with color
 void TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::TextureSubresourceInfo& subres);

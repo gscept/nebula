@@ -173,7 +173,7 @@ Core::Rtti*
 ResourceServer::GetType(const Resources::ResourceId id)
 {
     // get id of loader
-    const Ids::Id8 loaderid = id.cacheIndex;
+    const Ids::Id8 loaderid = id.loaderIndex;
 
     // get resource loader by extension
     n_assert(this->loaders.Size() > loaderid);

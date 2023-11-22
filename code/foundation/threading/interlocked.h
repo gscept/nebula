@@ -14,7 +14,10 @@
 #include "core/config.h"
 namespace Threading
 {
+
+using int64 = int64_t;
 typedef volatile int AtomicCounter;
+typedef volatile int64 AtomicCounter64;
 
 namespace Interlocked
 {

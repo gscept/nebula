@@ -49,7 +49,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
     else if (FourCC('SFRG') == fourcc)
     {
         // SkinFragment
-        this->primitiveGroupIndex = reader->ReadInt();
+        this->loadContext.primIndex = reader->ReadInt();
         Array<IndexT> jointPalette;
         SizeT numJoints = reader->ReadInt();
         jointPalette.Reserve(numJoints);
@@ -58,7 +58,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
         {
             jointPalette.Append(reader->ReadInt());
         }
-        this->AddFragment(this->primitiveGroupIndex, jointPalette);
+        this->AddFragment(this->loadContext.primIndex, jointPalette);
     }
     else
     {
@@ -78,7 +78,7 @@ CharacterSkinNode::OnFinishedLoading()
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     for (IndexT i = 0; i < numFrames; i++)
     {
-        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetGraphicsConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock::SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock::SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
     }
 }

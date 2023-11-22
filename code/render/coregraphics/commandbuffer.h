@@ -227,6 +227,20 @@ void CmdBarrier(
             const char* name = nullptr
 );
 
+/// Handover
+void CmdHandover(
+            const CmdBufferId from,
+            const CmdBufferId to,
+            CoreGraphics::PipelineStage fromStage,
+            CoreGraphics::PipelineStage toStage,
+            const Util::FixedArray<TextureBarrierInfo>& textures,
+            const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const IndexT fromQueue = InvalidIndex,
+            const IndexT toQueue = InvalidIndex,
+            const char* name = nullptr
+);
+            
+
 /// Insert execution barrier
 void CmdBarrier(const CmdBufferId id, const CoreGraphics::BarrierId barrier);
 /// Signals an event

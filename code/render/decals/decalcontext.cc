@@ -103,19 +103,12 @@ DecalContext::Create()
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
-        CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        // update resource table
-        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(i), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
-        ResourceTableCommitChanges(computeTable);
-
-        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(i), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
-        ResourceTableCommitChanges(graphicsTable);
+        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
+        ResourceTableCommitChanges(frameResourceTable);
     }
 
     // The first pass is to copy decals over
@@ -392,14 +385,11 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(bufferIndex);
-    CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(bufferIndex);
+    CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint offset = SetConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(computeTable, { GetComputeConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, (SizeT)offset });
-    ResourceTableCommitChanges(computeTable);
-    ResourceTableSetConstantBuffer(graphicsTable, { GetGraphicsConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, (SizeT)offset });
-    ResourceTableCommitChanges(graphicsTable);
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, (SizeT)offset });
+    ResourceTableCommitChanges(frameResourceTable);
 
     // update list of point lights
     if (numPbrDecals > 0 || numEmissiveDecals > 0)

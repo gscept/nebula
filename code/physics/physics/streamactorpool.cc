@@ -431,7 +431,7 @@ AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::mat4 c
 /**
 */
 Resources::ResourceUnknownId
-StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
+StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());    
     

@@ -417,17 +417,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
         if (bindGlobals && pipelineChange)
         {
-            QueueType queue = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
-            if (queue == GraphicsQueueType)
-            {
-                CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-                CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-            }
-            else
-            {
-                CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableCompute(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-                CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTableCompute(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-            }
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
         }
     }
     else
@@ -466,8 +457,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.graphicsLayout = info.layout;
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(id, PassGetResourceTable(pipelineBundle.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         }
     }
@@ -598,8 +589,8 @@ CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
     if (pipelineChange)
     {
         IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
-        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         CoreGraphics::CmdSetResourceTable(buf, PassGetResourceTable(pipelineObj.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
     }
 
@@ -705,6 +696,137 @@ CmdBarrier(
         barrier.numMemoryBarriers, barrier.memoryBarriers,
         barrier.numBufferBarriers, barrier.bufferBarriers,
         barrier.numImageBarriers, barrier.imageBarriers);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdHandover(
+    const CmdBufferId from
+    , const CmdBufferId to
+    , CoreGraphics::PipelineStage fromStage
+    , CoreGraphics::PipelineStage toStage
+    , const Util::FixedArray<TextureBarrierInfo>& textures
+    , const Util::FixedArray<BufferBarrierInfo>& buffers
+    , const IndexT fromQueue
+    , const IndexT toQueue
+    , const char* name
+)
+{
+    VkBarrierInfo barrier;
+    barrier.name = name;
+    barrier.srcFlags = VkTypes::AsVkPipelineStage(fromStage);
+    barrier.dstFlags = VkTypes::AsVkPipelineStage(toStage);
+    barrier.dep = 0;
+    barrier.numBufferBarriers = buffers.Size();
+    for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
+    {
+        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
+        BufferBarrierInfo& nebBar = buffers[i];
+
+        vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
+        vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(fromStage);
+        vkBar.buffer = CoreGraphics::BufferGetVk(nebBar.buf);
+        vkBar.offset = nebBar.subres.offset;
+        vkBar.size = (nebBar.subres.size == -1) ? VK_WHOLE_SIZE : nebBar.subres.size;
+        vkBar.srcQueueFamilyIndex = fromQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : fromQueue;
+        vkBar.dstQueueFamilyIndex = toQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : toQueue;
+
+        vkBar.pNext = nullptr;
+        vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    }
+    barrier.numImageBarriers = textures.Size();
+    IndexT i, j = 0;
+    for (i = 0; i < textures.Size(); i++, j++)
+    {
+        VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
+        TextureBarrierInfo& nebBar = textures[i];
+
+        vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
+        vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(fromStage);
+
+        const TextureSubresourceInfo& subres = nebBar.subres;
+        bool isDepth = AnyBits(subres.bits, CoreGraphics::ImageBits::DepthBits);
+        vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
+        vkBar.subresourceRange.baseMipLevel = subres.mip;
+        vkBar.subresourceRange.levelCount = subres.mipCount;
+        vkBar.subresourceRange.baseArrayLayer = subres.layer;
+        vkBar.subresourceRange.layerCount = subres.layerCount;
+        vkBar.image = CoreGraphics::TextureGetVkImage(nebBar.tex);
+        vkBar.srcQueueFamilyIndex = fromQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : fromQueue;
+        vkBar.dstQueueFamilyIndex = toQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : toQueue;
+        vkBar.oldLayout = VkTypes::AsVkImageLayout(fromStage, isDepth);
+        vkBar.newLayout = VkTypes::AsVkImageLayout(fromStage, isDepth);
+
+        vkBar.pNext = nullptr;
+        vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    }
+
+    // If we have no other barriers, insert a memory barrier
+    barrier.numMemoryBarriers = 0;
+    if (barrier.numBufferBarriers == 0 && barrier.numImageBarriers == 0)
+    {
+        barrier.numMemoryBarriers = 1;
+        barrier.memoryBarriers[0] =
+        {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            nullptr,
+            VkTypes::AsVkAccessFlags(fromStage),
+            VkTypes::AsVkAccessFlags(toStage)
+        };
+    }
+
+    VkCommandBuffer fromCmds = CmdBufferGetVk(from);
+    VkCommandBuffer toCmds = CmdBufferGetVk(to);
+    vkCmdPipelineBarrier(
+        fromCmds
+        , barrier.srcFlags
+        , barrier.srcFlags
+        , barrier.dep
+        , barrier.numMemoryBarriers, barrier.memoryBarriers
+        , barrier.numBufferBarriers, barrier.bufferBarriers
+        , barrier.numImageBarriers, barrier.imageBarriers);
+
+    vkCmdPipelineBarrier(
+        toCmds
+        , barrier.srcFlags
+        , barrier.srcFlags
+        , barrier.dep
+        , barrier.numMemoryBarriers, barrier.memoryBarriers
+        , barrier.numBufferBarriers, barrier.bufferBarriers
+        , barrier.numImageBarriers, barrier.imageBarriers);
+
+    // Last barrier does not do a handover but simply transitions the resource to the destination layout
+    for (IndexT i = 0; i < barrier.numBufferBarriers; i++)
+    {
+        barrier.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        barrier.bufferBarriers[i].dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
+    }
+
+    for (IndexT i = 0; i < barrier.numImageBarriers; i++)
+    {
+        barrier.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+        barrier.imageBarriers[i].dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
+
+        const TextureSubresourceInfo& subres = textures[i].subres;
+        bool isDepth = AnyBits(subres.bits, CoreGraphics::ImageBits::DepthBits);
+
+        barrier.imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(toStage, isDepth);
+    }
+
+    vkCmdPipelineBarrier(
+        toCmds
+        , barrier.srcFlags
+        , barrier.dstFlags
+        , barrier.dep
+        , barrier.numMemoryBarriers, barrier.memoryBarriers
+        , barrier.numBufferBarriers, barrier.bufferBarriers
+        , barrier.numImageBarriers, barrier.imageBarriers);
 }
 
 //------------------------------------------------------------------------------

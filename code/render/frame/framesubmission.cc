@@ -78,7 +78,6 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
     CoreGraphics::LockConstantUpdates();
 
     // First thing, flush all constant updates
-    CoreGraphics::FlushConstants(submissionBuffer, this->queue);
     CoreGraphics::FlushUpload();
 
     // Before starting the submission, flush updates

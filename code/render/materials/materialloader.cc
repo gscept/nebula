@@ -30,7 +30,7 @@ MaterialLoader::Setup()
 /**
 */
 Resources::ResourceUnknownId
-MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
     reader->SetStream(stream);
@@ -40,7 +40,7 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
         if (!reader->HasNode("/Nebula/Surface"))
         {
             n_error("MaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
-            return Failed;
+            return Resources::InvalidResourceUnknownId;
         }
 
         // send to first node
@@ -114,6 +114,7 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                                 tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
                                     [config, id, binding, &minLod, materialVal, this](Resources::ResourceId rid)
                                     {
+                                        CoreGraphics::TextureIdLock _0(rid);
                                         MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
                                         MaterialVariant tmp = materialVal;
                                         tmp.Set(tuple);
@@ -122,17 +123,20 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                                     },
                                     [config, id, binding, materialVal](Resources::ResourceId rid)
                                     {
+                                    CoreGraphics::TextureIdLock _0(rid);
                                         MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
                                         MaterialVariant tmp = materialVal;
                                         tmp.Set(tuple);
                                         MaterialSetConstant(id, binding, materialVal);
                                     });
+                                CoreGraphics::TextureIdLock _0(tex);
                                 MaterialVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };
                                 materialVal.Set(tuple);
                             }
                             else
                                 tex = Resources::ResourceId(defaultVal.Get<uint64>());
 
+                            CoreGraphics::TextureIdLock _0(tex);
                             MaterialVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };
                             materialVal.Set(tuple);
                             MaterialSetConstant(id, binding, materialVal);
@@ -147,14 +151,17 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                 Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, 
                     [config, id, slot, &minLod, this](Resources::ResourceId rid)
                     {
+                        CoreGraphics::TextureIdLock _0(rid);
                         MaterialSetTexture(id, slot, rid);
                         MaterialAddLODTexture(id, rid);
                     }, 
                     [config, id, slot](Resources::ResourceId rid)
                     {
+                        CoreGraphics::TextureIdLock _0(rid);
                         MaterialSetTexture(id, slot, rid);
                     });
 
+                CoreGraphics::TextureIdLock _0(tex);
                 MaterialSetTexture(id, slot, tex);
             }
             

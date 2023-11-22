@@ -66,7 +66,7 @@ public:
     virtual void LoadFallbackResources();
 
     /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-    Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
+    Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag
@@ -108,6 +108,16 @@ protected:
         Util::StringAtom tag;
         bool inflight;
         bool immediate;
+        bool reload;
+        float lod;
+
+        enum Mode
+        {
+            None = 0x0,
+            Create = 0x1,
+            Update = 0x2
+        };
+        uint mode;
 
         _PendingResourceLoad() : entry(-1) {};
     };
@@ -141,40 +151,45 @@ protected:
         SizeT size;
     };
 
-    enum LoadStatus
+    enum SubresourceLoadStatus
     {
-        Success,        /// resource is properly loaded
-        Failed,         /// resource loading failed
-        Delay,          /// resource is loaded at some later point
-        Threaded        /// resource is loaded from a thread, which is like Delay, but is no longer pending
-    };
-
-    struct _InternalLoadResult
-    {
-        LoadStatus status;
-        ResourceId id;
+        Full,       // All requested subresources were loaded
+        Partial,    // Some of the requested subresources could be loaded, but not all
+        Rejected    // None of the requested subresources were loaded, loader out of budget
     };
 
     static const uint32_t ResourceIndexGrow = 512;
 
-    /// perform actual load, override in subclass
-    virtual ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
+    /// Initialize and create the resource, optionally load if no subresource management is necessary
+    virtual ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
+    /// Stream resource
+    virtual uint StreamResource(const ResourceId entry, uint requestedBits);
     /// perform a reload
-    virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
+    virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
     /// perform a lod update
-    virtual void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
+    virtual SubresourceLoadStatus StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
+
+    /// Create load mask based on LOD
+    virtual uint LodMask(const Ids::Id32 entry, float lod) const;
+    /// Set lod factor for resource
+    virtual void RequestLOD(const Ids::Id32 entry, float lod) const;
 
     /// unload resource (overload to implement resource deallocation)
     virtual void Unload(const Resources::ResourceId id) = 0;
     /// update the resource loader, this is done every frame
     virtual void Update(IndexT frameIndex);
 
+    /// Construct resource ID based on loader entry
+    void SetupIdFromEntry(const Ids::Id32 entry, ResourceId& cacheEntry);
+
     /// Load immediately
-    _InternalLoadResult LoadImmediate(_PendingResourceLoad& res);
+    Resource::State LoadImmediate(_PendingResourceLoad& res);
     /// Load async
-    LoadStatus LoadDeferred(_PendingResourceLoad& res);
+    void LoadAsync(_PendingResourceLoad& res);
     /// run callbacks
-    void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
+    void RunCallbacks(Resource::State status, const Resources::ResourceId id);
+
+    friend Resource::State _LoadInternal(ResourceLoader* loader, const _PendingResourceLoad& res);
 
     struct _PlaceholderResource
     {
@@ -216,6 +231,8 @@ protected:
     Util::FixedArray<uint32_t> usage;
     Util::FixedArray<Util::StringAtom> tags;
     Util::FixedArray<Resource::State> states;
+    Util::FixedArray<uint> requestedBits;
+    Util::FixedArray<uint> loadedBits;
     Util::FixedArray<ResourceId> resources;
     Util::FixedArray<Util::Array<_Callbacks>> callbacks;
     Util::FixedArray<_PendingResourceLoad> loads;
@@ -237,7 +254,7 @@ protected:
 inline const Resources::ResourceName&
 ResourceLoader::GetName(const Resources::ResourceId id) const
 {
-    return this->names[id.cacheInstanceId];
+    return this->names[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -246,7 +263,7 @@ ResourceLoader::GetName(const Resources::ResourceId id) const
 inline const uint32_t
 ResourceLoader::GetUsage(const Resources::ResourceId id) const
 {
-    return this->usage[id.cacheInstanceId];
+    return this->usage[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -255,7 +272,7 @@ ResourceLoader::GetUsage(const Resources::ResourceId id) const
 inline const Util::StringAtom
 ResourceLoader::GetTag(const Resources::ResourceId id) const
 {
-    return this->tags[id.cacheInstanceId];
+    return this->tags[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -264,7 +281,7 @@ ResourceLoader::GetTag(const Resources::ResourceId id) const
 inline const Resources::Resource::State
 ResourceLoader::GetState(const Resources::ResourceId id) const
 {
-    return this->states[id.cacheInstanceId];
+    return this->states[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
@@ -293,7 +310,7 @@ ResourceLoader::GetResources() const
 inline const bool
 ResourceLoader::HasResource(const Resources::ResourceId id) const
 {
-    return this->names.Size() > (SizeT)id.cacheInstanceId;
+    return this->names.Size() > (SizeT)id.loaderInstanceId;
 }
 
 //------------------------------------------------------------------------------

@@ -330,7 +330,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
                     batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
                     batchCmd.mesh = otherMesh;
-                    batchCmd.primitiveGroup = CoreGraphics::MeshGetPrimitiveGroup(otherMesh, context->renderables->nodePrimitiveGroupIndex[index]);
+                    batchCmd.primitiveGroup = context->renderables->nodePrimitiveGroup[index];
                     batchCmd.material = otherMat;
 
 #if NEBULA_GRAPHICS_DEBUG

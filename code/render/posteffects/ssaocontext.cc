@@ -365,7 +365,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex), HbaoCs::Table_Batch::HBAOBlock::SLOT, 0, HbaoCs::Table_Batch::HBAOBlock::SIZE, (SizeT)hbaoOffset });
+    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoCs::Table_Batch::HBAOBlock::SLOT, 0, HbaoCs::Table_Batch::HBAOBlock::SIZE, (SizeT)hbaoOffset });
     ResourceTableCommitChanges(ssaoState.hbaoTable[bufferIndex]);
 
     HbaoblurCs::HBAOBlur blurBlock;
@@ -374,8 +374,8 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     blurBlock.PowerExponent = 1.5f;
     uint blurOffset = CoreGraphics::SetConstants(blurBlock);
 
-    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur::SLOT, 0, HbaoblurCs::Table_Batch::HBAOBlur::SIZE, (SizeT)blurOffset });
-    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur::SLOT, 0, HbaoblurCs::Table_Batch::HBAOBlur::SIZE, (SizeT)blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur::SLOT, 0, HbaoblurCs::Table_Batch::HBAOBlur::SIZE, (SizeT)blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur::SLOT, 0, HbaoblurCs::Table_Batch::HBAOBlur::SIZE, (SizeT)blurOffset });
     ResourceTableCommitChanges(ssaoState.blurTableX[bufferIndex]);
     ResourceTableCommitChanges(ssaoState.blurTableY[bufferIndex]);
 }
