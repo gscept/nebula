@@ -107,7 +107,7 @@ DecalContext::Create()
 
         ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetGraphicsConstantBuffer(i), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
@@ -388,7 +388,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint offset = SetConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetGraphicsConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms::SLOT, 0, Shared::Table_Frame::DecalUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // update list of point lights

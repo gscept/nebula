@@ -111,7 +111,7 @@ ParticleSystemNode::CreateResourceTables()
 
     for (IndexT i = 0; i < ret.Size(); i++)
     {
-        BufferId cbo = GetGraphicsConstantBuffer(i);
+        BufferId cbo = GetConstantBuffer(i);
         CoreGraphics::ResourceTableId table = ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
         ResourceTableSetConstantBuffer(table, { cbo, ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
         ResourceTableCommitChanges(table);

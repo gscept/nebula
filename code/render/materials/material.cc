@@ -91,7 +91,7 @@ CreateMaterial(const MaterialCreateInfo& info)
                 SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
-                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
+                    CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
 
                 // add to surface
                 instanceBuffer = Util::MakeTuple(slot, bufSize);

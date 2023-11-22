@@ -85,7 +85,7 @@ struct GraphicsDeviceState
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
     uint globalConstantBufferMaxValue;
-    Util::FixedArray<CoreGraphics::BufferId> globalGraphicsConstantBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
@@ -189,7 +189,7 @@ void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT s
 ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 
 /// return id to global graphics constant buffer
-CoreGraphics::BufferId GetGraphicsConstantBuffer(IndexT i);
+CoreGraphics::BufferId GetConstantBuffer(IndexT i);
 
 struct VertexAlloc
 {

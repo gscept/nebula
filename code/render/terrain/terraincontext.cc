@@ -593,7 +593,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     {
         ResourceTableSetConstantBuffer(table,
         {
-            CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++),
+            CoreGraphics::GetConstantBuffer(bufferIndex++),
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SLOT,
             0,
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SIZE,

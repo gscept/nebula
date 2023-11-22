@@ -891,12 +891,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
     cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
-    state.globalGraphicsConstantBuffer.Resize(info.numBufferedFrames);
+    state.globalConstantBuffer.Resize(info.numBufferedFrames);
     for (IndexT i = 0; i < info.numBufferedFrames; i++)
     {
         auto gfxCboInfo = cboInfo;
         gfxCboInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-        state.globalGraphicsConstantBuffer[i] = CreateBuffer(gfxCboInfo);
+        state.globalConstantBuffer[i] = CreateBuffer(gfxCboInfo);
     }
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
@@ -1109,7 +1109,7 @@ DestroyGraphicsDevice()
     {
         for (IndexT i = 0; i < state.maxNumBufferedFrames; i++)
         {
-            DestroyBuffer(state.globalGraphicsConstantBuffer[i]);
+            DestroyBuffer(state.globalConstantBuffer[i]);
         }
     }
 
@@ -1246,8 +1246,8 @@ LockTransferSetupCommandBuffer()
 void
 UnlockTransferSetupCommandBuffer()
 {
-    transferLock.Leave();
     CmdBufferIdRelease(state.setupTransferCommandBuffer);
+    transferLock.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -1282,8 +1282,8 @@ LockGraphicsSetupCommandBuffer()
 void
 UnlockGraphicsSetupCommandBuffer()
 {
-    setupLock.Leave();
     CmdBufferIdRelease(state.setupGraphicsCommandBuffer);
+    setupLock.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -1411,7 +1411,7 @@ LockConstantUpdates()
 void
 SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
 {
-    BufferUpdate(state.globalGraphicsConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
+    BufferUpdate(state.globalConstantBuffer[state.currentBufferedFrameIndex], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -1445,18 +1445,9 @@ AllocateConstantBufferMemory(uint size)
 /**
 */
 CoreGraphics::BufferId
-GetGraphicsConstantBuffer(IndexT i)
+GetConstantBuffer(IndexT i)
 {
-    return state.globalGraphicsConstantBuffer[i];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::BufferId
-GetComputeConstantBuffer(IndexT i)
-{
-    return state.globalGraphicsConstantBuffer[i];
+    return state.globalConstantBuffer[i];
 }
 
 //------------------------------------------------------------------------------

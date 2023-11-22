@@ -83,12 +83,12 @@ AllocateGlobalConstants()
     IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
 
     // Bind tables with memory allocated
-    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ViewConstants::SLOT, 0, Shared::Table_Frame::ViewConstants::SIZE, (SizeT)state.viewCboOffset });
-    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ShadowViewConstants::SLOT, 0, Shared::Table_Frame::ShadowViewConstants::SIZE, (SizeT)state.shadowViewCboOffset });
+    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ViewConstants::SLOT, 0, Shared::Table_Frame::ViewConstants::SIZE, (SizeT)state.viewCboOffset });
+    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ShadowViewConstants::SLOT, 0, Shared::Table_Frame::ShadowViewConstants::SIZE, (SizeT)state.shadowViewCboOffset });
     ResourceTableCommitChanges(state.frameResourceTables[bufferedFrameIndex]);
 
     // Update tick resource tables
-    ResourceTableSetConstantBuffer(state.tickResourceTables[bufferedFrameIndex], { CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), Shared::Table_Tick::PerTickParams::SLOT, 0, Shared::Table_Tick::PerTickParams::SIZE, (SizeT)state.tickCboOffset });
+    ResourceTableSetConstantBuffer(state.tickResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Tick::PerTickParams::SLOT, 0, Shared::Table_Tick::PerTickParams::SIZE, (SizeT)state.tickCboOffset });
     ResourceTableCommitChanges(state.tickResourceTables[bufferedFrameIndex]);
 }
 
@@ -99,7 +99,7 @@ void
 UpdateTickParams(const Shared::PerTickParams& tickParams)
 {
     state.tickParams = tickParams;
-    state.tickParamsDirty.bits = 0xFF;
+    state.tickParamsDirty.bits = 0x3;
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ void
 UpdateViewConstants(const Shared::ViewConstants& viewConstants)
 {
     state.viewConstants = viewConstants;
-    state.viewConstantsDirty.bits = 0xFF;
+    state.viewConstantsDirty.bits = 0x3;
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ void
 UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstants)
 {
     state.shadowViewConstants = shadowViewConstants;
-    state.shadowViewConstantsDirty.bits = 0xFF;
+    state.shadowViewConstantsDirty.bits = 0x3;
 }
 
 //------------------------------------------------------------------------------
@@ -130,63 +130,67 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType 
 {
     CoreGraphics::PipelineStage sourceStage = queue == CoreGraphics::GraphicsQueueType ? CoreGraphics::PipelineStage::AllShadersRead : CoreGraphics::PipelineStage::ComputeShaderRead;
     IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-    if (state.tickParamsDirty.graphicsDirty)
+
+    uint bits = queue == CoreGraphics::GraphicsQueueType ? 0x1 : 0x2;
+    if (state.tickParamsDirty.bits & bits)
     {
         CoreGraphics::CmdBarrier(buf, sourceStage, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
         {
             {
-                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::GetConstantBuffer(bufferedFrameIndex),
                 CoreGraphics::BufferSubresourceInfo(state.tickCboOffset, sizeof(state.tickParams))
             }
         });
-        CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), state.tickCboOffset, sizeof(state.tickParams), &state.tickParams);
+        CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetConstantBuffer(bufferedFrameIndex), state.tickCboOffset, sizeof(state.tickParams), &state.tickParams);
         CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, sourceStage, CoreGraphics::BarrierDomain::Global,
         {
             {
-                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::GetConstantBuffer(bufferedFrameIndex),
                 CoreGraphics::BufferSubresourceInfo(state.tickCboOffset, sizeof(state.tickParams))
-                        
+
             }
         });
-        state.tickParamsDirty.graphicsDirty = false;
+        state.tickParamsDirty.bits &= ~bits;
     }
-    if (state.viewConstantsDirty.graphicsDirty)
+
+    if (state.viewConstantsDirty.bits & bits)
     {
         CoreGraphics::CmdBarrier(buf, sourceStage, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
         {
             {
-                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::GetConstantBuffer(bufferedFrameIndex),
                 CoreGraphics::BufferSubresourceInfo(state.viewCboOffset, sizeof(state.viewConstants))
             }
         });
-        CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), state.viewCboOffset, sizeof(state.viewConstants), &state.viewConstants);
+        CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetConstantBuffer(bufferedFrameIndex), state.viewCboOffset, sizeof(state.viewConstants), &state.viewConstants);
         CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, sourceStage, CoreGraphics::BarrierDomain::Global,
         {
             {
-                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::GetConstantBuffer(bufferedFrameIndex),
                 CoreGraphics::BufferSubresourceInfo(state.viewCboOffset, sizeof(state.viewConstants))
             }
         });
-        state.viewConstantsDirty.graphicsDirty = false;
+        state.viewConstantsDirty.bits &= ~bits;
     }
-    if (state.shadowViewConstantsDirty.graphicsDirty)
+
+    if (state.shadowViewConstantsDirty.bits & bits)
     {
         CoreGraphics::CmdBarrier(buf, sourceStage, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
         {
             {
-                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::GetConstantBuffer(bufferedFrameIndex),
                 CoreGraphics::BufferSubresourceInfo(state.shadowViewCboOffset, sizeof(state.shadowViewConstants))
             }
         });
-        CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex), state.shadowViewCboOffset, sizeof(state.shadowViewConstants), &state.shadowViewConstants);
+        CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetConstantBuffer(bufferedFrameIndex), state.shadowViewCboOffset, sizeof(state.shadowViewConstants), &state.shadowViewConstants);
         CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, sourceStage, CoreGraphics::BarrierDomain::Global,
         {
             {
-                CoreGraphics::GetGraphicsConstantBuffer(bufferedFrameIndex),
+                CoreGraphics::GetConstantBuffer(bufferedFrameIndex),
                 CoreGraphics::BufferSubresourceInfo(state.shadowViewCboOffset, sizeof(state.shadowViewConstants))
             }
         });
-        state.shadowViewConstantsDirty.graphicsDirty = false;
+        state.shadowViewConstantsDirty.bits &= ~bits;
     }
 }
 

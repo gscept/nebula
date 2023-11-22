@@ -121,7 +121,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 
         ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::Table_Frame::FogIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::Table_Frame::FogLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetGraphicsConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
@@ -463,7 +463,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetGraphicsConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables
