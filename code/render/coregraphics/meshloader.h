@@ -29,14 +29,24 @@ public:
 	};
 
 private:
+
+    struct MeshStreamData
+    {
+        void* mappedData;
+        CoreGraphics::VertexAlloc indexAllocationOffset, vertexAllocationOffset;
+    };
     
-    /// perform load
-    Resources::ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    /// Initialize mesh
+    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    /// Stream texture
+    uint StreamResource(const Resources::ResourceId entry, uint requestedBits) override;
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
+    /// Create load mask based on LOD
+    uint LodMask(const Ids::Id32 entry, float lod) const override;
 
     /// setup mesh from nvx3 file in memory
-    void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const MeshResourceId entry);
+    void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource);
 };
 
 } // namespace CoreGraphics

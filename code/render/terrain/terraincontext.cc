@@ -76,6 +76,8 @@ struct
     Util::Array<CoreGraphics::TextureId> biomeTextures;
     CoreGraphics::TextureId biomeMasks[Terrain::MAX_BIOMES];
     CoreGraphics::TextureId biomeWeights[Terrain::MAX_BIOMES];
+    Threading::AtomicCounter biomeLoaded[Terrain::MAX_BIOMES];
+    uint biomeLowresGenerated[Terrain::MAX_BIOMES];
     IndexT biomeCounter;
 
     Graphics::GraphicsEntityId sun;
@@ -173,6 +175,8 @@ struct
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureCopies;
     Util::Array<IndirectionEntry>                                   indirectionEntryUpdates;
     Util::FixedArray<IndirectionEntry>                              indirectionBuffer;
+    CoreGraphics::BufferSet                                         indirectionUploadBuffers;
+    Util::FixedArray<uint>                                          indirectionUploadOffsets;
 
     CoreGraphics::PassId                                            tileUpdatePass;
     CoreGraphics::PassId                                            tileFallbackPass;
@@ -181,8 +185,6 @@ struct
     Util::Array<Math::uint2>                                        tileOffsets;
     Util::Array<PhysicalTileUpdate>                                 pageUpdatesThisFrame;
 
-    CoreGraphics::BufferId                                          uploadClearBufferThisFrame;
-    CoreGraphics::BufferId                                          uploadUpdateBufferThisFrame;
     Util::Array<CoreGraphics::BufferCopy>                           indirectionBufferUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureFromCopiesThisFrame;
@@ -210,6 +212,14 @@ struct TerrainQuad
     IndexT a, b, c, d;
 };
 
+enum BiomeLoadBits
+{
+    AlbedoLoaded = 0x1
+    , NormalLoaded = 0x2
+    , MaterialLoaded = 0x4
+    , MaskLoaded = 0x8
+    , WeightsLoaded = 0x10
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -392,6 +402,17 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainVirtualTileState.indirectionBuffer.Resize(offset);
     terrainVirtualTileState.indirectionBuffer.Fill(IndirectionEntry{ 0xFFFFFFFF });
 
+    bufInfo.name = "TerrainUploadBuffer"_atm;
+    bufInfo.elementSize = sizeof(IndirectionEntry);
+    bufInfo.size = IndirectionTextureSize * IndirectionTextureSize;
+    bufInfo.mode = BufferAccessMode::HostLocal;
+    bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    bufInfo.data = nullptr;
+    bufInfo.dataSize = 0;
+    terrainVirtualTileState.indirectionUploadBuffers = bufInfo;
+    terrainVirtualTileState.indirectionUploadOffsets.Resize(CoreGraphics::GetNumBufferedFrames());
+    terrainVirtualTileState.indirectionUploadOffsets.Fill(0x0);
+
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
     // clear the buffer, the subsequent fills are to clear the buffers
@@ -572,7 +593,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     {
         ResourceTableSetConstantBuffer(table,
         {
-            CoreGraphics::GetGraphicsConstantBuffer(bufferIndex++),
+            CoreGraphics::GetConstantBuffer(bufferIndex++),
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SLOT,
             0,
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SIZE,
@@ -660,7 +681,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     {
                         BufferBarrierInfo
                         {
-                            terrainVirtualTileState.uploadClearBufferThisFrame,
+                            terrainVirtualTileState.indirectionUploadBuffers.buffers[bufferIndex],
                             CoreGraphics::BufferSubresourceInfo()
                         },
 
@@ -668,7 +689,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
                 // perform the moves and clears of indirection pixels
                 CmdCopy(cmdBuf,
-                    terrainVirtualTileState.uploadClearBufferThisFrame, terrainVirtualTileState.indirectionBufferClearsThisFrame,
+                    terrainVirtualTileState.indirectionUploadBuffers.buffers[bufferIndex], terrainVirtualTileState.indirectionBufferClearsThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureClearsThisFrame);
 
                 CmdBarrier(cmdBuf,
@@ -679,7 +700,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     {
                         BufferBarrierInfo
                         {
-                            terrainVirtualTileState.uploadClearBufferThisFrame,
+                            terrainVirtualTileState.indirectionUploadBuffers.buffers[bufferIndex],
                             CoreGraphics::BufferSubresourceInfo()
                         },
                     });
@@ -704,7 +725,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     {
                         BufferBarrierInfo
                         {
-                            terrainVirtualTileState.uploadUpdateBufferThisFrame,
+                            terrainVirtualTileState.indirectionUploadBuffers.buffers[bufferIndex],
                             CoreGraphics::BufferSubresourceInfo()
                         },
 
@@ -712,7 +733,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
                 // update the new pixels
                 CmdCopy(cmdBuf,
-                    terrainVirtualTileState.uploadUpdateBufferThisFrame, terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
+                    terrainVirtualTileState.indirectionUploadBuffers.buffers[bufferIndex], terrainVirtualTileState.indirectionBufferUpdatesThisFrame,
                     terrainVirtualTileState.indirectionTexture, terrainVirtualTileState.indirectionTextureUpdatesThisFrame);
 
                 CmdBarrier(cmdBuf,
@@ -723,7 +744,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     {
                         BufferBarrierInfo
                         {
-                            terrainVirtualTileState.uploadUpdateBufferThisFrame,
+                            terrainVirtualTileState.indirectionUploadBuffers.buffers[bufferIndex],
                             CoreGraphics::BufferSubresourceInfo()
                         },
                     });
@@ -1203,10 +1224,21 @@ TerrainContext::SetupTerrain(
     TerrainLoadInfo& loadInfo = terrainAllocator.Get<Terrain_LoadInfo>(cid.id);
     TerrainRuntimeInfo& runtimeInfo = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
 
-    runtimeInfo.decisionMap = Resources::CreateResource(decisionMap, "terrain"_atm, nullptr, nullptr, true);
-    runtimeInfo.heightMap = Resources::CreateResource(heightMap, "terrain"_atm, nullptr, nullptr, true);
-    Resources::SetMinLod(runtimeInfo.decisionMap, 0.0f, false);
-    Resources::SetMinLod(runtimeInfo.heightMap, 0.0f, false);
+	runtimeInfo.loadBits = 0x0;
+    runtimeInfo.lowresGenerated = false;
+    runtimeInfo.decisionMap = Resources::CreateResource(decisionMap, "terrain"_atm, [&runtimeInfo](Resources::ResourceId id)
+	{
+		runtimeInfo.decisionMap = id;
+        runtimeInfo.lowresGenerated = false;
+        runtimeInfo.loadBits |= TerrainRuntimeInfo::DecisionMapLoaded;
+	}, nullptr, false, false);
+
+    runtimeInfo.heightMap = Resources::CreateResource(heightMap, "terrain"_atm, [&runtimeInfo](Resources::ResourceId id)
+	{
+        runtimeInfo.heightMap = id;
+        runtimeInfo.lowresGenerated = false;
+		runtimeInfo.loadBits |= TerrainRuntimeInfo::HeightMapLoaded;
+	}, nullptr, false, false);
 
     runtimeInfo.worldWidth = terrainState.settings.worldSizeX;
     runtimeInfo.worldHeight = terrainState.settings.worldSizeZ;
@@ -1403,37 +1435,73 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
         settings.materials[BiomeSettings::BiomeMaterialLayer::Height],
         settings.materials[BiomeSettings::BiomeMaterialLayer::HeightSlope]
     };
+    IndexT biomeIndex = terrainState.biomeCounter;
     for (int i = 0; i < mats.Size(); i++)
     {
-        CoreGraphics::TextureId albedo, normal, material;
-        albedo = Resources::CreateResource(mats[i].albedo.Value(), "terrain", nullptr, nullptr, true);
-        terrainState.biomeMaterials.MaterialAlbedos[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(albedo);
-        terrainState.biomeTextures.Append(albedo);
+        terrainState.biomeLoaded[i] = 0x0;
+        terrainState.biomeLowresGenerated[i] = false;
+        Resources::CreateResource(mats[i].albedo.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
+        {
+            CoreGraphics::TextureIdLock _0(id);
+            terrainState.biomeMaterials.MaterialAlbedos[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
+            terrainState.biomeTextures.Append(id);
+            CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
+            terrainState.biomeLowresGenerated[biomeIndex] = false;
+            Threading::Interlocked::Or(&terrainState.biomeLoaded[biomeIndex], BiomeLoadBits::AlbedoLoaded);
+        }, nullptr, false, false);
 
-        normal = Resources::CreateResource(mats[i].normal.Value(), "terrain", nullptr, nullptr, true);
-        terrainState.biomeMaterials.MaterialNormals[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(normal);
-        terrainState.biomeTextures.Append(normal);
+        Resources::CreateResource(mats[i].normal.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
+        {
+            CoreGraphics::TextureIdLock _0(id);
+            terrainState.biomeMaterials.MaterialNormals[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
+            terrainState.biomeTextures.Append(id);
+            CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
+            terrainState.biomeLowresGenerated[biomeIndex] = false;
+            Threading::Interlocked::Or(&terrainState.biomeLoaded[biomeIndex], BiomeLoadBits::NormalLoaded);
+        }, nullptr, false, false);
 
-        material = Resources::CreateResource(mats[i].material.Value(), "terrain", nullptr, nullptr, true);
-        terrainState.biomeMaterials.MaterialPBRs[terrainState.biomeCounter][i] = CoreGraphics::TextureGetBindlessHandle(material);
-        terrainState.biomeTextures.Append(material);
+        Resources::CreateResource(mats[i].material.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
+        {
+            CoreGraphics::TextureIdLock _0(id);
+            terrainState.biomeMaterials.MaterialPBRs[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
+            terrainState.biomeTextures.Append(id);
+            CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
+            terrainState.biomeLowresGenerated[biomeIndex] = false;
+            Threading::Interlocked::Or(&terrainState.biomeLoaded[biomeIndex], BiomeLoadBits::NormalLoaded);
+        }, nullptr, false, false);
     }
 
-    CoreGraphics::TextureId maskTex = Resources::CreateResource(settings.biomeMask, "terrain", nullptr, nullptr, true);
-    terrainState.biomeMaterials.MaterialMasks[terrainState.biomeCounter / 4][terrainState.biomeCounter % 4] = CoreGraphics::TextureGetBindlessHandle(maskTex);
-    terrainState.biomeTextures.Append(maskTex);
-    terrainState.biomeMasks[terrainState.biomeCounter] = maskTex;
+    Resources::CreateResource(settings.biomeMask, "terrain", [biomeIndex](Resources::ResourceId id)
+    {
+        CoreGraphics::TextureIdLock _0(id);
+        terrainState.biomeMaterials.MaterialMasks[biomeIndex / 4][biomeIndex % 4] = CoreGraphics::TextureGetBindlessHandle(id);
+        terrainState.biomeTextures.Append(id);
+        terrainState.biomeMasks[terrainState.biomeCounter] = id;
+        CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
+        terrainState.biomeLowresGenerated[biomeIndex] = false;
+        Threading::Interlocked::Or(&terrainState.biomeLoaded[biomeIndex], BiomeLoadBits::MaskLoaded);
+    }, nullptr, false, false);
 
     if (settings.biomeParameters.useMaterialWeights)
     {
-        CoreGraphics::TextureId weightsTex = Resources::CreateResource(settings.biomeParameters.weights, "terrain", nullptr, nullptr, true);
-        terrainState.biomeMaterials.MaterialWeights[terrainState.biomeCounter / 4][terrainState.biomeCounter % 4] = CoreGraphics::TextureGetBindlessHandle(weightsTex);
-        terrainState.biomeTextures.Append(weightsTex);
-        terrainState.biomeWeights[terrainState.biomeCounter] = weightsTex;
+        Resources::CreateResource(settings.biomeParameters.weights, "terrain", [biomeIndex](Resources::ResourceId id)
+        {
+            CoreGraphics::TextureIdLock _0(id);
+            terrainState.biomeMaterials.MaterialWeights[biomeIndex / 4][biomeIndex % 4] = CoreGraphics::TextureGetBindlessHandle(id);
+            terrainState.biomeTextures.Append(id);
+            terrainState.biomeWeights[terrainState.biomeCounter] = id;
+            CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
+            terrainState.biomeLowresGenerated[biomeIndex] = false;
+            terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::WeightsLoaded;
+        }, nullptr, false, false);
+    }
+    else
+    {
+        terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::WeightsLoaded;
     }
 
-    CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
-    terrainVirtualTileState.updateLowres = true;
+    //CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
+    //terrainVirtualTileState.updateLowres = true;
 
     terrainBiomeAllocator.Set<TerrainBiome_Index>(ret, terrainState.biomeCounter);
     terrainState.biomeCounter++;
@@ -1475,6 +1543,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 {
     N_SCOPE(TerrainRunJobs, Terrain);
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
+    terrainVirtualTileState.indirectionUploadOffsets[ctx.bufferIndex] = 0;
 
     n_assert(subtexturesDoneCounter == 0);
     subtexturesDoneCounter = 1;
@@ -1694,6 +1763,20 @@ UnpackPageDataEntry(uint* packed, uint& status, uint& subTextureIndex, uint& mip
 //------------------------------------------------------------------------------
 /**
 */
+template<typename T>
+uint
+Upload(T* data, uint size, uint alignment)
+{
+    uint& offset = terrainVirtualTileState.indirectionUploadOffsets[CoreGraphics::GetBufferedFrameIndex()];
+    uint uploadOffset = Math::align(offset, alignment);
+    CoreGraphics::BufferUpdateArray(terrainVirtualTileState.indirectionUploadBuffers.Buffer(), data, size, offset);
+    offset = uploadOffset + size * sizeof(T);
+    return uploadOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 IndirectionUpdate(
     uint mip
@@ -1870,8 +1953,7 @@ IndirectionClear(
     pixels.Fill(IndirectionEntry{ 0xFFFFFFFF });
 
     // Upload to GPU, the lowest mip will have enough values to cover all mips
-    auto [offset, buffer] = CoreGraphics::UploadArray(pixels.Begin(), pixels.Size(), 4);
-    terrainVirtualTileState.uploadClearBufferThisFrame = buffer;
+    uint offset = Upload(pixels.Begin(), pixels.Size(), 4);
 
     // go through old region and reset indirection pixels
     for (uint i = 0; i <= mips; i++)
@@ -1935,10 +2017,20 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     for (IndexT j = 0; j < terrainState.biomeCounter; j++)
     {
         BiomeParameters settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j).biomeParameters;
+        if (!terrainState.biomeLowresGenerated && AllBits(terrainState.biomeLoaded[j], BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded))
+        {
+            terrainVirtualTileState.updateLowres = true;
+            terrainState.biomeLowresGenerated[j] = true;
+        }
+        
+        CoreGraphics::TextureId biomeMask = terrainState.biomeMasks[j];
+		if (biomeMask != CoreGraphics::InvalidTextureId)
+		{
+			systemUniforms.BiomeRules[j][3] = CoreGraphics::TextureGetNumMips(terrainState.biomeMasks[j]);
+		}
         systemUniforms.BiomeRules[j][0] = settings.slopeThreshold;
         systemUniforms.BiomeRules[j][1] = settings.heightThreshold;
         systemUniforms.BiomeRules[j][2] = settings.uvScaleFactor;
-        systemUniforms.BiomeRules[j][3] = CoreGraphics::TextureGetNumMips(terrainState.biomeMasks[j]);
     }
     BufferUpdate(terrainState.systemConstants, systemUniforms, 0);
 
@@ -1967,7 +2059,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
             case SubTextureUpdateState::Created:
             {
                 Math::uint2 newCoord = terrainVirtualTileState.indirectionOccupancy.Allocate(output.newTiles);
-                n_assert(newCoord.x != 0xFFFFFFFF && newCoord.y != 0xFFFFFFFF);
+                if (newCoord.x == 0xFFFFFFFF || newCoord.y == 0xFFFFFFFF)
+                    break;
+                //n_assert(newCoord.x != 0xFFFFFFFF && newCoord.y != 0xFFFFFFFF);
 
                 // update subtexture
                 subTex.numTiles = output.newTiles;
@@ -2122,8 +2216,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     // Update buffers for indirection pixel uploads
 
     numPagesThisFrame = Math::min(NumPagesPerFrame, terrainVirtualTileState.indirectionEntryUpdates.Size());
-    auto [offset, buffer] = CoreGraphics::UploadArray(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
-    terrainVirtualTileState.uploadUpdateBufferThisFrame = buffer;
+    uint offset = Upload(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
     for (i = 0; i < numPagesThisFrame; i++)
     {
         // setup indirection update
@@ -2135,6 +2228,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         terrainVirtualTileState.indirectionEntryUpdates.EraseRange(0, numPagesThisFrame);
         terrainVirtualTileState.indirectionTextureCopies.EraseRange(0, numPagesThisFrame);
     }
+
+    // Flush upload buffer
+    CoreGraphics::BufferFlush(terrainVirtualTileState.indirectionUploadBuffers.buffers[ctx.bufferIndex], 0, terrainVirtualTileState.indirectionUploadOffsets[ctx.bufferIndex]);
 
     // Wait for jobs to finish
     sectionCullFinishedEvent.Wait();
@@ -2152,6 +2248,12 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     for (IndexT i = 0; i < runtimes.Size(); i++)
     {
         TerrainRuntimeInfo& rt = runtimes[i];
+
+        if (!rt.lowresGenerated && AllBits(rt.loadBits, TerrainRuntimeInfo::HeightMapLoaded))
+        {
+            terrainVirtualTileState.updateLowres = true;
+            rt.lowresGenerated = true;
+        }
 
         TerrainRuntimeUniforms uniforms;
         Math::mat4().store(uniforms.Transform);

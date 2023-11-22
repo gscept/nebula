@@ -56,7 +56,7 @@ ModelLoader::Setup()
 /**
 */
 Resources::ResourceUnknownId
-ModelLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     // a model is a list of resources, a bounding box, and a dictionary of nodes
     Math::bbox boundingBox;
@@ -78,12 +78,12 @@ ModelLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const 
         if (magic != FourCC('NEB3'))
         {
             n_error("StreamModelLoader: '%s' is not a N3 binary file!", stream->GetURI().AsString().AsCharPtr());
-            return Failed;
+            return Resources::InvalidResourceUnknownId;
         }
         if (version != 1)
         {
             n_error("StreamModelLoader: '%s' has wrong version!", stream->GetURI().AsString().AsCharPtr());
-            return Failed;
+            return Resources::InvalidResourceUnknownId;
         }
 
         // start reading tags

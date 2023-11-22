@@ -312,7 +312,6 @@ nebula_begin_module(foundation)
             poolarrayallocator.h
             rangeallocator.h
             ringallocator.h
-            sizeclassificationallocator.h
             debug/memorypagehandler.cc
             debug/memorypagehandler.h
         )

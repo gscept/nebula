@@ -33,7 +33,7 @@ ShaderLoader::~ShaderLoader()
 /**
 */
 Resources::ResourceUnknownId
-ShaderLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+ShaderLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());
     n_assert(stream->CanBeMapped());
@@ -60,7 +60,7 @@ ShaderLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceLoader::LoadStatus
+Resources::Resource::State
 ShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
 {
     void* srcData = stream->Map();
@@ -74,14 +74,14 @@ ShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
     {
         n_error("VkStreamShaderLoader::ReloadFromStream(): failed to load shader '%s'!",
             this->GetName(id).Value());
-        return ResourceLoader::Failed;
+        return Resources::Resource::Failed;
     }
 
     ShaderId shader;
     shader.resourceId = id.resourceId;
     shader.resourceType = id.resourceType;
     ReloadShader(shader, effect);
-    return ResourceLoader::Success;
+    return Resources::Resource::Loaded;
 }
 
 //------------------------------------------------------------------------------

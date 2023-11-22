@@ -85,9 +85,7 @@ struct GraphicsDeviceState
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
     uint globalConstantBufferMaxValue;
-    Util::FixedArray<CoreGraphics::BufferId> globalGraphicsConstantBuffer;
-    Util::FixedArray<CoreGraphics::BufferId> globalComputeConstantBuffer;
-
+    Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;
 
     CoreGraphics::ResourceTableId tickResourceTableGraphics;
     CoreGraphics::ResourceTableId tickResourceTableCompute;
@@ -96,13 +94,14 @@ struct GraphicsDeviceState
 
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 
-    Memory::SCAllocator vertexAllocator;
+    Memory::RangeAllocator vertexAllocator;
     CoreGraphics::BufferId vertexBuffer;
 
-    Memory::SCAllocator indexAllocator;
+    Memory::RangeAllocator indexAllocator;
     CoreGraphics::BufferId indexBuffer;
 
     int globalUploadBufferPoolSize;
+    Memory::RangeAllocator uploadAllocator;
     //CoreGraphics::BufferId uploadBuffer;
 
     uint maxNumBufferedFrames = 1;
@@ -190,11 +189,7 @@ void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT s
 ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 
 /// return id to global graphics constant buffer
-CoreGraphics::BufferId GetGraphicsConstantBuffer(IndexT i);
-/// Return buffer used for compute constants
-CoreGraphics::BufferId GetComputeConstantBuffer(IndexT i);
-/// Flush constants for queue type, do this before recording any commands doing draw or dispatch
-void FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue);
+CoreGraphics::BufferId GetConstantBuffer(IndexT i);
 
 struct VertexAlloc
 {
@@ -364,7 +359,8 @@ Upload(const TYPE& data, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE);
     auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
-    UploadInternal(buffer, offset, &data, uploadSize);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        UploadInternal(buffer, offset, &data, uploadSize);
     return Util::MakePair(offset, buffer);
 }
 
@@ -377,7 +373,8 @@ UploadArray(const TYPE* data, SizeT numElements, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
     auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
-    UploadInternal(buffer, offset, data, uploadSize);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        UploadInternal(buffer, offset, data, uploadSize);
     return Util::MakePair(offset, buffer);
 }
 
@@ -411,7 +408,8 @@ inline Util::Pair<uint, CoreGraphics::BufferId>
 UploadArray(const void* data, SizeT numBytes, SizeT alignment)
 {
     auto [offset, buffer] = AllocateUpload(numBytes, alignment);
-    UploadInternal(buffer, offset, data, numBytes);
+    if (buffer != CoreGraphics::InvalidBufferId)
+        UploadInternal(buffer, offset, data, numBytes);
     return Util::MakePair(offset, buffer);
 }
 

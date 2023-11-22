@@ -27,22 +27,15 @@ public:
 
 private:
 
-    struct TextureStreamData
-    {
-        gliml::context ctx;
-        void* mappedBuffer;
-        uint mappedBufferSize;
-        ubyte lowestLod;
-        ubyte maxMip;
-    };
-
     /// load texture
-    Resources::ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    /// Stream texture
+    uint StreamResource(const Resources::ResourceId entry, uint requestedBits) override;
     /// unload texture
     void Unload(const Resources::ResourceId id);
 
-    /// stream mips
-    void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate) override;
+    /// Create load mask based on LOD
+    uint LodMask(const Ids::Id32 entry, float lod) const override;
 };
 
 } // namespace CoreGraphics

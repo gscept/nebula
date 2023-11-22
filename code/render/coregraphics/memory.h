@@ -12,7 +12,7 @@
 #include "threading/criticalsection.h"
 #include "util/array.h"
 #include "ids/idpool.h"
-#include "memory/sizeclassificationallocator.h"
+#include "memory/rangeallocator.h"
 
 
 #if __VULKAN__
@@ -53,6 +53,11 @@ struct AllocRange
     DeviceSize size;
 };
 
+struct MemoryHeap
+{
+    DeviceSize space;
+};
+
 struct MemoryPool
 {
     // make a new allocation
@@ -70,7 +75,7 @@ struct MemoryPool
     uint memoryType;
     Ids::IdPool blockPool;
     Util::Array<DeviceMemory> blocks;
-    Util::Array<Memory::SCAllocator> allocators;
+    Util::Array<Memory::RangeAllocator> allocators;
     Util::Array<void*> blockMappedPointers;
     DeviceSize size;
 
@@ -78,12 +83,12 @@ struct MemoryPool
     DeviceSize maxSize;
     bool mapMemory;
 
+    MemoryHeap* heap;
+
 private:
 
     static constexpr uint DedicatedBlockNodeIndex = 0xFFFFFFFF;
 
-    // allocate conservatively
-    Alloc Allocate(DeviceSize alignment, DeviceSize size);
     // create new memory block
     DeviceMemory CreateBlock(void** outMappedPtr);
     // destroy block
@@ -93,6 +98,7 @@ private:
 };
 
 extern Util::Array<MemoryPool> Pools;
+extern Util::Array<MemoryHeap> Heaps;
 extern Threading::CriticalSection AllocationLock;
 
 /// setup memory pools

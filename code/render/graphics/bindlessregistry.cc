@@ -84,8 +84,7 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        ResourceTableSetTexture(Graphics::GetTickResourceTableGraphics(i), info);
-        ResourceTableSetTexture(Graphics::GetTickResourceTableCompute(i), info);
+        ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
     }
     state.bindResourceCriticalSection.Leave();
 
@@ -128,8 +127,7 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        ResourceTableSetTexture(Graphics::GetTickResourceTableGraphics(i), info);
-        ResourceTableSetTexture(Graphics::GetTickResourceTableCompute(i), info);
+        ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
     }
     state.bindResourceCriticalSection.Leave();
 }
@@ -170,8 +168,7 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        ResourceTableSetTexture(Graphics::GetTickResourceTableGraphics(i), info);
-        ResourceTableSetTexture(Graphics::GetTickResourceTableCompute(i), info);
+        ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
     }
     state.bindResourceCriticalSection.Leave();
 

@@ -144,5 +144,51 @@ inline void HashCombine(uint32_t& s, const T& v)
     s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+FirstOne(uint value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanForward(&count, value);
+#else
+    int count = __builtin_ctz(value);
+#endif
+    return count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+LastOne(uint value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanReverse(&count, value);
+#else
+    int count = __builtin_clz(value);
+#endif
+    return count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+Lsb(uint value, byte bit)
+{
+    uint mask = value & ~((1 << bit) - 1);
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanForward(&count, mask);
+#else
+    int count = __builtin_ctz(mask);
+#endif
+    return mask ? count : 0xFFFFFFFF;
+}
+
 } // namespace Util
 

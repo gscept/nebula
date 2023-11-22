@@ -22,9 +22,11 @@ public:
     /// destructor
     virtual ~PrimitiveNode();
 
-    /// get the nodes primitive group index
-    uint32_t GetPrimitiveGroupIndex() const { return this->primitiveGroupIndex; }
-    /// get primitives mesh id
+    /// Get the nodes primitive group index
+    uint32_t GetPrimitiveGroupIndex() const { return this->loadContext.primIndex; }
+    /// Get primitive group
+    const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup() const { return this->primGroup; }
+    /// Get primitives mesh id
     CoreGraphics::MeshId GetMesh() const { return this->mesh; }
 
 
@@ -38,7 +40,12 @@ protected:
 
     Resources::ResourceId res;
     CoreGraphics::MeshId mesh;
-    uint16_t primitiveGroupIndex;
+
+    struct LoadContext
+    {
+        uint16 meshIndex;
+        uint16 primIndex;
+    } loadContext;
     bool loadSuccess = false;
 
     CoreGraphics::BufferId vbo, ibo;

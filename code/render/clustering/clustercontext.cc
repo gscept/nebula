@@ -108,14 +108,10 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
-        CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
-
-        ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
     }
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -224,14 +220,10 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
 
         for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
-            CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
-            CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+            CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-            ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-            ResourceTableCommitChanges(computeTable);
-
-            ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-            ResourceTableCommitChanges(graphicsTable);
+            ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+            ResourceTableCommitChanges(frameResourceTable);
         }
     }
 }
