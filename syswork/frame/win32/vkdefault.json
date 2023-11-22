@@ -64,7 +64,7 @@
             },
             {
                 "name": "BloomBuffer",
-                "format": "R11G11B10F",
+                "format": "R16G16B16A16F",
                 "relative": true,
                 "usage": "Render|TransferSource|ReadWrite",
                 "width": 1.0,
