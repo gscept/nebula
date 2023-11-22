@@ -55,7 +55,7 @@ csMain()
     if (all(lessThan(pixel, TextureSize)))
     {
         vec4 color = texelFetch(ColorSource, pixel, Mip);
-        float luminance = dot(color, Luminance);
+        float luminance = dot(color.rgb, Luminance);
 
         float logLuminance = 0.0f;
         if (luminance >= 1.0f)

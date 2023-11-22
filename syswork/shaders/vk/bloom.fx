@@ -29,7 +29,7 @@ render_state PostEffectState
 };
 
 texture2D Input;
-write r11g11b10f image2D BloomOutput;
+write rgba16f image2D BloomOutput;
 
 groupshared vec3 SampleLookup[KERNEL_SIZE][KERNEL_SIZE];
 
@@ -111,7 +111,8 @@ csUpscale()
 
     if (pixelOutputMask)
     {
-        imageStore(BloomOutput, ivec2(outputPixel.x, outputPixel.y), vec4(sum, 1));
+        vec3 weight = sum / Mips;
+        imageStore(BloomOutput, ivec2(outputPixel.x, outputPixel.y), vec4(sum, saturate(dot(weight, weight)) * BloomIntensity));
     }
 }
 

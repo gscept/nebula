@@ -60,7 +60,7 @@ psMain(in vec2 UV,
     vec4 sample2 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(0, 1), 0);
     vec4 sample3 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(1, 1), 0);
     vec4 sample4 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(0, 0), 0);
-    float currentLum = dot((sample1 + sample2 + sample3 + sample4) * 0.25f, Luminance);
+    float currentLum = dot((sample1 + sample2 + sample3 + sample4).rgb * 0.25f, Luminance);
     float lastLum = texelFetch(sampler2D(PreviousLum, LuminanceSampler), ivec2(0, 0), 0).r;
 
     float lum = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * TimeDiff));
