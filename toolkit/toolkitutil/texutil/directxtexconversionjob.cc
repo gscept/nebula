@@ -10,6 +10,8 @@
 #include "io/ioserver.h"
 #include "system/systeminfo.h"
 
+#include "toolkit-common/text.h"
+
 namespace ToolkitUtil
 {
 using namespace IO;
@@ -90,13 +92,13 @@ DirectXTexConversionJob::Convert()
             (String::MatchPattern(this->srcPath, "*normal.*")) ||
             (String::MatchPattern(this->srcPath, "*bump.*")))
         {
-            this->logger->Print("   [Conversion] '%s' -> Normal Map (BC5 UNORM).\n", this->srcPath.AsCharPtr());
+            this->logger->Print("%s ", "Normal Map (BC5 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
             type = TextureDataType::NormalMap;
         }
 
         if (String::MatchPattern(this->srcPath, "*height.*"))
         {
-            this->logger->Print("   [Conversion] '%s' -> Height Map (R16 UNORM).\n", this->srcPath.AsCharPtr());
+            this->logger->Print("%s ", "Height Map (R16 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
             type = TextureDataType::HeightMap;
         }
         /*
@@ -173,10 +175,17 @@ DirectXTexConversionJob::Convert()
         {
             return false;
         }
+
+        ToolkitUtil::Text print = Util::String::Sprintf("%s -> %s... ", Text(URI(this->srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(Format("%s.dds", URI(this->dstPath).LocalPath().AsCharPtr())).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
+        this->logger->Print(Util::String::Sprintf("%s%s", print.AsCharPtr(), "done\n"_text.Color(TextColor::Green).AsCharPtr()).AsCharPtr());
     }
+
     return true;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 DirectXTexConversionJob::ConvertCube()
 {

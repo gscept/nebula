@@ -44,7 +44,7 @@ NglTFMaterialExtractor::ExportAll()
         {
             // delete all previously generated surfaces
             if (!IO::IoServer::Instance()->DeleteDirectory(surfaceExportPath))
-                n_warning("    [glTF Warning - Could not delete old directory for gltf-specific surfaces]\n");
+                this->logger->Warning("glTF - Could not delete old directory for gltf-specific surfaces\n");
         }
 
         // Generate surfaces
@@ -53,6 +53,7 @@ NglTFMaterialExtractor::ExportAll()
             Gltf::Material& material = this->doc->materials[i];
 
             SurfaceBuilder builder;
+            builder.SetLogger(this->logger);
             builder.SetDstDir(surfaceExportPath);
 
             Util::String templateName;

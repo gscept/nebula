@@ -239,7 +239,6 @@ NglTFScene::Setup(Gltf::Document* scene
         Gltf::Node* gltfNode = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
         nodeSetup(gltfNode, nullptr);
     }
-    n_printf("    [glTF - Parsing done (%d)]\n", scene->meshes.Size());
 }
 
 } // namespace ToolkitUtil

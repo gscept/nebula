@@ -2,6 +2,9 @@
 #include "foundation/stdneb.h"
 #include "assetbatcherapp.h"
 
+#define NEBULA_TEXT_IMPLEMENT
+#include "toolkit-common/text.h"
+
 //------------------------------------------------------------------------------
 /**
 */

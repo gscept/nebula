@@ -142,7 +142,7 @@ NFbxScene::Setup(
     n_assert(triangulated);
     delete converter;
     timer.Stop();
-    n_printf("  [FBX - Triangulation done (%.2f ms)]", timer.GetTime() * 1000);
+    n_printf("  [FBX - Triangulation done (%.2f ms)]\n", timer.GetTime() * 1000);
 
 
     // Okay so we want to do this, we really do, but if we do, 

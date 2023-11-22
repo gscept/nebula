@@ -48,6 +48,8 @@ protected:
 
     Scene* scene;
     TextureConverter* texConverter;
+
+    ToolkitUtil::Logger logger;
 };
 
 //------------------------------------------------------------------------------

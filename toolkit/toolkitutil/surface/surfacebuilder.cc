@@ -8,6 +8,7 @@
 #include "toolkit-common/converters/binaryxmlconverter.h"
 #include "io/xmlwriter.h"
 #include "io/memorystream.h"
+#include "toolkit-common/text.h"
 
 using namespace IO;
 using namespace Util;
@@ -70,10 +71,9 @@ SurfaceBuilder::ExportBinary(Util::String const& dstFile)
 
     stream->SetAccessMode(Stream::AccessMode::ReadAccess);
 
-    Logger logger;
-    logger.Print("[[Exporting surface: %s]]\n", dstFile.AsCharPtr());
+    this->logger->Print("Generated surface: %s\n", Text(dstFile).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     BinaryXmlConverter converter;
-    converter.ConvertStream(stream, dstFile, logger);
+    converter.ConvertStream(stream, dstFile, *this->logger);
 }
 
 } // namespace ToolkitUtil
