@@ -66,7 +66,7 @@ GraphicsServer::Open()
         .globalConstantBufferMemorySize = 16_MB,
         .globalVertexBufferMemorySize = 64_MB,
         .globalIndexBufferMemorySize = 64_MB,
-        .globalUploadMemorySize = 32_MB,
+        .globalUploadMemorySize = 100_MB,
         .memoryHeaps = {
             64_MB,                  // Device local memory block size
             32_MB,                  // Host coherent memory block size
