@@ -8,6 +8,7 @@
 #include "io/assignregistry.h"
 #include "toolkit-common/toolkitconsolehandler.h"
 #include "nflatbuffer/flatbufferinterface.h"
+#include "toolkit-common/text.h"
 
 using namespace Util;
 using namespace IO;
@@ -42,7 +43,7 @@ AssetExporter::Open()
     this->surfaceExporter = ToolkitUtil::SurfaceExporter::Create();
     this->surfaceExporter->Open();
     this->modelBuilder = ToolkitUtil::ModelBuilder::Create();
-    this->textureExporter.Setup(this->logger);
+    this->textureExporter.Setup();
 }
 
 //------------------------------------------------------------------------------
@@ -87,7 +88,7 @@ AssetExporter::ExportDir(const Util::String& category)
 void
 AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& category)
 {
-    n_printf("Exporting asset directory '%s'\n", category.AsCharPtr());
+    n_printf("\n----------------- Exporting asset directory %s -----------------\n", Text(URI(assetPath).LocalPath()).Color(TextColor::Blue).Style(FontMode::Bold).AsCharPtr());
     IoServer* ioServer = IoServer::Instance();
 
     IndexT fileIndex;
@@ -99,6 +100,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         console->Clear();
         // export GLTF sources
 
+        this->logger->Print("\nGLTFs ------------\n");
         Array<String> files = ioServer->ListFiles(assetPath, "*.gltf");
         files.AppendArray(ioServer->ListFiles(assetPath, "*.glb"));
         this->gltfExporter = ToolkitUtil::NglTFExporter::Create();
@@ -106,13 +108,21 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         this->gltfExporter->Open();
         this->gltfExporter->SetForce(this->force || (this->mode & ExportModes::ForceGLTF) != 0);
         this->gltfExporter->SetCategory(category);
+        this->gltfExporter->SetLogger(this->logger);
         log.AddEntry(console, "GLTF", category);
-        for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+        if (files.IsEmpty())
         {
-            console->Clear();
-            this->gltfExporter->SetFile(files[fileIndex]);
-            this->gltfExporter->ExportFile(assetPath + files[fileIndex]);
-            log.AddEntry(console, "GLTF", files[fileIndex]);
+            this->logger->Print("Nothing to export\n");
+        }
+        else
+        {
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                this->gltfExporter->SetFile(files[fileIndex]);
+                this->gltfExporter->ExportFile(assetPath + files[fileIndex]);
+                log.AddEntry(console, "GLTF", files[fileIndex]);
+            }
         }
         this->gltfExporter->Close();
         this->gltfExporter = nullptr;
@@ -120,20 +130,28 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
 
     if (this->mode & ExportModes::FBX)
     {
-        console->Clear();
+        this->logger->Print("\nFBXs ----------------\n");
         // export FBX sources
         Array<String> files = ioServer->ListFiles(assetPath, "*.fbx");
         this->fbxExporter = ToolkitUtil::NFbxExporter::Create();
         this->fbxExporter->Open();
         this->fbxExporter->SetForce(this->force || (this->mode & ExportModes::ForceFBX) != 0);
         this->fbxExporter->SetCategory(category);
+        this->fbxExporter->SetLogger(this->logger);
         log.AddEntry(console, "FBX", category);
-        for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+        if (files.IsEmpty())
         {
-            console->Clear();
-            this->fbxExporter->SetFile(files[fileIndex]);
-            this->fbxExporter->ExportFile(assetPath + files[fileIndex]);
-            log.AddEntry(console, "FBX", files[fileIndex]);
+            this->logger->Print("Nothing to export\n");
+        }
+        else
+        {
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                this->fbxExporter->SetFile(files[fileIndex]);
+                this->fbxExporter->ExportFile(assetPath + files[fileIndex]);
+                log.AddEntry(console, "FBX", files[fileIndex]);
+            }
         }
         this->fbxExporter->Close();
         this->fbxExporter = nullptr;
@@ -142,31 +160,41 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     if (this->mode & ExportModes::Models)
     {
         // export models
+        this->logger->Print("\nModels --------------\n");
         Array<String> files = ioServer->ListFiles(assetPath, "*.attributes");
-        for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+        if (files.IsEmpty())
         {
-            console->Clear();
-            String modelName = files[fileIndex];
-            modelName.StripFileExtension();
-            modelName = category + "/" + modelName;
-            Ptr<ModelConstants> constants = ModelDatabase::Instance()->LookupConstants(modelName, true);
-            Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(modelName, true);
-            Ptr<ModelPhysics> physics = ModelDatabase::Instance()->LookupPhysics(modelName, true);
+            this->logger->Print("Nothing to export\n");
+        }
+        else
+        {
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                String modelName = files[fileIndex];
+                modelName.StripFileExtension();
+                modelName = category + "/" + modelName;
+                Ptr<ModelConstants> constants = ModelDatabase::Instance()->LookupConstants(modelName, true);
+                Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(modelName, true);
+                Ptr<ModelPhysics> physics = ModelDatabase::Instance()->LookupPhysics(modelName, true);
 
-            this->modelBuilder->SetConstants(constants);
-            this->modelBuilder->SetAttributes(attributes);
-            this->modelBuilder->SetPhysics(physics);
+                this->modelBuilder->SetConstants(constants);
+                this->modelBuilder->SetAttributes(attributes);
+                this->modelBuilder->SetPhysics(physics);
 
-            // save models and physics
-            String modelPath = String::Sprintf("mdl:%s.n3", modelName.AsCharPtr());
-            this->modelBuilder->SaveN3(modelPath, this->platform);
+                // save models and physics
 
-            String physicsPath = String::Sprintf("phys:%s.actor", modelName.AsCharPtr());
-            this->modelBuilder->SaveN3Physics(physicsPath, this->platform);
+                String modelPath = String::Sprintf("mdl:%s.n3", modelName.AsCharPtr());
+                this->logger->Print("%s -> %s\n", Text(URI(assetPath + files[fileIndex]).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(modelPath).Color(TextColor::Green).AsCharPtr());
+                this->modelBuilder->SaveN3(modelPath, this->platform);
 
-            log.AddEntry(console, "Model", files[fileIndex]);
+                String physicsPath = String::Sprintf("phys:%s.actor", modelName.AsCharPtr());
+                this->modelBuilder->SaveN3Physics(physicsPath, this->platform);
+
+                log.AddEntry(console, "Model", files[fileIndex]);
+            }
+        }
     }
-}
 
     if (this->mode & ExportModes::Textures)
     {
@@ -178,40 +206,70 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         files.AppendArray(ioServer->ListFiles(assetPath, "*.jpg"));
         files.AppendArray(ioServer->ListFiles(assetPath, "*.exr"));
         files.AppendArray(ioServer->ListFiles(assetPath, "*.tif"));
+        Array<String> cubes = ioServer->ListDirectories(assetPath, "*.cube");
+
         this->textureExporter.SetForceFlag(this->force || (this->mode & ExportModes::ForceTextures) != 0);
-        for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+        this->textureExporter.SetLogger(this->logger);
+
+        this->logger->Print("\nTextures ------------\n");
+        Util::String dstDir = Util::String::Sprintf("tex:%s", category.AsCharPtr());
+        if (files.IsEmpty() && cubes.IsEmpty())
         {
-            console->Clear();
-            this->textureExporter.ConvertTexture(assetPath + files[fileIndex], "tex:", "temp:textureconverter");
-            log.AddEntry(console, "Texture", files[fileIndex]);
+            this->logger->Print("Nothing to export\n");
         }
-        // export cubemaps
-        Array<String> Cubes = ioServer->ListDirectories(assetPath, "*.cube");
-        for (fileIndex = 0; fileIndex < Cubes.Size(); fileIndex++)
+        else
         {
-            console->Clear();
-            this->textureExporter.ConvertCubemap(assetPath + Cubes[fileIndex], "tex:", "temp:textureconverter");
-            log.AddEntry(console, "Texture", Cubes[fileIndex]);
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), files[fileIndex].AsCharPtr());
+                dstFile.StripFileExtension();
+                this->textureExporter.ConvertTexture(assetPath + files[fileIndex], dstFile, "temp:textureconverter");
+                log.AddEntry(console, "Texture", files[fileIndex]);
+            }
+
+            for (fileIndex = 0; fileIndex < cubes.Size(); fileIndex++)
+            {
+                console->Clear();
+                Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), cubes[fileIndex].AsCharPtr());
+                dstFile.StripFileExtension();
+                this->textureExporter.ConvertCubemap(assetPath + cubes[fileIndex], dstFile, "temp:textureconverter");
+                log.AddEntry(console, "Texture", cubes[fileIndex]);
+            }
         }
     }
 
     if (this->mode & ExportModes::Surfaces)
     {
+        this->logger->Print("\nSurfaces ------------\n");
         Array<String> files = ioServer->ListFiles(assetPath, "*.sur");
+        this->surfaceExporter->SetLogger(this->logger);
         this->surfaceExporter->SetForce(this->force || (this->mode & ExportModes::ForceSurfaces) != 0);
-        for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+        if (files.IsEmpty())
         {
-            console->Clear();
-            this->surfaceExporter->ExportFile(assetPath + files[fileIndex]);
-            log.AddEntry(console, "Surface", files[fileIndex]);
+            this->logger->Print("Nothing to export\n");
+        }
+        else
+        {
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                this->surfaceExporter->ExportFile(assetPath + files[fileIndex]);
+                log.AddEntry(console, "Surface", files[fileIndex]);
+            }
         }
     }
 
     if (this->mode & ExportModes::Audio)
     {
+        this->logger->Print("\nAudio ---------------\n");
         Array<String> files = ioServer->ListFiles(assetPath, "*.wav");
         files.AppendArray(ioServer->ListFiles(assetPath, "*.mp3"));
-        if (!files.IsEmpty())
+        if (files.IsEmpty())
+        {
+            this->logger->Print("Nothing to export\n");
+        }
+        else
         {
             Util::String dstDir = Util::String::Sprintf("dst:audio/%s", category.AsCharPtr());
             ioServer->CreateDirectory(dstDir);
@@ -220,6 +278,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             {
                 console->Clear();
                 Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), files[fileIndex].AsCharPtr());
+                this->logger->Print("%s -> %s\n", Text(URI(assetPath + files[fileIndex]).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(dstFile).Color(TextColor::Green).AsCharPtr());
                 ioServer->CopyFile(assetPath + files[fileIndex], dstFile);
                 log.AddEntry(console, "Audio", files[fileIndex]);
             }
@@ -227,23 +286,30 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     }
     if (this->mode & ExportModes::Physics)
     {
-        Logger logger;
+        this->logger->Print("\nPhysics -------------\n");
         Array<String> files = ioServer->ListFiles(assetPath, "*.actor", true);
         Util::String dstDir = Util::String::Sprintf("dst:physics/%s", category.AsCharPtr());
 
-        for (auto const& file : files)
+        if (files.IsEmpty())
         {
-            Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), file.ExtractFileName().AsCharPtr());
-            logger.Print("Exporting Physics Actor: '%s' ... ", file.AsCharPtr());
-            if (this->mode & ExportModes::ForcePhysics || NeedsConversion(file, dstFile))
+            this->logger->Print("Nothing to export\n");
+        }
+        else
+        {
+            for (auto const& file : files)
             {
-                Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO");
-                log.AddEntry(console, "Physics", file);
-                logger.Print("converted\n");
-            }
-            else
-            {
-                logger.Print("skipped\n");
+                Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), file.ExtractFileName().AsCharPtr());
+                this->logger->Print("%s %s... ", "Exporting physics:", Text(Format("%s", file.AsCharPtr())).Color(TextColor::Blue).AsCharPtr());
+                if (this->mode & ExportModes::ForcePhysics || NeedsConversion(file, dstFile))
+                {
+                    Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO");
+                    log.AddEntry(console, "Physics", file);
+                    this->logger->Print("done\n"_text.Color(TextColor::Green).AsCharPtr());
+                }
+                else
+                {
+                    this->logger->Print("skipped\n"_text.Color(TextColor::Cyan).AsCharPtr());
+                }
             }
         }
     }

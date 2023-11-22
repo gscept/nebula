@@ -58,7 +58,9 @@ public:
     void AddAttributeEntry(const Util::String& file, const TextureAttrs& attrs);
 
     /// setup the texture converter, read the texture attributes table
-    bool Setup(Logger& logger);
+    bool Setup();
+    /// Set the logger to use
+    void SetLogger(Logger* logger);
     /// discard the texture converter
     void Discard();
     /// return true if the object has been setup
@@ -66,11 +68,12 @@ public:
     /// convert all textures from given file list
     bool ConvertFiles(const Util::Array<Util::String>& files);
     /// convert a texture from a given path
-    bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstDir, const Util::String& tmpDir);
+    bool ConvertTexture(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir);
     /// convert a cubemap folder from a given path
-    bool ConvertCubemap(const Util::String& srcTexPath, const Util::String& dstDir, const Util::String& tmpDir);
+    bool ConvertCubemap(const Util::String& srcTexPath, const Util::String& dstTexPath, const Util::String& tmpDir);
 
 private:
+
     Logger* logger;
     Platform::Code platform;
     Util::String texAttrTablePath;

@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "util/string.h"
+#include "toolkit-common/logger.h"
 
 namespace ToolkitUtil
 {
@@ -19,6 +20,7 @@ public:
     ///
     ~SurfaceBuilder();
 
+    void SetLogger(ToolkitUtil::Logger* logger);
     void SetDstDir(Util::String const& dir);
     void SetMaterial(Util::String const& name);
     void AddParam(Util::String const& name, Util::String const& value);
@@ -28,8 +30,18 @@ public:
 private:
     Util::String dstDir;
     Util::String material;
+    ToolkitUtil::Logger* logger;
     Util::Array<Util::KeyValuePair<Util::String, Util::String>> params;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+SurfaceBuilder::SetLogger(ToolkitUtil::Logger* logger)
+{
+    this->logger = logger;
+}
 
 //------------------------------------------------------------------------------
 /**

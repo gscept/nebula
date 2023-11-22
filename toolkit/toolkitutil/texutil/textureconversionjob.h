@@ -42,6 +42,9 @@ public:
     /// perform the texture conversion
     virtual bool Convert();
 
+    /// copy conversion result from temp to dst path
+    bool CopyResult();
+
 protected:
     /// prepares conversion process
     virtual bool PrepareConversion(const Util::String& srcPath, const Util::String& dstPath);
@@ -49,8 +52,7 @@ protected:
     virtual bool NeedsConversion(const Util::String& srcPath, const Util::String& dstPath);
     /// set destination file extension (call from subclass constructor)
     void SetDstFileExtension(const Util::String & ext);
-    /// copy conversion result from temp to dst path
-    bool CopyResult();
+
 
     const TextureAttrTable* textureAttrTable;
     Logger* logger;

@@ -85,7 +85,6 @@ private:
     Ptr<ToolkitUtil::SurfaceExporter> surfaceExporter;
     Ptr<ToolkitUtil::ModelBuilder> modelBuilder;    
     ToolkitUtil::TextureAttrTable textureAttrTable;
-    Logger logger;
     unsigned int mode;
     Util::Array<ToolLog> messages;
 };

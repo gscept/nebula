@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "logger.h"
+#include "text.h"
 
 namespace ToolkitUtil
 {
@@ -27,6 +28,7 @@ Logger::~Logger()
     // empty
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -40,7 +42,7 @@ Logger::Error(const char* msg, ...)
     this->messages.Append(String("[ERROR] ") + str);
     if (this->verbose)
     {
-        n_error(this->messages.Back().AsCharPtr());
+        n_error("%s%s", this->indent.AsCharPtr(), Text(this->messages.Back()).Color(TextColor::Red).AsCharPtr());
     }
     va_end(argList);
 }
@@ -58,7 +60,7 @@ Logger::Warning(const char* msg, ...)
     this->messages.Append(String("[WARNING] ") + str);
     if (this->verbose)
     {
-        n_warning(this->messages.Back().AsCharPtr());
+        n_warning("%s%s", this->indent.AsCharPtr(), Text(this->messages.Back()).Color(TextColor::Yellow).AsCharPtr());
     }
     va_end(argList);
 }
@@ -76,7 +78,7 @@ Logger::Print(const char* msg, ...)
     this->messages.Append(str);
     if (this->verbose)
     {
-        n_printf(str.AsCharPtr());
+        n_printf("%s%s", this->indent.AsCharPtr(), str.AsCharPtr());
     }
     va_end(argList);
 }

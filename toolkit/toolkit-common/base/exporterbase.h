@@ -10,6 +10,7 @@
 #include "core/refcounted.h"
 #include "io/uri.h"
 #include "toolkit-common/platform.h"
+#include "toolkit-common/logger.h"
 #include "net/socket/socket.h"
 #include "io/console.h"
 
@@ -70,6 +71,8 @@ public:
     void SetProgressCallback(ExporterProgressCallback callback);
     /// sets the min-max callback (only used if remote is false)
     void SetMinMaxCallback(ExporterMinMaxCallback callback);
+    /// Set the logger
+    void SetLogger(ToolkitUtil::Logger* logger);
 
     /// helper function for reporting progress
     void Progress(float progress, const Util::String& status);
@@ -98,6 +101,7 @@ protected:
     ExportFlag exportFlag;
     ExporterProgressCallback progressCallback;
     ExporterMinMaxCallback  minMaxCallback;
+    ToolkitUtil::Logger* logger;
 
     bool hasErrors;
 
@@ -216,6 +220,15 @@ inline void
 ExporterBase::SetMinMaxCallback( ExporterMinMaxCallback callback )
 {
     this->minMaxCallback = callback;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+ExporterBase::SetLogger(ToolkitUtil::Logger* logger)
+{
+    this->logger = logger;
 }
 
 //------------------------------------------------------------------------------

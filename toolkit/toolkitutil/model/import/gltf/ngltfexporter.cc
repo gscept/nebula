@@ -55,7 +55,7 @@ NglTFExporter::ParseScene()
     
     if (!res)
     {
-        n_warning("WARNING: Failed to import '%s'\n\n", this->file.AsCharPtr());
+        this->logger.Warning("Failed to import '%s'\n\n", this->file.AsCharPtr());
         return false;
     }
 
@@ -63,6 +63,7 @@ NglTFExporter::ParseScene()
     scene->SetName(this->file);
     scene->SetCategory(this->category);
     scene->Setup(&this->gltfScene, this->exportFlags, this->sceneScale);
+    this->texConverter->SetLogger(&this->logger);
     this->scene = scene;
 
     String fileExtension = this->path.LocalPath().GetFileExtension();
@@ -70,12 +71,17 @@ NglTFExporter::ParseScene()
         // Extract materials into .sur files
         // Always do this before exporting textures, since the texture names may be changed in the extractor.
         NglTFMaterialExtractor extractor;
+        extractor.SetLogger(&this->logger);
         extractor.SetCategoryName(this->category);
         extractor.SetDocument(&this->gltfScene);
         extractor.SetExportSubDirectory(this->file);
         extractor.ExportAll();
     }
 
+    static const Util::String tmpDir = "temp:textureconverter";
+    Util::String intermediateDir = Util::String::Sprintf("%s/%s/%s", tmpDir.AsCharPtr(), this->category.AsCharPtr(), this->file.AsCharPtr());
+
+    bool hasEmbedded = false;
     for (IndexT i = 0; i < gltfScene.materials.Size(); i++)
     {
         Gltf::Material const& material = gltfScene.materials[i];
@@ -89,8 +95,9 @@ NglTFExporter::ParseScene()
             Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.normalTexture.index].source];
             if (image.embedded)
             {
-                Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.normalTexture.index).AsCharPtr());
+                hasEmbedded = true;
+                Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), material.normalTexture.index, format.AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -112,8 +119,9 @@ NglTFExporter::ParseScene()
             Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.pbrMetallicRoughness.baseColorTexture.index].source];
             if (image.embedded)
             {
-                Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.pbrMetallicRoughness.baseColorTexture.index).AsCharPtr());
+                hasEmbedded = true;
+                Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), material.pbrMetallicRoughness.baseColorTexture.index, format.AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -134,8 +142,9 @@ NglTFExporter::ParseScene()
             Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source];
             if (image.embedded)
             {
-                Util::String intermediateDir = Util::String::Sprintf("%s_%s", this->file.AsCharPtr(), fileExtension.AsCharPtr());
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d", intermediateDir.AsCharPtr(), Util::String::FromInt(material.pbrMetallicRoughness.metallicRoughnessTexture.index).AsCharPtr());
+                hasEmbedded = true;
+                Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), material.pbrMetallicRoughness.metallicRoughnessTexture.index, format.AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -151,40 +160,21 @@ NglTFExporter::ParseScene()
     if (gltfScene.images.Size() > 0)
     {
         // Export embedded textures to file-specific directory
-        bool hasEmbedded = false;
         String embeddedPath = "tex:" + this->category + "/" + this->file;
         if (IO::IoServer::Instance()->DirectoryExists(embeddedPath))
         {
             // delete all previously generated images
             if (!IO::IoServer::Instance()->DeleteDirectory(embeddedPath))
-                n_warning("    [glTF Warning - Could not delete old directory for embedded gltf images]\n");
-        }
-
-        for (IndexT i = 0; i < gltfScene.images.Size(); i++)
-        {
-            if (gltfScene.images[i].embedded)
-            {
-                hasEmbedded = true;
-                break;
-            }
+                this->logger.Warning("glTF - Could not delete old directory for embedded gltf images\n");
         }
 
         if (hasEmbedded)
         {
             IO::IoServer::Instance()->CreateDirectory(embeddedPath);
 
-            static const Util::String tmpDir = "temp:textureconverter";
 
             TextureAttrTable texAttrTable;
             texAttrTable.Setup(tmpDir);
-
-            Util::String intermediateDir =
-                Util::String::Sprintf(
-                    "%s/%s/%s"
-                    , tmpDir.AsCharPtr()
-                    , this->category.AsCharPtr()
-                    , this->file.AsCharPtr()
-                );
 
             // Create intermediate directory
             IO::IoServer::Instance()->CreateDirectory(intermediateDir);
@@ -194,7 +184,9 @@ NglTFExporter::ParseScene()
                 Gltf::Image* const* image;
                 const Gltf::Document* scene;
                 const Util::String* category;
+                const Util::String* baseDir;
                 const Util::String* intermediateDir;
+                ToolkitUtil::Logger* logger;
                 TextureConverter* converter;
             } imageJob;
 
@@ -211,6 +203,8 @@ NglTFExporter::ParseScene()
             imageJob.scene = &gltfScene;
             imageJob.category = &this->category;
             imageJob.converter = this->texConverter;
+            imageJob.baseDir = &this->file;
+            imageJob.logger = &this->logger;
             imageJob.intermediateDir = &intermediateDir;
 
             auto job = [](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
@@ -240,27 +234,26 @@ NglTFExporter::ParseScene()
                         dataSize = bufferView.byteLength;
                     }
 
-                    Util::String format = (image.type == Gltf::Image::Type::Jpg) ? ".jpg" : ".png";
+                    Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
 
                     // export the content of blob to a temporary file
                     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-                    Util::String intermediateFile = Util::String::Sprintf("%s/%d%s", jobCtx->intermediateDir->AsCharPtr(), index, format.AsCharPtr());
+                    Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", jobCtx->intermediateDir->AsCharPtr(), index, format.AsCharPtr());
                     writer->SetStream(IO::IoServer::Instance()->CreateStream(intermediateFile));
-                    Logger logger;
                     if (!writer->Open())
                     {
-                        logger.Warning("    [glTF Warning - Could not open filestream to write intermediate image format]\n");
+                        jobCtx->logger->Warning("    [glTF - Could not open filestream to write intermediate image format]\n");
                         return;
                     }
                     writer->GetStream()->Write(data, dataSize);
                     writer->Close();
 
-                    auto dstDir = Util::String::Sprintf("tex:%s", jobCtx->category->AsCharPtr());
+                    auto dstFile = Util::String::Sprintf("tex:%s/%s/%d", jobCtx->category->AsCharPtr(), jobCtx->baseDir->AsCharPtr(), index);
 
                     // content is base 64 encoded in uri
-                    if (!jobCtx->converter->ConvertTexture(intermediateFile, dstDir, tmpDir))
+                    if (!jobCtx->converter->ConvertTexture(intermediateFile, dstFile, tmpDir))
                     {
-                        logger.Error("    [glTF Error - failed to convert texture]\n");
+                        jobCtx->logger->Error("    [glTF - Failed to convert texture]\n");
                     }
                 }
             };
@@ -273,7 +266,7 @@ NglTFExporter::ParseScene()
             if (IO::IoServer::Instance()->DirectoryExists(tmpDir))
             {
                 if (!IO::IoServer::Instance()->DeleteDirectory(tmpDir))
-                    n_printf("    [glTF Warning - Could not delete temporary texconverter directory]\n");
+                    this->logger.Warning("glTF - Could not delete temporary texconverter directory\n");
             }
 
             // Reset scratch memory

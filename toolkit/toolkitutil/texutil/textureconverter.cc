@@ -18,6 +18,7 @@
 #endif
 #include "timing/timer.h"
 
+#include "toolkit-common/text.h"
 
 namespace ToolkitUtil
 {
@@ -53,18 +54,26 @@ TextureConverter::~TextureConverter()
 /**
 */
 bool
-TextureConverter::Setup(Logger& logger)
+TextureConverter::Setup()
 {
     n_assert(!this->IsValid());
     n_assert(0 == this->logger);
 
-    this->logger = &logger;
     this->valid = true;
 
     // create a temporary directory
     IoServer::Instance()->CreateDirectory("temp:textureconverter");
 
     return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureConverter::SetLogger(Logger* logger)
+{
+    this->logger = logger;
 }
 
 //------------------------------------------------------------------------------
@@ -130,7 +139,7 @@ TextureConverter::ConvertFiles(const Util::Array<Util::String>& files)
     different platform-specific jobs based on the selected target platform.
 */
 bool
-TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir, const String& tmpDir)
+TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstTexPath, const String& tmpDir)
 {
     n_assert(this->IsValid());
     n_assert(srcTexPath.IsValid());
@@ -146,11 +155,7 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir,
     n_assert(tokens.Size() >= 3);
     String texCategory = tokens[tokens.Size() - 2];
     String texFilename = tokens[tokens.Size() - 1];
-    String dstTexPath;
-    dstTexPath.Format("%s/%s/%s", dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
-    dstTexPath.StripFileExtension();
 
-    this->logger->Print("[[Exporting texture: %s...]]\n", URI(srcTexPath).LocalPath().AsCharPtr());
 
     // select conversion method based on target platform
 #if (__WIN32__)    
@@ -162,7 +167,7 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir,
     job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
-    job.Convert();
+    bool ret = job.Convert();
 #else
 
     CompressonatorConversionJob job;
@@ -173,20 +178,19 @@ TextureConverter::ConvertTexture(const String& srcTexPath, const String& dstDir,
     job.SetTexAttrTable(&this->textureAttrTable);
     job.SetForceFlag(this->force);
     job.SetQuietFlag(this->quiet);
-    job.Convert();
+    bool ret = job.Convert();
 #endif
-    
-    if (this->platform != Platform::Win32 && this->platform != Platform::Linux) return false;
-    else return true;
-}
 
+    
+    return ret;
+}
 
 //------------------------------------------------------------------------------
 /**
     
 */
 bool
-TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstDir, const String& tmpDir)
+TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstTexPath, const String& tmpDir)
 {
     n_assert(this->IsValid());
     n_assert(srcTexPath.IsValid());
@@ -202,9 +206,6 @@ TextureConverter::ConvertCubemap(const String& srcTexPath, const String& dstDir,
     n_assert(tokens.Size() >= 3);
     String texCategory = tokens[tokens.Size() - 2];
     String texFilename = tokens[tokens.Size() - 1];
-    String dstTexPath;
-    dstTexPath.Format("%s/%s/%s", dstDir.AsCharPtr(), texCategory.AsCharPtr(), texFilename.AsCharPtr());
-    dstTexPath.StripFileExtension();
 
     n_printf("Converting texture: %s\n", URI(srcTexPath).LocalPath().AsCharPtr());
 

@@ -18,6 +18,10 @@
 #include "io/posix/posixconsolehandler.h"
 #endif
 
+#define NEBULA_TEXT_IMPLEMENT
+#include "toolkit-common/text.h"
+
+
 #define PRECISION 1000000
 
 using namespace IO;

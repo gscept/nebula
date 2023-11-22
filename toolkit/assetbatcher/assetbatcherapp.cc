@@ -214,6 +214,7 @@ AssetBatcherApp::DoWork()
     exporter->Open();
     exporter->SetExportMode(mode);
     exporter->SetForce(force);
+    exporter->SetLogger(&this->logger);
     if (force)
     {
         exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);

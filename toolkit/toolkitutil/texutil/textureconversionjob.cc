@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "textureconversionjob.h"
 #include "io/ioserver.h"
+#include "toolkit-common/text.h"
 
 namespace ToolkitUtil
 {
@@ -67,9 +68,10 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // check if we can skip conversion based on the file time stamps and force flag
     if (!this->NeedsConversion(srcPath, dstPath))
     {
-        n_printf("    [No changes, skipping]\n");
+        this->logger->Print("Skipped %s\n", Text(srcPath).Color(TextColor::Cyan).Style(FontMode::Underline).AsCharPtr());
         return true;
     }
+
 
     // remove read-only attr from dst file 
     if (ioServer->FileExists(dstPath))
@@ -86,10 +88,7 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     IoServer::Instance()->CreateDirectory(this->tmpPath.ExtractDirName());
 
     // get texture conversion attributes
-    String texEntry;
-    texEntry.Format("%s/%s", this->srcPath.ExtractLastDirName().AsCharPtr(), this->srcPath.ExtractFileName().AsCharPtr());
-    texEntry.StripFileExtension();
-    this->textureAttrs = this->textureAttrTable->GetEntry(texEntry);
+    this->textureAttrs = this->textureAttrTable->GetEntry(srcPath);
     
     // if destination file is already in native format, do a plain copy
     if (!neverCopy && srcPath.GetFileExtension() == dstPath.GetFileExtension())

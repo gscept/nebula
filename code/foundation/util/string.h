@@ -1498,6 +1498,8 @@ String::AppendMat4(const Math::mat4& val)
 }
 #endif
     
+inline auto Format = &String::Sprintf;
+
 } // namespace Util
 
 
@@ -1505,6 +1507,7 @@ String::AppendMat4(const Math::mat4& val)
 /**
 */
 Util::String operator ""_str(const char* c, std::size_t s);
+
 
 //------------------------------------------------------------------------------
 

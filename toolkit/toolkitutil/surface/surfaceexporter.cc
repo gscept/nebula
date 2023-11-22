@@ -7,6 +7,7 @@
 #include "io/xmlreader.h"
 #include "io/ioserver.h"
 #include "toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkit-common/text.h"
 
 using namespace Util;
 using namespace IO;
@@ -52,10 +53,9 @@ SurfaceExporter::ExportFile(const IO::URI& file)
     }
 
     // simply convert xml to binary
-    Logger logger;
-    logger.Print("Exporting surface material: 'sur:%s/%s.sur'\n", catName.AsCharPtr(), fileName.AsCharPtr());
+    this->logger->Print("%s %s\n", "Exporting surface:", Text(Format("sur:%s/%s.sur", catName.AsCharPtr(), fileName.AsCharPtr())).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     BinaryXmlConverter converter;
-    converter.ConvertFile(localPath, dst, logger);
+    converter.ConvertFile(localPath, dst, *this->logger);
 }
 
 } // namespace ToolkitUtil

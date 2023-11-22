@@ -9,6 +9,7 @@
 */
 #include "gltfdata.h"
 #include "surface/surfacebuilder.h"
+#include "toolkit-common/logger.h"
 
 namespace ToolkitUtil
 {
@@ -21,6 +22,7 @@ public:
     ~NglTFMaterialExtractor();
 
     void SetDocument(Gltf::Document const* document);
+    void SetLogger(ToolkitUtil::Logger* logger);
 
     void SetCategoryName(Util::String const& categoryName);
     void SetExportSubDirectory(Util::String const& subDir);
@@ -36,6 +38,8 @@ private:
     // used when exporting
     Util::String texCatDir;
     Util::String textureDir;
+
+    ToolkitUtil::Logger* logger;
 };
 
 //------------------------------------------------------------------------------
@@ -45,6 +49,15 @@ inline void
 NglTFMaterialExtractor::SetDocument(Gltf::Document const* document)
 {
     this->doc = document;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+NglTFMaterialExtractor::SetLogger(ToolkitUtil::Logger* logger)
+{
+    this->logger = logger;
 }
 
 //------------------------------------------------------------------------------
