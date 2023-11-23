@@ -67,14 +67,14 @@ NFbxExporter::ParseScene()
         importStatus = importer->Import(scene);
         if (!importStatus)
         {
-            n_error("    [Could not open %s for reading! Something went terribly wrong!]\n\n", this->file.AsCharPtr());
+            this->logger->Error("FBX - Failed to open\n");
             this->SetHasErrors(true);
             return false;
         }
     }
     else
     {
-        n_error("    [Could not initialize %s! Something went terribly wrong!]\n\n", this->file.AsCharPtr());
+        this->logger->Error("FBX - Failed to initialize\n");
         this->SetHasErrors(true);
         return false;
     }
@@ -85,7 +85,7 @@ NFbxExporter::ParseScene()
     auto fbxScene = new NFbxScene();
     fbxScene->SetName(this->file);
     fbxScene->SetCategory(this->category);
-    fbxScene->Setup(scene, this->exportFlags, attributes, this->sceneScale);
+    fbxScene->Setup(scene, this->exportFlags, attributes, this->sceneScale, this->logger);
     this->scene = fbxScene;
 
     scene->Destroy(true);

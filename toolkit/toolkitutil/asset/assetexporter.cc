@@ -185,7 +185,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
                 // save models and physics
 
                 String modelPath = String::Sprintf("mdl:%s.n3", modelName.AsCharPtr());
-                this->logger->Print("%s -> %s\n", Text(URI(assetPath + files[fileIndex]).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(modelPath).Color(TextColor::Green).AsCharPtr());
+                this->logger->Print("%s -> %s\n", Text(URI(assetPath + files[fileIndex]).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(modelPath).LocalPath()).Color(TextColor::Green).AsCharPtr());
                 this->modelBuilder->SaveN3(modelPath, this->platform);
 
                 String physicsPath = String::Sprintf("phys:%s.actor", modelName.AsCharPtr());
@@ -278,7 +278,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             {
                 console->Clear();
                 Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), files[fileIndex].AsCharPtr());
-                this->logger->Print("%s -> %s\n", Text(URI(assetPath + files[fileIndex]).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(dstFile).Color(TextColor::Green).AsCharPtr());
+                this->logger->Print("%s -> %s\n", Text(URI(assetPath + files[fileIndex]).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(dstFile).LocalPath()).Color(TextColor::Green).AsCharPtr());
                 ioServer->CopyFile(assetPath + files[fileIndex], dstFile);
                 log.AddEntry(console, "Audio", files[fileIndex]);
             }
@@ -299,16 +299,16 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             for (auto const& file : files)
             {
                 Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), file.ExtractFileName().AsCharPtr());
-                this->logger->Print("%s %s... ", "Exporting physics:", Text(Format("%s", file.AsCharPtr())).Color(TextColor::Blue).AsCharPtr());
+                
                 if (this->mode & ExportModes::ForcePhysics || NeedsConversion(file, dstFile))
                 {
                     Flat::FlatbufferInterface::Compile(file, dstDir, "ACTO");
                     log.AddEntry(console, "Physics", file);
-                    this->logger->Print("done\n"_text.Color(TextColor::Green).AsCharPtr());
+                    this->logger->Print("%s -> %s\n", Text(Format("%s", file.AsCharPtr())).Color(TextColor::Blue).AsCharPtr(), Text(URI(dstFile).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
                 }
                 else
                 {
-                    this->logger->Print("skipped\n"_text.Color(TextColor::Cyan).AsCharPtr());
+                    this->logger->Print("Skipping %s\n", Text(file).Color(TextColor::Blue).AsCharPtr());
                 }
             }
         }

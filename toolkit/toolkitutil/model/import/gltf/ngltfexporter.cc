@@ -55,7 +55,7 @@ NglTFExporter::ParseScene()
     
     if (!res)
     {
-        this->logger.Warning("Failed to import '%s'\n\n", this->file.AsCharPtr());
+        this->logger->Warning("Failed to import '%s'\n\n", this->file.AsCharPtr());
         return false;
     }
 
@@ -63,7 +63,7 @@ NglTFExporter::ParseScene()
     scene->SetName(this->file);
     scene->SetCategory(this->category);
     scene->Setup(&this->gltfScene, this->exportFlags, this->sceneScale);
-    this->texConverter->SetLogger(&this->logger);
+    this->texConverter->SetLogger(this->logger);
     this->scene = scene;
 
     String fileExtension = this->path.LocalPath().GetFileExtension();
@@ -71,7 +71,7 @@ NglTFExporter::ParseScene()
         // Extract materials into .sur files
         // Always do this before exporting textures, since the texture names may be changed in the extractor.
         NglTFMaterialExtractor extractor;
-        extractor.SetLogger(&this->logger);
+        extractor.SetLogger(this->logger);
         extractor.SetCategoryName(this->category);
         extractor.SetDocument(&this->gltfScene);
         extractor.SetExportSubDirectory(this->file);
@@ -165,7 +165,7 @@ NglTFExporter::ParseScene()
         {
             // delete all previously generated images
             if (!IO::IoServer::Instance()->DeleteDirectory(embeddedPath))
-                this->logger.Warning("glTF - Could not delete old directory for embedded gltf images\n");
+                this->logger->Warning("glTF - Could not delete old directory for embedded gltf images\n");
         }
 
         if (hasEmbedded)
@@ -204,7 +204,7 @@ NglTFExporter::ParseScene()
             imageJob.category = &this->category;
             imageJob.converter = this->texConverter;
             imageJob.baseDir = &this->file;
-            imageJob.logger = &this->logger;
+            imageJob.logger = this->logger;
             imageJob.intermediateDir = &intermediateDir;
 
             auto job = [](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
@@ -266,7 +266,7 @@ NglTFExporter::ParseScene()
             if (IO::IoServer::Instance()->DirectoryExists(tmpDir))
             {
                 if (!IO::IoServer::Instance()->DeleteDirectory(tmpDir))
-                    this->logger.Warning("glTF - Could not delete temporary texconverter directory\n");
+                    this->logger->Warning("glTF - Could not delete temporary texconverter directory\n");
             }
 
             // Reset scratch memory

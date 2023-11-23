@@ -99,18 +99,18 @@ NFbxScene::Setup(
     , const ExportFlags& exportFlags
     , const Ptr<ModelAttributes>& attributes
     , float scale
+    , ToolkitUtil::Logger* logger
 )
 {
     n_assert(scene);
 
     // set export settings
     this->flags = exportFlags;
+    this->logger = logger;
 
     // set scale
     SceneScale = scale;
     AdjustedScale = SceneScale;
-
-    Timing::Timer timer;
 
     float fps = TimeModeToFPS(scene->GetGlobalSettings().GetTimeMode());
 
@@ -118,10 +118,8 @@ NFbxScene::Setup(
     FbxAxisSystem newSystem(FbxAxisSystem::eOpenGL);
     if (axisSystem != newSystem)
     {
-        timer.Start();
         newSystem.DeepConvertScene(scene);
-        timer.Stop();
-        n_printf("  [FBX - Converting coordinate system (%.2f ms)]\n", timer.GetTime() * 1000);
+        this->logger->Print("FBX - Converting coordinate system\n");
 
     }
 
@@ -134,15 +132,13 @@ NFbxScene::Setup(
     AnimationFrameRate = fps;
 
     // split meshes based on material
-    timer.Reset();
-    timer.Start();
     FbxGeometryConverter* converter = new FbxGeometryConverter(sdkManager);
     bool triangulated = converter->Triangulate(scene, true);
     converter->RemoveBadPolygonsFromMeshes(scene);
     n_assert(triangulated);
     delete converter;
-    timer.Stop();
-    n_printf("  [FBX - Triangulation done (%.2f ms)]\n", timer.GetTime() * 1000);
+
+    this->logger->Print("FBX - Triangulating\n");
 
 
     // Okay so we want to do this, we really do, but if we do, 
