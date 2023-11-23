@@ -6,6 +6,7 @@
 #include "modelexporter.h"
 #include "io/ioserver.h"
 #include "io/filestream.h"
+#include "io/uri.h"
 #include "timing/timer.h"
 
 #include "model/animutil/animbuildersaver.h"
@@ -20,6 +21,7 @@
 #include "model/modelutil/modeldatabase.h"
 
 #include "model/scenewriter.h"
+
 
 #include "toolkit-common/text.h"
 
@@ -68,25 +70,22 @@ ModelExporter::ExportFile(const IO::URI& file)
 
     this->path = file;
     String localPath = file.GetHostAndLocalPath();
+    if (!this->NeedsConversion(localPath))
+    {
+        this->logger->Print("Skipping %s\n", Text(localPath).Color(TextColor::Blue).AsCharPtr());
+        return;
+    }
     this->file = localPath.ExtractFileName();
     this->file.StripFileExtension();
     this->category = localPath.ExtractLastDirName();
-    logger.Print("%s\n", Text(localPath).Color(TextColor::Blue).AsCharPtr());
-    logger.Indent();
+    this->logger->Print("%s\n", Text(localPath).Color(TextColor::Blue).AsCharPtr());
+    this->logger->Indent();
 
     // Get animations from scene
     Ptr<ModelAttributes> attributes = ModelDatabase::Instance()->LookupAttributes(this->category + "/" + this->file);
     this->exportFlags = attributes->GetExportFlags();
     this->sceneScale = attributes->GetScale();
 
-    // we want to see if the model file exists, because that's the only way to know if ALL the resources are old or new...
-    if (!this->NeedsConversion(localPath))
-    {
-        logger.Print("File not changed, ignoring...\n\n");
-        logger.Unindent();
-        //n_printf("  [File has not changed, ignoring export]\n\n", localPath.AsCharPtr());
-        return;
-    }
     Timing::Timer timer;
     Timing::Timer totalTime;
     totalTime.Start();
@@ -97,7 +96,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     if (!this->ParseScene())
         return;
 
-    this->logger.Print("%s %s (%.2f ms)\n", "Parsing...", Text("done").Color(TextColor::Green).AsCharPtr(), timer.GetTime() * 1000.0f);
+    this->logger->Print("%s %s (%.2f ms)\n", "Parsing...", Text("done").Color(TextColor::Green).AsCharPtr(), timer.GetTime() * 1000.0f);
     //n_printf("  [Parsed source] (%.2f ms)\n", timer.GetTime() * 1000.0f);
     timer.Stop();
 
@@ -117,12 +116,13 @@ ModelExporter::ExportFile(const IO::URI& file)
     Util::Array<MeshBuilder*> mergedMeshes;
     this->scene->OptimizeGraphics(mergedMeshNodes, mergedCharacterNodes, mergedGroups, mergedMeshes);
 
-    String destinationFiles[] =
+    Util::String physicsMeshExportName = String::Sprintf("msh:%s/%s_ph.nvx", this->category.AsCharPtr(), this->file.AsCharPtr());
+    IO::URI destinationFiles[] =
     {
-        String::Sprintf("msh:%s/%s.nvx", this->category.AsCharPtr(), this->file.AsCharPtr()) // mesh
-        , "" // physics
-        , String::Sprintf("ani:%s/%s.nax", this->category.AsCharPtr(), this->file.AsCharPtr()) // animation
-        , String::Sprintf("ske:%s/%s.nsk", this->category.AsCharPtr(), this->file.AsCharPtr())
+        IO::URI(String::Sprintf("msh:%s/%s.nvx", this->category.AsCharPtr(), this->file.AsCharPtr())) // mesh
+        , IO::URI(physicsMeshExportName) // physics
+        , IO::URI(String::Sprintf("ani:%s/%s.nax", this->category.AsCharPtr(), this->file.AsCharPtr())) // animation
+        , IO::URI(String::Sprintf("ske:%s/%s.nsk", this->category.AsCharPtr(), this->file.AsCharPtr())) // skeleton
     };
 
     enum DestinationFile
@@ -136,7 +136,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     // save mesh to file
     if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Mesh], mergedMeshes, mergedGroups, this->platform))
     {
-        this->logger.Error("Failed to save NVX file : % s\n", destinationFiles[DestinationFile::Mesh].AsCharPtr());
+        this->logger->Error("Failed to save NVX file : % s\n", destinationFiles[DestinationFile::Mesh].LocalPath().AsCharPtr());
     }
 
     // Delete merged meshes after export
@@ -146,7 +146,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     timer.Stop();
 
     // print info
-    this->logger.Print("%s %s\n", Format("Generated mesh: %s", Text(destinationFiles[DestinationFile::Mesh]).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+    this->logger->Print("%s %s\n", Format("Generated mesh: %s", Text(destinationFiles[DestinationFile::Mesh].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
 
     // get physics mesh
     Util::Array<SceneNode*> physicsNodes;
@@ -157,8 +157,6 @@ ModelExporter::ExportFile(const IO::URI& file)
     // only save physics mesh if it exists
     if (physicsMesh && physicsMesh->GetNumTriangles() > 0)
     {
-        destinationFiles[DestinationFile::Physics] = String::Sprintf("msh:%s/%s_ph.nvx", this->category.AsCharPtr(), this->file.AsCharPtr());
-
         timer.Reset();
         timer.Start();
 
@@ -167,13 +165,13 @@ ModelExporter::ExportFile(const IO::URI& file)
         group.SetNumTriangles(physicsMesh->GetNumTriangles());
         if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Physics], { physicsMesh }, { group }, this->platform))
         {
-            this->logger.Error("Failed to save physics NVX file : % s\n", destinationFiles[DestinationFile::Physics].AsCharPtr());
+            this->logger->Error("Failed to save physics NVX file : % s\n", destinationFiles[DestinationFile::Physics].LocalPath().AsCharPtr());
         }
 
         timer.Stop();
 
         // print info
-        this->logger.Print("%s %s\n", Format("Generated physics: %s", Text(destinationFiles[DestinationFile::Physics]).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+        this->logger->Print("%s %s\n", Format("Generated physics: %s", Text(destinationFiles[DestinationFile::Physics].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
 
     }
 
@@ -191,11 +189,11 @@ ModelExporter::ExportFile(const IO::URI& file)
         // now save actual animation
         if (!AnimBuilderSaver::Save(destinationFiles[DestinationFile::Animation], this->scene->animations, this->platform))
         {
-            this->logger.Error("Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].AsCharPtr());
+            this->logger->Error("Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].LocalPath().AsCharPtr());
         }
 
         timer.Stop();
-        this->logger.Print("%s %s\n", Format("Generated animation: %s", Text(destinationFiles[DestinationFile::Animation]).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+        this->logger->Print("%s %s\n", Format("Generated animation: %s", Text(destinationFiles[DestinationFile::Animation].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
     }
 
     if (this->scene->skeletons.Size() > 0)
@@ -205,11 +203,11 @@ ModelExporter::ExportFile(const IO::URI& file)
 
         if (!SkeletonBuilderSaver::Save(destinationFiles[DestinationFile::Skeleton], this->scene->skeletons, this->platform))
         {
-            this->logger.Error("Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].AsCharPtr());
+            this->logger->Error("Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].LocalPath().AsCharPtr());
         }
 
-        timer.Stop();
-        this->logger.Print("%s %s\n", Format("Generated skeleton: %s", Text(destinationFiles[DestinationFile::Skeleton]).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
+        timer.Stop(); 
+        this->logger->Print("%s %s\n", Format("Generated skeleton: %s", Text(destinationFiles[DestinationFile::Skeleton].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
     }
 
     // Finally, output model hierarchy to n3
@@ -220,13 +218,13 @@ ModelExporter::ExportFile(const IO::URI& file)
         , mergedMeshNodes
         , physicsNodes
         , mergedCharacterNodes
-        , destinationFiles[DestinationFile::Physics]
+        , physicsMeshExportName
         , this->exportFlags
     );
 
     totalTime.Stop();
-    this->logger.Unindent();
-    this->logger.Print("%s %s\n\n", "Done"_text.Color(TextColor::Green).Style(FontMode::Bold).AsCharPtr(), Format("(%.2f ms)", totalTime.GetTime() * 1000).AsCharPtr());
+    this->logger->Unindent();
+    this->logger->Print("%s %s\n\n", "Done"_text.Color(TextColor::Green).Style(FontMode::Bold).AsCharPtr(), Format("(%.2f ms)", totalTime.GetTime() * 1000).AsCharPtr());
 
     delete this->scene;
     this->scene = nullptr;

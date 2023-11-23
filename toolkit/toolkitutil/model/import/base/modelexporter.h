@@ -27,6 +27,8 @@ public:
     /// Run implementation scene parse
     virtual bool ParseScene();
 
+    /// Set logger
+    void SetLogger(ToolkitUtil::Logger* logger);
     /// exports a single file
     void ExportFile(const IO::URI& file);
     /// set texture converter
@@ -49,7 +51,7 @@ protected:
     Scene* scene;
     TextureConverter* texConverter;
 
-    ToolkitUtil::Logger logger;
+    ToolkitUtil::Logger* logger;
 };
 
 //------------------------------------------------------------------------------
@@ -68,6 +70,15 @@ inline void
 ModelExporter::SetTextureConverter(TextureConverter* texConv)
 {
     this->texConverter = texConv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+ModelExporter::SetLogger(ToolkitUtil::Logger* logger)
+{
+    this->logger = logger;
 }
 
 } // namespace ToolkitUtil

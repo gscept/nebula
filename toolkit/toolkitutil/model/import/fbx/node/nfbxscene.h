@@ -12,6 +12,7 @@
 #include "model/import/base/scene.h"
 #include "model/meshutil/meshbuilder.h"
 #include "toolkit-common/base/exporttypes.h"
+#include "toolkit-common/logger.h"
 
 #include <fbxsdk/core/base/fbxtime.h>
 
@@ -37,6 +38,7 @@ public:
         , const ToolkitUtil::ExportFlags& exportFlags
         , const Ptr<ModelAttributes>& attributes
         , float scale
+        , ToolkitUtil::Logger* logger
     );
 
 private:
@@ -50,6 +52,8 @@ private:
     );
     /// converts FBX time mode to FPS
     float TimeModeToFPS(const fbxsdk::FbxTime::EMode& timeMode);
+
+    ToolkitUtil::Logger* logger;
 };
 
 } // namespace ToolkitUtil

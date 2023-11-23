@@ -53,7 +53,7 @@ SurfaceExporter::ExportFile(const IO::URI& file)
     }
 
     // simply convert xml to binary
-    this->logger->Print("%s %s\n", "Exporting surface:", Text(Format("sur:%s/%s.sur", catName.AsCharPtr(), fileName.AsCharPtr())).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
+    this->logger->Print("%s -> %s\n", Text(file.LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(URI(Format("sur:%s/%s.sur", catName.AsCharPtr(), fileName.AsCharPtr())).LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     BinaryXmlConverter converter;
     converter.ConvertFile(localPath, dst, *this->logger);
 }

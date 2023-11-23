@@ -68,7 +68,7 @@ TextureConversionJob::PrepareConversion(const String& srcPath, const String& dst
     // check if we can skip conversion based on the file time stamps and force flag
     if (!this->NeedsConversion(srcPath, dstPath))
     {
-        this->logger->Print("Skipped %s\n", Text(srcPath).Color(TextColor::Cyan).Style(FontMode::Underline).AsCharPtr());
+        this->logger->Print("Skipping %s\n", Text(URI(srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr());
         return true;
     }
 
