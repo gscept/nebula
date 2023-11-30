@@ -200,6 +200,13 @@ _DEC_VK(vkBindImageMemory);
 _DEC_VK(vkCreateImageView);
 _DEC_VK(vkDestroyImageView);
 
+// raytracing
+_DEC_VK(vkGetAccelerationStructureBuildSizesKHR);
+_DEC_VK(vkCreateAccelerationStructureKHR);
+_DEC_VK(vkBuildAccelerationStructuresKHR);
+_DEC_VK(vkGetAccelerationStructureDeviceAddressKHR);
+_DEC_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
+
 #ifdef __cplusplus
 }
 #endif

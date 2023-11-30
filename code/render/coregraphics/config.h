@@ -135,7 +135,8 @@ enum ShaderPipeline
 {
     InvalidPipeline,
     GraphicsPipeline,
-    ComputePipeline     // Compute pipeline is not the compute queue, it's just resources available for compute shaders
+    ComputePipeline,     // Compute pipeline is not the compute queue, it's just resources available for compute shaders
+    RayTracingPipeline   
 };
 
 //------------------------------------------------------------------------------

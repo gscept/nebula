@@ -421,6 +421,17 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
             CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
         }
     }
+    else if (info.type == ShaderPipeline::RayTracingPipeline)
+    {
+        bool pipelineChange = pipelineBundle.raytracingLayout != info.layout;
+        pipelineBundle.raytracingLayout = info.layout;
+        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, info.pipeline);
+        if (bindGlobals && pipelineChange)
+        {
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+        }
+    }
     else
     {
         CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
@@ -495,6 +506,10 @@ CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId ta
         case ShaderPipeline::ComputePipeline:
             bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
             vkCmdBindDescriptorSets(cmdBuf, bindPoint, pipelineBundle.computeLayout, slot, 1, &set, numOffsets, offsets);
+            break;
+        case ShaderPipeline::RayTracingPipeline:
+            bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+            vkCmdBindDescriptorSets(cmdBuf, bindPoint, pipelineBundle.raytracingLayout, slot, 1, &set, numOffsets, offsets);
             break;
         default:
             bindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;

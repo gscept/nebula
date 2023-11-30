@@ -214,6 +214,12 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkBindImageMemory);
     _IMP_VK(vkCreateImageView);
     _IMP_VK(vkDestroyImageView);
+
+    _IMP_VK(vkGetAccelerationStructureBuildSizesKHR);
+    _IMP_VK(vkCreateAccelerationStructureKHR);
+    _IMP_VK(vkBuildAccelerationStructuresKHR);
+    _IMP_VK(vkGetAccelerationStructureDeviceAddressKHR);
+    _IMP_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
 }
 
 } // namespace Vulkan
@@ -381,3 +387,9 @@ _DEF_VK(vkDestroyImage);
 _DEF_VK(vkBindImageMemory);
 _DEF_VK(vkCreateImageView);
 _DEF_VK(vkDestroyImageView);
+
+_DEF_VK(vkGetAccelerationStructureBuildSizesKHR);
+_DEF_VK(vkCreateAccelerationStructureKHR);
+_DEF_VK(vkBuildAccelerationStructuresKHR);
+_DEF_VK(vkGetAccelerationStructureDeviceAddressKHR);
+_DEF_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
