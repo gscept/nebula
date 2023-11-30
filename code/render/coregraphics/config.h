@@ -66,7 +66,8 @@ enum IdType
     SamplerIdType,
     MaterialIdType,
     SubmissionContextIdType,
-    ImageIdType
+    ImageIdType,
+    AccelerationStructureIdType
 };
 
 enum QueueType

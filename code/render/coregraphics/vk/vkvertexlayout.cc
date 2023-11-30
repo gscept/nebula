@@ -136,6 +136,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     bool usedStreams[CoreGraphics::MaxNumVertexStreams];
     Memory::Fill(curOffset, CoreGraphics::MaxNumVertexStreams * sizeof(IndexT), 0);
     Memory::Fill(usedStreams, CoreGraphics::MaxNumVertexStreams * sizeof(bool), 0);
+    Util::Array<SizeT> streamSizes;
 
     IndexT compIndex;
     for (compIndex = 0; compIndex < loadInfo.comps.Size(); compIndex++)
@@ -159,12 +160,14 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         {
             bindInfo.binds[attr->binding].stride += component.GetByteSize();
             dynamicBindInfo.binds[attr->binding].stride += component.GetByteSize();
+            streamSizes[attr->binding] += component.GetByteSize();
         }
         else
         {
             bindInfo.binds[attr->binding].stride = component.GetByteSize();
             dynamicBindInfo.binds[attr->binding].stride = component.GetByteSize();
             usedStreams[attr->binding] = true;
+            streamSizes.Append(component.GetByteSize());
             numUsedStreams++;
         }
 
@@ -209,6 +212,15 @@ const SizeT
 VertexLayoutGetSize(const VertexLayoutId id)
 {
     return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.resourceId).vertexByteSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+VertexLayoutGetStreamSize(const VertexLayoutId id, IndexT stream)
+{
+    return vertexLayoutAllocator.Get<VertexSignature_StreamSize>(id.resourceId)[stream];
 }
 
 //------------------------------------------------------------------------------

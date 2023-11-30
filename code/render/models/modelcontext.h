@@ -32,6 +32,16 @@ namespace CoreGraphics
     struct MeshId;
 };
 
+namespace Visibility
+{
+    class VisibilityContext;
+};
+
+namespace Raytracing
+{
+    class RaytracingContext;
+};
+
 namespace Models
 {
 
@@ -188,7 +198,8 @@ public:
     static Threading::AtomicCounter TransformsUpdateCounter;
 
 private:
-    friend class VisibilityContext;
+    friend class Visibility::VisibilityContext;
+    friend class Raytracing::RaytracingContext;
 
     static ModelInstance NodeInstances;
     static Memory::RangeAllocator TransformInstanceAllocator, RenderInstanceAllocator;

@@ -25,6 +25,7 @@
 #include "posteffects/histogramcontext.h"
 #include "posteffects/downsamplingcontext.h"
 #include "particles/particlecontext.h"
+#include "raytracing/raytracingcontext.h"
 
 #include "graphics/globalconstants.h"
 
@@ -142,6 +143,7 @@ GraphicsFeatureUnit::OnActivate()
     ObserverContext::Create();
     ObservableContext::Create();
     ParticleContext::Create();
+    Raytracing::RaytracingContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
     if (terrainSettings.config->use)
@@ -251,6 +253,7 @@ GraphicsFeatureUnit::OnActivate()
         Fog::VolumetricFogContext::RenderUI,
         EnvironmentContext::OnBeforeFrame,
         EnvironmentContext::RenderUI,
+        Raytracing::RaytracingContext::RebuildToplevelAcceleration,
         Particles::ParticleContext::UpdateParticles,
     };
 

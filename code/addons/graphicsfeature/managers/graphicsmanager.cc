@@ -8,6 +8,7 @@
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
+#include "raytracing/raytracingcontext.h"
 #include "game/gameserver.h"
 #include "graphicsfeature/components/graphicsfeature.h"
 #include "basegamefeature/components/basegamefeature.h"
@@ -43,17 +44,25 @@ GraphicsManager::~GraphicsManager()
 /**
 */
 void
-RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceName const res, Math::mat4 const& t)
+RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceName const res, bool const raytracing, Math::mat4 const& t)
 {
     Models::ModelContext::RegisterEntity(gid);
     Visibility::ObservableContext::RegisterEntity(gid);
+    if (raytracing)
+    {
+        Raytracing::RaytracingContext::RegisterEntity(gid);
+    }
     Models::ModelContext::Setup(
         gid,
         res,
         "NONE",
-        [gid, t]()
+        [gid, raytracing, t]()
         {
             Models::ModelContext::SetTransform(gid, t);
+            if (raytracing)
+            {
+                Raytracing::RaytracingContext::Setup(gid);
+            }
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
         }
     );
@@ -96,7 +105,7 @@ GraphicsManager::InitCreateModelProcessor()
                 auto res = model.resource;
                 model.graphicsEntityId = Graphics::CreateEntity().id;
                 Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                RegisterModelEntity(model.graphicsEntityId, model.resource, worldTransform);
+                RegisterModelEntity(model.graphicsEntityId, model.resource, model.raytracing, worldTransform);
             }
         )
         .Build();

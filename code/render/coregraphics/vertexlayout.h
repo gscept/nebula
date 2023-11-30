@@ -37,8 +37,10 @@ const VertexLayoutId CreateVertexLayout(const VertexLayoutCreateInfo& info);
 /// destroy vertex layout
 void DestroyVertexLayout(const VertexLayoutId id);
 
-/// get byte size
+/// Get byte size
 const SizeT VertexLayoutGetSize(const VertexLayoutId id);
+/// Get byte size per stream
+const SizeT VertexLayoutGetStreamSize(const VertexLayoutId id, IndexT stream);
 /// get components
 const Util::Array<VertexComponent>& VertexLayoutGetComponents(const VertexLayoutId id);
 

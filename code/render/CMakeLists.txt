@@ -117,6 +117,7 @@ ENDIF()
             )
         fips_dir(coregraphics)
             fips_files(
+                accelerationstructure.h
                 adapter.cc
                 adapter.h
                 adapterinfo.h
@@ -284,6 +285,8 @@ ENDIF()
     elseif (N_USE_VULKAN)
         fips_dir(coregraphics/vk GROUP "coregraphics/vk")
             fips_files(
+                vkaccelerationstructure.cc
+                vkaccelerationstructure.h
                 vkbarrier.cc
                 vkbarrier.h
                 vkbuffer.cc
@@ -536,6 +539,12 @@ ENDIF()
                 modelloader.cc
                 modelloader.h
             )
+
+        fips_dir(raytracing)
+        fips_files(
+            raytracingcontext.cc
+            raytracingcontext.h
+        )
 
         fips_dir(renderutil)
         fips_files(

@@ -25,7 +25,8 @@
       "graphicsEntityId": {
         "type": "uint",
         "default": -1
-      }
+      },
+      "raytracing": "bool"
     },
     "Camera": {
       "viewHandle": {

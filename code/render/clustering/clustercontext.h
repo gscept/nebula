@@ -9,7 +9,6 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "coregraphics/buffer.h"
-#include "coregraphics/buffer.h"
 #include "coregraphics/window.h"
 #include <array>
 #include "cluster_generate.h"
