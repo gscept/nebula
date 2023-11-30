@@ -177,6 +177,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         dynamicBindInfo.binds[attr->binding].inputRate = component.GetStrideType() == CoreGraphics::VertexComponent::PerVertex ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
         curOffset[component.GetStreamIndex()] += component.GetByteSize();
     }
+    vertexLayoutAllocator.Set<VertexSignature_StreamSize>(id, streamSizes);
     dynamicBindInfo.binds.Resize(numUsedStreams);
 
     vertexInfo =

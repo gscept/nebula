@@ -220,7 +220,7 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkBuildAccelerationStructuresKHR);
     _IMP_VK(vkGetAccelerationStructureDeviceAddressKHR);
     _IMP_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
-    _IMP_VK(vkGetBufferDeviceAddressKHR);
+    _IMP_VK(vkGetBufferDeviceAddress);
 }
 
 } // namespace Vulkan
@@ -394,4 +394,4 @@ _DEF_VK(vkCreateAccelerationStructureKHR);
 _DEF_VK(vkBuildAccelerationStructuresKHR);
 _DEF_VK(vkGetAccelerationStructureDeviceAddressKHR);
 _DEF_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
-_DEF_VK(vkGetBufferDeviceAddressKHR);
+_DEF_VK(vkGetBufferDeviceAddress);

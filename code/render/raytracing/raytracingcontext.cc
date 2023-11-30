@@ -8,6 +8,7 @@
 namespace Raytracing
 {
 
+RaytracingContext::RaytracingAllocator RaytracingContext::raytracingContextAllocator;
 __ImplementContext(RaytracingContext, raytracingContextAllocator);
 
 bool RaytracingContext::TopLevelNeedsRebuild = false;
@@ -15,6 +16,8 @@ bool RaytracingContext::ToplevelNeedsUpdate = false;
 
 Util::Array<CoreGraphics::BottomLevelAccelerationId> RaytracingContext::BottomLevelAccelerationStructures;
 Memory::RangeAllocator RaytracingContext::BottomLevelAccelerationAllocator;
+
+CoreGraphics::TopLevelAccelerationId RaytracingContext::ToplevelAccelerationStructure;
 
 //------------------------------------------------------------------------------
 /**
@@ -74,7 +77,7 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
 /**
 */
 void
-RaytracingContext::RebuildToplevelAcceleration()
+RaytracingContext::RebuildToplevelAcceleration(const Graphics::FrameContext& ctx)
 {
     if (RaytracingContext::TopLevelNeedsRebuild)
     {

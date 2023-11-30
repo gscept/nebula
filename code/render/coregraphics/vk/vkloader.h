@@ -206,7 +206,7 @@ _DEC_VK(vkCreateAccelerationStructureKHR);
 _DEC_VK(vkBuildAccelerationStructuresKHR);
 _DEC_VK(vkGetAccelerationStructureDeviceAddressKHR);
 _DEC_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
-_DEC_VK(vkGetBufferDeviceAddressKHR);
+_DEC_VK(vkGetBufferDeviceAddress);
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,7 @@ public:
     static void Setup(const Graphics::GraphicsEntityId id);
 
     /// Build top level acceleration
-    static void RebuildToplevelAcceleration();
+    static void RebuildToplevelAcceleration(const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering

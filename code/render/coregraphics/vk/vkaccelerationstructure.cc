@@ -3,6 +3,7 @@
 //  @copyright (C) 2023 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "coregraphics/mesh.h"
 #include "coregraphics/accelerationstructure.h"
 #include "vkaccelerationstructure.h"
 #include "vkgraphicsdevice.h"
@@ -49,6 +50,8 @@ CreateBottomLevelAcceleration(const BottomLevelAccelerationCreateInfo& info)
         flagIndex++;
     }
 
+    BufferIdLock _1(CoreGraphics::GetVertexBuffer());
+    BufferIdLock _2(CoreGraphics::GetIndexBuffer());
     VkBufferDeviceAddressInfo deviceAddress =
     {
         VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
@@ -56,9 +59,9 @@ CreateBottomLevelAcceleration(const BottomLevelAccelerationCreateInfo& info)
         VK_NULL_HANDLE
     };
     deviceAddress.buffer = BufferGetVk(CoreGraphics::GetVertexBuffer());
-    VkDeviceAddress vboAddr = vkGetBufferDeviceAddressKHR(dev, &deviceAddress);
+    VkDeviceAddress vboAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
     deviceAddress.buffer = BufferGetVk(CoreGraphics::GetIndexBuffer());
-    VkDeviceAddress iboAddr = vkGetBufferDeviceAddressKHR(dev, &deviceAddress);
+    VkDeviceAddress iboAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
 
     MeshIdLock _0(info.mesh);
     CoreGraphics::VertexLayoutId layout = MeshGetVertexLayout(info.mesh);
@@ -140,6 +143,14 @@ CreateBottomLevelAcceleration(const BottomLevelAccelerationCreateInfo& info)
 /**
 */
 void
+DestroyBottomLevelAcceleration(const BottomLevelAccelerationId blac)
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 BottomLevelAccelerationBuild(const BottomLevelAccelerationId blac)
 {
     VkDevice dev = Vulkan::GetCurrentDevice();
@@ -149,6 +160,31 @@ BottomLevelAccelerationBuild(const BottomLevelAccelerationId blac)
     const VkAccelerationStructureBuildRangeInfoKHR* ranges = setup.rangeInfos.Begin();
     VkResult res = vkBuildAccelerationStructuresKHR(dev, VK_NULL_HANDLE, 1, &setup.buildGeometryInfo, &ranges);
     n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TopLevelAccelerationId
+CreateTopLevelAcceleration(const TopLevelAccelerationCreateInfo& info)
+{
+    return TopLevelAccelerationId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DestroyTopLevelAcceleration(const TopLevelAccelerationId tlac)
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TopLevelAccelerationBuild(const TopLevelAccelerationId tlac)
+{
 }
 
 } // namespace CoreGraphics
