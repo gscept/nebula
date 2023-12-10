@@ -183,13 +183,13 @@ inline RangeAllocation
 RangeAllocator::Alloc(uint size, uint alignment)
 {
     // We are not allowed any more allocations
-    size = Math::align(size, alignment);
-    if (this->freeStorage < size)
+    uint alignedSize = size + alignment;
+    if (this->freeStorage < alignedSize)
     {
         return { RangeAllocation::OOM, RangeAllocatorNode::END };
     }
 
-    BinIndex minIndex = IndexFromSize(size, true);
+    BinIndex minIndex = IndexFromSize(alignedSize, true);
     uint bin = 0xFFFFFFFF;
     uint bucket = minIndex.bucket;
 
@@ -223,12 +223,6 @@ RangeAllocator::Alloc(uint size, uint alignment)
 
     // Calculate padding required by alignment
     uint padding = Math::align(node.offset, alignment) - node.offset;
-
-    // Since we get a new size, need to check there is space with padding
-    if (this->freeStorage < (size + padding))
-    {
-        return { RangeAllocation::OOM, RangeAllocatorNode::END };
-    }
 
     // Save total size of node
     uint totalSize = node.size;
