@@ -19,7 +19,7 @@ Alloc
 MemoryPool::AllocateMemory(uint alignment, uint size)
 {
    // if size is too big, allocate a unique block for it
-    if (size > this->blockSize)
+    if ((size + alignment) > this->blockSize)
         return this->AllocateExclusiveBlock(alignment, size);
 
     for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
@@ -58,7 +58,7 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
         this->allocators[id] = Memory::RangeAllocator{ (uint)this->blockSize, (SizeT)(this->blockSize / 16) };
         this->blocks[id] = mem;
     }
-    Memory::RangeAllocation alloc = this->allocators[id].Alloc(size);
+    Memory::RangeAllocation alloc = this->allocators[id].Alloc(size, alignment);
     Alloc ret{ this->blocks[id], alloc.offset, size, alloc.node, this->memoryType, id };
     return ret;
 }
