@@ -57,11 +57,11 @@ CreatePipeline(const PipelineCreateInfo& info)
     shaderInfo.pDepthStencilState = &programInfo.depthStencilInfo;
     shaderInfo.pRasterizationState = &programInfo.rasterizerInfo;
     shaderInfo.pMultisampleState = &multisampleInfo;
-    shaderInfo.pDynamicState = &programInfo.dynamicInfo;
+    shaderInfo.pDynamicState = &programInfo.graphicsDynamicStateInfo;
     shaderInfo.pTessellationState = &programInfo.tessInfo;
     shaderInfo.layout = programInfo.layout;
     shaderInfo.stageCount = programInfo.stageCount;
-    shaderInfo.pStages = programInfo.shaderInfos;
+    shaderInfo.pStages = programInfo.graphicsShaderInfos;
 
     // Since this is the public facing API, we have to convert the primitive type as it's expected to be in CoreGraphics 
     InputAssemblyKey translatedKey;

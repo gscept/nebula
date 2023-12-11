@@ -42,7 +42,10 @@ enum BufferUsageFlag
     ReadWriteTexelBuffer        = 0x20,
     VertexBuffer                = 0x40,
     IndexBuffer                 = 0x80,
-    IndirectBuffer              = 0x100
+    IndirectBuffer              = 0x100,
+    ShaderAddress               = 0x200,
+    AccelerationStructure       = 0x400,
+    ShaderTable                 = 0x800
 };
 typedef uint BufferUsageFlags;
 

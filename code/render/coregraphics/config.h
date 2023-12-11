@@ -67,7 +67,9 @@ enum IdType
     MaterialIdType,
     SubmissionContextIdType,
     ImageIdType,
-    AccelerationStructureIdType
+    BlasIdType,
+    BlasInstanceIdType,
+    TlasIdType
 };
 
 enum QueueType

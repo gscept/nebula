@@ -1,3 +1,4 @@
+
 #pragma once
 //------------------------------------------------------------------------------
 /**
@@ -22,7 +23,7 @@
 namespace CoreGraphics
 {
 
-enum class AccelerationBuildFlags
+enum class AccelerationStructureBuildFlags
 {
     FastBuild = 0x1, // Create and recreate structure swiftly but suffer worse trace performance
     FastTrace = 0x2, // Vice versa of FastBuild, and is exclusive of it
@@ -30,40 +31,73 @@ enum class AccelerationBuildFlags
     Compact = 0x8,   // Hint to make the structure compact, which can make copys faster
     Small = 0x10,    // Hint to minimize memory spent
 };
-__ImplementEnumBitOperators(AccelerationBuildFlags);
-__ImplementEnumComparisonOperators(AccelerationBuildFlags);
+__ImplementEnumBitOperators(AccelerationStructureBuildFlags);
+__ImplementEnumComparisonOperators(AccelerationStructureBuildFlags);
 
-struct BottomLevelAccelerationCreateInfo
+struct BlasCreateInfo
 {
     CoreGraphics::MeshId mesh;
-    AccelerationBuildFlags flags;
+    AccelerationStructureBuildFlags flags;
 };
 
-ID_24_8_TYPE(BottomLevelAccelerationId);
+ID_24_8_TYPE(BlasId);
 
 /// Create bottom level acceleration structure
-BottomLevelAccelerationId CreateBottomLevelAcceleration(const BottomLevelAccelerationCreateInfo& info);
+BlasId CreateBlas(const BlasCreateInfo& info);
 /// Destroy bottom level acceleration structure
-void DestroyBottomLevelAcceleration(const BottomLevelAccelerationId blac);
+void DestroyBlas(const BlasId blac);
 
-/// Build bottom level acceleration structure on CPU
-void BottomLevelAccelerationBuild(const BottomLevelAccelerationId blac);
-
-
-struct TopLevelAccelerationCreateInfo
+enum BlasInstanceFlags
 {
-    Util::Array<BottomLevelAccelerationId> geometries;
-    AccelerationBuildFlags flags;
+    NoFlags = 0x0,
+    FaceCullingDisabled = 0x1,
+    InvertFace = 0x2,
+    ForceOpaque = 0x4,
+    NoOpaque = 0x8
+};
+__ImplementEnumBitOperators(BlasInstanceFlags);
+
+ID_24_8_TYPE(BlasInstanceId);
+_DECL_ACQUIRE_RELEASE(BlasInstanceId);
+struct BlasInstanceCreateInfo
+{
+    CoreGraphics::BlasId blas;
+    Math::mat4 transform;
+    uint instanceIndex;         // Readable in the shader as gl_InstanceCustomIndexKHR
+    uint mask;                  // 8 bit visibility mask
+    uint shaderOffset;          // Offset into the shader binding table
+    BlasInstanceFlags flags;
+
+    CoreGraphics::BufferId buffer; // The buffer to hold the instance being created
+    uint offset;                   // The offset into the buffer to where instances are created
 };
 
-ID_24_8_TYPE(TopLevelAccelerationId);
+/// Create an instance to a bottom level acceleration structure
+BlasInstanceId CreateBlasInstance(const BlasInstanceCreateInfo& info);
+/// Destroy blas instance
+void DestroyBlasInstance(const BlasInstanceId id);
+/// Set transform of blas
+void BlasInstanceSetTransform(const BlasInstanceId id, const Math::mat4& transform);
+/// Get instance size (platform dependent)
+const SizeT BlasInstanceGetSize();
+
+struct TlasCreateInfo
+{
+    SizeT numInstances;
+    CoreGraphics::BufferId instanceBuffer;
+    AccelerationStructureBuildFlags flags;
+};
+
+ID_24_8_TYPE(TlasId);
 
 /// Create top level acceleration structure
-TopLevelAccelerationId CreateTopLevelAcceleration(const TopLevelAccelerationCreateInfo& info);
+TlasId CreateTlas(const TlasCreateInfo& info);
 /// Destroy top level acceleration structure
-void DestroyTopLevelAcceleration(const TopLevelAccelerationId tlac);
+void DestroyTlas(const TlasId tlas);
 
-/// Build top level acceleration structure on the CPU
-void TopLevelAccelerationBuild(const TopLevelAccelerationId tlac);
+/// Initiate Tlas for build
+void TlasInitBuild(const TlasId tlas);
+/// Initiate Tlas for update
+void TlasInitUpdate(const TlasId tlas);
 
 } // namespace CoreGraphics

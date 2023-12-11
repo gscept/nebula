@@ -32,10 +32,12 @@ struct VkShaderProgramRuntimeInfo
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
     VkPipelineColorBlendStateCreateInfo colorBlendInfo;
     VkPipelineColorBlendAttachmentState colorBlendAttachments[8];
-    VkPipelineDynamicStateCreateInfo dynamicInfo;
+    VkPipelineDynamicStateCreateInfo graphicsDynamicStateInfo;
     VkPipelineTessellationStateCreateInfo tessInfo;
-    VkPipelineShaderStageCreateInfo shaderInfos[5];
-    VkShaderModule vs, hs, ds, gs, ps, cs;
+    VkPipelineShaderStageCreateInfo graphicsShaderInfos[5];
+    VkPipelineDynamicStateCreateInfo raytracingDynamicStateInfo;
+    VkPipelineShaderStageCreateInfo raytracingShaderInfos[5];
+    VkShaderModule vs, hs, ds, gs, ps, cs, rg, ra, rc, rm, ri;
     uint stencilFrontRef, stencilBackRef, stencilReadMask, stencilWriteMask;
     VkPipeline pipeline;
     VkPipelineLayout layout;
@@ -76,4 +78,6 @@ void VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, uns
 void VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime);
 /// create this program as a compute program (can be done immediately)
 void VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
+/// create this program as a compute program (can be done immediately)
+void VkShaderProgramSetupAsRaytracing(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 } // namespace Vulkan

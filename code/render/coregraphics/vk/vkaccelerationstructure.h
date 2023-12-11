@@ -8,9 +8,9 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
+#include "coregraphics/accelerationstructure.h"
 namespace Vulkan
 {
-
 
 struct GeometrySetup
 {
@@ -23,19 +23,93 @@ struct GeometrySetup
 
 enum
 {
-    AS_Handle,
-    AS_Geometry,
-    AS_View
+    Blas_Device,
+    Blas_Handle,
+    Blas_Buffer,
+    Blas_Scratch,
+    Blas_Geometry,
+    Blas_View
 };
-
 
 typedef Ids::IdAllocatorSafe<
     0xFFF
+    , VkDevice
     , VkAccelerationStructureKHR
+    , CoreGraphics::BufferId
+    , CoreGraphics::BufferId
     , GeometrySetup
     , VkDeviceAddress
-> VkBLASAllocator;
+> VkBlasAllocator;
+extern VkBlasAllocator blasAllocator;
 
-extern VkBLASAllocator vkBlasAllocator;
+/// Get device used to create blas
+VkDevice BlasGetVkDevice(const CoreGraphics::BlasId id);
+/// Get buffer representing the acceleration structure
+const VkAccelerationStructureKHR BlasGetVk(const CoreGraphics::BlasId id);
+/// Get build info for bottom level acceleration structure
+const VkAccelerationStructureBuildGeometryInfoKHR& BlasGetVkBuild(const CoreGraphics::BlasId id);
+/// Get range infos for bottom level acceleration structure
+const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& BlasGetVkRanges(const CoreGraphics::BlasId id);
+
+struct InstanceSetup
+{
+    VkAccelerationStructureGeometryInstancesDataKHR instanceData;
+    VkAccelerationStructureBuildGeometryInfoKHR geometryInfo;
+};
+
+enum
+{
+    BlasInstance_Instance,
+    BlasInstance_Transform,
+    BlasInstance_Buffer,
+    BlasInstance_BufferMem
+};
+
+typedef Ids::IdAllocatorSafe<
+    0xFFFF
+    , VkAccelerationStructureInstanceKHR
+    , Math::mat4
+    , CoreGraphics::BufferId
+    , void*
+    , uint
+> VkBlasInstanceAllocator;
+extern VkBlasInstanceAllocator blasInstanceAllocator;
+
+
+struct SceneSetup
+{
+    VkAccelerationStructureBuildGeometryInfoKHR geometryInfo;
+    VkAccelerationStructureBuildSizesInfoKHR buildSizes;
+};
+
+enum
+{
+    Tlas_Device,
+    Tlas_Scene,
+    Tlas_Handle,
+    Tlas_Buffer,
+    Tlas_BuildScratch,
+    Tlas_UpdateScratch,
+    Tlas_BuildScratchAddr,
+    Tlas_UpdateScratchAddr,
+};
+
+typedef Ids::IdAllocatorSafe<
+    0xFFF
+    , VkDevice
+    , SceneSetup
+    , VkAccelerationStructureKHR
+    , CoreGraphics::BufferId
+    , CoreGraphics::BufferId
+    , CoreGraphics::BufferId
+    , VkDeviceAddress
+    , VkDeviceAddress
+> VkTlasAllocator;
+extern VkTlasAllocator tlasAllocator;
+
+/// Get device used to create Tlas
+VkDevice TlasGetVkDevice(const CoreGraphics::TlasId id);
+/// Get acceleration structure
+VkAccelerationStructureKHR TlasGetVk(const CoreGraphics::TlasId id);
 
 } // namespace Vulkan

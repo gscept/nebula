@@ -33,12 +33,17 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
     setup.mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(mask);
     setup.name = name;
     setup.dev = Vulkan::GetCurrentDevice();
-    VkShaderProgramCreateShader(setup.dev, &runtime.vs, program->shaderBlock.vsBinarySize, program->shaderBlock.vsBinary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.hs, program->shaderBlock.hsBinarySize, program->shaderBlock.hsBinary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.ds, program->shaderBlock.dsBinarySize, program->shaderBlock.dsBinary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.gs, program->shaderBlock.gsBinarySize, program->shaderBlock.gsBinary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.ps, program->shaderBlock.psBinarySize, program->shaderBlock.psBinary);
-    VkShaderProgramCreateShader(setup.dev, &runtime.cs, program->shaderBlock.csBinarySize, program->shaderBlock.csBinary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.vs, program->shaderBlock.vs.binarySize, program->shaderBlock.vs.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.hs, program->shaderBlock.hs.binarySize, program->shaderBlock.hs.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.ds, program->shaderBlock.ds.binarySize, program->shaderBlock.ds.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.gs, program->shaderBlock.gs.binarySize, program->shaderBlock.gs.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.ps, program->shaderBlock.ps.binarySize, program->shaderBlock.ps.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.cs, program->shaderBlock.cs.binarySize, program->shaderBlock.cs.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.rg, program->shaderBlock.rg.binarySize, program->shaderBlock.rg.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.ra, program->shaderBlock.ra.binarySize, program->shaderBlock.ra.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.rc, program->shaderBlock.rc.binarySize, program->shaderBlock.rc.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.rm, program->shaderBlock.rm.binarySize, program->shaderBlock.rm.binary);
+    VkShaderProgramCreateShader(setup.dev, &runtime.ri, program->shaderBlock.ri.binarySize, program->shaderBlock.ri.binary);
 
     for (size_t i = 0; i < program->vsInputSlots.size(); i++)
     {
@@ -56,6 +61,7 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
         VkShaderProgramSetupAsCompute(setup, runtime);
     }
     else if (runtime.vs)    VkShaderProgramSetupAsGraphics(program, shaderName, runtime);
+    else if (runtime.rg)  VkShaderProgramSetupAsRaytracing(setup, runtime);
     else                    runtime.type = CoreGraphics::InvalidPipeline;
 }
 
@@ -91,7 +97,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
     // we have to keep track of how many shaders we are using, AnyFX makes every function 'main'
     unsigned shaderIdx = 0;
     static const char* name = "main";
-    memset(runtime.shaderInfos, 0, sizeof(runtime.shaderInfos));
+    memset(runtime.graphicsShaderInfos, 0, sizeof(runtime.graphicsShaderInfos));
 
     runtime.stencilFrontRef = program->renderState->renderSettings.stencilFrontRef;
     runtime.stencilBackRef = program->renderState->renderSettings.stencilBackRef;
@@ -101,13 +107,16 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
     // attach vertex shader
     if (0 != runtime.vs)
     {
-        runtime.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        runtime.shaderInfos[shaderIdx].pNext = nullptr;
-        runtime.shaderInfos[shaderIdx].flags = 0;
-        runtime.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        runtime.shaderInfos[shaderIdx].module = runtime.vs;
-        runtime.shaderInfos[shaderIdx].pName = name;
-        runtime.shaderInfos[shaderIdx].pSpecializationInfo = nullptr;
+        runtime.graphicsShaderInfos[shaderIdx] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = runtime.vs,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -117,13 +126,16 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 
     if (0 != runtime.hs)
     {
-        runtime.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        runtime.shaderInfos[shaderIdx].pNext = nullptr;
-        runtime.shaderInfos[shaderIdx].flags = 0;
-        runtime.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-        runtime.shaderInfos[shaderIdx].module = runtime.hs;
-        runtime.shaderInfos[shaderIdx].pName = name;
-        runtime.shaderInfos[shaderIdx].pSpecializationInfo = nullptr;
+        runtime.graphicsShaderInfos[shaderIdx] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+            .module = runtime.hs,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -133,13 +145,16 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 
     if (0 != runtime.ds)
     {
-        runtime.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        runtime.shaderInfos[shaderIdx].pNext = nullptr;
-        runtime.shaderInfos[shaderIdx].flags = 0;
-        runtime.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-        runtime.shaderInfos[shaderIdx].module = runtime.ds;
-        runtime.shaderInfos[shaderIdx].pName = name;
-        runtime.shaderInfos[shaderIdx].pSpecializationInfo = nullptr;
+        runtime.graphicsShaderInfos[shaderIdx] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+            .module = runtime.ds,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -149,13 +164,16 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 
     if (0 != runtime.gs)
     {
-        runtime.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        runtime.shaderInfos[shaderIdx].pNext = nullptr;
-        runtime.shaderInfos[shaderIdx].flags = 0;
-        runtime.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-        runtime.shaderInfos[shaderIdx].module = runtime.gs;
-        runtime.shaderInfos[shaderIdx].pName = name;
-        runtime.shaderInfos[shaderIdx].pSpecializationInfo = nullptr;
+        runtime.graphicsShaderInfos[shaderIdx] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_GEOMETRY_BIT,
+            .module = runtime.gs,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -165,13 +183,16 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 
     if (0 != runtime.ps)
     {
-        runtime.shaderInfos[shaderIdx].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        runtime.shaderInfos[shaderIdx].pNext = nullptr;
-        runtime.shaderInfos[shaderIdx].flags = 0;
-        runtime.shaderInfos[shaderIdx].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        runtime.shaderInfos[shaderIdx].module = runtime.ps;
-        runtime.shaderInfos[shaderIdx].pName = name;
-        runtime.shaderInfos[shaderIdx].pSpecializationInfo = nullptr;
+        runtime.graphicsShaderInfos[shaderIdx] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = runtime.ps,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
         shaderIdx++;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -247,7 +268,7 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
         , VK_DYNAMIC_STATE_PRIMITIVE_RESTART_ENABLE
         , VK_DYNAMIC_STATE_VERTEX_INPUT_EXT
     };
-    runtime.dynamicInfo =
+    runtime.graphicsDynamicStateInfo =
     {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         nullptr,
@@ -268,8 +289,6 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
 {
     // create 6 shader info stages for each shader type
     n_assert(0 != runtime.cs);
-
-
     VkPipelineShaderStageCreateInfo shader =
     {
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -302,6 +321,104 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
 /**
 */
 void
+VkShaderProgramSetupAsRaytracing(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime)
+{
+    // create 6 shader info stages for each shader type
+    n_assert(0 != runtime.rg);
+    unsigned shaderIndex = 0;
+    static const char* name = "main";
+
+    runtime.raytracingShaderInfos[shaderIndex] =
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+        .module = runtime.rg,
+        .pName = name,
+        .pSpecializationInfo = nullptr
+    };
+    shaderIndex++;
+
+    if (runtime.ra)
+    {
+        runtime.raytracingShaderInfos[shaderIndex] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_ANY_HIT_BIT_KHR,
+            .module = runtime.ra,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
+        shaderIndex++;
+    }
+
+    if (runtime.rc)
+    {
+        runtime.raytracingShaderInfos[shaderIndex] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+            .module = runtime.rc,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
+        shaderIndex++;
+    }
+
+    if (runtime.rm)
+    {
+        runtime.raytracingShaderInfos[shaderIndex] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_MISS_BIT_KHR,
+            .module = runtime.rm,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
+        shaderIndex++;
+    }
+
+    if (runtime.ri)
+    {
+        runtime.raytracingShaderInfos[shaderIndex] =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_INTERSECTION_BIT_KHR,
+            .module = runtime.ri,
+            .pName = name,
+            .pSpecializationInfo = nullptr
+        };
+        shaderIndex++;
+    }
+
+    static const VkDynamicState dynamicStates[] =
+    {
+        VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR
+    };
+    runtime.raytracingDynamicStateInfo =
+    {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0,
+        sizeof(dynamicStates) / sizeof(VkDynamicState),
+        dynamicStates
+    };
+    runtime.type = CoreGraphics::RayTracingPipeline;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkShaderProgramRuntimeInfo& rt, VkPipeline& computePipeline)
 {
     if (rt.vs != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.vs, nullptr);
@@ -310,6 +427,11 @@ VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkShaderProgramRuntimeInf
     if (rt.gs != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.gs, nullptr);
     if (rt.ps != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.ps, nullptr);
     if (rt.cs != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.cs, nullptr);
+    if (rt.rg != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.rg, nullptr);
+    if (rt.ra != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.ra, nullptr);
+    if (rt.rc != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.rc, nullptr);
+    if (rt.rm != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.rm, nullptr);
+    if (rt.ri != VK_NULL_HANDLE)                    vkDestroyShaderModule(info.dev, rt.ri, nullptr);
     if (computePipeline != VK_NULL_HANDLE)          vkDestroyPipeline(info.dev, computePipeline, nullptr);
 }
 

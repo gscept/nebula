@@ -254,17 +254,19 @@ SetupTexture(const TextureId id)
 
     // setup usage flags, by default, all textures can be sampled from
     // we automatically assign VK_IMAGE_USAGE_SAMPLED_BIT to sampled images, render textures and readwrite textures, but not for transfer textures
-    VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (loadInfo.usage & TextureUsage::SampleTexture)
-        usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    constexpr uint Lookup[] =
+    {
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        0x0 // Device exclusive?
+    };
+    VkImageUsageFlags usage = Util::BitmaskConvert(loadInfo.usage, Lookup);
+
     if (loadInfo.usage & TextureUsage::RenderTexture)
-        usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if (loadInfo.usage & TextureUsage::ReadWriteTexture)
-        usage |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (loadInfo.usage & TextureUsage::TransferTextureSource)
-        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if (loadInfo.usage & TextureUsage::TransferTextureDestination)
-        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        usage |= (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
     if (!loadInfo.windowTexture)
     {

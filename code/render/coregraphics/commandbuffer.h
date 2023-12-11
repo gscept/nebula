@@ -30,6 +30,8 @@ struct BarrierId;
 struct EventId;
 struct PassId;
 struct PipelineId;
+struct BlasId;
+struct TlasId;
 
 struct TextureBarrierInfo;
 struct BufferBarrierInfo;
@@ -277,6 +279,11 @@ void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId b
 void CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ);
 /// Resolve MSAA source to non-MSAA target
 void CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const CoreGraphics::TextureCopy sourceCopy, const CoreGraphics::TextureId dest, const CoreGraphics::TextureCopy destCopy);
+/// Build BLAS 
+void CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas);
+/// Build TLAS
+void CmdBuildTlas(const CmdBufferId id, const CoreGraphics::TlasId tlas);
+
 
 /// Copy between textures
 void CmdCopy(

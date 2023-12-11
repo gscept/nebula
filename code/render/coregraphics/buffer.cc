@@ -76,9 +76,11 @@ BufferWithStaging::BufferWithStaging(const BufferCreateInfo& createInfo)
 {
     BufferCreateInfo bufferInfo = createInfo;
     bufferInfo.mode = CoreGraphics::HostLocal;
+    bufferInfo.usageFlags |= CoreGraphics::TransferBufferSource;
     this->hostBuffers = BufferSet(bufferInfo);
 
     bufferInfo.mode = CoreGraphics::DeviceLocal;
+    bufferInfo.usageFlags |= CoreGraphics::TransferBufferDestination;
     this->deviceBuffer = CoreGraphics::CreateBuffer(bufferInfo);
 }
 
@@ -88,7 +90,9 @@ BufferWithStaging::BufferWithStaging(const BufferCreateInfo& createInfo)
 BufferWithStaging::BufferWithStaging(BufferWithStaging&& rhs)
 {
     this->hostBuffers = std::move(rhs.hostBuffers);
-    CoreGraphics::DestroyBuffer(this->deviceBuffer);
+    if (this->deviceBuffer != InvalidBufferId)
+        DestroyBuffer(this->deviceBuffer);
+    this->deviceBuffer = std::move(rhs.deviceBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +102,9 @@ void
 BufferWithStaging::operator=(BufferWithStaging&& rhs)
 {
     this->hostBuffers = std::move(rhs.hostBuffers);
-    CoreGraphics::DestroyBuffer(this->deviceBuffer);
+    if (this->deviceBuffer != InvalidBufferId)
+        DestroyBuffer(this->deviceBuffer);
+    this->deviceBuffer = std::move(rhs.deviceBuffer);
 }
 
 //------------------------------------------------------------------------------

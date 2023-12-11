@@ -253,6 +253,10 @@ void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 void DelayedDeleteDescriptorSet(const CoreGraphics::ResourceTableId id);
 /// Add a pass to delayed delete
 void DelayedDeletePass(const CoreGraphics::PassId id);
+/// Add a blas for delayed delete
+void DelayedDeleteBlas(const CoreGraphics::BlasId id);
+/// Add a tlas for delayed delete
+void DelayedDeleteTlas(const CoreGraphics::TlasId id);
 
 /// Allocate a range of queries
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);

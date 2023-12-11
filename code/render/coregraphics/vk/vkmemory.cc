@@ -110,11 +110,9 @@ FreeMemory(const Alloc& alloc)
     CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
     AllocationLock.Enter();
     bool res = pool.DeallocateMemory(alloc);
+    n_assert(res);
     N_BUDGET_COUNTER_DECR(pool.budgetCounter, alloc.size);
     AllocationLock.Leave();    
-
-    // assert result
-    n_assert(res);
 }
 
 //------------------------------------------------------------------------------
@@ -136,10 +134,18 @@ MemoryPool::CreateBlock(void** outMappedPtr)
     this->heap->space -= this->blockSize;
 
     VkDevice dev = GetCurrentDevice();
+
+    VkMemoryAllocateFlagsInfo flags =
+    {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+        nullptr,
+        VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        0xFFFFFFFF
+    };
     VkMemoryAllocateInfo allocInfo =
     {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
+        &flags,
         this->blockSize,
         this->memoryType
     };

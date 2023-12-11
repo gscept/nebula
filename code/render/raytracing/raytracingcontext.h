@@ -16,6 +16,11 @@
 namespace Raytracing
 {
 
+struct RaytracingSetupSettings
+{
+    SizeT maxNumAllowedInstances;
+};
+
 class RaytracingContext : public Graphics::GraphicsContext
 {
     __DeclareContext();
@@ -26,13 +31,17 @@ public:
     virtual ~RaytracingContext();
 
     /// Setup ray tracing context
-    static void Create();
+    static void Create(const RaytracingSetupSettings& settings);
 
     /// Setup an entity for ray tracing, assumes model context registration
     static void Setup(const Graphics::GraphicsEntityId id);
 
     /// Build top level acceleration
     static void RebuildToplevelAcceleration(const Graphics::FrameContext& ctx);
+    /// Update transforms
+    static void UpdateTransforms(const Graphics::FrameContext& ctx);
+    /// Wait for jobs to finish
+    static void WaitForJobs(const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
@@ -46,10 +55,6 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    static CoreGraphics::TopLevelAccelerationId ToplevelAccelerationStructure;
-    static bool TopLevelNeedsRebuild;
-    static bool ToplevelNeedsUpdate;
-
     enum
     {
         Raytracing_Allocation,
@@ -60,9 +65,6 @@ private:
         uint
     > RaytracingAllocator;
     static RaytracingAllocator raytracingContextAllocator;
-
-    static Util::Array<CoreGraphics::BottomLevelAccelerationId> BottomLevelAccelerationStructures;
-    static Memory::RangeAllocator BottomLevelAccelerationAllocator;
 };
 
 //------------------------------------------------------------------------------
@@ -72,22 +74,5 @@ inline Graphics::ContextEntityId
 RaytracingContext::Alloc()
 {
     return raytracingContextAllocator.Alloc();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-RaytracingContext::Dealloc(Graphics::ContextEntityId id)
-{
-    // clean up old stuff, but don't deallocate entity
-    Memory::RangeAllocation range = raytracingContextAllocator.Get<Raytracing_Allocation>(id.id);
-    SizeT numAllocs = raytracingContextAllocator.Get<Raytracing_NumStructures>(id.id);
-    for (IndexT i = range.offset; i < numAllocs; i++)
-    {
-        CoreGraphics::DestroyBottomLevelAcceleration(RaytracingContext::BottomLevelAccelerationStructures[i]);
-    }
-    raytracingContextAllocator.Dealloc(id.id);
-    RaytracingContext::TopLevelNeedsRebuild = true;
 }
 } // namespace Raytracing

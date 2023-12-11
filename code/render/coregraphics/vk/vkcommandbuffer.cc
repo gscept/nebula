@@ -19,6 +19,7 @@
 #include "vkevent.h"
 #include "vkpass.h"
 #include "vkpipeline.h"
+#include "vkaccelerationstructure.h"
 
 #include "graphics/globalconstants.h"
 
@@ -456,13 +457,13 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.pipelineInfo.pDepthStencilState = &info.depthStencilInfo;
         pipelineBundle.pipelineInfo.pRasterizationState = &info.rasterizerInfo;
         pipelineBundle.pipelineInfo.pMultisampleState = &pipelineBundle.multisampleInfo;
-        pipelineBundle.pipelineInfo.pDynamicState = &info.dynamicInfo;
+        pipelineBundle.pipelineInfo.pDynamicState = &info.graphicsDynamicStateInfo;
         pipelineBundle.pipelineInfo.pTessellationState = &info.tessInfo;
 
         // Setup shaders
         pipelineBundle.pipelineInfo.layout = info.layout;
         pipelineBundle.pipelineInfo.stageCount = info.stageCount;
-        pipelineBundle.pipelineInfo.pStages = info.shaderInfos;
+        pipelineBundle.pipelineInfo.pStages = info.graphicsShaderInfos;
 
         bool pipelineChange = pipelineBundle.graphicsLayout != info.layout;
         pipelineBundle.graphicsLayout = info.layout;
@@ -1070,6 +1071,28 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     resolve.dstSubresource.mipLevel = 0;
     
     vkCmdResolveImage(cmdBuf, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &resolve);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    const VkAccelerationStructureBuildGeometryInfoKHR& buildInfo = Vulkan::BlasGetVkBuild(blas);
+    const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& rangeInfo = Vulkan::BlasGetVkRanges(blas);
+    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { rangeInfo.ConstBegin() };
+    vkCmdBuildAccelerationStructuresKHR(cmdBuf, 1, &buildInfo, ranges);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdBuildTlas(const CmdBufferId id, const CoreGraphics::TlasId tlas)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 }
 
 //------------------------------------------------------------------------------

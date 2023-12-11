@@ -22,6 +22,7 @@
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vktextureview.h"
+#include "coregraphics/vk/vkaccelerationstructure.h"
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
 
@@ -78,7 +79,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Tuple<VkDevice, VkCommandPool, VkCommandBuffer>> commandBuffers;
         Util::Array<Util::Tuple<VkDevice, VkDescriptorPool, VkDescriptorSet, uint*>> resourceTables;
         Util::Array<Util::Tuple<VkDevice, VkFramebuffer, VkRenderPass>> passes;
-        Util::Array<Util::Tuple<CoreGraphics::Alloc>> allocs;
+        Util::Array<Util::Tuple<VkDevice, VkAccelerationStructureKHR>> ases;
+        Util::Array<CoreGraphics::Alloc> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
     Util::FixedArray<Util::Array<CoreGraphics::SubmissionWaitEvent>> waitEvents;
@@ -200,15 +202,19 @@ SetupAdapter()
 
                 static const Util::String wantedExtensions[] =
                 {
-                    "VK_KHR_swapchain",
-                    "VK_maintenance1",
-                    "VK_maintenance2",
-                    "VK_maintenance3",
-                    "VK_maintenance4",
-                    "VK_host_query_reset",
-                    "VK_descriptor_indexing",
-                    "VK_EXT_robustness2",
-                    "VK_EXT_vertex_input_dynamic_state"
+                    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_1_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_3_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                    VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
+                    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                    VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                    VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+                    VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME
                 };
 
                 uint32_t newNumCaps = 0;
@@ -411,70 +417,61 @@ SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaq
 void
 ClearPending()
 {
+    GraphicsDeviceState::PendingDeletes& pendingDeletes = state.pendingDeletes[state.currentBufferedFrameIndex];
+
     // Clear up any pending deletes
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers)
+    for (const auto& [dev, pool, buf] : pendingDeletes.commandBuffers)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkCommandPool pool = Util::Get<1>(tuple);
-        VkCommandBuffer buf = Util::Get<2>(tuple);
         vkFreeCommandBuffers(dev, pool, 1, &buf);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers.Clear();
+    pendingDeletes.commandBuffers.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].buffers)
+    for (const auto& [dev, buf] : pendingDeletes.buffers)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkBuffer buf = Util::Get<1>(tuple);
         n_assert(dev != nullptr);
         n_assert(buf != nullptr);
         vkDestroyBuffer(dev, buf, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].buffers.Clear();
+    pendingDeletes.buffers.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textures)
+    for (const auto& [dev, view, img] : pendingDeletes.textures)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkImage img = Util::Get<2>(tuple);
-        VkImageView view = Util::Get<1>(tuple);
         vkDestroyImage(dev, img, nullptr);
         vkDestroyImageView(dev, view, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].textures.Clear();
+    pendingDeletes.textures.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textureViews)
+    for (const auto& [dev, view] : pendingDeletes.textureViews)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkImageView view = Util::Get<1>(tuple);
         vkDestroyImageView(dev, view, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].textureViews.Clear();
+    pendingDeletes.textureViews.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables)
+    for (const auto& [dev, pool, set, size] : pendingDeletes.resourceTables)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkDescriptorPool pool = Util::Get<1>(tuple);
-        VkDescriptorSet set = Util::Get<2>(tuple);
         vkFreeDescriptorSets(dev, pool, 1, &set);
-        uint* size = Util::Get<3>(tuple);
         (*size)++;
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables.Clear();
+    pendingDeletes.resourceTables.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].passes)
+    for (const auto& [dev, fbo, pass] : pendingDeletes.passes)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkFramebuffer fbo = Util::Get<1>(tuple);
-        VkRenderPass pass = Util::Get<2>(tuple);
         vkDestroyRenderPass(dev, pass, nullptr);
         vkDestroyFramebuffer(dev, fbo, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].passes.Clear();
+    pendingDeletes.passes.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].allocs)
+    for (const auto& [dev, as] : pendingDeletes.ases)
     {
-        CoreGraphics::FreeMemory(Util::Get<0>(tuple));
+        vkDestroyAccelerationStructureKHR(dev, as, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].allocs.Clear();
+    pendingDeletes.ases.Clear();
+
+    for (const auto& alloc : pendingDeletes.allocs)
+    {
+        CoreGraphics::FreeMemory(alloc);
+    }
+    pendingDeletes.allocs.Clear();
 
     for (auto& markers : state.pendingMarkers)
     {
@@ -797,6 +794,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
         &timelineSemaphores
     };
+    descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = true;
     descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
 
     VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
@@ -806,10 +804,38 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         true
     };
 
+    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+        &dynamicVertexFeatures,
+        true,
+        true,
+        false
+    };
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+        &bufferDeviceAddressFeatures,
+        true,
+        true,
+        true,
+        false,
+        false
+    };
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingFeatures =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+        &accelerationStructureFeatures,
+        true
+    };
+    void* lastExtension = &raytracingFeatures;
+
     VkDeviceCreateInfo deviceInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        &dynamicVertexFeatures,
+        lastExtension,
         0,
         (uint32_t)queueInfos.Size(),
         &queueInfos[0],
@@ -1006,7 +1032,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     vboInfo.usageFlags =
         CoreGraphics::BufferUsageFlag::VertexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
+        | CoreGraphics::BufferUsageFlag::ShaderAddress;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
     state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 0xFFFF);
 
@@ -1018,7 +1045,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     iboInfo.usageFlags =
         CoreGraphics::BufferUsageFlag::IndexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
+        | CoreGraphics::BufferUsageFlag::ShaderAddress;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
     state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 0xFFFF);
 
@@ -1605,6 +1633,30 @@ DelayedDeletePass(const CoreGraphics::PassId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+DelayedDeleteBlas(const CoreGraphics::BlasId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::BlasGetVkDevice(id);
+    VkAccelerationStructureKHR as = BlasGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].ases.Append(Util::MakeTuple(dev, as));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteTlas(const CoreGraphics::TlasId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::TlasGetVkDevice(id);
+    VkAccelerationStructureKHR as = TlasGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].ases.Append(Util::MakeTuple(dev, as));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 AllocateQueries(const CoreGraphics::QueryType type, uint numQueries)
 {
@@ -1710,8 +1762,9 @@ const VertexAlloc
 AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    uint size = numIndices * IndexType::SizeOf(indexType);
-    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(size);
+    uint indexSize = IndexType::SizeOf(indexType);
+    uint size = numIndices * indexSize;
+    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(size, indexSize);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
     return VertexAlloc{ .size = size, .offset = alloc.offset, .node = alloc.node };
@@ -1724,7 +1777,7 @@ const VertexAlloc
 AllocateIndices(const SizeT bytes)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(bytes);
+    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(bytes, 4);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, bytes);
     return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
@@ -1791,6 +1844,7 @@ UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const voi
 void
 FlushUpload()
 {
+    Threading::CriticalScope _0(&UploadLock);
     const Vulkan::GraphicsDeviceState::UploadRingBuffer& uploadBuffer = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     Util::FixedArray<VkMappedMemoryRange> ranges(uploadBuffer.allocs.Size());

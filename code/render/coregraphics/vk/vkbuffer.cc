@@ -5,6 +5,7 @@
 #include "vkgraphicsdevice.h"
 #include "vkcommandbuffer.h"
 #include "vkbuffer.h"
+#include "util/bit.h"
 namespace Vulkan
 {
 VkBufferAllocator bufferAllocator;
@@ -82,24 +83,24 @@ CreateBuffer(const BufferCreateInfo& info)
             queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
         }
     }
-    if (info.usageFlags & CoreGraphics::TransferBufferSource)
-        flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    if (info.usageFlags & CoreGraphics::TransferBufferDestination)
-        flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    if (info.usageFlags & CoreGraphics::ReadWriteBuffer)
-        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::ReadWriteTexelBuffer)
-        flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::IndirectBuffer)
-        flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::VertexBuffer)
-        flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::IndexBuffer)
-        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::ConstantBuffer)
-        flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::ConstantTexelBuffer)
-        flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+
+    constexpr uint UsageLookup[] =
+    {
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
+        VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
+    };
+
+    flags = Util::BitmaskConvert(info.usageFlags, UsageLookup);
 
     // force add destination bit if we have data to be uploaded
     if (info.mode == DeviceLocal && info.dataSize != 0)
