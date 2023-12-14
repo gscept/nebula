@@ -70,6 +70,8 @@ public:
     void loadu(const scalar* ptr);
     /// write content to 16-byte-aligned memory through the write cache
     void store(scalar* ptr) const;
+    /// write 3 columns to 16-byte aligned memory through the write cache
+    void store3(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
     void storeu(scalar* ptr) const;
     /// stream content to 16-byte-aligned memory circumventing the write-cache
@@ -226,6 +228,17 @@ mat4::store(scalar* ptr) const
     _mm_store_ps((ptr + 4), r[1].vec);
     _mm_store_ps((ptr + 8), r[2].vec);
     _mm_store_ps((ptr + 12), r[3].vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+mat4::store3(scalar* ptr) const
+{
+    _mm_store_ps(ptr, r[0].vec);
+    _mm_store_ps((ptr + 4), r[1].vec);
+    _mm_store_ps((ptr + 8), r[2].vec);
 }
 
 //------------------------------------------------------------------------------

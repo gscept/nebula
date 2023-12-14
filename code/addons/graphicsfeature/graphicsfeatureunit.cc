@@ -143,7 +143,12 @@ GraphicsFeatureUnit::OnActivate()
     ObserverContext::Create();
     ObservableContext::Create();
     ParticleContext::Create();
-    Raytracing::RaytracingContext::Create();
+
+    Raytracing::RaytracingSetupSettings raytracingSettings =
+    {
+        .maxNumAllowedInstances = 0xFFFF
+    };
+    Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
     if (terrainSettings.config->use)
@@ -236,7 +241,7 @@ GraphicsFeatureUnit::OnActivate()
     Graphics::SetupBufferConstants(frameScript);
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(0.734, 0.583, 0.377), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 60_rad, 0_rad, true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 60_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -274,10 +279,12 @@ GraphicsFeatureUnit::OnActivate()
         Clustering::ClusterContext::UpdateResources,
         ObserverContext::RunVisibilityTests,
         ObserverContext::GenerateDrawLists,
+        Raytracing::RaytracingContext::UpdateTransforms,
 
         // At the very latest point, wait for work to finish
         Dynui::ImguiContext::Render,
         ModelContext::WaitForWork,
+        Raytracing::RaytracingContext::WaitForJobs,
         Characters::CharacterContext::WaitForCharacterJobs,
         Particles::ParticleContext::WaitForParticleUpdates,
         ObserverContext::WaitForVisibility
