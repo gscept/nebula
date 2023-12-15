@@ -34,6 +34,9 @@ static Threading::CriticalSection delayedDeleteSection;
 static Threading::CriticalSection transferLock;
 static Threading::CriticalSection setupLock;
 
+bool RayTracingSupported = false;
+bool DynamicVertexInputSupported = false;
+
 struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 {
     uint32_t adapter;
@@ -184,9 +187,14 @@ SetupAdapter()
         IndexT i;
         for (i = 0; i < (IndexT)gpuCount; i++)
         {
+            // Get device props and features
+            vkGetPhysicalDeviceProperties(state.physicalDevices[i], &state.deviceProps[i]);
+            vkGetPhysicalDeviceFeatures(state.physicalDevices[i], &state.deviceFeatures[i]);
+
             res = vkEnumerateDeviceExtensionProperties(state.physicalDevices[i], nullptr, &state.numCaps[i], nullptr);
             n_assert(res == VK_SUCCESS);
 
+            bool validDevice = true;
             if (state.numCaps[i] > 0)
             {
                 Util::FixedArray<VkExtensionProperties> caps;
@@ -222,15 +230,28 @@ SetupAdapter()
                 {
                     if (existingExtensions.FindIndex(wantedExtensions[j]) != InvalidIndex)
                     {
+                        if (wantedExtensions[j] == VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME ||
+                            wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                            RayTracingSupported = true;
+                        if (wantedExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
+                            DynamicVertexInputSupported = true;
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
                     }
+                    else
+                    {
+                        validDevice = false;
+                    }
                 }
+                
                 state.numCaps[i] = newNumCaps;
-            }
 
-            // get device props and features
-            vkGetPhysicalDeviceProperties(state.physicalDevices[0], &state.deviceProps[i]);
-            vkGetPhysicalDeviceFeatures(state.physicalDevices[0], &state.deviceFeatures[i]);
+                if (validDevice)
+                {
+                    n_printf("Picking device '%s' as primary graphics adapter", state.deviceProps[i].deviceName);
+                    state.currentDevice = i;
+                    break;
+                }
+            }
         }
     }
     else
@@ -607,8 +628,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     Vulkan::InitInstance(state.instance);
 
     // setup adapter
-    SetupAdapter();
     state.currentDevice = 0;
+    SetupAdapter();
 
 #if NEBULA_GRAPHICS_DEBUG
 #else
@@ -809,7 +830,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
         &dynamicVertexFeatures,
         true,
-        true,
+        false,
         false
     };
 
@@ -818,8 +839,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
         &bufferDeviceAddressFeatures,
         true,
-        true,
-        true,
+        false,
+        false,
         false,
         false
     };
@@ -1033,7 +1054,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         CoreGraphics::BufferUsageFlag::VertexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
         | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
-        | CoreGraphics::BufferUsageFlag::ShaderAddress;
+        | CoreGraphics::BufferUsageFlag::ShaderAddress
+        | CoreGraphics::BufferUsageFlag::AccelerationStructure;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
     state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 0xFFFF);
 
@@ -1046,7 +1068,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         CoreGraphics::BufferUsageFlag::IndexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
         | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
-        | CoreGraphics::BufferUsageFlag::ShaderAddress;
+        | CoreGraphics::BufferUsageFlag::ShaderAddress
+        | CoreGraphics::BufferUsageFlag::AccelerationStructure;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
     state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 0xFFFF);
 
@@ -1742,7 +1765,7 @@ void
 DeallocateVertices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    state.vertexAllocator.Dealloc(Memory::RangeAllocation{.offset = alloc.offset, .node = alloc.node});
+    state.vertexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .node = alloc.node});
     N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, alloc.size);
 }
 
@@ -1790,7 +1813,7 @@ void
 DeallocateIndices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    state.indexAllocator.Dealloc(Memory::RangeAllocation{.offset = alloc.offset, .node = alloc.node});
+    state.indexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .node = alloc.node});
     N_BUDGET_COUNTER_DECR(N_INDEX_MEMORY, alloc.size);
 }
 

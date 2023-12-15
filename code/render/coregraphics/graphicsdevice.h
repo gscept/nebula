@@ -27,6 +27,9 @@
 namespace CoreGraphics
 {
 
+extern bool RayTracingSupported;
+extern bool DynamicVertexInputSupported;
+
 struct GraphicsDeviceCreateInfo
 {
     uint64 globalConstantBufferMemorySize;
