@@ -202,11 +202,6 @@
                 "ops": [
                     {
                         "subgraph": {
-                            "name": "Raytracing Structures Update"
-                        }
-                    },
-                    {
-                        "subgraph": {
                             "name": "Cluster AABB Generation"
                         }
                     },
@@ -238,6 +233,11 @@
                 "queue": "Graphics",
                 "_comment": "Render and blur shadow maps",
                 "ops": [
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Structures Update"
+                        }
+                    },
                     {
                         "pass": {
                             "name": "Sun Shadows Pass",
@@ -277,7 +277,7 @@
                                     "flags": "Store"
                                 }
                             ],
-                            
+
                             "subpasses": [
                                 {
                                     "name": "Spotlight Shadows",
