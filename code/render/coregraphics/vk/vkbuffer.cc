@@ -106,6 +106,10 @@ CreateBuffer(const BufferCreateInfo& info)
     if (info.mode == DeviceLocal && info.dataSize != 0)
         flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
+    if (AllBits(info.usageFlags, BufferUsageFlag::AccelerationStructure & BufferUsageFlag::VertexBuffer)
+        || AllBits(info.usageFlags, BufferUsageFlag::AccelerationStructure & BufferUsageFlag::IndexBuffer))
+        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+
     if (queues.Size() > 1)
         sharingMode = VK_SHARING_MODE_CONCURRENT;
 
