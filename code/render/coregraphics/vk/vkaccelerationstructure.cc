@@ -137,11 +137,11 @@ CreateBlas(const BlasCreateInfo& info)
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
         .pNext = nullptr,
         .vertexFormat = positionsFormat,
-        .vertexData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr },// VkDeviceOrHostAddressConstKHR{ .deviceAddress = vboAddr },
+        .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + MeshGetVertexOffset(info.mesh, 0)},
         .vertexStride = (uint64)stride,
         .maxVertex = MeshGetIndexType(info.mesh) == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
         .indexType = MeshGetIndexType(info.mesh) == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
-        .indexData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr }, //VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr},
+        .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + MeshGetIndexOffset(info.mesh)},
         .transformData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr } // TODO: Support transforms
     };
 
@@ -185,7 +185,7 @@ CreateBlas(const BlasCreateInfo& info)
         setup.rangeInfos.Append(
         {
             .primitiveCount = (uint)primitiveCount,
-            .primitiveOffset = (uint)MeshGetVertexOffset(info.mesh, 0),
+            .primitiveOffset = 0, // Primitive offset is defined in the mesh
             .firstVertex = (uint)groups[i].GetBaseIndex(),
             .transformOffset = 0
         });
@@ -205,7 +205,7 @@ CreateBlas(const BlasCreateInfo& info)
     bufferInfo.byteSize = setup.buildSizes.accelerationStructureSize;
     bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructure;
-    bufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+    bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
 
     // Create main buffer
     CoreGraphics::BufferId blasBuf = CoreGraphics::CreateBuffer(bufferInfo);
@@ -416,7 +416,7 @@ CreateTlas(const TlasCreateInfo& info)
         bufferInfo.byteSize = scene.buildSizes.accelerationStructureSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
         bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructure;
-        bufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+        bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
 
         // Create main buffer
         tlasBuf = CoreGraphics::CreateBuffer(bufferInfo);
@@ -429,7 +429,7 @@ CreateTlas(const TlasCreateInfo& info)
         bufferInfo.byteSize = scene.buildSizes.buildScratchSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
         bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
-        bufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+        bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
         buildScratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
         tlasAllocator.Set<Tlas_BuildScratch>(id, buildScratchBuf);
 
@@ -449,7 +449,7 @@ CreateTlas(const TlasCreateInfo& info)
         bufferInfo.byteSize = scene.buildSizes.updateScratchSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
         bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
-        bufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+        bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
         updateScratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
         tlasAllocator.Set<Tlas_UpdateScratch>(id, updateScratchBuf);
 
