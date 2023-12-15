@@ -28,6 +28,8 @@ public:
     const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup() const { return this->primGroup; }
     /// Get primitives mesh id
     CoreGraphics::MeshId GetMesh() const { return this->mesh; }
+    /// Get mesh resource
+    Resources::ResourceId GetMeshResource() const { return this->res; }
 
 
 protected:

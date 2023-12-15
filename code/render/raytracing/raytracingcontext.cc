@@ -5,6 +5,7 @@
 #include "raytracingcontext.h"
 #include "models/modelcontext.h"
 #include "frame/framesubgraph.h"
+#include "models/nodes/primitivenode.h"
 
 namespace Raytracing
 {
@@ -14,6 +15,7 @@ __ImplementContext(RaytracingContext, raytracingContextAllocator);
 
 struct
 {
+    Threading::CriticalSection blasLock;
     Util::Array<CoreGraphics::BlasInstanceId> blasInstances;
     Util::Array<CoreGraphics::BlasId> blasesToRebuild;
     Util::Array<CoreGraphics::BlasId> blases;
@@ -137,8 +139,40 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
     for (IndexT i = nodes.begin; i < nodes.end; i++)
     {
         CoreGraphics::MeshId mesh = Models::ModelContext::NodeInstances.renderable.nodeMeshes[i];
+        Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
+        Resources::CreateResourceListener(pNode->GetMeshResource(), [mesh, alloc, counter, i](Resources::ResourceId id)
+        {
+            state.blasLock.Enter();
+
+            // Create Blas if we haven't registered it yet
+            IndexT blasIndex = state.blasLookup.FindIndex(mesh);
+            if (blasIndex == InvalidIndex)
+            {
+                CoreGraphics::BlasCreateInfo createInfo;
+                createInfo.mesh = mesh;
+                createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
+                CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
+                state.blases.Append(blas);
+                blasIndex = state.blasLookup.Add(mesh, blas);
+
+                state.blasesToRebuild.Append(blas);
+            }
+
+            // Setup instance
+            CoreGraphics::BlasInstanceCreateInfo createInfo;
+            createInfo.flags = CoreGraphics::BlasInstanceFlags::NoFlags;
+            createInfo.mask = 0x0;
+            createInfo.shaderOffset = 0;
+            createInfo.instanceIndex = alloc.offset + counter;
+            createInfo.buffer = state.blasInstanceBuffer.HostBuffer();
+            createInfo.blas = state.blasLookup.ValueAtIndex(mesh, blasIndex);
+            createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
+            createInfo.offset = (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize();
+            state.blasInstances[alloc.offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
+        });
 
         // Create Blas if we haven't registered it yet
+        /*
         IndexT blasIndex = state.blasLookup.FindIndex(mesh);
         if (blasIndex == InvalidIndex)
         {
@@ -163,6 +197,7 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
         createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
         createInfo.offset = (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize();
         state.blasInstances[alloc.offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
+        */
         counter++;
     }
     state.topLevelNeedsRebuild = true;
