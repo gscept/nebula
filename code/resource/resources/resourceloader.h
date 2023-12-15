@@ -71,6 +71,8 @@ public:
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag
     void DiscardByTag(const Util::StringAtom& tag);
+    /// Create new listener on resource
+    void CreateListener(const Resources::ResourceId res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
     /// get resource name
     const Resources::ResourceName& GetName(const Resources::ResourceId id) const;

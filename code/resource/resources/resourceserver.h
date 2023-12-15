@@ -54,6 +54,8 @@ public:
     void ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr);
     /// stream in a new LOD
     void SetMinLod(const ResourceId& id, float lod, bool immediate);
+    /// Add call back to resource
+    void CreateResourceListener(const ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed = nullptr);
 
     /// get type of resource pool this resource was allocated with
     Core::Rtti* GetType(const Resources::ResourceId id);
@@ -213,6 +215,26 @@ ResourceServer::SetMinLod(const ResourceId& id, float lod, bool immediate)
 
 //------------------------------------------------------------------------------
 /**
+*/
+inline void
+ResourceServer::CreateResourceListener(
+    const ResourceId& id,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed
+)
+{
+    // get id of loader
+    const Ids::Id8 loaderid = id.loaderIndex;
+
+    // get resource loader by extension
+    n_assert(this->loaders.Size() > loaderid);
+    const Ptr<ResourceLoader>& loader = this->loaders[loaderid].downcast<ResourceLoader>();
+
+
+}
+
+//------------------------------------------------------------------------------
+/**
     Discards a single resource, and removes the callbacks to it from
 */
 inline void
@@ -356,6 +378,19 @@ CreateResource(
 )
 {
     return ResourceServer::Instance()->CreateResource(res, metaData, tag, success, failed, immediate, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+CreateResourceListener(
+    const ResourceId& id
+    , std::function<void(const Resources::ResourceId)> success
+    , std::function<void(const Resources::ResourceId)> failed = nullptr
+)
+{
+    return ResourceServer::Instance()->CreateResourceListener(id, success, failed);
 }
 
 //------------------------------------------------------------------------------
