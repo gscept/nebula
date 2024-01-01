@@ -179,9 +179,11 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
             convexDesc.points.data = groupVertexBase;
             convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
 
+            PxTolerancesScale scale;
+            PxCookingParams params(scale);
             PxDefaultMemoryOutputStream buf;
             PxConvexMeshCookingResult::Enum result;
-            state.cooking->cookConvexMesh(convexDesc, buf, &result);
+            PxCookConvexMesh(params, convexDesc, buf, &result);
             PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
             holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
         }
@@ -194,8 +196,6 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
             //params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
             // disable edge precompute, edges are set for each triangle, slows contact generation
             params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
-
-            state.cooking->setParams(params);
 
             PxTriangleMeshDesc meshDesc;
             meshDesc.points.count = vertexCount;
@@ -210,9 +210,9 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
             meshDesc.triangles.stride = CoreGraphics::IndexType::SizeOf(elements.ranges[0].indexType) * 3 ;
             meshDesc.triangles.data = elements.indexData + elements.ranges[0].indexByteOffset;
 #if NEBULA_DEBUG
-            state.cooking->validateTriangleMesh(meshDesc);
+            PxValidateTriangleMesh(params, meshDesc);
 #endif
-            PxTriangleMesh* aTriangleMesh = state.cooking->createTriangleMesh(meshDesc, state.physics->getPhysicsInsertionCallback());
+            PxTriangleMesh* aTriangleMesh = PxCreateTriangleMesh(params, meshDesc, state.physics->getPhysicsInsertionCallback());
             holder = PxTriangleMeshGeometry(aTriangleMesh);
         }
         break;
@@ -345,7 +345,9 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const&
 
             PxDefaultMemoryOutputStream buf;
             PxConvexMeshCookingResult::Enum result;
-            state.cooking->cookConvexMesh(convexDesc, buf, &result);
+            PxTolerancesScale scale;
+            PxCookingParams params(scale);
+            PxCookConvexMesh(params, convexDesc, buf, &result);
             if (result == PxConvexMeshCookingResult::eSUCCESS)
             {
                 PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
@@ -540,7 +542,8 @@ static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& inScale)
 {
     n_assert(shape != nullptr);
     physx::PxTransform localTrans = shape->getLocalPose();
-    physx::PxGeometryType::Enum type = shape->getGeometryType();
+    const physx::PxGeometry& geometry = shape->getGeometry();
+    physx::PxGeometryType::Enum type = geometry.getType();
     physx::PxVec3 scale = Neb2PxVec(inScale);
 
     //localTrans.p = localTrans.p.multiply(scale);
@@ -555,26 +558,20 @@ static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& inScale)
         case physx::PxGeometryType::eSPHERE:
         {
             const float radiusScale = scale.maxElement();
-            PxSphereGeometry sGeom;
-            bool success = shape->getSphereGeometry(sGeom);
-            n_assert(success);
+            PxSphereGeometry sGeom = static_cast<const PxSphereGeometry&>(geometry);
             const float newRadius = sGeom.radius * radiusScale;
             holder = PxSphereGeometry(newRadius);
         }
         break;
         case physx::PxGeometryType::eCAPSULE:
         {   
-            PxCapsuleGeometry cGeom;
-            bool success = shape->getCapsuleGeometry(cGeom);
-            n_assert(success);
+            PxCapsuleGeometry cGeom = static_cast<const PxCapsuleGeometry&>(geometry);
             holder = PxCapsuleGeometry(cGeom.radius * scale.x, cGeom.halfHeight * scale.z);
         }
         break;
         case physx::PxGeometryType::eBOX:
         {
-            PxBoxGeometry bGeom;
-            bool success = shape->getBoxGeometry(bGeom);
-            n_assert(success);
+            PxBoxGeometry bGeom = static_cast<const PxBoxGeometry&>(geometry);
             physx::PxVec3 half = bGeom.halfExtents;
             half = half.multiply(scale);
             holder = PxBoxGeometry(half);
@@ -582,18 +579,14 @@ static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& inScale)
         break;
         case physx::PxGeometryType::eCONVEXMESH:
         {
-            physx::PxConvexMeshGeometry geom;
-            bool success = shape->getConvexMeshGeometry(geom);
-            n_assert(success);
+            physx::PxConvexMeshGeometry geom = static_cast<const PxConvexMeshGeometry&>(geometry);
             physx::PxMeshScale meshScale(scale, physx::PxQuat(physx::PxIDENTITY::PxIdentity));
             holder = physx::PxConvexMeshGeometry(geom.convexMesh, meshScale);
         }
         break;
         case physx::PxGeometryType::eTRIANGLEMESH:
         {
-            physx::PxTriangleMeshGeometry geom;
-            bool success = shape->getTriangleMeshGeometry(geom);
-            n_assert(success);
+            physx::PxTriangleMeshGeometry geom = static_cast<const PxTriangleMeshGeometry&>(geometry);
             physx::PxMeshScale meshScale(scale, physx::PxQuat(physx::PxIDENTITY::PxIdentity));
             holder = physx::PxTriangleMeshGeometry(geom.triangleMesh, meshScale);
         }

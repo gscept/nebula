@@ -26,7 +26,6 @@ class PhysxState : public physx::PxSimulationEventCallback
 public:
     physx::PxFoundation * foundation;
     physx::PxPhysics * physics;
-    physx::PxCooking * cooking;
     physx::PxPvd *pvd;
     physx::PxPvdTransport *transport;
     Util::StackArray<Physics::Scene, 8> activeScenes;
