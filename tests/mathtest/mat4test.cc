@@ -51,7 +51,7 @@ static const vec3 E3(E, E, E);
 
 bool matnearequal(mat4 lhs, mat4 rhs)
 {
-    return nearequal(lhs.r[0], rhs.r[0], E4) && nearequal(lhs.r[1], rhs.r[1], E4) && nearequal(lhs.r[2], rhs.r[2], E4) && nearequal(lhs.r[3], rhs.r[3], E4);
+    return nearequal(lhs.r[0], rhs.r[0], E) && nearequal(lhs.r[1], rhs.r[1], E) && nearequal(lhs.r[2], rhs.r[2], E) && nearequal(lhs.r[3], rhs.r[3], E);
 }
 
 //------------------------------------------------------------------------------

@@ -132,6 +132,7 @@ __forceinline void
 CommitVirtual(void* ptr, size_t size)
 {
     auto ret = mprotect(ptr, size, PROT_READ | PROT_WRITE);
+    explicit_bzero(ptr, size);
     n_assert(ret == 0);
 }
 

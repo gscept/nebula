@@ -23,7 +23,7 @@ namespace Physics
 //------------------------------------------------------------------------------
 /**
 */
-PhysxState::PhysxState() : foundation(nullptr), physics(nullptr), cooking(nullptr), pvd(nullptr), transport(nullptr)
+PhysxState::PhysxState() : foundation(nullptr), physics(nullptr), pvd(nullptr), transport(nullptr)
 {
     // empty
 }
@@ -42,9 +42,6 @@ PhysxState::Setup()
     this->physics = PxCreatePhysics(PX_PHYSICS_VERSION, *this->foundation, PxTolerancesScale(), false, this->pvd);
     n_assert2(this->physics, "PxCreatePhysics failed!");
 
-    this->cooking = PxCreateCooking(PX_PHYSICS_VERSION, *this->foundation, PxCookingParams(PxTolerancesScale()));
-    n_assert2(this->cooking, "PxCreateCooking failed!");
-
     if (!PxInitExtensions(*this->physics, this->pvd))
     {
         n_error("PxInitExtensions failed!");
@@ -62,8 +59,6 @@ void PhysxState::Shutdown()
 {
    
     PxCloseExtensions();
-    this->cooking->release();
-    this->cooking = nullptr;
     this->physics->release();
     this->physics = nullptr;
     if (this->pvd != nullptr)

@@ -733,6 +733,15 @@ align_down(unsigned int alignant, unsigned int alignment)
 
 //------------------------------------------------------------------------------
 /**
+*/
+__forceinline uintptr_t
+align_downptr(uintptr_t alignant, uintptr_t alignment)
+{
+    return (alignant / alignment * alignment);
+}
+
+//------------------------------------------------------------------------------
+/**
     Integer division with rounding
 */
 __forceinline unsigned int

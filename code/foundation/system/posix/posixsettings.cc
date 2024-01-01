@@ -74,41 +74,34 @@ PosixSettings::WriteString(const Util::String & vendor, const String& key, const
         IO::FSWrapper::CreateDirectory(home + "/.config/nebula/");
     }
     Util::String path = home + "/.config/nebula/"+ vendor + ".cfg";    
-    /*
-    property_tree::ptree pt;
-    if(IO::FSWrapper::FileExists(path))
+    cJSON * js = GetSettingsJson(path);
+    if(js != NULL)
     {
-        try
+        cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
+        if(keys != NULL)
         {
-            read_xml(path.AsCharPtr(), pt);
+            if (cJSON_HasObjectItem(keys, name.AsCharPtr()))
+            {
+                cJSON_ReplaceItemInObject(keys, name.AsCharPtr(), cJSON_CreateString(value.AsCharPtr()));
+            }
+            else
+            {
+                cJSON_AddStringToObject(keys, name.AsCharPtr(), value.AsCharPtr());
+            }
+            char* buffer = cJSON_PrintUnformatted(js);
+            if (buffer != nullptr)
+            {
+                PosixFSWrapper::Handle file = PosixFSWrapper::OpenFile(path, IO::Stream::AccessMode::WriteAccess, IO::Stream::AccessPattern::Random);
+                if(file != nullptr)
+                {
+                    IO::FSWrapper::Write(file, buffer, strlen(buffer));
+                    IO::FSWrapper::CloseFile(file);
+                    cJSON_Delete(js);
+                    return true;
+                }
+            }
         }
-        catch(property_tree::xml_parser::xml_parser_error e)
-        {
-            n_error("failed to parse settings file %s\n", path.AsCharPtr());
-        }
     }
-    
-    
-    Util::String skey = key + "." + name;
-    try
-    {
-        pt.put<std::string>(skey.AsCharPtr(),value.AsCharPtr());                
-    }
-    catch(property_tree::ptree_bad_data p)
-    {
-        n_error("failed to store setting %s\n",value.AsCharPtr());
-    }
-    
-    try
-    {    
-        write_xml(path.AsCharPtr(), pt);
-        return true;
-    }
-    catch(property_tree::xml_parser::xml_parser_error e)
-    {
-        n_error("failed to parse settings file %s\n", path.AsCharPtr());
-    }    
-    */
     return false;
 }
 

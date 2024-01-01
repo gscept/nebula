@@ -305,7 +305,7 @@ GetGeometryTransformation(FbxNode* inNode)
 {
     if (!inNode)
     {
-        throw std::exception("Null for mesh geometry");
+        throw std::runtime_error("Null for mesh geometry");
     }
 
     const FbxVector4 lT = inNode->GetGeometricTranslation(FbxNode::eSourcePivot);

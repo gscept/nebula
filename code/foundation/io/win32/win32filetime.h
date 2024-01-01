@@ -34,9 +34,9 @@ public:
     Util::String AsString() const;
 
     /// get high bits
-    uint GetHighBits();
+    uint GetHighBits() const;
     /// get low bits
-    uint GetLowBits();
+    uint GetLowBits() const;
     /// set bits
     void SetBits(uint lowBits, uint highBits);
 

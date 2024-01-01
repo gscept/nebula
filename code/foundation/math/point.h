@@ -482,13 +482,14 @@ equal_any(const point& v0, const point& v1)
 /**
 */
 __forceinline bool
-nearequal(const point& v0, const point& v1, const point& epsilon)
+nearequal(const point& v0, const point& v1, float epsilon)
 {
+    __m128 eps = _mm_set1_ps(epsilon);
     __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
     __m128 temp = _mm_setzero_ps();
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
-    temp = _mm_cmple_ps(temp, epsilon.vec);
+    temp = _mm_cmple_ps(temp, eps);
     temp = _mm_and_ps(temp, _mask_xyz);
     return (_mm_movemask_ps(temp) == 0x7) != 0;
 }
