@@ -622,6 +622,7 @@ nebula_begin_module(foundation)
             util/posix/posixguid.h
             io/posix/posixconsolehandler.cc
             io/posix/posixconsolehandler.h
+            io/posix/posixfiletime.cc
             io/posix/posixfiletime.h
             io/posix/linuxfilewatcher.cc
             io/posix/linuxfilewatcher.h

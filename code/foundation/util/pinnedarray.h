@@ -9,10 +9,6 @@
 //------------------------------------------------------------------------------
 #include "array.h"
 
-#ifdef __linux__
-#include <sys/mman.h>
-#endif
-
 namespace Util
 {
 
@@ -707,12 +703,13 @@ PinnedArray<MAX_ALLOCS, TYPE>::GrowTo(SizeT newCapacity)
     SizeT totalBytesNeeded = Math::align(totalByteSize, pageSize);
     n_assert(totalBytesNeeded <= MAX_ALLOCS * sizeof(TYPE));
     SizeT roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);
-    SizeT offset = this->capacity * sizeof(TYPE);
+    SizeT offset = Math::align(this->capacity * sizeof(TYPE), pageSize);
     if (totalBytesNeeded > offset)
     {
         // The amount of bytes we need to commit is the difference between the new and the old capacity
-        SizeT commitSize = (roundedUpNewCapacity - this->capacity) * sizeof(TYPE);
+        SizeT commitSize = Math::align((roundedUpNewCapacity - this->capacity) * sizeof(TYPE), pageSize);
         this->capacity = roundedUpNewCapacity;
+        
         Memory::CommitVirtual(((byte*)this->elements) + offset, commitSize);
     }
 }

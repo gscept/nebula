@@ -70,7 +70,7 @@ Spinlock::operator=(Spinlock&& rhs)
         return;
 
     // Lock this thread until whoever is holding it returns the lock
-    while (Interlocked::CompareExchange((volatile int*)&this->lock, InvalidThreadId, InvalidThreadId) != InvalidThreadId)
+    while (Interlocked::CompareExchange((volatile ThreadIdStorage*)&this->lock, InvalidThreadId, InvalidThreadId) != InvalidThreadId)
     {
         Thread::YieldThread();
     }
@@ -90,7 +90,7 @@ Spinlock::Lock()
         return;
 
     // Otherwise, enter the spin to exchange the thread id to ours
-    while (Interlocked::CompareExchange((volatile int*) &this->lock, threadId, InvalidThreadId) != InvalidThreadId)
+    while (Interlocked::CompareExchange((volatile ThreadIdStorage*) &this->lock, threadId, InvalidThreadId) != InvalidThreadId)
     {
         Thread::YieldThread();
     }
@@ -103,7 +103,7 @@ inline void
 Spinlock::Unlock()
 {
     n_assert(this->lock != InvalidThreadId);
-    Threading::Interlocked::Exchange((volatile int*) &this->lock, InvalidThreadId);
+    Threading::Interlocked::Exchange((volatile ThreadIdStorage*) &this->lock, InvalidThreadId);
 }
 
 struct SpinlockScope

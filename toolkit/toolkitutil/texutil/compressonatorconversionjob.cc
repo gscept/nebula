@@ -10,7 +10,7 @@
 #include "io/ioserver.h"
 #include "timing/timer.h"
 
-#include "compressonator.h"
+#include "Compressonator.h"
 
 
 namespace ToolkitUtil

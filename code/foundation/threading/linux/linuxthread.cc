@@ -61,7 +61,7 @@ LinuxThread::~LinuxThread()
 
     // unregister from thread list
     #if NEBULA_DEBUG
-    n_assert(nullptr != this->threadListIterator);
+    n_assert(nullptr != *this->threadListIterator);
     LinuxThread::criticalSection.Enter();
     ThreadList.Remove(this->threadListIterator);
     LinuxThread::criticalSection.Leave();

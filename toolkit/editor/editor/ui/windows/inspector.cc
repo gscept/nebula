@@ -61,7 +61,7 @@ Inspector::Run()
 
     Editor::Entity const entity = selection[0];
     static Game::EntityMapping lastEntityMapping;
-    Game::EntityMapping const entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
+    Game::EntityMapping entityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
 
     if (!Editor::state.editorWorld->IsValid(entity) || !Editor::state.editorWorld->HasInstance(entity))
         return;

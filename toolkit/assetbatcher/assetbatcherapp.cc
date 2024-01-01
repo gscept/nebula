@@ -168,6 +168,7 @@ AssetBatcherApp::DoWork()
         force = this->args.GetBoolFlag("-force");
     }
 
+    Flat::FlatbufferInterface::Init();
     AssetExporter::ExportModes mode = AssetExporter::All;
     if (this->args.HasArg("-mode"))
     {
@@ -184,15 +185,6 @@ AssetBatcherApp::DoWork()
     }
 
     AssignRegistry::Instance()->SetAssign(Assign("home","proj:"));
-
-    /*
-    IO::IoServer* ioServer = IO::IoServer::Instance();
-    ioServer->CreateDirectory("phys:");
-    auto files = ioServer->ListFiles("tool:syswork/data/tables/", "*", true);
-    IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
-    CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
-    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");
-    */
 
     // check to see if the assetbatcher has been updated, in that case, force all assets to be rebuilt.
     IO::FileTime cmdBinModifiedTime = IO::IoServer::Instance()->GetFileWriteTime(this->args.GetCmdName());

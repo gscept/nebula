@@ -20,6 +20,8 @@ class PosixFileTime
 public:
     /// constructor
     PosixFileTime();
+    /// construct from string
+    PosixFileTime(const Util::String& str);
     /// operator ==
     friend bool operator==(const PosixFileTime& a, const PosixFileTime& b);
     /// operator !=
@@ -30,11 +32,14 @@ public:
     friend bool operator<(const PosixFileTime& a, const PosixFileTime& b);
     
     /// get high bits of internal time structure (resolution is platform dependent!)
-    uint GetHighBits();
+    uint GetHighBits() const;
     /// get log bits of internal time structure (resolution is platform dependent!)
-    uint GetLowBits();
+    uint GetLowBits() const;
     /// set both parts of time (platform dependent)
     void SetBits(uint lowbits, uint highbits);
+
+    /// convert to string
+    Util::String AsString() const;
 
 private:
     friend class PosixFSWrapper;
@@ -57,7 +62,7 @@ PosixFileTime::PosixFileTime()
 /**
 */
 inline uint
-PosixFileTime::GetHighBits()
+PosixFileTime::GetHighBits() const
 {
     return this->time.tv_sec;
 }
@@ -66,7 +71,7 @@ PosixFileTime::GetHighBits()
 /**
 */
 inline uint
-PosixFileTime::GetLowBits()
+PosixFileTime::GetLowBits() const
 {
     return this->time.tv_nsec;
 }
@@ -106,7 +111,7 @@ operator>(const PosixFileTime& a, const PosixFileTime& b)
 {
     if (a.time.tv_sec < b.time.tv_sec) return false;
     if (a.time.tv_sec > b.time.tv_sec) return true;
-    if (a.time.tv_nsec > b.time.tv_sec) return true;
+    if (a.time.tv_nsec > b.time.tv_nsec) return true;
     return false;
 }
 
@@ -118,10 +123,9 @@ operator <(const PosixFileTime& a, const PosixFileTime& b)
 {
     if (a.time.tv_sec > b.time.tv_sec) return false;
     if (a.time.tv_sec < b.time.tv_sec) return true;
-    if (a.time.tv_nsec < b.time.tv_sec) return true;
+    if (a.time.tv_nsec < b.time.tv_nsec) return true;
     return false;
 }
-
 
 }; // namespace Posix
 //------------------------------------------------------------------------------

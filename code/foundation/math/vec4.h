@@ -817,13 +817,14 @@ equal_any(const vec4& v0, const vec4& v1)
 /**
 */
 __forceinline bool
-nearequal(const vec4& v0, const vec4& v1, const vec4& epsilon)
+nearequal(const vec4& v0, const vec4& v1, const float epsilon)
 {
+    __m128 eps = _mm_set1_ps(epsilon);
     __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
     __m128 temp = _mm_setzero_ps();
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
-    temp = _mm_cmple_ps(temp, epsilon.vec);
+    temp = _mm_cmple_ps(temp, eps);
     return (_mm_movemask_ps(temp) == 0xf) != 0;
 }
 
@@ -968,13 +969,14 @@ equal3_all(const vec4& v0, const vec4& v1)
 /**
 */
 __forceinline bool
-nearequal3(const vec4& v0, const vec4& v1, const vec4& epsilon)
+nearequal3(const vec4& v0, const vec4& v1, float epsilon)
 {
+    __m128 eps = _mm_set1_ps(epsilon);
     __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
     __m128 temp = _mm_setzero_ps();
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
-    temp = _mm_cmple_ps(temp, epsilon.vec);
+    temp = _mm_cmple_ps(temp, eps);
     return (_mm_movemask_ps(temp) == 0x7) != 0;
 }
 
