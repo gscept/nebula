@@ -32,7 +32,7 @@ static const vec4 EPSILON4(TEST_EPSILON, TEST_EPSILON, TEST_EPSILON, TEST_EPSILO
 __forceinline bool
 vec4equal(const vec4 &a, const vec4 &b)
 {
-    return nearequal(a, b, EPSILON4);
+    return nearequal(a, b, TEST_EPSILON);
 }
 
 //------------------------------------------------------------------------------

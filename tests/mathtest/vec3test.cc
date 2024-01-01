@@ -14,7 +14,6 @@
 using namespace Math;
 
 static const scalar E = 0.00001;
-static const vec3 E3(E, E, E);
 
 namespace Test
 {
@@ -171,19 +170,19 @@ print(v2);
     // reciprocal
     v0.set(1.0f, 10.0f, 5.0f);
     v0 = reciprocal(v0);
-    VERIFY(nearequal(v0, vec3(1.0f, 0.1f, 0.2f), E3));
+    VERIFY(nearequal(v0, vec3(1.0f, 0.1f, 0.2f), E));
 
     // cross3
     v0.set(1.0f, 0.0f, 0.0f);
     v1.set(0.0f, 0.0f, 1.0f);
     v2 = cross(v0, v1);
-    VERIFY(nearequal(v2, vec3(0.0f, -1.0f, 0.0f), E3));
+    VERIFY(nearequal(v2, vec3(0.0f, -1.0f, 0.0f), E));
 
     // multiply
     v0.set(1.0f, 2.0f, -3.0f);
     v1.set(5.0f, 6.0f, -7.0f);
     v2 = v0 * v1;
-    VERIFY(nearequal(v2, vec3(5.0f, 12.0f, 21.0f), E3));
+    VERIFY(nearequal(v2, vec3(5.0f, 12.0f, 21.0f), E));
 
     // dot3
     v0.set(1.0f, 0.0f, 0.0f);
@@ -220,7 +219,7 @@ print(v2);
     VERIFY(v1 == vec3(1.0f, 0.0f, 0.0f));
     v0.set(4.0f, 2.0f, 3.0f);
     v1 = normalize(v0);
-    VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 0.371390671f), E3));
+    VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 0.371390671f), E));
 
     // transform (point and vector)
     /* turn back when we have mat3
