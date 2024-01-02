@@ -43,7 +43,7 @@ typedef Ids::IdAllocatorSafe<
 extern VkBlasAllocator blasAllocator;
 
 /// Get device used to create blas
-VkDevice BlasGetVkDevice(const CoreGraphics::BlasId id);
+const VkDevice BlasGetVkDevice(const CoreGraphics::BlasId id);
 /// Get buffer representing the acceleration structure
 const VkAccelerationStructureKHR BlasGetVk(const CoreGraphics::BlasId id);
 /// Get build info for bottom level acceleration structure
@@ -78,8 +78,10 @@ extern VkBlasInstanceAllocator blasInstanceAllocator;
 
 struct SceneSetup
 {
+    VkAccelerationStructureGeometryKHR geo;
     VkAccelerationStructureBuildGeometryInfoKHR geometryInfo;
     VkAccelerationStructureBuildSizesInfoKHR buildSizes;
+    Util::Array<VkAccelerationStructureBuildRangeInfoKHR> rangeInfos;
 };
 
 enum
@@ -108,8 +110,12 @@ typedef Ids::IdAllocatorSafe<
 extern VkTlasAllocator tlasAllocator;
 
 /// Get device used to create Tlas
-VkDevice TlasGetVkDevice(const CoreGraphics::TlasId id);
+const VkDevice TlasGetVkDevice(const CoreGraphics::TlasId id);
 /// Get acceleration structure
-VkAccelerationStructureKHR TlasGetVk(const CoreGraphics::TlasId id);
+const VkAccelerationStructureKHR TlasGetVk(const CoreGraphics::TlasId id);
+/// Get build info
+const VkAccelerationStructureBuildGeometryInfoKHR& TlasGetVkBuild(const CoreGraphics::TlasId id);
+/// Get build ranges
+const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& TlasGetVkRanges(const CoreGraphics::TlasId id);
 
 } // namespace Vulkan

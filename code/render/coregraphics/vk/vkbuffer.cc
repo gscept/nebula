@@ -97,6 +97,9 @@ CreateBuffer(const BufferCreateInfo& info)
         VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
+        0x0,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
         VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
     };
 
@@ -105,10 +108,6 @@ CreateBuffer(const BufferCreateInfo& info)
     // force add destination bit if we have data to be uploaded
     if (info.mode == DeviceLocal && info.dataSize != 0)
         flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-    if (AllBits(info.usageFlags, BufferUsageFlag::AccelerationStructure & BufferUsageFlag::VertexBuffer)
-        || AllBits(info.usageFlags, BufferUsageFlag::AccelerationStructure & BufferUsageFlag::IndexBuffer))
-        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
 
     if (queues.Size() > 1)
         sharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -140,8 +139,16 @@ CreateBuffer(const BufferCreateInfo& info)
     else if (info.mode == HostCached)
         pool = CoreGraphics::MemoryPool_HostCached;
 
+    uint baseAlignment = 1;
+    if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureScratch))
+        baseAlignment = CoreGraphics::GetCurrentAccelerationStructureProperties().minAccelerationStructureScratchOffsetAlignment;
+    else if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureInstances))
+        baseAlignment = 16;
+    else if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
+        baseAlignment = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupBaseAlignment;
+
     // now bind memory to buffer
-    CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
+    CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool, baseAlignment);
     err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);
     n_assert(err == VK_SUCCESS);
 
@@ -388,6 +395,22 @@ BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Invalidate(loadInfo.dev, loadInfo.mem, offset, size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DeviceAddress
+BufferGetDeviceAddress(const BufferId id)
+{
+    VkDevice dev = BufferGetVkDevice(id);
+    VkBufferDeviceAddressInfo deviceAddress =
+    {
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+        nullptr,
+        BufferGetVk(id)
+    };
+    return vkGetBufferDeviceAddress(dev, &deviceAddress);
 }
 
 } // namespace CoreGraphics

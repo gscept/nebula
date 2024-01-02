@@ -16,6 +16,7 @@
 #include "math/rectangle.h"
 #include "coregraphics/indextype.h"
 #include "ids/idallocator.h"
+#include "coregraphics/memory.h"
 
 namespace CoreGraphics
 {
@@ -175,14 +176,12 @@ void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTable
 void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
 /// Set push constants
 void CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data);
-/// Set push constants on graphics
-void CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, const void* data);
-/// Set push constants on compute
-void CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void* data);
 /// Create (if necessary) and bind pipeline based on state thus far
 void CmdSetGraphicsPipeline(const CmdBufferId id);
 /// Set graphics pipeline directly
 void CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline);
+/// Set ray tracing pipeline
+void CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline);
 
 /// Insert pipeline barrier
 void CmdBarrier(
@@ -284,6 +283,21 @@ void CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas);
 /// Build TLAS
 void CmdBuildTlas(const CmdBufferId id, const CoreGraphics::TlasId tlas);
 
+struct RayDispatchTable
+{
+    struct Entry
+    {
+        DeviceAddress baseAddress;
+        DeviceSize entrySize;
+        ubyte numEntries;
+    };
+
+    Entry genEntry, missEntry, hitEntry, callableEntry;
+};
+/// Fire rays
+void CmdRaysDispatch(const CmdBufferId id, const RayDispatchTable& table, int dimX, int dimY, int dimZ);
+/// Draw meshlets
+void CmdDrawMeshlets(const CmdBufferId id, int dimX, int dimY, int dimZ);
 
 /// Copy between textures
 void CmdCopy(

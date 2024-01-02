@@ -19,6 +19,7 @@ namespace Raytracing
 struct RaytracingSetupSettings
 {
     SizeT maxNumAllowedInstances;
+    const Ptr<Frame::FrameScript>& script;
 };
 
 class RaytracingContext : public Graphics::GraphicsContext
@@ -37,7 +38,7 @@ public:
     static void Setup(const Graphics::GraphicsEntityId id);
 
     /// Build top level acceleration
-    static void RebuildToplevelAcceleration(const Graphics::FrameContext& ctx);
+    static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);
     /// Update transforms
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
     /// Wait for jobs to finish

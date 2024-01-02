@@ -17,13 +17,14 @@ VkBlasAllocator blasAllocator;
 VkBlasInstanceAllocator blasInstanceAllocator;
 VkTlasAllocator tlasAllocator;
 
+
 //------------------------------------------------------------------------------
 /**
 */
-VkDevice
+const VkDevice
 BlasGetVkDevice(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.Get<Blas_Device>(id.id24);
+    return blasAllocator.ConstGet<Blas_Device>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -32,7 +33,7 @@ BlasGetVkDevice(const CoreGraphics::BlasId id)
 const VkAccelerationStructureKHR
 BlasGetVk(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.Get<Blas_Handle>(id.id24);
+    return blasAllocator.ConstGet<Blas_Handle>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +42,7 @@ BlasGetVk(const CoreGraphics::BlasId id)
 const VkAccelerationStructureBuildGeometryInfoKHR&
 BlasGetVkBuild(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.Get<Blas_Geometry>(id.id24).buildGeometryInfo;
+    return blasAllocator.ConstGet<Blas_Geometry>(id.id24).buildGeometryInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -50,25 +51,43 @@ BlasGetVkBuild(const CoreGraphics::BlasId id)
 const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>&
 BlasGetVkRanges(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.Get<Blas_Geometry>(id.id24).rangeInfos;
+    return blasAllocator.ConstGet<Blas_Geometry>(id.id24).rangeInfos;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-VkDevice
+const VkDevice
 TlasGetVkDevice(const CoreGraphics::TlasId id)
 {
-    return tlasAllocator.Get<Tlas_Device>(id.id24);
+    return tlasAllocator.ConstGet<Tlas_Device>(id.id24);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-VkAccelerationStructureKHR
+const VkAccelerationStructureKHR
 TlasGetVk(const CoreGraphics::TlasId id)
 {
-    return tlasAllocator.Get<Tlas_Handle>(id.id24);
+    return tlasAllocator.ConstGet<Tlas_Handle>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkAccelerationStructureBuildGeometryInfoKHR&
+TlasGetVkBuild(const CoreGraphics::TlasId id)
+{
+    return tlasAllocator.ConstGet<Tlas_Scene>(id.id24).geometryInfo;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>&
+TlasGetVkRanges(const CoreGraphics::TlasId id)
+{
+    return tlasAllocator.ConstGet<Tlas_Scene>(id.id24).rangeInfos;
 }
 
 } // namespace Vulkan
@@ -76,6 +95,7 @@ TlasGetVk(const CoreGraphics::TlasId id)
 namespace CoreGraphics
 {
 _IMPL_ACQUIRE_RELEASE(BlasInstanceId, Vulkan::blasInstanceAllocator);
+_IMPL_ACQUIRE_RELEASE(BlasId, Vulkan::blasAllocator);
 
 using namespace Vulkan;
 
@@ -204,7 +224,7 @@ CreateBlas(const BlasCreateInfo& info)
     CoreGraphics::BufferCreateInfo bufferInfo;
     bufferInfo.byteSize = setup.buildSizes.accelerationStructureSize;
     bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructure;
+    bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureData;
     bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
 
     // Create main buffer
@@ -212,7 +232,7 @@ CreateBlas(const BlasCreateInfo& info)
     blasAllocator.Set<Blas_Buffer>(id, blasBuf);
 
     // Create scratch buffer
-    bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer | CoreGraphics::BufferUsageFlag::AccelerationStructureScratch;
     bufferInfo.byteSize = setup.buildSizes.buildScratchSize;
     CoreGraphics::BufferId scratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
     blasAllocator.Set<Blas_Scratch>(id, scratchBuf);
@@ -373,11 +393,11 @@ CreateTlas(const TlasCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR,
         .pNext = nullptr,
-        .arrayOfPointers = true,
+        .arrayOfPointers = false,
         .data = VkDeviceOrHostAddressConstKHR{ .deviceAddress = instanceBufferAddr }
     };
 
-    VkAccelerationStructureGeometryKHR geoInfo =
+    scene.geo =
     {
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
         .pNext = nullptr,
@@ -394,10 +414,18 @@ CreateTlas(const TlasCreateInfo& info)
         .srcAccelerationStructure = VK_NULL_HANDLE,
         .dstAccelerationStructure = VK_NULL_HANDLE,
         .geometryCount = 1,
-        .pGeometries = &geoInfo,
+        .pGeometries = &scene.geo,
         .ppGeometries = nullptr,
         .scratchData = VkDeviceOrHostAddressKHR{ .hostAddress = nullptr }
     };
+
+    scene.rangeInfos.Append(
+    {
+        .primitiveCount = (uint)info.numInstances,
+        .primitiveOffset = 0, // Primitive offset is defined in the mesh
+        .firstVertex = 0,
+        .transformOffset = 0
+    });
 
     // Get build sizes
     scene.buildSizes =
@@ -415,7 +443,7 @@ CreateTlas(const TlasCreateInfo& info)
         CoreGraphics::BufferCreateInfo bufferInfo;
         bufferInfo.byteSize = scene.buildSizes.accelerationStructureSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructure;
+        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureData;
         bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
 
         // Create main buffer
@@ -428,7 +456,7 @@ CreateTlas(const TlasCreateInfo& info)
         CoreGraphics::BufferCreateInfo bufferInfo;
         bufferInfo.byteSize = scene.buildSizes.buildScratchSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer | CoreGraphics::BufferUsageFlag::AccelerationStructureScratch;
         bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
         buildScratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
         tlasAllocator.Set<Tlas_BuildScratch>(id, buildScratchBuf);
@@ -448,7 +476,7 @@ CreateTlas(const TlasCreateInfo& info)
         CoreGraphics::BufferCreateInfo bufferInfo;
         bufferInfo.byteSize = scene.buildSizes.updateScratchSize;
         bufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        bufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer | CoreGraphics::BufferUsageFlag::AccelerationStructureScratch;
         bufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
         updateScratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
         tlasAllocator.Set<Tlas_UpdateScratch>(id, updateScratchBuf);

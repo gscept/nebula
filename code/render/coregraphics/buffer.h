@@ -33,19 +33,22 @@ enum BufferAccessMode
 
 enum BufferUsageFlag
 {
-    InvalidBufferUsage          = 0x0,
-    TransferBufferSource        = 0x1,
-    TransferBufferDestination   = 0x2,
-    ConstantBuffer              = 0x4,
-    ConstantTexelBuffer         = 0x8,
-    ReadWriteBuffer             = 0x10,
-    ReadWriteTexelBuffer        = 0x20,
-    VertexBuffer                = 0x40,
-    IndexBuffer                 = 0x80,
-    IndirectBuffer              = 0x100,
-    ShaderAddress               = 0x200,
-    AccelerationStructure       = 0x400,
-    ShaderTable                 = 0x800
+    InvalidBufferUsage              = 0x0,
+    TransferBufferSource            = 0x1,
+    TransferBufferDestination       = 0x2,
+    ConstantBuffer                  = 0x4,
+    ConstantTexelBuffer             = 0x8,
+    ReadWriteBuffer                 = 0x10,
+    ReadWriteTexelBuffer            = 0x20,
+    VertexBuffer                    = 0x40,
+    IndexBuffer                     = 0x80,
+    IndirectBuffer                  = 0x100,
+    ShaderAddress                   = 0x200,
+    AccelerationStructureData       = 0x400,    // The buffer holding acceleration structures
+    AccelerationStructureScratch    = 0x800,    // Scratch buffer for building and updating acceleration structures
+    AccelerationStructureInput      = 0x1000,   // Input to acceleration structure, vertices and indices
+    AccelerationStructureInstances  = 0x2000,   // Acceleration structure instances buffer
+    ShaderTable                     = 0x4000
 };
 typedef uint BufferUsageFlags;
 
@@ -126,6 +129,9 @@ void BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char 
 void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
 /// invalidate buffer CPU side, such that any GPU changes will be made visible
 void BufferInvalidate(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
+
+/// Get buffer device address
+DeviceAddress BufferGetDeviceAddress(const BufferId id);
 
 //------------------------------------------------------------------------------
 /**

@@ -47,7 +47,7 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
     {
         // Block is completely new, make space in our arrays for the data
         this->blockMappedPointers.Append(nullptr);
-        this->allocators.Append(Memory::RangeAllocator{(uint)this->blockSize, (SizeT)(this->blockSize / 16)});
+        this->allocators.Append(Memory::RangeAllocator{ (uint)this->blockSize, 256} );
 
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
         this->blocks.Append(mem);
@@ -55,7 +55,7 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
     else
     {
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
-        this->allocators[id] = Memory::RangeAllocator{ (uint)this->blockSize, (SizeT)(this->blockSize / 16) };
+        this->allocators[id] = Memory::RangeAllocator{ (uint)this->blockSize, 256 };
         this->blocks[id] = mem;
     }
     Memory::RangeAllocation alloc = this->allocators[id].Alloc(size, alignment);

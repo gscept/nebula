@@ -66,6 +66,7 @@ enum IdType
     SamplerIdType,
     MaterialIdType,
     SubmissionContextIdType,
+    PipelineIdType,
     ImageIdType,
     BlasIdType,
     BlasInstanceIdType,
@@ -94,15 +95,23 @@ enum QueryType
 
 enum ShaderVisibility
 {
-    InvalidVisibility           = 0,
-    VertexShaderVisibility      = 1 << 0,
-    HullShaderVisibility        = 1 << 2,
-    DomainShaderVisibility      = 1 << 3,
-    GeometryShaderVisibility    = 1 << 4,
-    PixelShaderVisibility       = 1 << 5,
-    AllGraphicsVisibility       = VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility,
-    ComputeShaderVisibility     = 1 << 6,
-    AllVisibility               = VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility | ComputeShaderVisibility
+    InvalidVisibility               = 0,
+    VertexShaderVisibility          = 1 << 0,
+    HullShaderVisibility            = 1 << 2,
+    DomainShaderVisibility          = 1 << 3,
+    GeometryShaderVisibility        = 1 << 4,
+    PixelShaderVisibility           = 1 << 5,
+    AllGraphicsVisibility = VertexShaderVisibility | HullShaderVisibility | DomainShaderVisibility | GeometryShaderVisibility | PixelShaderVisibility,
+    TaskShaderVisibility            = 1 << 6,
+    MeshShaderVisibility            = 1 << 7,
+    ComputeShaderVisibility         = 1 << 8,
+    RayGenerationShaderVisibility   = 1 << 9,
+    RayAnyHitShaderVisibility       = 1 << 10,
+    RayClosestHitShaderVisibility   = 1 << 11,
+    RayMissShaderVisibility         = 1 << 12,
+    RayIntersectionShaderVisibility = 1 << 13,
+    CallableShaderVisibility        = 1 << 14,
+    AllVisibility                   = (1 << 15) - 1
 };
 __ImplementEnumBitOperators(CoreGraphics::ShaderVisibility);
 
@@ -154,12 +163,20 @@ ShaderVisibilityFromString(const Util::String& str)
     for (i = 0; i < components.Size(); i++)
     {
         const Util::String& component = components[i];
-        if (component == "VS")      ret |= VertexShaderVisibility;
-        else if (component == "HS") ret |= HullShaderVisibility;
-        else if (component == "DS") ret |= DomainShaderVisibility;
-        else if (component == "GS") ret |= GeometryShaderVisibility;
-        else if (component == "PS") ret |= PixelShaderVisibility;
-        else if (component == "CS") ret |= ComputeShaderVisibility;
+        if (component == "VS")          ret |= VertexShaderVisibility;
+        else if (component == "HS")     ret |= HullShaderVisibility;
+        else if (component == "DS")     ret |= DomainShaderVisibility;
+        else if (component == "GS")     ret |= GeometryShaderVisibility;
+        else if (component == "PS")     ret |= PixelShaderVisibility;
+        else if (component == "CS")     ret |= ComputeShaderVisibility;
+        else if (component == "TS")     ret |= TaskShaderVisibility;
+        else if (component == "MS")     ret |= MeshShaderVisibility;
+        else if (component == "RGS")    ret |= RayGenerationShaderVisibility;
+        else if (component == "RAS")    ret |= RayAnyHitShaderVisibility;
+        else if (component == "RCS")    ret |= RayClosestHitShaderVisibility;
+        else if (component == "RMS")    ret |= RayMissShaderVisibility;
+        else if (component == "RIS")    ret |= RayIntersectionShaderVisibility;
+        else if (component == "CAS")    ret |= CallableShaderVisibility;
     }
 
     return ret;

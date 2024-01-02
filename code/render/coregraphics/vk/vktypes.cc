@@ -477,12 +477,20 @@ VkShaderStageFlags
 VkTypes::AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis)
 {
     VkShaderStageFlags ret = 0;
-    if ((vis & VertexShaderVisibility) == VertexShaderVisibility)       ret |= VK_SHADER_STAGE_VERTEX_BIT;
-    if ((vis & HullShaderVisibility) == HullShaderVisibility)           ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-    if ((vis & DomainShaderVisibility) == DomainShaderVisibility)       ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-    if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)   ret |= VK_SHADER_STAGE_GEOMETRY_BIT;
-    if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         ret |= VK_SHADER_STAGE_FRAGMENT_BIT;
-    if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     ret |= VK_SHADER_STAGE_COMPUTE_BIT;
+    if (AllBits(vis, VertexShaderVisibility))               ret |= VK_SHADER_STAGE_VERTEX_BIT;
+    if (AllBits(vis, HullShaderVisibility))                 ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+    if (AllBits(vis, DomainShaderVisibility))               ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+    if (AllBits(vis, GeometryShaderVisibility))             ret |= VK_SHADER_STAGE_GEOMETRY_BIT;
+    if (AllBits(vis, PixelShaderVisibility))                ret |= VK_SHADER_STAGE_FRAGMENT_BIT;
+    if (AllBits(vis, ComputeShaderVisibility))              ret |= VK_SHADER_STAGE_COMPUTE_BIT;
+    if (AllBits(vis, TaskShaderVisibility))                 ret |= VK_SHADER_STAGE_TASK_BIT_EXT;
+    if (AllBits(vis, MeshShaderVisibility))                 ret |= VK_SHADER_STAGE_MESH_BIT_EXT;
+    if (AllBits(vis, RayGenerationShaderVisibility))        ret |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+    if (AllBits(vis, RayAnyHitShaderVisibility))            ret |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+    if (AllBits(vis, RayClosestHitShaderVisibility))        ret |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    if (AllBits(vis, RayMissShaderVisibility))              ret |= VK_SHADER_STAGE_MISS_BIT_KHR;
+    if (AllBits(vis, RayIntersectionShaderVisibility))      ret |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+    if (AllBits(vis, CallableShaderVisibility))             ret |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
     return ret;
 }
 

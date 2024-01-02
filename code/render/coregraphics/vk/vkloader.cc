@@ -93,7 +93,7 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkResetQueryPool);
 
     // physical device
-    _IMP_VK(vkGetPhysicalDeviceProperties);
+    _IMP_VK(vkGetPhysicalDeviceProperties2);
     _IMP_VK(vkGetPhysicalDeviceFeatures);
     _IMP_VK(vkGetPhysicalDeviceQueueFamilyProperties);
     _IMP_VK(vkGetPhysicalDeviceMemoryProperties);
@@ -225,6 +225,10 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
     _IMP_VK(vkGetBufferDeviceAddress);
     _IMP_VK(vkCmdBuildAccelerationStructuresKHR);
+    _IMP_VK(vkCmdTraceRaysKHR);
+    _IMP_VK(vkGetRayTracingShaderGroupHandlesKHR);
+
+    _IMP_VK(vkCmdDrawMeshTasksEXT)
 }
 
 } // namespace Vulkan
@@ -271,7 +275,7 @@ _DEF_VK(vkDestroyQueryPool);
 _DEF_VK(vkResetQueryPool);
 
 // physical device
-_DEF_VK(vkGetPhysicalDeviceProperties);
+_DEF_VK(vkGetPhysicalDeviceProperties2);
 _DEF_VK(vkGetPhysicalDeviceFeatures);
 _DEF_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEF_VK(vkGetPhysicalDeviceMemoryProperties);
@@ -403,3 +407,7 @@ _DEF_VK(vkGetAccelerationStructureDeviceAddressKHR);
 _DEF_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
 _DEF_VK(vkGetBufferDeviceAddress);
 _DEF_VK(vkCmdBuildAccelerationStructuresKHR);
+_DEF_VK(vkCmdTraceRaysKHR);
+_DEF_VK(vkGetRayTracingShaderGroupHandlesKHR);
+
+_DEF_VK(vkCmdDrawMeshTasksEXT)

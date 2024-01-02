@@ -41,6 +41,7 @@ struct BlasCreateInfo
 };
 
 ID_24_8_TYPE(BlasId);
+_DECL_ACQUIRE_RELEASE(BlasId);
 
 /// Create bottom level acceleration structure
 BlasId CreateBlas(const BlasCreateInfo& info);

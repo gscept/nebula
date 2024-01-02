@@ -20,6 +20,7 @@
 
 typedef VkDeviceSize DeviceSize;
 typedef VkDeviceMemory DeviceMemory;
+typedef VkDeviceAddress DeviceAddress;
 #else
 #error "coregraphics/memory.h is not supported for the renderer"
 #endif

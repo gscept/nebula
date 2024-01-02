@@ -146,7 +146,8 @@ GraphicsFeatureUnit::OnActivate()
 
     Raytracing::RaytracingSetupSettings raytracingSettings =
     {
-        .maxNumAllowedInstances = 0xFFFF
+        .maxNumAllowedInstances = 0xFFFF,
+        .script = frameScript
     };
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
@@ -258,7 +259,7 @@ GraphicsFeatureUnit::OnActivate()
         Fog::VolumetricFogContext::RenderUI,
         EnvironmentContext::OnBeforeFrame,
         EnvironmentContext::RenderUI,
-        Raytracing::RaytracingContext::RebuildToplevelAcceleration,
+        Raytracing::RaytracingContext::ReconstructTopLevelAcceleration,
         Particles::ParticleContext::UpdateParticles,
     };
 
@@ -372,7 +373,7 @@ GraphicsFeatureUnit::OnBeginFrame()
         break;
     }
 
-    if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
+    //if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
         Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
 
 }

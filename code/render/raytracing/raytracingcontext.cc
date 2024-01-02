@@ -6,6 +6,9 @@
 #include "models/modelcontext.h"
 #include "frame/framesubgraph.h"
 #include "models/nodes/primitivenode.h"
+#include "coregraphics/pipeline.h"
+
+#include "raytracetest.h"
 
 namespace Raytracing
 {
@@ -21,12 +24,19 @@ struct
     Util::Array<CoreGraphics::BlasId> blases;
     CoreGraphics::TlasId toplevelAccelerationStructure;
     Memory::RangeAllocator blasInstanceAllocator;
-    bool topLevelNeedsRebuild, topLevelNeedsUpdate;
+    bool topLevelNeedsReconstruction, topLevelNeedsBuild, topLevelNeedsUpdate;
 
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 1> frameOpAllocator;
     Util::HashTable<CoreGraphics::MeshId, CoreGraphics::BlasId> blasLookup;
     CoreGraphics::BufferWithStaging blasInstanceBuffer;
+
+    CoreGraphics::ShaderId raytracingTestShader;
+    CoreGraphics::ShaderProgramId raytracingTestProgram;
+    CoreGraphics::ResourceTableSet raytracingTestTables;
+    CoreGraphics::TextureId raytracingTestOutput;
+
+    CoreGraphics::PipelineRayTracingTable raytracingBundle;
 
     Threading::Event jobWaitEvent;
 
@@ -56,7 +66,14 @@ RaytracingContext::~RaytracingContext()
 void
 RaytracingContext::Create(const RaytracingSetupSettings& settings)
 {
+    n_assert(CoreGraphics::RayTracingSupported);
     __CreateContext();
+
+    state.raytracingTestShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:raytracetest.fxb");
+    state.raytracingTestProgram = CoreGraphics::ShaderGetProgram(state.raytracingTestShader, CoreGraphics::ShaderFeatureFromString("test"));
+    state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(state.raytracingTestShader, NEBULA_BATCH_GROUP, 3);
+
+    state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline({ state.raytracingTestProgram });
 
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = RaytracingContext::OnRenderDebug;
@@ -69,6 +86,8 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     blasUpdate->domain = CoreGraphics::BarrierDomain::Global;
     blasUpdate->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
+        state.blasLock.Enter();
+
         // Update bottom level acceleration structures
         if (state.blasesToRebuild.Size() > 0)
         {
@@ -90,7 +109,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
         }
 
         // Update top level acceleration
-        if (state.topLevelNeedsRebuild)
+        if (state.topLevelNeedsBuild)
         {
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Top Level Acceleration Structure Build");
             CoreGraphics::TlasInitBuild(state.toplevelAccelerationStructure);
@@ -104,15 +123,32 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
             CoreGraphics::CmdBuildTlas(cmdBuf, state.toplevelAccelerationStructure);
             CoreGraphics::CmdEndMarker(cmdBuf);
         }
+        state.blasLock.Leave();
     };
     Frame::AddSubgraph("Raytracing Structures Update", { blasUpdate });
+
+    Frame::FrameCode* testRays = state.frameOpAllocator.Alloc<Frame::FrameCode>();
+    testRays->SetName("Ray Tracing Test Shader");
+    testRays->domain = CoreGraphics::BarrierDomain::Global;
+    testRays->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
+        {
+            CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.raytracingBundle.pipeline);
+            CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTestTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, {});
+            CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
+        }
+    };
+    Frame::AddSubgraph("Raytracing Test", { testRays });
 
     // Create buffers for updating blas instances
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.elementSize = CoreGraphics::BlasInstanceGetSize();
     bufInfo.size = settings.maxNumAllowedInstances;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress;
+    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureInstances;
     state.blasInstanceBuffer = CoreGraphics::BufferWithStaging(bufInfo);
+
+    state.raytracingTestOutput = settings.script->GetTexture("RayTracingTestOutput");
 
     state.maxAllowedInstances = settings.maxNumAllowedInstances;
 
@@ -155,6 +191,7 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
                 state.blases.Append(blas);
                 blasIndex = state.blasLookup.Add(mesh, blas);
 
+                CoreGraphics::BlasIdRelease(blas);
                 state.blasesToRebuild.Append(blas);
             }
 
@@ -168,48 +205,24 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
             createInfo.blas = state.blasLookup.ValueAtIndex(mesh, blasIndex);
             createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
             createInfo.offset = (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize();
+
+            CoreGraphics::BlasIdLock _0(createInfo.blas);
             state.blasInstances[alloc.offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
+
+            state.blasLock.Leave();
         });
-
-        // Create Blas if we haven't registered it yet
-        /*
-        IndexT blasIndex = state.blasLookup.FindIndex(mesh);
-        if (blasIndex == InvalidIndex)
-        {
-            CoreGraphics::BlasCreateInfo createInfo;
-            createInfo.mesh = mesh;
-            createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
-            CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
-            state.blases.Append(blas);
-            blasIndex = state.blasLookup.Add(mesh, blas);
-
-            state.blasesToRebuild.Append(blas);
-        }
-
-        // Setup instance
-        CoreGraphics::BlasInstanceCreateInfo createInfo;
-        createInfo.flags = CoreGraphics::BlasInstanceFlags::NoFlags;
-        createInfo.mask = 0x0;
-        createInfo.shaderOffset = 0;
-        createInfo.instanceIndex = alloc.offset + counter;
-        createInfo.buffer = state.blasInstanceBuffer.HostBuffer();
-        createInfo.blas = state.blasLookup.ValueAtIndex(mesh, blasIndex);
-        createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
-        createInfo.offset = (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize();
-        state.blasInstances[alloc.offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
-        */
         counter++;
     }
-    state.topLevelNeedsRebuild = true;
+    state.topLevelNeedsReconstruction = true;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-RaytracingContext::RebuildToplevelAcceleration(const Graphics::FrameContext& ctx)
+RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx)
 {
-    if (state.topLevelNeedsRebuild)
+    if (state.topLevelNeedsReconstruction)
     {
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
         {
@@ -220,7 +233,27 @@ RaytracingContext::RebuildToplevelAcceleration(const Graphics::FrameContext& ctx
         createInfo.instanceBuffer = state.blasInstanceBuffer.HostBuffer();
         createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastBuild | CoreGraphics::AccelerationStructureBuildFlags::Dynamic;
         state.toplevelAccelerationStructure = CoreGraphics::CreateTlas(createInfo);
+        state.topLevelNeedsReconstruction = false;
+        state.topLevelNeedsBuild = true;
     }
+    else if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
+    {
+        state.topLevelNeedsBuild = true;
+    }
+
+    if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
+    {
+        CoreGraphics::ResourceTableSetAccelerationStructure(
+            state.raytracingTestTables.tables[ctx.bufferIndex],
+            CoreGraphics::ResourceTableTlas(state.toplevelAccelerationStructure, Raytracetest::Table_Batch::TLAS_SLOT)
+        );
+        CoreGraphics::ResourceTableSetRWTexture(
+            state.raytracingTestTables.tables[ctx.bufferIndex],
+            CoreGraphics::ResourceTableTexture(state.raytracingTestOutput, Raytracetest::Table_Batch::Output_SLOT)
+        );
+        CoreGraphics::ResourceTableCommitChanges(state.raytracingTestTables.tables[ctx.bufferIndex]);
+    }
+
 }
 
 //------------------------------------------------------------------------------
@@ -274,8 +307,11 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
                 {
                     const Math::mat4& transform = transformables.nodeTransforms[renderables.nodeTransformIndex[j]];
-                    CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[alloc.offset + counter]);
-                    CoreGraphics::BlasInstanceSetTransform(state.blasInstances[alloc.offset + counter], transform);
+                    if (state.blasInstances[alloc.offset + counter] != CoreGraphics::InvalidBlasInstanceId)
+                    {
+                        CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[alloc.offset + counter]);
+                        CoreGraphics::BlasInstanceSetTransform(state.blasInstances[alloc.offset + counter], transform);
+                    }
                     counter++;
                 }
             }
@@ -322,7 +358,7 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
         CoreGraphics::DestroyBlas(state.blases[i]);
     }
     raytracingContextAllocator.Dealloc(id.id);
-    state.topLevelNeedsRebuild = true;
+    state.topLevelNeedsReconstruction = true;
 }
 
 } // namespace Raytracing

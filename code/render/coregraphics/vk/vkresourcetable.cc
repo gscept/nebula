@@ -11,6 +11,7 @@
 #include "vktexture.h"
 #include "vktextureview.h"
 #include "vkbuffer.h"
+#include "vkaccelerationstructure.h"
 
 namespace Vulkan
 {
@@ -651,6 +652,38 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 //------------------------------------------------------------------------------
 /**
 */
+void
+ResourceTableSetAccelerationStructure(const ResourceTableId id, const ResourceTableTlas& tlas)
+{
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+
+    n_assert(tlas.slot != InvalidIndex);
+
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    write.descriptorCount = 1;
+    write.dstArrayElement = 0;
+    write.dstBinding = tlas.slot;
+    write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
+
+    WriteInfo inf;
+    inf.tlas = Vulkan::TlasGetVk(tlas.tlas);
+    inf.write = write;
+    inf.type = WriteType::Tlas;
+    infoList.Append(inf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 ResourceTableBlock(bool b)
 {
@@ -687,6 +720,17 @@ ResourceTableCommitChanges(const ResourceTableId id)
             case WriteType::TexelBuffer:
                 infoList[i].write.pTexelBufferView = &infoList[i].tex;
                 break;
+            case WriteType::Tlas:
+            {
+                auto tlasWrite = VkWriteDescriptorSetAccelerationStructureKHR
+                {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+                    .pNext = nullptr,
+                    .accelerationStructureCount = 1,
+                    .pAccelerationStructures = &(infoList[i].tlas)
+                };
+                infoList[i].write.pNext = &tlasWrite;
+            }
         }
         vkUpdateDescriptorSets(dev, 1, &infoList[i].write, 0, nullptr);
     }
@@ -698,6 +742,61 @@ ResourceTableCommitChanges(const ResourceTableId id)
         vkUpdateDescriptorSets(dev, 0, nullptr, copies.Size(), copies.Begin());
         copies.Free();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding>& bindings, const VkDescriptorSetLayoutBinding& binding)
+{
+    IndexT index = bindings.FindIndex(binding.binding);
+    if (index != InvalidIndex)
+    {
+        const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+        if (prevBinding.descriptorCount != binding.descriptorCount
+            || prevBinding.descriptorType != binding.descriptorType
+            || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+            || prevBinding.stageFlags != binding.stageFlags)
+        {
+            n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+        }
+    }
+    else
+        bindings.Add(binding.binding, binding);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CountDescriptors(Util::HashTable<uint32_t, uint32_t>& counters, const VkDescriptorSetLayoutBinding& binding)
+{
+    // accumulate textures for same bind point
+    IndexT countIndex = counters.FindIndex(binding.binding);
+    if (countIndex == InvalidIndex)
+        counters.Add(binding.binding, binding.descriptorCount);
+    else
+    {
+        uint32_t& count = counters.ValueAtIndex(binding.binding, countIndex);
+        count = Math::max(count, (uint32_t)binding.descriptorCount);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetupDescriptorSize(VkDescriptorPoolSize& size, Util::HashTable<uint32_t, uint32_t>& counter, Util::Array<VkDescriptorPoolSize>& outSizes)
+{
+    auto it = counter.Begin();
+    while (it != counter.End())
+    {
+        size.descriptorCount += *it.val;
+        it++;
+    }
+    if (size.descriptorCount > 0)
+        outSizes.Append(size);
 }
 
 //------------------------------------------------------------------------------
@@ -737,7 +836,6 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     Util::HashTable<uint32_t, uint32_t> bufferCount;
     Util::HashTable<uint32_t, uint32_t> dynamicBufferCount;
 
-
     // setup textures, or texture-sampler pairs
     for (IndexT i = 0; i < info.textures.Size(); i++)
     {
@@ -753,15 +851,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
             if (!immutable.Contains(tex.slot))
                 immutable.Add(tex.slot, false);
 
-            // accumulate textures for same bind point
-            IndexT countIndex = textureCount.FindIndex(binding.binding);
-            if (countIndex == InvalidIndex)
-                textureCount.Add(binding.binding, tex.num);
-            else
-            {
-                uint32_t& count = textureCount.ValueAtIndex(binding.binding, countIndex);
-                count = Math::max(count, (uint32_t)tex.num);
-            }
+            CountDescriptors(textureCount, binding);
         }
         else
         {
@@ -770,53 +860,16 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
             if (!immutable.Contains(tex.slot))
                 immutable.Add(tex.slot, true);
 
-            // accumulate textures for same bind point
-            IndexT countIndex = sampledTextureCount.FindIndex(binding.binding);
-            if (countIndex == InvalidIndex)
-                sampledTextureCount.Add(binding.binding, tex.num);
-            else
-            {
-                uint32_t& count = sampledTextureCount.ValueAtIndex(binding.binding, countIndex);
-                count = Math::max(count, (uint32_t)tex.num);
-            }
+            CountDescriptors(sampledTextureCount, binding);
         }
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        IndexT index = bindings.FindIndex(binding.binding);
-        if (index != InvalidIndex)
-        {
-            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
-            if (prevBinding.descriptorCount != binding.descriptorCount
-                || prevBinding.descriptorType != binding.descriptorType
-                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-                || prevBinding.stageFlags != binding.stageFlags)
-            {
-                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
-            }
-        }
-        else 
-            bindings.Add(binding.binding, binding);
+
+        AddBinding(bindings, binding);
     }
 
     // update pool sizes
-    auto textureCountIt = textureCount.Begin();
-    while (textureCountIt != textureCount.End())
-    {
-        sampledImageSize.descriptorCount += *textureCountIt.val;
-        textureCountIt++;
-    }
-
-    auto sampledTextureCountIt = sampledTextureCount.Begin();
-    while (sampledTextureCountIt != sampledTextureCount.End())
-    {
-        combinedImageSize.descriptorCount += *sampledTextureCountIt.val;
-        sampledTextureCountIt++;
-    }
-
-    // add to list of sizes
-    if (sampledImageSize.descriptorCount > 0)
-        poolSizes.Append(sampledImageSize);
-    if (combinedImageSize.descriptorCount > 0)
-        poolSizes.Append(combinedImageSize);
+    SetupDescriptorSize(sampledImageSize, textureCount, poolSizes);
+    SetupDescriptorSize(combinedImageSize, sampledTextureCount, poolSizes);
 
     //------------------------------------------------------------------------------
     /**
@@ -840,43 +893,12 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        IndexT index = bindings.FindIndex(binding.binding);
-        if (index != InvalidIndex)
-        {
-            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
-            if (prevBinding.descriptorCount != binding.descriptorCount
-                || prevBinding.descriptorType != binding.descriptorType
-                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-                || prevBinding.stageFlags != binding.stageFlags)
-            {
-                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
-            }
-        }
-        else
-            bindings.Add(binding.binding, binding);
+        AddBinding(bindings, binding);
 
-        // accumulate textures for same bind point
-        IndexT countIndex = imageCount.FindIndex(binding.binding);
-        if (countIndex == InvalidIndex)
-            imageCount.Add(binding.binding, tex.num);
-        else
-        {
-            uint32_t& count = imageCount.ValueAtIndex(binding.binding, countIndex);
-            count = Math::max(count, (uint32_t)tex.num);
-        }
+        CountDescriptors(imageCount, binding);
     }
 
-    auto imageCountIt = imageCount.Begin();
-    while (imageCountIt != imageCount.End())
-    {
-        rwImageSize.descriptorCount += *imageCountIt.val;
-        imageCountIt++;
-    }
-
-    // add to list of sizes
-    if (rwImageSize.descriptorCount > 0)
-        poolSizes.Append(rwImageSize);
-
+    SetupDescriptorSize(rwImageSize, imageCount, poolSizes);
 
     //------------------------------------------------------------------------------
     /**
@@ -901,68 +923,14 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-        IndexT index = bindings.FindIndex(binding.binding);
-        if (index != InvalidIndex)
-        {
-            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
-            if (prevBinding.descriptorCount != binding.descriptorCount
-                || prevBinding.descriptorType != binding.descriptorType
-                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-                || prevBinding.stageFlags != binding.stageFlags)
-            {
-                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
-            }
-        }
-        else
-            bindings.Add(binding.binding, binding);
+        AddBinding(bindings, binding);
 
-        if (buf.dynamicOffset)
-        {
-            // accumulate textures for same bind point
-            IndexT countIndex = dynamicUniformCount.FindIndex(binding.binding);
-            if (countIndex == InvalidIndex)
-                dynamicUniformCount.Add(binding.binding, buf.num);
-            else
-            {
-                uint32_t& count = dynamicUniformCount.ValueAtIndex(binding.binding, countIndex);
-                count = Math::max(count, (uint32_t)buf.num);
-            }
-        }
-        else
-        {
-            // accumulate textures for same bind point
-            IndexT countIndex = uniformCount.FindIndex(binding.binding);
-            if (countIndex == InvalidIndex)
-                uniformCount.Add(binding.binding, buf.num);
-            else
-            {
-                uint32_t& count = uniformCount.ValueAtIndex(binding.binding, countIndex);
-                count = Math::max(count, (uint32_t)buf.num);
-            }
-        }
+        CountDescriptors(buf.dynamicOffset ? dynamicUniformCount : uniformCount, binding);
     }
 
     // update pool sizes
-    auto dynamicUniformCountIt = dynamicUniformCount.Begin();
-    while (dynamicUniformCountIt != dynamicUniformCount.End())
-    {
-        cbDynamicSize.descriptorCount += *dynamicUniformCountIt.val;
-        dynamicUniformCountIt++;
-    }
-
-    auto uniformCountIt = uniformCount.Begin();
-    while (uniformCountIt != uniformCount.End())
-    {
-        cbSize.descriptorCount += *uniformCountIt.val;
-        uniformCountIt++;
-    }
-
-    // add to list of sizes
-    if (cbDynamicSize.descriptorCount > 0)
-        poolSizes.Append(cbDynamicSize);
-    if (cbSize.descriptorCount > 0)
-        poolSizes.Append(cbSize);
-
+    SetupDescriptorSize(cbDynamicSize, dynamicUniformCount, poolSizes);
+    SetupDescriptorSize(cbSize, uniformCount, poolSizes);
 
     //------------------------------------------------------------------------------
     /**
@@ -987,68 +955,43 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-        IndexT index = bindings.FindIndex(binding.binding);
-        if (index != InvalidIndex)
-        {
-            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
-            if (prevBinding.descriptorCount != binding.descriptorCount
-                || prevBinding.descriptorType != binding.descriptorType
-                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-                || prevBinding.stageFlags != binding.stageFlags)
-            {
-                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
-            }
-        }
-        else
-            bindings.Add(binding.binding, binding);
+        AddBinding(bindings, binding);
 
-        if (buf.dynamicOffset)
-        {
-            // accumulate textures for same bind point
-            IndexT countIndex = dynamicBufferCount.FindIndex(binding.binding);
-            if (countIndex == InvalidIndex)
-                dynamicBufferCount.Add(binding.binding, buf.num);
-            else
-            {
-                uint32_t& count = dynamicBufferCount.ValueAtIndex(binding.binding, countIndex);
-                count = Math::max(count, (uint32_t)buf.num);
-            }
-        }
-        else
-        {
-            // accumulate textures for same bind point
-            IndexT countIndex = bufferCount.FindIndex(binding.binding);
-            if (countIndex == InvalidIndex)
-                bufferCount.Add(binding.binding, buf.num);
-            else
-            {
-                uint32_t& count = bufferCount.ValueAtIndex(binding.binding, countIndex);
-                count = Math::max(count, (uint32_t)buf.num);
-            }
-        }
+        CountDescriptors(buf.dynamicOffset ? dynamicBufferCount : bufferCount, binding);
     }
 
-        // update pool sizes
-    auto dynamicBufferCountIt = dynamicBufferCount.Begin();
-    while (dynamicBufferCountIt != dynamicBufferCount.End())
+    // update pool sizes
+    SetupDescriptorSize(rwDynamicBufferSize, dynamicBufferCount, poolSizes);
+    SetupDescriptorSize(rwBufferSize, bufferCount, poolSizes);
+
+    //------------------------------------------------------------------------------
+    /**
+        Acceleration structures
+    */
+    //------------------------------------------------------------------------------
+    if (CoreGraphics::RayTracingSupported)
     {
-        rwDynamicBufferSize.descriptorCount += *dynamicBufferCountIt.val;
-        dynamicBufferCountIt++;
+        VkDescriptorPoolSize accelerationStructureSize;
+        accelerationStructureSize.type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+        accelerationStructureSize.descriptorCount = 0;
+
+        // Setup acceleration structures
+        for (IndexT i = 0; i < info.accelerationStructures.Size(); i++)
+        {
+            const ResourceTableLayoutAccelerationStructure& tlas = info.accelerationStructures[i];
+            VkDescriptorSetLayoutBinding binding;
+            binding.binding = tlas.slot;
+            binding.descriptorCount = tlas.num;
+            binding.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+            binding.stageFlags = VkTypes::AsVkShaderVisibility(tlas.visibility);
+            AddBinding(bindings, binding);
+
+            accelerationStructureSize.descriptorCount += tlas.num;
+        }
+
+        if (accelerationStructureSize.descriptorCount > 0)
+            poolSizes.Append(accelerationStructureSize);
     }
-
-    auto bufferCountIt = bufferCount.Begin();
-    while (bufferCountIt != bufferCount.End())
-    {
-        rwBufferSize.descriptorCount += *bufferCountIt.val;
-        bufferCountIt++;
-    }
-
-    // add to list of sizes
-    if (rwDynamicBufferSize.descriptorCount > 0)
-        poolSizes.Append(rwDynamicBufferSize);
-    if (rwBufferSize.descriptorCount > 0)
-        poolSizes.Append(rwBufferSize);
-
 
     //------------------------------------------------------------------------------
     /**
@@ -1070,20 +1013,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         binding.pImmutableSamplers = &SamplerGetVk(samp.sampler);
         binding.stageFlags = VkTypes::AsVkShaderVisibility(samp.visibility);
-        IndexT index = bindings.FindIndex(binding.binding);
-        if (index != InvalidIndex)
-        {
-            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
-            if (prevBinding.descriptorCount != binding.descriptorCount
-                || prevBinding.descriptorType != binding.descriptorType
-                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-                || prevBinding.stageFlags != binding.stageFlags)
-            {
-                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
-            }
-        }
-        else
-            bindings.Add(binding.binding, binding);
+        AddBinding(bindings, binding);
 
         // add static samplers
         samplers.Append(Util::MakePair(samp.sampler, samp.slot));
@@ -1115,26 +1045,16 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        IndexT index = bindings.FindIndex(binding.binding);
-        if (index != InvalidIndex)
-        {
-            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
-            if (prevBinding.descriptorCount != binding.descriptorCount
-                || prevBinding.descriptorType != binding.descriptorType
-                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-                || prevBinding.stageFlags != binding.stageFlags)
-            {
-                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
-            }
-        }
-        else
-            bindings.Add(binding.binding, binding);
+        AddBinding(bindings, binding);
+
         inputAttachmentSize.descriptorCount += tex.num;
     }
 
     if (inputAttachmentSize.descriptorCount > 0)
         poolSizes.Append(inputAttachmentSize);
 
+
+    // Create layout
     if (bindings.Size() > 0)
     {
         Util::FixedArray<VkDescriptorBindingFlags> flags(bindings.Size());

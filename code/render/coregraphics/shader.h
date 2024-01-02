@@ -147,7 +147,6 @@ const IndexT ShaderGetConstantBufferResourceGroup(const ShaderId id, const Index
 /// get slot of any shader resource
 const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name);
 
-
 /// get programs
 const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
 /// get name of program
@@ -158,5 +157,21 @@ const ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
 const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask);
+
+/// Get shader program raytracing bits
+union RayTracingBits
+{
+    struct 
+    {
+        bool hasGen : 1;
+        bool hasCallable : 1;
+        bool hasAnyHit : 1;
+        bool hasClosestHit : 1;
+        bool hasIntersect : 1;
+        bool hasMiss : 1;
+    } bitField;
+    uint bits;
+};
+RayTracingBits ShaderProgramGetRaytracingBits(const ShaderProgramId id);
 
 } // namespace CoreGraphics

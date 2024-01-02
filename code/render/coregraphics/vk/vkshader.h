@@ -124,15 +124,15 @@ enum
     Shader_ReflectionInfo,
     Shader_SetupInfo,
     Shader_RuntimeInfo,
-    Shader_ProgramAllocator
+    Shader_Programs,
 };
 
 /// this member allocates shaders
 typedef Ids::IdAllocator<
     VkReflectionInfo,
-    VkShaderSetupInfo,                          //1 setup immutable values
-    VkShaderRuntimeInfo,                        //2 runtime values
-    VkShaderProgramAllocator                    //3 variations
+    VkShaderSetupInfo,                                       //1 setup immutable values
+    VkShaderRuntimeInfo,                                     //2 runtime values
+    Util::Array<CoreGraphics::ShaderProgramId>               // programs
 > ShaderAllocator;
 
 extern ShaderAllocator shaderAlloc;

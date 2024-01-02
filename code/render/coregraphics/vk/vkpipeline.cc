@@ -28,7 +28,7 @@ CreatePipeline(const PipelineCreateInfo& info)
     Pipeline& obj = pipelineAllocator.Get<0>(ret);
 
     VkGraphicsPipelineCreateInfo shaderInfo;
-    VkShaderProgramRuntimeInfo& programInfo = shaderAlloc.Get<Shader_ProgramAllocator>(info.shader.shaderId).Get<ShaderProgram_RuntimeInfo>(info.shader.programId);
+    VkShaderProgramRuntimeInfo& programInfo = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(info.shader.programId);
 
     // Setup blend info
     VkPipelineColorBlendStateCreateInfo blendInfo;
@@ -72,7 +72,7 @@ CreatePipeline(const PipelineCreateInfo& info)
     obj.pipeline = pipeline;
     obj.layout = programInfo.layout;
     obj.pass = info.pass;
-    return PipelineId{ ret, 0 };
+    return PipelineId{ ret, PipelineIdType };
 }
 
 //------------------------------------------------------------------------------
@@ -84,6 +84,173 @@ DestroyPipeline(const PipelineId pipeline)
     Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id24);
     vkDestroyPipeline(Vulkan::GetCurrentDevice(), obj.pipeline, nullptr);
     pipelineAllocator.Dealloc(pipeline.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const PipelineRayTracingTable
+CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs)
+{
+    PipelineRayTracingTable ret;
+    VkDevice dev = CoreGraphics::GetCurrentDevice();
+
+    Util::Array<VkPipeline> libraries;
+    Util::Array<char> genHandleData, hitHandleData, missHandleData, callableHandleData;
+    Util::Array<char*> groupHandleDatas;
+    uint handleAlignment = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleAlignment;
+    uint handleSize = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleSize;
+
+    uint rayPayloadSize = 0, hitAttributeSize = 0;
+    for (IndexT i = 0; i < programs.Size(); i++)
+    {
+        VkPipeline pipeline = VkShaderProgramGetRaytracingLibrary(programs[i]);
+        libraries.Append(pipeline);
+
+        uint rayPayload, hitAttribute;
+        VkShaderProgramGetRaytracingVaryingSizes(programs[i], rayPayload, hitAttribute);
+        rayPayloadSize = Math::max(rayPayload, rayPayloadSize);
+        hitAttributeSize = Math::max(hitAttribute, hitAttributeSize);
+
+        // Get raytracing bits
+        CoreGraphics::RayTracingBits bits = CoreGraphics::ShaderProgramGetRaytracingBits(programs[i]);
+
+        // Count the amount of groups
+        
+        uint numGroups = 0;
+        if (bits.bitField.hasGen)
+            numGroups++;
+        if (bits.bitField.hasCallable)
+            numGroups++;
+        if (bits.bitField.hasAnyHit || bits.bitField.hasClosestHit)
+            numGroups++;
+        if (bits.bitField.hasIntersect)
+            numGroups++;
+        if (bits.bitField.hasMiss)
+            numGroups++;
+
+        size_t dataSize = handleSize * numGroups;
+        char* buf = (char*)Memory::Alloc(Memory::ResourceHeap, dataSize, handleAlignment);
+        char* parseBuf = buf;
+        VkResult res = vkGetRayTracingShaderGroupHandlesKHR(dev, pipeline, 0, numGroups, dataSize, buf);
+        n_assert(res == VK_SUCCESS);
+        groupHandleDatas.Append(buf);
+
+        if (bits.bitField.hasGen)
+        {
+            genHandleData.AppendArray(parseBuf, handleSize);
+            parseBuf += handleSize;
+        }
+        if (bits.bitField.hasCallable)
+        {
+            callableHandleData.AppendArray(parseBuf, handleSize);
+            parseBuf += handleSize;
+        }
+        if (bits.bitField.hasAnyHit || bits.bitField.hasClosestHit)
+        {
+            hitHandleData.AppendArray(parseBuf, handleSize);
+            parseBuf += handleSize;
+        }
+        if (bits.bitField.hasIntersect)
+        {
+            hitHandleData.AppendArray(parseBuf, handleSize);
+            parseBuf += handleSize;
+        }
+        if (bits.bitField.hasMiss)
+        {
+            missHandleData.AppendArray(parseBuf, handleSize);
+            parseBuf += handleSize;
+        }
+        Memory::Free(Memory::ResourceHeap, buf);
+    }
+
+    auto CreateShaderTableBuffer = [handleSize](const Util::Array<char>& data, RayDispatchTable::Entry& tableEntry) -> CoreGraphics::BufferId
+    {
+        tableEntry.baseAddress = 0xFFFFFFFF;
+        tableEntry.numEntries = 0;
+        if (data.IsEmpty())
+            return CoreGraphics::InvalidBufferId;
+
+        // Create buffers for the different shader groups
+        CoreGraphics::BufferCreateInfo tableInfo;
+        tableInfo.byteSize = data.Size();
+        tableInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderTable | CoreGraphics::BufferUsageFlag::ShaderAddress;
+        tableInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
+        tableInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+        tableInfo.data = data.Begin();
+        tableInfo.dataSize = data.Size();
+        auto ret = CoreGraphics::CreateBuffer(tableInfo);
+        tableEntry.baseAddress = CoreGraphics::BufferGetDeviceAddress(ret);
+        tableEntry.numEntries = data.Size() / handleSize;
+        tableEntry.entrySize = data.Size();
+        return ret;
+    };
+
+    // Create buffers for shader tables
+    ret.raygenBindingBuffer = CreateShaderTableBuffer(genHandleData, ret.table.genEntry);
+    ret.missBindingBuffer = CreateShaderTableBuffer(missHandleData, ret.table.missEntry);
+    ret.hitBindingBuffer = CreateShaderTableBuffer(hitHandleData, ret.table.hitEntry);
+    ret.callableBindingBuffer = CreateShaderTableBuffer(callableHandleData, ret.table.callableEntry);
+
+    VkPipelineLibraryCreateInfoKHR libraryInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .libraryCount = (uint)libraries.Size(),
+        .pLibraries = libraries.Begin()
+    };
+    VkRayTracingPipelineInterfaceCreateInfoKHR interfaceInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .maxPipelineRayPayloadSize = rayPayloadSize,
+        .maxPipelineRayHitAttributeSize = hitAttributeSize
+    };
+
+    static const VkDynamicState dynamicStates[] =
+    {
+        VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState =
+    {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0,
+        0,
+        dynamicStates
+    };
+
+    VkRayTracingPipelineCreateInfoKHR createInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .stageCount = 0,
+        .pStages = nullptr,
+        .groupCount = 0,
+        .pGroups = nullptr,
+        .maxPipelineRayRecursionDepth = Math::min(4u, Vulkan::GetCurrentRaytracingProperties().maxRayRecursionDepth), // TODO: make configurable
+        .pLibraryInfo = &libraryInfo,
+        .pLibraryInterface = &interfaceInfo,
+        .pDynamicState = &dynamicState,
+        .layout = VkShaderProgramGetLayout(programs[0]),
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = 0
+    };
+    VkPipeline pipeline;
+    VkResult res = vkCreateRayTracingPipelinesKHR(dev, nullptr, CoreGraphics::GetPipelineCache(), 1, &createInfo, nullptr, &pipeline);
+    n_assert(res == VK_SUCCESS);
+
+    Ids::Id32 id = pipelineAllocator.Alloc();
+    pipelineAllocator.Set<Pipeline_Object>(id, { .pipeline = pipeline, .layout = createInfo.layout, .pass = InvalidPassId });
+
+    PipelineId pipeId;
+    pipeId.id24 = id;
+    pipeId.id8 = PipelineIdType;
+    ret.pipeline = pipeId;
+
+    return ret;
 }
 
 } // namespace CoreGraphics

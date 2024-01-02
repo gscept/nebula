@@ -226,10 +226,11 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 /**
 */
 CoreGraphics::Alloc
-AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
+AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type, uint alignment)
 {
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(dev, buf, &req);
+    req.alignment = Math::align(req.alignment, (DeviceSize)alignment);
     VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
     VkMemoryPropertyFlags flags = 0;

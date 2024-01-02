@@ -72,8 +72,8 @@ ModelContext::Create()
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    TransformInstanceAllocator = Memory::RangeAllocator(0xFFFF, 0xFFFF);
-    RenderInstanceAllocator = Memory::RangeAllocator(0xFFFF, 0xFFFF);
+    TransformInstanceAllocator = Memory::RangeAllocator(0x7FFF, 0x7FFF);
+    RenderInstanceAllocator = Memory::RangeAllocator(0x7FFF, 0x7FFF);
 }
 
 //------------------------------------------------------------------------------

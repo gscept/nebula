@@ -190,6 +190,14 @@
                 "layers": 4,
                 "usage": "Render",
                 "type": "Texture2DArray"
+            },
+            {
+                "name": "RayTracingTestOutput",
+                "format": "R16G16B16A16F",
+                "width": 640,
+                "height": 480,
+                "usage": "ReadWrite",
+                "type": "Texture2D"
             }
         ],
 
@@ -315,6 +323,11 @@
                 "_comment": "Calculate shadow maps and depth prepass",
                 "ops": [
 
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Test"
+                        }
+                    }
                     {
                         "subgraph": {
                             "name": "StaticUI"
