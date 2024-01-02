@@ -54,7 +54,7 @@ public:
     void ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr);
     /// stream in a new LOD
     void SetMinLod(const ResourceId& id, float lod, bool immediate);
-    /// Add call back to resource
+    /// Create single-fire listener for resource. When resource is loaded, the callbacks will be invoked and the listener is destroyed
     void CreateResourceListener(const ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed = nullptr);
 
     /// get type of resource pool this resource was allocated with
@@ -230,7 +230,7 @@ ResourceServer::CreateResourceListener(
     n_assert(this->loaders.Size() > loaderid);
     const Ptr<ResourceLoader>& loader = this->loaders[loaderid].downcast<ResourceLoader>();
 
-
+    loader->CreateListener(id, success, failed);
 }
 
 //------------------------------------------------------------------------------

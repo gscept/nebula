@@ -641,7 +641,7 @@ ResourceLoader::CreateListener(
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 
     this->asyncSection.Enter();
-    n_assert(this->states.Size() < res.loaderInstanceId);
+    n_assert(this->states.Size() > res.loaderInstanceId);
     const auto state = this->states[res.loaderInstanceId];
     if (state == Resource::Loaded)
     {
