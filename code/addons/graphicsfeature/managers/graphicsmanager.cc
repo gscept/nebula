@@ -24,8 +24,8 @@ namespace GraphicsFeature
 
 __ImplementSingleton(GraphicsManager)
 
-    //------------------------------------------------------------------------------
-    /**
+//------------------------------------------------------------------------------
+/**
 */
     GraphicsManager::GraphicsManager()
 {
