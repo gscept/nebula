@@ -522,7 +522,7 @@ CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uin
     switch (pipeline)
     {
         case ShaderPipeline::GraphicsPipeline:
-            vkCmdPushConstants(cmdBuf, pipelineBundle.computeLayout, VK_SHADER_STAGE_ALL_GRAPHICS, offset, size, data);
+            vkCmdPushConstants(cmdBuf, pipelineBundle.graphicsLayout, VK_SHADER_STAGE_ALL_GRAPHICS, offset, size, data);
             break;
         case ShaderPipeline::ComputePipeline:
             vkCmdPushConstants(cmdBuf, pipelineBundle.computeLayout, VK_SHADER_STAGE_COMPUTE_BIT, offset, size, data);

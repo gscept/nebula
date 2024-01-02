@@ -317,13 +317,6 @@ CreateBlasInstance(const BlasInstanceCreateInfo& info)
     };
     info.transform.store3(&setup.transform.matrix[0][0]);
 
-    // Update buffer with data
-    CoreGraphics::BufferIdLock _0(info.buffer);
-    CoreGraphics::BufferUpdate(info.buffer, setup, info.offset);
-
-    // Bind buffer and offset to instance
-    blasInstanceAllocator.Set<BlasInstance_Buffer>(id, info.buffer);
-    blasInstanceAllocator.Set<BlasInstance_BufferMem>(id, (char*)CoreGraphics::BufferMap(info.buffer) + info.offset);
     blasInstanceAllocator.Set<BlasInstance_Transform>(id, info.transform);
 
     BlasInstanceId ret;
@@ -347,17 +340,15 @@ DestroyBlasInstance(const BlasInstanceId id)
 /**
 */
 void
-BlasInstanceSetTransform(const BlasInstanceId id, const Math::mat4& transform)
+BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset)
 {
     VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
-    transform.store3(&setup.transform.matrix[0][0]);
+    Math::mat4 trans = Math::transpose(transform);
+    trans.store3(&setup.transform.matrix[0][0]);
 
-    // Update data in buffer owning the blas instance
-    const CoreGraphics::BufferId buf = blasInstanceAllocator.Get<BlasInstance_Buffer>(id.id24);
-    char* bufMem = (char*)blasInstanceAllocator.Get<BlasInstance_BufferMem>(id.id24);
+    char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
 
-    // Use memory pointer directly to circumvent having to sync the buffer 
-    memcpy(bufMem, &setup, sizeof(setup));
+    memcpy(ptr, &setup, sizeof(setup));
 }
 
 //------------------------------------------------------------------------------

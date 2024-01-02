@@ -7,6 +7,7 @@
 #include "frame/framesubgraph.h"
 #include "models/nodes/primitivenode.h"
 #include "coregraphics/pipeline.h"
+#include "coregraphics/meshresource.h"
 
 #include "raytracetest.h"
 
@@ -42,6 +43,7 @@ struct
 
     SizeT maxAllowedInstances = 0;
     SizeT numRegisteredInstances = 0;
+    SizeT numInstancesToFlush;
 } state;
 
 //------------------------------------------------------------------------------
@@ -176,11 +178,13 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
     {
         CoreGraphics::MeshId mesh = Models::ModelContext::NodeInstances.renderable.nodeMeshes[i];
         Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
-        Resources::CreateResourceListener(pNode->GetMeshResource(), [mesh, alloc, counter, i](Resources::ResourceId id)
+        Resources::CreateResourceListener(pNode->GetMeshResource(), [alloc, counter, i, pNode](Resources::ResourceId id)
         {
             state.blasLock.Enter();
+            CoreGraphics::MeshResourceId meshRes = id;
 
             // Create Blas if we haven't registered it yet
+            CoreGraphics::MeshId mesh = MeshResourceGetMesh(meshRes, pNode->GetMeshIndex());
             IndexT blasIndex = state.blasLookup.FindIndex(mesh);
             if (blasIndex == InvalidIndex)
             {
@@ -201,10 +205,8 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
             createInfo.mask = 0x0;
             createInfo.shaderOffset = 0;
             createInfo.instanceIndex = alloc.offset + counter;
-            createInfo.buffer = state.blasInstanceBuffer.HostBuffer();
             createInfo.blas = state.blasLookup.ValueAtIndex(mesh, blasIndex);
             createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
-            createInfo.offset = (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize();
 
             CoreGraphics::BlasIdLock _0(createInfo.blas);
             state.blasInstances[alloc.offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
@@ -253,7 +255,6 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
         );
         CoreGraphics::ResourceTableCommitChanges(state.raytracingTestTables.tables[ctx.bufferIndex]);
     }
-
 }
 
 //------------------------------------------------------------------------------
@@ -296,21 +297,23 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 // Get node range and update ids buffer
                 Graphics::GraphicsEntityId gid = context->ids[index];
                 Graphics::ContextEntityId cid = GetContextId(gid);
-                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(gid);
+                const Models::NodeInstanceRange& renderableRange = Models::ModelContext::GetModelRenderableRange(gid);
+                const Models::NodeInstanceRange& transformableRange = Models::ModelContext::GetModelTransformableRange(gid);
+
                 const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
                 const Models::ModelContext::ModelInstance::Transformable& transformables = Models::ModelContext::GetModelTransformables();
                 const Memory::RangeAllocation alloc = raytracingContextAllocator.Get<Raytracing_Allocation>(cid.id);
 
-                const uint numNodes = NodeInstances.end - NodeInstances.begin;
+                const uint numNodes = renderableRange.end - renderableRange.begin;
                 uint offset = Threading::Interlocked::Add(&context->counter, numNodes);
                 uint counter = 0;
-                for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
+                for (IndexT j = renderableRange.begin; j < renderableRange.end; j++)
                 {
-                    const Math::mat4& transform = transformables.nodeTransforms[renderables.nodeTransformIndex[j]];
+                    const Math::mat4& transform = transformables.nodeTransforms[transformableRange.begin + renderables.nodeTransformIndex[j]];
                     if (state.blasInstances[alloc.offset + counter] != CoreGraphics::InvalidBlasInstanceId)
                     {
                         CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[alloc.offset + counter]);
-                        CoreGraphics::BlasInstanceSetTransform(state.blasInstances[alloc.offset + counter], transform);
+                        CoreGraphics::BlasInstanceUpdate(state.blasInstances[alloc.offset + counter], transform, state.blasInstanceBuffer.HostBuffer(), (alloc.offset + counter) * CoreGraphics::BlasInstanceGetSize());
                     }
                     counter++;
                 }

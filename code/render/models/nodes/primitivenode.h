@@ -23,7 +23,9 @@ public:
     virtual ~PrimitiveNode();
 
     /// Get the nodes primitive group index
-    uint32_t GetPrimitiveGroupIndex() const { return this->loadContext.primIndex; }
+    uint GetPrimitiveGroupIndex() const { return this->loadContext.primIndex; }
+    /// Get the mesh index
+    uint GetMeshIndex() const { return this->loadContext.meshIndex;}
     /// Get primitive group
     const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup() const { return this->primGroup; }
     /// Get primitives mesh id

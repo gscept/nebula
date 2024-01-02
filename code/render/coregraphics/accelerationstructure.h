@@ -68,17 +68,14 @@ struct BlasInstanceCreateInfo
     uint mask;                  // 8 bit visibility mask
     uint shaderOffset;          // Offset into the shader binding table
     BlasInstanceFlags flags;
-
-    CoreGraphics::BufferId buffer; // The buffer to hold the instance being created
-    uint offset;                   // The offset into the buffer to where instances are created
 };
 
 /// Create an instance to a bottom level acceleration structure
 BlasInstanceId CreateBlasInstance(const BlasInstanceCreateInfo& info);
 /// Destroy blas instance
 void DestroyBlasInstance(const BlasInstanceId id);
-/// Set transform of blas
-void BlasInstanceSetTransform(const BlasInstanceId id, const Math::mat4& transform);
+/// Update blas instance and write to buffer
+void BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset);
 /// Get instance size (platform dependent)
 const SizeT BlasInstanceGetSize();
 

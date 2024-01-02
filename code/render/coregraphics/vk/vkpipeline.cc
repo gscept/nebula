@@ -130,7 +130,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
             numGroups++;
 
         size_t dataSize = handleSize * numGroups;
-        char* buf = (char*)Memory::Alloc(Memory::ResourceHeap, dataSize, handleAlignment);
+        char* buf = (char*)Memory::Alloc(Memory::ResourceHeap, dataSize);
         char* parseBuf = buf;
         VkResult res = vkGetRayTracingShaderGroupHandlesKHR(dev, pipeline, 0, numGroups, dataSize, buf);
         n_assert(res == VK_SUCCESS);

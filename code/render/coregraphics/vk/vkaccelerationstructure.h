@@ -61,16 +61,12 @@ enum
 {
     BlasInstance_Instance,
     BlasInstance_Transform,
-    BlasInstance_Buffer,
-    BlasInstance_BufferMem
 };
 
 typedef Ids::IdAllocatorSafe<
     0xFFFF
     , VkAccelerationStructureInstanceKHR
     , Math::mat4
-    , CoreGraphics::BufferId
-    , void*
     , uint
 > VkBlasInstanceAllocator;
 extern VkBlasInstanceAllocator blasInstanceAllocator;
