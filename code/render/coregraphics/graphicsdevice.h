@@ -29,6 +29,8 @@ namespace CoreGraphics
 
 extern bool RayTracingSupported;
 extern bool DynamicVertexInputSupported;
+extern bool VariableRateShadingSupported;
+extern bool MeshShadersSupported;
 
 struct GraphicsDeviceCreateInfo
 {
@@ -40,6 +42,12 @@ struct GraphicsDeviceCreateInfo
     uint64 maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
     byte numBufferedFrames : 3;
     bool enableValidation : 1;      // enables validation layer and writes output to console
+    struct Features
+    {
+        bool enableRayTracing : 1;
+        bool enableMeshShaders : 1;
+        bool enableVariableRateShading : 1;
+    } features;
 };
 
 /// create graphics device
@@ -193,11 +201,6 @@ ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetConstantBuffer(IndexT i);
-
-struct VertexAlloc
-{
-    uint size, offset, node;
-};
 
 /// Allocate vertices from the global vertex pool
 const VertexAlloc AllocateVertices(const SizeT numVertices, const SizeT vertexSize);

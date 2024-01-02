@@ -34,9 +34,6 @@ static Threading::CriticalSection delayedDeleteSection;
 static Threading::CriticalSection transferLock;
 static Threading::CriticalSection setupLock;
 
-bool RayTracingSupported = false;
-bool DynamicVertexInputSupported = false;
-
 struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 {
     uint32_t adapter;
@@ -133,7 +130,9 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     // device handling (multi GPU?!?!)
     Util::FixedArray<VkDevice> devices;
     Util::FixedArray<VkPhysicalDevice> physicalDevices;
-    Util::FixedArray<VkPhysicalDeviceProperties> deviceProps;
+    Util::FixedArray<VkPhysicalDeviceProperties2> deviceProps;
+    Util::FixedArray<VkPhysicalDeviceAccelerationStructurePropertiesKHR> accelerationStructureDeviceProps;
+    Util::FixedArray<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> raytracingDeviceProps;
     Util::FixedArray<VkPhysicalDeviceFeatures> deviceFeatures;
     Util::FixedArray<uint32_t> numCaps;
     Util::FixedArray<Util::FixedArray<const char*>> deviceFeatureStrings;
@@ -161,7 +160,7 @@ PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert = nullptr;
 /**
 */
 void
-SetupAdapter()
+SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
 {
     // retrieve available GPUs
     uint32_t gpuCount;
@@ -174,6 +173,8 @@ SetupAdapter()
     state.numCaps.Resize(gpuCount);
     state.deviceFeatureStrings.Resize(gpuCount);
     state.deviceProps.Resize(gpuCount);
+    state.accelerationStructureDeviceProps.Resize(gpuCount);
+    state.raytracingDeviceProps.Resize(gpuCount);
     state.deviceFeatures.Resize(gpuCount);
 
     if (gpuCount > 0)
@@ -188,7 +189,23 @@ SetupAdapter()
         for (i = 0; i < (IndexT)gpuCount; i++)
         {
             // Get device props and features
-            vkGetPhysicalDeviceProperties(state.physicalDevices[i], &state.deviceProps[i]);
+            state.accelerationStructureDeviceProps[i] =
+            {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR,
+                .pNext = nullptr
+            };
+            state.raytracingDeviceProps[i] =
+            {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR,
+                .pNext = &state.accelerationStructureDeviceProps[i]
+            };
+
+            state.deviceProps[i] =
+            {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                .pNext = &state.raytracingDeviceProps[i]
+            };
+            vkGetPhysicalDeviceProperties2(state.physicalDevices[i], &state.deviceProps[i]);
             vkGetPhysicalDeviceFeatures(state.physicalDevices[i], &state.deviceFeatures[i]);
 
             res = vkEnumerateDeviceExtensionProperties(state.physicalDevices[i], nullptr, &state.numCaps[i], nullptr);
@@ -221,8 +238,11 @@ SetupAdapter()
                     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
                     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                    VK_EXT_MESH_SHADER_EXTENSION_NAME,
+                    VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
                     VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
-                    VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME
+                    VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME,
+                    VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME
                 };
 
                 uint32_t newNumCaps = 0;
@@ -230,11 +250,36 @@ SetupAdapter()
                 {
                     if (existingExtensions.FindIndex(wantedExtensions[j]) != InvalidIndex)
                     {
-                        if (wantedExtensions[j] == VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME ||
-                            wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
-                            RayTracingSupported = true;
+                        if (features.enableRayTracing)
+                        {
+                            if (wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                            {
+                                CoreGraphics::RayTracingSupported = true;
+                                n_printf("[Graphics Device] Ray Tracing is enabled\n");
+                            }
+                        }
                         if (wantedExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
-                            DynamicVertexInputSupported = true;
+                        {
+                            CoreGraphics::DynamicVertexInputSupported = true;
+                            n_printf("[Graphics Device] Dynamic Vertex Input is enabled\n");
+                        }
+                        if (features.enableMeshShaders)
+                        {
+                            if (wantedExtensions[j] == VK_EXT_MESH_SHADER_EXTENSION_NAME)
+                            {
+                                CoreGraphics::MeshShadersSupported = true;
+                                n_printf("[Graphics Device] Mesh Shaders are enabled\n");
+                            }
+                        }
+
+                        if (features.enableVariableRateShading)
+                        {
+                            if (wantedExtensions[j] == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME)
+                            {
+                                CoreGraphics::VariableRateShadingSupported = true;
+                                n_printf("[Graphics Device] Variable Rate Shading is enabled\n");
+                            }
+                        }
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
                     }
                     else
@@ -242,12 +287,21 @@ SetupAdapter()
                         validDevice = false;
                     }
                 }
+
+                if (!CoreGraphics::RayTracingSupported)
+                    n_printf("[Graphics Device] Ray Tracing is disabled\n");
+                if (!CoreGraphics::DynamicVertexInputSupported)
+                    n_printf("[Graphics Device] Dynamic Vertex Input is disabled\n");
+                if (!CoreGraphics::MeshShadersSupported)
+                    n_printf("[Graphics Device] Mesh Shaders are disabled\n");
+                if (!CoreGraphics::VariableRateShadingSupported)
+                    n_printf("[Graphics Device] Variable Rate Shading is disabled\n");
                 
                 state.numCaps[i] = newNumCaps;
 
                 if (validDevice)
                 {
-                    n_printf("Picking device '%s' as primary graphics adapter", state.deviceProps[i].deviceName);
+                    n_printf("Picking device '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
                     state.currentDevice = i;
                     break;
                 }
@@ -293,7 +347,25 @@ GetCurrentPhysicalDevice()
 VkPhysicalDeviceProperties
 GetCurrentProperties()
 {
-    return state.deviceProps[state.currentDevice];
+    return state.deviceProps[state.currentDevice].properties;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPhysicalDeviceAccelerationStructurePropertiesKHR
+GetCurrentAccelerationStructureProperties()
+{
+    return state.accelerationStructureDeviceProps[state.currentDevice];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPhysicalDeviceRayTracingPipelinePropertiesKHR
+GetCurrentRaytracingProperties()
+{
+    return state.raytracingDeviceProps[state.currentDevice];
 }
 
 //------------------------------------------------------------------------------
@@ -521,6 +593,11 @@ NebulaVulkanErrorDebugCallback(
 
 namespace CoreGraphics
 {
+
+bool RayTracingSupported = false;
+bool DynamicVertexInputSupported = false;
+bool MeshShadersSupported = false;
+bool VariableRateShadingSupported = false;
 using namespace Vulkan;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -629,7 +706,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     // setup adapter
     state.currentDevice = 0;
-    SetupAdapter();
+    SetupAdapter(info.features);
 
 #if NEBULA_GRAPHICS_DEBUG
 #else
@@ -798,60 +875,134 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-        nullptr,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+        .pNext = nullptr,
+        .hostQueryReset = true
     };
 
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-        &hostQueryReset,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+        .pNext = &hostQueryReset,
+        .timelineSemaphore = true
     };
 
     VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-        &timelineSemaphores
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+        .pNext = &timelineSemaphores,
+        .shaderInputAttachmentArrayDynamicIndexing = false,
+        .shaderUniformTexelBufferArrayDynamicIndexing = false,
+        .shaderStorageTexelBufferArrayDynamicIndexing = false,
+        .shaderUniformBufferArrayNonUniformIndexing = true,
+        .shaderSampledImageArrayNonUniformIndexing = true,
+        .shaderStorageBufferArrayNonUniformIndexing = true,
+        .shaderStorageImageArrayNonUniformIndexing = true,
+        .shaderInputAttachmentArrayNonUniformIndexing = false,
+        .shaderUniformTexelBufferArrayNonUniformIndexing = false,
+        .shaderStorageTexelBufferArrayNonUniformIndexing = false,
+        .descriptorBindingUniformBufferUpdateAfterBind = true,
+        .descriptorBindingSampledImageUpdateAfterBind = true,
+        .descriptorBindingStorageImageUpdateAfterBind = true,
+        .descriptorBindingStorageBufferUpdateAfterBind = true,
+        .descriptorBindingUniformTexelBufferUpdateAfterBind = true,
+        .descriptorBindingStorageTexelBufferUpdateAfterBind = true,
+        .descriptorBindingUpdateUnusedWhilePending = true,
+        .descriptorBindingPartiallyBound = true,
+        .descriptorBindingVariableDescriptorCount = true,
+        .runtimeDescriptorArray = true
     };
-    descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = true;
-    descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
 
     VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
-        &descriptorIndexingFeatures,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
+        .pNext = &descriptorIndexingFeatures,
+        .vertexInputDynamicState = true
     };
 
     VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
-        &dynamicVertexFeatures,
-        true,
-        false,
-        false
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+        .pNext = &dynamicVertexFeatures,
+        .bufferDeviceAddress = true,
+        .bufferDeviceAddressCaptureReplay = false,
+        .bufferDeviceAddressMultiDevice = false
     };
+    void* lastExtension = &bufferDeviceAddressFeatures;
 
+#pragma region Mesh Shader Features
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShadersFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
+        .pNext = lastExtension,
+        .taskShader = true,
+        .meshShader = true,
+        .multiviewMeshShader = false,
+        .primitiveFragmentShadingRateMeshShader = info.features.enableVariableRateShading,
+        .meshShaderQueries = false,
+    };
+    if (info.features.enableMeshShaders)
+    {
+        lastExtension = &meshShadersFeatures;
+    }
+#pragma endregion
+
+#pragma region Variable Rate Shading Features
+    VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR,
+        .pNext = lastExtension,
+        .pipelineFragmentShadingRate = true,
+        .primitiveFragmentShadingRate = true,
+        .attachmentFragmentShadingRate = true,
+    };
+    if (info.features.enableVariableRateShading)
+    {
+        lastExtension = &variableShadingFeatures;
+    }
+#pragma endregion
+
+#pragma region Ray Tracing Features
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
-        &bufferDeviceAddressFeatures,
-        true,
-        false,
-        false,
-        false,
-        false
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+        .pNext = lastExtension,
+        .accelerationStructure = true,
+        .accelerationStructureCaptureReplay = true,
+        .accelerationStructureIndirectBuild = false,
+        .accelerationStructureHostCommands = false,
+        .descriptorBindingAccelerationStructureUpdateAfterBind = false,
     };
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
-        &accelerationStructureFeatures,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+        .pNext = &accelerationStructureFeatures,
+        .rayTracingPipeline = true,
+        .rayTracingPipelineShaderGroupHandleCaptureReplay = false,
+        .rayTracingPipelineShaderGroupHandleCaptureReplayMixed = false,
+        .rayTracingPipelineTraceRaysIndirect = false,
+        .rayTraversalPrimitiveCulling = false
     };
-    void* lastExtension = &raytracingFeatures;
+
+    VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT groupHandlesFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT,
+        .pNext = &raytracingFeatures,
+        .pipelineLibraryGroupHandles = true
+    };
+
+    VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT libraryFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT,
+        .pNext = &groupHandlesFeature,
+        .graphicsPipelineLibrary = true
+    };
+    if (info.features.enableRayTracing)
+    {
+        lastExtension = &libraryFeature;
+    }
+#pragma endregion
 
     VkDeviceCreateInfo deviceInfo =
     {
@@ -1055,9 +1206,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
         | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
         | CoreGraphics::BufferUsageFlag::ShaderAddress
-        | CoreGraphics::BufferUsageFlag::AccelerationStructure;
+        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
-    state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 0xFFFF);
+    state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 2048);
 
     CoreGraphics::BufferCreateInfo iboInfo;
     iboInfo.name = "Global Index Cache";
@@ -1069,19 +1220,19 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
         | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
         | CoreGraphics::BufferUsageFlag::ShaderAddress
-        | CoreGraphics::BufferUsageFlag::AccelerationStructure;
+        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
-    state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 0xFFFF);
+    state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 2048);
 
     CoreGraphics::BufferCreateInfo uploadInfo;
     uploadInfo.name = "Global Upload Buffer";
-    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
 
     state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
-    state.globalUploadBufferPoolSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+    state.globalUploadBufferPoolSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     state.uploadRingBuffers.Resize(info.numBufferedFrames);
     state.uploadAllocator = Memory::RangeAllocator(info.globalUploadMemorySize, 2048);
 
@@ -1473,7 +1624,7 @@ AllocateConstantBufferMemory(uint size)
     n_assert(sub.allowConstantAllocation);
 
     // Calculate aligned upper bound
-    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
     N_BUDGET_COUNTER_INCR(N_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
@@ -1837,7 +1988,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     // Calculate aligned upper bound
-    SizeT adjustedAlignment = Math::max(alignment, (SizeT)state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+    SizeT adjustedAlignment = Math::max(alignment, (SizeT)state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     const SizeT alignedBytes = numBytes + adjustedAlignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
@@ -1877,7 +2028,7 @@ FlushUpload()
         range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         range.pNext = nullptr;
         range.offset = uploadBuffer.allocs[i].offset; //uploadBuffer.interval.start;
-        range.size = Math::align(uploadBuffer.allocSizes[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);// (DeviceSize)size;
+        range.size = Math::align(uploadBuffer.allocSizes[i], state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);// (DeviceSize)size;
         range.memory = BufferGetVkMemory(state.uploadBuffer);
     }
 
@@ -1906,7 +2057,7 @@ Swap(IndexT i)
 void
 ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64* data, const uint64& offset)
 {
-    const SizeT timestampPeriod = state.deviceProps[state.currentDevice].limits.timestampPeriod;
+    const SizeT timestampPeriod = state.deviceProps[state.currentDevice].properties.limits.timestampPeriod;
     uint64 begin = data[marker.gpuBegin];
     uint64 end = data[marker.gpuEnd];
     marker.start = (begin - offset) * timestampPeriod;
