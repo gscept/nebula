@@ -32,12 +32,7 @@ EmbeddedMemoryStream::~EmbeddedMemoryStream()
         this->Close();
     }
 
-    // release memory buffer if allocated
-    if (0 != this->buffer)
-    {
-        Memory::Free(Memory::StreamDataHeap, this->buffer);
-        this->buffer = 0;
-    }
+    this->buffer = 0;
 }
 
 //------------------------------------------------------------------------------

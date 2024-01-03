@@ -106,7 +106,10 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans
 void 
 StreamActorPool::DiscardActorInstance(ActorId id)
 {
-    n_assert(ActorContext::IsValid(id));
+    if(!ActorContext::IsValid(id))
+    {
+        return;
+    }
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
