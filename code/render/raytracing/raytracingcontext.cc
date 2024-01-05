@@ -161,7 +161,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 /**
 */
 void
-RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
+RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uint mask, uint shaderOffset)
 {
     Graphics::ContextEntityId contextId = GetContextId(id);
     const Models::NodeInstanceRange& nodes = Models::ModelContext::GetModelRenderableRange(id);
@@ -178,7 +178,7 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
     {
         CoreGraphics::MeshId mesh = Models::ModelContext::NodeInstances.renderable.nodeMeshes[i];
         Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
-        Resources::CreateResourceListener(pNode->GetMeshResource(), [alloc, counter, i, pNode](Resources::ResourceId id)
+        Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, shaderOffset, offset = alloc.offset, counter, i, pNode](Resources::ResourceId id)
         {
             state.blasLock.Enter();
             CoreGraphics::MeshResourceId meshRes = id;
@@ -201,15 +201,15 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id)
 
             // Setup instance
             CoreGraphics::BlasInstanceCreateInfo createInfo;
-            createInfo.flags = CoreGraphics::BlasInstanceFlags::NoFlags;
-            createInfo.mask = 0x0;
-            createInfo.shaderOffset = 0;
-            createInfo.instanceIndex = alloc.offset + counter;
+            createInfo.flags = flags;
+            createInfo.mask = mask;
+            createInfo.shaderOffset = shaderOffset;
+            createInfo.instanceIndex = offset + counter;
             createInfo.blas = state.blasLookup.ValueAtIndex(mesh, blasIndex);
             createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
             CoreGraphics::BlasIdLock _0(createInfo.blas);
-            state.blasInstances[alloc.offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
+            state.blasInstances[offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
 
             state.blasLock.Leave();
         });

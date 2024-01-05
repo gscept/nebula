@@ -35,7 +35,7 @@ public:
     static void Create(const RaytracingSetupSettings& settings);
 
     /// Setup an entity for ray tracing, assumes model context registration
-    static void Setup(const Graphics::GraphicsEntityId id);
+    static void Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uint mask, uint shaderOffset);
 
     /// Build top level acceleration
     static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);

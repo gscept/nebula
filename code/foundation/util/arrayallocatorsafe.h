@@ -440,7 +440,7 @@ void
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Release(const uint32_t index)
 {
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId());
-    this->owners[index] = Threading::InvalidThreadId;
+    Threading::Interlocked::Exchange((volatile int*)&this->owners[index], Threading::InvalidThreadId);
 }
 
 } // namespace Util

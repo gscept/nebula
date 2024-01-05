@@ -3,9 +3,17 @@
 //  (C) 2023 gscept
 //------------------------------------------------------------------------------
 #include <lib/shared.fxh>
+#include <lib/raytracing.fxh>
+#include <lib/materials.fxh>
 
 group(BATCH_GROUP) accelerationStructure TLAS;
 group(BATCH_GROUP) write rgba16f image2D Output;
+
+MESH_BINDING rw_buffer VertexBase
+{
+    VertexPosUv positions;
+    VertexAttributeNormals normals;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -30,16 +38,6 @@ Raygen(
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
 
     imageStore(Output, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0f));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-shader void
-SphereIntersect(
-)
-{
-    reportIntersectionEXT(0.5f, 0);
 }
 
 //------------------------------------------------------------------------------

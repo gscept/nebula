@@ -10,6 +10,11 @@
 #include <lib/util.fxh>
 
 const int MAX_TEXTURES = 65535;
+const int NUM_CASCADES = 4;
+const int SHADOW_CASTER_COUNT = 16;
+
+#define FLT_MAX     3.40282347E+38F
+#define FLT_MIN     -3.40282347E+38F
 
 // the texture list can be updated once per tick (frame)
 group(TICK_GROUP) binding(0) texture2D			Textures2D[MAX_TEXTURES];
@@ -455,11 +460,7 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
     FogBox FogBoxes[128];
 };
 
-const int NUM_CASCADES = 4;
-const int SHADOW_CASTER_COUNT = 16;
 
-#define FLT_MAX     3.40282347E+38F
-#define FLT_MIN     -3.40282347E+38F
 
 
 group(PASS_GROUP) inputAttachment InputAttachment0;
