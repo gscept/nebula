@@ -123,7 +123,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                                     },
                                     [config, id, binding, materialVal](Resources::ResourceId rid)
                                     {
-                                    CoreGraphics::TextureIdLock _0(rid);
+                                        CoreGraphics::TextureIdLock _0(rid);
                                         MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
                                         MaterialVariant tmp = materialVal;
                                         tmp.Set(tuple);
