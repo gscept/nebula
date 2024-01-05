@@ -6,6 +6,8 @@
 #include "material.h"
 #include "shaderconfig.h"
 #include "resources/resourceserver.h"
+
+#include "material_interface.h"
 namespace Materials
 {
 
