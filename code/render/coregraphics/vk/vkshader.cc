@@ -590,29 +590,32 @@ CreateShader(const ShaderCreateInfo& info)
 
     // setup shader variations
     const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
-    for (size_t i = 0; i < programs.size(); i++)
+    if (!programs.empty())
     {
-        // get program object from shader subsystem
-        AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
+        for (size_t i = 0; i < programs.size(); i++)
+        {
+            // get program object from shader subsystem
+            AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
 
-        // allocate new program object and set it up
-        Ids::Id32 programId = shaderProgramAlloc.Alloc();
-        VkShaderProgramSetup(programId, info.name, program, setupInfo.pipelineLayout);
+            // allocate new program object and set it up
+            Ids::Id32 programId = shaderProgramAlloc.Alloc();
+            VkShaderProgramSetup(programId, info.name, program, setupInfo.pipelineLayout);
 
-        // make an ID which is the shader id and program id
-        ShaderProgramId shaderProgramId;
-        shaderProgramId.programId = programId;
-        shaderProgramId.shaderId = ret.resourceId;
-        shaderProgramId.shaderType = ret.resourceType;
-        runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
+            // make an ID which is the shader id and program id
+            ShaderProgramId shaderProgramId;
+            shaderProgramId.programId = programId;
+            shaderProgramId.shaderId = ret.resourceId;
+            shaderProgramId.shaderType = ret.resourceType;
+            runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
+        }
+
+        // set active variation
+        runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
+        runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
     }
 
     // delete the AnyFX effect
     delete effect;
-
-    // set active variation
-    runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
-    runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
 
 #if __NEBULA_HTTP__
     //res->debugState = res->CreateState();
