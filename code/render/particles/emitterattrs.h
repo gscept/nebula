@@ -182,6 +182,7 @@ EmitterAttrs::SetBool(BoolAttr key, bool value)
     case Billboard:
         this->boolAttributes.billboard = value;
         break;
+    default: n_error("unhandled enum"); break;
     };
 }
 
@@ -205,6 +206,7 @@ EmitterAttrs::GetBool(BoolAttr key) const
         return this->boolAttributes.viewAngleFade;
     case Billboard:
         return this->boolAttributes.billboard;
+    default: n_error("unhandled enum"); break;
     };
     return false;
 }
@@ -223,6 +225,7 @@ EmitterAttrs::SetInt(IntAttr key, int value)
     case AnimPhases:
         this->intAttributes.stretchDetail = value;
         break;
+    default: n_error("unhandled enum"); break;
     };
 }
 
@@ -238,6 +241,7 @@ EmitterAttrs::GetInt(IntAttr key) const
         return this->intAttributes.stretchDetail;
     case AnimPhases:
         return this->intAttributes.stretchDetail;
+    default: n_error("unhandled enum"); break;        
     };
     return 0;
 }

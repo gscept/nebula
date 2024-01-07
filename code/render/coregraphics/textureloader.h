@@ -32,7 +32,7 @@ private:
     /// Stream texture
     uint StreamResource(const Resources::ResourceId entry, uint requestedBits) override;
     /// unload texture
-    void Unload(const Resources::ResourceId id);
+    void Unload(const Resources::ResourceId id) override;
 
     /// Create load mask based on LOD
     uint LodMask(const Ids::Id32 entry, float lod) const override;

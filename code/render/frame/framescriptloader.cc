@@ -167,7 +167,9 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
             info.format = fmt;
 
             if (JzonValue* alias = jzon_get(cur, "alias"))
+            {
                 info.alias = script->GetTexture(alias->string_value);
+            }
 
             if (JzonValue* layers = jzon_get(cur, "layers"))
             {
@@ -176,13 +178,20 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
             }
 
             if (JzonValue* mips = jzon_get(cur, "mips"))
+            {
                 if (Util::String(mips->string_value) == "auto")
+                {
                     info.mips = TextureAutoMips;
+                }
                 else
+                {
                     info.mips = mips->int_value;
-
+                }
+            }
             if (JzonValue* depth = jzon_get(cur, "depth"))
+            {
                 info.depth = (float)depth->float_value;
+            }
 
             // set relative, dynamic or msaa if defined
             if (jzon_get(cur, "relative"))  info.windowRelative = jzon_get(cur, "relative")->bool_value;
@@ -1330,6 +1339,7 @@ FrameScriptLoader::ParseShaderVariables(
                 n_error("Unknown resource %s!", valStr.AsCharPtr());
             break;
         }
+        default: n_error("unhandled enum"); break;
         }
     }
 

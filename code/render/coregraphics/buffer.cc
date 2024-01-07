@@ -131,7 +131,6 @@ BufferWithStaging::HostBuffer()
 void
 BufferWithStaging::Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes)
 {
-    IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
     CoreGraphics::BufferCopy copy;
     copy.offset = 0;
     CoreGraphics::CmdCopy(cmdBuf, this->hostBuffers.Buffer(), {copy}, this->deviceBuffer, {copy}, numBytes);

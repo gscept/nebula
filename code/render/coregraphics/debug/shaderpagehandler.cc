@@ -8,6 +8,7 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shader.h"
 #include "http/html/htmlpagewriter.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 
 namespace Debug
@@ -77,7 +78,6 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             IndexT i;
             for (i = 0; i < shaders.Size(); i++)
             {
-                const ResourceId shd = shaders.ValueAtIndex(i);
                 const ResourceName name = shaders.KeyAtIndex(i);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);

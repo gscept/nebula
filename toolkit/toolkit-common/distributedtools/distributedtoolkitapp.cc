@@ -8,6 +8,7 @@
 #include "distributedtools/distributedjobs/distributedappjob.h"
 #include "distributedtools/distributedjobscheduler.h"
 #include "distributedtools/remotejobservice.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
 #include "io/uri.h"
@@ -26,11 +27,11 @@ namespace DistributedTools
     Constructor 
 */
 DistributedToolkitApp::DistributedToolkitApp() :
+    forceArg(false),
+    slaveArg(false),
     masterMode(false),
     jobsArg(1),
-    processorsArg(1),
-    slaveArg(false),
-    forceArg(false)
+    processorsArg(1)   
 {
     // empty
 }

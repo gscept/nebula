@@ -79,9 +79,6 @@ DecalContext::Create()
 #ifdef CLUSTERED_DECAL_DEBUG
     decalState.debugProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
-
-    DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
-
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "DecalIndexListsBuffer";
     rwbInfo.size = 1;
@@ -99,7 +96,7 @@ DecalContext::Create()
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
 
-    decalState.stagingClusterDecalsList = std::move(BufferSet(rwbInfo));
+    decalState.stagingClusterDecalsList = BufferSet(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {

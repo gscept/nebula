@@ -22,7 +22,7 @@ private:
     /// load character definition from stream
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// unload resource
-    void Unload(const Resources::ResourceId id);
+    void Unload(const Resources::ResourceId id) override;
 
 };
 

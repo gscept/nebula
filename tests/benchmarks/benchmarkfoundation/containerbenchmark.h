@@ -6,6 +6,7 @@
     (C) 2018 Individucal contributors, see AUTHORS file
 */
 #include "benchmarkbase/benchmark.h"
+#include <functional>
 
 //------------------------------------------------------------------------------
 namespace Benchmarking

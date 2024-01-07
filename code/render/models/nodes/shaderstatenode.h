@@ -60,7 +60,7 @@ protected:
     /// unload data
     virtual void Unload() override;
     /// called when loading finished
-    virtual void OnFinishedLoading();
+    virtual void OnFinishedLoading() override;
     
     Resources::ResourceId materialRes;
     Materials::MaterialId material;

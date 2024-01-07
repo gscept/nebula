@@ -176,7 +176,6 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
     IndexT counter = 0;
     for (IndexT i = nodes.begin; i < nodes.end; i++)
     {
-        CoreGraphics::MeshId mesh = Models::ModelContext::NodeInstances.renderable.nodeMeshes[i];
         Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
         Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, shaderOffset, offset = alloc.offset, counter, i, pNode](Resources::ResourceId id)
         {
@@ -305,7 +304,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 const Memory::RangeAllocation alloc = raytracingContextAllocator.Get<Raytracing_Allocation>(cid.id);
 
                 const uint numNodes = renderableRange.end - renderableRange.begin;
-                uint offset = Threading::Interlocked::Add(&context->counter, numNodes);
+                Threading::Interlocked::Add(&context->counter, numNodes);
                 uint counter = 0;
                 for (IndexT j = renderableRange.begin; j < renderableRange.end; j++)
                 {

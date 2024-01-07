@@ -21,12 +21,14 @@
 #include "util/array.h"
 #include "util/string.h"
 #include "io/filetime.h"
-#include "io/assignregistry.h"
 #include "io/schemeregistry.h"
-#include "http/httpclientregistry.h"
 #include "archfs/archivefilesystem.h"
 #include "io/cache/streamcache.h"
 
+namespace Http
+{
+    class HttpClientRegistry;
+};
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -35,6 +37,7 @@ class ArchiveFileSystem;
 class FileWatcher;
 class Stream;
 class URI;
+class AssignRegistry;
 
 class IoServer : public Core::RefCounted
 {

@@ -35,7 +35,7 @@ private:
     friend class ResourceLoader;
 
     /// perform work
-    void DoWork();
+    void DoWork() override;
     /// emit wakeup signal
     virtual void EmitWakeupSignal() override;
     

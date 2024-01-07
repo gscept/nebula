@@ -65,10 +65,10 @@ protected:
 /**
 */
 inline
-AppLauncherBase::AppLauncherBase() :    
-    stdoutCaptureStream(nullptr),
+AppLauncherBase::AppLauncherBase() :
+    noConsoleWindow(false),
     isRunning(false),
-    noConsoleWindow(false)
+    stdoutCaptureStream(nullptr)
 { 
     // empty
 }

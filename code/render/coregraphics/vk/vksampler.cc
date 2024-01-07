@@ -39,7 +39,7 @@ ToVkSamplerFilter(SamplerFilter filter)
     case NearestFilter: return VK_FILTER_NEAREST;
     case CubicFilter:   return VK_FILTER_CUBIC_IMG;
     default:
-        n_error("No sampler filter mode %s supported!", filter);
+        n_error("No sampler filter mode %d supported!", filter);
         return VK_FILTER_LINEAR;
     }
 }
@@ -55,7 +55,7 @@ ToVkSamplerMipMapMode(SamplerMipMode mode)
     case LinearMipMode:     return VK_SAMPLER_MIPMAP_MODE_LINEAR;
     case NearestMipMode:    return VK_SAMPLER_MIPMAP_MODE_NEAREST;
     default:
-        n_error("No sampler mipmap mode %s supported!", mode);
+        n_error("No sampler mipmap mode %d supported!", mode);
         return VK_SAMPLER_MIPMAP_MODE_LINEAR;
     }
 }
@@ -74,7 +74,7 @@ ToVkSamplerAddressMode(SamplerAddressMode mode)
     case ClampToBorderAddressMode:      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
     case MirrorClampToEdgeAddressMode:  return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
     default:
-        n_error("No sampler address mode %s supported!", mode);
+        n_error("No sampler address mode %d supported!", mode);
         return VK_SAMPLER_ADDRESS_MODE_REPEAT;
     }
 }
@@ -96,7 +96,7 @@ ToVkCompareOperation(SamplerCompareOperation op)
     case GreaterOrEqualCompare: return VK_COMPARE_OP_GREATER_OR_EQUAL;
     case AlwaysCompare:         return VK_COMPARE_OP_ALWAYS;
     default:
-        n_error("No comparison mode %s supported!", op);
+        n_error("No comparison mode %d supported!", op);
         return VK_COMPARE_OP_NEVER;
     }
 }
@@ -116,7 +116,7 @@ ToVkBorderMode(SamplerBorderMode mode)
     case FloatOpaqueWhiteBorder:        return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
     case IntOpaqueWhiteBorder:          return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
     default:
-        n_error("No border mode %s supported!", mode);
+        n_error("No border mode %d supported!", mode);
         return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
     }
 }
@@ -134,7 +134,7 @@ FromVkSamplerFilter(VkFilter filter)
     case VK_FILTER_NEAREST:     return NearestFilter;
     case VK_FILTER_CUBIC_IMG:   return CubicFilter;
     default:
-        n_error("No filter mode %s supported!", filter);
+        n_error("No filter mode %d supported!", filter);
         return LinearFilter;
     }
 }
@@ -150,7 +150,7 @@ FromVkSamplerMipMapMode(VkSamplerMipmapMode mode)
     case VK_SAMPLER_MIPMAP_MODE_LINEAR:     return LinearMipMode;
     case VK_SAMPLER_MIPMAP_MODE_NEAREST:    return NearestMipMode;
     default:
-        n_error("No sampler mipmap mode %s supported!", mode);
+        n_error("No sampler mipmap mode %d supported!", mode);
         return LinearMipMode;
     }
 }
@@ -169,7 +169,7 @@ FromVkSamplerAddressMode(VkSamplerAddressMode mode)
     case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER:       return ClampToBorderAddressMode;
     case VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:  return MirrorClampToEdgeAddressMode;
     default:
-        n_error("No sampler address mode %s supported!", mode);
+        n_error("No sampler address mode %d supported!", mode);
         return RepeatAddressMode;
     }
 }
@@ -191,7 +191,7 @@ FromVkCompareOperation(VkCompareOp op)
     case VK_COMPARE_OP_GREATER_OR_EQUAL:return GreaterOrEqualCompare;
     case VK_COMPARE_OP_ALWAYS:          return AlwaysCompare;
     default:
-        n_error("No comparison mode %s supported!", op);
+        n_error("No comparison mode %d supported!", op);
         return NeverCompare;
     }
 }
@@ -211,7 +211,7 @@ FromVkBorderMode(VkBorderColor mode)
     case VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE:        return FloatOpaqueWhiteBorder;
     case VK_BORDER_COLOR_INT_OPAQUE_WHITE:          return IntOpaqueWhiteBorder;
     default:
-        n_error("No border mode %s supported!", mode);
+        n_error("No border mode %d supported!", mode);
         return FloatTransparentBlackBorder;
     }
 }

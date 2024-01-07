@@ -28,7 +28,7 @@ public:
     ~UltralightRenderer();
 
     /// Get next texture
-    uint32_t NextTextureId();
+    uint32_t NextTextureId() override;
     /// Create texture
     void CreateTexture(uint32_t texture_id, ultralight::Ref<ultralight::Bitmap> bitmap) override;
     /// Update texture
@@ -37,28 +37,28 @@ public:
     void DestroyTexture(uint32_t texture_id) override;
 
     /// Get next render buffer id
-    uint32_t NextRenderBufferId();
+    uint32_t NextRenderBufferId() override;
     /// Create render target
-    void CreateRenderBuffer(uint32_t render_buffer_id, const ultralight::RenderBuffer& buffer);
+    void CreateRenderBuffer(uint32_t render_buffer_id, const ultralight::RenderBuffer& buffer) override;
     /// Destroy render target
-    void DestroyRenderBuffer(uint32_t render_buffer_id);
+    void DestroyRenderBuffer(uint32_t render_buffer_id) override;
 
     /// Get next geometry
-    uint32_t NextGeometryId();
+    uint32_t NextGeometryId() override;
     /// Create geometry
     void CreateGeometry(uint32_t geometry_id,
                                 const ultralight::VertexBuffer& vertices,
-                                const ultralight::IndexBuffer& indices);
+                                const ultralight::IndexBuffer& indices) override;
     /// Update geometry
     void UpdateGeometry(uint32_t geometry_id,
                                 const ultralight::VertexBuffer& vertices,
-                                const ultralight::IndexBuffer& indices);
+                                const ultralight::IndexBuffer& indices) override;
 
     /// Destroy geometry
-    void DestroyGeometry(uint32_t geometry_id);
+    void DestroyGeometry(uint32_t geometry_id) override;
 
     /// Fill list of draw commands
-    void UpdateCommandList(const ultralight::CommandList& list);
+    void UpdateCommandList(const ultralight::CommandList& list) override;
 
     /// Begin synchronization
     void BeginSynchronize() override;

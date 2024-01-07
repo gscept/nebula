@@ -76,9 +76,6 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.clusterShader = ShaderGet("shd:cluster_generate.fxb");
     state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureFromString("AABBGenerate"));
 
-    uint numBuffers = CoreGraphics::GetNumBufferedFrames();
-
-
     state.window = window;
     state.zNear = ZNear;
     state.zFar = ZFar;

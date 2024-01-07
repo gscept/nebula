@@ -38,7 +38,6 @@ CreateMaterial(const MaterialCreateInfo& info)
     auto batchIt = info.config->batchToIndexMap.Begin();
     while (batchIt != info.config->batchToIndexMap.End())
     {
-        const CoreGraphics::BatchGroup::Code code = *batchIt.key;
         const CoreGraphics::ShaderProgramId prog = info.config->programs[*batchIt.val];
 
         // create temporary shader id (this is safe)

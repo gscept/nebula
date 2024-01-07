@@ -961,7 +961,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         500,
         1000
     };
-    SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
+    //SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
     for (IndexT i = 0; i < groups.Size(); i++)
     {
         if (lodDistances[i] == FLT_MAX)

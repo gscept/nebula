@@ -37,7 +37,7 @@ public:
 private:
 
         /// build operation
-    virtual void Build(
+    void Build(
         Memory::ArenaAllocator<BIG_CHUNK>& allocator,
         Util::Array<FrameOp::Compiled*>& compiledOps,
         Util::Array<CoreGraphics::EventId>& events,

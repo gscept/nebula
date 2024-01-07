@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "io/zipfs/zipfilesystem.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/archfs/archive.h"
 #include "io/zipfs/zipfilestream.h"

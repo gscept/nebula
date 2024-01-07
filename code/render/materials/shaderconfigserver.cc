@@ -19,8 +19,8 @@ __ImplementInterfaceSingleton(Materials::ShaderConfigServer)
 /**
 */
 ShaderConfigServer::ShaderConfigServer() :
-    isOpen(false),
-    currentType(nullptr)
+    currentType(nullptr),
+    isOpen(false)
 {
     __ConstructSingleton;
 }

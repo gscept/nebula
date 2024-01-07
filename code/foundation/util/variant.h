@@ -3335,6 +3335,8 @@ Util::Variant::SetParseString(const Util::String& string)
                 retval = true;
                 break;
             }
+        default:
+        break;
     }
     return retval;
 }
@@ -3379,7 +3381,7 @@ Variant::Size() const
     case GuidArray:     return sizeof(Util::Array<Util::Guid>);
     case BlobArray:     return sizeof(Util::Array<Util::Blob>);
     default:
-        n_error("Variant::Size(): invalid type enum '%d'!", t);
+        n_error("Variant::Size(): invalid type enum '%d'!", this->type);
         return 0;
     }
 }
@@ -3427,7 +3429,7 @@ Variant::AsVoidPtr() const
     case BlobArray:
         return this->voidPtr;
     default:
-        n_error("Variant::AsVoidPtr(): invalid type enum '%d'!", t);
+        n_error("Variant::AsVoidPtr(): invalid type enum '%d'!", this->type);
         return nullptr;
     }
 }

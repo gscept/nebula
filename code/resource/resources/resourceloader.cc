@@ -673,9 +673,6 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         // get id of resource
         Resources::ResourceId ret = this->ids.ValueAtIndex(i);
 
-        // copy the reference
-        IoServer* ioserver = IoServer::Instance();
-
         _PendingResourceLoad pending;
         pending.entry = ret.loaderInstanceId;
         pending.tag = this->tags[ret.loaderInstanceId];

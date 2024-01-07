@@ -23,13 +23,13 @@ __ImplementClass(Base::ExporterBase, 'EXBA', Core::RefCounted);
 /**
 */
 ExporterBase::ExporterBase() : 
-    hasErrors(false),
-    isOpen(false),
-    remote(true),
     platform(Platform::Win32),
     progressCallback(0),
     minMaxCallback(0),
-    force(false)
+    hasErrors(false),
+    force(false),
+    isOpen(false),
+    remote(true)
 {
     this->socket = Socket::Create();
     this->socket->SetAddress(IpAddress("localhost", 15302));

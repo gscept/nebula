@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 
+#include "math/mat4.h"
 #include "planetest.h"
 #include "math/plane.h"
 #include "math/point.h"

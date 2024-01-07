@@ -42,9 +42,9 @@ private:
             , topRight(nullptr)
             , bottomLeft(nullptr)
             , bottomRight(nullptr)
-            , size(1)
-            , occupancyCounter(0)
             , occupied(false)
+            , occupancyCounter(0)
+            , size(1)
             , x(UINT32_MAX)
             , y(UINT32_MAX)
         {}
@@ -195,8 +195,6 @@ OccupancyQuadTree::Allocate(uint size)
     {
         for (int y = 0; y < this->topLevelNodes[x].Size(); y++)
         {
-            Node& node = this->topLevelNodes[x][y];
-
             // try to allocate node in this subtree, if failed, just skip to the next top-level node
             if (RecursiveAllocate(&this->topLevelNodes[x][y], size, ret))
                 return ret;
@@ -330,6 +328,7 @@ OccupancyQuadTree::IsOccupied(const Math::uint2 coord, uint size)
                 return true;
         }
     }
+    return false;
 }
 
 static uint colorIndex = 0;

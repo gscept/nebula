@@ -9,6 +9,7 @@
 #include "http/html/htmlpagewriter.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/streamtexturesaver.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "coregraphics/imagefileformat.h"
 

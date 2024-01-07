@@ -255,50 +255,50 @@ struct ResourceTableBuffer
         : buf(InvalidBufferId)
         , slot(0)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(NEBULA_WHOLE_BUFFER_SIZE)
         , offset(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot)
         : buf(buf)
         , slot(slot)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(NEBULA_WHOLE_BUFFER_SIZE)
         , offset(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size)
         : buf(buf)
         , slot(slot)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(size)
         , offset(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size, SizeT offset)
         : buf(buf)
         , slot(slot)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(size)
         , offset(offset)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT index, SizeT size, SizeT offset, bool texelBuffer = false, bool dynamicOffset = false)
         : buf(buf)
         , slot(slot)
         , index(index)
-        , texelBuffer(texelBuffer)
-        , dynamicOffset(dynamicOffset)
         , size(size)
         , offset(offset)
+        , texelBuffer(texelBuffer)
+        , dynamicOffset(dynamicOffset)
     {};
 
     CoreGraphics::BufferId buf;

@@ -97,7 +97,7 @@ Attribute::Attribute(Util::StringAtom name, SizeT typeSizeBytes, void const* def
 */
 inline
 Attribute::Attribute(Attribute&& desc) noexcept :
-    defVal(desc.defVal), typeSize(desc.typeSize), name(desc.name)
+    name(desc.name), typeSize(desc.typeSize), defVal(desc.defVal)
 {
     desc.defVal = nullptr;
     desc.name = nullptr;

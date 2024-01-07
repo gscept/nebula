@@ -29,8 +29,8 @@ using namespace IO;
 */
 ParticleSystemNode::ParticleSystemNode() :
     primGroupIndex(InvalidIndex)
-    , mesh(InvalidMeshId)
     , meshResource(InvalidResourceId)
+    , mesh(InvalidMeshId)
 {
     this->type = ParticleSystemNodeType;
     this->bits = HasTransformBit | HasStateBit;
@@ -93,9 +93,7 @@ ParticleSystemNode::OnFinishedLoading()
     this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
     this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
-    ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-
-    this->resourceTables = std::move(ParticleSystemNode::CreateResourceTables());
+    this->resourceTables = ParticleSystemNode::CreateResourceTables();
 }
 
 //------------------------------------------------------------------------------

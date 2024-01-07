@@ -368,7 +368,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     bufInfo.elementSize = sizeof(Terrain::TerrainSubTexture);
     bufInfo.mode = BufferAccessMode::HostLocal;
     bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    terrainVirtualTileState.subtextureStagingBuffers = std::move(BufferSet(bufInfo));
+    terrainVirtualTileState.subtextureStagingBuffers = BufferSet(bufInfo);
 
     CoreGraphics::TextureCreateInfo texInfo;
     texInfo.name = "IndirectionTexture"_atm;
@@ -400,7 +400,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     }
 
     terrainVirtualTileState.indirectionBuffer.Resize(offset);
-    terrainVirtualTileState.indirectionBuffer.Fill(IndirectionEntry{ 0xFFFFFFFF });
+    terrainVirtualTileState.indirectionBuffer.Fill(IndirectionEntry{ 0xF, 0x3FFF, 0x3FFF });
 
     bufInfo.name = "TerrainUploadBuffer"_atm;
     bufInfo.elementSize = sizeof(IndirectionEntry);
@@ -443,7 +443,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
 
-    terrainVirtualTileState.pageUpdateReadbackBuffers = std::move(BufferSet(bufInfo));
+    terrainVirtualTileState.pageUpdateReadbackBuffers = BufferSet(bufInfo);
     for (IndexT i = 0; i < terrainVirtualTileState.pageUpdateReadbackBuffers.buffers.Size(); i++)
     {
         CoreGraphics::BufferFill(cmdBuf, terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[i], 0x0);
@@ -1076,7 +1076,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             // go through pending page updates and render into the physical texture caches
             for (IndexT i = 0; i < runtimes.Size(); i++)
             {
-                TerrainRuntimeInfo& rt = runtimes[i];
                 CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
                 for (int j = 0; j < terrainVirtualTileState.pageUpdatesThisFrame.Size(); j++)
@@ -1221,7 +1220,6 @@ TerrainContext::SetupTerrain(
     n_assert(terrainState.settings.worldSizeZ > 0);
     using namespace CoreGraphics;
     const Graphics::ContextEntityId cid = GetContextId(entity);
-    TerrainLoadInfo& loadInfo = terrainAllocator.Get<Terrain_LoadInfo>(cid.id);
     TerrainRuntimeInfo& runtimeInfo = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
 
 	runtimeInfo.loadBits = 0x0;
@@ -1257,7 +1255,6 @@ TerrainContext::SetupTerrain(
     SizeT numVertsY = numQuadsY + 1;
     SizeT vertDistanceX = terrainState.settings.tileWidth  / terrainState.settings.quadsPerTileX;
     SizeT vertDistanceY = terrainState.settings.tileHeight / terrainState.settings.quadsPerTileY;
-    SizeT numBufferedFrame = CoreGraphics::GetNumBufferedFrames();
 
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.name = "TerrainPerPatchData"_atm;
@@ -1817,7 +1814,7 @@ IndirectionErase(
     , uint subTextureTileY
 )
 {
-    IndirectionEntry entry{ 0xFFFFFFFF };
+    IndirectionEntry entry{ 0xF, 0x3FFF, 0x3FFF };
 
     // Calculate indirection pixel in subtexture
     uint indirectionPixelX = (indirectionOffsetX >> mip) + subTextureTileX;
@@ -1950,7 +1947,7 @@ IndirectionClear(
 
     // Grab the largest mip and fill with 0 pixels
     Util::FixedArray<IndirectionEntry> pixels(width * width);
-    pixels.Fill(IndirectionEntry{ 0xFFFFFFFF });
+    pixels.Fill(IndirectionEntry{ 0xF, 0x3FFF, 0x3FFF });
 
     // Upload to GPU, the lowest mip will have enough values to cover all mips
     uint offset = Upload(pixels.Begin(), pixels.Size(), 4);
@@ -1984,8 +1981,6 @@ void
 TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(TerrainUpdateVirtualTexturing, Terrain);
-    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
-    const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
     Math::mat4 sunTransform = Lighting::LightContext::GetTransform(terrainState.sun);
@@ -2017,7 +2012,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     for (IndexT j = 0; j < terrainState.biomeCounter; j++)
     {
         BiomeParameters settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j).biomeParameters;
-        if (!terrainState.biomeLowresGenerated && AllBits(terrainState.biomeLoaded[j], BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded))
+        if (!terrainState.biomeLowresGenerated[j] && AllBits(terrainState.biomeLoaded[j], BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded))
         {
             terrainVirtualTileState.updateLowres = true;
             terrainState.biomeLowresGenerated[j] = true;
@@ -2080,6 +2075,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
                     case SubTextureUpdateState::Created:
                         IndirectionClear(output.newMaxMip, output.newTiles, newCoord);
                         break;
+                    default: break;
                 }
                 PackSubTexture(subTex, compressedSubTex);
                 break;

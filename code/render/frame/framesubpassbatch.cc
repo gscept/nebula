@@ -61,7 +61,6 @@ void
 FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
     // now do usual render stuff
-    ShaderServer* shaderServer = ShaderServer::Instance();
     ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
@@ -92,7 +91,6 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                     CoreGraphics::PrimitiveGroup primGroup;
                     CoreGraphics::MeshId mesh = InvalidMeshId;
 
-                    Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
@@ -159,7 +157,6 @@ void
 FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
     // now do usual render stuff
-    ShaderServer* shaderServer = ShaderServer::Instance();
     ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
@@ -190,7 +187,6 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                     CoreGraphics::PrimitiveGroup primGroup;
                     CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
 
-                    Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];

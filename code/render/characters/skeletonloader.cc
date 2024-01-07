@@ -35,7 +35,7 @@ SkeletonLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
 
     Util::FixedArray<SkeletonId> skeletons(header->numSkeletons);
     skeletons.Fill(InvalidSkeletonId);
-    for (IndexT skeletonIndex = 0; skeletonIndex < header->numSkeletons; skeletonIndex++)
+    for (uint skeletonIndex = 0; skeletonIndex < header->numSkeletons; skeletonIndex++)
     {
         Nsk3Skeleton* nsk3Skeleton = (Nsk3Skeleton*)ptr;
         ptr += sizeof(Nsk3Skeleton);
@@ -51,7 +51,6 @@ SkeletonLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             joints.SetSize(nsk3Skeleton->numJoints);
             bindPoses.SetSize(nsk3Skeleton->numJoints);
             idleSamples.SetSize(nsk3Skeleton->numJoints * 3);
-            Nsk3Joint* nskJoints = (Nsk3Joint*)(nsk3Skeleton + 1);
             uint jointIndex;
             for (jointIndex = 0; jointIndex < nsk3Skeleton->numJoints; jointIndex++)
             {

@@ -142,7 +142,7 @@ MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
     }
     this->blockSize = oldSize;
 
-    n_warning("Allocation of size %d is bigger than block size %d will receive a dedicated memory block\n", size, this->blockSize);
+    n_warning("Allocation of size %ld is bigger than block size %ld will receive a dedicated memory block\n", size, this->blockSize);
     Alloc ret{ this->blocks[id], 0, size, DedicatedBlockNodeIndex, this->memoryType, id };
     return ret;
 }

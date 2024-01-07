@@ -74,7 +74,7 @@ void
 VkShaderServer::UpdateResources()
 {
     // Just allocate the memory
-    IndexT bufferedFrameIndex = GetBufferedFrameIndex();
+    uint32_t bufferedFrameIndex = GetBufferedFrameIndex();
 
     VkDevice dev = GetCurrentDevice();
 

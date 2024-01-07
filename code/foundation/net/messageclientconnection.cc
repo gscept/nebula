@@ -89,11 +89,10 @@ MessageClientConnection::Send(const Ptr<IO::Stream> &stream)
         return Socket::Success;
     }
 
-    Socket::Result res = Socket::Error;
     stream->SetAccessMode(Stream::ReadAccess);
     this->codec.EncodeToMessage(stream, this->sendStream);
 
-    n_printf("MessageClientConnection: sending %d bytes\n", this->sendStream->GetSize());
+    n_printf("MessageClientConnection: sending %ld bytes\n", this->sendStream->GetSize());
 
     return TcpClientConnection::Send(sendStream);
 }

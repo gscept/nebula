@@ -43,7 +43,7 @@ namespace TimeManager
         Timing::Tick frameTime = 167; // start with dt = 1/60s
 
         TimeSourceState timeSources[32];
-        uint numTimeSources = 0;
+        uint32_t numTimeSources = 0;
 
         Util::HashTable<uint32_t, uint32_t, 32, 1> timeSourceTable;
 
@@ -178,8 +178,7 @@ TimeManager::OnBeginFrame()
 
     // update all time sources
     Timing::Time const frameTimeInSecs = Timing::TicksToSeconds(state->frameTime);
-    IndexT i;
-    for (i = 0; i < state->numTimeSources; i++)
+    for (uint32_t i = 0; i < state->numTimeSources; i++)
     {
         if (state->timeSources[i].pauseCounter == 0)
         {

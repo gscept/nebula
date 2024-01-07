@@ -18,10 +18,10 @@ ImguiProfiler::ImguiProfiler()
     : pauseProfiling(false)
     , showFrameProfiler(true)
     , profileFixedFps(false)
-    , fixedFps(60)
     , averageFrameTime(0.0f)
     , prevAverageFrameTime(0.0f)
     , currentFrameTime(0.0f)
+    , fixedFps(60)
 {
 }
 
@@ -296,7 +296,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                     else if (val >= 1_KB)
                         ImGui::LabelText(name, "%.2f KB allocated", val / float(1_KB));
                     else
-                        ImGui::LabelText(name, "%llu B allocated", val);
+                        ImGui::LabelText(name, "%lu B allocated", val);
                 }
 
                 const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>& budgetCounters = Profiling::ProfilingGetBudgetCounters();
@@ -311,7 +311,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                     else if (val.first >= 1_KB)
                         ImGui::LabelText(name, "%.2f KB allocated, %.2f KB left", val.first / float(1_KB), (val.first - val.second) / float(1_KB));
                     else
-                        ImGui::LabelText(name, "%llu B allocated, %llu B left", val.first, val.first - val.second);
+                        ImGui::LabelText(name, "%lu B allocated, %lu B left", val.first, val.first - val.second);
 
                     float weight = val.second / double(val.first);
                     Math::vec4 green(0, 1, 0, 1);
@@ -325,7 +325,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                 ImGui::PopFont();
             }
         }
-#endif NEBULA_ENABLE_PROFILING
+#endif //NEBULA_ENABLE_PROFILING
     }
     ImGui::End();
 }

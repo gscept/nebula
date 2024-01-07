@@ -10,6 +10,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
+#include "util/compilerhelper.h"
 #if __WIN32__
 #include "core/win32/precompiled.h"
 #elif __linux__

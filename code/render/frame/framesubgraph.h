@@ -32,7 +32,7 @@ public:
         Util::Array<FrameOp::Compiled*> subgraphOps;
     };
 
-    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) override;
 
 private:
 

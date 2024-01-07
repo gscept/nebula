@@ -90,7 +90,7 @@ VkTextRenderer::Open()
     const char* fontPath = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 #endif
 
-    unsigned char* ttf_buffer;
+    unsigned char* ttf_buffer = nullptr;
 
     // load font
     Ptr<IO::Stream> fontStream = IO::IoServer::Instance()->CreateStream(fontPath);
@@ -205,7 +205,6 @@ VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
 
     // update vertex buffer
     unsigned vert = 0;
-    unsigned totalChars = 0;
 
     TextElementVertex vertices[MaxNumChars * 6];
 
@@ -217,8 +216,6 @@ VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
         const vec4& color = curTextElm.GetColor();
         const float fontSize = curTextElm.GetSize();
         const unsigned char* text = (unsigned char*)curTextElm.GetText().AsCharPtr();
-        const unsigned numChars = curTextElm.GetText().Length();
-        totalChars += numChars;
         vec2 position = curTextElm.GetPosition();
 
         // calculate ascent, descent and gap for font
@@ -336,11 +333,11 @@ VkTextRenderer::Draw(const CoreGraphics::CmdBufferId cmdBuf, TextElementVertex* 
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbo, 0);
 
     // set viewport
-    CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
-    const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
-    uint screenWidth, screenHeight;
-    screenWidth = displayMode.GetWidth();
-    screenHeight = displayMode.GetHeight();
+    //CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
+    //const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
+    //uint screenWidth, screenHeight;
+    //screenWidth = displayMode.GetWidth();
+    //screenHeight = displayMode.GetHeight();
 
     CoreGraphics::BufferFlush(this->vbo);
     //dev->SetViewport(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);

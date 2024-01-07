@@ -290,17 +290,18 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
         case InputEvent::AppObtainFocus:
             this->hasFocus = true;
             break;
+        default: break;
     }
 
     // normal input event handling
     this->inputHandlersLockCount++;
-    bool handled = false;
+    //bool handled = false;
     IndexT i;
     for (i = 0; i < this->inputHandlers.Size(); i++)
     {
         if (this->inputHandlers[i].Value()->OnEvent(inputEvent))
         {
-            handled = true;
+            //handled = true;
             break;
         }
     }

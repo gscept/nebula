@@ -11,7 +11,7 @@ namespace CoreGraphics
 /**
 */
 void
-CoreGraphics::CmdBarrier(const CmdBufferId id
+CmdBarrier(const CmdBufferId id
                          , CoreGraphics::PipelineStage fromStage
                          , CoreGraphics::PipelineStage toStage
                          , CoreGraphics::BarrierDomain domain
@@ -27,7 +27,7 @@ CoreGraphics::CmdBarrier(const CmdBufferId id
 /**
 */
 void
-CoreGraphics::CmdBarrier(const CmdBufferId id
+CmdBarrier(const CmdBufferId id
                          , CoreGraphics::PipelineStage fromStage
                          , CoreGraphics::PipelineStage toStage
                          , CoreGraphics::BarrierDomain domain
@@ -43,7 +43,7 @@ CoreGraphics::CmdBarrier(const CmdBufferId id
 /**
 */
 void
-CoreGraphics::CmdBarrier(const CmdBufferId id
+CmdBarrier(const CmdBufferId id
                          , CoreGraphics::PipelineStage fromStage
                          , CoreGraphics::PipelineStage toStage
                          , CoreGraphics::BarrierDomain domain

@@ -108,7 +108,7 @@ UltralightRenderer::CreateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
 
     if (bitmap->format() != ultralight::kBitmapFormat_BGRA8_UNORM_SRGB && bitmap->format() != ultralight::kBitmapFormat_A8_UNORM)
     {
-        n_printf("UltralightRenderer Unsupported texture format\n", texture_id);
+        n_printf("UltralightRenderer Unsupported texture format on ID %d\n", texture_id);
         return;
     }
 

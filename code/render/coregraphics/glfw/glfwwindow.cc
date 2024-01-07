@@ -340,9 +340,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 
     GLFWmonitor* monitor = GLFWDisplayDevice::Instance()->GetMonitor(Adapter::Code::Primary);
     n_assert(monitor);
-    int count;
-    const GLFWvidmode* modes = glfwGetVideoModes(monitor, &count);
-
+    
     // get original window, if this is the first window, then the parent window will simply be nullptr
     GLFWwindow* wnd = nullptr;
     const CoreGraphics::WindowId origWindow = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
@@ -802,6 +800,7 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
                 numPresentModes = 0;
             }
             break;
+        default: n_error("unhandled enum"); break;
         }
     }
 
@@ -931,8 +930,6 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 void
 RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title)
 {
-    VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
-
     // Wait until GPU is idle
     CoreGraphics::WaitAndClearPendingCommands();
 

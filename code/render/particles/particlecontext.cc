@@ -452,7 +452,6 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
     if (allSystems.Size() > 0)
     {
         const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
-        Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetView(view->GetCamera()));
 
         struct ParticleConstantContext
         {
@@ -685,7 +684,6 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
     N_SCOPE(EmitParticles, Particles);
 
     // get the (wrapped around if looping) time since emission has started
-    const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
     const Particles::EmitterAttrs& attrs = node->GetEmitterAttrs();
     const Particles::EmitterMesh& mesh = node->GetEmitterMesh();
     const Particles::EnvelopeSampleBuffer& buffer = node->GetSampleBuffer();
@@ -905,8 +903,6 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
         return;
 
     n_assert(srt.particles.GetBuffer());
-    const SizeT inputBufferSize = srt.particles.Size() * ParticleJobInputElementSize;
-    const SizeT inputSliceSize = inputBufferSize;
 
     ParticleJobContext jobContext;
     jobContext.inputParticles = srt.particles.GetBuffer();

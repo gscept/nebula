@@ -14,7 +14,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"
-#include <functional>
+
 //------------------------------------------------------------------------------
 namespace Util
 {
@@ -380,9 +380,7 @@ StringAtom::AsString() const
 inline uint32_t
 StringAtom::HashCode() const
 {
-    // FIXME, test this :D
-    PtrT key = PtrT(this->content);
-    return (uint32_t)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
+    return Math::pointerhash((void *)this->content);
 }
 
 //------------------------------------------------------------------------------

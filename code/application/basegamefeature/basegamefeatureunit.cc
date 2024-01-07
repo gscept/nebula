@@ -99,7 +99,6 @@ BaseGameFeatureUnit::OnRenderDebug()
         
     ImGui::Begin("World inspector");
     {
-        uint const numWorlds = Game::GameServer::Instance()->state.numWorlds;
         static int selectedWorld = 0;
 
 		ImGui::InputInt("World index", &selectedWorld);

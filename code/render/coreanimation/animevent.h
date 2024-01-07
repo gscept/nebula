@@ -49,9 +49,9 @@ public:
 */
 inline
 AnimEvent::AnimEvent() :
-    time(0),
     name(nullptr),
-    category(nullptr)
+    category(nullptr),
+    time(0)
 {
     // empty
 }

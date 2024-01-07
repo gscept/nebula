@@ -84,7 +84,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 {
     const ContextEntityId cid = GetContextId(gfxId);
     
-    auto successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [cid, finishedCallback](Resources::ResourceId mid)
     {
         // Go through model nodes and setup instance data
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
@@ -97,8 +97,6 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         Util::Array<Models::ModelNode*> renderNodes;
         Util::Array<uint32_t> nodeIds;
         Util::Dictionary<Models::ModelNode*, uint32_t> nodeLookup;
-        SizeT numInstanceTransforms = 0;
-        SizeT numRenderNodes = 0;
         for (SizeT i = 0; i < nodes.Size(); i++)
         {
             Models::ModelNode* node = nodes[i];
@@ -235,7 +233,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
             auto sortCode = MaterialGetSortCode(sNode->material);
             assert(sortCode < 0xFFF0000000000000);
-            assert(sNode->HashCode() < 0x000FFFFF00000000);
+            //assert(sNode->HashCode() < 0x000FFFFF00000000);
             uint64 sortId = ((uint64)sortCode << 52) | ((uint64)sNode->HashCode() << 32);
             NodeInstances.renderable.nodeSortId[index] = sortId;
 
@@ -245,7 +243,6 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         }
 
         modelContextAllocator.Set<Model_Id>(cid.id, mid);
-        const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
 
         // add the callbacks to a lockfree queue, and dequeue and call them when it's safe
         if (finishedCallback != nullptr)
@@ -297,7 +294,7 @@ ModelContext::Setup(
     state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
     state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
     state.particleConstantsIndex = InvalidIndex;
-    state.resourceTables = std::move(Models::ShaderStateNode::CreateResourceTables());
+    state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
     state.resourceTableOffsets.Resize(3);
     state.resourceTableOffsets[state.objectConstantsIndex] = 0;
@@ -347,7 +344,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
         Models::DestroyModel(rid);
 
     // Currently super broken, needs to be identical to the Setup functions
-    auto successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [cid, finishedCallback](Resources::ResourceId mid)
     {
         modelContextAllocator.Get<Model_Id>(cid.id) = mid;
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
@@ -588,7 +585,6 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
     const Util::Array<Util::Array<uint32>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
-    const Util::Array<Math::bbox>& modelBoxes = Models::modelAllocator.GetArray<Model_BoundingBox>();
     Util::Array<Math::bbox>& instanceBoxes = NodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
     Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();

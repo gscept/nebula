@@ -23,7 +23,7 @@ public:
     virtual ~FrameSubpass();
 
     /// discard operation
-    void Discard();
+    void Discard() override;
 
     /// handle display resizing
     void OnWindowResized() override;
@@ -36,7 +36,7 @@ public:
     struct CompiledImpl : public FrameOp::Compiled
     {
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
-        void Discard();
+        void Discard() override;
 
         Util::Array<Frame::FrameOp::Compiled*> ops;
         Util::Array<Math::rectangle<int>> viewports;
@@ -47,7 +47,7 @@ public:
 #endif
     };
 
-    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) override;
 
 protected:
     friend class FramePass;

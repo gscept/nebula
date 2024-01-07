@@ -107,7 +107,6 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     loadInfo.comps = info.comps;
     vertexLayoutAllocator.Set<VertexSignature_LayoutInfo>(id, loadInfo);
 
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = vertexLayoutAllocator.Get<VertexSignature_ProgramLayoutMapping>(id);
     VkPipelineVertexInputStateCreateInfo& vertexInfo = vertexLayoutAllocator.Get<VertexSignature_VkPipelineInfo>(id);
     BindInfo& bindInfo = vertexLayoutAllocator.Get<VertexSignature_BindInfo>(id);
     VertexLayoutVkBindInfo& dynamicBindInfo = vertexLayoutAllocator.Get<VertexSignature_DynamicBindInfo>(id);
@@ -131,8 +130,6 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         };
     }
     dynamicBindInfo.attrs.Resize(loadInfo.comps.Size());
-
-    SizeT strides[CoreGraphics::MaxNumVertexStreams] = { 0 };
 
     uint32_t numUsedStreams = 0;
     IndexT curOffset[CoreGraphics::MaxNumVertexStreams];

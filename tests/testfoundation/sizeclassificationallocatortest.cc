@@ -5,6 +5,7 @@
 #include "stdneb.h"
 #include "util/array.h"
 #include "sizeclassificationallocatortest.h"
+#include <functional>
 #include "memory/rangeallocator.h"
 
 namespace Test

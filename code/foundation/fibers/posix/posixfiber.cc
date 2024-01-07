@@ -92,7 +92,7 @@ Fiber::Fiber(const Fiber& rhs)
     if (this->handle != nullptr)
     {
         fiber_t* implHandle = (fiber_t*)this->handle;
-        delete[] implHandle->fib.uc_stack.ss_sp;
+        delete[] (char*)implHandle->fib.uc_stack.ss_sp;
     }
     this->handle = rhs.handle;
     this->context = rhs.context;
@@ -106,7 +106,7 @@ Fiber::~Fiber()
     if (this->handle != nullptr)
     {
         fiber_t* implHandle = (fiber_t*)this->handle;
-        delete[] implHandle->fib.uc_stack.ss_sp;
+        delete[] (char*)implHandle->fib.uc_stack.ss_sp;
     }
     this->handle = nullptr;
     this->context = nullptr;
@@ -121,7 +121,7 @@ Fiber::operator=(const Fiber& rhs)
     if (this->handle != nullptr)
     {
         fiber_t* implHandle = (fiber_t*)this->handle;
-        delete[] implHandle->fib.uc_stack.ss_sp;
+        delete[] (char*)implHandle->fib.uc_stack.ss_sp;
     }
     this->handle = rhs.handle;
     this->context = rhs.context;

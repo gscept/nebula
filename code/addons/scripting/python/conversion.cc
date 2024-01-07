@@ -10,6 +10,9 @@
 #include <nanobind/operators.h>
 #include "util/random.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+
 namespace Python
 {
 
@@ -513,3 +516,4 @@ void RegisterNebulaModules()
     PyImport_AppendInittab("util", PyInit_util);
 }
 } // namespace Python
+#pragma clang diagnostic pop

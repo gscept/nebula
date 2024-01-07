@@ -563,7 +563,7 @@ SetupTexture(const TextureId id)
         VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(windowInfo.window.id24);
         swapInfo.swapimages = backbufferInfo.backbuffers;
         swapInfo.swapviews = backbufferInfo.backbufferViews;
-        VkClearColorValue clear = { 0, 0, 0, 0 };
+        VkClearColorValue clear = { { 0, 0, 0, 0 } };
 
         VkImageSubresourceRange subres;
         subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -708,7 +708,6 @@ DeleteTexture(const TextureId id)
     __Lock(textureAllocator, id.resourceId);
     VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.resourceId);
     VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.resourceId);
-    VkTextureWindowInfo& windowInfo = textureAllocator.Get<Texture_WindowInfo>(id.resourceId);
 
     if (loadInfo.stencilExtension != Ids::InvalidId32)
     {
@@ -716,7 +715,7 @@ DeleteTexture(const TextureId id)
         TextureViewId stencil = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
         IndexT bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
         CoreGraphics::DelayedDeleteTextureView(stencil);
-        if (runtimeInfo.type != 0xFFFFFFFF)
+        if (runtimeInfo.type != TextureType::InvalidTextureType)
             Graphics::UnregisterTexture(bind, runtimeInfo.type);
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
     }
@@ -1067,8 +1066,7 @@ TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, I
 
     const TextureSparsePageTable& table = textureSparseExtensionAllocator.ConstGet<TextureExtension_SparsePageTable>(sparseExtension);
     Util::Array<VkSparseImageMemoryBind>& pageBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparsePendingBinds>(sparseExtension);
-    VkDevice dev = GetCurrentDevice();
-
+    
     // get page and allocate memory
     CoreGraphics::TextureSparsePage& page = table.pages[layer][mip][pageIndex];
     n_assert(page.alloc.mem != VK_NULL_HANDLE);
@@ -1147,7 +1145,6 @@ TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip
 
     const TextureSparsePageTable& table = textureSparseExtensionAllocator.ConstGet<TextureExtension_SparsePageTable>(sparseExtension);
     Util::Array<VkSparseImageMemoryBind>& pageBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparsePendingBinds>(sparseExtension);
-    VkDevice dev = GetCurrentDevice();
 
     const Util::Array<CoreGraphics::TextureSparsePage>& pages = table.pages[layer][mip];
 
@@ -1236,6 +1233,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
     if (opaqueBinds.IsEmpty() && pageBinds.IsEmpty())
         return;
 
+    /* unused?    
     // setup bind structs
     VkSparseImageMemoryBindInfo imageMemoryBindInfo =
     {
@@ -1259,6 +1257,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
         pageBinds.IsEmpty() ? 0u : 1u, &imageMemoryBindInfo,
         0, nullptr
     };
+*/    
 
     // execute sparse bind, the bind call
     Vulkan::SparseTextureBind(img, opaqueBinds, pageBinds);

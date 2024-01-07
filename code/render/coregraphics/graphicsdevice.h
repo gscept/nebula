@@ -134,7 +134,7 @@ struct GraphicsDeviceState
 
 #ifdef NEBULA_ENABLE_PROFILING
     Util::Array<FrameProfilingMarker> frameProfilingMarkers;
-#endif NEBULA_ENABLE_PROFILING
+#endif //NEBULA_ENABLE_PROFILING
 };
 
 struct GraphicsDeviceThreadState

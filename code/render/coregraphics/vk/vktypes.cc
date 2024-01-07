@@ -78,6 +78,7 @@ VkTypes::IsDepthFormat(CoreGraphics::PixelFormat::Code p)
     case PixelFormat::D24X8:
     case PixelFormat::D24S8:
         return true;
+    default: return false; break;
     }
     return false;
 }
@@ -343,6 +344,7 @@ VkTypes::AsVkImageType(CoreGraphics::TextureType type)
             return VK_IMAGE_TYPE_2D;
         case TextureCubeArray:
             return VK_IMAGE_TYPE_2D;
+        default: break;
     }
     n_error("Should not happen");
     return VK_IMAGE_TYPE_MAX_ENUM;
@@ -370,6 +372,7 @@ VkTypes::AsVkImageViewType(CoreGraphics::TextureType type)
         return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     case TextureCubeArray:
         return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+    default: break;
     }
     n_error("Should not happen");
     return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
@@ -465,6 +468,7 @@ VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageBits bits)
         case CoreGraphics::ImageBits::Plane2Bits:
             flags |= VK_IMAGE_ASPECT_PLANE_2_BIT;
             break;
+        default: break;
         }
     }
     return flags;
@@ -583,6 +587,7 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
             return VK_PIPELINE_STAGE_HOST_BIT;
         case CoreGraphics::PipelineStage::Present:
             return VK_PIPELINE_STAGE_TRANSFER_BIT;
+        default: break;
     }
     return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 }
@@ -652,6 +657,7 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
             return VK_ACCESS_HOST_WRITE_BIT;
         case CoreGraphics::PipelineStage::Present:
             return VK_ACCESS_TRANSFER_READ_BIT;
+        default: break;
     }
     return VK_ACCESS_MEMORY_WRITE_BIT;
 }
@@ -717,6 +723,7 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
             return VK_IMAGE_LAYOUT_UNDEFINED;
         case CoreGraphics::PipelineStage::Present:
             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        default: break;
     }
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }
@@ -740,6 +747,7 @@ VkTypes::AsVkPrimitiveType(CoreGraphics::PrimitiveTopology::Code t)
     case CoreGraphics::PrimitiveTopology::TriangleListAdjacency: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
     case CoreGraphics::PrimitiveTopology::TriangleStripAdjacency: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
     case CoreGraphics::PrimitiveTopology::PatchList: return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+    default: break;
     }
     return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
 }

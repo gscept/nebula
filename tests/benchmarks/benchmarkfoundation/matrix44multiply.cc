@@ -5,6 +5,8 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "matrix44multiply.h"
+#include "math/mat4.h"
+#include "math/vec4.h"
 
 namespace Benchmarking
 {

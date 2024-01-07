@@ -17,6 +17,7 @@
 #include "coregraphics/indextype.h"
 #include "ids/idallocator.h"
 #include "coregraphics/memory.h"
+#include "math/vec4.h"
 
 namespace CoreGraphics
 {

@@ -14,6 +14,8 @@
 */
 #include "util/array.h"
 #include "util/string.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 
 //------------------------------------------------------------------------------
 namespace Util

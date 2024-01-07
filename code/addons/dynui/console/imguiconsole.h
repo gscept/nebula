@@ -95,7 +95,6 @@ private:
     Util::RingBuffer<LogEntry> consoleBuffer;   
     IndexT selectedSuggestion;
     Ptr<Scripting::ScriptServer> scriptServer;
-    bool moveScroll;
     bool visible;
 
     Ptr<IO::TextWriter> persistentHistory;

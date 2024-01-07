@@ -144,6 +144,7 @@ struct MaterialVariant
             case Type::Mat4:
                 return sizeof(Math::mat4);
                 break;
+            default: break;
         }
         return 0xFFFFFFFF;
     }

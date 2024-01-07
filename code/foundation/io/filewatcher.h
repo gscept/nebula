@@ -18,6 +18,7 @@
 #include "io/ioserver.h"
 #include "threading/thread.h"
 #include "threading/safequeue.h"
+#include <functional>
 #if __WIN32__
 #include "io/win32/win32filewatcher.h"
 #elif __linux__

@@ -12,6 +12,7 @@
 #include "input/inputhandler.h"
 #include "threading/criticalsection.h"
 #include "threading/thread.h"
+#include "math/mat4.h"
 
 #define MAX_GAMEPADS 4
 

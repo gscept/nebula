@@ -15,11 +15,11 @@ IndexT ShaderConfig::ShaderConfigUniqueIdCounter = 0;
 /**
 */
 ShaderConfig::ShaderConfig() 
-    : currentBatch(CoreGraphics::BatchGroup::InvalidBatchGroup)
-    , currentBatchIndex(InvalidIndex)
+    : isVirtual(false)
     , vertexType(-1)
-    , isVirtual(false)
     , uniqueId(ShaderConfigUniqueIdCounter++)
+    , currentBatch(CoreGraphics::BatchGroup::InvalidBatchGroup)
+    , currentBatchIndex(InvalidIndex)
 {
 }
 

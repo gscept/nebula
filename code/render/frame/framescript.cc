@@ -201,7 +201,6 @@ FrameScript::Build()
     {
         CoreGraphics::TextureId tex = this->textures[i];
         bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
-        CoreGraphics::ImageLayout layout = CoreGraphics::TextureGetDefaultLayout(tex);
         CoreGraphics::TextureUsage usage = CoreGraphics::TextureGetUsage(tex);
         auto& arr = textures.Emplace(tex);
 

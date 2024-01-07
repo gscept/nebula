@@ -35,7 +35,7 @@ public:
     /// destructor
     ~GraphicsFeatureUnit();
 
-    void OnAttach();
+    void OnAttach() override;
 
     /// Called upon activation of feature unit
     void OnActivate() override;
@@ -81,8 +81,8 @@ public:
     Graphics::GraphicsEntityId globalLight;
 
 private:
-    Util::StringAtom title;
     IO::URI defaultFrameScript;
+    Util::StringAtom title;
     Ptr<Graphics::View> defaultView;
     Ptr<Graphics::Stage> defaultStage;
 

@@ -31,7 +31,7 @@ public:
     bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
     /// discard node
-    void Discard();
+    void Discard() override;
 
     /// get the owned character object
     //const Ptr<Character>& GetCharacter() const;

@@ -27,7 +27,7 @@ public:
         /// running does nothing
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
-        void Discard();
+        void Discard() override;
     };
 
 private:

@@ -48,7 +48,7 @@ public:
     virtual ~StreamActorPool();
 
     /// setup resource loader, initiates the placeholder and error resources if valid
-    void Setup();
+    void Setup() override;
 
     ///
     ActorId CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene = 0);
@@ -63,7 +63,7 @@ private:
     /// perform actual load, override in subclass
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate) override;
     /// unload resource
-    void Unload(const Resources::ResourceId id);
+    void Unload(const Resources::ResourceId id) override;
 
     enum
     {

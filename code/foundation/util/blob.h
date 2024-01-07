@@ -485,8 +485,7 @@ Blob::HashCode() const
 {
     IndexT hash = 0;
     const char* charPtr = (const char*) this->ptr;
-    IndexT i;
-    for (i = 0; i < this->size; i++)
+    for (size_t i = 0; i < this->size; i++)
     {
         hash += charPtr[i];
         hash += hash << 10;

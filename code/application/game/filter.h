@@ -114,7 +114,6 @@ private:
     template<typename ... TYPES, std::size_t...Is>
     void UnrollExclusiveComponents(std::index_sequence<Is...>)
     {
-        size_t offset = info.numInclusive;
         (SetExclusive<typename std::tuple_element<Is, std::tuple<TYPES...>>::type>(Is), ...);
     }
 };

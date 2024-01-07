@@ -15,10 +15,10 @@ using namespace IO;
 /**
 */
 PosixAppLauncher::PosixAppLauncher() :
-    pid(-1),
     inPipe(-1),
     outPipe(-1),
-    errPipe(-1)
+    errPipe(-1),
+    pid(-1)
 {     
     // empty
 }

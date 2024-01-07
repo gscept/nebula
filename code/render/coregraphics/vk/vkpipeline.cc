@@ -98,7 +98,6 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
     Util::Array<VkPipeline> libraries;
     Util::Array<char> genHandleData, hitHandleData, missHandleData, callableHandleData;
     Util::Array<char*> groupHandleDatas;
-    uint handleAlignment = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleAlignment;
     uint handleSize = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleSize;
 
     uint rayPayloadSize = 0, hitAttributeSize = 0;

@@ -160,7 +160,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     {
         uint numQueries = 0;
         queryBundles.enabled[i] = false;
-        CoreGraphics::QueryType type;
+        UNUSED(CoreGraphics::QueryType) type;
 
         // If bit is not set, continue
         if ((bits & 1) == 0)
@@ -336,9 +336,8 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
     CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
-    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
+    //VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     const VertexLayoutVkBindInfo& bindInfo = VertexLayoutGetVkBindInfo(vl);
 
     vkCmdSetVertexInputEXT(cmdBuf, bindInfo.binds.Size(), bindInfo.binds.Begin(), bindInfo.attrs.Size(), bindInfo.attrs.Begin());
@@ -508,6 +507,7 @@ CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId ta
         case ShaderPipeline::RayTracingPipeline:
             vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineBundle.raytracingLayout, slot, 1, &set, numOffsets, offsets);
             break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -530,6 +530,7 @@ CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uin
         case ShaderPipeline::RayTracingPipeline:
             vkCmdPushConstants(cmdBuf, pipelineBundle.raytracingLayout, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR, offset, size, data);
             break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -1075,7 +1076,6 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     VkImage vkDst = TextureGetVkImage(dest);
 
     VkImageResolve resolve;
-    TextureDimensions dims = TextureGetDimensions(source);
     resolve.dstOffset = { destCopy.region.left, destCopy.region.top, 0 };
     resolve.srcOffset = { sourceCopy.region.left, sourceCopy.region.top, 0 };
     resolve.extent.width = sourceCopy.region.width();
@@ -1614,7 +1614,6 @@ void
 CmdFinishQueries(const CmdBufferId id)
 {
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
     {
         // Grab all chunk offsets and counts 
@@ -1655,7 +1654,6 @@ CmdGetMarkerOffset(const CmdBufferId id)
 {
     CoreGraphics::QueryBundle& queries = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     n_assert(queries.enabled[CoreGraphics::QueryType::TimestampsQueryType]);
-    QueryBundle::QueryChunk& chunk = queries.GetChunk(CoreGraphics::TimestampsQueryType);
     return queries.chunks[CoreGraphics::TimestampsQueryType][0].offset;
 }
 

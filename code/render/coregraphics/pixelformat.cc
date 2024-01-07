@@ -328,6 +328,7 @@ PixelFormat::IsDepthFormat(Code code)
     case PixelFormat::D24X8:
     case PixelFormat::D24S8:
     case PixelFormat::D32S8:            return true;
+    default: return false;
     }
     return false;
 }
@@ -343,6 +344,7 @@ PixelFormat::IsStencilFormat(Code code)
     {
         case PixelFormat::D24S8:
         case PixelFormat::D32S8:            return true;
+        default: return false;
     }
     return false;
 }

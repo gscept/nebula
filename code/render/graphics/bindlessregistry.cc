@@ -97,7 +97,7 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
 void 
 ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, BindlessIndex index, bool depth, bool stencil)
 {
-    IndexT var;
+    IndexT var = -1;
     switch (type)
     {
     case CoreGraphics::Texture2D:
@@ -112,6 +112,7 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     case CoreGraphics::TextureCube:
         var = Shared::Table_Tick::TexturesCube_SLOT;
         break;
+    default: n_error("unhandled enum"); break;
     }
 
     CoreGraphics::ResourceTableTexture info;
@@ -138,7 +139,7 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
 void 
 UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
 {
-    IndexT var;
+    IndexT var = -1;
     switch (type)
     {
     case CoreGraphics::Texture2D:
@@ -153,6 +154,7 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     case CoreGraphics::TextureCube:
         var = Shared::Table_Tick::TexturesCube_SLOT;
         break;
+    default: n_error("unhandled enum"); break;
     }    
 
     CoreGraphics::ResourceTableTexture info;

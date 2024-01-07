@@ -30,8 +30,8 @@ using namespace Resources;
 /**
 */
 ShaderServerBase::ShaderServerBase() :
-    objectIdShaderVar(Ids::InvalidId32),
     curShaderFeatureBits(0),
+    objectIdShaderVar(Ids::InvalidId32),
     isOpen(false)
 {
     __ConstructSingleton;

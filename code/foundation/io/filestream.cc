@@ -18,8 +18,8 @@ using namespace Core;
 */
 FileStream::FileStream() :
     handle(nullptr),
-    mappedContent(nullptr),
-    mapHandle(nullptr)
+    mapHandle(nullptr),
+    mappedContent(nullptr)
 {
     // empty
 }

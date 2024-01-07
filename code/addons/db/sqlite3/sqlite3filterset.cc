@@ -148,6 +148,7 @@ Sqlite3FilterSet::BindValuesToCommand(const Ptr<Command>& cmd, IndexT wildcardSt
             case Attr::VoidType:
                 n_error("Sqlite3FilterSet::BindValuesToCommand() void type");
                 break;
+            default: n_error("unhandled enum"); break;
         }
     }
 }

@@ -480,9 +480,6 @@ World::ExecuteAddComponentCommands()
 
     this->addStagedQueue.QuickSortWithFunc(sortFunc);
 
-    SizeT i = 0;
-    SizeT count = this->addStagedQueue.Size();
-
     auto* currentCmd = this->addStagedQueue.Begin();
     auto* end = this->addStagedQueue.End();
     while (currentCmd != end)
@@ -516,9 +513,6 @@ World::ExecuteRemoveComponentCommands()
     };
 
     this->removeComponentQueue.QuickSortWithFunc(sortFunc);
-
-    SizeT i = 0;
-    SizeT count = this->removeComponentQueue.Size();
 
     auto* currentCmd = this->removeComponentQueue.Begin();
     auto* end = this->removeComponentQueue.End();
@@ -991,8 +985,6 @@ World::Defragment(MemDb::TableId cat)
     if (!this->db->IsValid(cat))
         return;
 
-    MemDb::Table& table = this->db->GetTable(cat);
-
 #if NEBULA_DEBUG
     MemDb::ColumnIndex ownerColumnId = this->db->GetTable(cat).GetAttributeIndex(GetComponentId<Game::Entity>());
     n_assert(ownerColumnId == 0);
@@ -1000,7 +992,7 @@ World::Defragment(MemDb::TableId cat)
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.
     // The move callback is signaled BEFORE the swap has happened.
-    SizeT numErased = this->db->GetTable(cat).Defragment(
+    UNUSED(SizeT) numErased = this->db->GetTable(cat).Defragment(
         [this](MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
         {
             this->MoveInstance(partition, from, to);

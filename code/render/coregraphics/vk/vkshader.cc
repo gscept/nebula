@@ -103,8 +103,6 @@ ShaderSetup(
     for (i = 0; i < NumShaders; i++)
         constantRange[i] = CoreGraphics::ResourcePipelinePushConstantRange{ 0,0,InvalidVisibility };
 
-    bool usePushConstants = false;
-
     // assert we are not over-stepping any uniform buffer limit we are using, perStage is used for ALL_STAGES
     uint32_t numUniformDyn = 0;
     uint32_t numUniform = 0;
@@ -149,7 +147,6 @@ ShaderSetup(
             range.vis = AllGraphicsVisibility; // only allow for fragment bit...
             constantRange[0] = range; // okay, this is hacky
             pushRangeOffset += block->alignedSize;
-            usePushConstants = true;
             goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
         }
         {
@@ -758,7 +755,7 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
-    if (idx == InvalidIndex) return std::move(CoreGraphics::ResourceTableSet());
+    if (idx == InvalidIndex) return CoreGraphics::ResourceTableSet();
     else
     {
         ResourceTableCreateInfo crInfo =
@@ -766,7 +763,7 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
             Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
             overallocationSize
         };
-        return std::move(CoreGraphics::ResourceTableSet(crInfo));
+        return CoreGraphics::ResourceTableSet(crInfo);
     }
 }
 
@@ -846,7 +843,7 @@ ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT index = info.constantBindings.FindIndex(name.Value());
-    if (index == InvalidIndex)  return { INT32_MAX }; // invalid binding
+    if (index == InvalidIndex)  return INT32_MAX; // invalid binding
     else                        return info.constantBindings.ValueAtIndex(index);
 }
 

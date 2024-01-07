@@ -222,9 +222,6 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         // if the mip value is set to auto generate mips, generate mip chain
         if (info.mips == TextureAutoMips)
         {
-            SizeT width = rt.width;
-            SizeT height = rt.height;
-
             // calculate the second logarithm of height and width and pick the smallest value to guarantee no 0xN or Nx0 sizes
             // add 1 because we always have one mip
             rt.mips = Math::min(Math::log2(rt.width), Math::log2(rt.height)) + 1;

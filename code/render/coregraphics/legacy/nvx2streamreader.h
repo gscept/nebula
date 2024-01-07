@@ -45,9 +45,9 @@ public:
     /// set if buffers should be created as copy sources
     void SetBuffersCopySource(bool b);
     /// begin reading from the stream, read entire data
-    virtual bool Open(const Resources::ResourceName& name);
+    bool Open(const Resources::ResourceName& name);
     /// end reading from the stream, destroys loaded objects
-    virtual void Close();
+    void Close();
     /// get vertex buffer
     const CoreGraphics::BufferId GetVertexBuffer() const;
     /// get index buffer

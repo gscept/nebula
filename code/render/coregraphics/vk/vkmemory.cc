@@ -203,6 +203,8 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
         flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         break;
     default:
+        // dummy to avoid warning
+        flags = VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM;
         n_crash("AllocateMemory(): Only image pool types are allowed for image memory");
     }
 

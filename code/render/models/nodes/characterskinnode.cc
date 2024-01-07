@@ -74,7 +74,6 @@ void
 CharacterSkinNode::OnFinishedLoading()
 {
     PrimitiveNode::OnFinishedLoading();
-    CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     for (IndexT i = 0; i < numFrames; i++)
     {

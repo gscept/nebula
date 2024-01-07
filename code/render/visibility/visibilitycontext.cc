@@ -101,6 +101,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         case LightProbe:
             observerTransforms[i] = Graphics::LightProbeContext::GetTransform(id);
             break;
+        default: n_error("unhandled enum"); break;
         }
     }
 
@@ -541,7 +542,6 @@ ObserverContext::OnRenderDebug(uint32_t flags)
 #endif
                 1 
             };
-            Math::mat4 t = a->boundingBox.to_mat4();
             shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), color, a->boundingBox.to_mat4());
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
         }
@@ -680,7 +680,6 @@ ObservableContext::Alloc()
 void 
 ObservableContext::Dealloc(Graphics::ContextEntityId id)
 {
-    Graphics::GraphicsEntityId const eid = __state.entities[id.id];
     uint32 numNodes = observableAllocator.Get<Observable_NumNodes>(id.id);
 
     // add as many atoms to each visibility result allocator

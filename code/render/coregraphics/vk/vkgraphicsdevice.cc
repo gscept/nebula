@@ -464,6 +464,7 @@ GetQueue(const CoreGraphics::QueueType type, const IndexT index)
     case CoreGraphics::SparseQueueType:
         return state.queueHandler.sparseQueues[index];
         break;
+    default: n_error("unhandled enum"); break;
     }
     return VK_NULL_HANDLE;
 }
@@ -2082,7 +2083,6 @@ NewFrame()
     Threading::CriticalScope deleteScope(&delayedDeleteSection);
 
     // Progress to next frame and wait for that buffer
-    uint prevBuffer = state.currentBufferedFrameIndex;
     state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 
     N_MARKER_BEGIN(WaitForBuffer, Wait);

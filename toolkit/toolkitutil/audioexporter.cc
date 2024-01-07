@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "audioexporter.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/uri.h"
 #include "toolkit-common/applauncher.h"

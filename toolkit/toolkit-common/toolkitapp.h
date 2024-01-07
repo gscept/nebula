@@ -43,10 +43,9 @@ protected:
 
     Logger logger;
     ProjectInfo projectInfo;
-    Platform::Code platform;
-    bool waitForKey;
-
     Util::String toolkitVersion;
+    bool waitForKey;
+    Platform::Code platform;     
     Ptr<ToolkitUtil::ToolkitConsoleHandler> handler;
 };
 

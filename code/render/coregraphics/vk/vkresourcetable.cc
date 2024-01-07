@@ -236,11 +236,6 @@ void
 DestroyResourceTable(const ResourceTableId id)
 {
     n_assert(id != InvalidResourceTableId);
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
-    const IndexT& poolIndex = resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
-    const VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-    const VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(layout.id24)[poolIndex];
     CoreGraphics::DelayedDeleteDescriptorSet(id);
 
     resourceTableAllocator.Dealloc(id.id24);

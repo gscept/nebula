@@ -187,5 +187,5 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
         }
     }
     delete parser;
-    return false;
+    return result;
 }

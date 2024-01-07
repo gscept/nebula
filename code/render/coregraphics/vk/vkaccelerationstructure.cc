@@ -107,7 +107,6 @@ CreateBlas(const BlasCreateInfo& info)
 {
     VkDevice dev = Vulkan::GetCurrentDevice();
     Ids::Id32 id = blasAllocator.Alloc();
-    VkAccelerationStructureKHR handle = blasAllocator.ConstGet<Blas_Handle>(id);
     GeometrySetup& setup = blasAllocator.Get<Blas_Geometry>(id);
     blasAllocator.Set<Blas_Device>(id, dev);
     auto type = VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR;

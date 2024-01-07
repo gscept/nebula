@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "projectinfo.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "io/jsonreader.h"

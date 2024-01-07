@@ -98,6 +98,7 @@ GLFWInputDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
             inputEvent.SetType(InputEvent::MouseWheelBackward);
             inputServer->PutEvent(inputEvent);
             return true;
+        default: break;
     }
     return false;
 }

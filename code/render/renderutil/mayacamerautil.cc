@@ -69,8 +69,6 @@ MayaCameraUtil::Update()
     const scalar defOrbitVelocity = 0.015f;
     const scalar defPanVelocity  = 0.01f; // before 0.008f
     const scalar defZoomVelocity = 0.015f;
-    const scalar minPanVelocity  = 0.01f; // before 0.008f
-    const scalar minZoomVelocity = 0.050f;
 
     // zooming and panning speed is greater when farther away
     scalar panVelocity = defPanVelocity * this->viewDistance;

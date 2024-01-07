@@ -62,7 +62,6 @@ public:
     void SetWorkingDbInMemory(bool b);
 
 private:
-    bool isOpen;
     bool workDbInMemory;
     Ptr<Db::Sqlite3Factory> dbFactory;
     Ptr<Database> staticDatabase;

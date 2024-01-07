@@ -108,7 +108,6 @@ private:
     Priority priority;
     SizeT stackSize;
     Util::String name;
-    System::Cpu::CoreId coreId;
     ThreadState volatile threadState;
 
     Threading::Event threadStartedEvent;

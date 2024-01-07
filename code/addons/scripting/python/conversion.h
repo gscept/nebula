@@ -14,7 +14,9 @@
 #include "nanobind/stl/detail/nb_list.h"
 
 #pragma warning(push)
+#if defined(_MSC_VER)
 #pragma warning(disable: 4267)
+#endif
 
 namespace Python
 {

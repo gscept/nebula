@@ -54,7 +54,7 @@ struct TileCacheEntry
     }
 };
 
-static const TileCacheEntry InvalidTileCacheEntry = TileCacheEntry{ UINT64_MAX };
+static const TileCacheEntry InvalidTileCacheEntry = TileCacheEntry{ 0x3FF, 0x7FF, 0x7FF, 0xFFFFFFFF };
 
 class TextureTileCache
 {
@@ -93,7 +93,6 @@ private:
     /// detach node and fix tail & head
     void Remove(Node* node);
 
-    uint usedNodes;
     Util::FixedArray<Node> nodes;
 
     Node* head;

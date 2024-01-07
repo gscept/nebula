@@ -25,10 +25,10 @@ namespace DistributedTools
 */
 RemoteJobService::RemoteJobService() :
     isOpen(false),
-    state(Closed),
-    processorCount(1),
+    isClean(true),
     verboseFlag(false),
-    isClean(true)
+    state(Closed),
+    processorCount(1)
 {
 }
 

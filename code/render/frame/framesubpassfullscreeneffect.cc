@@ -32,8 +32,6 @@ void
 FrameSubpassFullscreenEffect::Setup()
 {
     n_assert(this->tex != InvalidTextureId);
-    TextureDimensions dims = TextureGetDimensions(this->tex);
-
     this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString(SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK));
 }
 

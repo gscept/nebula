@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "fileservertest.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/assign.h"
 #include "io/filestream.h"

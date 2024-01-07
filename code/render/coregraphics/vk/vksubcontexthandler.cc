@@ -46,7 +46,7 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, 
 
     Util::FixedArray<IndexT> queueUses(CoreGraphics::QueueType::NumQueueTypes, 0);
 
-    uint i;
+    SizeT i;
     for (i = 0; i < this->drawQueues.Size(); i++)
     {
         IndexT& queueIndex = queueUses[families[CoreGraphics::GraphicsQueueType]];
@@ -135,6 +135,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
         list = &this->sparseQueues;
         currentQueue = &this->currentSparseQueue;
         break;
+    default: n_error("unhandled enum"); break;
     }
 
     // progress the queue index
@@ -424,6 +425,7 @@ VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
     case CoreGraphics::SparseQueueType:
         list = &this->sparseQueues;
         break;
+    default: n_error("unhandled enum"); break;
     }
     for (IndexT i = 0; i < list->Size(); i++)
     {
