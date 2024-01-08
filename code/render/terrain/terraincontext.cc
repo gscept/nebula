@@ -677,7 +677,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     PipelineStage::HostWrite,
                     PipelineStage::TransferRead,
                     BarrierDomain::Global,
-                    nullptr,
                     {
                         BufferBarrierInfo
                         {
@@ -696,7 +695,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     PipelineStage::TransferRead,
                     PipelineStage::HostWrite,
                     BarrierDomain::Global,
-                    nullptr,
                     {
                         BufferBarrierInfo
                         {
@@ -721,7 +719,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     PipelineStage::HostWrite,
                     PipelineStage::TransferRead,
                     BarrierDomain::Global,
-                    nullptr,
                     {
                         BufferBarrierInfo
                         {
@@ -740,7 +737,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     PipelineStage::TransferRead,
                     PipelineStage::HostWrite,
                     BarrierDomain::Global,
-                    nullptr,
                     {
                         BufferBarrierInfo
                         {
@@ -770,7 +766,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 PipelineStage::HostWrite,
                 PipelineStage::TransferRead,
                 BarrierDomain::Global,
-                nullptr,
                 {
                     BufferBarrierInfo
                     {
@@ -791,7 +786,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 PipelineStage::TransferRead,
                 PipelineStage::HostWrite,
                 BarrierDomain::Global,
-                nullptr,
                 {
                     BufferBarrierInfo
                     {
@@ -1047,8 +1041,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                         terrainVirtualTileState.lowresNormal,
                         CoreGraphics::TextureSubresourceInfo(),
                     }
-                },
-                nullptr);
+                });
 
             // Now generate mipmaps
             CoreGraphics::TextureGenerateMipmaps(cmdBuf, terrainVirtualTileState.lowresAlbedo);

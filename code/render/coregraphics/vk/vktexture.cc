@@ -367,8 +367,7 @@ SetupTexture(const TextureId id)
                             id,
                             CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
-                    },
-                    nullptr);
+                    });
 
                 uint32_t size = PixelFormat::ToSize(loadInfo.format);
                 CoreGraphics::TextureUpdate(cmdBuf, TransferQueueType, id, extents.width, extents.height, 0, 0, loadInfo.width * loadInfo.height * loadInfo.depth * size, loadInfo.buffer);
@@ -383,8 +382,7 @@ SetupTexture(const TextureId id)
                             id,
                             CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
-                    },
-                    nullptr);
+                    });
                 CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
                 // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!

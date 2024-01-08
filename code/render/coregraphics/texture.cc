@@ -65,8 +65,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
                     id,
                     CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip, 1, 0, 1 },
                 }
-            },
-            nullptr);
+            });
 
         CoreGraphics::CmdBarrier(
             cmdBuf,
@@ -78,8 +77,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
                     id,
                     CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip + 1, 1, 0, 1 },
                 }
-            },
-            nullptr);
+            });
         CoreGraphics::CmdBlit(cmdBuf, id, fromRegion, CoreGraphics::ImageBits::ColorBits, mip, 0, id, toRegion, CoreGraphics::ImageBits::ColorBits, mip + 1, 0);
 
         CoreGraphics::CmdBarrier(
@@ -92,8 +90,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
                     id,
                     CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip + 1, 1, 0, 1 },
                 }
-            },
-            nullptr);
+            });
 
         // Transition source to source
         CoreGraphics::CmdBarrier(
@@ -106,8 +103,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
                     id,
                     CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip, 1, 0, 1 },
                 }
-            },
-            nullptr);
+            });
     }
 }
 

@@ -491,7 +491,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             PipelineStage::HostRead,
             PipelineStage::TransferWrite,
             BarrierDomain::Global,
-            nullptr,
             {
                 BufferBarrierInfo
                 {
@@ -509,7 +508,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             PipelineStage::TransferWrite,
             PipelineStage::HostRead,
             BarrierDomain::Global,
-            nullptr,
             {
                 BufferBarrierInfo
                 {
