@@ -67,18 +67,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build libxcursor-dev libxrandr-dev libxrandr-dev libxinerama-dev libxi-dev uuid-dev libcurl4-gnutls-dev libbsd-dev libxxf86vm-dev
 
+      - name: Store Deploy folder
+        id: deploy
+        shell: bash
+        run: |
+          pushd ..
+          echo "root_dir=$(python -c 'import os; print(os.path.abspath(os.getcwd()));')" >> "$GITHUB_OUTPUT"
+
+
       - name: Check PhysX version
         id: physx-rev
+        shell: bash
         run: |
           pushd ../physx
-          echo "::set-output name=gitrev::$(git rev-parse HEAD)"
+          echo "name=gitrev::$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd  
         
       - name: Cache PhysX
         id: cache-physx
-        uses: actions/cache@v1.1.2
+        uses: actions/cache@v3
         with:
-          path: ../fips-deploy/physx
+          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/physx
           key: ${{ runner.os }}-physx-deploy-${{ steps.physx-rev.outputs.gitrev }}
 
       - name: Build PhysX
@@ -88,16 +97,17 @@ jobs:
 
       - name: Check Anyfx version
         id: anyfx-rev
+        shell: bash
         run: |
           pushd ../fips-anyfx
-          echo "::set-output name=gitrev::$(git rev-parse HEAD)"
+          echo "name=gitrev::$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd
                     
       - name: Check for Anyfx cached build
         id: cache-anyfx
-        uses: actions/cache@v1.1.2
+        uses: actions/cache@v3
         with:
-          path: ../fips-deploy/fips-anyfx
+          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/fips-anyfx
           key: ${{ runner.os }}-anyfx-${{ steps.anyfx-rev.outputs.gitrev }}
 
       - name: Build AnyfxCompiler
