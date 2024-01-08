@@ -141,6 +141,21 @@ struct BufferBarrierInfo
     BufferSubresourceInfo subres;
 };
 
+struct AccelerationStructureBarrierInfo
+{
+    union
+    {
+        BlasId blas;
+        TlasId tlas;
+    };
+
+    enum
+    {
+        BlasBarrier,
+        TlasBarrier
+    } type;
+};
+
 struct BarrierCreateInfo
 {
     Util::StringAtom name;

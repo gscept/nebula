@@ -44,6 +44,8 @@ extern VkBlasAllocator blasAllocator;
 
 /// Get device used to create blas
 const VkDevice BlasGetVkDevice(const CoreGraphics::BlasId id);
+/// Get buffer holding TLAS data
+const VkBuffer BlasGetVkBuffer(const CoreGraphics::BlasId id);
 /// Get buffer representing the acceleration structure
 const VkAccelerationStructureKHR BlasGetVk(const CoreGraphics::BlasId id);
 /// Get build info for bottom level acceleration structure
@@ -107,6 +109,8 @@ extern VkTlasAllocator tlasAllocator;
 
 /// Get device used to create Tlas
 const VkDevice TlasGetVkDevice(const CoreGraphics::TlasId id);
+/// Get buffer holding TLAS data
+const VkBuffer TlasGetVkBuffer(const CoreGraphics::TlasId id);
 /// Get acceleration structure
 const VkAccelerationStructureKHR TlasGetVk(const CoreGraphics::TlasId id);
 /// Get build info

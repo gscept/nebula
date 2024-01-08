@@ -20,7 +20,7 @@ CmdBarrier(const CmdBufferId id
                          , const IndexT toQueue
                          , const char* name)
 {
-    CmdBarrier(id, fromStage, toStage, domain, textures, nullptr, fromQueue, toQueue, name);
+    CmdBarrier(id, fromStage, toStage, domain, textures, nullptr, nullptr, fromQueue, toQueue, name);
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +36,23 @@ CmdBarrier(const CmdBufferId id
                          , const IndexT toQueue
                          , const char* name)
 {
-    CmdBarrier(id, fromStage, toStage, domain, nullptr, buffers, fromQueue, toQueue, name);
+    CmdBarrier(id, fromStage, toStage, domain, nullptr, buffers, nullptr, fromQueue, toQueue, name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdBarrier(const CmdBufferId id
+                         , CoreGraphics::PipelineStage fromStage
+                         , CoreGraphics::PipelineStage toStage
+                         , CoreGraphics::BarrierDomain domain
+                         , const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures
+                         , const IndexT fromQueue
+                         , const IndexT toQueue
+                         , const char* name)
+{
+    CmdBarrier(id, fromStage, toStage, domain, nullptr, nullptr, accelerationStructures, fromQueue, toQueue, name);
 }
 
 //------------------------------------------------------------------------------
@@ -51,7 +67,7 @@ CmdBarrier(const CmdBufferId id
                          , const IndexT toQueue
                          , const char* name)
 {
-    CmdBarrier(id, fromStage, toStage, domain, nullptr, nullptr, fromQueue, toQueue, name);
+    CmdBarrier(id, fromStage, toStage, domain, nullptr, nullptr, nullptr, fromQueue, toQueue, name);
 }
 
 } // namespace CoreGraphics

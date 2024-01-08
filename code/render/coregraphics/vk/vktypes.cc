@@ -574,6 +574,15 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
             return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         case CoreGraphics::PipelineStage::DepthStencilWrite:
             return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        case CoreGraphics::PipelineStage::RayTracingShaderRead:
+        case CoreGraphics::PipelineStage::RayTracingShaderWrite:
+            return VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+        case CoreGraphics::PipelineStage::TaskShaderRead:
+        case CoreGraphics::PipelineStage::TaskShaderWrite:
+            return VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+        case CoreGraphics::PipelineStage::MeshShaderRead:
+        case CoreGraphics::PipelineStage::MeshShaderWrite:
+            return VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
         case CoreGraphics::PipelineStage::TransferRead:
         case CoreGraphics::PipelineStage::TransferWrite:
             return VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -583,6 +592,9 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::MemoryRead:
         case CoreGraphics::PipelineStage::MemoryWrite:
             return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        case CoreGraphics::PipelineStage::AccelerationStructureRead:
+        case CoreGraphics::PipelineStage::AccelerationStructureWrite:
+            return VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
         case CoreGraphics::PipelineStage::ImageInitial:
             return VK_PIPELINE_STAGE_HOST_BIT;
         case CoreGraphics::PipelineStage::Present:
@@ -622,6 +634,9 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::PixelShaderRead:
         case CoreGraphics::PipelineStage::GraphicsShadersRead:
         case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::RayTracingShaderRead:
+        case CoreGraphics::PipelineStage::TaskShaderRead:
+        case CoreGraphics::PipelineStage::MeshShaderRead:
         case CoreGraphics::PipelineStage::AllShadersRead:
             return VK_ACCESS_SHADER_READ_BIT;
         case CoreGraphics::PipelineStage::VertexShaderWrite:
@@ -631,6 +646,9 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::PixelShaderWrite:
         case CoreGraphics::PipelineStage::GraphicsShadersWrite:
         case CoreGraphics::PipelineStage::ComputeShaderWrite:
+        case CoreGraphics::PipelineStage::RayTracingShaderWrite:
+        case CoreGraphics::PipelineStage::TaskShaderWrite:
+        case CoreGraphics::PipelineStage::MeshShaderWrite:
         case CoreGraphics::PipelineStage::AllShadersWrite:
             return VK_ACCESS_SHADER_WRITE_BIT;
         case CoreGraphics::PipelineStage::ColorRead:
@@ -653,6 +671,10 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
             return VK_ACCESS_MEMORY_READ_BIT;
         case CoreGraphics::PipelineStage::MemoryWrite:
             return VK_ACCESS_MEMORY_WRITE_BIT;
+        case CoreGraphics::PipelineStage::AccelerationStructureRead:
+            return VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        case CoreGraphics::PipelineStage::AccelerationStructureWrite:
+            return VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
         case CoreGraphics::PipelineStage::ImageInitial:
             return VK_ACCESS_HOST_WRITE_BIT;
         case CoreGraphics::PipelineStage::Present:
@@ -685,6 +707,9 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::PixelShaderRead:
         case CoreGraphics::PipelineStage::GraphicsShadersRead:
         case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::RayTracingShaderRead:
+        case CoreGraphics::PipelineStage::TaskShaderRead:
+        case CoreGraphics::PipelineStage::MeshShaderRead:
         case CoreGraphics::PipelineStage::ColorRead:
         case CoreGraphics::PipelineStage::DepthStencilRead:
         case CoreGraphics::PipelineStage::AllShadersRead:
@@ -705,6 +730,9 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::PixelShaderWrite:
         case CoreGraphics::PipelineStage::GraphicsShadersWrite:
         case CoreGraphics::PipelineStage::ComputeShaderWrite:
+        case CoreGraphics::PipelineStage::RayTracingShaderWrite:
+        case CoreGraphics::PipelineStage::TaskShaderWrite:
+        case CoreGraphics::PipelineStage::MeshShaderWrite:
         case CoreGraphics::PipelineStage::AllShadersWrite:
             return VK_IMAGE_LAYOUT_GENERAL;
         case CoreGraphics::PipelineStage::TransferRead:
@@ -720,6 +748,8 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::MemoryWrite:
             return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         case CoreGraphics::PipelineStage::ImageInitial:
+        case CoreGraphics::PipelineStage::AccelerationStructureRead:
+        case CoreGraphics::PipelineStage::AccelerationStructureWrite:
             return VK_IMAGE_LAYOUT_UNDEFINED;
         case CoreGraphics::PipelineStage::Present:
             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;

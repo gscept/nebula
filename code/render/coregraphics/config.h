@@ -251,18 +251,26 @@ enum class PipelineStage
     ComputeShaderWrite,
     AllShadersRead,
     AllShadersWrite,
-    ColorRead,              // Color output read
-    ColorWrite,             // Color output write
-    DepthStencilRead,       // Depth-Stencil output read
-    DepthStencilWrite,      // Depth-Stencil output write
-    TransferRead,           // Memory transfering read
-    TransferWrite,          // Memory transfering write
-    HostRead,               // Host operations read
-    HostWrite,              // Host operations write
-    MemoryRead,             // Memory operations read
-    MemoryWrite,            // Memory operations write
-    ImageInitial,           // Special pipeline stage for initial images
-    Present                 // Special pipeline stage for present images
+    ColorRead,                      // Color output read
+    ColorWrite,                     // Color output write
+    DepthStencilRead,               // Depth-Stencil output read
+    DepthStencilWrite,              // Depth-Stencil output write
+    RayTracingShaderRead,
+    RayTracingShaderWrite,
+    TaskShaderRead,
+    TaskShaderWrite,
+    MeshShaderRead,
+    MeshShaderWrite,
+    TransferRead,                   // Memory transfering read
+    TransferWrite,                  // Memory transfering write
+    HostRead,                       // Host operations read
+    HostWrite,                      // Host operations write
+    MemoryRead,                     // Memory operations read
+    MemoryWrite,                    // Memory operations write
+    AccelerationStructureRead,      // Read acceleration structure
+    AccelerationStructureWrite,     // Write acceleration structure
+    ImageInitial,                   // Special pipeline stage for initial images
+    Present                         // Special pipeline stage for present images
 };
 
 __ImplementEnumBitOperators(PipelineStage);

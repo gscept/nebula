@@ -93,10 +93,33 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
         // Update bottom level acceleration structures
         if (state.blasesToRebuild.Size() > 0)
         {
+            
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Bottom Level Acceleration Structure Build");
             for (IndexT i = 0; i < state.blasesToRebuild.Size(); i++)
             {
+                CoreGraphics::CmdBarrier(
+                    cmdBuf,
+                    CoreGraphics::PipelineStage::AccelerationStructureRead,
+                    CoreGraphics::PipelineStage::AccelerationStructureWrite,
+                    CoreGraphics::BarrierDomain::Global,
+                    nullptr,
+                    nullptr,
+                    {
+                        CoreGraphics::AccelerationStructureBarrierInfo {.blas = state.blasesToRebuild[i], .type = CoreGraphics::AccelerationStructureBarrierInfo::BlasBarrier }
+                    }
+                );
                 CoreGraphics::CmdBuildBlas(cmdBuf, state.blasesToRebuild[i]);
+                CoreGraphics::CmdBarrier(
+                    cmdBuf,
+                    CoreGraphics::PipelineStage::AccelerationStructureWrite,
+                    CoreGraphics::PipelineStage::AccelerationStructureRead,
+                    CoreGraphics::BarrierDomain::Global,
+                    nullptr,
+                    nullptr,
+                    {
+                        CoreGraphics::AccelerationStructureBarrierInfo {.blas = state.blasesToRebuild[i], .type = CoreGraphics::AccelerationStructureBarrierInfo::BlasBarrier}
+                    }
+                );
             }
             CoreGraphics::CmdEndMarker(cmdBuf);
             state.blasesToRebuild.Clear();
@@ -113,17 +136,65 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
         // Update top level acceleration
         if (state.topLevelNeedsBuild)
         {
+            CoreGraphics::CmdBarrier(
+                cmdBuf,
+                CoreGraphics::PipelineStage::AccelerationStructureRead,
+                CoreGraphics::PipelineStage::AccelerationStructureWrite,
+                CoreGraphics::BarrierDomain::Global,
+                nullptr,
+                nullptr,
+                {
+                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                }
+            );
+
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Top Level Acceleration Structure Build");
             CoreGraphics::TlasInitBuild(state.toplevelAccelerationStructure);
             CoreGraphics::CmdBuildTlas(cmdBuf, state.toplevelAccelerationStructure);
             CoreGraphics::CmdEndMarker(cmdBuf);
+
+            CoreGraphics::CmdBarrier(
+                cmdBuf,
+                CoreGraphics::PipelineStage::AccelerationStructureWrite,
+                CoreGraphics::PipelineStage::AccelerationStructureRead,
+                CoreGraphics::BarrierDomain::Global,
+                nullptr,
+                nullptr,
+                {
+                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                }
+            );
         }
         else if (state.topLevelNeedsUpdate)
         {
+            CoreGraphics::CmdBarrier(
+                cmdBuf,
+                CoreGraphics::PipelineStage::AccelerationStructureRead,
+                CoreGraphics::PipelineStage::AccelerationStructureWrite,
+                CoreGraphics::BarrierDomain::Global,
+                nullptr,
+                nullptr,
+                {
+                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                }
+            );
+
             CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Top Level Acceleration Structure Update");
             CoreGraphics::TlasInitUpdate(state.toplevelAccelerationStructure);
             CoreGraphics::CmdBuildTlas(cmdBuf, state.toplevelAccelerationStructure);
             CoreGraphics::CmdEndMarker(cmdBuf);
+
+            CoreGraphics::CmdBarrier(
+                cmdBuf,
+                CoreGraphics::PipelineStage::AccelerationStructureWrite,
+                CoreGraphics::PipelineStage::AccelerationStructureRead,
+                CoreGraphics::BarrierDomain::Global,
+                nullptr,
+                nullptr,
+                {
+                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                }
+            );
         }
         state.blasLock.Leave();
     };

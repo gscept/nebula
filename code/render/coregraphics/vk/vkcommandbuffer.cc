@@ -659,6 +659,7 @@ CmdBarrier(
             CoreGraphics::BarrierDomain domain,
             const Util::FixedArray<TextureBarrierInfo>& textures,
             const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
             const IndexT fromQueue,
             const IndexT toQueue,
             const char* name)
@@ -669,10 +670,11 @@ CmdBarrier(
     barrier.dstFlags = VkTypes::AsVkPipelineStage(toStage);
     barrier.dep = 0;
     //barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
-    barrier.numBufferBarriers = buffers.Size();
-    for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
+    barrier.numBufferBarriers = buffers.Size() + accelerationStructures.Size();
+    IndexT i, j = 0;
+    for (i = 0; i < buffers.Size(); i++, j++)
     {
-        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
+        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[j];
         BufferBarrierInfo& nebBar = buffers[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -686,8 +688,33 @@ CmdBarrier(
         vkBar.pNext = nullptr;
         vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     }
+    for (i = 0; i < accelerationStructures.Size(); i++, j++)
+    {
+        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[j];
+        AccelerationStructureBarrierInfo& nebBar = accelerationStructures[i];
+
+        vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
+        vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
+        switch (nebBar.type)
+        {
+        case AccelerationStructureBarrierInfo::BlasBarrier:
+            vkBar.buffer = Vulkan::BlasGetVkBuffer(nebBar.blas);
+            break;
+        case AccelerationStructureBarrierInfo::TlasBarrier:
+            vkBar.buffer = Vulkan::TlasGetVkBuffer(nebBar.tlas);
+            break;
+        }
+        vkBar.offset = 0;
+        vkBar.size = VK_WHOLE_SIZE;
+        vkBar.srcQueueFamilyIndex = fromQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : fromQueue;
+        vkBar.dstQueueFamilyIndex = toQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : toQueue;
+
+        vkBar.pNext = nullptr;
+        vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    }
+    barrier.numBufferBarriers = buffers.Size() + accelerationStructures.Size();
+
     barrier.numImageBarriers = textures.Size();
-    IndexT i, j = 0;
     for (i = 0; i < textures.Size(); i++, j++)
     {
         VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
@@ -711,6 +738,11 @@ CmdBarrier(
 
         vkBar.pNext = nullptr;
         vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    }
+
+    for (i = 0; i < accelerationStructures.Size(); i++, j++)
+    {
+
     }
 
     // If we have no other barriers, insert a memory barrier

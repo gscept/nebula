@@ -37,6 +37,7 @@ struct TlasId;
 
 struct TextureBarrierInfo;
 struct BufferBarrierInfo;
+struct AccelerationStructureBarrierInfo;
 
 enum CmdBufferQueryBits
 {
@@ -218,12 +219,24 @@ void CmdBarrier(
 );
 /// Insert pipeline barrier
 void CmdBarrier(
+            const CmdBufferId id,
+            CoreGraphics::PipelineStage fromStage,
+            CoreGraphics::PipelineStage toStage,
+            CoreGraphics::BarrierDomain domain,
+            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
+            const IndexT fromQueue = InvalidIndex,
+            const IndexT toQueue = InvalidIndex,
+            const char* name = nullptr
+);
+/// Insert pipeline barrier
+void CmdBarrier(
             const CmdBufferId id, 
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
             const Util::FixedArray<TextureBarrierInfo>& textures,
             const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr

@@ -30,6 +30,15 @@ BlasGetVkDevice(const CoreGraphics::BlasId id)
 //------------------------------------------------------------------------------
 /**
 */
+const VkBuffer
+BlasGetVkBuffer(const CoreGraphics::BlasId id)
+{
+    return BufferGetVk(blasAllocator.ConstGet<Blas_Buffer>(id.id24));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const VkAccelerationStructureKHR
 BlasGetVk(const CoreGraphics::BlasId id)
 {
@@ -61,6 +70,15 @@ const VkDevice
 TlasGetVkDevice(const CoreGraphics::TlasId id)
 {
     return tlasAllocator.ConstGet<Tlas_Device>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkBuffer
+TlasGetVkBuffer(const CoreGraphics::TlasId id)
+{
+    return BufferGetVk(tlasAllocator.ConstGet<Tlas_Buffer>(id.id24));
 }
 
 //------------------------------------------------------------------------------
