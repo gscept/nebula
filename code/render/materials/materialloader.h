@@ -26,7 +26,7 @@ public:
 private:
 
     /// unload resource (overload to implement resource deallocation)
-    void Unload(const Resources::ResourceId id);
+    void Unload(const Resources::ResourceId id) override;
 };
 
 } // namespace Materials

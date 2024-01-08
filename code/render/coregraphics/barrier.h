@@ -12,6 +12,7 @@
 #include "util/array.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/buffer.h"
+#include "coregraphics/accelerationstructure.h"
 #include "coregraphics/config.h"
 #include <tuple>
 namespace CoreGraphics
@@ -139,6 +140,20 @@ struct BufferBarrierInfo
 {
     BufferId buf;
     BufferSubresourceInfo subres;
+};
+
+struct AccelerationStructureBarrierInfo
+{
+    BlasId blas;
+    TlasId tlas;
+    enum
+    {
+        BlasBarrier,
+        TlasBarrier,
+        None
+    } type;
+
+    ~AccelerationStructureBarrierInfo() {};
 };
 
 struct BarrierCreateInfo

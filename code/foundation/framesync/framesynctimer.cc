@@ -19,11 +19,11 @@ using namespace Timing;
 FrameSyncTimer::FrameSyncTimer() :
     time(0.0),
     ticks(0),
-    realTime(0.0),
     frameTime(0.0),
     frameTicks(0),
     scaledTime(0.0),
     timeFactor(1.0),
+    realTime(0.0),
     frameIndex(0),
     isValid(false)   
 {

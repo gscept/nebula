@@ -12,11 +12,17 @@
 
 #include "Compressonator.h"
 
+extern void (*PrintStatusLine)(char*);
 
 namespace ToolkitUtil
 {
 using namespace IO;
 using namespace Util;
+
+void Printl(char* buf)
+{
+    fprintf(stderr,"%s\n", buf);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -24,6 +30,8 @@ using namespace Util;
 CompressonatorConversionJob::CompressonatorConversionJob()
 {
     this->SetDstFileExtension("dds");
+    auto printline = [=](char*buff)->void { this->logger->Error(buff); };
+    PrintStatusLine = &Printl;
 }
 
 //------------------------------------------------------------------------------
@@ -113,9 +121,23 @@ CompressonatorConversionJob::Convert()
             quality = 0.1f;
             break;
         }
-        kernel_options.format = CMP_FORMAT_BC7; // Set the format to process
+        if((String::MatchPattern(this->srcPath, "*norm.*")) 
+            || (String::MatchPattern(this->srcPath, "*normal.*")) 
+            || (String::MatchPattern(this->srcPath, "*bump.*")))
+        {
+            kernel_options.format = CMP_FORMAT_BC5;
+        }
+        else if (String::MatchPattern(this->srcPath, "*height.*"))
+        {
+            kernel_options.format = CMP_FORMAT_R_16;
+        }
+        else
+        {
+            kernel_options.format = CMP_FORMAT_BC7; // Set the format to process
+        }
         kernel_options.fquality = quality;     // Set the quality of the result
         kernel_options.threads = 0;             // Auto setting
+        kernel_options.encodeWith = CMP_CPU;
 
         //--------------------------------------------------------------
         // Setup a results buffer for the processed file,

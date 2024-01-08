@@ -62,12 +62,6 @@ GameApplication::Open()
         // setup from cmd line args
         this->SetupAppFromCmdLineArgs();
 
-        Jobs2::JobSystemInitInfo jobSystemInfo;
-        jobSystemInfo.numThreads = System::NumCpuCores;
-        jobSystemInfo.name = "JobSystem";
-        jobSystemInfo.scratchMemorySize = 16_MB;
-        Jobs2::JobSystemInit(jobSystemInfo);
-
         // setup basic Nebula runtime system
         this->coreServer = CoreServer::Create();
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
@@ -108,6 +102,12 @@ GameApplication::Open()
         this->ioServer->MountStandardArchives();
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
+
+        Jobs2::JobSystemInitInfo jobSystemInfo;
+        jobSystemInfo.numThreads = System::NumCpuCores;
+        jobSystemInfo.name = "JobSystem";
+        jobSystemInfo.scratchMemorySize = 16_MB;
+        Jobs2::JobSystemInit(jobSystemInfo);
 
         this->resourceServer = Resources::ResourceServer::Create();
         this->resourceServer->Open();

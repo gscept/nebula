@@ -159,9 +159,8 @@ ShaderStateNode::OnFinishedLoading()
     // load surface immediately, however it will load textures async
     this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
     this->material = this->materialRes;
-    CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
 
-    this->resourceTables = std::move(ShaderStateNode::CreateResourceTables());
+    this->resourceTables = ShaderStateNode::CreateResourceTables();
 }
 
 //------------------------------------------------------------------------------

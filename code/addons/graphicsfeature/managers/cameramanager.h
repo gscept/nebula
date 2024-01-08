@@ -14,6 +14,7 @@
 #include "game/manager.h"
 #include "ids/idgenerationpool.h"
 #include "graphics/graphicsentity.h"
+#include "math/vec3.h"
 #include "graphicsfeature/components/graphicsfeature.h"
 
 namespace Graphics

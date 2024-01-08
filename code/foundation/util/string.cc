@@ -11,7 +11,12 @@
 #include <stdlib.h>
 #include "base64/base64.h"
 #include "blob.h"
-
+#include "math/mat4.h"
+#include "math/vec2.h"
+#include "math/vec3.h"
+#include "math/vec4.h"
+#include "math/quat.h"
+#include "math/transform44.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -1186,7 +1191,7 @@ String::FromBlob(const Util::Blob& b)
     static char hex[]= "0123456789abcdef";        
     
     const unsigned char * ptr = (const unsigned char*)b.GetPtr();
-    for(SizeT i = 0 ; i < b.Size(); i ++)
+    for(size_t i = 0 ; i < b.Size(); i ++)
     {
         buf[i * 2 + 0] = hex[ptr[i] >> 4  ];
         buf[i * 2 + 1] = hex[ptr[i] & 0x0F];
@@ -1266,4 +1271,364 @@ String::FromBase64(const String& in)
     return ret;
 }
 
-} // namespace System
+
+//------------------------------------------------------------------------------
+/**
+    Allocate a new heap buffer, discards old contents.
+*/
+void
+String::Alloc(SizeT newSize)
+{
+    n_assert(newSize > (this->strLen + 1));
+    n_assert(newSize > this->heapBufferSize);
+
+    // free old buffer
+    if (this->heapBuffer)
+    {
+        Memory::Free(Memory::StringDataHeap, (void*) this->heapBuffer);
+        this->heapBuffer = 0;
+    }
+
+    // allocate new buffer
+    this->heapBuffer = (char*) Memory::Alloc(Memory::StringDataHeap, newSize);
+    this->heapBufferSize = newSize;
+    this->localBuffer[0] = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+    (Re-)allocate external buffer and copy existing string contents there.
+*/
+void
+String::Realloc(SizeT newSize)
+{
+    n_assert(newSize > (this->strLen + 1));
+    n_assert(newSize > this->heapBufferSize);
+
+    // allocate a new buffer
+    char* newBuffer = (char*) Memory::Alloc(Memory::StringDataHeap, newSize);
+
+    // copy existing contents there...
+    if (this->strLen > 0)
+    {
+        const char* src = this->AsCharPtr();
+        Memory::Copy(src, newBuffer, this->strLen);
+    }
+    newBuffer[this->strLen] = 0;
+
+    // assign new buffer
+    if (this->heapBuffer)
+    {
+        Memory::Free(Memory::StringDataHeap, (void*) this->heapBuffer);
+        this->heapBuffer = 0;
+    }
+    this->localBuffer[0] = 0;
+    this->heapBuffer = newBuffer;
+    this->heapBufferSize = newSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Reserves internal space to prevent excessive heap re-allocations.
+    If you plan to do many Append() operations this may help alot.
+*/
+void
+String::Reserve(SizeT newSize)
+{
+    if (newSize > this->heapBufferSize)
+    {
+        this->Realloc(newSize);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetByte(byte val)
+{
+    this->Format("%d", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetUByte(ubyte val)
+{
+    this->Format("%u", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetShort(short val)
+{
+    this->Format("%d", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetUShort(ushort val)
+{
+    this->Format("%u", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetInt(int val)
+{
+    this->Format("%d", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetUInt(uint val)
+{
+    this->Format("%u", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetLong(long val)
+{
+    this->Format("%ld", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetSizeT(size_t val)
+{
+    this->Format("%zu", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetLongLong(long long val)
+{
+    this->Format("%lld", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetFloat(float val)
+{
+    this->Format("%.6f", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetDouble(double val)
+{
+    this->Format("%.6f", val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetBool(bool val)
+{
+    if (val)
+    {
+        this->SetCharPtr("true");
+    }
+    else
+    {
+        this->SetCharPtr("false");
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::Fill(SizeT length, unsigned char character)
+{
+    this->Alloc(length + 1);
+    Memory::Fill(this->heapBuffer, length, character);
+    this->heapBuffer[length] = 0;
+    this->localBuffer[0] = 0;
+    this->strLen = length;
+}
+
+#if !__OSX__
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetVec2(const Math::vec2& v)
+{
+    this->Format("%.6f,%.6f", v.x, v.y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetVec4(const Math::vec4& v)
+{
+    this->Format("%.6f,%.6f,%.6f,%.6f", v.x, v.y, v.z, v.w);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+String::SetVec3(const Math::vec3& v)
+{
+    this->Format("%.6f,%.6f,%.6f", v.x, v.y, v.z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetQuaternion(const Math::quat& v)
+{
+    this->Format("%.6f,%.6f,%.6f,%.6f", v.x, v.y, v.z, v.w);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetMat4(const Math::mat4& m)
+{
+    this->Format("%.6f, %.6f, %.6f, %.6f, "
+                 "%.6f, %.6f, %.6f, %.6f, "
+                 "%.6f, %.6f, %.6f, %.6f, "
+                 "%.6f, %.6f, %.6f, %.6f",
+                 m.row0.x, m.row0.y, m.row0.z, m.row0.w,
+                 m.row1.x, m.row1.y, m.row1.z, m.row1.w,
+                 m.row2.x, m.row2.y, m.row2.z, m.row2.w,
+                 m.row3.x, m.row3.y, m.row3.z, m.row3.w);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::SetTransform44(const Math::transform44& t)
+{
+    this->Format("%s|%s|%s|%s|%s|%s",
+        this->FromVec3(xyz(t.getposition())).AsCharPtr(),
+        this->FromQuat(t.getrotate()).AsCharPtr(),
+        this->FromVec3(t.getscale()).AsCharPtr(),
+        this->FromVec3(xyz(t.getrotatepivot())).AsCharPtr(),
+        this->FromVec3(xyz(t.getscalepivot())).AsCharPtr(),
+        this->FromMat4(t.getoffset()).AsCharPtr());
+}
+
+//------------------------------------------------------------------------------
+/**
+    Note: this method is not 100% correct, it just checks for invalid characters.
+*/
+bool
+String::IsValidVec2() const
+{
+    Array<String> tokens(2, 0);
+    this->Tokenize(", \t", tokens);
+    return this->CheckValidCharSet(" \t-+.,e1234567890") && tokens.Size() == 2;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Note: this method is not 100% correct, it just checks for invalid characters.
+*/
+bool
+String::IsValidVec4() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    return this->CheckValidCharSet(" \t-+.,e1234567890") && tokens.Size() == 4;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Note: this method is not 100% correct, it just checks for invalid characters.
+*/
+bool
+String::IsValidMat4() const
+{
+    Array<String> tokens(16, 0);
+    this->Tokenize(", \t", tokens);
+    return this->CheckValidCharSet(" \t-+.,e1234567890") && tokens.Size() == 16;
+}
+    
+//------------------------------------------------------------------------------
+/**
+Note: this method is not 100% correct, it just checks for invalid characters.
+*/
+bool
+String::IsValidTransform44() const
+{
+    Array<String> tokens(6, 0);
+    this->Tokenize("|", tokens);
+    return this->CheckValidCharSet("| \t-+.,e1234567890") && tokens.Size() == 6;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Returns content as vec2. Note: this method doesn't check whether the
+    contents is actually a valid vec4. Use the IsValidFloat2() method
+    for this!
+*/
+Math::vec2
+String::AsVec2() const
+{
+    Array<String> tokens(2, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 2);
+    Math::vec2 v(tokens[0].AsFloat(), tokens[1].AsFloat());
+    return v;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec3 
+String::AsVec3() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 3);
+    Math::vec3 v(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat());
+    return v;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Returns content as vec4. Note: this method doesn't check whether the
+    contents is actually a valid vec4. Use the IsValidVec4() method
+    for this!
+*/
+Math::vec4
+String::AsVec4() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 4);
+    Math::vec4 v(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), tokens[3].AsFloat());
+    return v;
+}
+#endif
+
+} // namespace Util

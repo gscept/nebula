@@ -78,6 +78,7 @@ VkTypes::IsDepthFormat(CoreGraphics::PixelFormat::Code p)
     case PixelFormat::D24X8:
     case PixelFormat::D24S8:
         return true;
+    default: return false; break;
     }
     return false;
 }
@@ -343,6 +344,7 @@ VkTypes::AsVkImageType(CoreGraphics::TextureType type)
             return VK_IMAGE_TYPE_2D;
         case TextureCubeArray:
             return VK_IMAGE_TYPE_2D;
+        default: break;
     }
     n_error("Should not happen");
     return VK_IMAGE_TYPE_MAX_ENUM;
@@ -370,6 +372,7 @@ VkTypes::AsVkImageViewType(CoreGraphics::TextureType type)
         return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
     case TextureCubeArray:
         return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+    default: break;
     }
     n_error("Should not happen");
     return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
@@ -465,6 +468,7 @@ VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageBits bits)
         case CoreGraphics::ImageBits::Plane2Bits:
             flags |= VK_IMAGE_ASPECT_PLANE_2_BIT;
             break;
+        default: break;
         }
     }
     return flags;
@@ -477,12 +481,20 @@ VkShaderStageFlags
 VkTypes::AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis)
 {
     VkShaderStageFlags ret = 0;
-    if ((vis & VertexShaderVisibility) == VertexShaderVisibility)       ret |= VK_SHADER_STAGE_VERTEX_BIT;
-    if ((vis & HullShaderVisibility) == HullShaderVisibility)           ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-    if ((vis & DomainShaderVisibility) == DomainShaderVisibility)       ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-    if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)   ret |= VK_SHADER_STAGE_GEOMETRY_BIT;
-    if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         ret |= VK_SHADER_STAGE_FRAGMENT_BIT;
-    if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     ret |= VK_SHADER_STAGE_COMPUTE_BIT;
+    if (AllBits(vis, VertexShaderVisibility))               ret |= VK_SHADER_STAGE_VERTEX_BIT;
+    if (AllBits(vis, HullShaderVisibility))                 ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+    if (AllBits(vis, DomainShaderVisibility))               ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+    if (AllBits(vis, GeometryShaderVisibility))             ret |= VK_SHADER_STAGE_GEOMETRY_BIT;
+    if (AllBits(vis, PixelShaderVisibility))                ret |= VK_SHADER_STAGE_FRAGMENT_BIT;
+    if (AllBits(vis, ComputeShaderVisibility))              ret |= VK_SHADER_STAGE_COMPUTE_BIT;
+    if (AllBits(vis, TaskShaderVisibility))                 ret |= VK_SHADER_STAGE_TASK_BIT_EXT;
+    if (AllBits(vis, MeshShaderVisibility))                 ret |= VK_SHADER_STAGE_MESH_BIT_EXT;
+    if (AllBits(vis, RayGenerationShaderVisibility))        ret |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+    if (AllBits(vis, RayAnyHitShaderVisibility))            ret |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+    if (AllBits(vis, RayClosestHitShaderVisibility))        ret |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    if (AllBits(vis, RayMissShaderVisibility))              ret |= VK_SHADER_STAGE_MISS_BIT_KHR;
+    if (AllBits(vis, RayIntersectionShaderVisibility))      ret |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+    if (AllBits(vis, CallableShaderVisibility))             ret |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
     return ret;
 }
 
@@ -562,6 +574,15 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
             return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         case CoreGraphics::PipelineStage::DepthStencilWrite:
             return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        case CoreGraphics::PipelineStage::RayTracingShaderRead:
+        case CoreGraphics::PipelineStage::RayTracingShaderWrite:
+            return VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+        case CoreGraphics::PipelineStage::TaskShaderRead:
+        case CoreGraphics::PipelineStage::TaskShaderWrite:
+            return VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+        case CoreGraphics::PipelineStage::MeshShaderRead:
+        case CoreGraphics::PipelineStage::MeshShaderWrite:
+            return VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
         case CoreGraphics::PipelineStage::TransferRead:
         case CoreGraphics::PipelineStage::TransferWrite:
             return VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -571,10 +592,14 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::MemoryRead:
         case CoreGraphics::PipelineStage::MemoryWrite:
             return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        case CoreGraphics::PipelineStage::AccelerationStructureRead:
+        case CoreGraphics::PipelineStage::AccelerationStructureWrite:
+            return VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
         case CoreGraphics::PipelineStage::ImageInitial:
             return VK_PIPELINE_STAGE_HOST_BIT;
         case CoreGraphics::PipelineStage::Present:
             return VK_PIPELINE_STAGE_TRANSFER_BIT;
+        default: break;
     }
     return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 }
@@ -609,6 +634,9 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::PixelShaderRead:
         case CoreGraphics::PipelineStage::GraphicsShadersRead:
         case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::RayTracingShaderRead:
+        case CoreGraphics::PipelineStage::TaskShaderRead:
+        case CoreGraphics::PipelineStage::MeshShaderRead:
         case CoreGraphics::PipelineStage::AllShadersRead:
             return VK_ACCESS_SHADER_READ_BIT;
         case CoreGraphics::PipelineStage::VertexShaderWrite:
@@ -618,6 +646,9 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
         case CoreGraphics::PipelineStage::PixelShaderWrite:
         case CoreGraphics::PipelineStage::GraphicsShadersWrite:
         case CoreGraphics::PipelineStage::ComputeShaderWrite:
+        case CoreGraphics::PipelineStage::RayTracingShaderWrite:
+        case CoreGraphics::PipelineStage::TaskShaderWrite:
+        case CoreGraphics::PipelineStage::MeshShaderWrite:
         case CoreGraphics::PipelineStage::AllShadersWrite:
             return VK_ACCESS_SHADER_WRITE_BIT;
         case CoreGraphics::PipelineStage::ColorRead:
@@ -640,10 +671,15 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
             return VK_ACCESS_MEMORY_READ_BIT;
         case CoreGraphics::PipelineStage::MemoryWrite:
             return VK_ACCESS_MEMORY_WRITE_BIT;
+        case CoreGraphics::PipelineStage::AccelerationStructureRead:
+            return VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        case CoreGraphics::PipelineStage::AccelerationStructureWrite:
+            return VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
         case CoreGraphics::PipelineStage::ImageInitial:
             return VK_ACCESS_HOST_WRITE_BIT;
         case CoreGraphics::PipelineStage::Present:
             return VK_ACCESS_TRANSFER_READ_BIT;
+        default: break;
     }
     return VK_ACCESS_MEMORY_WRITE_BIT;
 }
@@ -671,6 +707,9 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::PixelShaderRead:
         case CoreGraphics::PipelineStage::GraphicsShadersRead:
         case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::RayTracingShaderRead:
+        case CoreGraphics::PipelineStage::TaskShaderRead:
+        case CoreGraphics::PipelineStage::MeshShaderRead:
         case CoreGraphics::PipelineStage::ColorRead:
         case CoreGraphics::PipelineStage::DepthStencilRead:
         case CoreGraphics::PipelineStage::AllShadersRead:
@@ -691,6 +730,9 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::PixelShaderWrite:
         case CoreGraphics::PipelineStage::GraphicsShadersWrite:
         case CoreGraphics::PipelineStage::ComputeShaderWrite:
+        case CoreGraphics::PipelineStage::RayTracingShaderWrite:
+        case CoreGraphics::PipelineStage::TaskShaderWrite:
+        case CoreGraphics::PipelineStage::MeshShaderWrite:
         case CoreGraphics::PipelineStage::AllShadersWrite:
             return VK_IMAGE_LAYOUT_GENERAL;
         case CoreGraphics::PipelineStage::TransferRead:
@@ -706,9 +748,12 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::MemoryWrite:
             return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         case CoreGraphics::PipelineStage::ImageInitial:
+        case CoreGraphics::PipelineStage::AccelerationStructureRead:
+        case CoreGraphics::PipelineStage::AccelerationStructureWrite:
             return VK_IMAGE_LAYOUT_UNDEFINED;
         case CoreGraphics::PipelineStage::Present:
             return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        default: break;
     }
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }
@@ -732,6 +777,7 @@ VkTypes::AsVkPrimitiveType(CoreGraphics::PrimitiveTopology::Code t)
     case CoreGraphics::PrimitiveTopology::TriangleListAdjacency: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
     case CoreGraphics::PrimitiveTopology::TriangleStripAdjacency: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
     case CoreGraphics::PrimitiveTopology::PatchList: return VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+    default: break;
     }
     return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
 }

@@ -105,8 +105,10 @@ ShapeRendererBase::AddShape(const RenderShape& shape)
                     case PrimitiveTopology::TriangleStrip:
                         this->primitives[ShaderTypes::PrimitivesWireframeTriangles].Append(shape);
                         break;
+                    default: n_error("unhandled enum"); break;
                 }
                 break;
+            default: n_error("unhandled enum"); break;
         }
 
         this->numVerticesThisFrame += shape.GetNumVertices();
@@ -136,6 +138,7 @@ ShapeRendererBase::AddShape(const RenderShape& shape)
                         n_error("Topology not supported");
                 }
                 break;
+            default: n_error("unhandled enum"); break;
         }
 
         this->numVerticesThisFrame += shape.GetNumVertices();
@@ -154,6 +157,7 @@ ShapeRendererBase::AddShape(const RenderShape& shape)
             case RenderShape::Wireframe:
                 this->shapes[ShaderTypes::MeshWireframe].Append(shape);
                 break;
+            default: n_error("unhandled enum"); break;
         }
     }
 }

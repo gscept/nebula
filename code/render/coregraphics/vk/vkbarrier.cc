@@ -180,7 +180,7 @@ BarrierPush(const CoreGraphics::CmdBufferId buf
     , const Util::FixedArray<BufferBarrierInfo>& buffers)
 {
     // first insert the barrier as is
-    CmdBarrier(buf, fromStage, toStage, domain, textures, buffers);
+    CmdBarrier(buf, fromStage, toStage, domain, textures, buffers, nullptr);
 
     // create a stack entry to reverse this barrier
     BarrierStackEntry entry;
@@ -205,7 +205,7 @@ BarrierPush(const CoreGraphics::CmdBufferId buf
     , const Util::FixedArray<TextureBarrierInfo>& textures)
 {
     // first insert the barrier as is
-    CmdBarrier(buf, fromStage, toStage, domain, textures, nullptr);
+    CmdBarrier(buf, fromStage, toStage, domain, textures, nullptr, nullptr);
 
     // create a stack entry to reverse this barrier
     BarrierStackEntry entry;
@@ -230,7 +230,7 @@ BarrierPush(const CoreGraphics::CmdBufferId buf
     , const Util::FixedArray<BufferBarrierInfo>& buffers)
 {
     // first insert the barrier as is
-    CmdBarrier(buf, fromStage, toStage, domain, nullptr, buffers);
+    CmdBarrier(buf, fromStage, toStage, domain, nullptr, buffers, nullptr);
 
     // create a stack entry to reverse this barrier
     BarrierStackEntry entry;
@@ -254,7 +254,7 @@ BarrierPop(const CoreGraphics::CmdBufferId buf)
     BarrierStackEntry entry = BarrierStack.Pop();
 
     // insert barrier
-    CmdBarrier(buf, entry.toStage, entry.fromStage, entry.domain, entry.textures, entry.buffers);
+    CmdBarrier(buf, entry.toStage, entry.fromStage, entry.domain, entry.textures, entry.buffers, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -267,7 +267,7 @@ BarrierRepeat(const CoreGraphics::CmdBufferId buf)
     const BarrierStackEntry& entry = BarrierStack.Peek();
 
     // insert barrier
-    CmdBarrier(buf, entry.fromStage, entry.toStage, entry.domain, entry.textures, entry.buffers);
+    CmdBarrier(buf, entry.fromStage, entry.toStage, entry.domain, entry.textures, entry.buffers, nullptr);
 }
 
 } // namespace CoreGraphics

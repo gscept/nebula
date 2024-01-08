@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "shareddirftp.h"
 #include "io/memorystream.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/textwriter.h"
 #include "io/textreader.h"

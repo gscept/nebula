@@ -72,7 +72,6 @@ MessageClient::Send()
         // nothing to send
         return Socket::Success;
     }
-    Socket::Result res = Socket::Error;
     this->sendMessageStream->SetAccessMode(Stream::ReadAccess);
     this->codec.EncodeToMessage(this->sendMessageStream,TcpClient::GetSendStream());
     this->sendMessageStream->SetSize(0);

@@ -637,6 +637,7 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
     case InputEvent::MouseWheelBackward:
         io.MouseWheel = -1;
         return io.WantCaptureMouse;
+    default: break;
     }
     
     return false;

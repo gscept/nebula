@@ -16,6 +16,7 @@
 #include "textureview.h"
 #include "buffer.h"
 #include "sampler.h"
+#include "accelerationstructure.h"
 #include "coregraphics/config.h"
 namespace CoreGraphics
 {
@@ -49,6 +50,13 @@ struct ResourceTableLayoutShaderRWBuffer
     bool dynamicOffset;
 };
 
+struct ResourceTableLayoutAccelerationStructure
+{
+    IndexT slot;
+    SizeT num;
+    CoreGraphics::ShaderVisibility visibility;
+};
+
 struct ResourceTableLayoutSampler
 {
     IndexT slot;
@@ -69,6 +77,7 @@ struct ResourceTableLayoutCreateInfo
     Util::Array<ResourceTableLayoutTexture> rwTextures;
     Util::Array<ResourceTableLayoutConstantBuffer> constantBuffers;
     Util::Array<ResourceTableLayoutShaderRWBuffer> rwBuffers;
+    Util::Array<ResourceTableLayoutAccelerationStructure> accelerationStructures;
     Util::Array<ResourceTableLayoutSampler> samplers;
     Util::Array<ResourceTableLayoutInputAttachment> inputAttachments;
     uint32_t descriptorPoolInitialGrow = 1;
@@ -246,50 +255,50 @@ struct ResourceTableBuffer
         : buf(InvalidBufferId)
         , slot(0)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(NEBULA_WHOLE_BUFFER_SIZE)
         , offset(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot)
         : buf(buf)
         , slot(slot)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(NEBULA_WHOLE_BUFFER_SIZE)
         , offset(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size)
         : buf(buf)
         , slot(slot)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(size)
         , offset(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size, SizeT offset)
         : buf(buf)
         , slot(slot)
         , index(0)
-        , texelBuffer(false)
-        , dynamicOffset(false)
         , size(size)
         , offset(offset)
+        , texelBuffer(false)
+        , dynamicOffset(false)
     {};
 
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT index, SizeT size, SizeT offset, bool texelBuffer = false, bool dynamicOffset = false)
         : buf(buf)
         , slot(slot)
         , index(index)
-        , texelBuffer(texelBuffer)
-        , dynamicOffset(dynamicOffset)
         , size(size)
         , offset(offset)
+        , texelBuffer(texelBuffer)
+        , dynamicOffset(dynamicOffset)
     {};
 
     CoreGraphics::BufferId buf;
@@ -306,6 +315,16 @@ struct ResourceTableBuffer
 struct ResourceTableSampler
 {
     CoreGraphics::SamplerId samp;
+    IndexT slot;
+};
+
+struct ResourceTableTlas
+{
+    ResourceTableTlas(const CoreGraphics::TlasId tlas, IndexT slot)
+        : tlas(tlas)
+        , slot(slot)
+    {};
+    CoreGraphics::TlasId tlas;
     IndexT slot;
 };
 
@@ -339,6 +358,8 @@ void ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTabl
 void ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf);
 /// set resource table sampler
 void ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp);
+/// Set resource table acceleration structure
+void ResourceTableSetAccelerationStructure(const ResourceTableId id, const ResourceTableTlas& tlas);
 /// copy resources from a slot, index and array size between resource tables
 void ResourceTableCopy(const ResourceTableId from, const IndexT fromSlot, const IndexT fromIndex, const ResourceTableId to, const IndexT toSlot, const IndexT toIndex, const SizeT numResources);
 

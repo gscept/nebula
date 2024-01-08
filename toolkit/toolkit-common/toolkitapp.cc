@@ -4,6 +4,7 @@
 //  (C) 2013-2016 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "io/assignregistry.h"
 #include "toolkitapp.h"
 
 namespace ToolkitUtil

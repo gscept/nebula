@@ -110,11 +110,9 @@ FreeMemory(const Alloc& alloc)
     CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
     AllocationLock.Enter();
     bool res = pool.DeallocateMemory(alloc);
+    n_assert(res);
     N_BUDGET_COUNTER_DECR(pool.budgetCounter, alloc.size);
     AllocationLock.Leave();    
-
-    // assert result
-    n_assert(res);
 }
 
 //------------------------------------------------------------------------------
@@ -136,10 +134,18 @@ MemoryPool::CreateBlock(void** outMappedPtr)
     this->heap->space -= this->blockSize;
 
     VkDevice dev = GetCurrentDevice();
+
+    VkMemoryAllocateFlagsInfo flags =
+    {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+        nullptr,
+        VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+        0xFFFFFFFF
+    };
     VkMemoryAllocateInfo allocInfo =
     {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
+        &flags,
         this->blockSize,
         this->memoryType
     };
@@ -197,6 +203,8 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
         flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         break;
     default:
+        // dummy to avoid warning
+        flags = VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM;
         n_crash("AllocateMemory(): Only image pool types are allowed for image memory");
     }
 
@@ -220,10 +228,11 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 /**
 */
 CoreGraphics::Alloc
-AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
+AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type, uint alignment)
 {
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(dev, buf, &req);
+    req.alignment = Math::align(req.alignment, (DeviceSize)alignment);
     VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
     VkMemoryPropertyFlags flags = 0;

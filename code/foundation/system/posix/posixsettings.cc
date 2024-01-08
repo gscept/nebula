@@ -134,6 +134,7 @@ PosixSettings::ReadString(const Util::String & vendor, const String& key, const 
     }
     
     n_error("failed to open settings file %s\n",path.AsCharPtr());
+    return "";
 }
 
 

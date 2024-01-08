@@ -81,8 +81,8 @@ public:
     Input::MouseButton::Code GetMouseButton() const;
 
 private:
-    CoreGraphics::WindowId windowId;
     Code code;
+    CoreGraphics::WindowId windowId;
     Math::vec2 absMousePos;
     Math::vec2 normMousePos;
     Input::Key::Code keyCode;

@@ -254,17 +254,19 @@ SetupTexture(const TextureId id)
 
     // setup usage flags, by default, all textures can be sampled from
     // we automatically assign VK_IMAGE_USAGE_SAMPLED_BIT to sampled images, render textures and readwrite textures, but not for transfer textures
-    VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (loadInfo.usage & TextureUsage::SampleTexture)
-        usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    constexpr uint Lookup[] =
+    {
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        0x0 // Device exclusive?
+    };
+    VkImageUsageFlags usage = Util::BitmaskConvert(loadInfo.usage, Lookup);
+
     if (loadInfo.usage & TextureUsage::RenderTexture)
-        usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if (loadInfo.usage & TextureUsage::ReadWriteTexture)
-        usage |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (loadInfo.usage & TextureUsage::TransferTextureSource)
-        usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if (loadInfo.usage & TextureUsage::TransferTextureDestination)
-        usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        usage |= (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
     if (!loadInfo.windowTexture)
     {
@@ -365,8 +367,7 @@ SetupTexture(const TextureId id)
                             id,
                             CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
-                    },
-                    nullptr);
+                    });
 
                 uint32_t size = PixelFormat::ToSize(loadInfo.format);
                 CoreGraphics::TextureUpdate(cmdBuf, TransferQueueType, id, extents.width, extents.height, 0, 0, loadInfo.width * loadInfo.height * loadInfo.depth * size, loadInfo.buffer);
@@ -381,8 +382,7 @@ SetupTexture(const TextureId id)
                             id,
                             CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
-                    },
-                    nullptr);
+                    });
                 CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
                 // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
@@ -561,7 +561,7 @@ SetupTexture(const TextureId id)
         VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(windowInfo.window.id24);
         swapInfo.swapimages = backbufferInfo.backbuffers;
         swapInfo.swapviews = backbufferInfo.backbufferViews;
-        VkClearColorValue clear = { 0, 0, 0, 0 };
+        VkClearColorValue clear = { { 0, 0, 0, 0 } };
 
         VkImageSubresourceRange subres;
         subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -706,7 +706,6 @@ DeleteTexture(const TextureId id)
     __Lock(textureAllocator, id.resourceId);
     VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.resourceId);
     VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.resourceId);
-    VkTextureWindowInfo& windowInfo = textureAllocator.Get<Texture_WindowInfo>(id.resourceId);
 
     if (loadInfo.stencilExtension != Ids::InvalidId32)
     {
@@ -714,7 +713,7 @@ DeleteTexture(const TextureId id)
         TextureViewId stencil = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
         IndexT bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
         CoreGraphics::DelayedDeleteTextureView(stencil);
-        if (runtimeInfo.type != 0xFFFFFFFF)
+        if (runtimeInfo.type != TextureType::InvalidTextureType)
             Graphics::UnregisterTexture(bind, runtimeInfo.type);
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
     }
@@ -1065,8 +1064,7 @@ TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, I
 
     const TextureSparsePageTable& table = textureSparseExtensionAllocator.ConstGet<TextureExtension_SparsePageTable>(sparseExtension);
     Util::Array<VkSparseImageMemoryBind>& pageBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparsePendingBinds>(sparseExtension);
-    VkDevice dev = GetCurrentDevice();
-
+    
     // get page and allocate memory
     CoreGraphics::TextureSparsePage& page = table.pages[layer][mip][pageIndex];
     n_assert(page.alloc.mem != VK_NULL_HANDLE);
@@ -1145,7 +1143,6 @@ TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip
 
     const TextureSparsePageTable& table = textureSparseExtensionAllocator.ConstGet<TextureExtension_SparsePageTable>(sparseExtension);
     Util::Array<VkSparseImageMemoryBind>& pageBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparsePendingBinds>(sparseExtension);
-    VkDevice dev = GetCurrentDevice();
 
     const Util::Array<CoreGraphics::TextureSparsePage>& pages = table.pages[layer][mip];
 
@@ -1234,6 +1231,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
     if (opaqueBinds.IsEmpty() && pageBinds.IsEmpty())
         return;
 
+    /* unused?    
     // setup bind structs
     VkSparseImageMemoryBindInfo imageMemoryBindInfo =
     {
@@ -1257,6 +1255,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
         pageBinds.IsEmpty() ? 0u : 1u, &imageMemoryBindInfo,
         0, nullptr
     };
+*/    
 
     // execute sparse bind, the bind call
     Vulkan::SparseTextureBind(img, opaqueBinds, pageBinds);

@@ -126,7 +126,6 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
         }
 
         SizeT remainder = numInputSlices % numThreads;
-        ushort stride = numThreads;
         for (i = 0; i < remainder; i++)
         {
             numWorkUnitSlices[i] += 1;

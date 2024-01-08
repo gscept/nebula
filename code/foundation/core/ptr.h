@@ -14,8 +14,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
-#include <type_traits>
-#include <functional>
+#include "math/scalar.h"
 
 // platform secific stuff for handling/suppress "unused-argument"-warnings
 #if NEBULA_DEBUG
@@ -467,7 +466,7 @@ template<class TYPE>
 uint32_t
 Ptr<TYPE>::HashCode() const
 {
-    return (uint32_t)(std::hash<unsigned long long>{}((uintptr_t)this->ptr) & 0x7FFFFFFF);
+    return Math::pointerhash((void *)this->ptr);
 }
 
 //------------------------------------------------------------------------------

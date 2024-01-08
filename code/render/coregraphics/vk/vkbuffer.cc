@@ -5,6 +5,7 @@
 #include "vkgraphicsdevice.h"
 #include "vkcommandbuffer.h"
 #include "vkbuffer.h"
+#include "util/bit.h"
 namespace Vulkan
 {
 VkBufferAllocator bufferAllocator;
@@ -82,24 +83,27 @@ CreateBuffer(const BufferCreateInfo& info)
             queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
         }
     }
-    if (info.usageFlags & CoreGraphics::TransferBufferSource)
-        flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    if (info.usageFlags & CoreGraphics::TransferBufferDestination)
-        flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    if (info.usageFlags & CoreGraphics::ReadWriteBuffer)
-        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::ReadWriteTexelBuffer)
-        flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::IndirectBuffer)
-        flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::VertexBuffer)
-        flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::IndexBuffer)
-        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::ConstantBuffer)
-        flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    if (info.usageFlags & CoreGraphics::ConstantTexelBuffer)
-        flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+
+    constexpr uint UsageLookup[] =
+    {
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
+        0x0,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+        VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
+    };
+
+    flags = Util::BitmaskConvert(info.usageFlags, UsageLookup);
 
     // force add destination bit if we have data to be uploaded
     if (info.mode == DeviceLocal && info.dataSize != 0)
@@ -135,8 +139,16 @@ CreateBuffer(const BufferCreateInfo& info)
     else if (info.mode == HostCached)
         pool = CoreGraphics::MemoryPool_HostCached;
 
+    uint baseAlignment = 1;
+    if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureScratch))
+        baseAlignment = CoreGraphics::GetCurrentAccelerationStructureProperties().minAccelerationStructureScratchOffsetAlignment;
+    else if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureInstances))
+        baseAlignment = 16;
+    else if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
+        baseAlignment = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupBaseAlignment;
+
     // now bind memory to buffer
-    CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
+    CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool, baseAlignment);
     err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);
     n_assert(err == VK_SUCCESS);
 
@@ -240,8 +252,7 @@ DestroyBuffer(const BufferId id)
 {
     bufferAllocator.Acquire(id.id24);
     VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id24);
-    const VkBufferMapInfo& mapInfo = bufferAllocator.Get<Buffer_MapInfo>(id.id24);
-
+    
     CoreGraphics::DelayedDeleteBuffer(id);
     CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     loadInfo.mem = CoreGraphics::Alloc{};
@@ -383,6 +394,22 @@ BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Invalidate(loadInfo.dev, loadInfo.mem, offset, size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DeviceAddress
+BufferGetDeviceAddress(const BufferId id)
+{
+    VkDevice dev = BufferGetVkDevice(id);
+    VkBufferDeviceAddressInfo deviceAddress =
+    {
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+        nullptr,
+        BufferGetVk(id)
+    };
+    return vkGetBufferDeviceAddress(dev, &deviceAddress);
 }
 
 } // namespace CoreGraphics

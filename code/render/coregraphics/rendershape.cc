@@ -20,13 +20,13 @@ RenderShape::RenderShape() :
     shapeType(InvalidShapeType),
     depthFlag(CheckDepth),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
-    indexType(IndexType::None),
-    numVertices(0),
     numIndices(0),
-    color(1.0f, 1.0f, 1.0f, 1.0f),
+    numVertices(0),
     vertexDataOffset(0),
-    vertexLayout(InvalidVertexLayoutId),
-    groupIndex(InvalidIndex)
+    indexType(IndexType::None),
+    color(1.0f, 1.0f, 1.0f, 1.0f),
+    groupIndex(InvalidIndex),
+    vertexLayout(InvalidVertexLayoutId)
 {
     // empty
 }
@@ -39,14 +39,15 @@ RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const mat4& mod
     depthFlag(depthFlag_),
     modelTransform(modelTransform_),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
-    indexType(IndexType::None),
-    numVertices(0),
     numIndices(0),
+    numVertices(0),
+    vertexDataOffset(0),
+    indexType(IndexType::None),
     color(color_),
     lineThickness(1.0f),
-    vertexDataOffset(0),
-    vertexLayout(InvalidVertexLayoutId),
-    groupIndex(InvalidIndex)
+    groupIndex(InvalidIndex),
+    vertexLayout(InvalidVertexLayoutId)
+    
 {
     // empty
 }

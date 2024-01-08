@@ -68,7 +68,7 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans
     Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
     Math::decompose(trans, outScale, outRotation, outTranslation);
 
-    bool isScaled = Math::nearequal(outScale, Math::_plus1, 0.001f);
+    bool isScaled = !Math::nearequal(outScale, Math::_plus1, 0.001f);
     
     physx::PxRigidActor * newActor = state.CreateActor(type, outTranslation, outRotation);
     info.instanceCount++;
@@ -106,7 +106,10 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans
 void 
 StreamActorPool::DiscardActorInstance(ActorId id)
 {
-    n_assert(ActorContext::IsValid(id));
+    if(!ActorContext::IsValid(id))
+    {
+        return;
+    }
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {

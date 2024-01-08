@@ -195,8 +195,6 @@ ZipFileStream::Seek(Offset offset, SeekOrigin origin)
     n_assert(!this->IsMapped()); 
     n_assert((this->position >= 0) && (this->position <= this->size));
 
-    const Position posBefore = this->position;
-
     switch (origin)
     {
         case Begin:

@@ -54,7 +54,7 @@ VkCommandBufferThread::DoWork()
 
     Util::Array<DrawThread::Command> curCommands;
     byte* curCommandBuffer = nullptr;
-    size_t curCommandBufferSize = 0;
+    SizeT curCommandBufferSize = 0;
     while (!this->ThreadStopRequested())
     {
         // lock our resources, which hinders the main thread from pushing more data

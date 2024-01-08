@@ -16,6 +16,8 @@
 #include "math/rectangle.h"
 #include "coregraphics/indextype.h"
 #include "ids/idallocator.h"
+#include "coregraphics/memory.h"
+#include "math/vec4.h"
 
 namespace CoreGraphics
 {
@@ -30,9 +32,12 @@ struct BarrierId;
 struct EventId;
 struct PassId;
 struct PipelineId;
+struct BlasId;
+struct TlasId;
 
 struct TextureBarrierInfo;
 struct BufferBarrierInfo;
+struct AccelerationStructureBarrierInfo;
 
 enum CmdBufferQueryBits
 {
@@ -173,14 +178,12 @@ void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTable
 void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
 /// Set push constants
 void CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data);
-/// Set push constants on graphics
-void CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, const void* data);
-/// Set push constants on compute
-void CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void* data);
 /// Create (if necessary) and bind pipeline based on state thus far
 void CmdSetGraphicsPipeline(const CmdBufferId id);
 /// Set graphics pipeline directly
 void CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline);
+/// Set ray tracing pipeline
+void CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline);
 
 /// Insert pipeline barrier
 void CmdBarrier(
@@ -216,12 +219,24 @@ void CmdBarrier(
 );
 /// Insert pipeline barrier
 void CmdBarrier(
+            const CmdBufferId id,
+            CoreGraphics::PipelineStage fromStage,
+            CoreGraphics::PipelineStage toStage,
+            CoreGraphics::BarrierDomain domain,
+            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
+            const IndexT fromQueue = InvalidIndex,
+            const IndexT toQueue = InvalidIndex,
+            const char* name = nullptr
+);
+/// Insert pipeline barrier
+void CmdBarrier(
             const CmdBufferId id, 
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
             const Util::FixedArray<TextureBarrierInfo>& textures,
             const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
@@ -277,6 +292,26 @@ void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId b
 void CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ);
 /// Resolve MSAA source to non-MSAA target
 void CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const CoreGraphics::TextureCopy sourceCopy, const CoreGraphics::TextureId dest, const CoreGraphics::TextureCopy destCopy);
+/// Build BLAS 
+void CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas);
+/// Build TLAS
+void CmdBuildTlas(const CmdBufferId id, const CoreGraphics::TlasId tlas);
+
+struct RayDispatchTable
+{
+    struct Entry
+    {
+        DeviceAddress baseAddress;
+        DeviceSize entrySize;
+        ubyte numEntries;
+    };
+
+    Entry genEntry, missEntry, hitEntry, callableEntry;
+};
+/// Fire rays
+void CmdRaysDispatch(const CmdBufferId id, const RayDispatchTable& table, int dimX, int dimY, int dimZ);
+/// Draw meshlets
+void CmdDrawMeshlets(const CmdBufferId id, int dimX, int dimY, int dimZ);
 
 /// Copy between textures
 void CmdCopy(

@@ -25,15 +25,15 @@ __ImplementClass(Vulkan::VkShapeRenderer, 'VKSR', Base::ShapeRendererBase);
 //------------------------------------------------------------------------------
 /**
 */
-VkShapeRenderer::VkShapeRenderer() 
-    : indexBufferPtr(nullptr)
-    , vertexBufferPtr(nullptr)
-    , ibos{ InvalidBufferId }
+VkShapeRenderer::VkShapeRenderer()  
+    : ibos{ InvalidBufferId }
     , vbos{ InvalidBufferId }
+    , vertexBufferPtr(nullptr)
+    , indexBufferPtr(nullptr)
     , indexBufferActiveIndex()
     , vertexBufferActiveIndex()
-    , indexBufferCapacity(0)
     , vertexBufferCapacity(0)
+    , indexBufferCapacity(0)
     , vertexBufferOffset(0)
     , indexBufferOffset(0)
 

@@ -60,7 +60,6 @@ CreateTextureView(const TextureViewCreateInfo& info)
     loadInfo.numLayers = info.numLayers;
     loadInfo.swizzle = info.swizzle;
 
-    bool isDepthFormat = VkTypes::IsDepthFormat(info.format);
     VkImageSubresourceRange viewRange;
     n_assert(info.bits != ImageBits::Auto);
     viewRange.aspectMask = VkTypes::AsVkImageAspectFlags(info.bits);
@@ -110,8 +109,8 @@ CreateTextureView(const TextureViewCreateInfo& info)
 void 
 DestroyTextureView(const TextureViewId id)
 {
-    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
-    VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
+    //VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
+    //VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
     CoreGraphics::DelayedDeleteTextureView(id);
     textureViewAllocator.Dealloc(id.id24);
 }

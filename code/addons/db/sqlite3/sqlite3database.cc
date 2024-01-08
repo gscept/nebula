@@ -71,7 +71,6 @@ Sqlite3Database::Open()
         IoServer* ioServer = IoServer::Instance();
 
         // check if database file exists'
-        bool wasCreated = false;
         if (!ioServer->FileExists(this->uri))
         {
             // if we are in read only mode, fail
@@ -85,7 +84,6 @@ Sqlite3Database::Open()
             else
             {
                 // if database is created, make sure directory path is valid
-                wasCreated = true;
                 bool dirSuccess = ioServer->CreateDirectory(this->uri.AsString().ExtractDirName());
                 if (!dirSuccess)
                 {

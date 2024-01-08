@@ -31,7 +31,7 @@ public:
         FrameCodeFunc func;
     };
 
-    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) override;
 
     FrameCodeFunc func;
     FrameBuildFunc buildFunc;

@@ -21,6 +21,7 @@
 #include "util/queue.h"
 #include "ids/idgenerationpool.h"
 #include "tableid.h"
+#include <functional>
 
 namespace MemDb
 {

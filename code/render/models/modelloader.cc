@@ -94,8 +94,8 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
             if (fourCC == FourCC('>MDL'))
             {
                 // start of Model
-                FourCC classFourCC = reader->ReadUInt();
-                String name = reader->ReadString();
+                UNUSED(FourCC) classFourCC = reader->ReadUInt();
+                UNUSED(String) name = reader->ReadString();
             }
             else if (fourCC == FourCC('<MDL'))
             {

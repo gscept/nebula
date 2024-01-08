@@ -23,6 +23,9 @@
 #include "audioclip.h"
 #include "debug/debugtimer.h"
 #include "debug/debugcounter.h"
+#include "math/point.h"
+#include "math/vector.h"
+#include "math/mat4.h"
 
 namespace SoLoud
 {

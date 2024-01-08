@@ -84,7 +84,7 @@ void
 ProfilingNewFrame()
 {
     // get thread context
-    ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+    //ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
     //n_assert(ctx.threadName == "MainThread");
 
     for (IndexT i = 0; i < profilingContexts.Size(); i++)

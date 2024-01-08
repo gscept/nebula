@@ -190,5 +190,26 @@ Lsb(uint value, byte bit)
     return mask ? count : 0xFFFFFFFF;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint 
+BitmaskConvert(uint mask, const uint* table)
+{
+    uint ret = 0x0;
+    uint usageFlags = mask;
+    uint flagIndex = 0;
+    while (usageFlags != 0x0)
+    {
+        if (usageFlags & (1 << flagIndex))
+        {
+            ret |= table[flagIndex];
+        }
+        usageFlags &= ~(1 << flagIndex);
+        flagIndex++;
+    }
+    return ret;
+}
+
 } // namespace Util
 

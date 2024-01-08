@@ -46,7 +46,7 @@ private:
     /// perform actual load, override in subclass
     Resources::ResourceUnknownId InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// unload resource
-    void Unload(const Resources::ResourceId id);
+    void Unload(const Resources::ResourceId id) override;
 
     /// used for looking up constructors
     Util::Dictionary<Util::FourCC, std::function<Models::ModelNode* ()>> nodeConstructors;

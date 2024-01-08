@@ -283,11 +283,10 @@ __ImplementInterfaceSingleton(Dynui::ImguiConsole);
 /**
 */
 ImguiConsole::ImguiConsole() :
-    moveScroll(false),
-    visible(false),
-    selectedSuggestion(0),
     previousCommandIndex(-1),
-    scrollToBottom(true)
+    scrollToBottom(true),
+    selectedSuggestion(0),
+    visible(false)
 {
     __ConstructInterfaceSingleton;    
 }

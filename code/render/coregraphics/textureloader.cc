@@ -140,8 +140,7 @@ UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBu
                     texture,
                     subres
                 }
-            }
-            , nullptr);
+            });
 
         // Then run a copy on the command buffer
         uint width = ctx.image_width(layer, mip);

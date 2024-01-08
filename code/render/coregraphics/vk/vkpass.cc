@@ -722,7 +722,6 @@ DestroyPass(const PassId id)
 {
     VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id24);
     VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-    VkRenderPassBeginInfo& beginInfo = passAllocator.Get<Pass_VkRenderPassBeginInfo>(id.id24);
 
     for (IndexT i = 0; i < loadInfo.attachments.Size(); i++)
         CoreGraphics::DestroyTextureView(loadInfo.attachments[i]);
@@ -743,7 +742,6 @@ void
 PassWindowResizeCallback(const PassId id)
 {
     VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id24);
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
 
     // destroy pass and our descriptor set
     vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);

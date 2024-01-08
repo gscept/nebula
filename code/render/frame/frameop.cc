@@ -13,8 +13,8 @@ namespace Frame
 /**
 */
 FrameOp::FrameOp() :
-    queue(CoreGraphics::QueueType::GraphicsQueueType),
     domain(CoreGraphics::BarrierDomain::Global),
+    queue(CoreGraphics::QueueType::GraphicsQueueType),
     enabled(true)
 {
     // empty
@@ -324,7 +324,6 @@ FrameOp::SetupSynchronization(
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo> waitEvents;
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo> barriers;
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, FrameOp::Compiled*> signalEvents;
-        uint numOutputs = 0;
 
         // go through texture dependencies
         for (i = 0; i < this->textureDeps.Size(); i++)
@@ -353,8 +352,8 @@ FrameOp::SetupSynchronization(
                 case CoreGraphics::PipelineStage::MemoryWrite:
                 case CoreGraphics::PipelineStage::TransferWrite:
                     readOrWrite = DependencyIntent::Write;
-                    numOutputs++;
                     break;
+                default: break;
             }
 
             // dependencies currently on the texture
@@ -408,8 +407,8 @@ FrameOp::SetupSynchronization(
                 case CoreGraphics::PipelineStage::MemoryWrite:
                 case CoreGraphics::PipelineStage::TransferWrite:
                     readOrWrite = DependencyIntent::Write;
-                    numOutputs++;
                     break;
+                default: break;
             }
 
             // dependencies currently on the texture

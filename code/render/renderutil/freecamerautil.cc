@@ -15,9 +15,9 @@ using namespace Math;
 FreeCameraUtil::FreeCameraUtil() : 
     defaultEyePos(0,0,0),
     defaultEyeVec(0,0,1),
+    cameraTransform(mat4()),
     rotationSpeed(0.01f),
     moveSpeed(0.01f),
-    cameraTransform(mat4()),
     rotateButton(false),
     accelerateButton(false),
     forwardsKey(false),

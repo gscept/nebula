@@ -77,11 +77,12 @@ _DEC_VK(vkDestroyQueryPool);
 _DEC_VK(vkResetQueryPool);
 
 // physical device
-_DEC_VK(vkGetPhysicalDeviceProperties);
+_DEC_VK(vkGetPhysicalDeviceProperties2);
 _DEC_VK(vkGetPhysicalDeviceFeatures);
 _DEC_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEC_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEC_VK(vkGetPhysicalDeviceFormatProperties);
+_DEC_VK(vkGetPhysicalDeviceFormatProperties2);
 _DEC_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
 _DEC_VK(vkGetImageSparseMemoryRequirements);
 
@@ -199,6 +200,22 @@ _DEC_VK(vkDestroyImage);
 _DEC_VK(vkBindImageMemory);
 _DEC_VK(vkCreateImageView);
 _DEC_VK(vkDestroyImageView);
+
+// raytracing
+_DEC_VK(vkCreateRayTracingPipelinesKHR); 
+_DEC_VK(vkGetAccelerationStructureBuildSizesKHR);
+_DEC_VK(vkCreateAccelerationStructureKHR);
+_DEC_VK(vkDestroyAccelerationStructureKHR);
+_DEC_VK(vkBuildAccelerationStructuresKHR);
+_DEC_VK(vkGetAccelerationStructureDeviceAddressKHR);
+_DEC_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
+_DEC_VK(vkGetBufferDeviceAddress);
+_DEC_VK(vkCmdBuildAccelerationStructuresKHR);
+_DEC_VK(vkCmdTraceRaysKHR);
+_DEC_VK(vkGetRayTracingShaderGroupHandlesKHR);
+
+// mesh shaders
+_DEC_VK(vkCmdDrawMeshTasksEXT);
 
 #ifdef __cplusplus
 }

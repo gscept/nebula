@@ -116,9 +116,9 @@ struct ProfilingScope
         , category(nullptr)
         , file(nullptr)
         , line(-1)
-        , duration(0)
-        , start(0)
         , accum(false)
+        , start(0)
+        , duration(0)
     {};
 
     /// constructor
@@ -127,9 +127,9 @@ struct ProfilingScope
         , category(category)
         , file(file)
         , line(line)
-        , duration(0)
-        , start(0)
         , accum(accum)
+        , start(0)
+        , duration(0)        
     {};
 
     const char* name;

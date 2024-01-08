@@ -57,8 +57,8 @@ private:
 */
 inline
 LinuxEvent::LinuxEvent(bool manual)
-    : status(SIGNAL_NONE)
-    , manualReset(manual)
+    : manualReset(manual)
+    , status(SIGNAL_NONE)
 {
     // setup the mutex    
     int res = pthread_mutex_init(&this->mutex, nullptr);

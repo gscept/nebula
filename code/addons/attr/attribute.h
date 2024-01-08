@@ -869,6 +869,7 @@ Attribute::ValueAsString() const
         case VoidType:
             n_error("Attribute: Cannot convert void attribute to string (attrid='%s')!", this->GetName().AsCharPtr());
             break;
+        default: n_error("Attribute: unhandled enum"); break;
     }
     return str;
 }

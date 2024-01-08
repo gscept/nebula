@@ -77,6 +77,7 @@ enum
     , VertexSignature_VkPipelineInfo
     , VertexSignature_BindInfo
     , VertexSignature_LayoutInfo
+    , VertexSignature_StreamSize
     , VertexSignature_DynamicBindInfo
 };
 
@@ -85,6 +86,7 @@ typedef Ids::IdAllocator<
     VkPipelineVertexInputStateCreateInfo,             
     BindInfo,                                         
     CoreGraphics::VertexLayoutInfo,                   
+    Util::Array<SizeT>,
     VertexLayoutVkBindInfo
 > VkVertexLayoutAllocator;
 extern VkVertexLayoutAllocator vertexLayoutAllocator;

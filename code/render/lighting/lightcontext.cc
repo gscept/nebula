@@ -184,7 +184,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     rwbInfo.name = "LightListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostCached;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    clusterState.stagingClusterLightsList = std::move(BufferSet(rwbInfo));
+    clusterState.stagingClusterLightsList = BufferSet(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
@@ -721,6 +721,7 @@ LightContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::point
             areaLightAllocator.Get<AreaLight_Transform>(lid).setposition(position);
             Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
             break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -768,6 +769,7 @@ LightContext::SetRotation(const Graphics::GraphicsEntityId id, const Math::quat&
             areaLightAllocator.Get<AreaLight_Transform>(lid).setrotate(rotation);
             Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
             break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -822,8 +824,8 @@ LightContext::SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& sc
             }
             areaLightAllocator.Get<AreaLight_Transform>(lid).setscale(adjustedScale);
             Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
-            break;
-        }
+        } break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -947,7 +949,6 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
     }
 
     const Util::Array<LightType>& types = genericLightAllocator.GetArray<Type>();
-    const Util::Array<float>& ranges = genericLightAllocator.GetArray<Range>();
     const Util::Array<bool>& castShadow = genericLightAllocator.GetArray<ShadowCaster>();
     const Util::Array<Ids::Id32>& typeIds = genericLightAllocator.GetArray<TypedLightId>();
     lightServerState.shadowcastingLocalLights.Reset();
@@ -962,8 +963,6 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
             {
                 case LightType::SpotLightType:
                 {
-                    std::array<float, 2> angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
-
                     // setup a perpsective transform with a fixed z near and far and aspect
                     Math::mat4 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
                     Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]).getmatrix();
@@ -983,6 +982,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
                     // TODO: IMPLEMENT!
                     break;
                 }
+                default: break;
             }
         }
 
@@ -1066,7 +1066,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     // get camera view
     const Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
-    const Math::mat4 invViewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
 
     // update constant buffer
     Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
@@ -1117,7 +1116,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     SizeT numSpotLightsProjection = 0;
     SizeT numAreaLights = 0;
     SizeT numAreaLightShadows = 0;
-    SizeT numAreaLightsProjection = 0;
 
     IndexT i;
     for (i = 0; i < types.Size(); i++)
@@ -1284,6 +1282,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 numAreaLights++;
             }
             break;
+            default: break;
         }
     }
 
@@ -1429,7 +1428,6 @@ LightContext::OnRenderDebug(uint32_t flags)
 
                 // setup a perpsective transform with a fixed z near and far and aspect
                 Graphics::CameraSettings settings;
-                std::array<float, 2> angles = spotLightAllocator.Get<SpotLight_ConeAngles>(ids[i]);
 
                 // get projection
                 Math::mat4 proj = spotLightAllocator.Get<SpotLight_ProjectionTransform>(ids[i]);

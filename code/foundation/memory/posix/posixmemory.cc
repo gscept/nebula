@@ -61,11 +61,11 @@ operator new(size_t size, std::align_val_t al) noexcept(false)
 {
     return Memory::Alloc(Memory::ObjectHeap, size, (size_t)al);
 }
-void* operator new (size_t size, const std::nothrow_t& tag)
+void* operator new (size_t size, const std::nothrow_t& tag) noexcept
 {
     return Memory::Alloc(Memory::ObjectHeap, size);
 }
-void* operator new (size_t size, std::align_val_t al, const std::nothrow_t& tag)
+void* operator new (size_t size, std::align_val_t al, const std::nothrow_t& tag) noexcept
 {
     return Memory::Alloc(Memory::ObjectHeap, size, (size_t)al);
 }
@@ -84,12 +84,12 @@ operator new[](size_t size, std::align_val_t al) noexcept(false)
     return Memory::Alloc(Memory::ObjectArrayHeap, size, (size_t)al);
 }
 void*
-operator new[](size_t size, const std::nothrow_t& tag)
+operator new[](size_t size, const std::nothrow_t& tag) noexcept
 {
     return Memory::Alloc(Memory::ObjectArrayHeap, size);
 }
 void*
-operator new[](size_t size, std::align_val_t al, const std::nothrow_t& tag)
+operator new[](size_t size, std::align_val_t al, const std::nothrow_t& tag) noexcept
 {
     return Memory::Alloc(Memory::ObjectArrayHeap, size, (size_t)al);
 }
@@ -98,7 +98,7 @@ operator new[](size_t size, std::align_val_t al, const std::nothrow_t& tag)
     Replacement global delete operator.
 */
 void
-operator delete(void* p)
+operator delete(void* p) noexcept
 {
     Memory::Free(Memory::ObjectHeap, p);
 }
@@ -108,7 +108,7 @@ operator delete(void* p)
     Replacement global delete[] operator.
 */
 void
-operator delete[](void* p)
+operator delete[](void* p) noexcept
 {
     Memory::Free(Memory::ObjectArrayHeap, p);
 }

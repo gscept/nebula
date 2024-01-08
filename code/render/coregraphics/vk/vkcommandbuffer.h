@@ -80,6 +80,7 @@ struct VkPipelineBundle
     CoreGraphics::InputAssemblyKey inputAssembly;
     VkPipelineLayout computeLayout;
     VkPipelineLayout graphicsLayout;
+    VkPipelineLayout raytracingLayout;
     CoreGraphics::PassId pass;
     CoreGraphics::ShaderProgramId program;
 };

@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "rcswrapper.h"
 #include "applauncher.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/memorystream.h"
 #include "io/xmlreader.h"
@@ -125,8 +126,6 @@ RCSWrapper::CopyDirectory(const String& from, const String& to)
 bool
 RCSWrapper::Update(Logger& logger)
 {
-    IoServer* ioServer = IoServer::Instance();
-
     // write a SVN version file which switches the "use-commit-times" on
     this->WriteTempSVNConfigFiles();
 

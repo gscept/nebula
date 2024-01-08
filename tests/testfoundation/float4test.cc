@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "float4test.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 
 namespace Test
 {

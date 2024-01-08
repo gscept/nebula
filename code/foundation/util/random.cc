@@ -43,7 +43,7 @@ float
 RandomFloat()
 {
     static RandomUnion r;
-    r.i = FastRandom() & 0x007fffff | 0x3f800000;
+    r.i = (FastRandom() & 0x007fffff) | 0x3f800000;
     return r.f - 1.0f;
 }
 
@@ -54,7 +54,7 @@ float
 RandomFloatNTP()
 {
     static RandomUnion r;
-    r.i = FastRandom() & 0x007fffff | 0x40000000;
+    r.i = (FastRandom() & 0x007fffff) | 0x40000000;
     return r.f - 3.0f;
 }
 

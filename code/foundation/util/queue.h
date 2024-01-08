@@ -124,11 +124,11 @@ protected:
 */
 template<class TYPE>
 Queue<TYPE>::Queue():
+    data(nullptr),
+    grow(16),
     start(0),
     size(0),
-    capacity(0),
-    grow(16),
-    data(nullptr)
+    capacity(0)
 {
     // empty
 }

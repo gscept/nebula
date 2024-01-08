@@ -19,7 +19,7 @@ Alloc
 MemoryPool::AllocateMemory(uint alignment, uint size)
 {
    // if size is too big, allocate a unique block for it
-    if (size > this->blockSize)
+    if ((size + alignment) > this->blockSize)
         return this->AllocateExclusiveBlock(alignment, size);
 
     for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
@@ -47,7 +47,7 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
     {
         // Block is completely new, make space in our arrays for the data
         this->blockMappedPointers.Append(nullptr);
-        this->allocators.Append(Memory::RangeAllocator{(uint)this->blockSize, (SizeT)(this->blockSize / 16)});
+        this->allocators.Append(Memory::RangeAllocator{ (uint)this->blockSize, 256} );
 
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
         this->blocks.Append(mem);
@@ -55,10 +55,10 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
     else
     {
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
-        this->allocators[id] = Memory::RangeAllocator{ (uint)this->blockSize, (SizeT)(this->blockSize / 16) };
+        this->allocators[id] = Memory::RangeAllocator{ (uint)this->blockSize, 256 };
         this->blocks[id] = mem;
     }
-    Memory::RangeAllocation alloc = this->allocators[id].Alloc(size);
+    Memory::RangeAllocation alloc = this->allocators[id].Alloc(size, alignment);
     Alloc ret{ this->blocks[id], alloc.offset, size, alloc.node, this->memoryType, id };
     return ret;
 }
@@ -142,7 +142,7 @@ MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
     }
     this->blockSize = oldSize;
 
-    n_warning("Allocation of size %d is bigger than block size %d will receive a dedicated memory block\n", size, this->blockSize);
+    n_warning("Allocation of size %ld is bigger than block size %ld will receive a dedicated memory block\n", size, this->blockSize);
     Alloc ret{ this->blocks[id], 0, size, DedicatedBlockNodeIndex, this->memoryType, id };
     return ret;
 }

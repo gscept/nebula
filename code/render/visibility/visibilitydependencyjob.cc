@@ -16,7 +16,6 @@ void
 VisibilityDependencyJob(const Jobs::JobFuncContext& ctx)
 {
     N_SCOPE(VisibilityDependencyJob, Visibility);
-    ObserverContext::VisibilityDrawList* buckets = (ObserverContext::VisibilityDrawList*)ctx.outputs[0];
     DependencyMode mode = *(DependencyMode*)ctx.uniforms[0];
     uint32 numResults = ctx.inputSizes[0] / sizeof(Math::ClipStatus::Type);
     IndexT bIndexInA = *(uint32*)ctx.uniforms[1];

@@ -27,14 +27,14 @@ public:
     virtual ~FramePass();
 
     /// discard operation
-    void Discard();
+    void Discard() override;
     /// handle display resizing
     void OnWindowResized() override;
 
     struct CompiledImpl : public FrameOp::Compiled
     {
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
-        void Discard();
+        void Discard() override;
 
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
@@ -44,7 +44,7 @@ public:
     };
 
     /// allocate new instance
-    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) override;
 
     CoreGraphics::PassId pass;
 

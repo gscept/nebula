@@ -183,13 +183,13 @@ inline RangeAllocation
 RangeAllocator::Alloc(uint size, uint alignment)
 {
     // We are not allowed any more allocations
-    size = Math::align(size, alignment);
-    if (this->freeStorage < size)
+    uint alignedSize = size + alignment;
+    if (this->freeStorage < alignedSize)
     {
         return { RangeAllocation::OOM, RangeAllocatorNode::END };
     }
 
-    BinIndex minIndex = IndexFromSize(size, true);
+    BinIndex minIndex = IndexFromSize(alignedSize, true);
     uint bin = 0xFFFFFFFF;
     uint bucket = minIndex.bucket;
 
@@ -220,24 +220,14 @@ RangeAllocator::Alloc(uint size, uint alignment)
     // Get linked list head
     uint nodeIndex = this->binHeads[binIndex.index];
     RangeAllocatorNode& node = this->nodes[nodeIndex];
-
-    // Calculate padding required by alignment
-    uint padding = Math::align(node.offset, alignment) - node.offset;
-
-    // Since we get a new size, need to check there is space with padding
-    if (this->freeStorage < (size + padding))
-    {
-        return { RangeAllocation::OOM, RangeAllocatorNode::END };
-    }
+    n_assert(!node.resident);
 
     // Save total size of node
     uint totalSize = node.size;
     uint baseOffset = node.offset;
-    node.size = size;
+    node.size = alignedSize;
     node.resident = true;
-
-    // Offset by padding
-    node.offset += padding;
+    node.offset = Math::align(node.offset, alignment);
 
     // Bump head of bin to next node
     this->binHeads[binIndex.index] = node.binNext;
@@ -260,7 +250,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
     this->freeStorage -= totalSize;
     
     // The remainder in the front is then added back
-    uint remainder = totalSize - padding - node.size;
+    uint remainder = totalSize - node.size;
     if (remainder > 0)
     {
         uint newNodeIndex = this->InsertNode(remainder, node.offset + size);
@@ -274,25 +264,6 @@ RangeAllocator::Alloc(uint size, uint alignment)
         newNode.blockPrev = nodeIndex;
         newNode.blockNext = node.blockNext;
         node.blockNext = newNodeIndex;
-    }
-
-    // If there was any padding offset, that memory is also added back
-    if (padding > 0)
-    {
-        uint newNodeIndex = this->InsertNode(padding, baseOffset);
-        RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
-
-        if (node.blockPrev != RangeAllocatorNode::END)
-        {
-            this->nodes[node.blockPrev].blockNext = newNodeIndex;
-        }
-        if (node.blockNext != RangeAllocatorNode::END)
-        {
-            this->nodes[node.blockNext].blockPrev = newNodeIndex;
-        }
-        newNode.blockPrev = node.blockPrev;
-        newNode.blockNext = nodeIndex;
-        node.blockPrev = newNodeIndex;
     }
     
     return { node.offset, nodeIndex };

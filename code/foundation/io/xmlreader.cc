@@ -5,6 +5,12 @@
 //------------------------------------------------------------------------------
 
 #include "io/xmlreader.h"
+#if !__OSX__
+#include "math/vec4.h"
+#include "math/vec2.h"
+#include "math/mat4.h"
+#include "math/transform44.h"
+#endif
 
 namespace IO
 {

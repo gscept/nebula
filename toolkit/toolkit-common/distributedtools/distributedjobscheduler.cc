@@ -21,8 +21,8 @@ namespace DistributedTools
 */
 DistributedJobScheduler::DistributedJobScheduler() :
     isRunningJobs(false),
-    maxParallelLocalJob(2),
     isOpen(false),
+    maxParallelLocalJob(2),
     useRemoteServices(false),
     printLocalJobOutput(true)
 {

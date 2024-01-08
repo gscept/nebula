@@ -16,7 +16,7 @@ namespace Vulkan
 /// allocate memory for an image
 CoreGraphics::Alloc AllocateMemory(const VkDevice dev, const VkImage& img, CoreGraphics::MemoryPoolType type);
 /// allocate memory for a buffer
-CoreGraphics::Alloc AllocateMemory(const VkDevice dev, const VkBuffer& buf, CoreGraphics::MemoryPoolType type);
+CoreGraphics::Alloc AllocateMemory(const VkDevice dev, const VkBuffer& buf, CoreGraphics::MemoryPoolType type, uint alignment = 1);
 /// allocate memory for sparse memory
 CoreGraphics::Alloc AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize allocSize);
 

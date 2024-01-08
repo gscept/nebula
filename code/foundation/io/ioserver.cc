@@ -10,11 +10,14 @@
 #include "util/stack.h"
 #include "util/crc.h"
 #include "system/systeminfo.h"
+#include "io/assignregistry.h"
 #include "io/archfs/archive.h"
 #include "io/archfs/archivefilesystem.h"
 #include "io/filewatcher.h"
 #include "io/filestream.h"
 #include <filesystem>
+#include "http/httpclientregistry.h"
+
 
 namespace IO
 {
@@ -686,7 +689,11 @@ IoServer::CreateTemporaryFilename(const URI& uri) const
 Util::String
 IoServer::NativePath(const Util::String& path)
 {
+#if __cplusplus > 201703L
+    std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::path((char8_t*)path.AsCharPtr()));
+#else
     std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::u8path(path.AsCharPtr()));
+#endif
     return u8path.string().c_str();
 }
 

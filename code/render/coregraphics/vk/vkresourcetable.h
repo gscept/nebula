@@ -23,7 +23,8 @@ enum class WriteType
 {
     Image,
     Buffer,
-    TexelBuffer
+    TexelBuffer,
+    Tlas
 };
 
 struct WriteInfo
@@ -33,6 +34,7 @@ struct WriteInfo
         VkDescriptorImageInfo img;
         VkDescriptorBufferInfo buf;
         VkBufferView tex;
+        VkAccelerationStructureKHR tlas;
     };
     VkWriteDescriptorSet write;
     WriteType type;

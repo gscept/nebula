@@ -149,6 +149,7 @@ Sqlite3Table::BuildColumnDef(const Column& column)
         case Attr::VoidType:
             n_error("Sqlite3Table::BuildColumnDef() Void Type!");
             break;
+        default: n_error("Sqlite3Table::BuildColumnDef() unhandled enum");break;
     }
     if (column.GetType() == Column::Primary)
     {

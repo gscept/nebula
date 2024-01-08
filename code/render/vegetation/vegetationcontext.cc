@@ -491,7 +491,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             PipelineStage::HostRead,
             PipelineStage::TransferWrite,
             BarrierDomain::Global,
-            nullptr,
             {
                 BufferBarrierInfo
                 {
@@ -509,7 +508,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             PipelineStage::TransferWrite,
             PipelineStage::HostRead,
             BarrierDomain::Global,
-            nullptr,
             {
                 BufferBarrierInfo
                 {
@@ -961,7 +959,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         500,
         1000
     };
-    SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
+    //SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
     for (IndexT i = 0; i < groups.Size(); i++)
     {
         if (lodDistances[i] == FLT_MAX)

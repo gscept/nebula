@@ -47,7 +47,6 @@ MouseRayUtil::ComputeWorldMouseRayOrtho(const vec2& mousePos, float length, cons
     vec4 viewCoord = invProjMatrix * screenCoord3D;
     viewCoord.w = 0.0f;
     vec4 localMousePos = viewCoord;
-    const bool orthographic = (invProjMatrix.m[3][3] != 1.0f);
     localMousePos.w = 1;
     localMousePos.y = -localMousePos.y;
     vec4 worldMousePos = invViewMatrix * localMousePos;

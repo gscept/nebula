@@ -115,7 +115,7 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits
     auto groups = (Nvx3Group*)(vertexRanges + header->numMeshes);
     auto vertexData = (ubyte*)(groups + header->numGroups);
     auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
-    auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
+    //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
     CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
     CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
@@ -222,9 +222,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
         n_assert(header->numMeshes > 0);
         auto vertexRanges = (Nvx3VertexRange*)(header + 1);
         auto groups = (Nvx3Group*)(vertexRanges + header->numMeshes);
-        auto vertexData = (ubyte*)(groups + header->numGroups);
-        auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
-        auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
+        //auto vertexData = (ubyte*)(groups + header->numGroups);
+        //auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
+        //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
         meshes.Resize(header->numMeshes);
 
@@ -252,7 +252,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             streamData->indexAllocationOffset = indexAllocation;
         }
 
-        for (IndexT i = 0; i < header->numGroups; i++)
+        for (uint i = 0; i < header->numGroups; i++)
         {
             PrimitiveGroup group;
             group.SetBaseIndex(groups[i].firstIndex);
@@ -260,7 +260,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             primGroups.Append(group);
         }
 
-        for (IndexT i = 0; i < header->numMeshes; i++)
+        for (uint i = 0; i < header->numMeshes; i++)
         {
             MeshCreateInfo mshInfo;
             mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + vertexRanges[i].baseVertexByteOffset), 0 });

@@ -93,11 +93,12 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkResetQueryPool);
 
     // physical device
-    _IMP_VK(vkGetPhysicalDeviceProperties);
+    _IMP_VK(vkGetPhysicalDeviceProperties2);
     _IMP_VK(vkGetPhysicalDeviceFeatures);
     _IMP_VK(vkGetPhysicalDeviceQueueFamilyProperties);
     _IMP_VK(vkGetPhysicalDeviceMemoryProperties);
     _IMP_VK(vkGetPhysicalDeviceFormatProperties);
+    _IMP_VK(vkGetPhysicalDeviceFormatProperties2);
     _IMP_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
     _IMP_VK(vkGetImageSparseMemoryRequirements);
 
@@ -214,6 +215,20 @@ InitInstance(VkInstance instance)
     _IMP_VK(vkBindImageMemory);
     _IMP_VK(vkCreateImageView);
     _IMP_VK(vkDestroyImageView);
+
+    _IMP_VK(vkCreateRayTracingPipelinesKHR);
+    _IMP_VK(vkGetAccelerationStructureBuildSizesKHR);
+    _IMP_VK(vkCreateAccelerationStructureKHR);
+    _IMP_VK(vkDestroyAccelerationStructureKHR);
+    _IMP_VK(vkBuildAccelerationStructuresKHR);
+    _IMP_VK(vkGetAccelerationStructureDeviceAddressKHR);
+    _IMP_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
+    _IMP_VK(vkGetBufferDeviceAddress);
+    _IMP_VK(vkCmdBuildAccelerationStructuresKHR);
+    _IMP_VK(vkCmdTraceRaysKHR);
+    _IMP_VK(vkGetRayTracingShaderGroupHandlesKHR);
+
+    _IMP_VK(vkCmdDrawMeshTasksEXT)
 }
 
 } // namespace Vulkan
@@ -260,11 +275,12 @@ _DEF_VK(vkDestroyQueryPool);
 _DEF_VK(vkResetQueryPool);
 
 // physical device
-_DEF_VK(vkGetPhysicalDeviceProperties);
+_DEF_VK(vkGetPhysicalDeviceProperties2);
 _DEF_VK(vkGetPhysicalDeviceFeatures);
 _DEF_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEF_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEF_VK(vkGetPhysicalDeviceFormatProperties);
+_DEF_VK(vkGetPhysicalDeviceFormatProperties2);
 _DEF_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
 _DEF_VK(vkGetImageSparseMemoryRequirements);
 
@@ -381,3 +397,17 @@ _DEF_VK(vkDestroyImage);
 _DEF_VK(vkBindImageMemory);
 _DEF_VK(vkCreateImageView);
 _DEF_VK(vkDestroyImageView);
+
+_DEF_VK(vkCreateRayTracingPipelinesKHR);
+_DEF_VK(vkGetAccelerationStructureBuildSizesKHR);
+_DEF_VK(vkCreateAccelerationStructureKHR);
+_DEF_VK(vkDestroyAccelerationStructureKHR);
+_DEF_VK(vkBuildAccelerationStructuresKHR);
+_DEF_VK(vkGetAccelerationStructureDeviceAddressKHR);
+_DEF_VK(vkGetDeviceAccelerationStructureCompatibilityKHR);
+_DEF_VK(vkGetBufferDeviceAddress);
+_DEF_VK(vkCmdBuildAccelerationStructuresKHR);
+_DEF_VK(vkCmdTraceRaysKHR);
+_DEF_VK(vkGetRayTracingShaderGroupHandlesKHR);
+
+_DEF_VK(vkCmdDrawMeshTasksEXT)

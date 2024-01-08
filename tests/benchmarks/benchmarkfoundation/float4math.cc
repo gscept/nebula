@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "float4math.h"
+#include "math/vec4.h"
 
 namespace Benchmarking
 {

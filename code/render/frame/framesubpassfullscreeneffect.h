@@ -24,7 +24,7 @@ public:
     /// setup
     void Setup();
     /// discard operation
-    void Discard();
+    void Discard() override;
     /// Resize render texture
     void OnWindowResized() override;
 
@@ -36,7 +36,7 @@ public:
         CoreGraphics::ResourceTableId resourceTable;
     };
 
-    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator) override;
     
     Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId> constantBuffers;
     Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>> textures;

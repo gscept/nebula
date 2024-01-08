@@ -960,7 +960,7 @@ JsonReader::Get<uint64_t>(uint64_t& ret, const char* attr)
 #if NEBULA_DEBUG
     if (val < 0)
     {
-        n_warning("JsonReader::Get<uint64_t>: unsigned integer underflow! ('%s': %i)\n", attr, val);
+        n_warning("JsonReader::Get<uint64_t>: unsigned integer underflow! ('%s': %li)\n", attr, val);
     }
 #endif
 #if NEBULA_BOUNDSCHECKS
@@ -986,7 +986,7 @@ template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
     }
 #endif
 #if NEBULA_BOUNDSCHECKS
-    n_assert(val >= 0 && val <= UINT_MAX)
+    n_assert(val >= 0 && val <= INT_MAX)
 #endif
 
         ret = (uint32_t)val;
@@ -1056,8 +1056,6 @@ template<> void JsonReader::Get<float>(float & ret, const char* attr)
 */
 template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* attr)
 {
-    const value_variant * node = this->GetChild(attr);
-
     switch (ret.GetType())
     {
     case Util::Variant::Type::Void:

@@ -15,7 +15,7 @@ namespace Dynui
 //------------------------------------------------------------------------------
 /**
 */
-Graph::Graph(const Util::String & _name, SizeT s) : buffer(s), name(_name), _min(0.0f), _max(1000.0f), average(0.0f), scroll(false)
+Graph::Graph(const Util::String & _name, SizeT s) : _min(0.0f), _max(1000.0f), average(0.0f), name(_name), buffer(s), scroll(false)
 {
     this->frame_max = -FLT_MAX;
     this->frame_min = FLT_MAX;

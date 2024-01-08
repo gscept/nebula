@@ -630,6 +630,39 @@ ResourceLoader::DiscardByTag(const Util::StringAtom& tag)
 //------------------------------------------------------------------------------
 /**
 */
+void
+ResourceLoader::CreateListener(
+    const Resources::ResourceId res,
+    std::function<void(const Resources::ResourceId)> success,
+    std::function<void(const Resources::ResourceId)> failed
+)
+{
+    // this assert should maybe be removed in favor of putting things on a queue if called from another thread
+    n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
+
+    this->asyncSection.Enter();
+    n_assert(this->states.Size() > res.loaderInstanceId);
+    const auto state = this->states[res.loaderInstanceId];
+    if (state == Resource::Loaded)
+    {
+        if (success != nullptr)
+            success(res);
+    }
+    else if (state == Resource::Failed)
+    {
+        if (failed != nullptr)
+            failed(this->failResourceId);
+    }
+    else
+    {
+        this->callbacks[res.loaderInstanceId].Append(_Callbacks {res, success, failed});
+    }
+    this->asyncSection.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
@@ -639,9 +672,6 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
     {
         // get id of resource
         Resources::ResourceId ret = this->ids.ValueAtIndex(i);
-
-        // copy the reference
-        IoServer* ioserver = IoServer::Instance();
 
         _PendingResourceLoad pending;
         pending.entry = ret.loaderInstanceId;

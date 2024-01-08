@@ -10,6 +10,7 @@
 #include "resources/resourceserver.h"
 #include "coregraphics/meshloader.h"
 #include "coregraphics/indextype.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 
 namespace Debug

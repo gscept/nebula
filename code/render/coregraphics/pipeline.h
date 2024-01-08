@@ -28,4 +28,14 @@ PipelineId CreatePipeline(const PipelineCreateInfo& info);
 /// Destroy pipeline
 void DestroyPipeline(const PipelineId pipeline);
 
+struct PipelineRayTracingTable
+{
+    CoreGraphics::PipelineId pipeline;
+    CoreGraphics::BufferId raygenBindingBuffer, missBindingBuffer, hitBindingBuffer, callableBindingBuffer;
+    CoreGraphics::RayDispatchTable table;
+};
+
+/// Create raytacing pipeline using multiple shader programs
+const PipelineRayTracingTable CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs);
+
 } // namespace CoreGraphics

@@ -302,8 +302,6 @@ PosixFSWrapper::DeleteFile(const String& path)
 bool
 PosixFSWrapper::ReplaceFile(const Util::String& source, const Util::String& target)
 {
-    ushort wideSourcePath[1024];
-    ushort wideTargetPath[1024];
     return (0 == rename(source.AsCharPtr(), target.AsCharPtr()));
 }
 
@@ -399,7 +397,6 @@ Util::String
 PosixFSWrapper::CreateTemporaryFilename(const Util::String& path)
 {
     n_assert(path.IsValid());
-    const String& nativePath = path;
     char buf[1024];
     snprintf(buf, 1024, "NEB%s.XXXXXX", path.AsCharPtr());
     String res(mkdtemp(buf));
@@ -421,24 +418,25 @@ PosixFSWrapper::ListFiles(const String& dirPath, const String& pattern)
     DIR * dir = opendir(dirPath.AsCharPtr());
     if (0 != dir)
     {
-        struct dirent entry;
-        struct dirent *result;
-        int r;
-        for (r = readdir_r(dir, &entry, &result); (result != NULL) && (r == 0); r = readdir_r(dir, &entry, &result))
+        struct dirent *result = nullptr;
+        do
         {
-            if (0 != fnmatch(pattern.AsCharPtr(), entry.d_name, FNM_CASEFOLD))
+            if ((result = readdir(dir)) != nullptr)
             {
-                continue;
+                if (0 != fnmatch(pattern.AsCharPtr(), result->d_name, FNM_CASEFOLD))
+                {
+                    continue;
+                }
+                String fullName = dirPath + "/" + result->d_name;
+                struct stat s;
+                stat(fullName.AsCharPtr(), &s);
+                if (S_ISDIR(s.st_mode))
+                {
+                    continue;
+                }
+                fileList.Append(result->d_name);
             }
-            String fullName = dirPath + "/" + entry.d_name;
-            struct stat s;
-            stat(fullName.AsCharPtr(), &s);
-            if (S_ISDIR(s.st_mode))
-            {
-                continue;
-            }
-            fileList.Append(entry.d_name);
-        }
+        } while (result != nullptr);
     }
     return fileList;
 }
@@ -459,31 +457,33 @@ PosixFSWrapper::ListDirectories(const String& dirPath, const String& pattern)
     DIR * dir = opendir(dirPath.AsCharPtr());
     if (0 != dir)
     {
-        struct dirent entry;
-        struct dirent *result;
-        int r;
-        for (r = readdir_r(dir, &entry, &result); (result != NULL) && (r == 0); r = readdir_r(dir, &entry, &result))
+        
+        struct dirent *result = nullptr;
+        do
         {
-            if (0 != fnmatch(pattern.AsCharPtr(), entry.d_name, FNM_CASEFOLD))
+            if ((result = readdir(dir)) != nullptr)
             {
-                continue;
-            }
+                if (0 != fnmatch(pattern.AsCharPtr(), result->d_name, FNM_CASEFOLD))
+                {
+                    continue;
+                }
 
-            // remove dot
-            if (0 == strcmp(result->d_name, ".") || 0 == strcmp(result->d_name, ".."))
-            {
-                continue;
+                // remove dot
+                if (0 == strcmp(result->d_name, ".") || 0 == strcmp(result->d_name, ".."))
+                {
+                    continue;
+                }
+                
+                String fullName = dirPath + "/" + result->d_name;
+                struct stat s;
+                stat(fullName.AsCharPtr(), &s);
+                if (!S_ISDIR(s.st_mode))
+                {
+                    continue;
+                }
+                dirList.Append(result->d_name);
             }
-            
-            String fullName = dirPath + "/" + entry.d_name;
-            struct stat s;
-            stat(fullName.AsCharPtr(), &s);
-            if (!S_ISDIR(s.st_mode))
-            {
-                continue;
-            }
-            dirList.Append(entry.d_name);
-        }
+        } while (result != nullptr);
     }
     return dirList;
 }

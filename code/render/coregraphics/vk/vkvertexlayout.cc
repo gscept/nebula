@@ -107,7 +107,6 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     loadInfo.comps = info.comps;
     vertexLayoutAllocator.Set<VertexSignature_LayoutInfo>(id, loadInfo);
 
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = vertexLayoutAllocator.Get<VertexSignature_ProgramLayoutMapping>(id);
     VkPipelineVertexInputStateCreateInfo& vertexInfo = vertexLayoutAllocator.Get<VertexSignature_VkPipelineInfo>(id);
     BindInfo& bindInfo = vertexLayoutAllocator.Get<VertexSignature_BindInfo>(id);
     VertexLayoutVkBindInfo& dynamicBindInfo = vertexLayoutAllocator.Get<VertexSignature_DynamicBindInfo>(id);
@@ -120,22 +119,24 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     dynamicBindInfo.binds.Resize(CoreGraphics::MaxNumVertexStreams);
     for (auto& bind : dynamicBindInfo.binds)
     {
-        bind.sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT;
-        bind.pNext = nullptr;
-        bind.binding = 0xFFFFFFFF;
-        bind.stride = 0xFFFFFFFF;
-        bind.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        bind.divisor = 1;
+        bind = VkVertexInputBindingDescription2EXT
+        {
+            .sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+            .pNext = nullptr,
+            .binding = 0xFFFFFFFF,
+            .stride = 0xFFFFFFFF,
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+            .divisor = 1
+        };
     }
     dynamicBindInfo.attrs.Resize(loadInfo.comps.Size());
-
-    SizeT strides[CoreGraphics::MaxNumVertexStreams] = { 0 };
 
     uint32_t numUsedStreams = 0;
     IndexT curOffset[CoreGraphics::MaxNumVertexStreams];
     bool usedStreams[CoreGraphics::MaxNumVertexStreams];
     Memory::Fill(curOffset, CoreGraphics::MaxNumVertexStreams * sizeof(IndexT), 0);
     Memory::Fill(usedStreams, CoreGraphics::MaxNumVertexStreams * sizeof(bool), 0);
+    Util::Array<SizeT> streamSizes;
 
     IndexT compIndex;
     for (compIndex = 0; compIndex < loadInfo.comps.Size(); compIndex++)
@@ -147,24 +148,29 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         attr->format = VkTypes::AsVkVertexType(component.GetFormat());
         attr->offset = curOffset[component.GetStreamIndex()];
 
-        VkVertexInputAttributeDescription2EXT* attr2 = &dynamicBindInfo.attrs[compIndex];
-        attr2->sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
-        attr2->pNext = nullptr;
-        attr2->location = component.GetIndex();
-        attr2->binding = component.GetStreamIndex();
-        attr2->format = VkTypes::AsVkVertexType(component.GetFormat());
-        attr2->offset = curOffset[component.GetStreamIndex()];
+        VkVertexInputAttributeDescription2EXT& attr2 = dynamicBindInfo.attrs[compIndex];
+        attr2 = VkVertexInputAttributeDescription2EXT
+        {
+            .sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+            .pNext = nullptr,
+            .location = (uint)component.GetIndex(),
+            .binding = (uint)component.GetStreamIndex(),
+            .format = VkTypes::AsVkVertexType(component.GetFormat()),
+            .offset = (uint)curOffset[component.GetStreamIndex()]
+        };
 
         if (usedStreams[attr->binding])
         {
             bindInfo.binds[attr->binding].stride += component.GetByteSize();
             dynamicBindInfo.binds[attr->binding].stride += component.GetByteSize();
+            streamSizes[attr->binding] += component.GetByteSize();
         }
         else
         {
             bindInfo.binds[attr->binding].stride = component.GetByteSize();
             dynamicBindInfo.binds[attr->binding].stride = component.GetByteSize();
             usedStreams[attr->binding] = true;
+            streamSizes.Append(component.GetByteSize());
             numUsedStreams++;
         }
 
@@ -174,17 +180,18 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         dynamicBindInfo.binds[attr->binding].inputRate = component.GetStrideType() == CoreGraphics::VertexComponent::PerVertex ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
         curOffset[component.GetStreamIndex()] += component.GetByteSize();
     }
+    vertexLayoutAllocator.Set<VertexSignature_StreamSize>(id, streamSizes);
     dynamicBindInfo.binds.Resize(numUsedStreams);
 
     vertexInfo =
     {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        NULL,
-        0,
-        numUsedStreams,
-        bindInfo.binds.Begin(),
-        (uint32_t)bindInfo.attrs.Size(),
-        bindInfo.attrs.Begin()
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags =  0,
+        .vertexBindingDescriptionCount = numUsedStreams,
+        .pVertexBindingDescriptions = bindInfo.binds.Begin(),
+        .vertexAttributeDescriptionCount = (uint32_t)bindInfo.attrs.Size(),
+        .pVertexAttributeDescriptions = bindInfo.attrs.Begin()
     };
 
     VertexLayoutId ret;
@@ -209,6 +216,15 @@ const SizeT
 VertexLayoutGetSize(const VertexLayoutId id)
 {
     return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.resourceId).vertexByteSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+VertexLayoutGetStreamSize(const VertexLayoutId id, IndexT stream)
+{
+    return vertexLayoutAllocator.Get<VertexSignature_StreamSize>(id.resourceId)[stream];
 }
 
 //------------------------------------------------------------------------------

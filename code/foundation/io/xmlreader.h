@@ -12,11 +12,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "io/streamreader.h"
-#if !__OSX__
-#include "math/vec4.h"
-#include "math/vec2.h"
-#include "math/mat4.h"
-#endif
 #include "tinyxml/tinyxml.h"
 
 //------------------------------------------------------------------------------

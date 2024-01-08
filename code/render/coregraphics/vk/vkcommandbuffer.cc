@@ -19,6 +19,7 @@
 #include "vkevent.h"
 #include "vkpass.h"
 #include "vkpipeline.h"
+#include "vkaccelerationstructure.h"
 
 #include "graphics/globalconstants.h"
 
@@ -159,7 +160,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     {
         uint numQueries = 0;
         queryBundles.enabled[i] = false;
-        CoreGraphics::QueryType type;
+        UNUSED(CoreGraphics::QueryType) type;
 
         // If bit is not set, continue
         if ((bits & 1) == 0)
@@ -335,9 +336,8 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
     CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
     n_assert(usage == QueueType::GraphicsQueueType);
 #endif
-    CmdPipelineBuildBits& bits = commandBuffers.Get<CmdBuffer_PipelineBuildBits>(id.id24);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
-    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
+    //VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     const VertexLayoutVkBindInfo& bindInfo = VertexLayoutGetVkBindInfo(vl);
 
     vkCmdSetVertexInputEXT(cmdBuf, bindInfo.binds.Size(), bindInfo.binds.Begin(), bindInfo.attrs.Size(), bindInfo.attrs.Begin());
@@ -406,7 +406,7 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
+    VkShaderProgramRuntimeInfo& info = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(pro.programId);
 
     IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
     pipelineBundle.program = pro;
@@ -419,6 +419,17 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         {
             CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+        }
+    }
+    else if (info.type == ShaderPipeline::RayTracingPipeline)
+    {
+        bool pipelineChange = pipelineBundle.raytracingLayout != info.layout;
+        pipelineBundle.raytracingLayout = info.layout;
+        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, info.pipeline);
+        if (bindGlobals && pipelineChange)
+        {
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
         }
     }
     else
@@ -445,13 +456,13 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.pipelineInfo.pDepthStencilState = &info.depthStencilInfo;
         pipelineBundle.pipelineInfo.pRasterizationState = &info.rasterizerInfo;
         pipelineBundle.pipelineInfo.pMultisampleState = &pipelineBundle.multisampleInfo;
-        pipelineBundle.pipelineInfo.pDynamicState = &info.dynamicInfo;
+        pipelineBundle.pipelineInfo.pDynamicState = &info.graphicsDynamicStateInfo;
         pipelineBundle.pipelineInfo.pTessellationState = &info.tessInfo;
 
         // Setup shaders
         pipelineBundle.pipelineInfo.layout = info.layout;
         pipelineBundle.pipelineInfo.stageCount = info.stageCount;
-        pipelineBundle.pipelineInfo.pStages = info.shaderInfos;
+        pipelineBundle.pipelineInfo.pStages = info.graphicsShaderInfos;
 
         bool pipelineChange = pipelineBundle.graphicsLayout != info.layout;
         pipelineBundle.graphicsLayout = info.layout;
@@ -485,19 +496,18 @@ CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId ta
     const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     VkDescriptorSet set = Vulkan::ResourceTableGetVkDescriptorSet(table);
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
-    VkPipelineBindPoint bindPoint;
     switch (pipeline)
     {
         case ShaderPipeline::GraphicsPipeline:
-            bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            vkCmdBindDescriptorSets(cmdBuf, bindPoint, pipelineBundle.graphicsLayout, slot, 1, &set, numOffsets, offsets);
+            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineBundle.graphicsLayout, slot, 1, &set, numOffsets, offsets);
             break;
         case ShaderPipeline::ComputePipeline:
-            bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
-            vkCmdBindDescriptorSets(cmdBuf, bindPoint, pipelineBundle.computeLayout, slot, 1, &set, numOffsets, offsets);
+            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineBundle.computeLayout, slot, 1, &set, numOffsets, offsets);
             break;
-        default:
-            bindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
+        case ShaderPipeline::RayTracingPipeline:
+            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineBundle.raytracingLayout, slot, 1, &set, numOffsets, offsets);
+            break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -507,14 +517,20 @@ CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId ta
 void
 CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data)
 {
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    const VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id24);
     switch (pipeline)
     {
         case ShaderPipeline::GraphicsPipeline:
-            CmdPushGraphicsConstants(id, offset, size, data);
+            vkCmdPushConstants(cmdBuf, pipelineBundle.graphicsLayout, VK_SHADER_STAGE_ALL_GRAPHICS, offset, size, data);
             break;
         case ShaderPipeline::ComputePipeline:
-            CmdPushComputeConstants(id, offset, size, data);
+            vkCmdPushConstants(cmdBuf, pipelineBundle.computeLayout, VK_SHADER_STAGE_COMPUTE_BIT, offset, size, data);
             break;
+        case ShaderPipeline::RayTracingPipeline:
+            vkCmdPushConstants(cmdBuf, pipelineBundle.raytracingLayout, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_INTERSECTION_BIT_KHR | VK_SHADER_STAGE_CALLABLE_BIT_KHR, offset, size, data);
+            break;
+        default: n_error("unhandled enum"); break;
     }
 }
 
@@ -613,6 +629,29 @@ CmdSetGraphicsPipeline(const CmdBufferId buf, const PipelineId pipeline)
 /**
 */
 void
+CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(buf.id24);
+    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(buf.id24);
+    Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id24);
+    pipelineBundle.raytracingLayout = pipelineObj.layout;
+
+    bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
+    pipelineBundle.graphicsLayout = pipelineObj.layout;
+    if (pipelineChange)
+    {
+        IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
+    }
+
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CmdBarrier(
             const CmdBufferId id,
             CoreGraphics::PipelineStage fromStage,
@@ -620,6 +659,7 @@ CmdBarrier(
             CoreGraphics::BarrierDomain domain,
             const Util::FixedArray<TextureBarrierInfo>& textures,
             const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
             const IndexT fromQueue,
             const IndexT toQueue,
             const char* name)
@@ -630,10 +670,11 @@ CmdBarrier(
     barrier.dstFlags = VkTypes::AsVkPipelineStage(toStage);
     barrier.dep = 0;
     //barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
-    barrier.numBufferBarriers = buffers.Size();
-    for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
+    barrier.numBufferBarriers = buffers.Size() + accelerationStructures.Size();
+    IndexT i, j = 0;
+    for (i = 0; i < buffers.Size(); i++, j++)
     {
-        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
+        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[j];
         BufferBarrierInfo& nebBar = buffers[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -647,8 +688,33 @@ CmdBarrier(
         vkBar.pNext = nullptr;
         vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     }
+    for (i = 0; i < accelerationStructures.Size(); i++, j++)
+    {
+        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[j];
+        AccelerationStructureBarrierInfo& nebBar = accelerationStructures[i];
+
+        vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
+        vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
+        switch (nebBar.type)
+        {
+        case AccelerationStructureBarrierInfo::BlasBarrier:
+            vkBar.buffer = Vulkan::BlasGetVkBuffer(nebBar.blas);
+            break;
+        case AccelerationStructureBarrierInfo::TlasBarrier:
+            vkBar.buffer = Vulkan::TlasGetVkBuffer(nebBar.tlas);
+            break;
+        }
+        vkBar.offset = 0;
+        vkBar.size = VK_WHOLE_SIZE;
+        vkBar.srcQueueFamilyIndex = fromQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : fromQueue;
+        vkBar.dstQueueFamilyIndex = toQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : toQueue;
+
+        vkBar.pNext = nullptr;
+        vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    }
+    barrier.numBufferBarriers = buffers.Size() + accelerationStructures.Size();
+
     barrier.numImageBarriers = textures.Size();
-    IndexT i, j = 0;
     for (i = 0; i < textures.Size(); i++, j++)
     {
         VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
@@ -672,6 +738,11 @@ CmdBarrier(
 
         vkBar.pNext = nullptr;
         vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    }
+
+    for (i = 0; i < accelerationStructures.Size(); i++, j++)
+    {
+
     }
 
     // If we have no other barriers, insert a memory barrier
@@ -1037,7 +1108,6 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     VkImage vkDst = TextureGetVkImage(dest);
 
     VkImageResolve resolve;
-    TextureDimensions dims = TextureGetDimensions(source);
     resolve.dstOffset = { destCopy.region.left, destCopy.region.top, 0 };
     resolve.srcOffset = { sourceCopy.region.left, sourceCopy.region.top, 0 };
     resolve.extent.width = sourceCopy.region.width();
@@ -1055,6 +1125,78 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     resolve.dstSubresource.mipLevel = 0;
     
     vkCmdResolveImage(cmdBuf, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &resolve);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    const VkAccelerationStructureBuildGeometryInfoKHR& buildInfo = Vulkan::BlasGetVkBuild(blas);
+    const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& rangeInfo = Vulkan::BlasGetVkRanges(blas);
+    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { rangeInfo.ConstBegin() };
+    vkCmdBuildAccelerationStructuresKHR(cmdBuf, 1, &buildInfo, ranges);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdBuildTlas(const CmdBufferId id, const CoreGraphics::TlasId tlas)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    const VkAccelerationStructureBuildGeometryInfoKHR& buildInfo = Vulkan::TlasGetVkBuild(tlas);
+    const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& rangeInfo = Vulkan::TlasGetVkRanges(tlas);
+    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { rangeInfo.ConstBegin() };
+    vkCmdBuildAccelerationStructuresKHR(cmdBuf, 1, &buildInfo, ranges);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdRaysDispatch(const CmdBufferId id, const RayDispatchTable& table, int dimX, int dimY, int dimZ)
+{
+    VkStridedDeviceAddressRegionKHR genRegion, hitRegion, missRegion, callableRegion;
+    uint handleSize = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleSize;
+
+    auto RegionSetup = [handleSize](VkStridedDeviceAddressRegionKHR& region, const RayDispatchTable::Entry& entry)
+    {
+        if (entry.numEntries > 0)
+            region =
+            {
+                .deviceAddress = entry.baseAddress,
+                .stride = handleSize,
+                .size = entry.entrySize
+            };
+        else
+            region =
+            {
+                .deviceAddress = 0x0,
+                .stride = 0x0,
+                .size = 0x0
+            };
+    };
+
+    RegionSetup(genRegion, table.genEntry);
+    RegionSetup(missRegion, table.missEntry);
+    RegionSetup(hitRegion, table.hitEntry);
+    RegionSetup(callableRegion, table.callableEntry);
+
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    vkCmdTraceRaysKHR(cmdBuf, &genRegion, &missRegion, &hitRegion, &callableRegion, dimX, dimY, dimZ);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdDrawMeshlets(const CmdBufferId id, int dimX, int dimY, int dimZ)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
+    vkCmdDrawMeshTasksEXT(cmdBuf, dimX, dimY, dimZ);
 }
 
 //------------------------------------------------------------------------------
@@ -1504,7 +1646,6 @@ void
 CmdFinishQueries(const CmdBufferId id)
 {
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
     {
         // Grab all chunk offsets and counts 
@@ -1545,7 +1686,6 @@ CmdGetMarkerOffset(const CmdBufferId id)
 {
     CoreGraphics::QueryBundle& queries = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     n_assert(queries.enabled[CoreGraphics::QueryType::TimestampsQueryType]);
-    QueryBundle::QueryChunk& chunk = queries.GetChunk(CoreGraphics::TimestampsQueryType);
     return queries.chunks[CoreGraphics::TimestampsQueryType][0].offset;
 }
 

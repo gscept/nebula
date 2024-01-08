@@ -775,6 +775,7 @@ struct randxorstate
 {
     uint64 x[2];
 };
+
 __forceinline uint64
 randxor(randxorstate& state)
 {
@@ -786,6 +787,16 @@ randxor(randxorstate& state)
     t ^= s ^ (s >> 5);	// c
     state.x[1] = t;
     return t + s;
+}
+
+//------------------------------------------------------------------------------
+/**
+    cheap pointer hash using modulo with a mersenne prime
+*/
+__forceinline uint32_t
+pointerhash(void* ptr)
+{
+    return (uint32_t) (((uintptr_t)(void *)ptr) % 4294967291u);
 }
 
 } // namespace Math

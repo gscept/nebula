@@ -99,8 +99,6 @@ private:
     CoreGraphics::InputAssemblyKey currentInputAssembly;
     const VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
 
-    StateLevel currentLevel;
-
     struct Tier1Node;
     struct Tier2Node;
     struct Tier3Node;
@@ -131,8 +129,7 @@ private:
     };
 
     Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;
-    IndexT tier1Iterator;
-
+    
     Memory::ArenaAllocator<BIG_CHUNK> tierNodeAllocator;
 
     Tier1Node* ct1;

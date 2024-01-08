@@ -84,7 +84,6 @@ AnimSampleStep(
         const AnimCurve& curve = curves[clip.firstCurve + i];
         const bool activeCurve = curve.numIntervals > 0;
         int stride = 0;
-        int idleSampleIndex = i / 3;
 
         uint key = *lastUsedIntervalPtr;
         AnimKeyBuffer::Interval currentTime = intervalPtr[key];
@@ -117,6 +116,7 @@ AnimSampleStep(
                 stride = 3;
                 break;
             }
+            default: n_error("unhandled enum"); break;
         }
 
         if (curve.curveType == CurveType::Velocity)
@@ -160,7 +160,6 @@ AnimSampleLinear(
 
         float sampleWeight = 0.0f;
         int stride = 0;
-        int idleSampleIndex = i / 3;
 
         uint key = *lastUsedIntervalPtr;
         AnimKeyBuffer::Interval currentTime = intervalPtr[key];
@@ -214,6 +213,7 @@ AnimSampleLinear(
                 stride = 3;
                 break;
             }
+            default: n_error("unhandled enum"); break;
         }
 
         if (curve.curveType == CurveType::Velocity)

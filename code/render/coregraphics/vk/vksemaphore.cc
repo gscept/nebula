@@ -111,6 +111,7 @@ SemaphoreReset(const SemaphoreId& semaphore)
     case SemaphoreType::Binary:
         semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24) = 0;
         break;
+    default: n_error("unhandled enum"); break;
     }
 }
 

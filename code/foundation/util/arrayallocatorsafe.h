@@ -43,8 +43,8 @@ template<class T>
 struct AllocatorLock
 {
     AllocatorLock(T* allocator, uint32_t element)
-        : allocator(allocator)
-        , element(element)
+        : element(element)
+        , allocator(allocator)
     {
         this->didAcquire = this->allocator->Acquire(this->element);
     };
@@ -440,7 +440,7 @@ void
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Release(const uint32_t index)
 {
     n_assert(this->owners[index] == Threading::Thread::GetMyThreadId());
-    this->owners[index] = Threading::InvalidThreadId;
+    Threading::Interlocked::Exchange((volatile Threading::ThreadIdStorage*)&this->owners[index], Threading::InvalidThreadId);
 }
 
 } // namespace Util

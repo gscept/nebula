@@ -13,7 +13,7 @@
 
 using namespace Math;
 
-static const scalar E = 0.00001;
+static const scalar E = 0.00001f;
 
 namespace Test
 {

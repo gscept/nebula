@@ -97,7 +97,7 @@ CharacterContext::Setup(
     }
 
     characterContextAllocator.Get<Skeleton>(cid.id) = Characters::InvalidSkeletonId;
-    Resources::CreateResource(skeletonResource, tag, [cid, id, skeletonIndex](Resources::ResourceId rid)
+    Resources::CreateResource(skeletonResource, tag, [cid, skeletonIndex](Resources::ResourceId rid)
         {
             auto skeleton = SkeletonResourceGetSkeleton(rid, skeletonIndex);
             characterContextAllocator.Set<Skeleton>(cid.id, skeleton);
@@ -123,7 +123,7 @@ CharacterContext::Setup(
         }, nullptr, true);
 
     characterContextAllocator.Get<Animation>(cid.id) = CoreAnimation::InvalidAnimationId;
-    Resources::CreateResource(animationResource, tag, [cid, id, animationIndex, supportBlending](Resources::ResourceId rid)
+    Resources::CreateResource(animationResource, tag, [cid, animationIndex, supportBlending](Resources::ResourceId rid)
         {
             auto animation = CoreAnimation::AnimationResourceGetAnimation(rid, animationIndex);
             characterContextAllocator.Set<Animation>(cid.id, animation);
@@ -424,12 +424,10 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         if (skeleton == InvalidSkeletonId)
             continue;
         const Util::FixedArray<Math::mat4>& bindPose = Characters::SkeletonGetBindPose(skeleton);
-        const Util::FixedArray<Math::mat4>& userJoint = context->userJoints->Get(index);
         const Util::FixedArray<Math::mat4>& jointPalette = context->jointPalettes->Get(index);
         const Util::FixedArray<Math::mat4>& scaledJointPalette = context->scaledJointPalettes->Get(index);
         const Util::FixedArray<Math::vec4>& idleSamples = Characters::SkeletonGetIdleSamples(skeleton);
         const CoreAnimation::AnimSampleBuffer& sampleBuffer = context->sampleBuffers->Get(index);
-        const Graphics::GraphicsEntityId& model = context->entities->Get(index);
         Math::mat4* tmpMatrices = context->tmpJoints[index];
         float* tmpSamples = context->tmpSamples[index];
         uint* tmpSampleIndices = context->tmpSampleIndices[index];
@@ -584,7 +582,6 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
 
         // Evaluate skeleton
         const Math::mat4* invPoseMatrixBase = bindPose.Begin();
-        const Math::mat4* mixPoseMatrixBase = userJoint.Begin();
         Math::mat4* unscaledMatrixBase = tmpMatrices;
 
         Math::vec3 translate(0.0f, 0.0f, 0.0f);
@@ -599,9 +596,6 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         n_assert(0 != compsBase);
         const float* samplesBase = sampleBuffer.GetSamplesPointer();
         const float* samplesPtr = samplesBase;
-
-        const uchar* sampleCountBase = sampleBuffer.GetSampleCountsPointer();
-        const uchar* sampleCountPtr = sampleCountBase;
 
         Math::mat4* scaledMatrixBase = scaledJointPalette.Begin();
         Math::mat4* skinMatrixBase = jointPalette.Begin();
@@ -621,7 +615,6 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             rotate.load(samplesPtr + ROTATION_OFFSET);
             scale.load(samplesPtr + SCALE_OFFSET);
 
-            sampleCountPtr += 3;
             samplesPtr += sampleWidth;
 
             const SkeletonJobJoint& comps = compsBase[jointIndex];

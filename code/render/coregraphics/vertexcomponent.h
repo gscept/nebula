@@ -136,10 +136,10 @@ inline
 VertexComponent::VertexComponent() :
     index(0),
     format(Float),
+    strideType(PerVertex),  
+    stride(0),
     streamIndex(0),
-    byteOffset(0),
-    strideType(PerVertex),
-    stride(0)
+    byteOffset(0)
 {
     // empty
 }
@@ -151,10 +151,10 @@ inline
 VertexComponent::VertexComponent(IndexT semIndex_, Format format_, IndexT streamIndex_, StrideType strideType_, SizeT stride_) :
     index(semIndex_),
     format(format_),
-    streamIndex(streamIndex_),
-    byteOffset(0),
     strideType(strideType_),
-    stride(stride_)
+    stride(stride_),
+    streamIndex(streamIndex_),
+    byteOffset(0)
 {
     // empty
 }
@@ -245,6 +245,7 @@ VertexComponent::GetByteSize() const
         case UShort4N:  return 8;
         case Short2N:   return 4;
         case Short4N:   return 8;
+        default: break;
     }
     n_error("Can't happen");
     return 0;

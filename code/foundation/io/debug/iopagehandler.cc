@@ -6,6 +6,7 @@
 
 #include "io/debug/iopagehandler.h"
 #include "http/html/htmlpagewriter.h"
+#include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "io/archfs/archivefilesystem.h"
 #include "io/archfs/archive.h"

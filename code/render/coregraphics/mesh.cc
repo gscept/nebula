@@ -12,6 +12,8 @@ namespace CoreGraphics
 MeshId RectangleMesh;
 MeshId DiskMesh;
 
+_IMPL_ACQUIRE_RELEASE(MeshId, meshAllocator);
+
 MeshAllocator meshAllocator;
 using namespace Ids;
 //------------------------------------------------------------------------------

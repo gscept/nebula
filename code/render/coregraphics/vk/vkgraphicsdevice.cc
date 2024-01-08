@@ -22,6 +22,7 @@
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vktextureview.h"
+#include "coregraphics/vk/vkaccelerationstructure.h"
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
 
@@ -78,7 +79,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Tuple<VkDevice, VkCommandPool, VkCommandBuffer>> commandBuffers;
         Util::Array<Util::Tuple<VkDevice, VkDescriptorPool, VkDescriptorSet, uint*>> resourceTables;
         Util::Array<Util::Tuple<VkDevice, VkFramebuffer, VkRenderPass>> passes;
-        Util::Array<Util::Tuple<CoreGraphics::Alloc>> allocs;
+        Util::Array<Util::Tuple<VkDevice, VkAccelerationStructureKHR>> ases;
+        Util::Array<CoreGraphics::Alloc> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
     Util::FixedArray<Util::Array<CoreGraphics::SubmissionWaitEvent>> waitEvents;
@@ -128,7 +130,9 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     // device handling (multi GPU?!?!)
     Util::FixedArray<VkDevice> devices;
     Util::FixedArray<VkPhysicalDevice> physicalDevices;
-    Util::FixedArray<VkPhysicalDeviceProperties> deviceProps;
+    Util::FixedArray<VkPhysicalDeviceProperties2> deviceProps;
+    Util::FixedArray<VkPhysicalDeviceAccelerationStructurePropertiesKHR> accelerationStructureDeviceProps;
+    Util::FixedArray<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> raytracingDeviceProps;
     Util::FixedArray<VkPhysicalDeviceFeatures> deviceFeatures;
     Util::FixedArray<uint32_t> numCaps;
     Util::FixedArray<Util::FixedArray<const char*>> deviceFeatureStrings;
@@ -156,7 +160,7 @@ PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert = nullptr;
 /**
 */
 void
-SetupAdapter()
+SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
 {
     // retrieve available GPUs
     uint32_t gpuCount;
@@ -169,6 +173,8 @@ SetupAdapter()
     state.numCaps.Resize(gpuCount);
     state.deviceFeatureStrings.Resize(gpuCount);
     state.deviceProps.Resize(gpuCount);
+    state.accelerationStructureDeviceProps.Resize(gpuCount);
+    state.raytracingDeviceProps.Resize(gpuCount);
     state.deviceFeatures.Resize(gpuCount);
 
     if (gpuCount > 0)
@@ -182,9 +188,30 @@ SetupAdapter()
         IndexT i;
         for (i = 0; i < (IndexT)gpuCount; i++)
         {
+            // Get device props and features
+            state.accelerationStructureDeviceProps[i] =
+            {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR,
+                .pNext = nullptr
+            };
+            state.raytracingDeviceProps[i] =
+            {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR,
+                .pNext = &state.accelerationStructureDeviceProps[i]
+            };
+
+            state.deviceProps[i] =
+            {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                .pNext = &state.raytracingDeviceProps[i]
+            };
+            vkGetPhysicalDeviceProperties2(state.physicalDevices[i], &state.deviceProps[i]);
+            vkGetPhysicalDeviceFeatures(state.physicalDevices[i], &state.deviceFeatures[i]);
+
             res = vkEnumerateDeviceExtensionProperties(state.physicalDevices[i], nullptr, &state.numCaps[i], nullptr);
             n_assert(res == VK_SUCCESS);
 
+            bool validDevice = true;
             if (state.numCaps[i] > 0)
             {
                 Util::FixedArray<VkExtensionProperties> caps;
@@ -200,15 +227,22 @@ SetupAdapter()
 
                 static const Util::String wantedExtensions[] =
                 {
-                    "VK_KHR_swapchain",
-                    "VK_maintenance1",
-                    "VK_maintenance2",
-                    "VK_maintenance3",
-                    "VK_maintenance4",
-                    "VK_host_query_reset",
-                    "VK_descriptor_indexing",
-                    "VK_EXT_robustness2",
-                    "VK_EXT_vertex_input_dynamic_state"
+                    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_1_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_3_EXTENSION_NAME,
+                    VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                    VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
+                    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                    VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                    VK_EXT_MESH_SHADER_EXTENSION_NAME,
+                    VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
+                    VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+                    VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME,
+                    VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME
                 };
 
                 uint32_t newNumCaps = 0;
@@ -216,15 +250,62 @@ SetupAdapter()
                 {
                     if (existingExtensions.FindIndex(wantedExtensions[j]) != InvalidIndex)
                     {
+                        if (features.enableRayTracing)
+                        {
+                            if (wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                            {
+                                CoreGraphics::RayTracingSupported = true;
+                                n_printf("[Graphics Device] Ray Tracing is enabled\n");
+                            }
+                        }
+                        if (wantedExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
+                        {
+                            CoreGraphics::DynamicVertexInputSupported = true;
+                            n_printf("[Graphics Device] Dynamic Vertex Input is enabled\n");
+                        }
+                        if (features.enableMeshShaders)
+                        {
+                            if (wantedExtensions[j] == VK_EXT_MESH_SHADER_EXTENSION_NAME)
+                            {
+                                CoreGraphics::MeshShadersSupported = true;
+                                n_printf("[Graphics Device] Mesh Shaders are enabled\n");
+                            }
+                        }
+
+                        if (features.enableVariableRateShading)
+                        {
+                            if (wantedExtensions[j] == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME)
+                            {
+                                CoreGraphics::VariableRateShadingSupported = true;
+                                n_printf("[Graphics Device] Variable Rate Shading is enabled\n");
+                            }
+                        }
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
                     }
+                    else
+                    {
+                        validDevice = false;
+                    }
                 }
-                state.numCaps[i] = newNumCaps;
-            }
 
-            // get device props and features
-            vkGetPhysicalDeviceProperties(state.physicalDevices[0], &state.deviceProps[i]);
-            vkGetPhysicalDeviceFeatures(state.physicalDevices[0], &state.deviceFeatures[i]);
+                if (!CoreGraphics::RayTracingSupported)
+                    n_printf("[Graphics Device] Ray Tracing is disabled\n");
+                if (!CoreGraphics::DynamicVertexInputSupported)
+                    n_printf("[Graphics Device] Dynamic Vertex Input is disabled\n");
+                if (!CoreGraphics::MeshShadersSupported)
+                    n_printf("[Graphics Device] Mesh Shaders are disabled\n");
+                if (!CoreGraphics::VariableRateShadingSupported)
+                    n_printf("[Graphics Device] Variable Rate Shading is disabled\n");
+                
+                state.numCaps[i] = newNumCaps;
+
+                if (validDevice)
+                {
+                    n_printf("Picking device '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
+                    state.currentDevice = i;
+                    break;
+                }
+            }
         }
     }
     else
@@ -266,7 +347,25 @@ GetCurrentPhysicalDevice()
 VkPhysicalDeviceProperties
 GetCurrentProperties()
 {
-    return state.deviceProps[state.currentDevice];
+    return state.deviceProps[state.currentDevice].properties;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPhysicalDeviceAccelerationStructurePropertiesKHR
+GetCurrentAccelerationStructureProperties()
+{
+    return state.accelerationStructureDeviceProps[state.currentDevice];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPhysicalDeviceRayTracingPipelinePropertiesKHR
+GetCurrentRaytracingProperties()
+{
+    return state.raytracingDeviceProps[state.currentDevice];
 }
 
 //------------------------------------------------------------------------------
@@ -365,6 +464,7 @@ GetQueue(const CoreGraphics::QueueType type, const IndexT index)
     case CoreGraphics::SparseQueueType:
         return state.queueHandler.sparseQueues[index];
         break;
+    default: n_error("unhandled enum"); break;
     }
     return VK_NULL_HANDLE;
 }
@@ -411,70 +511,61 @@ SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaq
 void
 ClearPending()
 {
+    GraphicsDeviceState::PendingDeletes& pendingDeletes = state.pendingDeletes[state.currentBufferedFrameIndex];
+
     // Clear up any pending deletes
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers)
+    for (const auto& [dev, pool, buf] : pendingDeletes.commandBuffers)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkCommandPool pool = Util::Get<1>(tuple);
-        VkCommandBuffer buf = Util::Get<2>(tuple);
         vkFreeCommandBuffers(dev, pool, 1, &buf);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers.Clear();
+    pendingDeletes.commandBuffers.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].buffers)
+    for (const auto& [dev, buf] : pendingDeletes.buffers)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkBuffer buf = Util::Get<1>(tuple);
         n_assert(dev != nullptr);
         n_assert(buf != nullptr);
         vkDestroyBuffer(dev, buf, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].buffers.Clear();
+    pendingDeletes.buffers.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textures)
+    for (const auto& [dev, view, img] : pendingDeletes.textures)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkImage img = Util::Get<2>(tuple);
-        VkImageView view = Util::Get<1>(tuple);
         vkDestroyImage(dev, img, nullptr);
         vkDestroyImageView(dev, view, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].textures.Clear();
+    pendingDeletes.textures.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textureViews)
+    for (const auto& [dev, view] : pendingDeletes.textureViews)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkImageView view = Util::Get<1>(tuple);
         vkDestroyImageView(dev, view, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].textureViews.Clear();
+    pendingDeletes.textureViews.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables)
+    for (const auto& [dev, pool, set, size] : pendingDeletes.resourceTables)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkDescriptorPool pool = Util::Get<1>(tuple);
-        VkDescriptorSet set = Util::Get<2>(tuple);
         vkFreeDescriptorSets(dev, pool, 1, &set);
-        uint* size = Util::Get<3>(tuple);
         (*size)++;
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables.Clear();
+    pendingDeletes.resourceTables.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].passes)
+    for (const auto& [dev, fbo, pass] : pendingDeletes.passes)
     {
-        VkDevice dev = Util::Get<0>(tuple);
-        VkFramebuffer fbo = Util::Get<1>(tuple);
-        VkRenderPass pass = Util::Get<2>(tuple);
         vkDestroyRenderPass(dev, pass, nullptr);
         vkDestroyFramebuffer(dev, fbo, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].passes.Clear();
+    pendingDeletes.passes.Clear();
 
-    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].allocs)
+    for (const auto& [dev, as] : pendingDeletes.ases)
     {
-        CoreGraphics::FreeMemory(Util::Get<0>(tuple));
+        vkDestroyAccelerationStructureKHR(dev, as, nullptr);
     }
-    state.pendingDeletes[state.currentBufferedFrameIndex].allocs.Clear();
+    pendingDeletes.ases.Clear();
+
+    for (const auto& alloc : pendingDeletes.allocs)
+    {
+        CoreGraphics::FreeMemory(alloc);
+    }
+    pendingDeletes.allocs.Clear();
 
     for (auto& markers : state.pendingMarkers)
     {
@@ -503,6 +594,11 @@ NebulaVulkanErrorDebugCallback(
 
 namespace CoreGraphics
 {
+
+bool RayTracingSupported = false;
+bool DynamicVertexInputSupported = false;
+bool MeshShadersSupported = false;
+bool VariableRateShadingSupported = false;
 using namespace Vulkan;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -610,8 +706,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     Vulkan::InitInstance(state.instance);
 
     // setup adapter
-    SetupAdapter();
     state.currentDevice = 0;
+    SetupAdapter(info.features);
 
 #if NEBULA_GRAPHICS_DEBUG
 #else
@@ -780,36 +876,139 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-        nullptr,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+        .pNext = nullptr,
+        .hostQueryReset = true
     };
 
     VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-        &hostQueryReset,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+        .pNext = &hostQueryReset,
+        .timelineSemaphore = true
     };
 
     VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-        &timelineSemaphores
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+        .pNext = &timelineSemaphores,
+        .shaderInputAttachmentArrayDynamicIndexing = false,
+        .shaderUniformTexelBufferArrayDynamicIndexing = false,
+        .shaderStorageTexelBufferArrayDynamicIndexing = false,
+        .shaderUniformBufferArrayNonUniformIndexing = true,
+        .shaderSampledImageArrayNonUniformIndexing = true,
+        .shaderStorageBufferArrayNonUniformIndexing = true,
+        .shaderStorageImageArrayNonUniformIndexing = true,
+        .shaderInputAttachmentArrayNonUniformIndexing = false,
+        .shaderUniformTexelBufferArrayNonUniformIndexing = false,
+        .shaderStorageTexelBufferArrayNonUniformIndexing = false,
+        .descriptorBindingUniformBufferUpdateAfterBind = true,
+        .descriptorBindingSampledImageUpdateAfterBind = true,
+        .descriptorBindingStorageImageUpdateAfterBind = true,
+        .descriptorBindingStorageBufferUpdateAfterBind = true,
+        .descriptorBindingUniformTexelBufferUpdateAfterBind = true,
+        .descriptorBindingStorageTexelBufferUpdateAfterBind = true,
+        .descriptorBindingUpdateUnusedWhilePending = true,
+        .descriptorBindingPartiallyBound = true,
+        .descriptorBindingVariableDescriptorCount = true,
+        .runtimeDescriptorArray = true
     };
-    descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
 
     VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
     {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
-        &descriptorIndexingFeatures,
-        true
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
+        .pNext = &descriptorIndexingFeatures,
+        .vertexInputDynamicState = true
     };
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+        .pNext = &dynamicVertexFeatures,
+        .bufferDeviceAddress = true,
+        .bufferDeviceAddressCaptureReplay = false,
+        .bufferDeviceAddressMultiDevice = false
+    };
+    void* lastExtension = &bufferDeviceAddressFeatures;
+
+#pragma region Mesh Shader Features
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShadersFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
+        .pNext = lastExtension,
+        .taskShader = true,
+        .meshShader = true,
+        .multiviewMeshShader = false,
+        .primitiveFragmentShadingRateMeshShader = info.features.enableVariableRateShading,
+        .meshShaderQueries = false,
+    };
+    if (info.features.enableMeshShaders)
+    {
+        lastExtension = &meshShadersFeatures;
+    }
+#pragma endregion
+
+#pragma region Variable Rate Shading Features
+    VkPhysicalDeviceFragmentShadingRateFeaturesKHR variableShadingFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR,
+        .pNext = lastExtension,
+        .pipelineFragmentShadingRate = true,
+        .primitiveFragmentShadingRate = true,
+        .attachmentFragmentShadingRate = true,
+    };
+    if (info.features.enableVariableRateShading)
+    {
+        lastExtension = &variableShadingFeatures;
+    }
+#pragma endregion
+
+#pragma region Ray Tracing Features
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+        .pNext = lastExtension,
+        .accelerationStructure = true,
+        .accelerationStructureCaptureReplay = true,
+        .accelerationStructureIndirectBuild = false,
+        .accelerationStructureHostCommands = false,
+        .descriptorBindingAccelerationStructureUpdateAfterBind = false,
+    };
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+        .pNext = &accelerationStructureFeatures,
+        .rayTracingPipeline = true,
+        .rayTracingPipelineShaderGroupHandleCaptureReplay = false,
+        .rayTracingPipelineShaderGroupHandleCaptureReplayMixed = false,
+        .rayTracingPipelineTraceRaysIndirect = false,
+        .rayTraversalPrimitiveCulling = false
+    };
+
+    VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT groupHandlesFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT,
+        .pNext = &raytracingFeatures,
+        .pipelineLibraryGroupHandles = true
+    };
+
+    VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT libraryFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT,
+        .pNext = &groupHandlesFeature,
+        .graphicsPipelineLibrary = true
+    };
+    if (info.features.enableRayTracing)
+    {
+        lastExtension = &libraryFeature;
+    }
+#pragma endregion
 
     VkDeviceCreateInfo deviceInfo =
     {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        &dynamicVertexFeatures,
+        lastExtension,
         0,
         (uint32_t)queueInfos.Size(),
         &queueInfos[0],
@@ -1006,9 +1205,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     vboInfo.usageFlags =
         CoreGraphics::BufferUsageFlag::VertexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
+        | CoreGraphics::BufferUsageFlag::ShaderAddress
+        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
-    state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 0xFFFF);
+    state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 2048);
 
     CoreGraphics::BufferCreateInfo iboInfo;
     iboInfo.name = "Global Index Cache";
@@ -1018,19 +1219,21 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     iboInfo.usageFlags =
         CoreGraphics::BufferUsageFlag::IndexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
+        | CoreGraphics::BufferUsageFlag::ShaderAddress
+        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
-    state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 0xFFFF);
+    state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 2048);
 
     CoreGraphics::BufferCreateInfo uploadInfo;
     uploadInfo.name = "Global Upload Buffer";
-    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
 
     state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
-    state.globalUploadBufferPoolSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+    state.globalUploadBufferPoolSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     state.uploadRingBuffers.Resize(info.numBufferedFrames);
     state.uploadAllocator = Memory::RangeAllocator(info.globalUploadMemorySize, 2048);
 
@@ -1422,7 +1625,7 @@ AllocateConstantBufferMemory(uint size)
     n_assert(sub.allowConstantAllocation);
 
     // Calculate aligned upper bound
-    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].properties.limits.minUniformBufferOffsetAlignment);
     N_BUDGET_COUNTER_INCR(N_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
@@ -1605,6 +1808,30 @@ DelayedDeletePass(const CoreGraphics::PassId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+DelayedDeleteBlas(const CoreGraphics::BlasId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::BlasGetVkDevice(id);
+    VkAccelerationStructureKHR as = BlasGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].ases.Append(Util::MakeTuple(dev, as));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteTlas(const CoreGraphics::TlasId id)
+{
+    Threading::CriticalScope scope(&delayedDeleteSection);
+    VkDevice dev = CoreGraphics::TlasGetVkDevice(id);
+    VkAccelerationStructureKHR as = TlasGetVk(id);
+    state.pendingDeletes[state.currentBufferedFrameIndex].ases.Append(Util::MakeTuple(dev, as));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 AllocateQueries(const CoreGraphics::QueryType type, uint numQueries)
 {
@@ -1690,7 +1917,7 @@ void
 DeallocateVertices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    state.vertexAllocator.Dealloc(Memory::RangeAllocation{.offset = alloc.offset, .node = alloc.node});
+    state.vertexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .node = alloc.node});
     N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, alloc.size);
 }
 
@@ -1710,8 +1937,9 @@ const VertexAlloc
 AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    uint size = numIndices * IndexType::SizeOf(indexType);
-    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(size);
+    uint indexSize = IndexType::SizeOf(indexType);
+    uint size = numIndices * indexSize;
+    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(size, indexSize);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
     return VertexAlloc{ .size = size, .offset = alloc.offset, .node = alloc.node };
@@ -1724,7 +1952,7 @@ const VertexAlloc
 AllocateIndices(const SizeT bytes)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(bytes);
+    Memory::RangeAllocation alloc = state.indexAllocator.Alloc(bytes, 4);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, bytes);
     return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
@@ -1737,7 +1965,7 @@ void
 DeallocateIndices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    state.indexAllocator.Dealloc(Memory::RangeAllocation{.offset = alloc.offset, .node = alloc.node});
+    state.indexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .node = alloc.node});
     N_BUDGET_COUNTER_DECR(N_INDEX_MEMORY, alloc.size);
 }
 
@@ -1761,7 +1989,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     // Calculate aligned upper bound
-    SizeT adjustedAlignment = Math::max(alignment, (SizeT)state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+    SizeT adjustedAlignment = Math::max(alignment, (SizeT)state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     const SizeT alignedBytes = numBytes + adjustedAlignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
@@ -1791,6 +2019,7 @@ UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const voi
 void
 FlushUpload()
 {
+    Threading::CriticalScope _0(&UploadLock);
     const Vulkan::GraphicsDeviceState::UploadRingBuffer& uploadBuffer = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     Util::FixedArray<VkMappedMemoryRange> ranges(uploadBuffer.allocs.Size());
@@ -1800,7 +2029,7 @@ FlushUpload()
         range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         range.pNext = nullptr;
         range.offset = uploadBuffer.allocs[i].offset; //uploadBuffer.interval.start;
-        range.size = Math::align(uploadBuffer.allocSizes[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);// (DeviceSize)size;
+        range.size = Math::align(uploadBuffer.allocSizes[i], state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);// (DeviceSize)size;
         range.memory = BufferGetVkMemory(state.uploadBuffer);
     }
 
@@ -1829,7 +2058,7 @@ Swap(IndexT i)
 void
 ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64* data, const uint64& offset)
 {
-    const SizeT timestampPeriod = state.deviceProps[state.currentDevice].limits.timestampPeriod;
+    const SizeT timestampPeriod = state.deviceProps[state.currentDevice].properties.limits.timestampPeriod;
     uint64 begin = data[marker.gpuBegin];
     uint64 end = data[marker.gpuEnd];
     marker.start = (begin - offset) * timestampPeriod;
@@ -1854,7 +2083,6 @@ NewFrame()
     Threading::CriticalScope deleteScope(&delayedDeleteSection);
 
     // Progress to next frame and wait for that buffer
-    uint prevBuffer = state.currentBufferedFrameIndex;
     state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 
     N_MARKER_BEGIN(WaitForBuffer, Wait);

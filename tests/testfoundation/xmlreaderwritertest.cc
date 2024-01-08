@@ -8,6 +8,8 @@
 #include "io/memorystream.h"
 #include "io/xmlreader.h"
 #include "io/xmlwriter.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 
 namespace Test
 {

@@ -84,7 +84,7 @@ struct ImageLoadInfo
     ImageChannelPrimitive primitive;
     PixelFormat::Code format;
     ImageContainer container;
-    char redOffset, greenOffset, blueOffset, alphaOffset;
+    uint8_t redOffset, greenOffset, blueOffset, alphaOffset;
     byte* buffer;
 };
 

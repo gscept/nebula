@@ -23,7 +23,6 @@ SetupHeaps()
     {
         n_assert(0 == Heaps[i]);
         size_t initialSize = 0;
-        size_t maxSize = 0;
         bool useLowFragHeap = false;
         switch (i)
         {

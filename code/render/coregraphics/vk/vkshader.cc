@@ -23,6 +23,48 @@ Util::Dictionary<Util::StringAtom, VkPipelineLayout> VkShaderPipelineCache;
 Util::Dictionary<Util::StringAtom, VkDescriptorSet> VkShaderDescriptorSetCache;
 ShaderAllocator shaderAlloc;
 
+enum ShaderStages
+{
+    VertexShader,
+    HullShader,
+    DomainShader,
+    GeometryShader,
+    PixelShader,
+    ComputeShader,
+    TaskShader,
+    MeshShader,
+    RayGenerationShader,
+    RayAnyHitShader,
+    RayClosestHitShader,
+    RayMissShader,
+    RayIntersectionShader,
+    CallableShader,
+
+    NumShaders
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+UpdateOccupancy(uint32_t* occupancyList, uint32_t& slotsUsed, const CoreGraphics::ShaderVisibility vis)
+{
+    if (AllBits(vis, CoreGraphics::VertexShaderVisibility))             { occupancyList[VertexShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::HullShaderVisibility))               { occupancyList[HullShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::DomainShaderVisibility))             { occupancyList[DomainShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::GeometryShaderVisibility))           { occupancyList[GeometryShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::PixelShaderVisibility))              { occupancyList[PixelShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::TaskShaderVisibility))               { occupancyList[TaskShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::MeshShaderVisibility))               { occupancyList[MeshShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::ComputeShaderVisibility))            { occupancyList[ComputeShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::RayGenerationShaderVisibility))      { occupancyList[RayGenerationShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::RayAnyHitShaderVisibility))          { occupancyList[RayAnyHitShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::RayClosestHitShaderVisibility))      { occupancyList[RayClosestHitShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::RayMissShaderVisibility))            { occupancyList[RayMissShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::RayIntersectionShaderVisibility))    { occupancyList[RayIntersectionShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::CallableShaderVisibility))           { occupancyList[CallableShader]++; slotsUsed++; }
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -53,29 +95,13 @@ ShaderSetup(
     Util::Dictionary<uint32_t, ResourceTableLayoutCreateInfo> layoutCreateInfos;
     uint32_t numsets = 0;
 
-    enum ShaderStages
-    {
-        VertexShader,
-        HullShader,
-        DomainShader,
-        GeometryShader,
-        PixelShader,
-        ComputeShader,
-
-        NumShaders
-    };
-
     // always create push constant range in layout, making all shaders using push constants compatible
     uint32_t maxConstantBytes = props.limits.maxPushConstantsSize;
     uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
-    constantRange.Resize(6); // one per shader stage
+    constantRange.Resize(NumShaders); // one per shader stage
     uint i;
     for (i = 0; i < NumShaders; i++)
         constantRange[i] = CoreGraphics::ResourcePipelinePushConstantRange{ 0,0,InvalidVisibility };
-
-    bool usePushConstants = false;
-
-#define uint_max(a, b) (a > b ? a : b)
 
     // assert we are not over-stepping any uniform buffer limit we are using, perStage is used for ALL_STAGES
     uint32_t numUniformDyn = 0;
@@ -86,6 +112,7 @@ ShaderSetup(
     uint32_t numPerStageSamplers[NumShaders] = {0};
     uint32_t numPerStageSampledImages[NumShaders] = {0};
     uint32_t numPerStageStorageImages[NumShaders] = {0};
+    uint32_t numPerStageAccelerationStructures[NumShaders] = {0};
     uint32_t numInputAttachments = 0;
     for (i = 0; i < varblocks.size(); i++) 
     { 
@@ -99,23 +126,13 @@ ShaderSetup(
 
         if (block->HasAnnotation("Visibility"))
         {
-            CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
-            cbo.visibility = vis;
-            if ((vis & VertexShaderVisibility) == VertexShaderVisibility)       { numPerStageUniformBuffers[VertexShader]++; slotsUsed++; }
-            if ((vis & HullShaderVisibility) == HullShaderVisibility)           { numPerStageUniformBuffers[HullShader]++; slotsUsed++; }
-            if ((vis & DomainShaderVisibility) == DomainShaderVisibility)       { numPerStageUniformBuffers[DomainShader]++; slotsUsed++; }
-            if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)   { numPerStageUniformBuffers[GeometryShader]++; slotsUsed++; }
-            if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { numPerStageUniformBuffers[PixelShader]++; slotsUsed++; }
-            if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageUniformBuffers[ComputeShader]++; slotsUsed++; }
+            cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
+            UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
         }
         else
         {
-            numPerStageUniformBuffers[VertexShader]++;
-            numPerStageUniformBuffers[HullShader]++;
-            numPerStageUniformBuffers[DomainShader]++;
-            numPerStageUniformBuffers[GeometryShader]++;
-            numPerStageUniformBuffers[PixelShader]++;
-            numPerStageUniformBuffers[ComputeShader]++;
+            for (IndexT i = 0; i < NumShaders; i++)
+                numPerStageUniformBuffers[i]++;
         }
 
         if (block->variables.empty()) continue;
@@ -130,14 +147,13 @@ ShaderSetup(
             range.vis = AllGraphicsVisibility; // only allow for fragment bit...
             constantRange[0] = range; // okay, this is hacky
             pushRangeOffset += block->alignedSize;
-            usePushConstants = true;
             goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
-        };
+        }
         {
             // add to resource map
             resourceSlotMapping.Add(block->name.c_str(), block->binding);
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(block->set);
-            numsets = uint_max(numsets, block->set + 1);
+            numsets = Math::max(numsets, block->set + 1);
 
             if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP)
             {
@@ -186,27 +202,17 @@ ShaderSetup(
 
         if (buffer->alignedSize == 0) continue;
         ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(buffer->set);
-        numsets = uint_max(numsets, buffer->set + 1);
+        numsets = Math::max(numsets, buffer->set + 1);
 
         if (buffer->HasAnnotation("Visibility"))
         {
-            CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
-            rwbo.visibility = vis;
-            if ((vis & VertexShaderVisibility) == VertexShaderVisibility)       { numPerStageStorageBuffers[VertexShader]++; slotsUsed++; }
-            if ((vis & HullShaderVisibility) == HullShaderVisibility)           { numPerStageStorageBuffers[HullShader]++; slotsUsed++; }
-            if ((vis & DomainShaderVisibility) == DomainShaderVisibility)       { numPerStageStorageBuffers[DomainShader]++; slotsUsed++; }
-            if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)   { numPerStageStorageBuffers[GeometryShader]++; slotsUsed++; }
-            if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { numPerStageStorageBuffers[PixelShader]++; slotsUsed++; }
-            if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageStorageBuffers[ComputeShader]++; slotsUsed++; }
+            rwbo.visibility = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
+            UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
         }
         else
         {
-            numPerStageStorageBuffers[VertexShader]++;
-            numPerStageStorageBuffers[HullShader]++;
-            numPerStageStorageBuffers[DomainShader]++;
-            numPerStageStorageBuffers[GeometryShader]++;
-            numPerStageStorageBuffers[PixelShader]++;
-            numPerStageStorageBuffers[ComputeShader]++;
+            for (IndexT i = 0; i < NumShaders; i++)
+                numPerStageStorageBuffers[i]++;
         }
 
         if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP)
@@ -270,23 +276,14 @@ ShaderSetup(
 
             if (sampler->HasAnnotation("Visibility"))
             {
-                CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(sampler->GetAnnotationString("Visibility").c_str());
-                if ((vis & VertexShaderVisibility) == VertexShaderVisibility)       { numPerStageSamplers[VertexShader]++; };
-                if ((vis & HullShaderVisibility) == HullShaderVisibility)           { numPerStageSamplers[HullShader]++; };
-                if ((vis & DomainShaderVisibility) == DomainShaderVisibility)       { numPerStageSamplers[DomainShader]++; };
-                if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)   { numPerStageSamplers[GeometryShader]++; };
-                if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { numPerStageSamplers[PixelShader]++; };
-                if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { numPerStageSamplers[ComputeShader]++; };
-                smla.visibility = vis;
+                smla.visibility = ShaderVisibilityFromString(sampler->GetAnnotationString("Visibility").c_str());
+                uint32_t dummy;
+                UpdateOccupancy(numPerStageSamplers, dummy, smla.visibility);
             }
             else
             {
-                numPerStageSamplers[VertexShader]++;
-                numPerStageSamplers[HullShader]++;
-                numPerStageSamplers[DomainShader]++;
-                numPerStageSamplers[GeometryShader]++;
-                numPerStageSamplers[PixelShader]++;
-                numPerStageSamplers[ComputeShader]++;
+                for (IndexT i = 0; i < NumShaders; i++)
+                    numPerStageSamplers[i]++;
             }
             smla.slot = sampler->bindingLayout.binding;
             smla.sampler = samp;
@@ -294,7 +291,7 @@ ShaderSetup(
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(sampler->set);
             rinfo.samplers.Append(smla);
 
-            numsets = uint_max(numsets, sampler->set + 1);
+            numsets = Math::max(numsets, sampler->set + 1);
         }
     }
 
@@ -342,14 +339,9 @@ ShaderSetup(
             
             if (variable->HasAnnotation("Visibility"))
             {
-                CoreGraphics::ShaderVisibility vis = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
-                if ((vis & VertexShaderVisibility) == VertexShaderVisibility)       { storageImage ? numPerStageStorageImages[VertexShader]++	: numPerStageSampledImages[VertexShader]++; }
-                if ((vis & HullShaderVisibility) == HullShaderVisibility)           { storageImage ? numPerStageStorageImages[HullShader]++		: numPerStageSampledImages[HullShader]++; }
-                if ((vis & DomainShaderVisibility) == DomainShaderVisibility)       { storageImage ? numPerStageStorageImages[DomainShader]++	: numPerStageSampledImages[DomainShader]++; }
-                if ((vis & GeometryShaderVisibility) == GeometryShaderVisibility)   { storageImage ? numPerStageStorageImages[GeometryShader]++ : numPerStageSampledImages[GeometryShader]++; }
-                if ((vis & PixelShaderVisibility) == PixelShaderVisibility)         { storageImage ? numPerStageStorageImages[PixelShader]++	: numPerStageSampledImages[PixelShader]++; }
-                if ((vis & ComputeShaderVisibility) == ComputeShaderVisibility)     { storageImage ? numPerStageStorageImages[ComputeShader]++	: numPerStageSampledImages[ComputeShader]++; }
-                tex.visibility = vis;
+                tex.visibility = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
+                uint32_t dummy = 0;
+                UpdateOccupancy(storageImage ? numPerStageStorageImages : numPerStageSampledImages, dummy, tex.visibility);
             }
 
             if (remainingTextures < (uint32_t)variable->arraySizes[0])
@@ -374,7 +366,7 @@ ShaderSetup(
             if (storageImage) info.rwTextures.Append(tex);
             else              info.textures.Append(tex);
 
-            numsets = uint_max(numsets, variable->set + 1);
+            numsets = Math::max(numsets, variable->set + 1);
         }
         else if (variable->type >= AnyFX::InputAttachment && variable->type <= AnyFX::InputAttachmentUIntegerMS)
         {
@@ -388,7 +380,26 @@ ShaderSetup(
             ResourceTableLayoutCreateInfo& info = layoutCreateInfos.Emplace(variable->set);
             info.inputAttachments.Append(ia);
 
-            numsets = uint_max(numsets, variable->set + 1);
+            numsets = Math::max(numsets, variable->set + 1);
+        }
+        else if (CoreGraphics::RayTracingSupported && variable->type == AnyFX::AccelerationStructure)
+        {
+            resourceSlotMapping.Add(variable->name.c_str(), variable->binding);
+
+            ResourceTableLayoutAccelerationStructure tlas;
+            tlas.slot = variable->bindingLayout.binding;
+            tlas.num = variable->bindingLayout.descriptorCount;
+            tlas.visibility = AllVisibility;
+
+            if (variable->HasAnnotation("Visibility"))
+                tlas.visibility = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
+
+
+
+            ResourceTableLayoutCreateInfo& info = layoutCreateInfos.Emplace(variable->set);
+            info.accelerationStructures.Append(tlas);
+
+            numsets = Math::max(numsets, variable->set + 1);
         }
     }
     uint32_t maxPerStageStorageImages = props.limits.maxPerStageDescriptorStorageImages;
@@ -492,7 +503,7 @@ VkShaderCreateSignature(const VkDescriptorSetLayoutBinding& bind)
 const VkProgramReflectionInfo&
 ShaderGetProgramReflection(const CoreGraphics::ShaderProgramId shaderProgramId)
 {
-    return shaderAlloc.Get<Shader_ProgramAllocator>(shaderProgramId.shaderId).Get<ShaderProgram_ReflectionInfo>(shaderProgramId.programId);
+    return shaderProgramAlloc.Get<ShaderProgram_ReflectionInfo>(shaderProgramId.programId);
 }
 
 } // namespace Vulkan
@@ -576,30 +587,32 @@ CreateShader(const ShaderCreateInfo& info)
 
     // setup shader variations
     const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
-    for (size_t i = 0; i < programs.size(); i++)
+    if (!programs.empty())
     {
-        // get program object from shader subsystem
-        VkShaderProgramAllocator& programAllocator = shaderAlloc.Get<Shader_ProgramAllocator>(id);
-        AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
+        for (size_t i = 0; i < programs.size(); i++)
+        {
+            // get program object from shader subsystem
+            AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
 
-        // allocate new program object and set it up
-        Ids::Id32 programId = programAllocator.Alloc();
-        VkShaderProgramSetup(programId, info.name, program, setupInfo.pipelineLayout, shaderAlloc.Get<Shader_ProgramAllocator>(id));
+            // allocate new program object and set it up
+            Ids::Id32 programId = shaderProgramAlloc.Alloc();
+            VkShaderProgramSetup(programId, info.name, program, setupInfo.pipelineLayout);
 
-        // make an ID which is the shader id and program id
-        ShaderProgramId shaderProgramId;
-        shaderProgramId.programId = programId;
-        shaderProgramId.shaderId = ret.resourceId;
-        shaderProgramId.shaderType = ret.resourceType;
-        runtimeInfo.programMap.Add(programAllocator.Get<0>(programId).mask, shaderProgramId);
+            // make an ID which is the shader id and program id
+            ShaderProgramId shaderProgramId;
+            shaderProgramId.programId = programId;
+            shaderProgramId.shaderId = ret.resourceId;
+            shaderProgramId.shaderType = ret.resourceType;
+            runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
+        }
+
+        // set active variation
+        runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
+        runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
     }
 
     // delete the AnyFX effect
     delete effect;
-
-    // set active variation
-    runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
-    runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
 
 #if __NEBULA_HTTP__
     //res->debugState = res->CreateState();
@@ -614,14 +627,13 @@ void
 DeleteShader(const ShaderId id)
 {
     VkShaderSetupInfo& setup = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
-    VkShaderProgramAllocator& programs = shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId);
     VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(id.resourceId);
     ShaderCleanup(setup.dev, setup.immutableSamplers, setup.descriptorSetLayouts, setup.uniformBufferMap, setup.pipelineLayout);
 
     for (IndexT i = 0; i < runtime.programMap.Size(); i++)
     {
-        VkShaderProgramSetupInfo& progSetup = programs.Get<ShaderProgram_SetupInfo>(runtime.programMap.ValueAtIndex(i).programId);
-        VkShaderProgramRuntimeInfo& progRuntime = programs.Get<ShaderProgram_RuntimeInfo>(runtime.programMap.ValueAtIndex(i).programId);
+        VkShaderProgramSetupInfo& progSetup = shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(runtime.programMap.ValueAtIndex(i).programId);
+        VkShaderProgramRuntimeInfo& progRuntime = shaderProgramAlloc.Get<ShaderProgram_RuntimeInfo>(runtime.programMap.ValueAtIndex(i).programId);
         VkShaderProgramDiscard(progSetup, progRuntime, progRuntime.pipeline);
     }
     runtime.programMap.Clear();
@@ -690,14 +702,13 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
     for (IndexT i = 0; i < programs.size(); i++)
     {
         // get program object from shader subsystem
-        VkShaderProgramAllocator& programAllocator = shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId);
         AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
         CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(program->GetAnnotationString("Mask").c_str());
 
         const ShaderProgramId& shaderProgramId = runtimeInfo.programMap[mask];
 
         // allocate new program object and set it up
-        VkShaderProgramSetup(shaderProgramId.programId, setupInfo.name, program, setupInfo.pipelineLayout, shaderAlloc.Get<Shader_ProgramAllocator>(id.resourceId));
+        VkShaderProgramSetup(shaderProgramId.programId, setupInfo.name, program, setupInfo.pipelineLayout);
 
         // trigger a reload in the graphics device
         CoreGraphics::ReloadShaderProgram(shaderProgramId);
@@ -744,7 +755,7 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
-    if (idx == InvalidIndex) return std::move(CoreGraphics::ResourceTableSet());
+    if (idx == InvalidIndex) return CoreGraphics::ResourceTableSet();
     else
     {
         ResourceTableCreateInfo crInfo =
@@ -752,7 +763,7 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
             Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
             overallocationSize
         };
-        return std::move(CoreGraphics::ResourceTableSet(crInfo));
+        return CoreGraphics::ResourceTableSet(crInfo);
     }
 }
 
@@ -832,7 +843,7 @@ ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT index = info.constantBindings.FindIndex(name.Value());
-    if (index == InvalidIndex)  return { INT32_MAX }; // invalid binding
+    if (index == InvalidIndex)  return INT32_MAX; // invalid binding
     else                        return info.constantBindings.ValueAtIndex(index);
 }
 
@@ -1214,7 +1225,7 @@ ShaderGetPrograms(const CoreGraphics::ShaderId id)
 Util::StringAtom
 ShaderGetProgramName(CoreGraphics::ShaderProgramId id)
 {
-    return shaderAlloc.Get<Shader_ProgramAllocator>(id.shaderId).Get<0>(id.programId).name;
+    return shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(id.programId).name;
 }
 
 //------------------------------------------------------------------------------
@@ -1228,6 +1239,5 @@ ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask
     if (i == InvalidIndex)  return CoreGraphics::InvalidShaderProgramId;
     else                    return runtime.programMap.ValueAtIndex(i);
 }
-
 
 } // namespace CoreGraphics

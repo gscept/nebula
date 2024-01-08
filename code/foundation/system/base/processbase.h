@@ -66,10 +66,10 @@ protected:
 /**
 */
 inline
-Process::Process() :    
-    stdoutCaptureStream(nullptr),
+Process::Process() :
+    noConsoleWindow(false),
     isRunning(false),
-    noConsoleWindow(false)
+    stdoutCaptureStream(nullptr)   
 { 
     // empty
 }

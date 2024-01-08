@@ -19,10 +19,10 @@ using namespace Util;
 GamePadBase::GamePadBase() :
     index(0),
     isConnected(false),
-    hasTransform(false),
     buttonStates(NumButtons),
     axisValues(NumAxes, 0.0f),
     vibratorsDirty(false),
+    hasTransform(false),
     lowFreqVibrator(0.0f),
     highFreqVibrator(0.0f),
     creatorThreadId(Threading::Thread::GetMyThreadId())

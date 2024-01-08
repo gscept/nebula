@@ -11,7 +11,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/config.h"
 #include "resources/resourceid.h"
-#include "graphicsdevice.h"
 #include "ids/id.h"
 #include "ids/idallocator.h"
 #include "coregraphics/buffer.h"
@@ -19,6 +18,11 @@
 #include "coregraphics/primitivegroup.h"
 namespace CoreGraphics
 {
+
+struct VertexAlloc
+{
+    uint size, offset, node;
+};
 
 struct CmdBufferId;
 

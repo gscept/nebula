@@ -136,13 +136,13 @@ private:
     /// check if dynamic attribute array exists and create on demand
     static void CheckCreateDynamicAttributesArray();
 
-    bool isDynamic;
     Util::String name;
     Util::String typeName;
     Util::FourCC fourCC;
     AccessMode accessMode;
     Util::Variant defaultValue;
     const Attr::ValueType valueType;
+    bool isDynamic;
 
     friend class AttrId;
     static AttrExitHandler attrExitHandler;

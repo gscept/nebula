@@ -34,6 +34,7 @@ void
 PosixReadWriteLock::LockRead()
 {
     int ret = pthread_rwlock_rdlock(&this->lock);
+    readCounter++;
     n_assert(ret == 0);
 }
 
@@ -60,6 +61,7 @@ void
 PosixReadWriteLock::UnlockRead()
 {
     int ret = pthread_rwlock_unlock(&this->lock);
+    readCounter--;
     n_assert(ret == 0);
 }
 

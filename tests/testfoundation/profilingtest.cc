@@ -7,6 +7,7 @@
 #include "core/ptr.h"
 #include "profiling/profiling.h"
 #include "threading/thread.h"
+#include <functional>
 
 namespace Test
 {

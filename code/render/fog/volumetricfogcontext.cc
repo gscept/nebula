@@ -104,7 +104,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     rwbInfo.name = "FogListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    fogState.stagingClusterFogLists = std::move(BufferSet(rwbInfo));
+    fogState.stagingClusterFogLists = BufferSet(rwbInfo);
 
     fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
     fogState.renderProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Render"));
@@ -453,8 +453,6 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     fogUniforms.GlobalTurbidity = fogState.turbidity;
     fogState.color.store(fogUniforms.GlobalAbsorption);
     fogUniforms.DownscaleFog = 4;
-
-    TextureDimensions dims = TextureGetDimensions(fogState.fogVolumeTexture0);
 
     ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { fogState.fogVolumeTexture0, Volumefog::Table_Batch::Lighting_SLOT, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);

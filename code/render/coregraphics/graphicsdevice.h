@@ -27,6 +27,11 @@
 namespace CoreGraphics
 {
 
+extern bool RayTracingSupported;
+extern bool DynamicVertexInputSupported;
+extern bool VariableRateShadingSupported;
+extern bool MeshShadersSupported;
+
 struct GraphicsDeviceCreateInfo
 {
     uint64 globalConstantBufferMemorySize;
@@ -37,6 +42,12 @@ struct GraphicsDeviceCreateInfo
     uint64 maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
     byte numBufferedFrames : 3;
     bool enableValidation : 1;      // enables validation layer and writes output to console
+    struct Features
+    {
+        bool enableRayTracing : 1;
+        bool enableMeshShaders : 1;
+        bool enableVariableRateShading : 1;
+    } features;
 };
 
 /// create graphics device
@@ -123,7 +134,7 @@ struct GraphicsDeviceState
 
 #ifdef NEBULA_ENABLE_PROFILING
     Util::Array<FrameProfilingMarker> frameProfilingMarkers;
-#endif NEBULA_ENABLE_PROFILING
+#endif //NEBULA_ENABLE_PROFILING
 };
 
 struct GraphicsDeviceThreadState
@@ -191,11 +202,6 @@ ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetConstantBuffer(IndexT i);
 
-struct VertexAlloc
-{
-    uint size, offset, node;
-};
-
 /// Allocate vertices from the global vertex pool
 const VertexAlloc AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
 /// Allocate vertices from the global vertex pool by bytes
@@ -253,6 +259,10 @@ void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 void DelayedDeleteDescriptorSet(const CoreGraphics::ResourceTableId id);
 /// Add a pass to delayed delete
 void DelayedDeletePass(const CoreGraphics::PassId id);
+/// Add a blas for delayed delete
+void DelayedDeleteBlas(const CoreGraphics::BlasId id);
+/// Add a tlas for delayed delete
+void DelayedDeleteTlas(const CoreGraphics::TlasId id);
 
 /// Allocate a range of queries
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);

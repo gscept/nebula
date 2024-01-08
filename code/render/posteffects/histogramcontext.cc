@@ -96,7 +96,7 @@ HistogramContext::Create()
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
     bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
-    histogramState.histogramReadbackBuffers = std::move(CoreGraphics::BufferSet(bufInfo));
+    histogramState.histogramReadbackBuffers = CoreGraphics::BufferSet(bufInfo);
 
     bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants);
     bufInfo.mode = CoreGraphics::DeviceAndHost;
@@ -155,7 +155,6 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
     histogramState.sourceTexture = script->GetTexture("LightBuffer");
     auto dims = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
-    auto numMips = CoreGraphics::TextureGetNumMips(histogramState.sourceTexture);
     histogramState.sourceTextureBinding = HistogramCs::Table_Batch::ColorSource_SLOT;
     histogramState.sourceTextureDimensions = dims;
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
@@ -168,9 +167,6 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
             false
     });
     CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
-
-    uint dispatchX = (dims.width - 1) / 64;
-    uint dispatchY = (dims.height - 1) / 64;
 
     histogramState.logLuminanceRange = Math::log2(65000.0f); // R11G11B10 maxes out around 65k (https://www.khronos.org/opengl/wiki/Small_Float_Formats)
     //histogramState.logMinLuminance = Math::log2(10.0f);

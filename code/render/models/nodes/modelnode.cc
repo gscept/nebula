@@ -50,8 +50,8 @@ ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const P
     else if (FourCC('SSTA') == fourcc)
     {
         // string attribute, deprecated
-        StringAtom key = reader->ReadString();
-        String value = reader->ReadString();
+        UNUSED(StringAtom) key = reader->ReadString();
+        UNUSED(String) value = reader->ReadString();
         //this->SetStringAttr(key, value);
     }
     else

@@ -36,7 +36,7 @@ FrameResolve::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 
     PixelFormat::Code fmtSource = TextureGetPixelFormat(this->from);
-    PixelFormat::Code fmtDest = TextureGetPixelFormat(this->to);
+    //PixelFormat::Code fmtDest = TextureGetPixelFormat(this->to);
     //n_assert(fmtSource == fmtDest);
     bool isDepth = PixelFormat::IsDepthFormat(fmtSource);
 

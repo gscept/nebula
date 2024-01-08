@@ -31,7 +31,10 @@ if(FIPS_WINDOWS)
 elseif(FIPS_LINUX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.2 -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4 -mavx -w")
+    set(CXX_WARNING_FLAGS "-Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-copy -Wno-deprecated-volatile -Wno-unused-function -Wno-unknown-pragmas -Wno-ignored-pragmas -Wno-missing-braces -Wno-overloaded-virtual -Wno-unused-variable -Wno-tautological-constant-out-of-range-compare -w")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4 -mavx ${CXX_WARNING_FLAGS} ")
+
+    
 endif()
 
 set(CMAKE_CXX_STANDARD 20)

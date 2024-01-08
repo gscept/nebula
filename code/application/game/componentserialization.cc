@@ -89,7 +89,7 @@ ComponentSerialization::~ComponentSerialization()
 bool
 ComponentSerialization::ValidateTypeSize(MemDb::AttributeId component, uint32_t size)
 {
-    if (!MemDb::AttributeRegistry::TypeSize(component) == size)
+    if (MemDb::AttributeRegistry::TypeSize(component) != size)
     {
         return false;
     }
@@ -104,7 +104,7 @@ ComponentSerialization::ValidateTypeSize(MemDb::AttributeId component, uint32_t 
 template<> void
 IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 {
-    entity = { this->GetUInt(key) };
+    entity = Game::Entity(this->GetUInt(key));
 }
 
 //------------------------------------------------------------------------------

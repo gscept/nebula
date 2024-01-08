@@ -49,7 +49,7 @@ ActorContext::AllocateActorId(PxRigidActor* pxActor, ActorResourceId res)
     actor.res = res;
 #pragma warning(push)
 #pragma warning(disable: 4312)
-    pxActor->userData = (void*)id.id;
+    pxActor->userData = (void*)(uintptr_t)id.id;
 #pragma warning(pop)
     return id;
 }

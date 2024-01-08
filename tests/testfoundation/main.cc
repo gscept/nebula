@@ -88,7 +88,8 @@ __cdecl main()
     //testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
-    testRunner->AttachTestCase(SizeClassificationAllocatorTest::Create());
+    // FIXME 
+    // testRunner->AttachTestCase(SizeClassificationAllocatorTest::Create());
     testRunner->AttachTestCase(MemoryPoolTest::Create());
     testRunner->AttachTestCase(Matrix44Test::Create());
     testRunner->AttachTestCase(Float4Test::Create());

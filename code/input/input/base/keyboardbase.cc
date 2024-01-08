@@ -77,7 +77,7 @@ KeyboardBase::OnBeginFrame()
     for (i = 0; i < this->keyStates.Size(); i++)
     {
         KeyState& keyState = this->keyStates[i];
-        KeyState& nextKeyState = this->nextKeyStates[i];
+        //KeyState& nextKeyState = this->nextKeyStates[i];
 
         // NOTE: if the key was released in the previous frame,
         // clear the pressed state (see the KeyUp-handling

@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "characternode.h"
+#include "util/compilerhelper.h"
 
 namespace Models
 {
@@ -93,7 +94,7 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     }
     else if (FourCC('NJMS') == fourcc)
     {
-        SizeT numMasks = reader->ReadInt();
+        UNUSED(SizeT) numMasks = reader->ReadInt();
         //this->character->Skeleton().ReserveMasks(numMasks);
     }
     else if (FourCC('JOMS') == fourcc)
