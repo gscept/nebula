@@ -265,7 +265,7 @@ JobAlloc(SizeT bytes)
 {
     // make sure to always pad to next 16 byte alignment in case the 
     // context used needs to be aligned
-    bytes = Math::alignptr(bytes, 16);
+    bytes = Math::align(bytes, 16);
     n_assert((ctx.iterator + bytes) < ctx.scratchMemorySize);
     void* ret = (ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
     ctx.iterator += bytes;

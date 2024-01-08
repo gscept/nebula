@@ -132,13 +132,14 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     static Threading::AtomicCounter idCounter;
     idCounter = 1;
-    if (NodeInstances.nodeBoundingBoxes.Size() > 0)
+    if (nodes.Size() > 0)
     {
-        Threading::AtomicCounter counter = 0;
+        static Threading::AtomicCounter counter;
+        counter = 0;
 
         // Run job to collect model node ids
         Jobs2::JobDispatch(
-            [ids = ids.Begin(), nodes = nodes.Begin(), &counter](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+            [idData = ids.Begin(), nodeData = nodes.Begin()](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
             N_SCOPE(VisibilityIdCollectJob, Graphics);
             for (IndexT i = 0; i < groupSize; i++)
@@ -148,11 +149,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     return;
 
                 // Get node range and update ids buffer
-                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(ids[index]);
+                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
                 uint offset = Threading::Interlocked::Add(&counter, numNodes);
                 for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
-                    nodes[offset++] = j;
+                    nodeData[offset++] = j;
             }
         }, ids.Size(), 1024, {}, &idCounter, nullptr);
         
