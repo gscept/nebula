@@ -39,7 +39,7 @@ namespace Math
     struct vec3;
     struct vec4;
     struct quat;
-    struct transform44;
+    class transform44;
 };
 
 //------------------------------------------------------------------------------
