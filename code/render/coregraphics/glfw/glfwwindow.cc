@@ -800,7 +800,10 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
                 numPresentModes = 0;
             }
             break;
-        default: n_error("unhandled enum"); break;
+        case VK_PRESENT_MODE_FIFO_KHR:
+            continue;
+        default:
+            n_error("unhandled enum"); break;
         }
     }
 
