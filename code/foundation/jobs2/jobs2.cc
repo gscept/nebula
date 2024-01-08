@@ -163,7 +163,10 @@ next:
         n_assert(jobIndex != -1);
 
         // Run function
-        job->func(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize, job->data);
+        if (job->l.callable != nullptr)
+            job->l(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize);
+        else
+            job->func(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize, job->data);
 
         // Decrement number of finished jobs, and if this was the last one, signal the finished event
         if (Threading::Interlocked::Decrement(&job->groupCompletionCounter) == 0)

@@ -134,23 +134,13 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     idCounter = 1;
     if (NodeInstances.nodeBoundingBoxes.Size() > 0)
     {
-        struct IdUpdateContext
-        {
-            Graphics::GraphicsEntityId* ids;
-            Util::Array<uint32>* nodes;
-            Threading::AtomicCounter counter;
-        } idCtx;
-
-        idCtx.ids = ids.Begin();
-        idCtx.nodes = &nodes;
-        idCtx.counter = 0;
+        Threading::AtomicCounter counter = 0;
 
         // Run job to collect model node ids
-        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        Jobs2::JobDispatch(
+            [ids = ids.Begin(), nodes = nodes.Begin(), &counter](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
             N_SCOPE(VisibilityIdCollectJob, Graphics);
-
-            auto context = static_cast<IdUpdateContext*>(ctx);
             for (IndexT i = 0; i < groupSize; i++)
             {
                 IndexT index = i + invocationOffset;
@@ -158,13 +148,13 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     return;
 
                 // Get node range and update ids buffer
-                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(context->ids[index]);
+                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(ids[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
-                uint offset = Threading::Interlocked::Add(&context->counter, numNodes);
+                uint offset = Threading::Interlocked::Add(&counter, numNodes);
                 for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
-                    context->nodes->Begin()[offset++] = j;
+                    nodes[offset++] = j;
             }
-        }, ids.Size(), 1024, idCtx, {}, &idCounter, nullptr);
+        }, ids.Size(), 1024, {}, &idCounter, nullptr);
         
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
