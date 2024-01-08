@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           pushd ../physx
-          echo "name=gitrev::$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd  
         
       - name: Cache PhysX
@@ -100,7 +100,7 @@ jobs:
         shell: bash
         run: |
           pushd ../fips-anyfx
-          echo "name=gitrev::$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd
                     
       - name: Check for Anyfx cached build
