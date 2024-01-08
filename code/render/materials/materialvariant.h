@@ -191,15 +191,7 @@ struct MaterialVariant
     template <typename T> void Set(const T& data)
     {
         auto size = TypeToSize(this->type);
-        switch (this->type.needsDeref)
-        {
-            case true:
-                memcpy(this->mem, &data, size);
-                return;
-            case false:
-                memcpy(reinterpret_cast<void*>(&this->mem), &data, size);
-                return;
-        }
+        memcpy(this->type.needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, size);
     }
 };
 
