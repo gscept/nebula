@@ -134,12 +134,12 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     idCounter = 1;
     if (nodes.Size() > 0)
     {
-        static Threading::AtomicCounter counter;
+        Threading::AtomicCounter counter;
         counter = 0;
 
         // Run job to collect model node ids
         Jobs2::JobDispatch(
-            [idData = ids.Begin(), nodeData = nodes.Begin()](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+            [idData = ids.Begin(), nodeData = nodes.Begin(), counter](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset) mutable
         {
             N_SCOPE(VisibilityIdCollectJob, Graphics);
             for (IndexT i = 0; i < groupSize; i++)

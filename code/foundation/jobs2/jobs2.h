@@ -205,7 +205,7 @@ JobAlloc(SizeT count)
 */
 template <typename LAMBDA> void
 JobDispatch(
-    const LAMBDA&& func
+    LAMBDA&& func
     , const SizeT numInvocations
     , const SizeT groupSize
     , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
