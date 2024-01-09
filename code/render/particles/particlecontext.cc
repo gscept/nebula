@@ -453,24 +453,19 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
     {
         const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
 
-        struct ParticleConstantContext
-        {
-            const Util::Array<Util::Array<ParticleSystemRuntime>>* allSystems;
-            const Util::Array<Graphics::GraphicsEntityId>* models;
-            Math::mat4 invViewMatrix;
-        } jobCtx;
-        jobCtx.allSystems = &allSystems;
-        jobCtx.models = &graphicsEntities;
-        jobCtx.invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera());
-
         n_assert(ParticleContext::ConstantUpdateCounter == 0);
         ParticleContext::ConstantUpdateCounter = 1;
 
         // Run job to update constants, can be per-view because of the billboard flag
-        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        Jobs2::JobDispatch(
+            [
+                allSystems = allSystems.ConstBegin()
+                , models = graphicsEntities.ConstBegin()
+                , invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera())
+            ]
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
             N_SCOPE(ParticleConstantUpdate, Graphics);
-            auto context = static_cast<ParticleConstantContext*>(ctx);
             const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
 
             for (IndexT i = 0; i < groupSize; i++)
@@ -479,8 +474,8 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                 if (index >= totalJobs)
                     return;
 
-                const Util::Array<ParticleSystemRuntime>& systems = context->allSystems->Get(index);
-                const NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(context->models->Get(index));
+                const Util::Array<ParticleSystemRuntime>& systems = allSystems[index];
+                const NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(models[index]);
 
                 // TODO: Can't we make this a part of the particle chain system job chain? Run one job per particle system, and also update constants and whatnot there?
                 IndexT j;
@@ -500,7 +495,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
                         // update system transform
                         if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
-                            system.transform = system.transform * context->invViewMatrix;
+                            system.transform = system.transform * invViewMatrix;
                         system.transform.store(block.EmitterTransform);
 
                         // update parameters
@@ -516,7 +511,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                 }
             }
 
-        }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::ConstantUpdateCounter, &ParticleContext::totalCompletionEvent);
+        }, allSystems.Size(), 128, { &allSystemsCompleteCounter }, &ParticleContext::ConstantUpdateCounter, &ParticleContext::totalCompletionEvent);
     }
 
     if (ParticleContext::ConstantUpdateCounter == 0)

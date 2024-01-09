@@ -596,35 +596,29 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     n_assert(TransformsUpdateCounter == 0);
     TransformsUpdateCounter = 1;
 
-    struct TransformUpdateContext
-    {
-        const Util::Array<NodeInstanceRange>* nodeInstanceTransformRanges;
-        const Util::Array<Util::Array<uint32>>* nodeInstanceRoots;
-        Util::Array<Math::mat4>* pending;
-        Util::Array<bool>* hasPending;
-    } transCtx;
-    transCtx.nodeInstanceTransformRanges = &nodeInstanceTransformRanges;
-    transCtx.nodeInstanceRoots = &nodeInstanceRoots;
-    transCtx.pending = &pending;
-    transCtx.hasPending = &hasPending;
-
-    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    Jobs2::JobDispatch(
+        [
+            nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
+            , nodeInstanceRoots = nodeInstanceRoots.ConstBegin()
+            , pending = pending.Begin()
+            , hasPending = hasPending.Begin()
+        ]
+    (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
         N_SCOPE(ModelTransformUpdate, Graphics);
-        auto context = static_cast<TransformUpdateContext*>(ctx);
         for (IndexT i = 0; i < groupSize; i++)
         {
             IndexT index = i + invocationOffset;
             if (index >= totalJobs)
                 return;
 
-            const NodeInstanceRange& transformRange = context->nodeInstanceTransformRanges->Get(index);
-            const Util::Array<uint32>& roots = context->nodeInstanceRoots->Get(index);
-            if (context->hasPending->Get(index))
+            const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
+            const Util::Array<uint32>& roots = nodeInstanceRoots[index];
+            if (hasPending[index])
             {
                 // The pending transform is the root of the model
-                const Math::mat4 transform = context->pending->Get(index);
-                context->hasPending->Get(index) = false;
+                const Math::mat4 transform = pending[index];
+                hasPending[index] = false;
 
                 // Set root transform
                 SizeT j;
@@ -642,50 +636,44 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 }
             }
         }
-    }, nodeInstanceTransformRanges.Size(), 256, transCtx, nullptr, &TransformsUpdateCounter, nullptr);
+    }, nodeInstanceTransformRanges.Size(), 256, nullptr, &TransformsUpdateCounter, nullptr);
 
     static Threading::AtomicCounter lodUpdateCounter = 0;
     n_assert(lodUpdateCounter == 0);
     lodUpdateCounter = 1;
 
-    struct LodUpdateContext
-    {
-        const Util::Array<NodeInstanceRange>* nodeInstanceTransformRanges;
-        const Util::Array<NodeInstanceRange>* nodeInstanceStateRanges;
-        Util::Array<Math::bbox>* instanceBoxes;
-        Math::mat4 cameraTransform;
-    } renderCtx;
-    renderCtx.nodeInstanceTransformRanges = &nodeInstanceTransformRanges;
-    renderCtx.nodeInstanceStateRanges = &nodeInstanceStateRanges;
-    renderCtx.instanceBoxes = &instanceBoxes;
-    renderCtx.cameraTransform = cameraTransform;
-
-    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    Jobs2::JobDispatch(
+        [
+            nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
+            , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
+            , instanceBoxes = instanceBoxes.Begin()
+            , cameraTransform
+        ]
+    (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
         N_SCOPE(ModelLodUpdate, Graphics);
-        auto context = static_cast<LodUpdateContext*>(ctx);
         for (IndexT i = 0; i < groupSize; i++)
         {
             IndexT index = i + invocationOffset;
             if (index >= totalJobs)
                 return;
 
-            const NodeInstanceRange& stateRange = context->nodeInstanceStateRanges->Get(index);
-            const NodeInstanceRange& transformRange = context->nodeInstanceTransformRanges->Get(index);
+            const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
+            const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
             SizeT j;
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
                 Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
                 Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
                 box.affine_transform(transform);
-                NodeInstances.renderable.nodeBoundingBoxes[j] = box;
+                instanceBoxes[j] = box;
 
                 Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
                 NodeInstances.renderable.nodeMeshes[j] = primitiveNode->GetMesh();
                 NodeInstances.renderable.nodePrimitiveGroup[j] = primitiveNode->GetPrimitiveGroup();
 
                 // calculate view vector to calculate LOD
-                Math::vec4 viewVector = context->cameraTransform.position - transform.position;
+                Math::vec4 viewVector = cameraTransform.position - transform.position;
                 float viewDistance = length(viewVector);
                 float textureLod = Math::max(0.0f, (viewDistance - 10.0f) / 30.5f);
 
@@ -721,29 +709,28 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
             }
         }
-    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);
+    }, nodeInstanceStateRanges.Size(), 256, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);
 
     n_assert(ConstantsUpdateCounter == 0);
     ConstantsUpdateCounter = 1;
 
-    struct ConstantUpdateContext
-    {
-        const Util::Array<NodeInstanceRange>* nodeInstanceTransformRanges;
-        const Util::Array<NodeInstanceRange>* nodeInstanceStateRanges;
-    };
-
-    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    Jobs2::JobDispatch(
+        [
+            nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
+            , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
+            , cameraTransform
+        ]
+    (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
         N_SCOPE(ModelConstantUpdate, Graphics);
-        auto context = static_cast<ConstantUpdateContext*>(ctx);
         for (IndexT i = 0; i < groupSize; i++)
         {
             IndexT index = i + invocationOffset;
             if (index >= totalJobs)
                 return;
 
-            const NodeInstanceRange& stateRange = context->nodeInstanceStateRanges->Get(index);
-            const NodeInstanceRange& transformRange = context->nodeInstanceTransformRanges->Get(index);
+            const NodeInstanceRange& stateRange = nodeInstanceStateRanges[index];
+            const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
             SizeT j;
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
@@ -760,7 +747,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
             }
         }
-    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
+    }, nodeInstanceStateRanges.Size(), 256, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
 }
 
 //------------------------------------------------------------------------------
