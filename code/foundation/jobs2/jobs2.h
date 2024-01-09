@@ -21,6 +21,20 @@ class Event;
 namespace Jobs2 
 {
 
+#define JOB_SIGNATURE (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+#define JOB_BEGIN_LOOP \
+for (IndexT i = 0; i < groupSize; i++)\
+{\
+    IndexT __INDEX = i + invocationOffset;\
+    if (__INDEX >= totalJobs)\
+        return;\
+
+#define JOB_END_LOOP \
+}
+
+#define JOB_ITEM_INDEX __INDEX
+
+
 class JobThread;
 
 void* JobAlloc(SizeT bytes);
@@ -38,7 +52,7 @@ struct Callable : CallableStub<ARGS...>
 {
     LAMBDA l;
 
-    Callable(LAMBDA&& l) : l(std::move(l)) {}
+    Callable(LAMBDA l) : l(std::move(l)) {};
 
     void invoke(ARGS... args) override
     {
@@ -51,9 +65,11 @@ struct Lambda
     CallableStub<SizeT, SizeT, IndexT, SizeT>* callable;
 
     template<typename LAMBDA>
-    Lambda(LAMBDA&& l) : callable((CallableStub<SizeT, SizeT, IndexT, SizeT>*)Jobs2::JobAlloc(sizeof(LAMBDA))) 
+    Lambda(LAMBDA l)
     {
-        new (this->callable) Callable<LAMBDA, SizeT, SizeT, IndexT, SizeT>(std::forward<LAMBDA>(l));
+        using CallableType = Callable<LAMBDA, SizeT, SizeT, IndexT, SizeT>;
+        this->callable = (CallableType*)Jobs2::JobAlloc(sizeof(CallableType));
+        new (this->callable) CallableType(l);
     };
 
     void operator()(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
@@ -263,6 +279,21 @@ JobDispatch(
     {
         thread->SignalWorkAvailable();
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename LAMBDA> void
+JobDispatch(
+    LAMBDA&& func
+    , const SizeT numInvocations
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
+    , Threading::Event* signalEvent = nullptr
+)
+{
+    JobDispatch(func, numInvocations, numInvocations, waitCounters, doneCounter, signalEvent);
 }
 
 //------------------------------------------------------------------------------
