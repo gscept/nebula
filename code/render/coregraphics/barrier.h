@@ -203,6 +203,62 @@ void BarrierPop(const CoreGraphics::CmdBufferId buf);
 /// repeat barrier in queue
 void BarrierRepeat(const CoreGraphics::CmdBufferId buf);
 
+struct BarrierScope
+{
+    BarrierScope(const CmdBufferId buf, CoreGraphics::PipelineStage fromStage, CoreGraphics::PipelineStage toStage, const Util::FixedArray<TextureBarrierInfo>& textures) 
+        : buf(buf)
+        , fromStage(fromStage)
+        , toStage(toStage)
+        , textures(textures)
+        , buffers(nullptr)
+        , accelerationStructures(nullptr)
+    {
+        this->Push();
+    };
+
+    BarrierScope(const CmdBufferId buf, CoreGraphics::PipelineStage fromStage, CoreGraphics::PipelineStage toStage, const Util::FixedArray<BufferBarrierInfo>& buffers) 
+        : buf(buf)
+        , fromStage(fromStage)
+        , toStage(toStage)
+        , textures(nullptr)
+        , buffers(buffers)
+        , accelerationStructures(nullptr)
+    {
+        this->Push();
+    };
+
+    BarrierScope(const CmdBufferId buf, CoreGraphics::PipelineStage fromStage, CoreGraphics::PipelineStage toStage, const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures) 
+        : buf(buf)
+        , fromStage(fromStage)
+        , toStage(toStage)
+        , textures(nullptr)
+        , buffers(nullptr)
+        , accelerationStructures(accelerationStructures)
+    {
+        this->Push();
+    };
+
+    CmdBufferId buf;
+    CoreGraphics::PipelineStage fromStage;
+    CoreGraphics::PipelineStage toStage;
+    Util::FixedArray<TextureBarrierInfo> textures;
+    Util::FixedArray<BufferBarrierInfo> buffers;
+    Util::FixedArray<AccelerationStructureBarrierInfo> accelerationStructures;
+
+    /// Inverse barrier
+    void Pop()
+    {
+        CmdBarrier(this->buf, this->toStage, this->fromStage, CoreGraphics::BarrierDomain::Global, this->textures, this->buffers, this->accelerationStructures);
+    }
+
+private:
+    /// Apply 
+    void Push()
+    {
+        CmdBarrier(this->buf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, this->textures, this->buffers, this->accelerationStructures);
+    }
+};
+
 
 //------------------------------------------------------------------------------
 /**

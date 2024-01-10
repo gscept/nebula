@@ -135,7 +135,17 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits
             from.offset = offset;
             to.offset = baseVertexOffset;
             CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            BarrierScope barrierScope(
+                cmdBuf,
+                CoreGraphics::PipelineStage::AllShadersRead,
+                CoreGraphics::PipelineStage::TransferWrite,
+                {
+                    BufferBarrierInfo {.buf = buffer, .subres = BufferSubresourceInfo(baseVertexOffset, header->vertexDataSize)}
+                }
+            );
             CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, vbo, { to }, header->vertexDataSize);
+            barrierScope.Pop();
+
             CoreGraphics::UnlockGraphicsSetupCommandBuffer();
             BufferIdRelease(vbo);
 
@@ -156,7 +166,17 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits
             from.offset = offset;
             to.offset = baseIndexOffset;
             CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+
+            BarrierScope barrierScope(
+                cmdBuf,
+                CoreGraphics::PipelineStage::AllShadersRead,
+                CoreGraphics::PipelineStage::TransferWrite,
+                {
+                    BufferBarrierInfo {.buf = buffer, .subres = BufferSubresourceInfo(baseIndexOffset, header->vertexDataSize)}
+                }
+            );
             CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, ibo, { to }, header->indexDataSize);
+            barrierScope.Pop();
             CoreGraphics::UnlockGraphicsSetupCommandBuffer();
             BufferIdRelease(ibo);
 

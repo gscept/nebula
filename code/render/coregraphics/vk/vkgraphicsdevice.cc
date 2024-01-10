@@ -1418,10 +1418,53 @@ RemoveBackBufferTexture(const CoreGraphics::TextureId tex)
 //------------------------------------------------------------------------------
 /**
 */
+TransferLock
+LockTransfer()
+{
+    TransferLock ret(&setupLock);
+    if (state.setupTransferCommandBuffer == CoreGraphics::InvalidCmdBufferId)
+    {
+        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+        cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
+        cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
+        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        state.setupTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+
+        CoreGraphics::CmdBeginRecord(state.setupTransferCommandBuffer, { true, false, false });
+        CoreGraphics::CmdBeginMarker(state.setupTransferCommandBuffer, NEBULA_MARKER_PURPLE, "Transfer");
+    }
+    else
+    {
+        CmdBufferIdAcquire(state.setupTransferCommandBuffer);
+    }
+    ret.transferBuffer = state.setupTransferCommandBuffer;
+
+    if (state.setupGraphicsCommandBuffer == CoreGraphics::InvalidCmdBufferId)
+    {
+        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+        cmdCreateInfo.pool = state.setupGraphicsCommandBufferPool;
+        cmdCreateInfo.usage = CoreGraphics::QueueType::GraphicsQueueType;
+        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        state.setupGraphicsCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+
+        CoreGraphics::CmdBeginRecord(state.setupGraphicsCommandBuffer, { true, false, false });
+        CoreGraphics::CmdBeginMarker(state.setupGraphicsCommandBuffer, NEBULA_MARKER_PURPLE, "Setup");
+    }
+    else
+    {
+        CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
+    }
+    ret.setupBuffer = state.setupGraphicsCommandBuffer;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphics::CmdBufferId
 LockTransferSetupCommandBuffer()
 {
-    transferLock.Enter();
+    setupLock.Enter();
     if (state.setupTransferCommandBuffer == CoreGraphics::InvalidCmdBufferId)
     {
         CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
@@ -1448,7 +1491,7 @@ void
 UnlockTransferSetupCommandBuffer()
 {
     CmdBufferIdRelease(state.setupTransferCommandBuffer);
-    transferLock.Leave();
+    setupLock.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -1505,7 +1548,7 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
 {
     // Submit transfer and graphics commands from this frame
     CoreGraphics::SubmissionWaitEvent transferWait, graphicsWait;
-    transferLock.Enter();
+    setupLock.Enter();
     if (state.setupTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
         CmdBufferIdAcquire(state.setupTransferCommandBuffer);
@@ -1524,9 +1567,6 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         // Reset command buffer id for the next frame
         state.setupTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
     }
-    transferLock.Leave();
-
-    setupLock.Enter();
     if (state.setupGraphicsCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
         CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
@@ -2078,7 +2118,7 @@ NewFrame()
 {
     // We need to lock here so that we don't accidentally insert a delete resource inbetween updating
     // the current buffer index and deleting pending resources
-    Threading::CriticalScope transferScope(&transferLock);
+    //Threading::CriticalScope transferScope(&transferLock);
     Threading::CriticalScope setupScope(&setupLock);
     Threading::CriticalScope deleteScope(&delayedDeleteSection);
 
