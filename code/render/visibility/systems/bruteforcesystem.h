@@ -21,7 +21,7 @@ private:
     void Setup(const BruteforceSystemLoadInfo& info);
 
     /// run system
-    void Run(const Threading::AtomicCounter* const* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters) override;
+    void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters) override;
 };
 
 } // namespace Visibility

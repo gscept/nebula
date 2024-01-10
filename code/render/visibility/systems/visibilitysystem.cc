@@ -20,9 +20,9 @@ VisibilitySystem::VisibilitySystem()
 void
 VisibilitySystem::PrepareObservers(const Math::mat4* transforms, bool* orthoFlags, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
-    this->obs.completionCounters.Reserve(count);
-    for (IndexT i = 0; i < count; i++)
-        this->obs.completionCounters.Append(new Threading::AtomicCounter(0));
+    this->obs.completionCounters.Resize(count);
+    for (auto& counter : this->obs.completionCounters)
+        counter = 0;
     this->obs.transforms = transforms;
     this->obs.isOrtho = orthoFlags;
     this->obs.results = results;
@@ -46,7 +46,7 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, co
 /**
 */
 void
-VisibilitySystem::Run(const Threading::AtomicCounter* const* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
+VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     // do nothing
 }
@@ -54,7 +54,7 @@ VisibilitySystem::Run(const Threading::AtomicCounter* const* previousSystemCompl
 //------------------------------------------------------------------------------
 /**
 */
-const Threading::AtomicCounter*
+const Threading::AtomicCounter
 VisibilitySystem::GetCompletionCounter(IndexT i) const
 {
     return this->obs.completionCounters[i];
@@ -63,7 +63,7 @@ VisibilitySystem::GetCompletionCounter(IndexT i) const
 //------------------------------------------------------------------------------
 /**
 */
-const Threading::AtomicCounter* const*
+const Threading::AtomicCounter*
 VisibilitySystem::GetCompletionCounters() const
 {
     return this->obs.completionCounters.ConstBegin();

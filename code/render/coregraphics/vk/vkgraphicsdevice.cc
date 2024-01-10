@@ -1562,7 +1562,7 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
     AddSubmissionEvent(ret);
 
     Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmds);
-    state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(markers);
+    state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
     state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmds));
     return ret;
 }

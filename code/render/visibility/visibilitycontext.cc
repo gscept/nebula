@@ -143,17 +143,23 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 , nodeData = nodes.Begin()
                 , counter
             ]
-        JOB_SIGNATURE mutable
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset) mutable
         {
             N_SCOPE(VisibilityIdCollectJob, Graphics);
-            JOB_BEGIN_LOOP
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                // Get item index
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
+
                 // Get node range and update ids buffer
-                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[JOB_ITEM_INDEX]);
+                const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
                 uint offset = Threading::Interlocked::Add(&counter, numNodes);
                 for (IndexT j = NodeInstances.begin; j < NodeInstances.end; j++)
                     nodeData[offset++] = j;
-            JOB_END_LOOP
+            }
         }, ids.Size(), 1024, {}, &idCounter, nullptr);
         
         for (i = 0; i < ObserverContext::systems.Size(); i++)
@@ -164,7 +170,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // run all visibility systems
-    const Threading::AtomicCounter* const* prevSystemCounters = nullptr;
+    const Threading::AtomicCounter* prevSystemCounters = nullptr;
     if ((observerTransforms.Size() > 0) && (NodeInstances.nodeBoundingBoxes.Size() > 0))
     {
         for (i = 0; i < ObserverContext::systems.Size(); i++)
@@ -197,7 +203,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         // For particles, that's done before visibility so we can omit it here
         Util::Array<const Threading::AtomicCounter*> waitCounters =
         {
-            prevSystemCounters[i],
+            &prevSystemCounters[i],
             &Models::ModelContext::ConstantsUpdateCounter,
             &Characters::CharacterContext::ConstantUpdateCounter,
         };

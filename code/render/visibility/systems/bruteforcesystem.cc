@@ -22,22 +22,22 @@ BruteforceSystem::Setup(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
+BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     IndexT i;
     for (i = 0; i < this->obs.count; i++)
     {
         Math::mat4 camera = this->obs.transforms[i];
 
-        n_assert(*this->obs.completionCounters[i] == 0);
-        (*this->obs.completionCounters[i]) = 1;
+        n_assert(this->obs.completionCounters[i] == 0);
+        this->obs.completionCounters[i] = 1;
 
         // Setup counters
         Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters == nullptr ? 0 : 1));
         if (!extraCounters.IsEmpty())
             Memory::CopyElements(extraCounters.Begin(), counters.Begin(), extraCounters.Size());
         if (previousSystemCompletionCounters != nullptr)
-            counters[extraCounters.Size()] = previousSystemCompletionCounters[i];
+            counters[extraCounters.Size()] = &previousSystemCompletionCounters[i];
 
         // Splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
         // This provides a way to rearrange the camera transform into a more SSE friendly matrix transform in the job
@@ -99,7 +99,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompl
         , this->ent.count
         , 1024
         , counters
-        , this->obs.completionCounters[i]
+        , { &this->obs.completionCounters[i] }
         , nullptr);
     }
 }
