@@ -163,7 +163,10 @@ next:
         n_assert(jobIndex != -1);
 
         // Run function
-        job->func(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize, job->data);
+        if (job->l.callable != nullptr)
+            job->l(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize);
+        else
+            job->func(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize, job->data);
 
         // Decrement number of finished jobs, and if this was the last one, signal the finished event
         if (Threading::Interlocked::Decrement(&job->groupCompletionCounter) == 0)
@@ -262,7 +265,7 @@ JobAlloc(SizeT bytes)
 {
     // make sure to always pad to next 16 byte alignment in case the 
     // context used needs to be aligned
-    bytes = Math::alignptr(bytes, 16);
+    bytes = Math::align(bytes, 16);
     n_assert((ctx.iterator + bytes) < ctx.scratchMemorySize);
     void* ret = (ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
     ctx.iterator += bytes;

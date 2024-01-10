@@ -712,36 +712,31 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         n_assert(ConstantUpdateCounter == 0);
         ConstantUpdateCounter = 1;
 
-        struct UpdateJointsContext
-        {
-            const Util::Array<IndexT>* characterNodeIndices;
-            const Util::Array<Util::FixedArray<Math::mat4>>* jointPalettes;
-            const Util::Array<Graphics::GraphicsEntityId>* entities;
-        } jobCtx;
-        jobCtx.characterNodeIndices = &characterSkinNodeIndices;
-        jobCtx.entities = &models;
-        jobCtx.jointPalettes = &jointPalettes;
-
         // Run job to update constants
-        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        Jobs2::JobDispatch(
+            [
+                characterNodeIndices = characterSkinNodeIndices.ConstBegin()
+                , entities = models.ConstBegin()
+                , jointPalettes = jointPalettes.ConstBegin()
+            ]
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
             N_SCOPE(JointConstantsUpdate, Graphics);
-            auto jobCtx = static_cast<UpdateJointsContext*>(ctx);
             for (IndexT i = 0; i < groupSize; i++)
             {
                 IndexT index = invocationOffset + i;
                 if (index >= totalJobs)
                     return;
 
-                const Graphics::GraphicsEntityId entity = jobCtx->entities->Get(index);
+                const Graphics::GraphicsEntityId entity = entities[index];
                 if (entity == Graphics::InvalidGraphicsEntityId)
                     continue;
 
                 const Models::NodeInstanceRange& range = Models::ModelContext::GetModelRenderableRange(entity);
                 const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
 
-                const Util::FixedArray<Math::mat4>& jointPalette = jobCtx->jointPalettes->Get(index);
-                IndexT node = range.begin + jobCtx->characterNodeIndices->Get(index);
+                const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[index];
+                IndexT node = range.begin + characterNodeIndices[index];
                 n_assert(renderables.nodeTypes[node] == Models::NodeType::CharacterSkinNodeType);
                 Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
                 const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
@@ -764,7 +759,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }
 
-        }, characterSkinNodeIndices.Size(), 64, jobCtx, { &animationCounter }, &ConstantUpdateCounter, &CharacterContext::totalCompletionEvent);
+        }, characterSkinNodeIndices.Size(), 64, { &animationCounter }, &ConstantUpdateCounter, &CharacterContext::totalCompletionEvent);
     }
     else // If we have no jobs, just signal completion event
         CharacterContext::totalCompletionEvent.Signal();
