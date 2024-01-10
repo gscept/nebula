@@ -343,7 +343,6 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
         static Threading::AtomicCounter idCounter;
         idCounter = 1;
-
         Threading::AtomicCounter counter = 0;
 
         // Run job to collect model node ids
@@ -355,7 +354,6 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset) mutable
         {
             N_SCOPE(RaytracingTransformJob, Graphics);
-
             for (IndexT i = 0; i < groupSize; i++)
             {
                 IndexT index = i + invocationOffset;
