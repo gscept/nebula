@@ -36,7 +36,9 @@ struct WriteInfo
         VkBufferView tex;
         VkAccelerationStructureKHR tlas;
     };
+
     VkWriteDescriptorSet write;
+    VkWriteDescriptorSetAccelerationStructureKHR tlasWrite;
     WriteType type;
 };
 

@@ -717,14 +717,15 @@ ResourceTableCommitChanges(const ResourceTableId id)
                 break;
             case WriteType::Tlas:
             {
-                auto tlasWrite = VkWriteDescriptorSetAccelerationStructureKHR
+                infoList[i].tlasWrite = VkWriteDescriptorSetAccelerationStructureKHR
                 {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
                     .pNext = nullptr,
                     .accelerationStructureCount = 1,
                     .pAccelerationStructures = &(infoList[i].tlas)
                 };
-                infoList[i].write.pNext = &tlasWrite;
+                infoList[i].write.pNext = &infoList[i].tlasWrite;
+                break;
             }
         }
         vkUpdateDescriptorSets(dev, 1, &infoList[i].write, 0, nullptr);
