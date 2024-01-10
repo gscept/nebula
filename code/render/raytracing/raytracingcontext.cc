@@ -343,21 +343,17 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
         static Threading::AtomicCounter idCounter;
         idCounter = 1;
-        struct TransformUpdateContext
-        {
-            Graphics::GraphicsEntityId* ids;
-            Threading::AtomicCounter counter;
-        } idCtx;
-
-        idCtx.ids = entities.Begin();
-        idCtx.counter = 0;
+        Threading::AtomicCounter counter = 0;
 
         // Run job to collect model node ids
-        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        Jobs2::JobDispatch(
+            [
+                ids = entities.Begin()
+                , counter
+            ]
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset) mutable
         {
             N_SCOPE(RaytracingTransformJob, Graphics);
-
-            auto context = static_cast<TransformUpdateContext*>(ctx);
             for (IndexT i = 0; i < groupSize; i++)
             {
                 IndexT index = i + invocationOffset;
@@ -365,7 +361,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     return;
 
                 // Get node range and update ids buffer
-                Graphics::GraphicsEntityId gid = context->ids[index];
+                Graphics::GraphicsEntityId gid = ids[index];
                 Graphics::ContextEntityId cid = GetContextId(gid);
                 const Models::NodeInstanceRange& renderableRange = Models::ModelContext::GetModelRenderableRange(gid);
                 const Models::NodeInstanceRange& transformableRange = Models::ModelContext::GetModelTransformableRange(gid);
@@ -375,7 +371,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 const Memory::RangeAllocation alloc = raytracingContextAllocator.Get<Raytracing_Allocation>(cid.id);
 
                 const uint numNodes = renderableRange.end - renderableRange.begin;
-                Threading::Interlocked::Add(&context->counter, numNodes);
+                Threading::Interlocked::Add(&counter, numNodes);
                 uint counter = 0;
                 for (IndexT j = renderableRange.begin; j < renderableRange.end; j++)
                 {
@@ -388,7 +384,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     counter++;
                 }
             }
-        }, entities.Size(), 1024, idCtx, { &Models::ModelContext::TransformsUpdateCounter }, &idCounter, &state.jobWaitEvent);
+        }, entities.Size(), 1024, { &Models::ModelContext::TransformsUpdateCounter }, &idCounter, &state.jobWaitEvent);
 
         state.topLevelNeedsUpdate = true;
     }

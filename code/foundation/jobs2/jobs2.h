@@ -21,14 +21,67 @@ class Event;
 namespace Jobs2 
 {
 
+#define JOB_SIGNATURE (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+#define JOB_BEGIN_LOOP \
+for (IndexT i = 0; i < groupSize; i++)\
+{\
+    IndexT __INDEX = i + invocationOffset;\
+    if (__INDEX >= totalJobs)\
+        return;\
+
+#define JOB_END_LOOP \
+}
+
+#define JOB_ITEM_INDEX __INDEX
+
+
 class JobThread;
 
+void* JobAlloc(SizeT bytes);
 typedef volatile long CompletionCounter;
 using JobFunc = void(*)(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
+
+template <typename... ARGS>
+struct CallableStub
+{
+    virtual void invoke(ARGS... args) = 0;
+};
+
+template<typename LAMBDA, typename... ARGS>
+struct Callable : CallableStub<ARGS...>
+{
+    LAMBDA l;
+
+    Callable(LAMBDA l) : l(std::move(l)) {};
+
+    void invoke(ARGS... args) override
+    {
+        l(args...);
+    }
+};
+
+struct Lambda
+{
+    CallableStub<SizeT, SizeT, IndexT, SizeT>* callable;
+
+    template<typename LAMBDA>
+    Lambda(LAMBDA l)
+    {
+        using CallableType = Callable<LAMBDA, SizeT, SizeT, IndexT, SizeT>;
+        this->callable = (CallableType*)Jobs2::JobAlloc(sizeof(CallableType));
+        new (this->callable) CallableType(l);
+    };
+
+    void operator()(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
+    {
+        callable->invoke(totalJobs, groupSize, groupIndex, invocationOffset);
+    }
+};
 
 struct JobContext
 {
     JobFunc func;
+    Lambda l;
     int remainingGroups;
     Threading::AtomicCounter groupCompletionCounter;
     SizeT numInvocations;
@@ -166,6 +219,86 @@ JobAlloc(SizeT count)
 //------------------------------------------------------------------------------
 /**
 */
+template <typename LAMBDA> void
+JobDispatch(
+    LAMBDA&& func
+    , const SizeT numInvocations
+    , const SizeT groupSize
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
+    , Threading::Event* signalEvent = nullptr
+)
+{
+    n_assert(numInvocations > 0);
+    n_assert(doneCounter != nullptr ? *doneCounter > 0 : true);
+
+    // Calculate the number of actual jobs based on invocations and group size
+    SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
+
+    // Calculate allocation size which is node + counters + data context
+    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    auto mem = JobAlloc<char>(dynamicAllocSize);
+    auto node = (JobNode*)mem;
+
+    // Copy over wait counters
+    node->job.waitCounters = nullptr;
+    if (waitCounters.Size() > 0)
+    {
+        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode));
+        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
+    }
+
+    node->job.l = std::move(func);
+    node->job.func = nullptr;
+    node->job.remainingGroups = numJobs;
+    node->job.groupCompletionCounter = numJobs;
+    node->job.numInvocations = numInvocations;
+    node->job.groupSize = groupSize;
+    node->job.numWaitCounters = (SizeT)waitCounters.Size();
+    node->job.doneCounter = doneCounter;
+    node->job.signalEvent = signalEvent;
+    node->sequence = nullptr;
+
+    // Add to end of linked list
+    ctx.jobLock.Enter();
+
+    // First, set head node if nullptr
+    if (ctx.head == nullptr)
+        ctx.head = node;
+
+    // Then add node to end of list
+    node->next = nullptr;
+    if (ctx.tail != nullptr)
+        ctx.tail->next = node;
+    ctx.tail = node;
+
+    ctx.jobLock.Leave();
+
+    // Trigger threads to wake up and compete for jobs
+    for (Ptr<JobThread>& thread : ctx.threads)
+    {
+        thread->SignalWorkAvailable();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename LAMBDA> void
+JobDispatch(
+    LAMBDA&& func
+    , const SizeT numInvocations
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
+    , Threading::Event* signalEvent = nullptr
+)
+{
+    JobDispatch(func, numInvocations, numInvocations, waitCounters, doneCounter, signalEvent);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template <typename CTX> void
 JobDispatch(
     const JobFunc& func
@@ -202,6 +335,7 @@ JobDispatch(
     auto data = reinterpret_cast<CTX*>(node->job.data);
     *data = context;
 
+    node->job.l.callable = nullptr;
     node->job.func = func;
     node->job.remainingGroups = numJobs;
     node->job.groupCompletionCounter = numJobs;
@@ -288,6 +422,7 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     auto data = reinterpret_cast<CTX*>(node->job.data);
     *data = context;
 
+    node->job.l.callable = nullptr;
     node->job.func = func;
     node->job.remainingGroups = numJobs;
     node->job.groupCompletionCounter = numJobs;

@@ -1537,29 +1537,21 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 
     n_assert(subtexturesDoneCounter == 0);
     subtexturesDoneCounter = 1;
-    struct SubTextureUpdateCtx
-    {
-        SubTextureUpdateJobUniforms uniforms;
-        Math::mat4 camera;
-        Terrain::SubTexture* subtextures;
-        Threading::AtomicCounter* numOutputs;
-        Terrain::SubTextureUpdateJobOutput* outputs;
-    };
-    SubTextureUpdateCtx subtexCtx;
-    subtexCtx.uniforms.maxMip = IndirectionNumMips - 1;
-    subtexCtx.uniforms.physicalTileSize = PhysicalTextureTileSize;
-    subtexCtx.uniforms.subTextureWorldSize = SubTextureWorldSize;
-
-    subtexCtx.camera = cameraTransform;
-    subtexCtx.subtextures = terrainVirtualTileState.subTextures.Begin();
     terrainVirtualTileState.subTextureNumOutputs = 0;
-    subtexCtx.numOutputs = &terrainVirtualTileState.subTextureNumOutputs;
-    subtexCtx.outputs = terrainVirtualTileState.subTextureJobOutputs;
-    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+
+    SubTextureUpdateJobUniforms uniforms;
+    uniforms.maxMip = IndirectionNumMips - 1;
+    uniforms.physicalTileSize = PhysicalTextureTileSize;
+    uniforms.subTextureWorldSize = SubTextureWorldSize;
+
+    Jobs2::JobDispatch(
+        [
+            uniforms
+            , camera = cameraTransform
+        ]
+    (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
         N_SCOPE(TerrainSubTextureUpdateJob, Terrain);
-
-        auto context = static_cast<SubTextureUpdateCtx*>(ctx);
 
         // Iterate over work group
         for (IndexT i = 0; i < groupSize; i++)
@@ -1569,12 +1561,12 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
             if (index >= totalJobs)
                 return;
 
-            const Terrain::SubTexture& subTexture = context->subtextures[index];
+            const Terrain::SubTexture& subTexture = terrainVirtualTileState.subTextures[index];
 
             // mask out y coordinate by multiplying result with, 1, 0 ,1
             Math::vec4 min = Math::vec4(subTexture.worldCoordinate.x, 0, subTexture.worldCoordinate.y, 0);
-            Math::vec4 max = min + Math::vec4(context->uniforms.subTextureWorldSize, 0.0f, context->uniforms.subTextureWorldSize, 0.0f);
-            Math::vec4 cameraXZ = context->camera.position * Math::vec4(1, 0, 1, 0);
+            Math::vec4 max = min + Math::vec4(uniforms.subTextureWorldSize, 0.0f, uniforms.subTextureWorldSize, 0.0f);
+            Math::vec4 cameraXZ = camera.position * Math::vec4(1, 0, 1, 0);
             Math::vec4 nearestPoint = Math::minimize(Math::maximize(cameraXZ, min), max);
             float distance = length(nearestPoint - cameraXZ);
 
@@ -1589,7 +1581,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
             t = Math::max(1.0f, (distance / SubTextureSwapDistance));
 
             // calculate lod logarithmically, such that it goes geometrically slower to progress to higher lods
-            lod = Math::min((uint)Math::log2(t), context->uniforms.maxMip);
+            lod = Math::min((uint)Math::log2(t), uniforms.maxMip);
 
             // calculate the resolution by offseting the max resolution with the lod
             resolution = SubTextureMaxPixels >> lod;
@@ -1598,7 +1590,7 @@ skipResolution:
 
             // calculate the amount of tiles, which is the final lodded resolution divided by the size of a tile
             // the max being maxResolution and the smallest being 1
-            uint tiles = resolution / context->uniforms.physicalTileSize;
+            uint tiles = resolution / uniforms.physicalTileSize;
 
             // only care about subtextures with at least 4 tiles
             //tiles = tiles >= 4 ? tiles : 0;
@@ -1625,10 +1617,10 @@ skipResolution:
             if (state != SubTextureUpdateState::NoChange)
             {
                 // If change, produce output
-                int outputIndex = Threading::Interlocked::Add(context->numOutputs, 1);
+                int outputIndex = Threading::Interlocked::Add(&terrainVirtualTileState.subTextureNumOutputs, 1);
                 n_assert(outputIndex < SubTextureMaxUpdates);
 
-                SubTextureUpdateJobOutput& output = context->outputs[outputIndex];
+                SubTextureUpdateJobOutput& output = terrainVirtualTileState.subTextureJobOutputs[outputIndex];
                 output.index = index;
                 output.oldMaxMip = subTexture.maxMip;
                 output.oldTiles = subTexture.numTiles;
@@ -1644,59 +1636,57 @@ skipResolution:
             }
 
         }
-    }, terrainVirtualTileState.subTextures.Size(), 256, subtexCtx, {}, &subtexturesDoneCounter, &subtexturesFinishedEvent);
+    }, terrainVirtualTileState.subTextures.Size(), 256, {}, &subtexturesDoneCounter, &subtexturesFinishedEvent);
 
     n_assert(sectionCullDoneCounter == 0);
     sectionCullDoneCounter = 1;  
     const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
-    struct TileCullCtx
-    {
-        Math::vec4 m_col_x[4];
-        Math::vec4 m_col_y[4];
-        Math::vec4 m_col_z[4];
-        Math::vec4 m_col_w[4];
-        Math::bbox* boundingBoxes;
-        bool* visibilities;
-        Threading::AtomicCounter* instanceCounter;
-        Terrain::TerrainPatch* patchData;
-    };
-    TileCullCtx cullCtx;
-    cullCtx.m_col_x[0] = Math::splat_x(viewProj.r[0]);
-    cullCtx.m_col_x[1] = Math::splat_x(viewProj.r[1]);
-    cullCtx.m_col_x[2] = Math::splat_x(viewProj.r[2]);
-    cullCtx.m_col_x[3] = Math::splat_x(viewProj.r[3]);
 
-    cullCtx.m_col_y[0] = Math::splat_y(viewProj.r[0]);
-    cullCtx.m_col_y[1] = Math::splat_y(viewProj.r[1]);
-    cullCtx.m_col_y[2] = Math::splat_y(viewProj.r[2]);
-    cullCtx.m_col_y[3] = Math::splat_y(viewProj.r[3]);
+    Math::vec4 m_col_x[4];
+    Math::vec4 m_col_y[4];
+    Math::vec4 m_col_z[4];
+    Math::vec4 m_col_w[4];
+    m_col_x[0] = Math::splat_x(viewProj.r[0]);
+    m_col_x[1] = Math::splat_x(viewProj.r[1]);
+    m_col_x[2] = Math::splat_x(viewProj.r[2]);
+    m_col_x[3] = Math::splat_x(viewProj.r[3]);
 
-    cullCtx.m_col_z[0] = Math::splat_z(viewProj.r[0]);
-    cullCtx.m_col_z[1] = Math::splat_z(viewProj.r[1]);
-    cullCtx.m_col_z[2] = Math::splat_z(viewProj.r[2]);
-    cullCtx.m_col_z[3] = Math::splat_z(viewProj.r[3]);
+    m_col_y[0] = Math::splat_y(viewProj.r[0]);
+    m_col_y[1] = Math::splat_y(viewProj.r[1]);
+    m_col_y[2] = Math::splat_y(viewProj.r[2]);
+    m_col_y[3] = Math::splat_y(viewProj.r[3]);
 
-    cullCtx.m_col_w[0] = Math::splat_w(viewProj.r[0]);
-    cullCtx.m_col_w[1] = Math::splat_w(viewProj.r[1]);
-    cullCtx.m_col_w[2] = Math::splat_w(viewProj.r[2]);
-    cullCtx.m_col_w[3] = Math::splat_w(viewProj.r[3]);
+    m_col_z[0] = Math::splat_z(viewProj.r[0]);
+    m_col_z[1] = Math::splat_z(viewProj.r[1]);
+    m_col_z[2] = Math::splat_z(viewProj.r[2]);
+    m_col_z[3] = Math::splat_z(viewProj.r[3]);
+
+    m_col_w[0] = Math::splat_w(viewProj.r[0]);
+    m_col_w[1] = Math::splat_w(viewProj.r[1]);
+    m_col_w[2] = Math::splat_w(viewProj.r[2]);
+    m_col_w[3] = Math::splat_w(viewProj.r[3]);
 
     terrainVirtualTileState.numPatchesThisFrame = 0;
-    cullCtx.instanceCounter = &terrainVirtualTileState.numPatchesThisFrame;
-    cullCtx.patchData = (Terrain::TerrainPatch*)CoreGraphics::BufferMap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
 
     sectionCullDoneCounter = runtimes.Size();
     for (IndexT i = 0; i < runtimes.Size(); i++)
     {
         TerrainRuntimeInfo& rt = runtimes[i];
-
-        cullCtx.boundingBoxes = rt.sectionBoxes.Begin();
-        cullCtx.visibilities = rt.sectorVisible.Begin();
-        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        Jobs2::JobDispatch(
+            [
+                boundingBoxes = rt.sectionBoxes.ConstBegin()
+                , visibilities = rt.sectorVisible.Begin()
+                , instanceCounter = &terrainVirtualTileState.numPatchesThisFrame
+                , patchData = (Terrain::TerrainPatch*)CoreGraphics::BufferMap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex])
+                , m_col_x
+                , m_col_y
+                , m_col_z
+                , m_col_w
+            ]
+        (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
             N_SCOPE(BruteforceViewFrustumCulling, Visibility);
-            auto context = static_cast<TileCullCtx*>(ctx);
 
             // Iterate over work group
             for (IndexT i = 0; i < groupSize; i++)
@@ -1706,25 +1696,25 @@ skipResolution:
                 if (index >= totalJobs)
                     return;
 
-                const Math::ClipStatus::Type clip = context->boundingBoxes[index].clipstatus(context->m_col_x, context->m_col_y, context->m_col_z, context->m_col_w);
+                const Math::ClipStatus::Type clip = boundingBoxes[index].clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
                 if (clip != Math::ClipStatus::Outside)
                 {
-                    uint offset = Threading::Interlocked::Add(context->instanceCounter, 1);
+                    uint offset = Threading::Interlocked::Add(instanceCounter, 1);
 
                     Terrain::TerrainPatch patch;
-                    patch.PosOffset[0] = context->boundingBoxes[index].pmin.x;
-                    patch.PosOffset[1] = context->boundingBoxes[index].pmin.z;
+                    patch.PosOffset[0] = boundingBoxes[index].pmin.x;
+                    patch.PosOffset[1] = boundingBoxes[index].pmin.z;
                     patch.UvOffset[0] = 0.0f;
                     patch.UvOffset[1] = 0.0f;
-                    context->patchData[offset] = patch;
-                    context->visibilities[index] = true;
+                    patchData[offset] = patch;
+                    visibilities[index] = true;
                 }
                 else
                 {
-                    context->visibilities[index] = false;
+                    visibilities[index] = false;
                 }
             }
-        }, rt.sectionBoxes.Size(), 256, cullCtx, {}, & sectionCullDoneCounter, & sectionCullFinishedEvent);
+        }, rt.sectionBoxes.Size(), 256, {}, & sectionCullDoneCounter, & sectionCullFinishedEvent);
     }
     CoreGraphics::BufferUnmap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
     if (runtimes.IsEmpty())
