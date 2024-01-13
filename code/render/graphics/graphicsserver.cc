@@ -77,11 +77,12 @@ GraphicsServer::Open()
         .maxTimestampQueries = 0x100,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
-        .enableValidation = true,
+        .enableValidation = false,
         .features = {
             .enableRayTracing = true,
             .enableMeshShaders = true,
-            .enableVariableRateShading = true
+            .enableVariableRateShading = true,
+            .enableDescriptorBuffers = false
         }
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);

@@ -31,6 +31,7 @@ extern bool RayTracingSupported;
 extern bool DynamicVertexInputSupported;
 extern bool VariableRateShadingSupported;
 extern bool MeshShadersSupported;
+extern bool DescriptorBuffersSupported;
 
 struct GraphicsDeviceCreateInfo
 {
@@ -47,6 +48,7 @@ struct GraphicsDeviceCreateInfo
         bool enableRayTracing : 1;
         bool enableMeshShaders : 1;
         bool enableVariableRateShading : 1;
+        bool enableDescriptorBuffers : 1;
     } features;
 };
 

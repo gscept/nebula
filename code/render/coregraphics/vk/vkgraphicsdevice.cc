@@ -242,7 +242,8 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                     VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
                     VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
                     VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME,
-                    VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME
+                    VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+                    VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME
                 };
 
                 uint32_t newNumCaps = 0;
@@ -250,35 +251,30 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                 {
                     if (existingExtensions.FindIndex(wantedExtensions[j]) != InvalidIndex)
                     {
-                        if (features.enableRayTracing)
+                        if (features.enableRayTracing && wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
                         {
-                            if (wantedExtensions[j] == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
-                            {
-                                CoreGraphics::RayTracingSupported = true;
-                                n_printf("[Graphics Device] Ray Tracing is enabled\n");
-                            }
+                            CoreGraphics::RayTracingSupported = true;
+                            n_printf("[Graphics Device] Ray Tracing is enabled\n");
                         }
-                        if (wantedExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
+                        else if (wantedExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
                         {
                             CoreGraphics::DynamicVertexInputSupported = true;
                             n_printf("[Graphics Device] Dynamic Vertex Input is enabled\n");
                         }
-                        if (features.enableMeshShaders)
+                        else if (features.enableMeshShaders && wantedExtensions[j] == VK_EXT_MESH_SHADER_EXTENSION_NAME)
                         {
-                            if (wantedExtensions[j] == VK_EXT_MESH_SHADER_EXTENSION_NAME)
-                            {
-                                CoreGraphics::MeshShadersSupported = true;
-                                n_printf("[Graphics Device] Mesh Shaders are enabled\n");
-                            }
+                            CoreGraphics::MeshShadersSupported = true;
+                            n_printf("[Graphics Device] Mesh Shaders are enabled\n");
                         }
-
-                        if (features.enableVariableRateShading)
+                        else if (features.enableVariableRateShading && wantedExtensions[j] == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME)
                         {
-                            if (wantedExtensions[j] == VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME)
-                            {
-                                CoreGraphics::VariableRateShadingSupported = true;
-                                n_printf("[Graphics Device] Variable Rate Shading is enabled\n");
-                            }
+                            CoreGraphics::VariableRateShadingSupported = true;
+                            n_printf("[Graphics Device] Variable Rate Shading is enabled\n");
+                        }
+                        else if (features.enableDescriptorBuffers && wantedExtensions[j] == VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)
+                        {
+                            CoreGraphics::DescriptorBuffersSupported = true;
+                            n_printf("[Graphics Device] Descriptor Buffers is enabled\n");
                         }
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
                     }
@@ -930,6 +926,20 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .bufferDeviceAddressMultiDevice = false
     };
     void* lastExtension = &bufferDeviceAddressFeatures;
+
+    VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
+        .pNext = lastExtension,
+        .descriptorBuffer = true,
+        .descriptorBufferCaptureReplay = false,
+        .descriptorBufferImageLayoutIgnored = false,
+        .descriptorBufferPushDescriptors = false
+    };
+    if (info.features.enableDescriptorBuffers)
+    {
+        lastExtension = &descriptorBufferFeatures;
+    }
 
 #pragma region Mesh Shader Features
     VkPhysicalDeviceMeshShaderFeaturesEXT meshShadersFeatures =
