@@ -342,7 +342,7 @@ vsDrawGrass(
     , out vec3 WorldSpacePos
     )
 {
-    InstanceUniforms instanceUniforms = InstanceGrassUniforms[gl_InstanceID];
+    InstanceUniforms instanceUniforms = InstanceGrassUniforms[gl_InstanceIndex];
     float windWeight = position.y * instanceUniforms.random;
     vec3 displacement = vec3(sin(windWeight * Time_Random_Luminance_X.x), 0, cos(windWeight * Time_Random_Luminance_X.x));
 
@@ -433,7 +433,7 @@ vsDrawMeshVColor(
     , out vec3 WorldSpacePos
 )
 {
-    InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceID];
+    InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceIndex];
     vec3 displacement = vec3(sin(color.r * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * Time_Random_Luminance_X.x * instanceUniforms.random));
     mat3 rotation = mat3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
@@ -475,7 +475,7 @@ vsDrawMesh(
 #endif
     )
 {
-    InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceID];
+    InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceIndex];
     vec3 displacement = vec3(sin(position.y * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * Time_Random_Luminance_X.x * instanceUniforms.random));
     mat3 rotation = mat3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,

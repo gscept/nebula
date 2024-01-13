@@ -81,7 +81,7 @@ vsColoredShadow(
     out vec2 UV,
     out vec4 ProjPos) 
 {
-    uint index = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+    uint index = ShadowTiles[gl_InstanceIndex / 4][gl_InstanceIndex % 4];
     vec4 pos = LightViewMatrix[index] * Model * vec4(position, 1);
     gl_Position = pos;
     ProjPos = pos;
@@ -104,10 +104,10 @@ vsColoredCSM(
     out vec4 ProjPos,
     out int Instance) 
 {
-    uint index = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+    uint index = ShadowTiles[gl_InstanceIndex / 4][gl_InstanceIndex % 4];
     ProjPos = LightViewMatrix[index] * Model * vec4(position, 1);
     UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
-    Instance = gl_InstanceID;
+    Instance = gl_InstanceIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ vsColoredShadowTessellated(
     
     float vertexDistance = distance( Position.xyz, EyePos.xyz );
     Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
-    gl_Layer = gl_InstanceID;
+    gl_Layer = gl_InstanceIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ vsColoredCSMTessellated(
     
     float vertexDistance = distance( Position.xyz, EyePos.xyz );
     Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
-    gl_Layer = gl_InstanceID;
+    gl_Layer = gl_InstanceIndex;
 }
 
 //------------------------------------------------------------------------------

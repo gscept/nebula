@@ -217,7 +217,7 @@ vsTerrain(
     , out float Tessellation
 ) 
 {
-    TerrainPatch terrainPatch = Patches[gl_InstanceID];
+    TerrainPatch terrainPatch = Patches[gl_InstanceIndex];
     vec3 offsetPos = position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y);
     vec4 modelSpace = Transform * vec4(offsetPos, 1);
     Position = vec4(offsetPos, 1);

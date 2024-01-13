@@ -82,7 +82,7 @@ vsStaticInst(
     [slot=4] in vec3 binormal,
     out vec2 UV) 
 {
-    gl_Position = ViewProjection * ModelArray[gl_InstanceID] * vec4(position, 1);
+    gl_Position = ViewProjection * ModelArray[gl_InstanceIndex] * vec4(position, 1);
     UV = uv;
 }
 

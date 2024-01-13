@@ -34,9 +34,9 @@ vsStatic(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+	ProjPos = LightViewMatrix[gl_InstanceIndex] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
-	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+	gl_Layer = ShadowTiles[gl_InstanceIndex / 4][gl_InstanceIndex % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -54,9 +54,9 @@ vsSkinned(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+    ProjPos = LightViewMatrix[gl_InstanceIndex] * Model * skinnedPos;
 	gl_Position = ProjPos;
-	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+	gl_Layer = ShadowTiles[gl_InstanceIndex / 4][gl_InstanceIndex % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -71,8 +71,8 @@ vsStaticInst(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	int viewStride = gl_InstanceID % 16;
-	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);;
+	int viewStride = gl_InstanceIndex % 16;
+	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceIndex] * vec4(position, 1);;
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
 	UV = UnpackUV(uv);
@@ -89,9 +89,9 @@ vsStaticCSM(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+	ProjPos = LightViewMatrix[gl_InstanceIndex] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
-	gl_Layer = gl_InstanceID;
+	gl_Layer = gl_InstanceIndex;
 	UV = UnpackUV(uv);
 }
 
@@ -109,9 +109,9 @@ vsSkinnedCSM(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+	ProjPos = LightViewMatrix[gl_InstanceIndex] * Model * skinnedPos;
 	gl_Position = ProjPos;
-	gl_Layer = gl_InstanceID;
+	gl_Layer = gl_InstanceIndex;
 	UV = UnpackUV(uv);
 }
 
@@ -126,8 +126,8 @@ vsStaticInstCSM(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	int viewStride = gl_InstanceID % 4;
-	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
+	int viewStride = gl_InstanceIndex % 4;
+	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceIndex] * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
 	UV = UnpackUV(uv);
@@ -144,9 +144,9 @@ vsStaticPoint(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-    ProjPos = LightViewMatrix[gl_InstanceID] * Model * vec4(position, 1);
+    ProjPos = LightViewMatrix[gl_InstanceIndex] * Model * vec4(position, 1);
 	gl_Position = ProjPos;
-	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+	gl_Layer = ShadowTiles[gl_InstanceIndex / 4][gl_InstanceIndex % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -164,9 +164,9 @@ vsSkinnedPoint(
 	out vec4 ProjPos)
 {
 	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
-    ProjPos = LightViewMatrix[gl_InstanceID] * Model * skinnedPos;
+    ProjPos = LightViewMatrix[gl_InstanceIndex] * Model * skinnedPos;
 	gl_Position = ProjPos;
-	gl_Layer = ShadowTiles[gl_InstanceID / 4][gl_InstanceID % 4];
+	gl_Layer = ShadowTiles[gl_InstanceIndex / 4][gl_InstanceIndex % 4];
 	UV = UnpackUV(uv);
 }
 
@@ -181,8 +181,8 @@ vsStaticInstPoint(
 	out vec2 UV,
 	out vec4 ProjPos)
 {
-	int viewStride = gl_InstanceID % 6;
-	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceID] * vec4(position, 1);
+	int viewStride = gl_InstanceIndex % 6;
+	ProjPos = LightViewMatrix[viewStride] * ModelArray[gl_InstanceIndex] * vec4(position, 1);
 	gl_Position = ProjPos;
 	gl_Layer = viewStride;
 	UV = UnpackUV(uv);

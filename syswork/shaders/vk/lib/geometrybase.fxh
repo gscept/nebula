@@ -362,7 +362,7 @@ vsStaticInstanced(
     out vec3 WorldSpacePos
 )
 {
-    vec4 modelSpace = ModelArray[gl_InstanceID] * vec4(position, 1);
+    vec4 modelSpace = ModelArray[gl_InstanceIndex] * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
 
     Tangent 	  = (Model * vec4(tangent.xyz, 0)).xyz;
