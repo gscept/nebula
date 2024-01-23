@@ -65,6 +65,16 @@ MeshLoader::MeshLoader()
         , VertexComponent{ VertexComponent::IndexName::SkinJIndices, VertexComponent::UByte4, 1 }
     };
     layouts[(uint)CoreGraphics::VertexLayoutType::Skin] = CreateVertexLayout(vlCreateInfo);
+
+    vlCreateInfo.comps = {
+        VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0)
+        , VertexComponent(0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::position
+        , VertexComponent(1, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::stretchPosition
+        , VertexComponent(2, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::color
+        , VertexComponent(3, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::uvMinMax
+        , VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // x: Particle::rotation, y: Particle::size
+    };
+    layouts[(uint)CoreGraphics::VertexLayoutType::Particle] = CreateVertexLayout(vlCreateInfo);
 }
 
 //------------------------------------------------------------------------------

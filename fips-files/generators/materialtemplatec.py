@@ -146,8 +146,15 @@ class MaterialTemplateGenerator:
                                     matDef.variables = self.materialDict[adjustedInherits].variables + matDef.variables
                                     matDef.passes = self.materialDict[adjustedInherits].passes + matDef.passes
                             self.materialDict[matDef.name] = matDef
-                            f.WriteLine(matDef.Format())
+                            self.materials.append(matDef)
 
+        enumStr = ''
+        for mat in self.materials:
+            if not mat.virtual:
+                enumStr += '\t{},\n'.format(mat.name)
+        f.WriteLine('enum MaterialTemplates \n{{\n{}}};\n'.format(enumStr))
+        for mat in self.materials:
+            f.WriteLine(mat.Format())
         f.Close()
 
 

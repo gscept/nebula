@@ -118,11 +118,11 @@
                 ]
             },
             {
-                "name": "Static",
+                "name": "BRDF",
                 "inherits": "PBR + IBL",
                 "materialProperties": "BRDF",
                 "vertexType": "VertexLayoutType::Normal",
-                "desc": "PBR + IBL based dielectric/metal material.",
+                "desc": "Default BRDF material.",
                 "group": "Standard",
                 "passes": [
                     {
@@ -158,7 +158,7 @@
                 ]
             },
             {
-                "name": "Static + Alpha test",
+                "name": "BRDFAlphaTest",
                 "inherits": "PBR + IBL|Alpha test",
                 "materialProperties": "BRDF",
                 "vertexType": "VertexLayoutType::Normal",
@@ -198,7 +198,7 @@
                 ]
             },
             {
-                "name": "Static + Alpha blending",
+                "name": "BRDFAlphaBlend",
                 "inherits": "PBR + IBL|Alpha blend",
                 "materialProperties": "BRDF",
                 "vertexType": "VertexLayoutType::Normal",
@@ -218,7 +218,7 @@
                 ]
             },
             {
-                "name": "Skinned",
+                "name": "BRDFSkin",
                 "vertexType": "VertexLayoutType::Skin",
                 "materialProperties": "BRDF",
                 "inherits": "PBR + IBL",
@@ -258,7 +258,7 @@
                 ]
             },
             {
-                "name": "Skinned + Alpha test",
+                "name": "BRDFSkinAlphaTest",
                 "vertexType": "VertexLayoutType::Skin",
                 "materialProperties": "BRDF",
                 "inherits": "PBR + IBL|Alpha test",
@@ -298,7 +298,7 @@
                 ]
             },
             {
-                "name": "Skinned + Alpha blending",
+                "name": "BRDFSkinAlphaBlend",
                 "vertexType": "VertexLayoutType::Skin",
                 "materialProperties": "BRDF",
                 "inherits": "PBR + IBL|Alpha blend",
@@ -314,27 +314,6 @@
                         "batch": "FlatGeometryAlphaLit",
                         "shader": "skinned",
                         "variation": "Skinned|Environment|Alpha"
-                    }
-                ]
-            },
-            {
-                "name": "Tiled",
-                "virtual": true,
-                "desc": "Base material for tiled UVs",
-                "variables": [
-                    {
-                        "name": "NumXTiles",
-                        "type": "int",
-                        "defaultValue": 1,
-                        "min": 1,
-                        "max": 64
-                    },
-                    {
-                        "name": "NumYTiles",
-                        "type": "int",
-                        "defaultValue": 1,
-                        "min": 1,
-                        "max": 64
                     }
                 ]
             },
