@@ -183,7 +183,7 @@ inline RangeAllocation
 RangeAllocator::Alloc(uint size, uint alignment)
 {
     // We are not allowed any more allocations
-    uint alignedSize = size + alignment;
+    uint alignedSize = size + alignment - 1;
     if (this->freeStorage < alignedSize)
     {
         return { RangeAllocation::OOM, RangeAllocatorNode::END };
