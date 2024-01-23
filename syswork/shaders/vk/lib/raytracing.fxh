@@ -5,6 +5,13 @@
 
 #define MESH_BINDING group(BATCH_GROUP) binding(50)
 
+struct HitResult
+{
+    vec3 radiance;
+    vec3 normal;
+    float depth;
+};
+
 // Declare type for vertex positions and uv
 ptr struct VertexPosUv
 {

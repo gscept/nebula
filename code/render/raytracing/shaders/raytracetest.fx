@@ -15,6 +15,41 @@ MESH_BINDING rw_buffer VertexBase
     VertexAttributeNormals normals;
 };
 
+ptr struct MaterialTest
+{
+    vec4 color;
+    float intensity;
+};
+
+group(BATCH_GROUP) rw_buffer Materials
+{
+    MaterialTest MaterialPtr;
+};
+
+struct BRDFObject
+{
+    BRDFMaterial MaterialPtr;
+    VertexPosUv PositionsPtr;
+    VertexAttributeNormals AttributePtr;
+};
+
+MATERIAL_BINDING rw_buffer BRDFObjectBuffer
+{
+    BRDFObject BRDFObjects[];
+};
+
+struct BSDFObject
+{
+    BSDFMaterial MaterialPtr;
+    VertexPosUv PositionsPtr;
+    VertexAttributeNormals AttributePtr;
+};
+
+MATERIAL_BINDING rw_buffer BSDFObjectBuffer
+{
+    BSDFObject BSDFObjects[];
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -48,18 +83,7 @@ ClosestHit(
     [ray_payload] in vec3 color
 )
 {
-    color = vec3(1, 0, 0);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-shader void
-AnyHit(
-    [ray_payload] in vec3 color
-)
-{
-    color = vec3(0, 1, 0);
+    color = (MaterialPtr + gl_InstanceID).color.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -80,6 +104,5 @@ program Main[string Mask = "test";]
 {
     RayGenerationShader = Raygen();
     RayClosestHitShader = ClosestHit();
-    RayAnyHitShader = AnyHit();
     RayMissShader = Miss();
 };

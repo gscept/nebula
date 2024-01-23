@@ -7,18 +7,17 @@
 #include <lib/materials.fxh>
 #include <lib/raytracing.fxh>
 #include <lib/shared.fxh>
-#include "ddgi.fxh"
 
-struct BRDFObject
+struct Object
 {
-    BRDFMaterial MaterialPtr;
+    GLTFMaterial MaterialPtr;
     VertexPosUv PositionsPtr;
     VertexAttributeNormals AttributePtr;
 };
 
-MATERIAL_BINDING rw_buffer BRDFObjectBuffer
+MATERIAL_BINDING rw_buffer ObjectBuffer
 {
-    BRDFObject BRDFObjects[];
+    Object Objects[];
 };
 
 //------------------------------------------------------------------------------
@@ -30,7 +29,7 @@ ClosestHit(
     [hit_attribute] in vec2 baryCoords
 )
 {
-    BRDFObject obj = BRDFObjects[gl_InstanceID];
+    Object obj = Objects[gl_InstanceID];
     vec2 uv0 = UnpackUV32((obj.PositionsPtr + gl_PrimitiveID).uv);
     vec2 uv1 = UnpackUV32((obj.PositionsPtr + gl_PrimitiveID + 1).uv);
     vec2 uv2 = UnpackUV32((obj.PositionsPtr + gl_PrimitiveID + 2).uv);
@@ -41,15 +40,15 @@ ClosestHit(
     vec3 n3 = UnpackNormal32((obj.AttributePtr + gl_PrimitiveID + 2).normal_tangent.x);
     vec3 norm = BaryCentricVec3(n1, n2, n3, baryCoords);
 
-    vec4 albedo = sample2DLod(obj.MaterialPtr.AlbedoMap, Basic2DSampler, uv, 0);
-    Result.albedo = albedo.rgb;
+    vec4 albedo = sample2DLod(obj.MaterialPtr.baseColorTexture, Basic2DSampler, uv, 0);
+    Result.radiance = albedo.rgb;
     Result.normal = norm;
 }   
 
 //------------------------------------------------------------------------------
 /**
 */
-program Main[string Mask = "BRDFHit"; ]
+program Main[string Mask = "Hit"; ]
 {
     RayClosestHitShader = ClosestHit();
 };

@@ -193,16 +193,19 @@ macro(add_shaders_intern)
         if (nebula_shader)
             set(base_path ${NROOT}/syswork/shaders/vk)
         else()
-            set(base_path ${CMAKE_CURRENT_SOURCE_DIR})
+            set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
         endif()
 
-        cmake_path(SET shd_path "${shd}")
+        cmake_path(SET shd_path ${shd})
+
         cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
         cmake_path(GET rel_path STEM basename)
         cmake_path(GET rel_path PARENT_PATH foldername)
         
         set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
         set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}/${basename}.h)
+
+        SET(foldername ${CurDir}${foldername})
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shaders)
@@ -211,7 +214,7 @@ macro(add_shaders_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${depoutput} -h ${headerOutput} -t shader)
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${CMAKE_BINARY_DIR}/shaders/${foldername} -h ${CMAKE_BINARY_DIR}/shaders/${foldername} -t shader)
         endif()
 
         # sadly this doesnt work for some reason
@@ -226,21 +229,29 @@ macro(add_shaders_intern)
             file(READ ${depoutput} deps)
         endif()
 
-        set(output ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
+        set(output ${EXPORT_DIR}/shaders/${foldername})
         add_custom_command(OUTPUT ${output}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${output} -h ${CMAKE_BINARY_DIR}/shaders/${foldername} -t shader ${shader_debug}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${SHADERC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
             COMMENT ""
             VERBATIM
             )
+
+        SET(tmp_dir ${CurDir})
+        SET(CurDir "")
         fips_files(${shd})
 
-        SOURCE_GROUP(TREE "${base_path}" PREFIX "res\\shaders" FILES ${shd})
+        SET(CurDir ${tmp_dir})
+
+        if (nebula_shader)
+            SOURCE_GROUP(TREE "${base_path}" PREFIX "res\\shaders" FILES ${shd})
+        endif()
+
         if(N_ENABLE_SHADER_COMMAND_GENERATION)
             # create compile flags file for live shader compile
-            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}")
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${output} -h ${CMAKE_BINARY_DIR}/shaders/${foldername} -t shader ${shader_debug}")
         endif()
     endif()
 endmacro()
@@ -553,13 +564,13 @@ macro(add_shaders)
     else()
         set_nebula_export_dir()
         foreach(shd ${ARGN})
-            add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd} false)
+            add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
         endforeach()
 
         # add configurations for the .vscode anyfx linter
         SET(folders)
         foreach(shd ${ARGN})
-            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${shd} DIRECTORY)
+            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} DIRECTORY)
             list(APPEND folders ${foldername})
         endforeach()
         execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${folders})

@@ -15,6 +15,21 @@ ptr struct BRDFMaterial
     textureHandle NormalMap;
 };
 
+ptr struct GLTFMaterial
+{
+    vec4 baseColorFactor;
+    vec4 emissiveFactor;
+    float metallicFactor;
+    float roughnessFactor;
+    float normalScale;
+    float alphaCutoff;
+    textureHandle baseColorTexture;
+    textureHandle normalTexture;
+    textureHandle metallicRoughnessTexture;
+    textureHandle emissiveTexture;
+    textureHandle occlusionTexture;
+};
+
 ptr struct BSDFMaterial
 {
     vec3 MatAlbedoIntensity;
@@ -22,8 +37,8 @@ ptr struct BSDFMaterial
     float MatRoughnessIntensity;
     textureHandle ParameterMap;
     textureHandle NormalMap;
-    textureHandle AbsorptionTexture;
-    textureHandle ScatterTexture;
+    textureHandle AbsorptionMap;
+    textureHandle ScatterMap;
 };
 
 ptr struct TransparentMaterial
@@ -68,4 +83,12 @@ ptr struct Unlit4Material
     textureHandle Layer2;
     textureHandle Layer3;
     textureHandle Layer4;
+};
+
+ptr struct SkyboxMaterial
+{
+    textureHandle SkyLayer1;
+    textureHandle SkyLayer2;
+    float Contrast;
+    float Brightness;
 };

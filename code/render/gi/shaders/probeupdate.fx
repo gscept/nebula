@@ -10,7 +10,7 @@
 #include "ddgi.fxh"
 
 group(BATCH_GROUP) accelerationStructure TLAS;
-group(BATCH_GROUP) write rgba8 image2D AlbedoOutput;
+group(BATCH_GROUP) write rgba8 image2D RadianceOutput;
 group(BATCH_GROUP) write rgba8 image2D NormalOutput;
 group(BATCH_GROUP) write r32f image2D DepthOutput;
 
@@ -25,6 +25,11 @@ group(BATCH_GROUP) rw_buffer ProbeBuffer
     Probe Probes[];
 };
 
+group(BATCH_GROUP) constant SampleDirections
+{
+    vec3 Directions[24];
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -33,14 +38,32 @@ RayGen(
     [ray_payload] out HitResult payload
 )
 {
-    payload.albedo = vec3(0);
+    payload.radiance = vec3(0);
     payload.normal = vec3(0, 1, 0);
 
     Probe probe = Probes[gl_LaunchIDEXT.x];
+    vec3 direction = Directions[gl_LaunchIDEXT.y] * probe.rotation;
 
-    vec3 direction = vec3(0, 0, 1) * probe.rotation;
+    const float MaxDistance = 10000.0f;
+    const uint NumColorSamples = 16;
+    const uint NumDepthSamples = 8;
 
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probe.position.xyz, 0.01f, direction, 10000.0f, 0);
+    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probe.position.xyz, 0.01f, direction, MaxDistance, 0);
+
+    // If launch ID is below 16, it's a color sample
+    if (gl_LaunchIDEXT.y < NumColorSamples)
+    {
+        uint row = gl_LaunchIDEXT.y / NumColorSamples;
+        uint column = (gl_LaunchIDEXT.y % NumColorSamples) * NumColorSamples + gl_LaunchIDEXT.x;
+        imageStore(RadianceOutput, ivec2(row, column), vec4(payload.radiance, 0));
+        imageStore(NormalOutput, ivec2(row, column), vec4(payload.normal, 0));
+    }
+    else
+    {
+        uint row = gl_LaunchIDEXT.y / NumDepthSamples;
+        uint column = (gl_LaunchIDEXT.y % NumDepthSamples) * NumDepthSamples + gl_LaunchIDEXT.x;
+        imageStore(DepthOutput, ivec2(row, column), vec4(payload.depth / MaxDistance));
+    }
 
     // TODO use octahedral mapping to output the probe pixels here
 }
@@ -57,7 +80,7 @@ Miss(
     vec3 dir = normalize(gl_WorldRayDirectionEXT);
     vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 
-    payload.albedo = atmo;
+    payload.radiance = atmo;
     payload.normal = -gl_WorldRayDirectionEXT;
 }
 
