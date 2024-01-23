@@ -520,6 +520,7 @@ ENDIF()
                 shaderconfig.cc
                 shaderconfig.h
             )
+            nebula_material_template_compile(materialtemplates.json)
         fips_dir(models/nodes GROUP "models/nodes")
             fips_files(
                 characternode.cc

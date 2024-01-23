@@ -288,6 +288,29 @@ macro(nebula_idl_compile)
     include_directories("${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
 endmacro()
 
+macro(nebula_material_template_compile)
+    SOURCE_GROUP("Material Template Files" FILES ${ARGN})
+    foreach(temp ${ARGN})
+        get_filename_component(f_abs ${CurDir}${temp} ABSOLUTE)
+        get_filename_component(f_dir ${f_abs} PATH)
+        STRING(REPLACE ".json" ".h" out_header ${temp})
+        STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
+        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
+        set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}/${CurDir}")
+        add_custom_command(OUTPUT "${abs_output_folder}/${out_header}"
+            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py "${f_abs}" "${abs_output_folder}/${out_header}"
+            WORKING_DIRECTORY "${NROOT}"
+            MAIN_DEPENDENCY "${f_abs}"
+            DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py
+            VERBATIM PRE_BUILD)
+        SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_header}" )
+        source_group("${CurGroup}" FILES ${f_abs})
+        target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}")
+        target_sources(${CurTargetName} PRIVATE "${f_abs}")
+    endforeach()
+    include_directories("${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}")
+endmacro()
+
 # Call inside fips_sharedlib, after calling nebula_idl_generate_cs_target
 macro(nebula_register_nidl_cs)
     add_dependencies(${CurTargetName} ${NIDL_Cs_Deps})
