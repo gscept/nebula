@@ -98,12 +98,7 @@ Outline::Run()
     // @todo:   The order of the entites is arbitrary. We should allow the user to move and sort the entities as they like.
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
     {
-        Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId("Owner"_atm);
-        filterInfo.access   [0] = Game::AccessMode::READ;
-        filterInfo.numInclusive = 1;
-
-        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+        Game::Filter filter = Game::FilterBuilder::FilterBuilder().Including<Game::Entity>().Build();
         Game::Dataset data = state.editorWorld->Query(filter);
         
         bool contextMenuOpened = false;
@@ -149,7 +144,11 @@ Outline::Run()
                     ImGui::SetCursorPosX(xPos);
                     ImGui::TextDisabled("|-");
                     ImGui::SameLine();
-                    ImGui::Image(&UIManager::Icons::game, {20,20});
+                    
+                    // TODO: make this work again
+                    //ImGui::Image(&UIManager::Icons::game, {20,20});
+                    ImGui::Text(" "); // hack: this just replaces the image until that works again
+
                     ImGui::SameLine();
                     ImGui::SetCursorPosY(yPos + 3);
                     ImGui::Text(edit.name.AsCharPtr());
