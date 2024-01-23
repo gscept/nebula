@@ -98,7 +98,7 @@ Outline::Run()
     // @todo:   The order of the entites is arbitrary. We should allow the user to move and sort the entities as they like.
     ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
     {
-        Game::Filter filter = Game::FilterBuilder::FilterBuilder().Including<Game::Entity>().Build();
+        Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
         Game::Dataset data = state.editorWorld->Query(filter);
         
         bool contextMenuOpened = false;
