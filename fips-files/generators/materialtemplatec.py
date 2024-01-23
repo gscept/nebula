@@ -74,7 +74,7 @@ class MaterialTemplateDefinition:
                     varStr += '\t\tstatic constexpr float Default[{}] = {{{}}};\n'.format(len(var.default), vecStr)
                 elif var.type == "float":
                     varStr += '\t\tstatic constexpr {} Default = {}f;\n'.format(var.type, var.default)
-                elif var.type == "textureHandle":
+                elif var.type == "textureHandle" or var.type == "texture2d":
                     varStr += '\t\tstatic constexpr const char* Default = "{}";\n'.format(var.default)
                 
                 ret += '\tstruct {}\n\t{{\n{}\t}};\n\n'.format(var.name, varStr)
@@ -129,6 +129,7 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "coregraphics/vertexlayout.h"')
         f.WriteLine('#include "materials/shaderconfig.h"')
         f.WriteLine('using namespace Util;')
+        f.WriteLine('namespace Materials\n{\n')
 
         self.materials = list()
         self.materialDict = {}
@@ -151,9 +152,12 @@ class MaterialTemplateGenerator:
         for mat in self.materials:
             if not mat.virtual:
                 enumStr += '\t{},\n'.format(mat.name)
-        f.WriteLine('enum MaterialTemplates \n{{\n{}}};\n'.format(enumStr))
+
+        #f.WriteLine('enum MaterialTemplates \n{{\n{}}};\n'.format(enumStr))
         for mat in self.materials:
             f.WriteLine(mat.Format())
+
+        f.WriteLine('} // namespace Materials\n')
         f.Close()
 
 

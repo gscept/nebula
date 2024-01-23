@@ -7,6 +7,7 @@
 #include "io/bxmlreader.h"
 #include "resources/resourceserver.h"
 #include "shaderconfigserver.h"
+#include "materials/materialtemplates.h"
 
 namespace Materials
 {
