@@ -129,7 +129,7 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "coregraphics/vertexlayout.h"')
         f.WriteLine('#include "materials/shaderconfig.h"')
         f.WriteLine('using namespace Util;')
-        f.WriteLine('namespace Materials\n{\n')
+        f.WriteLine('namespace MaterialTemplates\n{\n')
 
         self.materials = list()
         self.materialDict = {}
@@ -153,11 +153,11 @@ class MaterialTemplateGenerator:
             if not mat.virtual:
                 enumStr += '\t{},\n'.format(mat.name)
 
-        #f.WriteLine('enum MaterialTemplates \n{{\n{}}};\n'.format(enumStr))
+        f.WriteLine('enum MaterialTemplates \n{{\n{}}};\n'.format(enumStr))
         for mat in self.materials:
             f.WriteLine(mat.Format())
 
-        f.WriteLine('} // namespace Materials\n')
+        f.WriteLine('} // namespace MaterialTemplates\n')
         f.Close()
 
 
