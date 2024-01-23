@@ -90,7 +90,7 @@ ResourceServer::Close()
 /**
 */
 void
-ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
+ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
 {
     n_assert(this->open);
     n_assert(loaderClass.IsDerivedFrom(ResourceLoader::RTTI));
@@ -98,6 +98,7 @@ ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti
     Ptr<ResourceLoader> loader((ResourceLoader*)obj);
     loader->uniqueId = UniquePoolCounter++;
     loader->Setup();
+    loader->LoadFallbackResources();
     this->loaders.Append(loader);
     this->extensionMap.Add(ext, this->loaders.Size() - 1);
     this->typeMap.Add(&loaderClass, this->loaders.Size() - 1);

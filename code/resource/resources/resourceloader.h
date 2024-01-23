@@ -45,6 +45,13 @@
 
 namespace Resources
 {
+
+struct PartialLoadBits
+{
+    uint bits;
+    uint64 submissionId;
+};
+
 class Resource;
 class ResourceLoaderThread;
 class ResourceLoader : public Core::RefCounted
@@ -111,6 +118,7 @@ protected:
         bool inflight;
         bool immediate;
         bool reload;
+        IndexT frame;
         float lod;
 
         enum Mode
@@ -165,7 +173,7 @@ protected:
     /// Initialize and create the resource, optionally load if no subresource management is necessary
     virtual ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
     /// Stream resource
-    virtual uint StreamResource(const ResourceId entry, uint requestedBits);
+    virtual uint StreamResource(const ResourceId entry, IndexT frameIndex, uint requestedBits);
     /// perform a reload
     virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
     /// perform a lod update

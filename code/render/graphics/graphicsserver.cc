@@ -90,13 +90,8 @@ GraphicsServer::Open()
     {
 
         // Register graphics resource loaders
-        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::TextureLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nax", CoreAnimation::AnimationLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk", Characters::SkeletonLoader::RTTI); 
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx", CoreGraphics::MeshLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::MaterialLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::ModelLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
 
         RenderUtil::DrawFullScreenQuad::Setup();
 
@@ -191,6 +186,12 @@ GraphicsServer::Open()
         this->materialServer = Materials::ShaderConfigServer::Create();
         this->materialServer->Open();
 
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
+
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
         
@@ -202,7 +203,7 @@ GraphicsServer::Open()
             this->timer->StartTime();
 
         // tell the resource manager to load default resources once we are done setting everything up
-        Resources::ResourceServer::Instance()->LoadDefaultResources();
+        //Resources::ResourceServer::Instance()->LoadDefaultResources();
     }
     else
     {

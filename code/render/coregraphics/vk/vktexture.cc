@@ -84,7 +84,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
     uint32_t usedMemoryRequirements = UINT32_MAX;
     for (uint32_t i = 0; i < sparseMemoryRequirementsCount; i++)
     {
-        if (sparseMemoryRequirements[i].formatProperties.aspectMask == VK_IMAGE_ASPECT_COLOR_BIT)
+        if (AllBits(sparseMemoryRequirements[i].formatProperties.aspectMask, VK_IMAGE_ASPECT_COLOR_BIT))
         {
             usedMemoryRequirements = i;
             break;

@@ -56,6 +56,8 @@ private:
     Util::Array<ShaderConfig*> shaderConfigs;
     ShaderConfig* currentType;
     bool isOpen;
+
+    Util::Dictionary<uint, MaterialProperties> materialPropertiesMap;
 };
 
 } // namespace Materials

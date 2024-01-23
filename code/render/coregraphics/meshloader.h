@@ -39,7 +39,7 @@ private:
     /// Initialize mesh
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// Stream texture
-    uint StreamResource(const Resources::ResourceId entry, uint requestedBits) override;
+    uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
     /// Create load mask based on LOD

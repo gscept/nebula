@@ -42,6 +42,20 @@ ShaderConfigServer::Open()
     n_assert(!this->isOpen);
     this->isOpen = true;
 
+#define ADD_MATERIAL_MAP(x) \
+    this->materialPropertiesMap.Add(#x##_hash, MaterialProperties::x);
+
+    this->materialPropertiesMap.BeginBulkAdd();
+    ADD_MATERIAL_MAP(BRDF);
+    ADD_MATERIAL_MAP(BSDF);
+    ADD_MATERIAL_MAP(GLTF);
+    ADD_MATERIAL_MAP(Unlit);
+    ADD_MATERIAL_MAP(Unlit2);
+    ADD_MATERIAL_MAP(Unlit3);
+    ADD_MATERIAL_MAP(Unlit4);
+    ADD_MATERIAL_MAP(Skybox);
+    this->materialPropertiesMap.EndBulkAdd();
+
     // load base materials first
     this->LoadShaderConfigs("mat:base.json");
 
@@ -100,14 +114,17 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
             if (isVirtual)
             {
                 if (reader->HasAttr("vertexType"))
-                {
-                    n_error("Material '%s' is virtual and is not allowed to have a type defined", type->name.AsCharPtr());
-                }
+                    n_error("Material '%s' is virtual and is not allowed to have a vertex type defined", type->name.AsCharPtr());
+                else if (reader->HasAttr("materialProperties"))
+                    n_error("Material '%s' is virtual and is not allowed to have material properties defined", type->name.AsCharPtr());
             }
             else
             {
-                Util::String vtype = reader->GetString("vertexType");
-                type->vertexType = vtype.HashCode();
+                type->vertexType = reader->GetString("vertexType").HashCode();
+                Util::String propString = reader->GetString("materialProperties");
+                IndexT materialPropertyMapIndex = this->materialPropertiesMap.FindIndex(propString.HashCode());
+                n_assert_fmt(materialPropertyMapIndex != InvalidIndex, "Unknown material properties string '%s'", propString.AsCharPtr());
+                type->materialProperties = this->materialPropertiesMap.ValueAtIndex(materialPropertyMapIndex);
             }
             type->isVirtual = isVirtual;
 

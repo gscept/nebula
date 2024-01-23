@@ -19,8 +19,8 @@ nebula_begin_module(render)
 
     target_precompile_headers(render PRIVATE "render/stdneb.h" "coregraphics/shaderserver.h" "../foundation/core/rtti.h" "graphics/graphicsserver.h" )
      
-    if(N_USE_VULKAN)  
-        fips_deps(glfw3)
+    if(N_USE_VULKAN)
+        fips_deps(glfw3) 
     endif()
      
     fips_files(render/precompiled.h render/stdneb.h) 

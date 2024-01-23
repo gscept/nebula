@@ -9,6 +9,7 @@
 namespace Vulkan
 {
 VkBufferAllocator bufferAllocator;
+VkBufferSparseExtensionAllocator bufferSparseExtensionAllocator;
 
 //------------------------------------------------------------------------------
 /**
@@ -55,6 +56,7 @@ CreateBuffer(const BufferCreateInfo& info)
     VkBufferRuntimeInfo& runtimeInfo = bufferAllocator.Get<Buffer_RuntimeInfo>(id);
     VkBufferMapInfo& mapInfo = bufferAllocator.Get<Buffer_MapInfo>(id);
 
+    loadInfo.sparseExtension = 0xFFFFFFFF;
     loadInfo.dev = Vulkan::GetCurrentDevice();
     runtimeInfo.usageFlags = info.usageFlags;
 
@@ -104,6 +106,7 @@ CreateBuffer(const BufferCreateInfo& info)
     };
 
     flags = Util::BitmaskConvert(info.usageFlags, UsageLookup);
+    VkBufferCreateFlags createFlags = 0x0;
 
     // force add destination bit if we have data to be uploaded
     if (info.mode == DeviceLocal && info.dataSize != 0)
@@ -111,6 +114,11 @@ CreateBuffer(const BufferCreateInfo& info)
 
     if (queues.Size() > 1)
         sharingMode = VK_SHARING_MODE_CONCURRENT;
+    if (info.sparse)
+    {
+        createFlags |= VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
+        n_assert(info.data == nullptr);
+    }
 
     // start by creating buffer
     uint size = info.byteSize == 0 ? info.size * info.elementSize : info.byteSize;
@@ -118,7 +126,7 @@ CreateBuffer(const BufferCreateInfo& info)
     {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         NULL,
-        0,															// use for sparse buffers
+        createFlags,												// use for sparse buffers
         size,
         flags,
         sharingMode,												// can only be accessed from the creator queue,
@@ -147,82 +155,110 @@ CreateBuffer(const BufferCreateInfo& info)
     else if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
         baseAlignment = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupBaseAlignment;
 
-    // now bind memory to buffer
-    CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool, baseAlignment);
-    err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);
-    n_assert(err == VK_SUCCESS);
-
-    loadInfo.mem = alloc;
-
-    if (info.mode == HostLocal || info.mode == HostCached || info.mode == DeviceAndHost)
+    if (info.sparse)
     {
-        // copy contents and flush memory
-        char* data = (char*)GetMappedMemory(alloc);
-        mapInfo.mappedMemory = data;
+        Ids::Id32 sparseExtension = bufferSparseExtensionAllocator.Alloc();
+        loadInfo.sparseExtension = sparseExtension;
+        BufferSparsePageTable& table = bufferSparseExtensionAllocator.Get<BufferExtension_SparsePageTable>(sparseExtension);
 
-        // if we have data, copy the memory to the region
-        if (info.data)
+        VkMemoryRequirements memoryReqs;
+        vkGetBufferMemoryRequirements(loadInfo.dev, runtimeInfo.buf, &memoryReqs);
+
+        VkPhysicalDeviceProperties devProps = GetCurrentProperties();
+        n_assert(memoryReqs.size < devProps.limits.sparseAddressSpaceSize);
+
+        table.memoryReqs = memoryReqs;
+        table.bindCounts = size / memoryReqs.alignment;
+        table.pages.Resize(table.bindCounts);
+
+        SizeT offset = 0;
+        for (auto& page : table.pages)
         {
-            n_assert(info.dataSize <= bufinfo.size);
-            memcpy(data, info.data, info.dataSize);
-
-            // if not host-local memory, we need to flush the initial update
-            if (info.mode == HostCached || info.mode == DeviceAndHost)
-            {
-                VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
-
-                VkMappedMemoryRange range;
-                range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-                range.pNext = nullptr;
-                range.offset = Math::align_down(alloc.offset, props.limits.nonCoherentAtomSize);
-                range.size = Math::align(alloc.size, props.limits.nonCoherentAtomSize);
-                range.memory = alloc.mem;
-                VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
-                n_assert(res == VK_SUCCESS);
-            }
+            CoreGraphics::BufferSparsePage p;
+            p.offset = offset;
+            p.alloc = CoreGraphics::Alloc{ VK_NULL_HANDLE, 0, 0, CoreGraphics::MemoryPool_DeviceLocal };
+            offset += memoryReqs.alignment;
         }
     }
-    else if (info.mode == DeviceLocal && info.data != nullptr)
+    else
     {
-        // if device local and we provide a data pointer, create a temporary staging buffer and perform a copy
-        VkBufferCreateInfo tempAllocInfo =
-        {
-            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            NULL,
-            0,									// use for sparse buffers
-            info.dataSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_SHARING_MODE_EXCLUSIVE,			// can only be accessed from the creator queue,
-            0,									// number of queues in family
-            nullptr								// array of queues belonging to family
-        };
-
-        // create temporary buffer
-        VkBuffer tempBuffer;
-        err = vkCreateBuffer(loadInfo.dev, &tempAllocInfo, nullptr, &tempBuffer);
-
-        // allocate some host-local temporary memory for it
-        CoreGraphics::Alloc tempAlloc = AllocateMemory(loadInfo.dev, tempBuffer, CoreGraphics::MemoryPool_HostLocal);
-        err = vkBindBufferMemory(loadInfo.dev, tempBuffer, tempAlloc.mem, tempAlloc.offset);
+        // now bind memory to buffer
+        CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool, baseAlignment);
+        err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);
         n_assert(err == VK_SUCCESS);
 
-        // copy data to temporary buffer
-        char* buf = (char*)GetMappedMemory(tempAlloc);
-        memcpy(buf, info.data, info.dataSize);
+        loadInfo.mem = alloc;
 
-        CoreGraphics::CmdBufferId cmd = CoreGraphics::LockGraphicsSetupCommandBuffer();
-        VkBufferCopy copy;
-        copy.dstOffset = 0;
-        copy.srcOffset = 0;
-        copy.size = info.dataSize;
+        if (info.mode == HostLocal || info.mode == HostCached || info.mode == DeviceAndHost)
+        {
+            // copy contents and flush memory
+            char* data = (char*)GetMappedMemory(alloc);
+            mapInfo.mappedMemory = data;
 
-        // copy from temp buffer to source buffer in the resource submission context
-        vkCmdCopyBuffer(Vulkan::CmdBufferGetVk(cmd), tempBuffer, runtimeInfo.buf, 1, &copy);
+            // if we have data, copy the memory to the region
+            if (info.data)
+            {
+                n_assert(info.dataSize <= bufinfo.size);
+                memcpy(data, info.data, info.dataSize);
 
-        // add delayed delete for this temporary buffer
-        Vulkan::DelayedDeleteVkBuffer(loadInfo.dev, tempBuffer);
-        CoreGraphics::DelayedFreeMemory(tempAlloc);
-        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+                // if not host-local memory, we need to flush the initial update
+                if (info.mode == HostCached || info.mode == DeviceAndHost)
+                {
+                    VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
+
+                    VkMappedMemoryRange range;
+                    range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+                    range.pNext = nullptr;
+                    range.offset = Math::align_down(alloc.offset, props.limits.nonCoherentAtomSize);
+                    range.size = Math::align(alloc.size, props.limits.nonCoherentAtomSize);
+                    range.memory = alloc.mem;
+                    VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
+                    n_assert(res == VK_SUCCESS);
+                }
+            }
+        }
+        else if (info.mode == DeviceLocal && info.data != nullptr)
+        {
+            // if device local and we provide a data pointer, create a temporary staging buffer and perform a copy
+            VkBufferCreateInfo tempAllocInfo =
+            {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                NULL,
+                0,									// use for sparse buffers
+                info.dataSize,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_SHARING_MODE_EXCLUSIVE,			// can only be accessed from the creator queue,
+                0,									// number of queues in family
+                nullptr								// array of queues belonging to family
+            };
+
+            // create temporary buffer
+            VkBuffer tempBuffer;
+            err = vkCreateBuffer(loadInfo.dev, &tempAllocInfo, nullptr, &tempBuffer);
+
+            // allocate some host-local temporary memory for it
+            CoreGraphics::Alloc tempAlloc = AllocateMemory(loadInfo.dev, tempBuffer, CoreGraphics::MemoryPool_HostLocal);
+            err = vkBindBufferMemory(loadInfo.dev, tempBuffer, tempAlloc.mem, tempAlloc.offset);
+            n_assert(err == VK_SUCCESS);
+
+            // copy data to temporary buffer
+            char* buf = (char*)GetMappedMemory(tempAlloc);
+            memcpy(buf, info.data, info.dataSize);
+
+            CoreGraphics::CmdBufferId cmd = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            VkBufferCopy copy;
+            copy.dstOffset = 0;
+            copy.srcOffset = 0;
+            copy.size = info.dataSize;
+
+            // copy from temp buffer to source buffer in the resource submission context
+            vkCmdCopyBuffer(Vulkan::CmdBufferGetVk(cmd), tempBuffer, runtimeInfo.buf, 1, &copy);
+
+            // add delayed delete for this temporary buffer
+            Vulkan::DelayedDeleteVkBuffer(loadInfo.dev, tempBuffer);
+            CoreGraphics::DelayedFreeMemory(tempAlloc);
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+        }
     }
 
     // setup resource
@@ -394,6 +430,122 @@ BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Invalidate(loadInfo.dev, loadInfo.mem, offset, size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BufferSparseEvict(const BufferId id, IndexT pageIndex)
+{
+    __Lock(bufferAllocator, id.id24);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    n_assert(sparseExtension != 0xFFFFFFFF);
+    const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
+
+    BufferSparsePage& page = table.pages[pageIndex];
+    if (page.alloc.mem == VK_NULL_HANDLE)
+        return;
+
+    // deallocate memory
+    CoreGraphics::FreeMemory(page.alloc);
+    page.alloc.mem = VK_NULL_HANDLE;
+    page.alloc.offset = 0;
+    VkSparseMemoryBind binding =
+    {
+        .resourceOffset = pageIndex * table.memoryReqs.alignment,
+        .size = table.memoryReqs.alignment,
+        .memory = VK_NULL_HANDLE,
+        .memoryOffset = 0,
+        .flags = 0x0
+    };
+
+    // append pending page update
+    Util::Array<VkSparseMemoryBind>& pageBinds = bufferSparseExtensionAllocator.Get<BufferExtension_SparsePendingBinds>(sparseExtension);
+    pageBinds.Append(binding);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BufferSparseMakeResident(const BufferId id, IndexT pageIndex)
+{
+    __Lock(bufferAllocator, id.id24);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    n_assert(sparseExtension != 0xFFFFFFFF);
+    const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
+
+    BufferSparsePage& page = table.pages[pageIndex];
+    if (page.alloc.mem != VK_NULL_HANDLE)
+        return;
+
+    VkDevice dev = GetCurrentDevice();
+    page.alloc = Vulkan::AllocateMemory(dev, table.memoryReqs, table.memoryReqs.alignment);
+    VkSparseMemoryBind binding =
+    {
+        .resourceOffset = pageIndex * table.memoryReqs.alignment,
+        .size = table.memoryReqs.alignment,
+        .memory = page.alloc.mem,
+        .memoryOffset = page.alloc.offset,
+        .flags = 0x0
+    };
+
+    Util::Array<VkSparseMemoryBind>& pageBinds = bufferSparseExtensionAllocator.Get<BufferExtension_SparsePendingBinds>(sparseExtension);
+    pageBinds.Append(binding);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+BufferSparseGetPageIndex(const BufferId id, SizeT offset)
+{
+    __Lock(bufferAllocator, id.id24);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    n_assert(sparseExtension != 0xFFFFFFFF);
+    const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
+
+    // The page index is simply the offset divided by the page size (which is stored in alignment)
+    return offset / table.memoryReqs.alignment;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+BufferSparseGetPageSize(const BufferId id)
+{
+    __Lock(bufferAllocator, id.id24);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    n_assert(sparseExtension != 0xFFFFFFFF);
+    const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
+    return table.memoryReqs.alignment;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BufferSparseCommitChanges(const BufferId id)
+{
+    __Lock(bufferAllocator, id.id24);
+    VkBuffer buf = bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id24).buf;
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    n_assert(sparseExtension != 0xFFFFFFFF);
+    const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
+
+    Util::Array<VkSparseMemoryBind>& pageBinds = bufferSparseExtensionAllocator.Get<BufferExtension_SparsePendingBinds>(sparseExtension);
+
+    // abort early if we have no updates
+    if (pageBinds.IsEmpty())
+        return;
+
+    // execute sparse bind, the bind call
+    Vulkan::SparseBufferBind(buf, pageBinds);
+
+    // clear all pending binds
+    pageBinds.Clear();
 }
 
 //------------------------------------------------------------------------------

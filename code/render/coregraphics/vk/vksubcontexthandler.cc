@@ -153,7 +153,7 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
     submissions.Append(TimelineSubmission());
     TimelineSubmission& sub = submissions.Back();
 
-    uint64 ret = this->semaphoreSubmissionIds[type] + 1;
+    uint64 ret = GetNextTimelineIndex(type);
     
     // If command buffer is present, add it
     sub.buffers.Append(cmds);
@@ -166,6 +166,15 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
     this->semaphoreSubmissionIds[type] = ret;
     
     return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64
+VkSubContextHandler::GetNextTimelineIndex(CoreGraphics::QueueType type)
+{
+    return this->semaphoreSubmissionIds[type] + 1;
 }
 
 //------------------------------------------------------------------------------
@@ -236,6 +245,37 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 //------------------------------------------------------------------------------
 /**
 */
+uint64
+VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds)
+{
+    this->sparseBindSubmissions.Append(SparseBindSubmission());
+    SparseBindSubmission& submission = this->sparseBindSubmissions.Back();
+
+    // setup bind structs, add support for ordinary buffer
+    if (!binds.IsEmpty())
+    {
+        submission.bufferMemoryBinds.Resize(binds.Size());
+        memcpy(submission.bufferMemoryBinds.Begin(), binds.Begin(), binds.Size() * sizeof(VkSparseMemoryBind));
+        VkSparseBufferMemoryBindInfo bufferMemoryBindInfo =
+        {
+            buf,
+            (uint32_t)submission.bufferMemoryBinds.Size(),
+            submission.bufferMemoryBinds.Size() > 0 ? submission.bufferMemoryBinds.Begin() : nullptr
+        };
+        submission.bufferMemoryBindInfos.Append(bufferMemoryBindInfo);
+    }
+
+    // add signal
+    submission.signalSemaphores.Append(this->semaphores[type]);
+    this->semaphoreSubmissionIds[type]++;
+    submission.signalIndices.Append(this->semaphoreSubmissionIds[type]);
+
+    return this->semaphoreSubmissionIds[type];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkSubContextHandler::AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem)
 {
@@ -269,26 +309,26 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 
         VkTimelineSemaphoreSubmitInfo ext =
         {
-            VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
-            nullptr,
-            (uint32_t)sub.waitIndices.Size(),
-            sub.waitIndices.Size() > 0 ? sub.waitIndices.Begin() : nullptr,
-            (uint32_t)sub.signalIndices.Size(),
-            sub.signalIndices.Size() > 0 ? sub.signalIndices.Begin() : nullptr
+            .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreValueCount = (uint32_t)sub.waitIndices.Size(),
+            .pWaitSemaphoreValues = sub.waitIndices.Size() > 0 ? sub.waitIndices.Begin() : nullptr,
+            .signalSemaphoreValueCount = (uint32_t)sub.signalIndices.Size(),
+            .pSignalSemaphoreValues = sub.signalIndices.Size() > 0 ? sub.signalIndices.Begin() : nullptr
         };
         extensions[i] = ext;
 
         VkSubmitInfo info =
         {
-            VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            &extensions[i],
-            (uint32_t)sub.waitSemaphores.Size(),
-            sub.waitSemaphores.Size() > 0 ? sub.waitSemaphores.Begin() : nullptr,
-            sub.waitFlags.Size() > 0 ? sub.waitFlags.Begin() : nullptr,
-            (uint32_t)sub.buffers.Size(),
-            sub.buffers.Size() > 0 ? sub.buffers.Begin() : nullptr,
-            (uint32_t)sub.signalSemaphores.Size(),                              // if we have a finish semaphore, add it on the submit
-            sub.signalSemaphores.Size() > 0 ? sub.signalSemaphores.Begin() : nullptr
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .pNext = &extensions[i],
+            .waitSemaphoreCount = (uint32_t)sub.waitSemaphores.Size(),
+            .pWaitSemaphores = sub.waitSemaphores.Size() > 0 ? sub.waitSemaphores.Begin() : nullptr,
+            .pWaitDstStageMask = sub.waitFlags.Size() > 0 ? sub.waitFlags.Begin() : nullptr,
+            .commandBufferCount = (uint32_t)sub.buffers.Size(),
+            .pCommandBuffers = sub.buffers.Size() > 0 ? sub.buffers.Begin() : nullptr,
+            .signalSemaphoreCount = (uint32_t)sub.signalSemaphores.Size(),                              // if we have a finish semaphore, add it on the submit
+            .pSignalSemaphores = sub.signalSemaphores.Size() > 0 ? sub.signalSemaphores.Begin() : nullptr
         };
         submitInfos[i] = info;
     }
@@ -360,12 +400,12 @@ VkSubContextHandler::FlushSparseBinds(VkFence fence)
         // wait for graphics to finish before we perform our sparse bindings
         VkTimelineSemaphoreSubmitInfo timelineSubmitInfo =
         {
-            VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
-            nullptr,
-            (uint32_t)sub.waitIndices.Size(),
-            sub.waitIndices.Begin(),
-            (uint32_t)sub.signalIndices.Size(),
-            sub.signalIndices.Begin()
+            .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreValueCount = (uint32_t)sub.waitIndices.Size(),
+            .pWaitSemaphoreValues = sub.waitIndices.Begin(),
+            .signalSemaphoreValueCount = (uint32_t)sub.signalIndices.Size(),
+            .pSignalSemaphoreValues = sub.signalIndices.Begin()
         };
         extensions[i] = timelineSubmitInfo;
 

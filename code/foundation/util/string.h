@@ -1147,8 +1147,32 @@ inline auto Format = &String::Sprintf;
 
 //------------------------------------------------------------------------------
 /**
+    Overload literal operator
 */
 Util::String operator ""_str(const char* c, std::size_t s);
+
+//------------------------------------------------------------------------------
+/**
+    Convert string to integer
+*/
+constexpr uint
+operator ""_hash(const char* c, std::size_t s)
+{
+    uint hash = 0;
+    const char* ptr = c;
+    std::size_t len = s;
+    std::size_t i;
+    for (i = 0; i < len; i++)
+    {
+        hash += ptr[i];
+        hash += hash << 10;
+        hash ^= hash >> 6;
+    }
+    hash += hash << 3;
+    hash ^= hash >> 11;
+    hash += hash << 15;
+    return hash;
+}
 
 
 //------------------------------------------------------------------------------

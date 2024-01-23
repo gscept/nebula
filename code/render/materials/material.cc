@@ -227,6 +227,24 @@ MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::Textur
 /**
 */
 void
+MaterialSetBufferBinding(const MaterialId id, IndexT index)
+{
+    materialAllocator.Set<Material_BufferOffset>(id.resourceId, index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+MaterialGetBufferBinding(const MaterialId id)
+{
+    return materialAllocator.Get<Material_BufferOffset>(id.resourceId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex)
 {
     Threading::CriticalScope scope(&materialTextureLoadSection);

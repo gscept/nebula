@@ -95,7 +95,7 @@ ResourceLoader::LoadFallbackResources()
 /**
 */
 uint
-ResourceLoader::StreamResource(const ResourceId entry, uint requestedBits)
+ResourceLoader::StreamResource(const ResourceId entry, IndexT frameIndex, uint requestedBits)
 {
     // Assume the loader doesn't support streaming, whereby all data is loaded on initialize
     return 0xFFFFFFFF;
@@ -149,6 +149,7 @@ ResourceLoader::Update(IndexT frameIndex)
     {
         // get pending element
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
+        resourceLoad.frame = frameIndex;
 
         // If already loaded, just return
         this->asyncSection.Enter();
@@ -318,7 +319,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
     }
 
     // If successful, begin streaming its data
-    loadedBits = loader->StreamResource(resource, requestedBits);
+    loadedBits = loader->StreamResource(resource, res.frame, requestedBits);
     if (AllBits(loadedBits, requestedBits))
     {
         state = Resource::Loaded;

@@ -49,6 +49,20 @@ struct ShaderConfigBatchConstant
     IndexT offset, slot, group;
 };
 
+enum class MaterialProperties
+{
+    BRDF,
+    BSDF,
+    GLTF,
+    Unlit,
+    Unlit2,
+    Unlit3,
+    Unlit4,
+    Skybox,
+
+    Num
+};
+
 class ShaderConfig
 {
 public:
@@ -73,6 +87,9 @@ public:
 
     /// Get batch index from surface config
     BatchIndex GetBatchIndex(const CoreGraphics::BatchGroup::Code batch);
+
+    /// Get material properties prototype hash
+    MaterialProperties GetMaterialProperties();
 
     /// get name
     const Util::String& GetName();
@@ -103,6 +120,7 @@ private:
     Util::String description;
     Util::String group;
     uint vertexType;
+    MaterialProperties materialProperties;
 
     IndexT uniqueId;
     static IndexT ShaderConfigUniqueIdCounter;
@@ -127,6 +145,15 @@ inline const uint32_t
 ShaderConfig::HashCode() const
 {
     return (uint32_t)this->uniqueId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline MaterialProperties
+ShaderConfig::GetMaterialProperties()
+{
+    return this->materialProperties;
 }
 
 } // namespace Materials

@@ -62,7 +62,7 @@ void
 Setup()
 {
     state.Setup();
-    Resources::ResourceServer::Instance()->RegisterStreamPool("actor", Physics::StreamActorPool::RTTI);
+    Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", Physics::StreamActorPool::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();

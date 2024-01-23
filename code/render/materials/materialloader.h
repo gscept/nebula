@@ -10,6 +10,11 @@
 #include "resources/resourceloader.h"
 #include "coregraphics/config.h"
 
+namespace IO
+{
+class BXmlReader;
+}
+
 namespace Materials
 {
 
@@ -27,6 +32,7 @@ private:
 
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
+    Util::Dictionary<MaterialProperties, void(*)(Ptr<IO::BXmlReader>, Materials::MaterialId, Util::StringAtom)> loaderMap;
 };
 
 } // namespace Materials

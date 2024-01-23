@@ -102,7 +102,7 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
 /**
 */
 uint
-MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits)
+MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
 {
     ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
 

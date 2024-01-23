@@ -64,6 +64,15 @@ SurfaceBuilder::ExportBinary(Util::String const& dstFile)
                 writer->EndNode();
             }
         }
+        writer->BeginNode("Params");
+        for (IndexT i = 0; i < this->params.Size(); i++)
+        {
+            writer->BeginNode(this->params[i].Key());
+            writer->SetString("value", this->params[i].Value());
+            writer->EndNode();
+        }
+        writer->EndNode();
+
         writer->EndNode();
     }
     writer->EndNode();

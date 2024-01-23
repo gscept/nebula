@@ -30,7 +30,7 @@ private:
     /// load texture
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// Stream texture
-    uint StreamResource(const Resources::ResourceId entry, uint requestedBits) override;
+    uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
     /// unload texture
     void Unload(const Resources::ResourceId id) override;
 

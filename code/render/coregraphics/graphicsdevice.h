@@ -174,6 +174,11 @@ const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer();
 /// Release lock on handover command buffer
 void UnlockGraphicsSetupCommandBuffer();
 
+/// Get the next submission index for a specific queue
+uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);
+/// Poll a submission for completion
+bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
+
 /// Submit a command buffer, but doesn't necessarily execute it immediately
 SubmissionWaitEvent SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type);
 /// Wait for a submission

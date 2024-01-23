@@ -62,7 +62,7 @@ RecursiveLoadShaders(ShaderServerBase* shaderServer, const Util::String& path)
         shaderServer->LoadShader(resId);
     }
 
-    Util::Array<Util::String> directories = IoServer::Instance()->ListDirectories(path, "*");
+    Util::Array<Util::String> directories = IoServer::Instance()->ListDirectories(path, "*", false, false);
     for (IndexT i = 0; i < directories.Size(); i++)
     {
         RecursiveLoadShaders(shaderServer, path + directories[i] + "/");

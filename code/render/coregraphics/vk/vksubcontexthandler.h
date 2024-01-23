@@ -74,10 +74,14 @@ public:
 
     /// append submission to context to execute later, supports waiting for a queue
     uint64 AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds);
+    /// Gets the next submission id for a specific queue
+    uint64 GetNextTimelineIndex(CoreGraphics::QueueType type);
     /// Append a wait for a submission timeline index
     void AppendWaitTimeline(uint64 index, CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitType);
-    /// append a sparse bind timeline operation
+    /// append a sparse image bind timeline operation
     uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
+    /// append a sparse buffer bind timeline operation
+    uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
     /// Append present signal
     void AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem);
     /// flush submissions
@@ -85,7 +89,7 @@ public:
     /// wait for timeline index
     void Wait(CoreGraphics::QueueType type, uint64 index);
     /// check to see if timeline index has passed
-    bool Poll(CoreGraphics::QueueType type, uint64 index);
+    bool Poll(CoreGraphics::QueueType type, uint64_t index);
 
     /// flush sparse binds
     void FlushSparseBinds(VkFence fence);

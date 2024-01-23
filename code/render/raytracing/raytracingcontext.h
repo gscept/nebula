@@ -22,6 +22,14 @@ struct RaytracingSetupSettings
     const Ptr<Frame::FrameScript>& script;
 };
 
+enum ObjectType
+{
+    BRDFObject,
+    BSDFObject,
+    GLTFObject,
+    ParticleObject
+};
+
 class RaytracingContext : public Graphics::GraphicsContext
 {
     __DeclareContext();
@@ -29,13 +37,13 @@ public:
     /// constructor
     RaytracingContext();
     /// destructor
-    virtual ~RaytracingContext();
+    ~RaytracingContext();
 
     /// Setup ray tracing context
     static void Create(const RaytracingSetupSettings& settings);
 
     /// Setup an entity for ray tracing, assumes model context registration
-    static void Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uint mask, uint shaderOffset);
+    static void Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uint mask);
 
     /// Build top level acceleration
     static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);

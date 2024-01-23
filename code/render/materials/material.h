@@ -16,9 +16,13 @@
 #include "coregraphics/texture.h"
 #include "coregraphics/buffer.h"
 #include "materialvariant.h"
-#include <functional>
+
+#include "material_interface.h"
+
 namespace Materials
 {
+
+
 
 class ShaderConfig;
 RESOURCE_ID_TYPE(MaterialId);
@@ -40,6 +44,11 @@ void DestroyMaterial(const MaterialId id);
 void MaterialSetConstant(const MaterialId mat, IndexT name, const MaterialVariant& value);
 /// Set texture
 void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::TextureId tex);
+
+/// Set material GPU buffer binding
+void MaterialSetBufferBinding(const MaterialId id, IndexT index);
+/// Get material GPU buffer binding
+IndexT MaterialGetBufferBinding(const MaterialId id);
 
 /// Add texture to LOD update
 void MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex);
@@ -76,7 +85,7 @@ struct MaterialTexture
     IndexT slot;
 };
 
-enum MaterialMembers
+enum
 {
     Material_ShaderConfig,
     Material_MinLOD,
@@ -87,6 +96,7 @@ enum MaterialMembers
     Material_InstanceBuffers,
     Material_Textures,
     Material_Constants,
+    Material_BufferOffset
 };
 
 
@@ -99,7 +109,8 @@ typedef Ids::IdAllocator<
     Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
     Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
-    Util::FixedArray<Util::Array<MaterialConstant>>                                 // constants
+    Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
+    IndexT                                                                          // global material buffer binding (based on ShaderConfig::PrototypeHash)
 > MaterialAllocator;
 extern MaterialAllocator materialAllocator;
 
