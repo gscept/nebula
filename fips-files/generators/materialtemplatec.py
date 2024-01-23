@@ -64,23 +64,22 @@ class MaterialTemplateDefinition:
             ret += '\tstatic constexpr Materials::MaterialProperties Properties = Materials::MaterialProperties::{};\n'.format(self.properties)
             ret += '\tstatic constexpr CoreGraphics::VertexLayoutType VertexLayout = CoreGraphics::{};\n'.format(self.vertex)
 
-        #ret += "\tstatic const std::map<const char*, "
-        for var in self.variables:
-            varStr = ''
-            if var.type == "vec4" or var.type == "vec3" or var.type == "vec2":
-                vecStr = ''
-                for val in var.default:
-                    vecStr += '{}, '.format(val)
-                vecStr = vecStr[:-2]
-                varStr += '\t\tstatic constexpr float Default[{}] = {{{}}};\n'.format(len(var.default), vecStr)
-            elif var.type == "float":
-                varStr += '\t\tstatic constexpr {} Default = {}f;\n'.format(var.type, var.default)
-            elif var.type == "textureHandle":
-                varStr += '\t\tstatic constexpr const char* Default = "{}";\n'.format(var.default)
-            
-            ret += '\tstruct {}\n\t{{\n{}\t}};\n\n'.format(var.name, varStr)
+            for var in self.variables:
+                varStr = ''
+                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2":
+                    vecStr = ''
+                    for val in var.default:
+                        vecStr += '{}, '.format(val)
+                    vecStr = vecStr[:-2]
+                    varStr += '\t\tstatic constexpr float Default[{}] = {{{}}};\n'.format(len(var.default), vecStr)
+                elif var.type == "float":
+                    varStr += '\t\tstatic constexpr {} Default = {}f;\n'.format(var.type, var.default)
+                elif var.type == "textureHandle":
+                    varStr += '\t\tstatic constexpr const char* Default = "{}";\n'.format(var.default)
+                
+                ret += '\tstruct {}\n\t{{\n{}\t}};\n\n'.format(var.name, varStr)
 
-        ret = 'struct {}\n{{\n{}}};\n\n'.format(self.name, ret)
+        ret = 'struct {}\n{{\n{}}};\n'.format(self.name, ret)
         return ret
     pass
 
