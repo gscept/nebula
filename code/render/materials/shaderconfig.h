@@ -23,6 +23,29 @@
 namespace Materials
 {
 
+struct MaterialTemplateValue
+{
+    enum Type
+    {
+        Bool,
+        Scalar,
+        Vec2,
+        Vec3,
+        Vec4,
+        Resource
+    } type;
+
+    union
+    {
+        bool b;
+        float f;
+        Math::vec2 f2;
+        Math::vec3 f3;
+        Math::vec4 f4;
+        const char* resource;
+    } data;
+
+};
 
 struct ShaderConfigTexture
 {
