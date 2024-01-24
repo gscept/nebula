@@ -6,7 +6,7 @@
 #include "characterskinnode.h"
 #include "coregraphics/shaderserver.h"
 
-#include "objects_shared.h"
+#include "system_shaders/objects_shared.h"
 
 namespace Models
 {

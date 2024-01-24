@@ -14,8 +14,8 @@
 #include "graphics/view.h"
 #include "ssaocontext.h"
 
-#include "hbao_cs.h"
-#include "hbaoblur_cs.h"
+#include "system_shaders/hbao_cs.h"
+#include "system_shaders/hbaoblur_cs.h"
 
 namespace PostEffects
 {

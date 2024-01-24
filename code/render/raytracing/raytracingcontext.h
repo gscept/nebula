@@ -11,7 +11,7 @@
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
 #include <array>
-#include "cluster_generate.h"
+#include "system_shaders/cluster_generate.h"
 
 namespace Raytracing
 {

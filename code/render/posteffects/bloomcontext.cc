@@ -9,7 +9,7 @@
 #include "graphics/graphicsserver.h"
 #include "bloomcontext.h"
 
-#include "bloom.h"
+#include "system_shaders/bloom.h"
 namespace PostEffects
 {
 

@@ -10,10 +10,10 @@
 #include "coregraphics/meshresource.h"
 
 #include "raytracing/shaders/raytracetest.h"
-#include "raytracetest.h"
-#include "brdfhit.h"
-#include "bsdfhit.h"
-#include "gltfhit.h"
+#include "raytracing/shaders/raytracetest.h"
+#include "raytracing/shaders/brdfhit.h"
+#include "raytracing/shaders/bsdfhit.h"
+#include "raytracing/shaders/gltfhit.h"
 
 namespace Raytracing
 {

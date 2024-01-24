@@ -22,7 +22,7 @@
 #include "resources/resourceserver.h"
 #include "gliml.h"
 
-#include "terrain/terrain.h"
+#include "system_shaders/terrain/terrain.h"
 
 N_DECLARE_COUNTER(N_TERRAIN_TOTAL_AVAILABLE_DATA, Terrain Total Data Size);
 

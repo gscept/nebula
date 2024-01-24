@@ -12,7 +12,7 @@
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
 
-#include "particle.h"
+#include "system_shaders/particle.h"
 
 static CoreGraphics::ShaderId baseShader = CoreGraphics::InvalidShaderId;
 namespace Models

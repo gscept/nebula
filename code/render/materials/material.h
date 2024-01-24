@@ -17,7 +17,7 @@
 #include "coregraphics/buffer.h"
 #include "materialvariant.h"
 
-#include "material_interface.h"
+#include "system_shaders/material_interface.h"
 
 namespace Materials
 {

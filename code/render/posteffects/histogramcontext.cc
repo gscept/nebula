@@ -11,8 +11,8 @@
 
 #include "graphics/globalconstants.h"
 
-#include "histogram_cs.h"
-#include "shared.h"
+#include "system_shaders/histogram_cs.h"
+#include "system_shaders/shared.h"
 #include "core/cvar.h"
 
 namespace PostEffects

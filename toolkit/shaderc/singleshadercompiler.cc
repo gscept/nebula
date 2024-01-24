@@ -44,13 +44,13 @@ SingleShaderCompiler::~SingleShaderCompiler()
 bool 
 SingleShaderCompiler::CompileShader(const Util::String& src)
 {
-    if (!this->dstDir.IsValid())
+    if (!this->dstBinary.IsValid())
     {
         n_printf("shaderc error: No destination for shader compile");
         return false;
     }
 
-    if (!this->headerDir.IsValid())
+    if (!this->dstHeader.IsValid())
     {
         n_printf("shaderc error: No header output folder for shader compile");
         return false;
@@ -66,8 +66,8 @@ SingleShaderCompiler::CompileShader(const Util::String& src)
     }
 
     // make sure the target directory exists
-    ioServer->CreateDirectory(this->dstDir + "/shaders");
-    ioServer->CreateDirectory(this->headerDir);
+    ioServer->CreateDirectory(this->dstBinary);
+    ioServer->CreateDirectory(this->dstHeader);
 
     // attempt compile base shaders
     bool retval = false;
@@ -99,7 +99,7 @@ SingleShaderCompiler::CompileFrameShader(const Util::String& srcf)
     }
 
     // make sure target dir exists
-    Util::String frameDest = this->dstDir + "/frame/";
+    Util::String frameDest = this->dstBinary + "/frame/";
     ioServer->CreateDirectory(frameDest);
     frameDest.Append(srcf.ExtractFileName());
     ioServer->CopyFile(srcf, frameDest);
@@ -123,7 +123,7 @@ SingleShaderCompiler::CompileMaterial(const Util::String & srcf)
     converter.SetPlatform(Platform::Win32);
     
     // make sure output exists
-    Util::String destDir = this->dstDir + "/materials";
+    Util::String destDir = this->dstBinary + "/materials";
     ioServer->CreateDirectory(destDir);
     
     Util::String dest = destDir + "/" + srcf.ExtractFileName();
@@ -157,7 +157,7 @@ SingleShaderCompiler::CompileGLSL(const Util::String& srcf)
     Util::String file = srcf.ExtractFileName();
     file.StripFileExtension();
     // format destination
-    String destFile = this->dstDir + "/shaders/" + file;
+    String destFile = this->dstBinary + "/" + file;
 
     URI src(srcf);
     URI dst(destFile);
@@ -272,8 +272,8 @@ SingleShaderCompiler::CompileSPIRV(const Util::String& srcf)
     file.StripFileExtension();
 
     // format destination
-    String destFile = this->dstDir + "/shaders/" + file + ".fxb";
-    String destHeader = this->headerDir + "/" + file + ".h";
+    String destFile = this->dstBinary + "/" + file + ".fxb";
+    String destHeader = this->dstHeader + "/" + file + ".h";
 
     URI src(srcf);
     URI dst(destFile);
@@ -390,7 +390,7 @@ const Ptr<IoServer>& ioServer = IoServer::Instance();
     Util::String folder = srcf.ExtractDirName();
     file.StripFileExtension();
     // format destination
-    String destDir = this->dstDir + "/shaders/";
+    String destDir = this->dstBinary;
     String destFile = destDir + file + ".dep";
 
     URI src(srcf);

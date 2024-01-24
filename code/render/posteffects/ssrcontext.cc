@@ -11,8 +11,8 @@
 #include "graphics/view.h"
 #include "ssrcontext.h"
 
-#include "ssr_cs.h"
-#include "ssr_resolve_cs.h"
+#include "system_shaders/ssr_cs.h"
+#include "system_shaders/ssr_resolve_cs.h"
 
 namespace PostEffects
 {

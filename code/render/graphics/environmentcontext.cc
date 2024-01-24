@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 
 #include "environmentcontext.h"
-#include "shared.h"
+#include "system_shaders/shared.h"
 #include "graphicsserver.h"
 #include "lighting/lightcontext.h"
 #include "graphics/cameracontext.h"

@@ -9,6 +9,8 @@
 #include "shaderconfigserver.h"
 #include "materials/materialtemplates.h"
 
+#include "system_shaders/material_interface.h"
+
 namespace Materials
 {
 

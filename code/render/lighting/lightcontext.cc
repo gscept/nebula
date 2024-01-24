@@ -22,10 +22,10 @@
 
 #include "graphics/globalconstants.h"
 
-#include "shared.h"
-#include "lights_cluster.h"
-#include "combine.h"
-#include "csmblur.h"
+#include "system_shaders/shared.h"
+#include "system_shaders/lights_cluster.h"
+#include "system_shaders/combine.h"
+#include "system_shaders/csmblur.h"
 
 #define CLUSTERED_LIGHTING_DEBUG 0
 

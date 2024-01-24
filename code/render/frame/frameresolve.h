@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "frameop.h"
 #include "coregraphics/shader.h"
-#include "msaa/msaaresolvedepth4.h"
+#include "system_shaders/msaa/msaaresolvedepth4.h"
 
 namespace Frame
 {

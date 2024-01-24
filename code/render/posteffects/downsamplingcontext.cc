@@ -5,9 +5,9 @@
 #include "frame/framesubgraph.h"
 #include "downsamplingcontext.h"
 
-#include "downsample/downsample_cs_light.h"
-#include "downsample/downsample_cs_depth.h"
-#include "downsample/depth_extract_cs.h"
+#include "system_shaders/downsample/downsample_cs_light.h"
+#include "system_shaders/downsample/downsample_cs_depth.h"
+#include "system_shaders/downsample/depth_extract_cs.h"
 namespace PostEffects
 {
 

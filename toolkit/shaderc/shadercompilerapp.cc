@@ -25,8 +25,8 @@ ShaderCompilerApp::ParseCmdLineArgs()
         }
 
         this->shaderCompiler.SetDebugFlag(this->args.GetBoolFlag("-debug"));
-        this->shaderCompiler.SetDstDir(this->args.GetString("-o"));
-        this->shaderCompiler.SetHeaderDir(this->args.GetString("-h"));
+        this->shaderCompiler.SetDstBinary(this->args.GetString("-o"));
+        this->shaderCompiler.SetDstHeader(this->args.GetString("-h"));
 
         // find include dir args
         for (SizeT i = 0; i < this->args.GetNumArgs(); i++)

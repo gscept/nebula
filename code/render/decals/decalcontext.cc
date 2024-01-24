@@ -15,7 +15,7 @@
 
 #include "graphics/globalconstants.h"
 
-#include "decals_cluster.h"
+#include "system_shaders/decals_cluster.h"
 namespace Decals
 {
 DecalContext::GenericDecalAllocator DecalContext::genericDecalAllocator;

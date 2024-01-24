@@ -13,8 +13,8 @@
 #include "imgui.h"
 #include "graphics/globalconstants.h"
 
-#include "volumefog.h"
-#include "blur/blur_2d_rgba16f_cs.h"
+#include "system_shaders/volumefog.h"
+#include "system_shaders/blur/blur_2d_rgba16f_cs.h"
 namespace Fog
 {
 

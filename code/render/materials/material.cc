@@ -7,7 +7,7 @@
 #include "shaderconfig.h"
 #include "resources/resourceserver.h"
 
-#include "material_interface.h"
+#include "system_shaders/material_interface.h"
 namespace Materials
 {
 
