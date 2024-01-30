@@ -581,10 +581,18 @@ CreateShader(const ShaderCreateInfo& info)
         refl.set = var->set;
         refl.byteSize = var->alignedSize;
 
-        if (var->set > reflectionInfo.uniformBuffersMask.Size())
-            reflectionInfo.uniformBuffersMask.Resize(var->set);
-        uint64& mask = reflectionInfo.uniformBuffersMask[var->set];
-        mask |= (1ull << (uint64)var->binding);
+        if (var->binding != 0xFFFFFFFF)
+        {
+            if (var->set > reflectionInfo.uniformBuffersMask.Size())
+            {
+                reflectionInfo.uniformBuffersMask.Resize(var->set + 1);
+                reflectionInfo.uniformBuffersMask[var->set] = 0;
+            }
+            uint64& mask = reflectionInfo.uniformBuffersMask[var->set];
+            mask |= (1ull << (uint64)var->binding);
+            n_assert(var->binding < 64);
+        }
+
 
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);

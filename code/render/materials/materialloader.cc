@@ -225,7 +225,6 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         // send to first node
         reader->SetToNode("/Nebula/Surface");
 
-
 #pragma region New Method
         // Get template
         Util::String templateName = reader->GetString("template");

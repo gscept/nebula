@@ -88,10 +88,22 @@ GraphicsServer::Open()
 
     if (this->graphicsDevice)
     {
+        // Setup shader server
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
+        this->shaderServer = CoreGraphics::ShaderServer::Create();
+        this->shaderServer->Open();
+
+        // Setup bindless registry and global constants hub
+        BindlessRegistryCreateInfo bindlessRegistryInfo;
+        CreateBindlessRegistry(bindlessRegistryInfo);
 
         // Register graphics resource loaders
         Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
 
         RenderUtil::DrawFullScreenQuad::Setup();
 
@@ -169,28 +181,11 @@ GraphicsServer::Open()
         CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
         CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
 
-        // Setup shader server
-        this->shaderServer = CoreGraphics::ShaderServer::Create();
-        this->shaderServer->Open();
-
-        // Setup bindless registry and global constants hub
-        BindlessRegistryCreateInfo bindlessRegistryInfo;
-        CreateBindlessRegistry(bindlessRegistryInfo);
-
-        GlobalConstantsCreateInfo globalConstantsInfo;
-        CreateGlobalConstants(globalConstantsInfo);
-
         this->frameServer = Frame::FrameServer::Create();
         this->frameServer->Open();
 
         this->materialServer = Materials::ShaderConfigServer::Create();
         this->materialServer->Open();
-
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
 
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
@@ -202,8 +197,11 @@ GraphicsServer::Open()
         if (!this->timer->IsTimeRunning())
             this->timer->StartTime();
 
+        GlobalConstantsCreateInfo globalConstantsInfo;
+        CreateGlobalConstants(globalConstantsInfo);
+
         // tell the resource manager to load default resources once we are done setting everything up
-        //Resources::ResourceServer::Instance()->LoadDefaultResources();
+        Resources::ResourceServer::Instance()->LoadDefaultResources();
     }
     else
     {

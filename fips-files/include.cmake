@@ -332,13 +332,11 @@ macro(nebula_material_template_glue)
     set(out_header "materialtemplates.h")
     set(out_source "materialtemplates.cc")
     
-    message(STATUS ${material_template_headers})
     get_filename_component(f_abs ${CurTargetName} ABSOLUTE)
     set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}/materials")
     add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
         PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py "--glue" ${material_template_headers} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
         WORKING_DIRECTORY "${NROOT}"
-        MAIN_DEPENDENCY ${f_abs}
         DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_template_headers}
         VERBATIM PRE_BUILD)
     source_group("materials\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" )

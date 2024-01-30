@@ -98,7 +98,6 @@ ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rt
     Ptr<ResourceLoader> loader((ResourceLoader*)obj);
     loader->uniqueId = UniquePoolCounter++;
     loader->Setup();
-    loader->LoadFallbackResources();
     this->loaders.Append(loader);
     this->extensionMap.Add(ext, this->loaders.Size() - 1);
     this->typeMap.Add(&loaderClass, this->loaders.Size() - 1);

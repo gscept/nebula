@@ -425,6 +425,7 @@ if __name__ == '__main__':
     generator.SetVersion(Version)
 
     if sys.argv[1] == '--glue':
+        print('Glueing {}\n'.format(sys.argv[2:-2]))
         generator.GenerateGlueHeader(sys.argv[-2])
         generator.GenerateGlueSource(sys.argv[2:-2], sys.argv[-2], sys.argv[-1])
 

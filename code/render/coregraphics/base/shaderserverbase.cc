@@ -152,10 +152,10 @@ ShaderServerBase::Open()
 #endif
 #endif
     // create standard shader for access to shared variables
-    if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
+    if (this->shaders.Contains(ResourceName("shd:system_shaders/shared.fxb")))
     {
         // get shared object id shader variable
-        this->sharedVariableShader = this->GetShader("shd:shared.fxb");
+        this->sharedVariableShader = this->GetShader("shd:system_shaders/shared.fxb");
         n_assert(this->sharedVariableShader != ShaderId::Invalid());
     }
 
@@ -199,7 +199,7 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 	Resources::ResourceId sid = Resources::CreateResource(shdName, "shaders"_atm, nullptr,
 		[shdName](const ResourceId id)
 	{
-		n_error("Failed to load shader '%s'!", shdName.Value());
+		n_error("Failed to load shader '%s'!\n", shdName.Value());
 	}, true);
 	
 	this->shaders.Add(shdName, sid);
