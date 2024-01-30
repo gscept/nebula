@@ -143,6 +143,8 @@ const Util::StringAtom ShaderGetConstantBufferName(const ShaderId id, const Inde
 const IndexT ShaderGetConstantBufferResourceSlot(const ShaderId id, const IndexT i);
 /// get group of constant buffer
 const IndexT ShaderGetConstantBufferResourceGroup(const ShaderId id, const IndexT i);
+/// Get mask of constant buffers
+const uint64 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group);
 
 /// get slot of any shader resource
 const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name);

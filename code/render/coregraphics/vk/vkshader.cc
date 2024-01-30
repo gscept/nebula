@@ -581,6 +581,11 @@ CreateShader(const ShaderCreateInfo& info)
         refl.set = var->set;
         refl.byteSize = var->alignedSize;
 
+        if (var->set > reflectionInfo.uniformBuffersMask.Size())
+            reflectionInfo.uniformBuffersMask.Resize(var->set);
+        uint64& mask = reflectionInfo.uniformBuffersMask[var->set];
+        mask |= (1ull << (uint64)var->binding);
+
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
     }
@@ -1196,6 +1201,15 @@ ShaderGetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const Inde
 {
     const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
     return var.set;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint64
+ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
+{
+    return shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersMask[group];
 }
 
 //------------------------------------------------------------------------------

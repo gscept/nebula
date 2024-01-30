@@ -117,6 +117,8 @@ struct VkReflectionInfo
     };
     Util::Dictionary<Util::StringAtom, Variable> variablesByName;
     Util::Array<Variable> variables;
+
+    Util::Array<uint64> uniformBuffersMask;
 };
 
 enum
