@@ -32,7 +32,8 @@ struct MaterialTemplateValue
         Vec2,
         Vec3,
         Vec4,
-        Resource
+        Resource,
+        BindlessResource
     } type;
 
     union
@@ -44,6 +45,28 @@ struct MaterialTemplateValue
         Math::vec4 f4;
         const char* resource;
     } data;
+
+    // Get size of data
+    SizeT GetSize() const
+    {
+        switch (this->type)
+        {
+            case Bool:
+                return 1;
+            case Scalar:
+                return 4;
+            case Vec2:
+                return 8;
+            case Vec3:
+                return 12;
+            case Vec4:
+                return 16;
+            case BindlessResource:
+                return 4;
+            default: 
+                return 1;
+        }
+    }
 
 };
 
@@ -58,6 +81,7 @@ struct ShaderConfigTexture
 struct ShaderConfigBatchTexture
 {
     IndexT slot;
+    Materials::MaterialTemplateValue def;
 };
 
 struct ShaderConfigConstant
@@ -70,6 +94,7 @@ struct ShaderConfigConstant
 struct ShaderConfigBatchConstant
 {
     IndexT offset, slot, group;
+    Materials::MaterialTemplateValue def;
 };
 
 enum class MaterialProperties
@@ -82,6 +107,7 @@ enum class MaterialProperties
     Unlit3,
     Unlit4,
     Skybox,
+    Legacy,
 
     Num
 };
@@ -180,3 +206,27 @@ ShaderConfig::GetMaterialProperties()
 }
 
 } // namespace Materials
+
+namespace MaterialTemplates
+{
+
+struct Entry
+{
+    struct Pass
+    {
+        CoreGraphics::ShaderId shader;
+        CoreGraphics::ShaderProgramId program;
+        uint index;
+    };
+    const char* name;
+    Materials::MaterialProperties properties;
+    CoreGraphics::VertexLayoutType vertexLayout;
+    Util::Dictionary<const char*, Materials::MaterialTemplateValue> values;
+    Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass> passes;
+    Util::Array<Util::Array<Materials::ShaderConfigBatchTexture>> texturesPerBatch;
+    Util::Array<Util::Array<Materials::ShaderConfigBatchConstant>> constantsPerBatch;
+    Util::Array<Util::Dictionary<const char*, uint>> textureBatchLookup;
+    Util::Array<Util::Dictionary<const char*, uint>> constantBatchLookup;
+};
+
+}

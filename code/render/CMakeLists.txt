@@ -520,7 +520,7 @@ ENDIF()
                 shaderconfig.cc
                 shaderconfig.h
             )
-            nebula_material_template_compile(materialtemplates.json)
+            nebula_material_template_compile(base.json gltf.json)
         fips_dir(models/nodes GROUP "models/nodes")
             fips_files(
                 characternode.cc
@@ -652,6 +652,7 @@ ENDIF()
                 visibilitysystem.cc
             )
 
+        nebula_material_template_glue()
 nebula_end_module()
 
 

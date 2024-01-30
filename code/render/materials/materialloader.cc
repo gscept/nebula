@@ -24,6 +24,10 @@ struct
     Util::PinnedArray<0xFFFF, MaterialInterface::Unlit3Material> Unlit3Materials;
     Util::PinnedArray<0xFFFF, MaterialInterface::Unlit4Material> Unlit4Materials;
     Util::PinnedArray<0xFFFF, MaterialInterface::SkyboxMaterial> SkyboxMaterials;
+    Util::PinnedArray<0xFFFF, MaterialInterface::LegacyMaterial> LegacyMaterials;
+
+    Threading::CriticalSection VariantAllocatorLock;
+    Memory::ArenaAllocator<4096> VariantAllocator;
 } state;
 
 __ImplementClass(Materials::MaterialLoader, 'MALO', Resources::ResourceLoader);
@@ -36,6 +40,9 @@ MaterialLoader::Setup()
 {
     this->placeholderResourceName = "syssur:placeholder.sur";
     this->failResourceName = "syssur:error.sur";
+
+    // Run generated setup code
+    MaterialTemplates::SetupMaterialTemplates();
 
 #define LOAD_TEXTURE(x, def) \
             if (reader->SetToFirstChild(#x)) \
@@ -95,7 +102,7 @@ MaterialLoader::Setup()
     auto gltfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.GLTFMaterials.Size());
         MaterialInterface::GLTFMaterial& material = state.GLTFMaterials.Emplace();
-        LOAD_TEXTURE(baseColorTexture, CoreGraphics::White1D);
+        LOAD_TEXTURE(baseColorTexture, CoreGraphics::White2D);
         LOAD_TEXTURE(normalTexture, CoreGraphics::Green2D);
         LOAD_TEXTURE(metallicRoughnessTexture, CoreGraphics::Black2D);
         LOAD_TEXTURE(emissiveTexture, CoreGraphics::Black2D);
@@ -112,7 +119,7 @@ MaterialLoader::Setup()
     auto brdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.BRDFMaterials.Size());
         MaterialInterface::BRDFMaterial& material = state.BRDFMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White1D);
+        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
         LOAD_TEXTURE(ParameterMap, CoreGraphics::Black2D);
         LOAD_TEXTURE(NormalMap, CoreGraphics::Green2D);
         LOAD_VEC3(MatAlbedoIntensity, 1);
@@ -123,7 +130,7 @@ MaterialLoader::Setup()
     auto bsdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.BSDFMaterials.Size());
         MaterialInterface::BSDFMaterial& material = state.BSDFMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White1D);
+        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
         LOAD_TEXTURE(ParameterMap, CoreGraphics::Black2D);
         LOAD_TEXTURE(NormalMap, CoreGraphics::Green2D);
         LOAD_TEXTURE(AbsorptionMap, CoreGraphics::Black2D);
@@ -136,46 +143,61 @@ MaterialLoader::Setup()
     auto unlitLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.UnlitMaterials.Size());
         MaterialInterface::UnlitMaterial& material = state.UnlitMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White1D);
+        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
     };
     this->loaderMap.Add(MaterialProperties::Unlit, unlitLoader);
 
     auto unlit2Loader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.Unlit2Materials.Size());
         MaterialInterface::Unlit2Material& material = state.Unlit2Materials.Emplace();
-        LOAD_TEXTURE(Layer1, CoreGraphics::White1D);
-        LOAD_TEXTURE(Layer2, CoreGraphics::White1D);
+        LOAD_TEXTURE(Layer1, CoreGraphics::White2D);
+        LOAD_TEXTURE(Layer2, CoreGraphics::White2D);
     };
     this->loaderMap.Add(MaterialProperties::Unlit2, unlit2Loader);
 
     auto unlit3Loader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.Unlit3Materials.Size());
         MaterialInterface::Unlit3Material& material = state.Unlit3Materials.Emplace();
-        LOAD_TEXTURE(Layer1, CoreGraphics::White1D);
-        LOAD_TEXTURE(Layer2, CoreGraphics::White1D);
-        LOAD_TEXTURE(Layer3, CoreGraphics::White1D);
+        LOAD_TEXTURE(Layer1, CoreGraphics::White2D);
+        LOAD_TEXTURE(Layer2, CoreGraphics::White2D);
+        LOAD_TEXTURE(Layer3, CoreGraphics::White2D);
     };
     this->loaderMap.Add(MaterialProperties::Unlit3, unlit3Loader);
 
     auto unlit4Loader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.Unlit4Materials.Size());
         MaterialInterface::Unlit4Material& material = state.Unlit4Materials.Emplace();
-        LOAD_TEXTURE(Layer1, CoreGraphics::White1D);
-        LOAD_TEXTURE(Layer2, CoreGraphics::White1D);
-        LOAD_TEXTURE(Layer3, CoreGraphics::White1D);
-        LOAD_TEXTURE(Layer4, CoreGraphics::White1D);
+        LOAD_TEXTURE(Layer1, CoreGraphics::White2D);
+        LOAD_TEXTURE(Layer2, CoreGraphics::White2D);
+        LOAD_TEXTURE(Layer3, CoreGraphics::White2D);
+        LOAD_TEXTURE(Layer4, CoreGraphics::White2D);
     };
     this->loaderMap.Add(MaterialProperties::Unlit4, unlit4Loader);
 
     auto skyboxLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         Materials::MaterialSetBufferBinding(mat, state.SkyboxMaterials.Size());
         MaterialInterface::SkyboxMaterial& material = state.SkyboxMaterials.Emplace();
-        LOAD_TEXTURE(SkyLayer1, CoreGraphics::White1D);
-        LOAD_TEXTURE(SkyLayer2, CoreGraphics::White1D);
+        LOAD_TEXTURE(SkyLayer1, CoreGraphics::WhiteCube);
+        LOAD_TEXTURE(SkyLayer2, CoreGraphics::WhiteCube);
         LOAD_FLOAT(Contrast, 1.0f);
         LOAD_FLOAT(Brightness, 1.0f);
     };
     this->loaderMap.Add(MaterialProperties::Skybox, skyboxLoader);
+
+    auto legacyLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
+        Materials::MaterialSetBufferBinding(mat, state.LegacyMaterials.Size());
+        MaterialInterface::LegacyMaterial& material = state.LegacyMaterials.Emplace();
+        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
+        LOAD_TEXTURE(ParameterMap, CoreGraphics::Black2D);
+        LOAD_TEXTURE(NormalMap, CoreGraphics::Green2D);
+        LOAD_VEC4(MatAlbedoIntensity, 1);
+        LOAD_VEC4(MatSpecularIntensity, 1);
+        LOAD_FLOAT(MatRoughnessIntensity, 1);
+        LOAD_FLOAT(MatMetallicIntensity, 1);
+        LOAD_FLOAT(AlphaSensitivity, 1);
+        LOAD_FLOAT(AlphaBlendFactor, 1);
+    };
+    this->loaderMap.Add(MaterialProperties::Legacy, legacyLoader);
 
     n_assert_msg(this->loaderMap.Size() == (uint)MaterialProperties::Num, "Missing material loaders, please add a loader for each material in the MaterialProperties enum");
 
@@ -203,6 +225,133 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         // send to first node
         reader->SetToNode("/Nebula/Surface");
 
+
+#pragma region New Method
+        // Get template
+        Util::String templateName = reader->GetString("template");
+        uint templateHash = templateName.HashCode();
+        IndexT templateIndex = MaterialTemplates::Lookup.FindIndex(templateHash);
+        n_assert_fmt(templateIndex != InvalidIndex, "Unknown material template '%s'", templateName.AsCharPtr());
+        const auto& materialTemplate = MaterialTemplates::Lookup.ValueAtIndex(templateIndex);
+
+        MaterialId id = CreateMaterial2(materialTemplate);
+
+        // New material upload system, the defaults and types can be discarded
+        IndexT loaderIndex = this->loaderMap.FindIndex(materialTemplate.properties);
+        if (loaderIndex != InvalidIndex)
+        {
+            auto loader = this->loaderMap.ValueAtIndex(loaderIndex);
+            if (reader->SetToFirstChild("Params")) do
+            {
+                loader(reader, id, tag);
+            } while (reader->SetToNextChild("Params"));
+        }
+
+        if (reader->SetToFirstChild("Param")) do
+        {
+            Util::StringAtom paramName = reader->GetString("name");
+
+            // set variant value which we will use in the surface constants
+            for (IndexT i = 0; i < materialTemplate.passes.Size(); i++)
+            {
+                uint constantIndex = materialTemplate.constantBatchLookup[i][paramName.Value()];
+                uint textureIndex = materialTemplate.textureBatchLookup[i][paramName.Value()];
+                if (constantIndex != InvalidIndex)
+                {
+                    // Get constant
+                    const auto& constant = materialTemplate.constantsPerBatch[i][constantIndex];
+
+                    // Create variant and allocate memory
+                    state.VariantAllocatorLock.Enter();
+                    void* mem = state.VariantAllocator.Alloc(constant.def.GetSize());
+                    state.VariantAllocatorLock.Leave();
+
+                    MaterialVariant var;
+                    var.mem = mem;
+
+                    // Get value from material, if the type doesn't match the template, we'll pick the template value
+                    switch (constant.def.type)
+                    {
+                        case MaterialTemplateValue::Scalar:
+                            var.Set(MaterialVariant(reader->GetOptFloat("value", constant.def.data.f)));
+                            break;
+                        case MaterialTemplateValue::Bool:
+                            var.Set(MaterialVariant(reader->GetOptBool("value", constant.def.data.b)));
+                            break;
+                        case MaterialTemplateValue::Vec2:
+                            var.Set(MaterialVariant(reader->GetOptVec2("value", constant.def.data.f2)));
+                            break;
+                        case MaterialTemplateValue::Vec3:
+                            var.Set(MaterialVariant(reader->GetOptVec4("value", constant.def.data.f4)));
+                            break;
+                        case MaterialTemplateValue::Vec4:
+                            var.Set(MaterialVariant(reader->GetOptVec4("value", constant.def.data.f4)));
+                            break;
+                        case MaterialTemplateValue::BindlessResource:
+                        {
+                            Util::String path = reader->GetOptString("value", constant.def.data.resource);
+                            Resources::ResourceId tex;
+
+                            tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
+                                [id, binding = constant.offset, var](Resources::ResourceId rid) mutable
+                                {
+                                    CoreGraphics::TextureIdLock _0(rid);
+                                    MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
+                                    var.Set(tuple);
+                                    MaterialSetConstant(id, binding, var);
+                                    MaterialAddLODTexture(id, rid);
+                                },
+                                [id, binding = constant.offset, var](Resources::ResourceId rid) mutable
+                                {
+                                    CoreGraphics::TextureIdLock _0(rid);
+                                    MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
+                                    var.Set(tuple);
+                                    MaterialSetConstant(id, binding, var);
+                                });
+                            CoreGraphics::TextureIdLock _0(tex);
+                            MaterialVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };
+                            var.Set(tuple);
+
+                            break;
+                        }
+                    }
+
+                    // Set constant
+                    MaterialSetConstant(id, constant.offset, var);
+                }
+                else if (textureIndex != InvalidIndex)
+                {
+                    const auto& texture = materialTemplate.texturesPerBatch[i][textureIndex];
+
+                    Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
+                        [id, slot = texture.slot](Resources::ResourceId rid)
+                        {
+                            CoreGraphics::TextureIdLock _0(rid);
+                            MaterialSetTexture(id, slot, rid);
+                            MaterialAddLODTexture(id, rid);
+                        },
+                        [id, slot = texture.slot](Resources::ResourceId rid)
+                        {
+                            CoreGraphics::TextureIdLock _0(rid);
+                            MaterialSetTexture(id, slot, rid);
+                        });
+
+                    CoreGraphics::TextureIdLock _0(tex);
+                    MaterialSetTexture(id, texture.slot, tex);
+                }
+
+                //materialTemplate.constantsPerBatch[i][constantIndex].
+            }
+            //IndexT slot = config->GetTextureIndex(paramName);
+            //if (binding != InvalidIndex)
+            //{
+            //}
+        }
+        while (reader->SetToNextChild("Param"));
+#pragma endregion
+
+        /*
+#pragma region Old Method
         // load surface
         Resources::ResourceName shaderConfig = reader->GetString("template");
         Materials::ShaderConfigServer* server = Materials::ShaderConfigServer::Instance();
@@ -271,9 +420,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                         case MaterialVariant::Type::TextureHandle: // texture handle
                         {
                             Util::String path = reader->GetOptString("value", "");
-                            /*if (paramName == "DiffuseMap" || paramName == "AlbedoMap")
-                                path = "systex:error.dds";
-                                */
+ 
                             Resources::ResourceId tex;
                             if (!path.IsEmpty())
                             {
@@ -331,7 +478,8 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             }
             
         } while (reader->SetToNextChild("Param"));
-
+#pragma endregion
+        */
         return id;
     }
     return InvalidMaterialId;

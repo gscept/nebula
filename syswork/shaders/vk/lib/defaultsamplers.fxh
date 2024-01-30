@@ -6,22 +6,9 @@
 #ifndef DEFAULTSAMPLERS_FXH
 #define DEFAULTSAMPLERS_FXH
 
-group(BATCH_GROUP) shared constant DefaultSamplers [ string Visibility = "VS|PS"; ]
-{
-	textureHandle AlbedoMap;
-	textureHandle DisplacementMap;
-	textureHandle ParameterMap;
-	textureHandle NormalMap;
-};
-
-
 // samplers
 sampler_state GeometryTextureSampler
 {
-	// Samplers = { ParameterMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, CavityMap };
-	//Filter = MinMagMipLinear;
-	//AddressU = Wrap;
-	//AddressV = Wrap;
 };
 
 sampler_state MaterialSampler
@@ -44,7 +31,6 @@ sampler_state CubeSampler
 
 sampler_state EnvironmentSampler
 {
-	//Samplers = { EnvironmentMap, IrradianceMap };
 	Filter = MinMagMipLinear;
 	AddressU = Wrap;
 	AddressV = Wrap;

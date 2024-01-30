@@ -287,25 +287,64 @@ endmacro()
 macro(nebula_material_template_compile)
     SOURCE_GROUP("Material Template Files" FILES ${ARGN})
     foreach(temp ${ARGN})
-        get_filename_component(f_abs ${CurDir}${temp} ABSOLUTE)
-        get_filename_component(f_dir ${f_abs} PATH)
-        STRING(REPLACE ".json" ".h" out_header ${temp})
         STRING(REPLACE ".json" ".cc" out_source ${temp})
-        STRING(FIND "${CMAKE_CURRENT_SOURCE_DIR}"  "/" last REVERSE)
-        STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
+        STRING(REPLACE ".json" ".h" out_header ${temp})
+        get_filename_component(f_abs ${CurDir}${temp} ABSOLUTE)
         set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}/${CurDir}")
         add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
-            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py "${f_abs}" "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
+            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${f_abs} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
             WORKING_DIRECTORY "${NROOT}"
-            MAIN_DEPENDENCY "${f_abs}"
-            DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py
+            MAIN_DEPENDENCY ${f_abs}
+            DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py 
             VERBATIM PRE_BUILD)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" )
-        source_group("${CurGroup}" FILES ${f_abs})
+        source_group("${CurGroup}\\Templates" FILES ${f_abs})
         target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}")
         target_sources(${CurTargetName} PRIVATE "${f_abs}")
+        include_directories("${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}")
+        LIST(APPEND material_template_headers ${out_header})
     endforeach()
-    include_directories("${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}")
+    #set(out_header "materialtemplates.h")
+    #set(out_source "materialtemplates.cc")
+    #foreach(temp ${ARGN})
+    #    get_filename_component(f_abs ${CurDir}${temp} ABSOLUTE)
+    #    LIST(APPEND files_abs ${f_abs})
+    #endforeach()
+    #string(JOIN " " files_list ${files_abs})
+    #
+    #message(STATUS ${files_list})
+    #list(GET files_abs 0 dep)
+    #set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}/${CurDir}")
+    #add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
+    #    PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${files_abs} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
+    #    WORKING_DIRECTORY "${NROOT}"
+    #    MAIN_DEPENDENCY ${dep}
+    #    DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py 
+    #    VERBATIM PRE_BUILD)
+    #SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" )
+    #source_group("${CurGroup}\\Templates" FILES ${files_abs})
+    #target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}")
+    #target_sources(${CurTargetName} PRIVATE "${files_abs}")
+    #include_directories("${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}")
+endmacro()
+
+macro(nebula_material_template_glue)
+    set(out_header "materialtemplates.h")
+    set(out_source "materialtemplates.cc")
+    
+    message(STATUS ${material_template_headers})
+    get_filename_component(f_abs ${CurTargetName} ABSOLUTE)
+    set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}/materials")
+    add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
+        PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py "--glue" ${material_template_headers} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
+        WORKING_DIRECTORY "${NROOT}"
+        MAIN_DEPENDENCY ${f_abs}
+        DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_template_headers}
+        VERBATIM PRE_BUILD)
+    source_group("materials\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" )
+    source_group("materials\\Templates" FILES "${out_header}" "${out_source}")
+    target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}")
+    include_directories("${CMAKE_BINARY_DIR}/material_templates/${CurTargetName}/materials")
 endmacro()
 
 # Call inside fips_sharedlib, after calling nebula_idl_generate_cs_target

@@ -92,3 +92,18 @@ ptr struct SkyboxMaterial
     float Contrast;
     float Brightness;
 };
+
+ptr struct LegacyMaterial
+{
+    vec4 MatAlbedoIntensity;
+    vec4 MatSpecularIntensity;
+
+    float AlphaSensitivity;
+    float AlphaBlendFactor;
+    float MatRoughnessIntensity;
+    float MatMetallicIntensity;
+
+    textureHandle AlbedoMap;
+    textureHandle ParameterMap;
+    textureHandle NormalMap;
+};
