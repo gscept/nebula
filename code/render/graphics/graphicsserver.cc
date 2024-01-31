@@ -97,6 +97,9 @@ GraphicsServer::Open()
         BindlessRegistryCreateInfo bindlessRegistryInfo;
         CreateBindlessRegistry(bindlessRegistryInfo);
 
+        GlobalConstantsCreateInfo globalConstantsInfo;
+        CreateGlobalConstants(globalConstantsInfo);
+
         // Register graphics resource loaders
         Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
@@ -184,8 +187,8 @@ GraphicsServer::Open()
         this->frameServer = Frame::FrameServer::Create();
         this->frameServer->Open();
 
-        this->materialServer = Materials::ShaderConfigServer::Create();
-        this->materialServer->Open();
+        //this->materialServer = Materials::ShaderConfigServer::Create();
+        //this->materialServer->Open();
 
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
@@ -197,8 +200,7 @@ GraphicsServer::Open()
         if (!this->timer->IsTimeRunning())
             this->timer->StartTime();
 
-        GlobalConstantsCreateInfo globalConstantsInfo;
-        CreateGlobalConstants(globalConstantsInfo);
+
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();

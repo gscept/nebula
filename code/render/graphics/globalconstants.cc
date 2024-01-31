@@ -40,7 +40,7 @@ void
 CreateGlobalConstants(const GlobalConstantsCreateInfo& info)
 {
     // create shader state for textures, and fetch variables
-    CoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:shared.fxb"_atm);
+    CoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:system_shaders/shared.fxb"_atm);
 
     state.tableLayout = CoreGraphics::ShaderGetResourcePipeline(shader);
 
