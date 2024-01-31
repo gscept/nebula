@@ -118,7 +118,6 @@ StringAtom::StringHashCode() const
     {
         hash += ptr[i];
         hash += hash << 10;
-        hash += hash << 10;
         hash ^= hash >> 6;
     }
     hash += hash << 3;
@@ -133,7 +132,7 @@ StringAtom::StringHashCode() const
 Util::StringAtom
 operator""_atm(const char* c)
 {
-    return Util::StringAtom();
+    return Util::StringAtom(c);
 }
 
 } // namespace Util
