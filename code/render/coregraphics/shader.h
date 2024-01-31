@@ -104,6 +104,8 @@ const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringA
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostCached);
 /// create constant buffer from index
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostCached);
+/// Calculate buffer index using binding mask and slot
+const uint ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot);
 
 /// Get name of shader
 const Resources::ResourceName ShaderGetName(const ShaderId id);

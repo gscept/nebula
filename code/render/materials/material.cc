@@ -219,24 +219,29 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
             }
         }
 
-        uint64 it = 0;
+        uint it = 0;
         uint64 batchGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_BATCH_GROUP);
-        uint numBuffers = Util::LastOne(batchGroupMask);
-        buffersPerPass[passIndex].Resize(numBuffers + 1);
+        uint64 currentMask = batchGroupMask;
+        uint numBuffers = Util::PopCnt(batchGroupMask);
+        buffersPerPass[passIndex].Resize(numBuffers);
 
-        while (batchGroupMask != 0)
+        while (currentMask != 0)
         {
-            if (AllBits(batchGroupMask, 1 << it))
+            if (AllBits(currentMask, 1 << it))
             {
                 IndexT slot = it;
-                CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, NEBULA_BATCH_GROUP, slot);
-                buffersPerPass[passIndex][slot] = Util::MakePair(slot, buf);
+				uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, it);
+                CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, NEBULA_BATCH_GROUP, bufferIndex);
+
+                // Calculate the index by counting the active bits at the point of the iterator
+                buffersPerPass[passIndex][bufferIndex] = Util::MakePair(slot, buf);
+
                 if (buf != CoreGraphics::InvalidBufferId)
                 {
                     CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
                 }
             }
-            batchGroupMask &= ~(1 << it);
+            currentMask &= ~(1 << it);
             it++;
         }
 
@@ -247,7 +252,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
             if (AllBits(instanceGroupMask, 1 << it))
             {
                 IndexT slot = it;
-                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, slot);
+                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, it));
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
                     CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
@@ -270,20 +275,10 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
         {
             if (constant.group == NEBULA_BATCH_GROUP)
             {
-                CoreGraphics::BufferId buffer = buffersPerPass[passIndex][constant.slot].second;
-                /*
-                IndexT k;
-                for (k = 0; k < buffersPerPass[passIndex].Size(); k++)
-                {
-                    const auto& pair = buffersPerPass[passIndex][k];
-                    if (pair.first == constant.slot)
-                    {
-                        buffer = pair.second;
-                        break;
-                    }
-                }
-                */
+                // Get the buffer index by using the constant slot
+                uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, constant.slot);
 
+                CoreGraphics::BufferId buffer = buffersPerPass[passIndex][bufferIndex].second;
                 if (constant.def.type != MaterialTemplateValue::Type::BindlessResource)
                     CoreGraphics::BufferUpdate(buffer, &constant.def.data, constant.def.GetSize(), constant.offset);
                 else

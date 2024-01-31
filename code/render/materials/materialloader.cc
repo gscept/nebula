@@ -253,12 +253,13 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             // set variant value which we will use in the surface constants
             for (IndexT i = 0; i < materialTemplate.passes.Size(); i++)
             {
-                uint constantIndex = materialTemplate.constantBatchLookup[i][paramName.Value()];
-                uint textureIndex = materialTemplate.textureBatchLookup[i][paramName.Value()];
+                uint constantIndex = materialTemplate.constantBatchLookup[i].FindIndex(paramName.StringHashCode());
+                uint textureIndex = materialTemplate.textureBatchLookup[i].FindIndex(paramName.StringHashCode());
+
                 if (constantIndex != InvalidIndex)
                 {
                     // Get constant
-                    const auto& constant = materialTemplate.constantsPerBatch[i][constantIndex];
+                    const auto& constant = materialTemplate.constantsPerBatch[i][materialTemplate.constantBatchLookup[i].ValueAtIndex(constantIndex)];
 
                     // Create variant and allocate memory
                     state.VariantAllocatorLock.Enter();
@@ -320,7 +321,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                 }
                 else if (textureIndex != InvalidIndex)
                 {
-                    const auto& texture = materialTemplate.texturesPerBatch[i][textureIndex];
+                    const auto& texture = materialTemplate.texturesPerBatch[i][materialTemplate.textureBatchLookup[i].ValueAtIndex(textureIndex)];
 
                     Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
                         [id, slot = texture.slot](Resources::ResourceId rid)

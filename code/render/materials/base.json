@@ -9,17 +9,17 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "ParameterMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:default_material"
+                        "defaultValue": "systex:default_material.dds"
                     },
                     {
                         "name": "NormalMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:nobump"
+                        "defaultValue": "systex:nobump.dds"
                     },
                     {
                         "name": "MatAlbedoIntensity",
@@ -339,7 +339,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "AlphaSensitivity",
@@ -381,7 +381,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "AlphaSensitivity",
@@ -433,7 +433,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     }
                 ]
             },
@@ -455,7 +455,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     }
                 ]
             },
@@ -477,7 +477,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     }
                 ]
             },
@@ -499,12 +499,12 @@
                     {
                         "name": "Layer1",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer2",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "UVAnim1",
@@ -550,17 +550,17 @@
                     {
                         "name": "Layer1",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer2",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer3",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "UVAnim1",
@@ -612,22 +612,22 @@
                     {
                         "name": "Layer1",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer2",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer3",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer4",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "UVAnim1",
@@ -708,17 +708,17 @@
                     {
                         "name": "AlbedoMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:white"
+                        "defaultValue": "systex:white.dds"
                     },
                     {
                         "name": "NormalMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:nobump"
+                        "defaultValue": "systex:nobump.dds"
                     },
                     {
                         "name": "ParameterMap",
                         "type": "textureHandle",
-                        "defaultValue": "systex:default_material"
+                        "defaultValue": "systex:default_material.dds"
                     },
                     {
                         "name": "Transmission",
@@ -749,7 +749,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder",
+                        "defaultValue": "systex:placeholder.dds",
                         "system": true
                     },
                     {
@@ -787,12 +787,12 @@
                     {
                         "name": "SkyLayer1",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "SkyLayer2",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "SkyBlendFactor",
@@ -849,7 +849,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     }
                 ]
             },
@@ -874,7 +874,7 @@
                     {
                         "name": "AlbedoMap",
                         "type": "texture2d",
-                        "defaultValue": "systex:placeholder"
+                        "defaultValue": "systex:placeholder.dds"
                     }
                 ]
             }

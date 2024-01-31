@@ -148,6 +148,25 @@ inline void HashCombine(uint32_t& s, const T& v)
 /**
 */
 inline uint
+PopCnt(uint value)
+{
+	return _mm_popcnt_u32(value);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint64
+PopCnt(uint64 value)
+{
+	return _mm_popcnt_u64(value);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
 FirstOne(uint value)
 {
 #if __WIN32__

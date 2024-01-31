@@ -225,8 +225,8 @@ struct Entry
     Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass> passes;
     Util::Array<Util::Array<Materials::ShaderConfigBatchTexture>> texturesPerBatch;
     Util::Array<Util::Array<Materials::ShaderConfigBatchConstant>> constantsPerBatch;
-    Util::Array<Util::Dictionary<const char*, uint>> textureBatchLookup;
-    Util::Array<Util::Dictionary<const char*, uint>> constantBatchLookup;
+    Util::Array<Util::Dictionary<uint, uint>> textureBatchLookup;
+    Util::Array<Util::Dictionary<uint, uint>> constantBatchLookup;
 };
 
 }

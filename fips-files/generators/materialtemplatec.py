@@ -178,7 +178,7 @@ class MaterialTemplateDefinition:
                 varCounter = 0
                 for var in self.variables:
                     if var.type == 'texture2d':
-                        func += '\t\tthis->entry.textureBatchLookup[{}].Add("{}", this->entry.texturesPerBatch[{}].Size());\n'.format(passCounter, var.name, passCounter)
+                        func += '\t\tthis->entry.textureBatchLookup[{}].Add("{}"_hash, {});\n'.format(passCounter, var.name, texCounter)
                         func += '\t\tthis->entry.texturesPerBatch[{}][{}] = Materials::ShaderConfigBatchTexture{{.slot = CoreGraphics::ShaderGetResourceSlot(shader, "{}"), .def = {}}};\n'.format(passCounter, texCounter, var.name, defList[varCounter])
                         texCounter += 1
                     else:
@@ -189,7 +189,7 @@ class MaterialTemplateDefinition:
                         func += '\n\t\tMaterials::ShaderConfigBatchConstant {}Constant;\n'.format(var.name)
                         func += '\t\tIndexT {}Slot = CoreGraphics::ShaderGetConstantSlot(shader, "{}");\n'.format(var.name, var.name)
                         func += '\t\tif ({}Slot != InvalidIndex)\n\t\t{{\n{}\t\t}}\n\t\telse\n\t\t{{\n\t\t\t{}Constant = {{InvalidIndex, InvalidIndex, InvalidIndex}};  \n\t\t}}\n'.format(var.name, constStr, var.name)
-                        func += '\t\tthis->entry.constantBatchLookup[{}].Add("{}", this->entry.constantsPerBatch[{}].Size());\n'.format(passCounter, var.name, passCounter)
+                        func += '\t\tthis->entry.constantBatchLookup[{}].Add("{}"_hash, {});\n'.format(passCounter, var.name, constCounter)
                         func += '\t\tthis->entry.constantsPerBatch[{}][{}] = {}Constant;\n'.format(passCounter, constCounter, var.name)
                         constCounter += 1
                     varCounter += 1

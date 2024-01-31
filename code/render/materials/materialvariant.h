@@ -21,6 +21,38 @@ struct MaterialVariant
         , mem(nullptr)
     {};
 
+    /// Copy constructor
+    MaterialVariant(const MaterialVariant& rhs)
+    {
+        this->SetType(rhs.type.type);
+        this->mem = rhs.mem;
+    }
+
+    /// Assign operator
+    void operator=(const MaterialVariant& rhs)
+    {
+        this->SetType(rhs.type.type);
+        this->mem = rhs.mem;
+    }
+
+    /// Move constructor
+    MaterialVariant(MaterialVariant&& rhs)
+    {
+        this->SetType(rhs.type.type);
+        rhs.SetType(Type::Invalid);
+        this->mem = rhs.mem;
+        rhs.mem = nullptr;
+    }
+
+    /// Move operator
+    void operator=(MaterialVariant&& rhs)
+    {
+        this->SetType(rhs.type.type);
+        rhs.SetType(Type::Invalid);
+        this->mem = rhs.mem;
+        rhs.mem = nullptr;
+    }
+
     /// Nullptr constructor
     MaterialVariant(std::nullptr_t)
         : type({ Type::Invalid })

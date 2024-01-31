@@ -593,7 +593,18 @@ CreateShader(const ShaderCreateInfo& info)
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
         reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1);
-        reflectionInfo.uniformBuffersPerSet[var->set].Add(var->binding, refl);
+        reflectionInfo.uniformBuffersPerSet[var->set].Append(refl);
+    }
+
+    // Sort uniform buffers by binding
+    for (auto& set : reflectionInfo.uniformBuffersPerSet)
+    {
+        set.SortWithFunc(
+            [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
+            {
+                return lhs.binding < rhs.binding;
+            }
+        );
     }
 
     // setup shader variations
@@ -706,9 +717,20 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
         refl.byteSize = var->alignedSize;
 
         reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1);
-        reflectionInfo.uniformBuffersPerSet[var->set].Add(refl.binding, refl);
+        reflectionInfo.uniformBuffersPerSet[var->set].Append(refl);
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
+    }
+
+    // Sort uniform buffers by binding
+    for (auto& set : reflectionInfo.uniformBuffersPerSet)
+    {
+        set.SortWithFunc(
+            [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
+            {
+                return lhs.binding < rhs.binding;
+            }
+        );
     }
 
     // setup shader variations from existing programs
@@ -856,26 +878,33 @@ const BufferId
 ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT cbIndex, BufferAccessMode mode)
 {
     const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersPerSet;
-    IndexT i = uniformBuffers[group].FindIndex(cbIndex);
-    if (i != InvalidIndex)
+    const auto& buffer = uniformBuffers[group][cbIndex];
+    if (buffer.byteSize > 0)
     {
-        const auto& buffer = uniformBuffers[group].ValueAtIndex(i);
-        if (buffer.byteSize > 0)
-        {
-            BufferCreateInfo info;
-            info.byteSize = buffer.byteSize;
-            info.name = buffer.name;
-            info.mode = mode;
-            info.usageFlags = CoreGraphics::ConstantBuffer;
+        BufferCreateInfo info;
+        info.byteSize = buffer.byteSize;
+        info.name = buffer.name;
+        info.mode = mode;
+        info.usageFlags = CoreGraphics::ConstantBuffer;
 
-            // Initialize data to zeroes
-            Util::FixedArray<byte> data(buffer.byteSize, 0x0);
-            info.data = data.Begin();
-            info.dataSize = data.Size();
-            return CoreGraphics::CreateBuffer(info);
-        }
+        // Initialize data to zeroes
+        Util::FixedArray<byte> data(buffer.byteSize, 0x0);
+        info.data = data.Begin();
+        info.dataSize = data.Size();
+        return CoreGraphics::CreateBuffer(info);
     }
     return CoreGraphics::InvalidBufferId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint
+ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot)
+{
+    uint mask = (1 << slot) - 1;
+	uint survivingBits = bindingMask & mask;
+	return Util::PopCnt(survivingBits);
 }
 
 //------------------------------------------------------------------------------
@@ -1247,7 +1276,11 @@ ShaderGetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const Inde
 const uint64
 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
 {
-    return shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersMask[group];
+    const auto& masks = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersMask;
+    if (masks.Size() > group)
+        return masks[group];
+    else
+        return 0x0;
 }
 
 //------------------------------------------------------------------------------
