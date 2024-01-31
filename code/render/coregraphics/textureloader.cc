@@ -104,6 +104,18 @@ TextureLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, 
         textureInfo.layers = layers;
         textureInfo.type = type;
         textureInfo.format = format;
+        if (immediate)
+        {
+            textureInfo.data = ctx.image_data(0, 0);
+            for (IndexT i = 0; i < ctx.num_faces(); i++)
+            {
+                for (IndexT j = 0; j < ctx.num_mipmaps(i); j++)
+                {
+                    textureInfo.dataSize += ctx.image_size(i, j);
+                }
+            }
+        }
+            
         CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
 
         TextureIdRelease(texture);
@@ -125,7 +137,9 @@ UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBu
     // Attempt to upload
     CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, mip, 1, layer, 1);
 
-    SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(TextureGetPixelFormat(texture));
+    CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(texture);
+    uint blockSize = CoreGraphics::PixelFormat::ToBlockSize(fmt);
+    SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(fmt) / blockSize;
     auto [offset, buffer] = CoreGraphics::UploadArray((byte*)ctx.image_data(layer, mip), ctx.image_size(layer, mip), alignment);
     if (buffer == CoreGraphics::InvalidBufferId)
     {

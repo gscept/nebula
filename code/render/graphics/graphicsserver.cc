@@ -111,55 +111,56 @@ GraphicsServer::Open()
         RenderUtil::DrawFullScreenQuad::Setup();
 
         // load base textures before setting up major subsystems
-        const unsigned char white = 0xFF;
-        const unsigned char black = 0x00;
+        const unsigned char white[6] = {0xFF};
+        const unsigned char black[6] = {0x00};
         CoreGraphics::TextureCreateInfo texInfo;
         texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
 
         texInfo.tag = "system";
         texInfo.format = CoreGraphics::PixelFormat::R8;
         texInfo.bindless = false;
+        texInfo.dataSize = sizeof(unsigned char) * 6;
 
         texInfo.type = CoreGraphics::TextureType::Texture1D;
         texInfo.name = "White1D";
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::White1D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::Texture1DArray;
         texInfo.name = "White1DArray";
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::White1DArray = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::Texture2D;
         texInfo.name = "White2D";
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::White2D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::Texture2D;
         texInfo.name = "Black2D";
-        texInfo.buffer = &black;
+        texInfo.data = &black;
         CoreGraphics::Black2D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::Texture2DArray;
         texInfo.name = "White2DArray";
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::White2DArray = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::Texture3D;
         texInfo.name = "White3D";
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::White3D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::TextureCube;
         texInfo.name = "WhiteCube";
         texInfo.layers = 6;
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
         texInfo.name = "WhiteCubeArray";
         texInfo.layers = 6;
-        texInfo.buffer = &white;
+        texInfo.data = &white;
         CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
 
         const unsigned int red = 0x000000FF;
@@ -169,16 +170,16 @@ GraphicsServer::Open()
         texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
 
         texInfo.name = "Red2D";
-        texInfo.buffer = &red;
+        texInfo.data = &red;
         texInfo.layers = 1;
         CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.name = "Green2D";
-        texInfo.buffer = &green;
+        texInfo.data = &green;
         CoreGraphics::Green2D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.name = "Blue2D";
-        texInfo.buffer = &blue;
+        texInfo.data = &blue;
         CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
 
         CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();

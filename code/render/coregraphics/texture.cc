@@ -111,10 +111,12 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
 /**
 */
 bool
-TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
+TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, const void* data, SizeT dataSize)
 {
-    SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(TextureGetPixelFormat(tex));
-    auto [offset, buffer] = CoreGraphics::UploadArray(data, size, alignment);
+    CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(tex);
+    uint blockSize = CoreGraphics::PixelFormat::ToBlockSize(fmt);
+    SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(fmt) / blockSize;
+    auto [offset, buffer] = CoreGraphics::UploadArray(data, dataSize, alignment);
     if (buffer == CoreGraphics::InvalidBufferId)
         return false;
 
@@ -142,13 +144,13 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     {
         n_assert2(info.samples == 1, "Texture created as window may not have any multisampling enabled");
         n_assert2(info.alias == CoreGraphics::InvalidTextureId, "Texture created as window may not be alias");
-        n_assert2(info.buffer == nullptr, "Texture created as window may not have any buffer data");
+        n_assert2(info.data == nullptr, "Texture created as window may not have any buffer data");
         
         rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
         rt.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination;
         rt.name = "__WINDOW__";
-        rt.buffer = nullptr;
+        rt.data = nullptr;
         rt.type = CoreGraphics::Texture2D;
         rt.format = mode.GetPixelFormat();
         rt.width = mode.GetWidth();
@@ -174,7 +176,8 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
             n_assert(info.layers == 6);
         rt.name = info.name;
         rt.usage = info.usage;
-        rt.buffer = info.buffer;
+        rt.data = info.data;
+		rt.dataSize = info.dataSize;
         rt.type = info.type;
         rt.format = info.format;
         rt.width = (SizeT)info.width;

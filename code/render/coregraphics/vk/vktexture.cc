@@ -323,7 +323,7 @@ SetupTexture(const TextureId id)
         // if we have a sparse texture, don't allocate any memory or load any pixels
         if (loadInfo.sparse)
         {
-            n_assert(loadInfo.buffer == nullptr);
+            n_assert(loadInfo.data == nullptr);
             loadInfo.sparseExtension = textureSparseExtensionAllocator.Alloc();
 
             // setup sparse and commit the initial page updates
@@ -351,7 +351,7 @@ SetupTexture(const TextureId id)
             }
 
             // if we have initial data to setup, perform a data transfer
-            if (loadInfo.buffer != nullptr)
+            if (loadInfo.data != nullptr)
             {
                 // use resource submission
                 CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
@@ -369,8 +369,21 @@ SetupTexture(const TextureId id)
                         }
                     });
 
-                uint32_t size = PixelFormat::ToSize(loadInfo.format);
-                CoreGraphics::TextureUpdate(cmdBuf, TransferQueueType, id, extents.width, extents.height, 0, 0, loadInfo.width * loadInfo.height * loadInfo.depth * size, loadInfo.buffer);
+                uint size = PixelFormat::ToTexelSize(loadInfo.format);
+                uint texelSize = PixelFormat::ToBlockSize(loadInfo.format);
+                uint offset = 0;
+                for (IndexT j = viewRange.baseArrayLayer; j < viewRange.baseArrayLayer + viewRange.layerCount; j++)
+                {
+                    for (IndexT i = viewRange.baseMipLevel; i < viewRange.baseMipLevel + viewRange.levelCount; i++)
+                    {
+                        uint mipWidth = extents.width >> i;
+                        uint mipHeight = extents.height >> i;
+                        n_assert(offset < loadInfo.dataSize);
+                        SizeT uploadSize = (mipWidth * mipHeight * size) / texelSize;
+                        CoreGraphics::TextureUpdate(cmdBuf, id, mipWidth, mipHeight, i, j, (char*)loadInfo.data + offset, uploadSize);
+                        offset += uploadSize;
+                    }
+                }
 
                 CoreGraphics::CmdBarrier(cmdBuf,
                     CoreGraphics::PipelineStage::TransferWrite,
@@ -386,7 +399,7 @@ SetupTexture(const TextureId id)
                 CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
                 // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
-                loadInfo.buffer = nullptr;
+                loadInfo.data = nullptr;
             }
         }
 
@@ -673,7 +686,8 @@ CreateTexture(const TextureCreateInfo& info)
     runtimeInfo.bind = 0xFFFFFFFF;
 
     // borrow buffer pointer
-    loadInfo.buffer = adjustedInfo.buffer;
+    loadInfo.data = adjustedInfo.data;
+    loadInfo.dataSize = adjustedInfo.dataSize;
     windowInfo.window = adjustedInfo.window;
 
     if (loadInfo.windowTexture)

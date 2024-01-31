@@ -532,17 +532,18 @@ ImguiContext::Create()
 #endif
     
     unsigned char* buffer;
-    int width, height, channels;
-    io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &channels);
+    int width, height, bytesPerPixel;
+    io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &bytesPerPixel);
 
     // load image using SOIL
-    // unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * channels, &width, &height, &channels, SOIL_LOAD_AUTO);
+    // unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * bytesPerPixel, &width, &height, &bytesPerPixel, SOIL_LOAD_AUTO);
 
     CoreGraphics::TextureCreateInfo texInfo;
     texInfo.name = "imgui_font_tex"_atm;
     texInfo.usage = TextureUsage::SampleTexture;
     texInfo.tag = "system"_atm;
-    texInfo.buffer = buffer;
+    texInfo.data = buffer;
+    texInfo.dataSize = width * height * bytesPerPixel;
     texInfo.type = TextureType::Texture2D;
     texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
     texInfo.width = width;

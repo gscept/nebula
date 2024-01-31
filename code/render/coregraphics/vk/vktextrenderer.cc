@@ -130,7 +130,8 @@ VkTextRenderer::Open()
     texInfo.name = "GlyphTexture"_atm;
     texInfo.usage = TextureUsage::SampleTexture;
     texInfo.tag = "render_system"_atm;
-    texInfo.buffer = bitmap;
+    texInfo.data = bitmap;
+    texInfo.dataSize = sizeof(unsigned char) * GLYPH_TEXTURE_SIZE * GLYPH_TEXTURE_SIZE;
     texInfo.type = TextureType::Texture2D;
     texInfo.format = PixelFormat::R8;
     texInfo.width = GLYPH_TEXTURE_SIZE;
