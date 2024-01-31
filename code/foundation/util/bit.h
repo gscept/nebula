@@ -163,11 +163,40 @@ FirstOne(uint value)
 /**
 */
 inline uint
+FirstOne(uint64 value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanForward64(&count, value);
+#else
+    int count = __builtin_ctz(value);
+#endif
+    return count;
+}
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
 LastOne(uint value)
 {
 #if __WIN32__
     DWORD count = 0;
     _BitScanReverse(&count, value);
+#else
+    int count = __builtin_clz(value);
+#endif
+    return count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+LastOne(uint64 value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanReverse64(&count, value);
 #else
     int count = __builtin_clz(value);
 #endif

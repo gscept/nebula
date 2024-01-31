@@ -104,6 +104,7 @@ struct VkReflectionInfo
         uint32_t byteSize;
         Util::StringAtom name;
     };
+    Util::Array<Util::Dictionary<uint, UniformBuffer>> uniformBuffersPerSet;
     Util::Dictionary<Util::StringAtom, UniformBuffer> uniformBuffersByName;
     Util::Array<UniformBuffer> uniformBuffers;
 

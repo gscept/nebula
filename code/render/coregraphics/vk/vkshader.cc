@@ -583,19 +583,17 @@ CreateShader(const ShaderCreateInfo& info)
 
         if (var->binding != 0xFFFFFFFF)
         {
-            if (var->set > reflectionInfo.uniformBuffersMask.Size())
-            {
-                reflectionInfo.uniformBuffersMask.Resize(var->set + 1);
-                reflectionInfo.uniformBuffersMask[var->set] = 0;
-            }
+            reflectionInfo.uniformBuffersMask.Resize(var->set + 1);
+            reflectionInfo.uniformBuffersMask[var->set] = 0;
             uint64& mask = reflectionInfo.uniformBuffersMask[var->set];
             mask |= (1ull << (uint64)var->binding);
             n_assert(var->binding < 64);
         }
 
-
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
+        reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1);
+        reflectionInfo.uniformBuffersPerSet[var->set].Add(var->binding, refl);
     }
 
     // setup shader variations
@@ -675,6 +673,7 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
 
     reflectionInfo.uniformBuffers.Clear();
     reflectionInfo.uniformBuffersByName.Clear();
+    reflectionInfo.uniformBuffersPerSet.Clear();
     reflectionInfo.variables.Clear();
     reflectionInfo.variablesByName.Clear();
 
@@ -706,6 +705,8 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
         refl.set = var->set;
         refl.byteSize = var->alignedSize;
 
+        reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1);
+        reflectionInfo.uniformBuffersPerSet[var->set].Add(refl.binding, refl);
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
     }
@@ -846,6 +847,35 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex
     }
     else
         return CoreGraphics::InvalidBufferId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const BufferId
+ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT cbIndex, BufferAccessMode mode)
+{
+    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersPerSet;
+    IndexT i = uniformBuffers[group].FindIndex(cbIndex);
+    if (i != InvalidIndex)
+    {
+        const auto& buffer = uniformBuffers[group].ValueAtIndex(i);
+        if (buffer.byteSize > 0)
+        {
+            BufferCreateInfo info;
+            info.byteSize = buffer.byteSize;
+            info.name = buffer.name;
+            info.mode = mode;
+            info.usageFlags = CoreGraphics::ConstantBuffer;
+
+            // Initialize data to zeroes
+            Util::FixedArray<byte> data(buffer.byteSize, 0x0);
+            info.data = data.Begin();
+            info.dataSize = data.Size();
+            return CoreGraphics::CreateBuffer(info);
+        }
+    }
+    return CoreGraphics::InvalidBufferId;
 }
 
 //------------------------------------------------------------------------------
@@ -1218,6 +1248,16 @@ const uint64
 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
 {
     return shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersMask[group];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint64
+ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i)
+{
+    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersPerSet[group][i];
+    return var.byteSize;
 }
 
 //------------------------------------------------------------------------------
