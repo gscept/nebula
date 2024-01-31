@@ -178,7 +178,7 @@ class MaterialTemplateDefinition:
                 varCounter = 0
                 for var in self.variables:
                     if var.type == 'texture2d':
-                        func += '\t\tthis->entry.textureBatchLookup[{}].Add("{}", this->entry.texturesPerBatch[{}].Size());\n'.format(passCounter, var.name, texCounter)
+                        func += '\t\tthis->entry.textureBatchLookup[{}].Add("{}", this->entry.texturesPerBatch[{}].Size());\n'.format(passCounter, var.name, passCounter)
                         func += '\t\tthis->entry.texturesPerBatch[{}][{}] = Materials::ShaderConfigBatchTexture{{.slot = CoreGraphics::ShaderGetResourceSlot(shader, "{}"), .def = {}}};\n'.format(passCounter, texCounter, var.name, defList[varCounter])
                         texCounter += 1
                     else:
@@ -189,7 +189,7 @@ class MaterialTemplateDefinition:
                         func += '\n\t\tMaterials::ShaderConfigBatchConstant {}Constant;\n'.format(var.name)
                         func += '\t\tIndexT {}Slot = CoreGraphics::ShaderGetConstantSlot(shader, "{}");\n'.format(var.name, var.name)
                         func += '\t\tif ({}Slot != InvalidIndex)\n\t\t{{\n{}\t\t}}\n\t\telse\n\t\t{{\n\t\t\t{}Constant = {{InvalidIndex, InvalidIndex, InvalidIndex}};  \n\t\t}}\n'.format(var.name, constStr, var.name)
-                        func += '\t\tthis->entry.constantBatchLookup[{}].Add("{}", this->entry.constantsPerBatch[{}].Size());\n'.format(passCounter, var.name, constCounter)
+                        func += '\t\tthis->entry.constantBatchLookup[{}].Add("{}", this->entry.constantsPerBatch[{}].Size());\n'.format(passCounter, var.name, passCounter)
                         func += '\t\tthis->entry.constantsPerBatch[{}][{}] = {}Constant;\n'.format(passCounter, constCounter, var.name)
                         constCounter += 1
                     varCounter += 1
@@ -425,7 +425,7 @@ if __name__ == '__main__':
     generator.SetVersion(Version)
 
     if sys.argv[1] == '--glue':
-        print('Glueing {}\n'.format(sys.argv[2:-2]))
+        print("Compiling glue '{}' -> '{}' & '{}'".format(sys.argv[2:-2], sys.argv[-2], sys.argv[-1]))
         generator.GenerateGlueHeader(sys.argv[-2])
         generator.GenerateGlueSource(sys.argv[2:-2], sys.argv[-2], sys.argv[-1])
 
@@ -433,6 +433,7 @@ if __name__ == '__main__':
 
         # The number of input files is defined between 1 - len-2
         path = Path(sys.argv[1]).stem
+        print("Compiling material template '{}' -> '{}' & '{}'".format(sys.argv[1], sys.argv[-2], sys.argv[-1]))
         generator.SetDocument(sys.argv[1])
         generator.Parse()
         generator.SetName(path)

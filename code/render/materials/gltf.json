@@ -70,32 +70,32 @@
                 "passes": [
                     {
                         "batch": "Picking",
-                        "shader": "picking",
+                        "shader": "system_shaders/picking",
                         "variation": "Static"
                     },
                     {
                         "batch": "SpotLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Spot"
                     },
                     {
                         "batch": "PointLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Point"
                     },
                     {
                         "batch": "GlobalShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
                     {
                         "batch": "FlatGeometryDepth",
-                        "shader": "static",
+                        "shader": "system_shaders/static",
                         "variation": "Static|Depth"
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static"
                     }
                 ]
@@ -110,32 +110,32 @@
                 "passes": [
                     {
                         "batch": "Picking",
-                        "shader": "picking",
+                        "shader": "system_shaders/picking",
                         "variation": "Static"
                     },
                     {
                         "batch": "SpotLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Spot"
                     },
                     {
                         "batch": "PointLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Point"
                     },
                     {
                         "batch": "GlobalShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
                     {
                         "batch": "FlatGeometryDepth",
-                        "shader": "static",
+                        "shader": "system_shaders/static",
                         "variation": "Static|Depth|DoubleSided"
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|DoubleSided"
                     }
                 ]
@@ -157,32 +157,32 @@
                 "passes": [
                     {
                         "batch": "Picking",
-                        "shader": "picking",
+                        "shader": "system_shaders/picking",
                         "variation": "Static"
                     },
                     {
                         "batch": "SpotLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Spot"
                     },
                     {
                         "batch": "PointLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Point"
                     },
                     {
                         "batch": "GlobalShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
                     {
                         "batch": "FlatGeometryDepth",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|Depth|AlphaMask"
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|AlphaMask"
                     }
                 ]
@@ -204,32 +204,32 @@
                 "passes": [
                     {
                         "batch": "Picking",
-                        "shader": "picking",
+                        "shader": "system_shaders/picking",
                         "variation": "Static"
                     },
                     {
                         "batch": "SpotLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Spot"
                     },
                     {
                         "batch": "PointLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Point"
                     },
                     {
                         "batch": "GlobalShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
                     {
                         "batch": "FlatGeometryDepth",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|Depth|AlphaMask|DoubleSided"
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|AlphaMask|DoubleSided"
                     }
                 ]
@@ -244,27 +244,27 @@
                 "passes": [
                     {
                         "batch": "Picking",
-                        "shader": "picking",
+                        "shader": "system_shaders/picking",
                         "variation": "Static"
                     },
                     {
                         "batch": "SpotLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Spot"
                     },
                     {
                         "batch": "PointLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Point"
                     },
                     {
                         "batch": "GlobalShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
                     {
                         "batch": "FlatGeometryAlphaLit",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|AlphaBlend"
                     }
                 ]
@@ -279,27 +279,27 @@
                 "passes": [
                     {
                         "batch": "Picking",
-                        "shader": "picking",
+                        "shader": "system_shaders/picking",
                         "variation": "Static"
                     },
                     {
                         "batch": "SpotLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Spot"
                     },
                     {
                         "batch": "PointLightShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Point"
                     },
                     {
                         "batch": "GlobalShadow",
-                        "shader": "shadow",
+                        "shader": "system_shaders/shadow",
                         "variation": "Static|Global"
                     },
                     {
                         "batch": "FlatGeometryAlphaLit",
-                        "shader": "gltf",
+                        "shader": "system_shaders/gltf",
                         "variation": "Static|AlphaBlend|DoubleSided"
                     }
                 ]

@@ -112,7 +112,7 @@ typedef Ids::IdAllocator<
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
     Util::FixedArray<Util::FixedArray<CoreGraphics::ResourceTableId>>,              // instance level resource table, mapped batch -> table
-    Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
+    Util::FixedArray<Util::Array<Util::Pair<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
     Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
     Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants

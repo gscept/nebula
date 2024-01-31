@@ -66,7 +66,7 @@ CreateMaterial(const MaterialCreateInfo& info)
         SizeT numBuffers = CoreGraphics::ShaderGetConstantBufferCount(shd);
 
         // get arrays to pre-allocated buffers
-        Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>& surfaceBuffers = materialAllocator.Get<Material_Buffers>(id)[*batchIt.val];
+        Util::Array<Util::Pair<IndexT, CoreGraphics::BufferId>>& surfaceBuffers = materialAllocator.Get<Material_Buffers>(id)[*batchIt.val];
         Util::Tuple<IndexT, SizeT>& instanceBuffer = materialAllocator.Get<Material_InstanceBuffers>(id)[*batchIt.val];
         instanceBuffer = Util::MakeTuple(InvalidIndex, 0);
 
@@ -84,7 +84,7 @@ CreateMaterial(const MaterialCreateInfo& info)
                     CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 
                     // add to surface
-                    surfaceBuffers.Append(Util::MakeTuple(slot, buf));
+                    surfaceBuffers.Append(Util::MakePair(slot, buf));
                 }
             }
             else if (group == NEBULA_INSTANCE_GROUP && !instanceTables.IsEmpty())
@@ -219,58 +219,45 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
             }
         }
 
-        // get constant buffer count
-        SizeT numBuffers = CoreGraphics::ShaderGetConstantBufferCount(shader);
-
         uint64 it = 0;
         uint64 batchGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_BATCH_GROUP);
+        uint numBuffers = Util::LastOne(batchGroupMask);
+        buffersPerPass[passIndex].Resize(numBuffers + 1);
+
         while (batchGroupMask != 0)
         {
-            if (batchGroupMask & (1ull << (uint64)it))
+            if (AllBits(batchGroupMask, 1 << it))
             {
                 IndexT slot = it;
-                CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, slot);
-                buffersPerPass[passIndex].Append(Util::MakePair(slot, buf));
+                CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, NEBULA_BATCH_GROUP, slot);
+                buffersPerPass[passIndex][slot] = Util::MakePair(slot, buf);
                 if (buf != CoreGraphics::InvalidBufferId)
                 {
                     CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
                 }
             }
             batchGroupMask &= ~(1 << it);
+            it++;
         }
+
         uint64 instanceGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_INSTANCE_GROUP);
-
-        // get arrays to pre-allocated buffers
-        Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>& surfaceBuffers = materialAllocator.Get<Material_Buffers>(id)[passIndex];
-
-        // Create and bind constant buffers
-        IndexT j;
-        for (j = 0; j < numBuffers; j++)
+        it = 0;
+        while (instanceGroupMask != 0)
         {
-            IndexT slot = CoreGraphics::ShaderGetConstantBufferResourceSlot(shader, j);
-            IndexT group = CoreGraphics::ShaderGetConstantBufferResourceGroup(shader, j);
-            if (group == NEBULA_BATCH_GROUP && surfaceTable != CoreGraphics::InvalidResourceTableId)
+            if (AllBits(instanceGroupMask, 1 << it))
             {
-                CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, j);
-                if (buf != CoreGraphics::InvalidBufferId)
-                {
-                    CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-
-                    // add to surface
-                    surfaceBuffers.Append(Util::MakeTuple(slot, buf));
-                }
-            }
-            else if (group == NEBULA_INSTANCE_GROUP && !instanceTables.IsEmpty())
-            {
-                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, j);
+                IndexT slot = it;
+                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, slot);
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
                     CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
             }
+            instanceGroupMask &= ~(1 << it);
+            it++;
         }
 
         // Bind textures to surface table
-        const Util::Array<ShaderConfigBatchTexture>& textures = entry.texturesPerBatch[pass.Value().index];
+        const Util::Array<ShaderConfigBatchTexture>& textures = entry.texturesPerBatch[passIndex];
         for (auto& texture : textures)
         {
             CoreGraphics::TextureId tex = Resources::CreateResource(texture.def.data.resource, "materials", nullptr, nullptr, true, false);
@@ -278,21 +265,24 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
         }
 
         // Update constant buffers with default values
-        const Util::Array<ShaderConfigBatchConstant>& constants = entry.constantsPerBatch[pass.Value().index];
+        const Util::Array<ShaderConfigBatchConstant>& constants = entry.constantsPerBatch[passIndex];
         for (auto& constant : constants)
         {
             if (constant.group == NEBULA_BATCH_GROUP)
             {
-                CoreGraphics::BufferId buffer;
+                CoreGraphics::BufferId buffer = buffersPerPass[passIndex][constant.slot].second;
+                /*
                 IndexT k;
-                for (k = 0; k < surfaceBuffers.Size(); k++)
+                for (k = 0; k < buffersPerPass[passIndex].Size(); k++)
                 {
-                    if (Util::Get<0>(surfaceBuffers[k]) == constant.slot)
+                    const auto& pair = buffersPerPass[passIndex][k];
+                    if (pair.first == constant.slot)
                     {
-                        buffer = Util::Get<1>(surfaceBuffers[k]);
+                        buffer = pair.second;
                         break;
                     }
                 }
+                */
 
                 if (constant.def.type != MaterialTemplateValue::Type::BindlessResource)
                     CoreGraphics::BufferUpdate(buffer, &constant.def.data, constant.def.GetSize(), constant.offset);
