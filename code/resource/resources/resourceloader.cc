@@ -293,6 +293,13 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
             resource.resourceType = internalResource.resourceType;
             requestedBits = loader->LodMask(res.entry, res.lod);
 
+            if (res.immediate)
+            {
+                loadedBits = requestedBits;
+                state = Resource::Loaded;
+                goto skip_stream;
+            }
+
             if (internalResource == InvalidResourceUnknownId)
             {
                 // If the initialize failed, it means the file is invalid or can't be found
