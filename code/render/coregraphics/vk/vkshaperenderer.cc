@@ -60,7 +60,7 @@ VkShapeRenderer::Open()
     ShapeRendererBase::Open();
 
     // create shape shader instance
-    CoreGraphics::ShaderId shapesShader = ShaderServer::Instance()->GetShader("shd:system_shaders/shapes.fxb"_atm);
+    CoreGraphics::ShaderId shapesShader = CoreGraphics::ShaderGet("shd:system_shaders/shapes.fxb"_atm);
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
     this->meshes.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
@@ -99,13 +99,13 @@ VkShapeRenderer::Open()
     this->diffuseColor = ShaderGetConstantBinding(shapesShader, "ShapeColor");
     this->lineWidth = ShaderGetConstantBinding(shapesShader, "LineWidth");
 
-    this->programs[ShaderTypes::Primitives] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Primitives"));
-    this->programs[ShaderTypes::PrimitivesNoDepth] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|NoDepth"));
-    this->programs[ShaderTypes::PrimitivesWireframeTriangles] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|Wireframe|Triangles"));
-    this->programs[ShaderTypes::PrimitivesWireframeLines] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|Wireframe|Lines"));
-    this->programs[ShaderTypes::Mesh] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Mesh"));
-    this->programs[ShaderTypes::MeshNoDepth] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|NoDepth"));
-    this->programs[ShaderTypes::MeshWireframe] = ShaderGetProgram(shapesShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|Wireframe|Triangles"));
+    this->programs[ShaderTypes::Primitives] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives"));
+    this->programs[ShaderTypes::PrimitivesNoDepth] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives|NoDepth"));
+    this->programs[ShaderTypes::PrimitivesWireframeTriangles] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives|Wireframe|Triangles"));
+    this->programs[ShaderTypes::PrimitivesWireframeLines] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives|Wireframe|Lines"));
+    this->programs[ShaderTypes::Mesh] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Mesh"));
+    this->programs[ShaderTypes::MeshNoDepth] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Mesh|NoDepth"));
+    this->programs[ShaderTypes::MeshWireframe] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Mesh|Wireframe|Triangles"));
 
     this->comps.Append(VertexComponent(VertexComponent::Position, VertexComponent::Float3));
     this->comps.Append(VertexComponent(VertexComponent::Color, VertexComponent::UByte4N));

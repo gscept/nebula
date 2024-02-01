@@ -103,7 +103,7 @@ Util::FixedArray<CoreGraphics::ResourceTableId>
 ParticleSystemNode::CreateResourceTables()
 {
     if (baseShader == CoreGraphics::InvalidShaderId)
-        baseShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
+        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/particle.fxb"_atm);
 
     Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
 

@@ -218,7 +218,11 @@ struct Entry
         CoreGraphics::ShaderProgramId program;
         uint index;
     };
+    
+    // Return HashCode for hash table support
+    const uint HashCode() const { return this->uniqueId; }
     const char* name;
+    uint uniqueId;
     Materials::MaterialProperties properties;
     CoreGraphics::VertexLayoutType vertexLayout;
     Util::Dictionary<const char*, Materials::MaterialTemplateValue> values;

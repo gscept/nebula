@@ -155,6 +155,7 @@ public:
             Util::PinnedArray<0xFFFF, uint64> nodeSortId;
             Util::PinnedArray<0xFFFF, NodeInstanceFlags> nodeFlags;
             Util::PinnedArray<0xFFFF, Materials::MaterialId> nodeMaterials;
+            Util::PinnedArray<0xFFFF, const MaterialTemplates::Entry*> nodeMaterialTemplates;
             Util::PinnedArray<0xFFFF, Materials::ShaderConfig*> nodeShaderConfigs;
             Util::PinnedArray<0xFFFF, NodeInstanceState> nodeStates;
             Util::PinnedArray<0xFFFF, Models::NodeType> nodeTypes;

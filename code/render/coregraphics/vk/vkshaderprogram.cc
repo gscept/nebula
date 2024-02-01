@@ -31,7 +31,7 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
     runtime.layout = ResourcePipelineGetVk(pipelineLayout);
     runtime.pipeline = VK_NULL_HANDLE;
     runtime.uniqueId = UniqueIdCounter++;
-    setup.mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(mask);
+    setup.mask = CoreGraphics::ShaderFeatureMask(mask);
     setup.name = name;
     setup.dev = Vulkan::GetCurrentDevice();
     VkShaderProgramCreateShader(setup.dev, &runtime.vs, program->shaderBlock.vs.binarySize, program->shaderBlock.vs.binary);

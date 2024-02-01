@@ -137,13 +137,13 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
     using namespace CoreGraphics;
 
-    state.downsampleColorShader = ShaderGet("shd:downsample/downsample_cs_light.fxb");
-    state.downsampleColorProgram = ShaderGetProgram(state.downsampleColorShader, ShaderFeatureFromString("Downsample"));
-    state.downsampleDepthShader = ShaderGet("shd:downsample/downsample_cs_depth.fxb");
-    state.downsampleDepthProgram = ShaderGetProgram(state.downsampleDepthShader, ShaderFeatureFromString("Downsample"));
+    state.downsampleColorShader = ShaderGet("shd:system_shaders/downsample/downsample_cs_light.fxb");
+    state.downsampleColorProgram = ShaderGetProgram(state.downsampleColorShader, ShaderFeatureMask("Downsample"));
+    state.downsampleDepthShader = ShaderGet("shd:system_shaders/downsample/downsample_cs_depth.fxb");
+    state.downsampleDepthProgram = ShaderGetProgram(state.downsampleDepthShader, ShaderFeatureMask("Downsample"));
 
-    state.extractShader = ShaderGet("shd:downsample/depth_extract_cs.fxb");
-    state.extractProgram = ShaderGetProgram(state.extractShader, ShaderFeatureFromString("Extract"));
+    state.extractShader = ShaderGet("shd:system_shaders/downsample/depth_extract_cs.fxb");
+    state.extractProgram = ShaderGetProgram(state.extractShader, ShaderFeatureMask("Extract"));
 
     state.colorDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleColorShader, NEBULA_BATCH_GROUP);
     state.depthDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleDepthShader, NEBULA_BATCH_GROUP);

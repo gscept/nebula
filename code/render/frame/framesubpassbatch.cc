@@ -10,6 +10,7 @@
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "visibility/visibilitycontext.h"
+#include "materials/materialtemplates.h"
 
 using namespace Graphics;
 using namespace CoreGraphics;
@@ -61,27 +62,29 @@ void
 FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
     // now do usual render stuff
-    ShaderConfigServer* matServer = ShaderConfigServer::Instance();
+    //ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
 
-    const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            ShaderConfig* shaderConfig = types[typeIdx];
-            IndexT idx = drawList->visibilityTable.FindIndex(shaderConfig);
+            MaterialTemplates::Entry* type = types[typeIdx];
+            IndexT idx = drawList->visibilityTable.FindIndex(type);
             if (idx != InvalidIndex)
             {
-                N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
+                N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_DARK_GREEN, type->name);
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
+                IndexT batchIndex = type->passes.FindIndex(batch);
                 if (batchIndex != InvalidIndex)
                 {
-                    const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
+                    // Bind shader
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, type->passes.ValueAtIndex(batchIndex).program);
+                    const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
@@ -140,7 +143,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         // Apply draw packet constants and draw
                         if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
                         {
-                            instance->Apply(cmdBuf, batchIndex, shaderConfig, bufferIndex);
+                            instance->Apply(cmdBuf, batchIndex, bufferIndex);
                             CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
                         }
                     }
@@ -157,27 +160,27 @@ void
 FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
     // now do usual render stuff
-    ShaderConfigServer* matServer = ShaderConfigServer::Instance();
+    //ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
 
-    const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            ShaderConfig* shaderConfig = types[typeIdx];
-            IndexT idx = drawList->visibilityTable.FindIndex(shaderConfig);
+            MaterialTemplates::Entry* type = types[typeIdx];
+            IndexT idx = drawList->visibilityTable.FindIndex(type);
             if (idx != InvalidIndex)
             {
-                N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
+                N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_DARK_GREEN, type->name);
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
+                IndexT batchIndex = type->passes.FindIndex(batch);
                 if (batchIndex != InvalidIndex)
                 {
-                    const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
+                    const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
@@ -234,7 +237,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, batchIndex, shaderConfig, bufferIndex);
+                        instance->Apply(cmdBuf, batchIndex, bufferIndex);
                         CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }

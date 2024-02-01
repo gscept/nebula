@@ -287,14 +287,14 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     memset(&vegetationState.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms));
 
     vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.fxb");
-    vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationClear"));
-    vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGenerateDraws"));
-    vegetationState.vegetationGrassZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGrassDrawZ"));
-    vegetationState.vegetationGrassShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGrassDraw"));
-    vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDrawZ"));
-    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDraw"));
-    vegetationState.vegetationMeshVColorZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDrawVColorZ"));
-    vegetationState.vegetationMeshVColorShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDrawVColor"));
+    vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
+    vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
+    vegetationState.vegetationGrassZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGrassDrawZ"));
+    vegetationState.vegetationGrassShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGrassDraw"));
+    vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawZ"));
+    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDraw"));
+    vegetationState.vegetationMeshVColorZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColorZ"));
+    vegetationState.vegetationMeshVColorShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationMeshDrawVColor"));
     vegetationState.systemResourceTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_SYSTEM_GROUP);
 
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,

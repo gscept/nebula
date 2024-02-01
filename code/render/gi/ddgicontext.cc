@@ -25,17 +25,17 @@ struct
 */
 DDGIContext::DDGIContext()
 {
-    auto probeUpdateShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:gi/shaders/probeupdate.fxb");
-    auto probeUpdateProgram = CoreGraphics::ShaderGetProgram(probeUpdateShader, CoreGraphics::ShaderFeatureFromString("ProbeRayGen"));
+    auto probeUpdateShader = CoreGraphics::ShaderGet("shd:gi/shaders/probeupdate.fxb");
+    auto probeUpdateProgram = CoreGraphics::ShaderGetProgram(probeUpdateShader, CoreGraphics::ShaderFeatureMask("ProbeRayGen"));
 
-    auto brdfHitShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:raytracing/shaders/brdfhit.fxb");
-    auto brdfHitProgram = CoreGraphics::ShaderGetProgram(brdfHitShader, CoreGraphics::ShaderFeatureFromString("Hit"));
-    auto bsdfHitShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:raytracing/shaders/bsdfhit.fxb");
-    auto bsdfHitProgram = CoreGraphics::ShaderGetProgram(bsdfHitShader, CoreGraphics::ShaderFeatureFromString("Hit"));
-    auto gltfHitShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:raytracing/shaders/gltfhit.fxb");
-    auto gltfHitProgram = CoreGraphics::ShaderGetProgram(gltfHitShader, CoreGraphics::ShaderFeatureFromString("Hit"));
-    auto particleHitShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:raytracing/shaders/particlehit.fxb");
-    auto particleHitProgram = CoreGraphics::ShaderGetProgram(particleHitShader, CoreGraphics::ShaderFeatureFromString("Hit"));
+    auto brdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/brdfhit.fxb");
+    auto brdfHitProgram = CoreGraphics::ShaderGetProgram(brdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
+    auto bsdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/bsdfhit.fxb");
+    auto bsdfHitProgram = CoreGraphics::ShaderGetProgram(bsdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
+    auto gltfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/gltfhit.fxb");
+    auto gltfHitProgram = CoreGraphics::ShaderGetProgram(gltfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
+    auto particleHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/particlehit.fxb");
+    auto particleHitProgram = CoreGraphics::ShaderGetProgram(particleHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
 
     // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
     state.pipeline = CoreGraphics::CreateRaytracingPipeline({ probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram });

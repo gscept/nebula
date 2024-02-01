@@ -583,16 +583,14 @@ CreateShader(const ShaderCreateInfo& info)
 
         if (var->binding != 0xFFFFFFFF)
         {
-            reflectionInfo.uniformBuffersMask.Resize(var->set + 1);
-            reflectionInfo.uniformBuffersMask[var->set] = 0;
-            uint64& mask = reflectionInfo.uniformBuffersMask[var->set];
-            mask |= (1ull << (uint64)var->binding);
             n_assert(var->binding < 64);
+            reflectionInfo.uniformBuffersMask.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersMask.Size()), 0);
+            reflectionInfo.uniformBuffersMask[var->set] |= (1ull << (uint64)var->binding);
         }
 
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
-        reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1);
+        reflectionInfo.uniformBuffersPerSet.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersPerSet.Size()), nullptr);
         reflectionInfo.uniformBuffersPerSet[var->set].Append(refl);
     }
 
@@ -716,7 +714,7 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
         refl.set = var->set;
         refl.byteSize = var->alignedSize;
 
-        reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1);
+        reflectionInfo.uniformBuffersPerSet.Resize(var->set + 1, nullptr);
         reflectionInfo.uniformBuffersPerSet[var->set].Append(refl);
         reflectionInfo.uniformBuffers.Append(refl);
         reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
@@ -739,7 +737,7 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
     {
         // get program object from shader subsystem
         AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
-        CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(program->GetAnnotationString("Mask").c_str());
+        CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderFeatureMask(program->GetAnnotationString("Mask").c_str());
 
         const ShaderProgramId& shaderProgramId = runtimeInfo.programMap[mask];
 
@@ -902,6 +900,8 @@ ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT c
 const uint
 ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot)
 {
+    if ((bindingMask & (1ull << slot)) == 0)
+        return 0xFFFFFFFF;
     uint mask = (1 << slot) - 1;
 	uint survivingBits = bindingMask & mask;
 	return Util::PopCnt(survivingBits);

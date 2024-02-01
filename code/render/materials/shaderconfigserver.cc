@@ -206,8 +206,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     //get shader
                     Util::String shaderName = reader->GetString("shader");
                     Resources::ResourceName shaderResId = Resources::ResourceName("shd:" + shaderName + ".fxb");
-                    CoreGraphics::ShaderId shd = CoreGraphics::ShaderServer::Instance()->GetShader(shaderResId);
-                    CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(shaderFeatures);
+                    CoreGraphics::ShaderId shd = CoreGraphics::ShaderGet(shaderResId);
+                    CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderFeatureMask(shaderFeatures);
                     CoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram(shd, mask);
 
                     if (program == CoreGraphics::InvalidShaderProgramId)

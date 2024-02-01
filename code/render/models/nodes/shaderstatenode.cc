@@ -40,7 +40,7 @@ Util::FixedArray<CoreGraphics::ResourceTableId>
 ShaderStateNode::CreateResourceTables()
 {
     if (baseShader == CoreGraphics::InvalidShaderId)
-        baseShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
+        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/objects_shared.fxb"_atm);
 
     Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
 
@@ -167,7 +167,7 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type, IndexT bufferIndex)
+ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, IndexT bufferIndex)
 {
     // Apply per-draw surface parameters
     if (this->materialInstance != Materials::MaterialInstanceId::Invalid())

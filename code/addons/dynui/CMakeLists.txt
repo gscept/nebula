@@ -14,7 +14,8 @@ fips_files(
     imguicontext.h
 )
 
-add_shaders(imgui.fx)
+fips_dir(imgui/shaders)
+    add_shaders(imgui.fx)
 fips_dir(im3d/shaders)
     add_shaders(im3d.fx) 
 

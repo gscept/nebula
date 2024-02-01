@@ -321,10 +321,10 @@ ImguiContext::Create()
     state.dockOverViewport = false;
 
     // allocate imgui shader
-    state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui.fxb");
+    state.uiShader = CoreGraphics::ShaderGet("shd:imgui/shaders/imgui.fxb");
     state.params.projVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader,"TextProjectionModel");
     state.params.fontVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
-    state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureFromString("Static"));
+    state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureMask("Static"));
 
     state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 

@@ -8,6 +8,7 @@
 #include "models/nodes/primitivenode.h"
 #include "coregraphics/pipeline.h"
 #include "coregraphics/meshresource.h"
+#include "coregraphics/shader.h"
 
 #include "raytracing/shaders/raytracetest.h"
 #include "raytracing/shaders/raytracetest.h"
@@ -88,8 +89,8 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     n_assert(CoreGraphics::RayTracingSupported);
     __CreateContext();
 
-    state.raytracingTestShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:raytracing/shaders/raytracetest.fxb");
-    state.raytracingTestProgram = CoreGraphics::ShaderGetProgram(state.raytracingTestShader, CoreGraphics::ShaderFeatureFromString("test"));
+    state.raytracingTestShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/raytracetest.fxb");
+    state.raytracingTestProgram = CoreGraphics::ShaderGetProgram(state.raytracingTestShader, CoreGraphics::ShaderFeatureMask("test"));
     state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(state.raytracingTestShader, NEBULA_BATCH_GROUP, 3);
 
     state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline({ state.raytracingTestProgram });

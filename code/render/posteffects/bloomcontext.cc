@@ -54,8 +54,8 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     using namespace CoreGraphics;
 
     // setup shaders
-    bloomState.shader = ShaderGet("shd:bloom.fxb");
-    bloomState.program = ShaderGetProgram(bloomState.shader, ShaderFeatureFromString("Bloom"));
+    bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
+    bloomState.program = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Bloom"));
     bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
 
     bloomState.bloomBuffer = script->GetTexture("BloomBuffer");

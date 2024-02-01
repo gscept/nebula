@@ -188,6 +188,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
+    materialAllocator.Set<Material_Template>(id, &entry);
 
     // Resize all arrays to fit the number of batches
     tablesPerPass.Resize(entry.passes.Size()); // surface tables
@@ -231,14 +232,17 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
             {
                 IndexT slot = it;
 				uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, it);
-                CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, NEBULA_BATCH_GROUP, bufferIndex);
-
-                // Calculate the index by counting the active bits at the point of the iterator
-                buffersPerPass[passIndex][bufferIndex] = Util::MakePair(slot, buf);
-
-                if (buf != CoreGraphics::InvalidBufferId)
+                if (bufferIndex != 0xFFFFFFFF)
                 {
-                    CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+                    CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, NEBULA_BATCH_GROUP, bufferIndex);
+
+                    // Calculate the index by counting the active bits at the point of the iterator
+                    buffersPerPass[passIndex][bufferIndex] = Util::MakePair(slot, buf);
+
+                    if (buf != CoreGraphics::InvalidBufferId)
+                    {
+                        CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+                    }
                 }
             }
             currentMask &= ~(1 << it);
@@ -265,8 +269,11 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
         const Util::Array<ShaderConfigBatchTexture>& textures = entry.texturesPerBatch[passIndex];
         for (auto& texture : textures)
         {
-            CoreGraphics::TextureId tex = Resources::CreateResource(texture.def.data.resource, "materials", nullptr, nullptr, true, false);
-            CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex, texture.slot });
+            if (texture.slot != InvalidIndex)
+            {
+                CoreGraphics::TextureId tex = Resources::CreateResource(texture.def.data.resource, "materials", nullptr, nullptr, true, false);
+                CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex, texture.slot });
+            }            
         }
 
         // Update constant buffers with default values
@@ -311,6 +318,41 @@ void
 DestroyMaterial(const MaterialId id)
 {
     materialAllocator.Dealloc(id.resourceId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant& bind, const MaterialVariant& value)
+{
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.resourceId);
+    const auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(mat.resourceId);
+
+    for (const auto& pass : temp->passes)
+    {
+        uint64 batchGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(pass.Value().shader, NEBULA_BATCH_GROUP);
+        uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, bind.slot);
+        if (bufferIndex != 0xFFFFFFFF)
+        {
+            CoreGraphics::BufferId buf = buffersPerPass[pass.Value().index][bufferIndex].second;
+            CoreGraphics::BufferUpdate(buf, value.Get(), value.size, bind.offset);
+        }        
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture& bind, const CoreGraphics::TextureId tex)
+{
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.resourceId);
+    for (const auto& pass : temp->passes)
+    {
+        CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_Table>(mat.resourceId)[pass.Value().index];
+        CoreGraphics::ResourceTableSetTexture(table, { tex, bind.slot, 0, CoreGraphics::InvalidSamplerId, false });
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -407,6 +449,15 @@ MaterialSetLowestLod(const MaterialId mat, float lod)
 //------------------------------------------------------------------------------
 /**
 */
+const MaterialTemplates::Entry*
+MaterialGetTemplate(const MaterialId mat)
+{
+    return materialAllocator.Get<Material_Template>(mat.resourceId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ShaderConfig*
 MaterialGetShaderConfig(const MaterialId mat)
 {
@@ -428,7 +479,7 @@ MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code
 uint64_t
 MaterialGetSortCode(const MaterialId mat)
 {
-    return materialAllocator.Get<Material_ShaderConfig>(mat.resourceId)->HashCode();
+    return materialAllocator.Get<Material_Template>(mat.resourceId)->uniqueId;
 }
 
 //------------------------------------------------------------------------------

@@ -91,6 +91,8 @@ void ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect);
 
 /// get shader by name
 const ShaderId ShaderGet(const Resources::ResourceName& name);
+/// Get shader feature mask from string
+CoreGraphics::ShaderFeature::Mask ShaderFeatureMask(const Util::String& mask);
 
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
@@ -159,9 +161,6 @@ const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& na
 const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
 /// get name of program
 const Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
-
-/// convert shader feature from string to mask
-const ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
 const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask);

@@ -141,8 +141,8 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     }
 
     // setup programs
-    ssrState.traceProgram = ShaderGetProgram(ssrState.traceShader, ShaderFeatureFromString("Alt0"));
-    ssrState.resolveProgram = ShaderGetProgram(ssrState.resolveShader, ShaderFeatureFromString("Alt0"));
+    ssrState.traceProgram = ShaderGetProgram(ssrState.traceShader, ShaderFeatureMask("Alt0"));
+    ssrState.resolveProgram = ShaderGetProgram(ssrState.resolveShader, ShaderFeatureMask("Alt0"));
 }
 
 //------------------------------------------------------------------------------

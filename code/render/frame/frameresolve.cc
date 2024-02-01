@@ -50,7 +50,7 @@ FrameResolve::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 
         auto shaderName = Util::String::Sprintf("shd:msaaresolvedepth%d.fxb", samples);
         ShaderId shader = ShaderGet(shaderName);
-        ShaderProgramId program = ShaderGetProgram(shader, ShaderFeatureFromString("Resolve"));
+        ShaderProgramId program = ShaderGetProgram(shader, ShaderFeatureMask("Resolve"));
 
         ret->dispatchDims.x = Math::divandroundup(dimsSource.width, 64);
         ret->dispatchDims.y = dimsSource.height;

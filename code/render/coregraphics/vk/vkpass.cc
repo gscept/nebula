@@ -582,7 +582,7 @@ SetupPass(const PassId pid)
     if (runtimeInfo.passDescriptorSet == ResourceTableId::Invalid())
     {
         // setup uniform buffer for render target information
-        ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
+        ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.fxb"_atm);
         loadInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock");
         loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
 

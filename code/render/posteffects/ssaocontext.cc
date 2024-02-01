@@ -125,13 +125,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.internalTargets[1] = CreateTexture(tinfo);
 
     // setup shaders
-    ssaoState.hbaoShader = ShaderGet("shd:hbao_cs.fxb");
-    ssaoState.blurShader = ShaderGet("shd:hbaoblur_cs.fxb");
+    ssaoState.hbaoShader = ShaderGet("shd:system_shaders/hbao_cs.fxb");
+    ssaoState.blurShader = ShaderGet("shd:system_shaders/hbaoblur_cs.fxb");
 
-    ssaoState.xDirectionHBAO = ShaderGetProgram(ssaoState.hbaoShader, ShaderFeatureFromString("Alt0"));
-    ssaoState.yDirectionHBAO = ShaderGetProgram(ssaoState.hbaoShader, ShaderFeatureFromString("Alt1"));
-    ssaoState.xDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureFromString("Alt0"));
-    ssaoState.yDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureFromString("Alt1"));
+    ssaoState.xDirectionHBAO = ShaderGetProgram(ssaoState.hbaoShader, ShaderFeatureMask("Alt0"));
+    ssaoState.yDirectionHBAO = ShaderGetProgram(ssaoState.hbaoShader, ShaderFeatureMask("Alt1"));
+    ssaoState.xDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureMask("Alt0"));
+    ssaoState.yDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureMask("Alt1"));
 
     ssaoState.ssaoOutput = script->GetTexture("SSAOBuffer");
     ssaoState.zBuffer = script->GetTexture("ZBuffer");

@@ -487,7 +487,7 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 
     JzonValue* variation = jzon_get(node, "variation");
     n_assert(variation != nullptr);
-    op->program = ShaderGetProgram(op->shader, ShaderServer::Instance()->FeatureStringToMask(variation->string_value));
+    op->program = ShaderGetProgram(op->shader, CoreGraphics::ShaderFeatureMask(variation->string_value));
 
     // dimensions, must be 3
     if (JzonValue* dims = jzon_get(node, "dimensions"))
@@ -1217,8 +1217,8 @@ FrameScriptLoader::ParseShaderState(
 {
     JzonValue* shader = jzon_get(node, "shader");
     n_assert(shader != nullptr);
-    Util::String shaderRes = "shd:" + Util::String(shader->string_value) + ".fxb";
-    shd = ShaderGet(shaderRes);
+    //Util::String shaderRes = "shd:" + Util::String(shader->string_value) + ".fxb";
+    shd = ShaderGet(shader->string_value);
     table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 1);
 
     JzonValue* vars = jzon_get(node, "variables");

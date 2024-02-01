@@ -126,6 +126,7 @@ struct MaterialVariant
         bool needsDeref : 8;
     } type;
     void* mem;
+    SizeT size;
 
     static MaterialVariant::Type StringToType(const Util::String& str)
     {
@@ -225,6 +226,22 @@ struct MaterialVariant
     {
         auto size = TypeToSize(this->type);
         memcpy(this->type.needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, size);
+    }
+
+    /// Set
+    template <typename T> void Set(const T& data, void* mem)
+    {
+        this->size = sizeof(T);
+        this->mem = mem;
+        memcpy(this->type.needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, this->size);
+    }
+
+    /// Set texture
+    template <> void Set(const TextureHandleTuple& data, void* mem)
+    {
+        this->size = sizeof(TextureHandleTuple);
+        this->mem = mem;
+        memcpy(this->type.needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, this->size);
     }
 };
 

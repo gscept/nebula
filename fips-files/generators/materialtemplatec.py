@@ -62,6 +62,7 @@ class MaterialTemplateDefinition:
         self.name = node['name']
         self.name = self.name.replace(" ", "_").replace("+", "")
         self.inherits = ""
+        self.uniqueId = 0
         self.virtual = False
         self.passes = set()
         self.variables = set()
@@ -102,7 +103,7 @@ class MaterialTemplateDefinition:
             ret += "\t/* Virtual Material */\n"
         ret += '\tconst char* Description = "{}";\n'.format(self.desc)
         if not self.virtual:
-            ret += '\tEntry entry = {{.name = "{}", .properties = Materials::MaterialProperties::{}, .vertexLayout =  CoreGraphics::{}}};\n'.format(self.name, self.properties, self.vertex)
+            ret += '\tEntry entry = {{.name = "{}", .uniqueId = {}, .properties = Materials::MaterialProperties::{}, .vertexLayout =  CoreGraphics::{}}};\n'.format(self.name, self.uniqueId, self.properties, self.vertex)
             ret += '\tvoid Setup();\n'
 
         ret = 'struct {}\n{{\n{}}};\n'.format(self.name, ret)
@@ -168,8 +169,8 @@ class MaterialTemplateDefinition:
             for p in self.passes:
                 func += '\t{\n'
                 func += '\t\t/* Pass {} */\n'.format(p.batch)
-                func += '\t\tCoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:{}.fxb");\n'.format(p.shader)
-                func += '\t\tCoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram({}, CoreGraphics::ShaderFeatureFromString("{}"));\n'.format('shader', p.variation)
+                func += '\t\tCoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:{}.fxb");\n'.format(p.shader)
+                func += '\t\tCoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram({}, CoreGraphics::ShaderFeatureMask("{}"));\n'.format('shader', p.variation)
                 func += '\t\tthis->entry.passes.Add(CoreGraphics::BatchGroup::FromName("{}"), Entry::Pass{{.shader = shader, .program = program, .index = {} }});\n'.format(p.batch, passCounter)
                 func += '\t\tthis->entry.texturesPerBatch[{}].Resize({});\n'.format(passCounter, numTextures)
                 func += '\t\tthis->entry.constantsPerBatch[{}].Resize({});\n'.format(passCounter, numConstants)
@@ -198,6 +199,7 @@ class MaterialTemplateDefinition:
             return '\n//------------------------------------------------------------------------------\n/**\n*/\nvoid\n{}::Setup() \n{{\n{}}}'.format(self.name, func)
 
 
+materialCounter = 0
 class MaterialTemplateGenerator:
     def __init__(self):
         self.document = None
@@ -238,12 +240,16 @@ class MaterialTemplateGenerator:
     ##
     #
     def Parse(self):
+        global materialCounter;
+
         if "Nebula" in self.document:
             main = self.document["Nebula"]
             for name, node in main.items():
                     if name == "Templates":
                         for mat in node:
                             matDef = MaterialTemplateDefinition(mat)
+                            matDef.uniqueId = materialCounter;
+                            materialCounter += 1;
                             if matDef.inherits:
                                 inheritances = matDef.inherits.split("|")
                                 for inherits in inheritances:
@@ -273,6 +279,8 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "util/tupleutility.h"')
         f.WriteLine('#include "coregraphics/vertexlayout.h"')
         f.WriteLine('#include "materials/shaderconfig.h"')
+        f.WriteLine('#include "coregraphics/shader.h"')
+
         f.WriteLine('#include "math/vec2.h"')
         f.WriteLine('#include "math/vec3.h"')
         f.WriteLine('#include "math/vec4.h"')
@@ -305,9 +313,7 @@ class MaterialTemplateGenerator:
                 enumStr += '\t{},\n'.format(mat.name)
 
         f.WriteLine('enum MaterialTemplateEnums \n{{\n{}}};\n'.format(enumStr))
-
-        f.WriteLine('extern Util::Dictionary<uint, Entry> Lookup;')
-        f.WriteLine('void SetupMaterialTemplates();\n')
+        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
 
         for mat in self.materials:
             f.WriteLine(mat.FormatHeader())
@@ -347,16 +353,17 @@ class MaterialTemplateGenerator:
         f.WriteLine('namespace {}\n{{\n'.format(self.name))
 
         f.WriteLine('// Entry points')
-        f.WriteLine('Util::Dictionary<uint, Entry> Lookup;')
-
         setupStr = ''
         for mat in self.materials:
             if not mat.virtual:
                 f.WriteLine(mat.FormatSource())
                 setupStr += '\t__{}.Setup();\n'.format(mat.name)
-                setupStr += '\tLookup.Add("{}"_hash, __{}.entry);\n\n'.format(mat.name, mat.name)
+                setupStr += '\tLookup.Add("{}"_hash, __{}.entry);\n'.format(mat.name, mat.name)
+                for p in mat.passes:
+                    setupStr += '\tConfigs.Emplace(CoreGraphics::BatchGroup::FromName("{}")).Append(&__{}.entry);\n'.format(p.batch, mat.name)
+                setupStr += '\n'
                 f.WriteLine('struct MaterialTemplates::{}::{} MaterialTemplates::{}::__{};'.format(self.name, mat.name, self.name, mat.name))
-        f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates()\n{{\n{}}}\n'.format(setupStr))
+        f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates(Util::Dictionary<uint, Entry>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs)\n{{\n{}}}\n'.format(setupStr))
 
         f.WriteLine('}} // namespace {}\n'.format(self.name))
 
@@ -381,7 +388,8 @@ class MaterialTemplateGenerator:
 
         f.WriteLine('namespace MaterialTemplates\n{\n')
 
-        f.WriteLine('extern Util::Dictionary<uint, Entry> Lookup;\n')
+        f.WriteLine('extern Util::Dictionary<uint, Entry> Lookup;')
+        f.WriteLine('extern Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
         f.WriteLine('void SetupMaterialTemplates();\n')
 
         f.WriteLine('} // namespace MaterialTemplates\n')
@@ -406,12 +414,12 @@ class MaterialTemplateGenerator:
         setupStr = ''
         for file in files:
             name = Path(file).stem
-            setupStr += '\t{}::SetupMaterialTemplates();\n'.format(name)
-            setupStr += '\tLookup.Merge({}::Lookup);\n'.format(name)
+            setupStr += '\t{}::SetupMaterialTemplates(Lookup, Configs);\n'.format(name)
             f.WriteLine('#include "{}"'.format(file))
 
         f.WriteLine('namespace MaterialTemplates\n{\n')
-        f.WriteLine('Util::Dictionary<uint, Entry> Lookup;\n')
+        f.WriteLine('Util::Dictionary<uint, Entry> Lookup;')
+        f.WriteLine('Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
 
         f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates() \n{{\n{}}}'.format(setupStr))
 

@@ -27,8 +27,10 @@ struct Entry;
 namespace Materials
 {
 
-
+struct ShaderConfigBatchConstant;
+struct ShaderConfigBatchTexture;
 class ShaderConfig;
+
 RESOURCE_ID_TYPE(MaterialId);
 ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialType); // 32 bits instance, 24 bits material, 8 bits type
 
@@ -47,6 +49,10 @@ MaterialId CreateMaterial2(const MaterialTemplates::Entry& entry);
 void DestroyMaterial(const MaterialId id);
 
 /// Set constant
+void MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant& bind, const MaterialVariant& value);
+/// Set texture
+void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture& bind, const CoreGraphics::TextureId tex);
+/// Set constant
 void MaterialSetConstant(const MaterialId mat, IndexT name, const MaterialVariant& value);
 /// Set texture
 void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::TextureId tex);
@@ -64,6 +70,8 @@ void MaterialSetLowestLod(const MaterialId mat, float lod);
 /// Apply material
 void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, IndexT index);
 
+/// Get material shader config
+const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
 /// Get material shader config
 ShaderConfig* MaterialGetShaderConfig(const MaterialId mat);
 /// Get shader config batch index
@@ -102,7 +110,8 @@ enum
     Material_InstanceBuffers,
     Material_Textures,
     Material_Constants,
-    Material_BufferOffset
+    Material_BufferOffset,
+    Material_Template
 };
 
 
@@ -112,11 +121,12 @@ typedef Ids::IdAllocator<
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
     Util::FixedArray<Util::FixedArray<CoreGraphics::ResourceTableId>>,              // instance level resource table, mapped batch -> table
-    Util::FixedArray<Util::Array<Util::Pair<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
+    Util::FixedArray<Util::Array<Util::Pair<IndexT, CoreGraphics::BufferId>>>,      // surface level constant buffers, mapped batch -> buffers
     Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
     Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
-    IndexT                                                                          // global material buffer binding (based on ShaderConfig::PrototypeHash)
+    IndexT,                                                                         // global material buffer binding (based on ShaderConfig::PrototypeHash)
+    const MaterialTemplates::Entry*                                                 // template
 > MaterialAllocator;
 extern MaterialAllocator materialAllocator;
 

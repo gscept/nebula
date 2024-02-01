@@ -151,13 +151,6 @@ ShaderServerBase::Open()
     }
 #endif
 #endif
-    // create standard shader for access to shared variables
-    if (this->shaders.Contains(ResourceName("shd:system_shaders/shared.fxb")))
-    {
-        // get shared object id shader variable
-        this->sharedVariableShader = this->GetShader("shd:system_shaders/shared.fxb");
-        n_assert(this->sharedVariableShader != ShaderId::Invalid());
-    }
 
     this->isOpen = true;
     return true;

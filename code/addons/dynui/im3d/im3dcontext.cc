@@ -11,6 +11,7 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/pipeline.h"
+#include "coregraphics/shader.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "graphics/cameracontext.h"
@@ -139,12 +140,12 @@ Im3dContext::Create()
     //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
     // allocate imgui shader
-    imState.im3dShader = ShaderServer::Instance()->GetShader("shd:im3d/shaders/im3d.fxb");
-    imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Lines"));
-    imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Lines"));
-    imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Points"));
-    imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Triangles"));
-    imState.depthTriangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Triangles"));
+    imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.fxb");
+    imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Lines"));
+    imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Lines"));
+    imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Points"));
+    imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Triangles"));
+    imState.depthTriangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Triangles"));
     
     imState.depthLayerId = Im3d::MakeId("depthEnabled");
     // create vertex buffer

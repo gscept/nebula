@@ -609,7 +609,7 @@
                                             "fullscreen_effect": {
                                                 "name": "Finalize",
                                                 "shader_state": {
-                                                    "shader": "finalize",
+                                                    "shader": "shd:system_shaders/finalize.fxb",
                                                     "variables": [
                                                         {
                                                             "semantic": "LuminanceTexture",

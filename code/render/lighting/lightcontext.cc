@@ -159,11 +159,11 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 
     using namespace CoreGraphics;
 
-    clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster.fxb");
+    clusterState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/lights_cluster.fxb");
 
-    clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
+    clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
 #ifdef CLUSTERED_LIGHTING_DEBUG
-    clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
+    clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, CoreGraphics::ShaderFeatureMask("Debug"));
 #endif
 
     textureState.ltcLut0 = Resources::CreateResource("systex:ltc_1.dds", "system", nullptr, nullptr, true);
@@ -197,8 +197,8 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     }
 
     // setup combine
-    combineState.combineShader = ShaderServer::Instance()->GetShader("shd:combine.fxb");
-    combineState.combineProgram = ShaderGetProgram(combineState.combineShader, ShaderServer::Instance()->FeatureStringToMask("Combine"));
+    combineState.combineShader = CoreGraphics::ShaderGet("shd:system_shaders/combine.fxb");
+    combineState.combineProgram = ShaderGetProgram(combineState.combineShader, CoreGraphics::ShaderFeatureMask("Combine"));
     combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
     for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)

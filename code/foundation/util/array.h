@@ -201,6 +201,8 @@ public:
     
     /// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
     void Resize(SizeT num);
+    /// Resize and fill new elements with arguments
+    template <typename ...ARGS> void Resize(SizeT num, ARGS... args);
     /// Fit the size of the array to the amount of elements
     void Fit();
 
@@ -1606,6 +1608,28 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num)
     else if (num > this->capacity)
     {
         this->GrowTo(num);
+    }
+
+    this->count = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+template<typename ...ARGS>
+void Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num, ARGS... args)
+{
+    if (num < this->count)
+    {
+        this->DestroyRange(num, this->count);
+    }
+    else if (num > this->capacity)
+    {
+        SizeT oldCapacity = this->capacity;
+        this->GrowTo(num);
+        for (IndexT i = oldCapacity; i < this->capacity; i++)
+            this->elements[i] = TYPE(args...);
     }
 
     this->count = num;

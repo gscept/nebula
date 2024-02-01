@@ -71,13 +71,13 @@ DecalContext::Create()
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    decalState.classificationShader = ShaderServer::Instance()->GetShader("shd:decals_cluster.fxb");
+    decalState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/decals_cluster.fxb");
 
-    decalState.cullProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
-    decalState.renderPBRProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("RenderPBR"));
-    decalState.renderEmissiveProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("RenderEmissive"));
+    decalState.cullProgram = ShaderGetProgram(decalState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
+    decalState.renderPBRProgram = ShaderGetProgram(decalState.classificationShader, CoreGraphics::ShaderFeatureMask("RenderPBR"));
+    decalState.renderEmissiveProgram = ShaderGetProgram(decalState.classificationShader, CoreGraphics::ShaderFeatureMask("RenderEmissive"));
 #ifdef CLUSTERED_DECAL_DEBUG
-    decalState.debugProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
+    decalState.debugProgram = ShaderGetProgram(decalState.classificationShader, CoreGraphics::ShaderFeatureMask("Debug"));
 #endif
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "DecalIndexListsBuffer";

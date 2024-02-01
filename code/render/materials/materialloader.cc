@@ -273,19 +273,19 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                     switch (constant.def.type)
                     {
                         case MaterialTemplateValue::Scalar:
-                            var.Set(MaterialVariant(reader->GetOptFloat("value", constant.def.data.f)));
+                            var.Set(reader->GetOptFloat("value", constant.def.data.f), mem);
                             break;
                         case MaterialTemplateValue::Bool:
-                            var.Set(MaterialVariant(reader->GetOptBool("value", constant.def.data.b)));
+                            var.Set(reader->GetOptBool("value", constant.def.data.b), mem);
                             break;
                         case MaterialTemplateValue::Vec2:
-                            var.Set(MaterialVariant(reader->GetOptVec2("value", constant.def.data.f2)));
+                            var.Set(reader->GetOptVec2("value", constant.def.data.f2), mem);
                             break;
                         case MaterialTemplateValue::Vec3:
-                            var.Set(MaterialVariant(reader->GetOptVec4("value", constant.def.data.f4)));
+                            var.Set(reader->GetOptVec4("value", constant.def.data.f4), mem);
                             break;
                         case MaterialTemplateValue::Vec4:
-                            var.Set(MaterialVariant(reader->GetOptVec4("value", constant.def.data.f4)));
+                            var.Set(reader->GetOptVec4("value", constant.def.data.f4), mem);
                             break;
                         case MaterialTemplateValue::BindlessResource:
                         {
@@ -293,51 +293,50 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                             Resources::ResourceId tex;
 
                             tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
-                                [id, binding = constant.offset, var](Resources::ResourceId rid) mutable
+                                [id, constant, var, mem](Resources::ResourceId rid) mutable
                                 {
                                     CoreGraphics::TextureIdLock _0(rid);
-                                    MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
-                                    var.Set(tuple);
-                                    MaterialSetConstant(id, binding, var);
+                                    var.Set(CoreGraphics::TextureGetBindlessHandle(rid), mem);
+                                    MaterialSetConstant(id, constant, var);
                                     MaterialAddLODTexture(id, rid);
                                 },
-                                [id, binding = constant.offset, var](Resources::ResourceId rid) mutable
+                                [id, constant, var, mem](Resources::ResourceId rid) mutable
                                 {
                                     CoreGraphics::TextureIdLock _0(rid);
-                                    MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
-                                    var.Set(tuple);
-                                    MaterialSetConstant(id, binding, var);
+                                    var.Set(CoreGraphics::TextureGetBindlessHandle(rid), mem);
+                                    MaterialSetConstant(id, constant, var);
                                 });
                             CoreGraphics::TextureIdLock _0(tex);
-                            MaterialVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };
-                            var.Set(tuple);
+                            var.Set(CoreGraphics::TextureGetBindlessHandle(tex), mem);
 
                             break;
                         }
                     }
 
                     // Set constant
-                    MaterialSetConstant(id, constant.offset, var);
+                    MaterialSetConstant(id, constant, var);
                 }
                 else if (textureIndex != InvalidIndex)
                 {
                     const auto& texture = materialTemplate.texturesPerBatch[i][materialTemplate.textureBatchLookup[i].ValueAtIndex(textureIndex)];
-
-                    Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
-                        [id, slot = texture.slot](Resources::ResourceId rid)
+                    if (texture.slot != InvalidIndex)
+                    {
+                        Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
+                        [id, texture](Resources::ResourceId rid)
                         {
                             CoreGraphics::TextureIdLock _0(rid);
-                            MaterialSetTexture(id, slot, rid);
+                            MaterialSetTexture(id, texture, rid);
                             MaterialAddLODTexture(id, rid);
                         },
-                        [id, slot = texture.slot](Resources::ResourceId rid)
+                        [id, texture](Resources::ResourceId rid)
                         {
                             CoreGraphics::TextureIdLock _0(rid);
-                            MaterialSetTexture(id, slot, rid);
+                            MaterialSetTexture(id, texture, rid);
                         });
 
-                    CoreGraphics::TextureIdLock _0(tex);
-                    MaterialSetTexture(id, texture.slot, tex);
+                        CoreGraphics::TextureIdLock _0(tex);
+                        MaterialSetTexture(id, texture, tex);
+                    }                    
                 }
 
                 //materialTemplate.constantsPerBatch[i][constantIndex].

@@ -108,7 +108,6 @@ protected:
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
     Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;      
     Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
-    CoreGraphics::ShaderId sharedVariableShader;
     Ids::Id32 objectIdShaderVar;
 
     bool isOpen;

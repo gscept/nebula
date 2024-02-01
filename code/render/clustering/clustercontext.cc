@@ -73,8 +73,8 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    state.clusterShader = ShaderGet("shd:cluster_generate.fxb");
-    state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureFromString("AABBGenerate"));
+    state.clusterShader = ShaderGet("shd:system_shaders/cluster_generate.fxb");
+    state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureMask("AABBGenerate"));
 
     state.window = window;
     state.zNear = ZNear;
