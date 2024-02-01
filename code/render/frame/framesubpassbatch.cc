@@ -67,7 +67,14 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
 
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
+    IndexT configIndex = MaterialTemplates::Configs.FindIndex(batch);
+    if (configIndex == InvalidIndex)
+    {
+        n_warning("Meaningless batch %s\n", CoreGraphics::BatchGroup::ToName(batch));
+        return;
+    }
+
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs.ValueAtIndex(batch, configIndex);
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
@@ -165,7 +172,11 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
 
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
+    IndexT configIndex = MaterialTemplates::Configs.FindIndex(batch);
+    if (configIndex == InvalidIndex)
+        return;
+
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs.ValueAtIndex(batch, configIndex);
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
