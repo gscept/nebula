@@ -124,7 +124,7 @@ ResourceLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, b
 /**
 */
 uint
-ResourceLoader::LodMask(const Ids::Id32 entry, float lod) const
+ResourceLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
 {
     return 0xFFFFFFFF;
 }
@@ -291,12 +291,20 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
             ResourceUnknownId internalResource = loader->InitializeResource(res.entry, res.tag, stream, res.immediate);
             resource.resourceId = internalResource.resourceId;
             resource.resourceType = internalResource.resourceType;
-            requestedBits = loader->LodMask(res.entry, res.lod);
+            requestedBits = loader->LodMask(res.entry, res.lod, !res.immediate);
 
             if (res.immediate)
             {
-                loadedBits = requestedBits;
-                state = Resource::Loaded;
+                if (internalResource != InvalidResourceUnknownId)
+                {
+                    loadedBits = requestedBits;
+                    state = Resource::Loaded;
+                }
+                else
+                {
+                    loadedBits = 0;
+                    state = Resource::Failed;
+                }
                 goto skip_stream;
             }
 
@@ -322,7 +330,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
 
     if (AllBits(res.mode, ResourceLoader::_PendingResourceLoad::Update))
     {
-        requestedBits |= loader->LodMask(res.entry, res.lod);
+        requestedBits |= loader->LodMask(res.entry, res.lod, true);
     }
 
     // If successful, begin streaming its data

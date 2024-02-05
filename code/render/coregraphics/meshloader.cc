@@ -190,7 +190,7 @@ MeshLoader::Unload(const Resources::ResourceId id)
 /**
 */
 uint
-MeshLoader::LodMask(const Ids::Id32 entry, float lod) const
+MeshLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
 {
     return 0x3;
 }

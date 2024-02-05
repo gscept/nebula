@@ -379,7 +379,7 @@ SetupTexture(const TextureId id)
                         uint mipWidth = extents.width >> i;
                         uint mipHeight = extents.height >> i;
                         n_assert(offset < loadInfo.dataSize);
-                        SizeT uploadSize = (mipWidth * mipHeight * size) / texelSize;
+                        SizeT uploadSize = Math::ceil((mipWidth * mipHeight * size) / (float)texelSize);
                         CoreGraphics::TextureUpdate(cmdBuf, id, mipWidth, mipHeight, i, j, (char*)loadInfo.data + offset, uploadSize);
                         offset += uploadSize;
                     }

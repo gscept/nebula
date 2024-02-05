@@ -180,7 +180,7 @@ protected:
     virtual SubresourceLoadStatus StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
     /// Create load mask based on LOD
-    virtual uint LodMask(const Ids::Id32 entry, float lod) const;
+    virtual uint LodMask(const Ids::Id32 entry, float lod, bool stream) const;
     /// Set lod factor for resource
     virtual void RequestLOD(const Ids::Id32 entry, float lod) const;
 

@@ -35,7 +35,7 @@ private:
     void Unload(const Resources::ResourceId id) override;
 
     /// Create load mask based on LOD
-    uint LodMask(const Ids::Id32 entry, float lod) const override;
+    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
 };
 
 } // namespace CoreGraphics

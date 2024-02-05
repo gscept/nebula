@@ -43,7 +43,7 @@ private:
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
     /// Create load mask based on LOD
-    uint LodMask(const Ids::Id32 entry, float lod) const override;
+    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
 
     /// setup mesh from nvx3 file in memory
     void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource);
