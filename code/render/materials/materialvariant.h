@@ -233,6 +233,7 @@ struct MaterialVariant
     {
         this->size = sizeof(T);
         this->mem = mem;
+        this->type.needsDeref = this->size > sizeof(void*);
         memcpy(this->type.needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, this->size);
     }
 
@@ -241,6 +242,7 @@ struct MaterialVariant
     {
         this->size = sizeof(TextureHandleTuple);
         this->mem = mem;
+        this->type.needsDeref = this->size > sizeof(void*);
         memcpy(this->type.needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, this->size);
     }
 };

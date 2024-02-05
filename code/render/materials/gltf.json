@@ -10,27 +10,27 @@
                     {
                         "name": "baseColorTexture",
                         "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
+                        "defaultValue": "tex:system/placeholder.dds"
                     },
                     {
                         "name": "normalTexture",
                         "type": "textureHandle",
-                        "defaultValue": "systex:nobump.dds"
+                        "defaultValue": "tex:system/nobump.dds"
                     },
                     {
                         "name": "metallicRoughnessTexture",
                         "type": "textureHandle",
-                        "defaultValue": "systex:default_material.dds"
+                        "defaultValue": "tex:system/default_material.dds"
                     },
                     {
                         "name": "emissiveTexture",
                         "type": "textureHandle",
-                        "defaultValue": "systex:white.dds"
+                        "defaultValue": "tex:system/white.dds"
                     },
                     {
                         "name": "occlusionTexture",
                         "type": "textureHandle",
-                        "defaultValue": "systex:white.dds"
+                        "defaultValue": "tex:system/white.dds"
                     },
                     {
                         "name": "baseColorFactor",

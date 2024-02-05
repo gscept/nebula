@@ -60,23 +60,23 @@ NglTFMaterialExtractor::ExportAll()
             if (material.alphaMode == Gltf::Material::AlphaMode::Opaque)
             {
                 if (!material.doubleSided)
-                    templateName = "GLTF Static";
+                    templateName = "GLTF";
                 else
-                    templateName = "GLTF Static + DoubleSided";
+                    templateName = "GLTFDoubleSided";
             }
             else if (material.alphaMode == Gltf::Material::AlphaMode::Blend)
             {
                 if (!material.doubleSided)
-                    templateName = "GLTF Static + AlphaBlend";
+                    templateName = "GLTFAlphaBlend";
                 else
-                    templateName = "GLTF Static + AlphaBlend + DoubleSided";
+                    templateName = "GLTFAlphaBlendDoubleSided";
             }
             else
             {
                 if (!material.doubleSided)
-                    templateName = "GLTF Static + AlphaMask";
+                    templateName = "GLTFAlphaMask";
                 else
-                    templateName = "GLTF Static + AlphaMask + DoubleSided";
+                    templateName = "GLTFAlphaMaskDoubleSided";
 
                 builder.AddParam("alphaCutoff", Util::String::FromFloat(material.alphaCutoff));
             }

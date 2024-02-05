@@ -44,7 +44,7 @@ typedef IndexT BatchIndex;
 /// Create material
 MaterialId CreateMaterial(const MaterialCreateInfo& info);
 /// Create material
-MaterialId CreateMaterial2(const MaterialTemplates::Entry& entry);
+MaterialId CreateMaterial2(const MaterialTemplates::Entry* entry);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 

@@ -178,7 +178,7 @@ CreateMaterial(const MaterialCreateInfo& info)
 /**
 */
 MaterialId
-CreateMaterial2(const MaterialTemplates::Entry& entry)
+CreateMaterial2(const MaterialTemplates::Entry* entry)
 {
     Ids::Id32 id = materialAllocator.Alloc();
 
@@ -188,15 +188,15 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
-    materialAllocator.Set<Material_Template>(id, &entry);
+    materialAllocator.Set<Material_Template>(id, entry);
 
     // Resize all arrays to fit the number of batches
-    tablesPerPass.Resize(entry.passes.Size()); // surface tables
-    buffersPerPass.Resize(entry.passes.Size()); // surface buffers
-    instanceTablesPerPass.Resize(entry.passes.Size()); // instance tables
+    tablesPerPass.Resize(entry->passes.Size()); // surface tables
+    buffersPerPass.Resize(entry->passes.Size()); // surface buffers
+    instanceTablesPerPass.Resize(entry->passes.Size()); // instance tables
 
     // Go through passes
-    for (auto& pass : entry.passes)
+    for (auto& pass : entry->passes)
     {
         const CoreGraphics::ShaderId shader = pass.Value().shader;
         const CoreGraphics::ShaderProgramId prog = pass.Value().program;
@@ -205,7 +205,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
         // create resource tables
         CoreGraphics::ResourceTableId surfaceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_BATCH_GROUP, 256);
         if (surfaceTable != CoreGraphics::InvalidResourceTableId)
-            CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' pass table", entry.name).AsCharPtr());
+            CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' pass table", entry->name).AsCharPtr());
         tablesPerPass[passIndex] = surfaceTable;
 
         auto& instanceTables = instanceTablesPerPass[passIndex];
@@ -216,7 +216,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
             {
                 table = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_INSTANCE_GROUP, 256);
                 if (table != CoreGraphics::InvalidResourceTableId)
-                    CoreGraphics::ObjectSetName(table, Util::String::Sprintf("Material '%s' instance table", entry.name).AsCharPtr());
+                    CoreGraphics::ObjectSetName(table, Util::String::Sprintf("Material '%s' instance table", entry->name).AsCharPtr());
             }
         }
 
@@ -266,7 +266,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
         }
 
         // Bind textures to surface table
-        const Util::Array<ShaderConfigBatchTexture>& textures = entry.texturesPerBatch[passIndex];
+        const Util::Array<ShaderConfigBatchTexture>& textures = entry->texturesPerBatch[passIndex];
         for (auto& texture : textures)
         {
             if (texture.slot != InvalidIndex)
@@ -277,7 +277,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
         }
 
         // Update constant buffers with default values
-        const Util::Array<ShaderConfigBatchConstant>& constants = entry.constantsPerBatch[passIndex];
+        const Util::Array<ShaderConfigBatchConstant>& constants = entry->constantsPerBatch[passIndex];
         for (auto& constant : constants)
         {
             if (constant.group == NEBULA_BATCH_GROUP)
@@ -291,6 +291,7 @@ CreateMaterial2(const MaterialTemplates::Entry& entry)
                 else
                 {
                     CoreGraphics::TextureId tex = Resources::CreateResource(constant.def.data.resource, "materials", nullptr, nullptr, true, false);
+                    CoreGraphics::TextureIdLock _0(tex);
                     uint handle = CoreGraphics::TextureGetBindlessHandle(tex);
                     CoreGraphics::BufferUpdate(buffer, &handle, constant.def.GetSize(), constant.offset);
                 }

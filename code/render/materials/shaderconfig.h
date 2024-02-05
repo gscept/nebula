@@ -95,6 +95,12 @@ struct ShaderConfigBatchConstant
 {
     IndexT offset, slot, group;
     Materials::MaterialTemplateValue def;
+
+    // Returns true if valid
+    const bool Valid() const
+    {
+        return offset != InvalidIndex && slot != InvalidIndex && group != InvalidIndex;
+    }
 };
 
 enum class MaterialProperties

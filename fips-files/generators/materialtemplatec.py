@@ -313,7 +313,7 @@ class MaterialTemplateGenerator:
                 enumStr += '\t{},\n'.format(mat.name)
 
         f.WriteLine('enum MaterialTemplateEnums \n{{\n{}}};\n'.format(enumStr))
-        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
+        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
 
         for mat in self.materials:
             f.WriteLine(mat.FormatHeader())
@@ -358,12 +358,12 @@ class MaterialTemplateGenerator:
             if not mat.virtual:
                 f.WriteLine(mat.FormatSource())
                 setupStr += '\t__{}.Setup();\n'.format(mat.name)
-                setupStr += '\tLookup.Add("{}"_hash, __{}.entry);\n'.format(mat.name, mat.name)
+                setupStr += '\tLookup.Add("{}"_hash, &__{}.entry);\n'.format(mat.name, mat.name)
                 for p in mat.passes:
                     setupStr += '\tConfigs.Emplace(CoreGraphics::BatchGroup::FromName("{}")).Append(&__{}.entry);\n'.format(p.batch, mat.name)
                 setupStr += '\n'
                 f.WriteLine('struct MaterialTemplates::{}::{} MaterialTemplates::{}::__{};'.format(self.name, mat.name, self.name, mat.name))
-        f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates(Util::Dictionary<uint, Entry>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs)\n{{\n{}}}\n'.format(setupStr))
+        f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs)\n{{\n{}}}\n'.format(setupStr))
 
         f.WriteLine('}} // namespace {}\n'.format(self.name))
 
@@ -388,7 +388,7 @@ class MaterialTemplateGenerator:
 
         f.WriteLine('namespace MaterialTemplates\n{\n')
 
-        f.WriteLine('extern Util::Dictionary<uint, Entry> Lookup;')
+        f.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
         f.WriteLine('extern Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
         f.WriteLine('void SetupMaterialTemplates();\n')
 
@@ -418,7 +418,7 @@ class MaterialTemplateGenerator:
             f.WriteLine('#include "{}"'.format(file))
 
         f.WriteLine('namespace MaterialTemplates\n{\n')
-        f.WriteLine('Util::Dictionary<uint, Entry> Lookup;')
+        f.WriteLine('Util::Dictionary<uint, Entry*> Lookup;')
         f.WriteLine('Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
 
         f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates() \n{{\n{}}}'.format(setupStr))

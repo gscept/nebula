@@ -312,6 +312,7 @@ ModelContext::Setup(
     NodeInstances.renderable.textureLods.Append(1.0f);
     NodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
     NodeInstances.renderable.nodeMaterials.Append(material);
+    NodeInstances.renderable.nodeMaterialTemplates.Append(MaterialGetTemplate(material));
     NodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(material));
     NodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
     NodeInstances.renderable.nodes.Append(nullptr);
