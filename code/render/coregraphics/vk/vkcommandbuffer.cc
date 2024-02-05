@@ -653,28 +653,28 @@ CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
 */
 void
 CmdBarrier(
-            const CmdBufferId id,
-            CoreGraphics::PipelineStage fromStage,
-            CoreGraphics::PipelineStage toStage,
-            CoreGraphics::BarrierDomain domain,
-            const Util::FixedArray<TextureBarrierInfo>& textures,
-            const Util::FixedArray<BufferBarrierInfo>& buffers,
-            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
-            const IndexT fromQueue,
-            const IndexT toQueue,
-            const char* name)
+        const CmdBufferId id,
+        CoreGraphics::PipelineStage fromStage,
+        CoreGraphics::PipelineStage toStage,
+        CoreGraphics::BarrierDomain domain,
+        const Util::FixedArray<TextureBarrierInfo>& textures,
+        const Util::FixedArray<BufferBarrierInfo>& buffers,
+        const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
+        const IndexT fromQueue,
+        const IndexT toQueue,
+        const char* name
+)
 {
-    VkBarrierInfo barrier;
-    barrier.name = name;
-    barrier.srcFlags = VkTypes::AsVkPipelineStage(fromStage);
-    barrier.dstFlags = VkTypes::AsVkPipelineStage(toStage);
-    barrier.dep = 0;
-    //barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
-    barrier.numBufferBarriers = buffers.Size() + accelerationStructures.Size();
+    VkPipelineStageFlags fromFlags = VkTypes::AsVkPipelineStage(fromStage);
+    VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
+    VkDependencyFlags depFlags = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
+    uint numBuffers = buffers.Size() + accelerationStructures.Size();
+    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)_malloca(numBuffers * sizeof(VkBufferMemoryBarrier));
+
     IndexT i, j = 0;
     for (i = 0; i < buffers.Size(); i++, j++)
     {
-        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[j];
+        VkBufferMemoryBarrier& vkBar = bufferBarriers[j];
         BufferBarrierInfo& nebBar = buffers[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -690,7 +690,7 @@ CmdBarrier(
     }
     for (i = 0; i < accelerationStructures.Size(); i++, j++)
     {
-        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[j];
+        VkBufferMemoryBarrier& vkBar = bufferBarriers[j];
         AccelerationStructureBarrierInfo& nebBar = accelerationStructures[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -712,12 +712,12 @@ CmdBarrier(
         vkBar.pNext = nullptr;
         vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     }
-    barrier.numBufferBarriers = buffers.Size() + accelerationStructures.Size();
 
-    barrier.numImageBarriers = textures.Size();
+    uint numImages = textures.Size();
+    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)_malloca(textures.Size() * sizeof(VkImageMemoryBarrier));
     for (i = 0; i < textures.Size(); i++, j++)
     {
-        VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
+        VkImageMemoryBarrier& vkBar = imageBarriers[j];
         TextureBarrierInfo& nebBar = textures[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -740,17 +740,13 @@ CmdBarrier(
         vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     }
 
-    for (i = 0; i < accelerationStructures.Size(); i++, j++)
-    {
-
-    }
-
     // If we have no other barriers, insert a memory barrier
-    barrier.numMemoryBarriers = 0;
-    if (barrier.numBufferBarriers == 0 && barrier.numImageBarriers == 0)
+    uint numMemoryBarriers = 0;
+    VkMemoryBarrier memBarrier;
+    if (numBuffers == 0 && numImages == 0)
     {
-        barrier.numMemoryBarriers = 1;
-        barrier.memoryBarriers[0] =
+        numMemoryBarriers = 1;
+        memBarrier =
         {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER,
             nullptr,
@@ -761,12 +757,12 @@ CmdBarrier(
    
     // Insert barrier
     vkCmdPipelineBarrier(CmdBufferGetVk(id),
-        barrier.srcFlags,
-        barrier.dstFlags,
-        barrier.dep,
-        barrier.numMemoryBarriers, barrier.memoryBarriers,
-        barrier.numBufferBarriers, barrier.bufferBarriers,
-        barrier.numImageBarriers, barrier.imageBarriers);
+        fromFlags,
+        toFlags,
+        depFlags,
+        numMemoryBarriers, &memBarrier,
+        numBuffers, bufferBarriers,
+        numImages, imageBarriers);
 }
 
 //------------------------------------------------------------------------------
@@ -785,15 +781,14 @@ CmdHandover(
     , const char* name
 )
 {
-    VkBarrierInfo barrier;
-    barrier.name = name;
-    barrier.srcFlags = VkTypes::AsVkPipelineStage(fromStage);
-    barrier.dstFlags = VkTypes::AsVkPipelineStage(toStage);
-    barrier.dep = 0;
-    barrier.numBufferBarriers = buffers.Size();
-    for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
+    VkPipelineStageFlags fromFlags = VkTypes::AsVkPipelineStage(fromStage);
+    VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
+    uint numBuffers = buffers.Size();
+    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)_malloca(numBuffers * sizeof(VkBufferMemoryBarrier));
+
+    for (uint32_t i = 0; i < numBuffers; i++)
     {
-        VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
+        VkBufferMemoryBarrier& vkBar = bufferBarriers[i];
         BufferBarrierInfo& nebBar = buffers[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -807,11 +802,13 @@ CmdHandover(
         vkBar.pNext = nullptr;
         vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     }
-    barrier.numImageBarriers = textures.Size();
+
+    uint numImages = textures.Size();
+    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)_malloca(textures.Size() * sizeof(VkImageMemoryBarrier));
     IndexT i, j = 0;
     for (i = 0; i < textures.Size(); i++, j++)
     {
-        VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
+        VkImageMemoryBarrier& vkBar = imageBarriers[j];
         TextureBarrierInfo& nebBar = textures[i];
 
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
@@ -835,11 +832,12 @@ CmdHandover(
     }
 
     // If we have no other barriers, insert a memory barrier
-    barrier.numMemoryBarriers = 0;
-    if (barrier.numBufferBarriers == 0 && barrier.numImageBarriers == 0)
+    uint numMemoryBarriers = 0;
+    VkMemoryBarrier memBarrier;
+    if (numBuffers == 0 && numImages == 0)
     {
-        barrier.numMemoryBarriers = 1;
-        barrier.memoryBarriers[0] =
+        numMemoryBarriers = 1;
+        memBarrier =
         {
             VK_STRUCTURE_TYPE_MEMORY_BARRIER,
             nullptr,
@@ -852,52 +850,52 @@ CmdHandover(
     VkCommandBuffer toCmds = CmdBufferGetVk(to);
     vkCmdPipelineBarrier(
         fromCmds
-        , barrier.srcFlags
-        , barrier.srcFlags
-        , barrier.dep
-        , barrier.numMemoryBarriers, barrier.memoryBarriers
-        , barrier.numBufferBarriers, barrier.bufferBarriers
-        , barrier.numImageBarriers, barrier.imageBarriers);
+        , fromFlags
+        , fromFlags
+        , 0x0
+        , numMemoryBarriers, &memBarrier
+        , numBuffers, bufferBarriers
+        , numImages, imageBarriers
+    );
 
     vkCmdPipelineBarrier(
         toCmds
-        , barrier.srcFlags
-        , barrier.srcFlags
-        , barrier.dep
-        , barrier.numMemoryBarriers, barrier.memoryBarriers
-        , barrier.numBufferBarriers, barrier.bufferBarriers
-        , barrier.numImageBarriers, barrier.imageBarriers);
+        , fromFlags
+        , fromFlags
+        , 0x0
+        , numMemoryBarriers, &memBarrier
+        , numBuffers, bufferBarriers
+        , numImages, imageBarriers
+    );
 
     // Last barrier does not do a handover but simply transitions the resource to the destination layout
-    for (IndexT i = 0; i < barrier.numBufferBarriers; i++)
+    for (IndexT i = 0; i < numBuffers; i++)
     {
-        barrier.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        barrier.bufferBarriers[i].dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
+        bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        bufferBarriers[i].dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
     }
 
-    for (IndexT i = 0; i < barrier.numImageBarriers; i++)
+    for (IndexT i = 0; i < numImages; i++)
     {
-        barrier.imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        barrier.imageBarriers[i].dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
-
         const TextureSubresourceInfo& subres = textures[i].subres;
         bool isDepth = AnyBits(subres.bits, CoreGraphics::ImageBits::DepthBits);
 
-        barrier.imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(toStage, isDepth);
+        imageBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageBarriers[i].dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
+        imageBarriers[i].newLayout = VkTypes::AsVkImageLayout(toStage, isDepth);
     }
 
     vkCmdPipelineBarrier(
         toCmds
-        , barrier.srcFlags
-        , barrier.dstFlags
-        , barrier.dep
-        , barrier.numMemoryBarriers, barrier.memoryBarriers
-        , barrier.numBufferBarriers, barrier.bufferBarriers
-        , barrier.numImageBarriers, barrier.imageBarriers);
+        , fromFlags
+        , toFlags
+        , 0x0
+        , numMemoryBarriers, &memBarrier
+        , numBuffers, bufferBarriers
+        , numImages, imageBarriers
+    );
 }
 
 //------------------------------------------------------------------------------
