@@ -375,7 +375,7 @@ VkSubContextHandler::Poll(CoreGraphics::QueueType type, uint64_t index)
     uint64_t lastPayload;
     VkResult res = vkGetSemaphoreCounterValue(this->device, this->semaphores[type], &lastPayload);
     n_assert(res == VK_SUCCESS);
-    return index < lastPayload;
+    return index <= lastPayload;
 }
 
 //------------------------------------------------------------------------------
