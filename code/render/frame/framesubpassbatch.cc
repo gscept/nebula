@@ -66,15 +66,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-
-    IndexT configIndex = MaterialTemplates::Configs.FindIndex(batch);
-    if (configIndex == InvalidIndex)
-    {
-        n_warning("Meaningless batch %s\n", CoreGraphics::BatchGroup::ToName(batch));
-        return;
-    }
-
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs.ValueAtIndex(batch, configIndex);
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
@@ -90,7 +82,8 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                 if (batchIndex != InvalidIndex)
                 {
                     // Bind shader
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, type->passes.ValueAtIndex(batchIndex).program);
+                    const auto& pass = type->passes.ValueAtIndex(batchIndex);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass.program);
                     const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
@@ -126,7 +119,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                                 }
 
                                 // Apply material
-                                MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
+                                MaterialApply(visModelCmd->material, cmdBuf, pass.index);
                             }
 
                             // Progress to next model command
@@ -150,7 +143,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         // Apply draw packet constants and draw
                         if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
                         {
-                            instance->Apply(cmdBuf, batchIndex, bufferIndex);
+                            instance->Apply(cmdBuf, pass.index, bufferIndex);
                             CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
                         }
                     }
@@ -171,12 +164,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-
-    IndexT configIndex = MaterialTemplates::Configs.FindIndex(batch);
-    if (configIndex == InvalidIndex)
-        return;
-
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs.ValueAtIndex(batch, configIndex);
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
@@ -191,6 +179,8 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                 IndexT batchIndex = type->passes.FindIndex(batch);
                 if (batchIndex != InvalidIndex)
                 {
+                    const auto& pass = type->passes.ValueAtIndex(batchIndex);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass.program);
                     const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
@@ -226,7 +216,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                                 }
 
                                 // Apply material
-                                MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
+                                MaterialApply(visModelCmd->material, cmdBuf, pass.index);
                             }
 
                             // Progress to next model command
@@ -248,7 +238,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, batchIndex, bufferIndex);
+                        instance->Apply(cmdBuf, pass.index, bufferIndex);
                         CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }

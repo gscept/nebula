@@ -28,7 +28,7 @@
 #include "coregraphics/barrier.h"
 #include "coregraphics/displaydevice.h"
 #include "memory/arenaallocator.h"
-#include <mutex>
+#include "materials/materialtemplates.h"
 
 using namespace CoreGraphics;
 using namespace IO;
@@ -1124,12 +1124,19 @@ FrameScriptLoader::ParseSubpassSubgraph(const Ptr<Frame::FrameScript>& script, F
 void
 FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
+    JzonValue* name = jzon_get(node, "name");
+    CoreGraphics::BatchGroup::Code batch = CoreGraphics::BatchGroup::FromName(name->string_value);
+    n_assert(name != nullptr);
+    if (MaterialTemplates::Configs.FindIndex(batch) == InvalidIndex)
+    {
+        n_warning("[FrameScript] - Skipping, batch with name '%s' because it's not rendered by any material\n", name->string_value);
+        return;
+    }
+
     FrameSubpassBatch* op = script->GetAllocator().Alloc<FrameSubpassBatch>();
     op->domain = BarrierDomain::Pass;
     op->queue = CoreGraphics::QueueType::GraphicsQueueType;
-
-    JzonValue* name = jzon_get(node, "name");
-    n_assert(name != nullptr);
+    op->batch = batch;
 
     JzonValue* inputs = jzon_get(node, "resource_dependencies");
     if (inputs != nullptr)
@@ -1147,12 +1154,19 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
 void
 FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
-    FrameSubpassOrderedBatch* op = script->GetAllocator().Alloc<FrameSubpassOrderedBatch>();
+    JzonValue* name = jzon_get(node, "name");
+    CoreGraphics::BatchGroup::Code batch = CoreGraphics::BatchGroup::FromName(name->string_value);
+    n_assert(name != nullptr);
+    if (MaterialTemplates::Configs.FindIndex(batch) == InvalidIndex)
+    {
+        n_warning("Skipping, batch with name '%s' because it's not rendered by any material\n", name->string_value);
+        return;
+    }
+
+    FrameSubpassBatch* op = script->GetAllocator().Alloc<FrameSubpassBatch>();
     op->domain = BarrierDomain::Pass;
     op->queue = CoreGraphics::QueueType::GraphicsQueueType;
-
-    JzonValue* name = jzon_get(node, "name");
-    n_assert(name != nullptr);
+    op->batch = batch;
 
     JzonValue* inputs = jzon_get(node, "resource_dependencies");
     if (inputs != nullptr)
@@ -1160,7 +1174,6 @@ FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script
         ParseResourceDependencies(script, op, inputs);
     }
 
-    op->batch = CoreGraphics::BatchGroup::FromName(name->string_value);
     subpass->AddChild(op);
 }
 
@@ -1364,7 +1377,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
             JzonValue* nd = nullptr;
 
             TextureId tex = script->texturesByName[valstr];
-            if ((nd = jzon_get(dep, "bits")) != nullptr) subres.bits = ImageBitsFromString(nd->string_value);
+            if ((nd = jzon_get(dep, "mipBits")) != nullptr) subres.bits = ImageBitsFromString(nd->string_value);
             else
             {
                 bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
