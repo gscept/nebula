@@ -103,8 +103,19 @@ class MaterialTemplateDefinition:
             ret += "\t/* Virtual Material */\n"
         ret += '\tconst char* Description = "{}";\n'.format(self.desc)
         if not self.virtual:
-            ret += '\tEntry entry = {{.name = "{}", .uniqueId = {}, .properties = Materials::MaterialProperties::{}, .vertexLayout =  CoreGraphics::{}}};\n'.format(self.name, self.uniqueId, self.properties, self.vertex)
-            ret += '\tvoid Setup();\n'
+            for v in self.variables:
+                ret += '\tMaterials::MaterialTemplateValue __{};\n'.format(v.name)
+
+            for p in self.passes:
+                ret += '\n\tMaterialTemplates::Entry::Pass __{};\n'.format(p.batch)
+                for v in self.variables:
+                    if v.type == 'texture2d':
+                        ret += '\tMaterials::ShaderConfigBatchTexture __{}_{};\n'.format(p.batch, v.name)
+                    else:
+                        ret += '\tMaterials::ShaderConfigBatchConstant __{}_{};\n'.format(p.batch, v.name)
+                        
+            ret += '\n\tEntry entry = {{.name = "{}", .uniqueId = {}, .properties = Materials::MaterialProperties::{}, .vertexLayout =  CoreGraphics::{}}};\n'.format(self.name, self.uniqueId, self.properties, self.vertex)
+            ret += '\n\tvoid Setup();\n'
 
         ret = 'struct {}\n{{\n{}}};\n'.format(self.name, ret)
         ret += 'extern struct {} __{};'.format(self.name, self.name)
@@ -163,35 +174,38 @@ class MaterialTemplateDefinition:
                     accessorStr = 'resource'
                     numTextures += 1
 
-                func += '\tthis->entry.values.Add("{}", Materials::MaterialTemplateValue{{.type = Materials::MaterialTemplateValue::Type::{}, .data = {{.{} = {}}} }});\n'.format(var.name, typeStr, accessorStr, varStr)
-                defList.append('Materials::MaterialTemplateValue{{.type = Materials::MaterialTemplateValue::Type::{}, .data = {{.{} = {}}} }}'.format(typeStr, accessorStr, varStr))
+                func += '\tthis->__{} = Materials::MaterialTemplateValue{{.type = Materials::MaterialTemplateValue::Type::{}, .data = {{.{} = {}}} }};\n'.format(var.name, typeStr, accessorStr, varStr)
+                func += '\tthis->entry.values.Add("{}", &this->__{});\n'.format(var.name, var.name)
+                defList.append('&this->__{}'.format(var.name))
             passCounter = 0
             for p in self.passes:
                 func += '\t{\n'
                 func += '\t\t/* Pass {} */\n'.format(p.batch)
                 func += '\t\tCoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:{}.fxb");\n'.format(p.shader)
                 func += '\t\tCoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram({}, CoreGraphics::ShaderFeatureMask("{}"));\n'.format('shader', p.variation)
-                func += '\t\tthis->entry.passes.Add(CoreGraphics::BatchGroup::FromName("{}"), Entry::Pass{{.shader = shader, .program = program, .index = {} }});\n'.format(p.batch, passCounter)
+                func += '\t\tthis->__{} = Entry::Pass{{.shader = shader, .program = program, .index = {} }};\n'.format(p.batch, passCounter)
+                func += '\t\tthis->entry.passes.Add(CoreGraphics::BatchGroup::FromName("{}"), &this->__{});\n'.format(p.batch, p.batch)
                 func += '\t\tthis->entry.texturesPerBatch[{}].Resize({});\n'.format(passCounter, numTextures)
                 func += '\t\tthis->entry.constantsPerBatch[{}].Resize({});\n'.format(passCounter, numConstants)
                 texCounter = 0
                 constCounter = 0
                 varCounter = 0
                 for var in self.variables:
+                    memStr = 'this->__{}_{}'.format(p.batch, var.name)
                     if var.type == 'texture2d':
                         func += '\t\tthis->entry.textureBatchLookup[{}].Add("{}"_hash, {});\n'.format(passCounter, var.name, texCounter)
-                        func += '\t\tthis->entry.texturesPerBatch[{}][{}] = Materials::ShaderConfigBatchTexture{{.slot = CoreGraphics::ShaderGetResourceSlot(shader, "{}"), .def = {}}};\n'.format(passCounter, texCounter, var.name, defList[varCounter])
+                        func += '\t\t{} = Materials::ShaderConfigBatchTexture{{.slot = CoreGraphics::ShaderGetResourceSlot(shader, "{}"), .def = {}}};\n'.format(memStr, var.name, defList[varCounter]);
+                        func += '\t\tthis->entry.texturesPerBatch[{}][{}] = &{};\n'.format(passCounter, texCounter, memStr)
                         texCounter += 1
                     else:
-                        constStr = '\t\t\t{}Constant.slot = {}Slot;\n'.format(var.name, var.name)
-                        constStr += '\t\t\t{}Constant.offset = CoreGraphics::ShaderGetConstantBinding(shader, "{}");\n'.format(var.name, var.name)
-                        constStr += '\t\t\t{}Constant.group = CoreGraphics::ShaderGetConstantGroup(shader, "{}");\n'.format(var.name, var.name)
-                        constStr += '\t\t\t{}Constant.def = {};\n'.format(var.name, defList[varCounter])
-                        func += '\n\t\tMaterials::ShaderConfigBatchConstant {}Constant;\n'.format(var.name)
+                        constStr = '\t\t\t{}.slot = {}Slot;\n'.format(memStr, var.name)
+                        constStr += '\t\t\t{}.offset = CoreGraphics::ShaderGetConstantBinding(shader, "{}");\n'.format(memStr, var.name)
+                        constStr += '\t\t\t{}.group = CoreGraphics::ShaderGetConstantGroup(shader, "{}");\n'.format(memStr, var.name)
+                        constStr += '\t\t\t{}.def = {};\n'.format(memStr, defList[varCounter])
                         func += '\t\tIndexT {}Slot = CoreGraphics::ShaderGetConstantSlot(shader, "{}");\n'.format(var.name, var.name)
-                        func += '\t\tif ({}Slot != InvalidIndex)\n\t\t{{\n{}\t\t}}\n\t\telse\n\t\t{{\n\t\t\t{}Constant = {{InvalidIndex, InvalidIndex, InvalidIndex}};  \n\t\t}}\n'.format(var.name, constStr, var.name)
+                        func += '\t\tif ({}Slot != InvalidIndex)\n\t\t{{\n{}\t\t}}\n\t\telse\n\t\t{{\n\t\t\t{} = {{InvalidIndex, InvalidIndex, InvalidIndex}};  \n\t\t}}\n'.format(var.name, constStr, memStr)
                         func += '\t\tthis->entry.constantBatchLookup[{}].Add("{}"_hash, {});\n'.format(passCounter, var.name, constCounter)
-                        func += '\t\tthis->entry.constantsPerBatch[{}][{}] = {}Constant;\n'.format(passCounter, constCounter, var.name)
+                        func += '\t\tthis->entry.constantsPerBatch[{}][{}] = &{};\n'.format(passCounter, constCounter, memStr)
                         constCounter += 1
                     varCounter += 1
                 func += '\t}\n'
@@ -288,24 +302,6 @@ class MaterialTemplateGenerator:
         f.WriteLine('namespace MaterialTemplates\n{\n')
 
         f.WriteLine('namespace {}\n{{\n'.format(self.name))
-
-        passDeclaration = StructDeclaration('Pass')
-        passDeclaration.AddMember('CoreGraphics::ShaderId', 'shader')
-        passDeclaration.AddMember('CoreGraphics::ShaderProgramId', 'program')
-        passDeclaration.AddMember('uint', 'index')
-
-        #entryDeclaration = StructDeclaration('Entry')
-        #entryDeclaration.AddStruct(passDeclaration)
-        #entryDeclaration.AddMember('const char*', 'name')
-        #entryDeclaration.AddMember('Materials::MaterialProperties', 'properties')
-        #entryDeclaration.AddMember('CoreGraphics::VertexLayoutType', 'vertexLayout')
-        #entryDeclaration.AddMember('Util::Dictionary<const char*, Materials::MaterialTemplateValue>', 'values')
-        #entryDeclaration.AddMember('Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass>', 'passes')
-        #entryDeclaration.AddMember('Util::Array<Util::Array<Materials::ShaderConfigBatchTexture>>', 'texturesPerBatch')
-        #entryDeclaration.AddMember('Util::Array<Util::Array<Materials::ShaderConfigBatchConstant>>', 'constantsPerBatch')
-        #entryDeclaration.AddMember('Util::Array<Util::Dictionary<const char*, uint>>', 'textureBatchLookup')
-        #entryDeclaration.AddMember('Util::Array<Util::Dictionary<const char*, uint>>', 'constantBatchLookup')
-        #f.WriteLine(entryDeclaration.Format(''))
 
         enumStr = ''
         for mat in self.materials:

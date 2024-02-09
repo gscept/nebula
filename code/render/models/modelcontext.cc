@@ -163,7 +163,6 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.nodeFlags.Resize(stateRange.end);
             NodeInstances.renderable.nodeMaterials.Resize(stateRange.end);
             NodeInstances.renderable.nodeMaterialTemplates.Resize(stateRange.end);
-            NodeInstances.renderable.nodeShaderConfigs.Resize(stateRange.end);
             NodeInstances.renderable.nodeTypes.Resize(stateRange.end);
             NodeInstances.renderable.nodes.Resize(stateRange.end);
             NodeInstances.renderable.nodeMeshes.Resize(stateRange.end);
@@ -223,7 +222,6 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
             NodeInstances.renderable.nodeMaterials[index] = sNode->material;
             NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(sNode->material);
-            NodeInstances.renderable.nodeShaderConfigs[index] = MaterialGetShaderConfig(sNode->material);
             NodeInstances.renderable.nodeTypes[index] = sNode->GetType();
             NodeInstances.renderable.nodes[index] = sNode;
             NodeInstances.renderable.nodeMeshes[index] = sNode->GetMesh();
@@ -313,7 +311,6 @@ ModelContext::Setup(
     NodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
     NodeInstances.renderable.nodeMaterials.Append(material);
     NodeInstances.renderable.nodeMaterialTemplates.Append(MaterialGetTemplate(material));
-    NodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(material));
     NodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
     NodeInstances.renderable.nodes.Append(nullptr);
     NodeInstances.renderable.nodeMeshes.Append(mesh);

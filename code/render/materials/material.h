@@ -29,33 +29,22 @@ namespace Materials
 
 struct ShaderConfigBatchConstant;
 struct ShaderConfigBatchTexture;
-class ShaderConfig;
 
 RESOURCE_ID_TYPE(MaterialId);
 ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialType); // 32 bits instance, 24 bits material, 8 bits type
 
-struct MaterialCreateInfo
-{
-    ShaderConfig* config;
-};
 typedef IndexT BatchIndex;
 
 
 /// Create material
-MaterialId CreateMaterial(const MaterialCreateInfo& info);
-/// Create material
-MaterialId CreateMaterial2(const MaterialTemplates::Entry* entry);
+MaterialId CreateMaterial(const MaterialTemplates::Entry* entry);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 
 /// Set constant
-void MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant& bind, const MaterialVariant& value);
+void MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind, const MaterialVariant& value);
 /// Set texture
-void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture& bind, const CoreGraphics::TextureId tex);
-/// Set constant
-void MaterialSetConstant(const MaterialId mat, IndexT name, const MaterialVariant& value);
-/// Set texture
-void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::TextureId tex);
+void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const CoreGraphics::TextureId tex);
 
 /// Set material GPU buffer binding
 void MaterialSetBufferBinding(const MaterialId id, IndexT index);
@@ -72,10 +61,8 @@ void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, Ind
 
 /// Get material shader config
 const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
-/// Get material shader config
-ShaderConfig* MaterialGetShaderConfig(const MaterialId mat);
-/// Get shader config batch index
-Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code);
+/// Get batch index from code
+const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code);
 /// Get sort code
 uint64_t MaterialGetSortCode(const MaterialId mat);
 
@@ -101,7 +88,6 @@ struct MaterialTexture
 
 enum
 {
-    Material_ShaderConfig,
     Material_MinLOD,
     Material_LODTextures,
     Material_Table,
@@ -116,7 +102,6 @@ enum
 
 
 typedef Ids::IdAllocator<
-    ShaderConfig*,
     float,
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table

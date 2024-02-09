@@ -519,8 +519,6 @@ ENDIF()
                 materialloader.cc
                 materialloader.h
                 materialvariant.h
-                shaderconfigserver.cc
-                shaderconfigserver.h
                 shaderconfig.cc
                 shaderconfig.h
             )

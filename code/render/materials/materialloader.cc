@@ -6,7 +6,6 @@
 #include "materialloader.h"
 #include "io/bxmlreader.h"
 #include "resources/resourceserver.h"
-#include "shaderconfigserver.h"
 #include "materials/materialtemplates.h"
 
 #include "system_shaders/material_interface.h"
@@ -225,7 +224,6 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         // send to first node
         reader->SetToNode("/Nebula/Surface");
 
-#pragma region New Method
         // Get template
         Util::String templateName = reader->GetString("template");
         uint templateHash = templateName.HashCode();
@@ -233,7 +231,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         n_assert_fmt(templateIndex != InvalidIndex, "Unknown material template '%s'", templateName.AsCharPtr());
         const MaterialTemplates::Entry* materialTemplate = MaterialTemplates::Lookup.ValueAtIndex(templateIndex);
 
-        MaterialId id = CreateMaterial2(materialTemplate);
+        MaterialId id = CreateMaterial(materialTemplate);
 
         if (reader->SetToFirstChild("Param")) do
         {
@@ -248,41 +246,39 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                 if (constantIndex != InvalidIndex)
                 {
                     // Get constant
-                    const auto& constant = materialTemplate->constantsPerBatch[i][materialTemplate->constantBatchLookup[i].ValueAtIndex(constantIndex)];
-
-                    if (constant.Valid())
+                    const auto constant = materialTemplate->constantsPerBatch[i][materialTemplate->constantBatchLookup[i].ValueAtIndex(constantIndex)];
+                    if (constant->Valid())
                     {
 
-
-                    // Create variant and allocate memory
+                        // Create variant and allocate memory
                         state.VariantAllocatorLock.Enter();
-                        void* mem = state.VariantAllocator.Alloc(constant.def.GetSize());
+                        void* mem = state.VariantAllocator.Alloc(constant->def->GetSize());
                         state.VariantAllocatorLock.Leave();
 
                         MaterialVariant var;
                         var.mem = mem;
 
                         // Get value from material, if the type doesn't match the template, we'll pick the template value
-                        switch (constant.def.type)
+                        switch (constant->def->type)
                         {
                             case MaterialTemplateValue::Scalar:
-                                var.Set(reader->GetOptFloat("value", constant.def.data.f), mem);
+                                var.Set(reader->GetOptFloat("value", constant->def->data.f), mem);
                                 break;
                             case MaterialTemplateValue::Bool:
-                                var.Set(reader->GetOptBool("value", constant.def.data.b), mem);
+                                var.Set(reader->GetOptBool("value", constant->def->data.b), mem);
                                 break;
                             case MaterialTemplateValue::Vec2:
-                                var.Set(reader->GetOptVec2("value", constant.def.data.f2), mem);
+                                var.Set(reader->GetOptVec2("value", constant->def->data.f2), mem);
                                 break;
                             case MaterialTemplateValue::Vec3:
-                                var.Set(reader->GetOptVec4("value", constant.def.data.f4), mem);
+                                var.Set(reader->GetOptVec4("value", constant->def->data.f4), mem);
                                 break;
                             case MaterialTemplateValue::Vec4:
-                                var.Set(reader->GetOptVec4("value", constant.def.data.f4), mem);
+                                var.Set(reader->GetOptVec4("value", constant->def->data.f4), mem);
                                 break;
                             case MaterialTemplateValue::BindlessResource:
                             {
-                                Util::String path = reader->GetOptString("value", constant.def.data.resource);
+                                Util::String path = reader->GetOptString("value", constant->def->data.resource);
                                 Resources::ResourceId tex;
 
                                 tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
@@ -312,8 +308,8 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                 }
                 else if (textureIndex != InvalidIndex)
                 {
-                    const auto& texture = materialTemplate->texturesPerBatch[i][materialTemplate->textureBatchLookup[i].ValueAtIndex(textureIndex)];
-                    if (texture.slot != InvalidIndex)
+                    const auto texture = materialTemplate->texturesPerBatch[i][materialTemplate->textureBatchLookup[i].ValueAtIndex(textureIndex)];
+                    if (texture->slot != InvalidIndex)
                     {
                         Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
                         [id, texture](Resources::ResourceId rid)
@@ -332,13 +328,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                         MaterialSetTexture(id, texture, tex);
                     }                    
                 }
-
-                //materialTemplate.constantsPerBatch[i][constantIndex].
             }
-            //IndexT slot = config->GetTextureIndex(paramName);
-            //if (binding != InvalidIndex)
-            //{
-            //}
         }
         while (reader->SetToNextChild("Param"));
 
@@ -354,141 +344,18 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             reader->SetToParent();
         }
 
-#pragma endregion
-
-        /*
-#pragma region Old Method
-        // load surface
-        Resources::ResourceName shaderConfig = reader->GetString("template");
-        Materials::ShaderConfigServer* server = Materials::ShaderConfigServer::Instance();
-
-        IndexT i = server->shaderConfigsByName.FindIndex(shaderConfig);
-        if (i == InvalidIndex)
-        {
-            n_error("Material '%s', referenced in '%s' could not be found!", shaderConfig.AsString().AsCharPtr(), stream->GetURI().AsString().AsCharPtr());
-        }
-        ShaderConfig* config = server->shaderConfigsByName.ValueAtIndex(i);
-
-        // Create material, copying the defaults from the material table
-        MaterialId id = CreateMaterial({ config });
-
-        // Load using the new material system
-        IndexT loaderIndex = this->loaderMap.FindIndex(config->GetMaterialProperties());
-        if (loaderIndex != InvalidIndex)
-        {
-            auto loader = this->loaderMap.ValueAtIndex(loaderIndex);
-            if (reader->SetToFirstChild("Params")) do
-            {
-                loader(reader, id, tag);
-            }
-            while (reader->SetToNextChild("Params"));
-        }
-
-        if (reader->SetToFirstChild("Param")) do
-        {
-            Util::StringAtom paramName = reader->GetString("name");
-
-            // set variant value which we will use in the surface constants
-            IndexT binding = config->GetConstantIndex(paramName);
-            IndexT slot = config->GetTextureIndex(paramName);
-            if (binding != InvalidIndex)
-            {
-                MaterialVariant defaultVal = config->GetConstantDefault(binding);
-                if (defaultVal.GetType() != MaterialVariant::Type::Invalid)
-                {
-                    MaterialVariant materialVal = ShaderConfigServer::Instance()->AllocateVariantMemory(defaultVal.type);
-                    switch (defaultVal.GetType())
-                    {
-                        case MaterialVariant::Type::Float:
-                            materialVal.Set(reader->GetOptFloat("value", defaultVal.Get<float>()));
-                            MaterialSetConstant(id, binding, materialVal);
-                            break;
-                        case MaterialVariant::Type::Int:
-                            materialVal.Set(reader->GetOptInt("value", defaultVal.Get<int32>()));
-                            MaterialSetConstant(id, binding, materialVal);
-                            break;
-                        case MaterialVariant::Type::Bool:
-                            materialVal.Set(reader->GetOptBool("value", defaultVal.Get<bool>()));
-                            MaterialSetConstant(id, binding, materialVal);
-                            break;
-                        case MaterialVariant::Type::Vec4:
-                            materialVal.Set(reader->GetOptVec4("value", defaultVal.Get<Math::vec4>()));
-                            MaterialSetConstant(id, binding, materialVal);
-                            break;
-                        case MaterialVariant::Type::Vec2:
-                            materialVal.Set(reader->GetOptVec2("value", defaultVal.Get<Math::vec2>()));
-                            MaterialSetConstant(id, binding, materialVal);
-                            break;
-                        case MaterialVariant::Type::Mat4:
-                            materialVal.Set(reader->GetOptMat4("value", defaultVal.Get<Math::mat4>()));
-                            MaterialSetConstant(id, binding, materialVal);
-                            break;
-                        case MaterialVariant::Type::TextureHandle: // texture handle
-                        {
-                            Util::String path = reader->GetOptString("value", "");
- 
-                            Resources::ResourceId tex;
-                            if (!path.IsEmpty())
-                            {
-                                tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
-                                    [id, binding, materialVal](Resources::ResourceId rid)
-                                    {
-                                        CoreGraphics::TextureIdLock _0(rid);
-                                        MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
-                                        MaterialVariant tmp = materialVal;
-                                        tmp.Set(tuple);
-                                        MaterialSetConstant(id, binding, materialVal);
-                                        MaterialAddLODTexture(id, rid);
-                                    },
-                                    [id, binding, materialVal](Resources::ResourceId rid)
-                                    {
-                                        CoreGraphics::TextureIdLock _0(rid);
-                                        MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
-                                        MaterialVariant tmp = materialVal;
-                                        tmp.Set(tuple);
-                                        MaterialSetConstant(id, binding, materialVal);
-                                    });
-                                CoreGraphics::TextureIdLock _0(tex);
-                                MaterialVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };
-                                materialVal.Set(tuple);
-                            }
-                            else
-                                tex = Resources::ResourceId(defaultVal.Get<uint64>());
-
-                            CoreGraphics::TextureIdLock _0(tex);
-                            MaterialVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };
-                            materialVal.Set(tuple);
-                            MaterialSetConstant(id, binding, materialVal);
-                        } break;
-                        default: n_error("unhandled enum"); break;
-                    }
-                }
-            }
-            else if (slot != InvalidIndex)
-            {
-                Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, 
-                    [id, slot](Resources::ResourceId rid)
-                    {
-                        CoreGraphics::TextureIdLock _0(rid);
-                        MaterialSetTexture(id, slot, rid);
-                        MaterialAddLODTexture(id, rid);
-                    }, 
-                    [id, slot](Resources::ResourceId rid)
-                    {
-                        CoreGraphics::TextureIdLock _0(rid);
-                        MaterialSetTexture(id, slot, rid);
-                    });
-
-                CoreGraphics::TextureIdLock _0(tex);
-                MaterialSetTexture(id, slot, tex);
-            }
-            
-        } while (reader->SetToNextChild("Param"));
-#pragma endregion
-        */
         return id;
     }
     return InvalidMaterialId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+MaterialLoader::AllocateConstantMemory(SizeT size)
+{
+    return state.VariantAllocator.Alloc(size);
 }
 
 //------------------------------------------------------------------------------

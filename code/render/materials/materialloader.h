@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "resources/resourceloader.h"
+#include "materials/shaderconfig.h"
 #include "coregraphics/config.h"
 
 namespace IO
@@ -28,6 +29,9 @@ public:
 
     /// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+
+    /// Allocate constant memory explicitly
+    static void* AllocateConstantMemory(SizeT size);
 private:
 
     /// unload resource (overload to implement resource deallocation)

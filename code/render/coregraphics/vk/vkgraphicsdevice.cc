@@ -98,6 +98,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<CoreGraphics::Alloc> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
+    Util::Array<PendingDeletes> deletesPerSubmission;
     Util::FixedArray<Util::Array<CoreGraphics::SubmissionWaitEvent>> waitEvents;
     CoreGraphics::SubmissionWaitEvent mostRecentEvents[CoreGraphics::QueueType::NumQueueTypes];
 
@@ -1592,7 +1593,7 @@ CoreGraphics::SubmissionWaitEvent
 SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type)
 {
     // Submit transfer and graphics commands from this frame
-    CoreGraphics::SubmissionWaitEvent transferWait, graphicsWait;
+    CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait;
     transferLock.Enter();
     if (state.setupTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
@@ -1619,11 +1620,11 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         CmdBufferIdAcquire(state.handoverTransferCommandBuffer);
         CmdEndMarker(state.handoverTransferCommandBuffer);
         CmdEndRecord(state.handoverTransferCommandBuffer);
-        transferWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.handoverTransferCommandBuffer));
-        transferWait.queue = CoreGraphics::TransferQueueType;
+        handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.handoverTransferCommandBuffer));
+        handoverWait.queue = CoreGraphics::TransferQueueType;
 
         // Set wait events in graphics device
-        AddSubmissionEvent(transferWait);
+        AddSubmissionEvent(handoverWait);
 
         // Delete command buffer
         DestroyCmdBuffer(state.handoverTransferCommandBuffer);
@@ -1645,8 +1646,8 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         graphicsWait.queue = CoreGraphics::GraphicsQueueType;
 
         // This command buffer will have handover commands, so wait for that transfer
-        if (transferWait != nullptr)
-            state.queueHandler.AppendWaitTimeline(transferWait.timelineIndex, CoreGraphics::GraphicsQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, CoreGraphics::TransferQueueType);
+        if (handoverWait != nullptr)
+            state.queueHandler.AppendWaitTimeline(handoverWait.timelineIndex, CoreGraphics::GraphicsQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, CoreGraphics::TransferQueueType);
 
         // Add wait event
         AddSubmissionEvent(graphicsWait);

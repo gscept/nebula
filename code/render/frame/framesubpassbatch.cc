@@ -5,7 +5,6 @@
 
 #include "framesubpassbatch.h"
 #include "coregraphics/shaderserver.h"
-#include "materials/shaderconfigserver.h"
 #include "models/nodes/shaderstatenode.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
@@ -61,9 +60,6 @@ FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 void
 FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
-    // now do usual render stuff
-    //ShaderConfigServer* matServer = ShaderConfigServer::Instance();
-
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
     const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
@@ -83,7 +79,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                 {
                     // Bind shader
                     const auto& pass = type->passes.ValueAtIndex(batchIndex);
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass.program);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass->program);
                     const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
@@ -119,7 +115,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                                 }
 
                                 // Apply material
-                                MaterialApply(visModelCmd->material, cmdBuf, pass.index);
+                                MaterialApply(visModelCmd->material, cmdBuf, pass->index);
                             }
 
                             // Progress to next model command
@@ -143,7 +139,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         // Apply draw packet constants and draw
                         if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
                         {
-                            instance->Apply(cmdBuf, pass.index, bufferIndex);
+                            instance->Apply(cmdBuf, pass->index, bufferIndex);
                             CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
                         }
                     }
@@ -159,9 +155,6 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
 void
 FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
-    // now do usual render stuff
-    //ShaderConfigServer* matServer = ShaderConfigServer::Instance();
-
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
     const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
@@ -180,7 +173,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                 if (batchIndex != InvalidIndex)
                 {
                     const auto& pass = type->passes.ValueAtIndex(batchIndex);
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass.program);
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, pass->program);
                     const Visibility::ObserverContext::VisibilityBatchCommand& visBatchCmd = drawList->visibilityTable.ValueAtIndex(type, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
@@ -216,7 +209,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                                 }
 
                                 // Apply material
-                                MaterialApply(visModelCmd->material, cmdBuf, pass.index);
+                                MaterialApply(visModelCmd->material, cmdBuf, pass->index);
                             }
 
                             // Progress to next model command
@@ -238,7 +231,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, pass.index, bufferIndex);
+                        instance->Apply(cmdBuf, pass->index, bufferIndex);
                         CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }

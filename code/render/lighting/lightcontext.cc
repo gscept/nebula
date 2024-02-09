@@ -20,6 +20,10 @@
 #include "debug/framescriptinspector.h"
 #endif
 
+#include "materials/materialtemplates.h"
+#include "materials/base.h"
+#include "materials/materialloader.h"
+
 #include "graphics/globalconstants.h"
 
 #include "system_shaders/shared.h"
@@ -572,16 +576,16 @@ LightContext::SetupAreaLight(
     // Last step is to create a geometric proxy for the light source
 
     // Create material
-    Materials::ShaderConfigServer* server = Materials::ShaderConfigServer::Instance();
-    Materials::ShaderConfig* config = server->GetShaderConfig("AreaLight");
-    Materials::MaterialId material = Materials::CreateMaterial({ config });
+    MaterialTemplates::Entry* matTemplate = &MaterialTemplates::base::__AreaLight.entry;
+    Materials::MaterialId material = Materials::CreateMaterial(matTemplate);
 
-    IndexT binding = config->GetConstantIndex("EmissiveColor");
-    Materials::MaterialVariant defaultVal = config->GetConstantDefault(binding);
+    const Materials::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
+    void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
+    const Materials::ShaderConfigBatchConstant* batchConstant = &MaterialTemplates::base::__AreaLight.__LightMeshes_EmissiveColor;
 
-    Materials::MaterialVariant var = server->AllocateVariantMemory(defaultVal.type);
-    var.Set(color * intensity);
-    Materials::MaterialSetConstant(material, binding, var);
+    Materials::MaterialVariant var;
+    var.Set(color * intensity, mem);
+    Materials::MaterialSetConstant(material, batchConstant, var);
 
     CoreGraphics::MeshId mesh;
     switch (shape)

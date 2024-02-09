@@ -25,7 +25,6 @@
 #include "coregraphics/textrenderer.h"
 #include "frame/frameserver.h"
 #include "debug/debughandler.h"
-#include "materials/shaderconfigserver.h"
 
 namespace Graphics
 {
@@ -142,7 +141,6 @@ private:
     Ptr<CoreGraphics::DisplayDevice> displayDevice;
     bool graphicsDevice;
     Ptr<CoreGraphics::ShaderServer> shaderServer;
-    Ptr<Materials::ShaderConfigServer> materialServer;
     Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
     Ptr<CoreGraphics::TextRenderer> textRenderer;
     Ptr<Frame::FrameServer> frameServer;

@@ -57,8 +57,7 @@ struct MaterialTemplateValue
                 return 4;
             case Vec2:
                 return 8;
-            case Vec3:
-                return 12;
+            case Vec3:      // Vec3 expands to Vec4 because neither SSE nor GPU's can actually store only 3 floats
             case Vec4:
                 return 16;
             case BindlessResource:
@@ -81,7 +80,7 @@ struct ShaderConfigTexture
 struct ShaderConfigBatchTexture
 {
     IndexT slot;
-    Materials::MaterialTemplateValue def;
+    Materials::MaterialTemplateValue* def;
 };
 
 struct ShaderConfigConstant
@@ -94,7 +93,7 @@ struct ShaderConfigConstant
 struct ShaderConfigBatchConstant
 {
     IndexT offset, slot, group;
-    Materials::MaterialTemplateValue def;
+    Materials::MaterialTemplateValue* def;
 
     // Returns true if valid
     const bool Valid() const
@@ -118,99 +117,6 @@ enum class MaterialProperties
     Num
 };
 
-class ShaderConfig
-{
-public:
-
-    /// constructor
-    ShaderConfig();
-    /// destructor
-    ~ShaderConfig();
-
-    /// setup after loading
-    void Setup();
-
-    /// get constant index
-    IndexT GetConstantIndex(const Util::StringAtom& name);
-    /// get texture index
-    IndexT GetTextureIndex(const Util::StringAtom& name);
-
-    /// get default value for constant
-    const MaterialVariant GetConstantDefault(IndexT idx);
-    /// get default value for texture
-    const CoreGraphics::TextureId GetTextureDefault(IndexT idx);
-
-    /// Get batch index from surface config
-    BatchIndex GetBatchIndex(const CoreGraphics::BatchGroup::Code batch);
-
-    /// Get material properties prototype hash
-    MaterialProperties GetMaterialProperties();
-
-    /// get name
-    const Util::String& GetName();
-    /// get hash code 
-    const uint32_t HashCode() const;
-
-    /// Bind shader for a batch and return the batch index
-    IndexT BindShader(const CoreGraphics::CmdBufferId buf, CoreGraphics::BatchGroup::Code batch);
-
-private:
-    friend class ShaderConfigServer;
-    friend class MaterialCache;
-    friend MaterialId CreateMaterial(const MaterialCreateInfo& info);
-    friend void MaterialSetConstant(const MaterialId mat, IndexT name, const MaterialVariant& value);
-    friend void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::TextureId tex);
-
-    Util::HashTable<CoreGraphics::BatchGroup::Code, BatchIndex> batchToIndexMap;
-
-    Util::Dictionary<Util::StringAtom, IndexT> textureLookup;
-    Util::Dictionary<Util::StringAtom, IndexT> constantLookup;
-    Util::Array<CoreGraphics::ShaderProgramId> programs;
-    Util::Array<ShaderConfigTexture> textures;
-    Util::Array<ShaderConfigConstant> constants;
-    Util::Array<Util::Array<ShaderConfigBatchTexture>> texturesByBatch;
-    Util::Array<Util::Array<ShaderConfigBatchConstant>> constantsByBatch;
-    bool isVirtual;
-    Util::String name;
-    Util::String description;
-    Util::String group;
-    uint vertexType;
-    MaterialProperties materialProperties;
-
-    IndexT uniqueId;
-    static IndexT ShaderConfigUniqueIdCounter;
-
-    CoreGraphics::BatchGroup::Code currentBatch;
-    IndexT currentBatchIndex;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::String&
-ShaderConfig::GetName()
-{
-    return this->name;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const uint32_t
-ShaderConfig::HashCode() const
-{
-    return (uint32_t)this->uniqueId;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline MaterialProperties
-ShaderConfig::GetMaterialProperties()
-{
-    return this->materialProperties;
-}
-
 } // namespace Materials
 
 namespace MaterialTemplates
@@ -231,12 +137,12 @@ struct Entry
     uint uniqueId;
     Materials::MaterialProperties properties;
     CoreGraphics::VertexLayoutType vertexLayout;
-    Util::Dictionary<const char*, Materials::MaterialTemplateValue> values;
-    Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass> passes;
-    Util::Array<Util::Array<Materials::ShaderConfigBatchTexture>> texturesPerBatch;
-    Util::Array<Util::Array<Materials::ShaderConfigBatchConstant>> constantsPerBatch;
+    Util::Dictionary<const char*, Materials::MaterialTemplateValue*> values;
+    Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass*> passes;
+    Util::Array<Util::Array<Materials::ShaderConfigBatchTexture*>> texturesPerBatch;
+    Util::Array<Util::Array<Materials::ShaderConfigBatchConstant*>> constantsPerBatch;
     Util::Array<Util::Dictionary<uint, uint>> textureBatchLookup;
     Util::Array<Util::Dictionary<uint, uint>> constantBatchLookup;
 };
 
-}
+} // namespace MaterialTemplates
