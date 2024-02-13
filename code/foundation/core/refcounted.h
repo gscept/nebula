@@ -90,10 +90,9 @@ protected:
         static ThreadLocal bool isInCreate;
         static Threading::CriticalSection criticalSection;
 private:        
+        bool destroyed;
         static RefCountedList list;
         RefCountedList::Iterator listIterator;
-        bool destroyed;
-
 public:
         /// register debug name
         void SetDebugName(const Util::String& name);

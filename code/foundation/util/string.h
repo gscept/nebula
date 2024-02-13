@@ -405,7 +405,7 @@ private:
 
     enum
     {
-        LocalStringSize = 20,
+        LocalStringSize = 16,
     };
     char* heapBuffer;
     char localBuffer[LocalStringSize];

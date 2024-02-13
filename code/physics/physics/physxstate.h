@@ -28,22 +28,22 @@ public:
     physx::PxPhysics * physics;
     physx::PxPvd *pvd;
     physx::PxPvdTransport *transport;
+    Util::Delegate<void(ActorId*, SizeT)> onSleepCallback;
+    Util::Delegate<void(ActorId*, SizeT)> onWakeCallback;
+    Physics::Allocator allocator;
+    Physics::ErrorCallback errorCallback;
+    Physics::Material FallbackMaterial;
+    Util::Set<Ids::Id32> awakeActors;
+
+    Util::Dictionary<Util::StringAtom, IndexT> materialNameTable;
+
     Util::StackArray<Physics::Scene, 8> activeScenes;
     Util::StackArray<Physics::Material, 16> materials;
-    Util::Dictionary<Util::StringAtom, IndexT> materialNameTable;
+    
     Util::StackArray<IndexT, 8> activeSceneIds;
     Util::StackArray<IndexT, 8> deadSceneIds;
 
-    Physics::Material FallbackMaterial;
-
-    Util::Set<Ids::Id32> awakeActors;
-
-    Physics::Allocator allocator;
-    Physics::ErrorCallback errorCallback;
     physx::PxOverlapHit overlapBuffer[MAX_SHAPE_OVERLAPS];
-
-    Util::Delegate<void(ActorId*, SizeT)> onSleepCallback;
-    Util::Delegate<void(ActorId*, SizeT)> onWakeCallback;
 
     /// 
     PhysxState();

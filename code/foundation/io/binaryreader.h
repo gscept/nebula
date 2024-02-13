@@ -101,11 +101,11 @@ public:
     void ReadRawData(void* ptr, SizeT numBytes);
 
 public:
-    bool enableMapping;
-    bool isMapped;
     System::ByteOrder byteOrder;
     unsigned char* mapCursor;
     unsigned char* mapEnd;
+    bool enableMapping;
+    bool isMapped;
 };
 
 //------------------------------------------------------------------------------

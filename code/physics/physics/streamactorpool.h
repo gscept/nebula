@@ -30,8 +30,9 @@ struct ActorInfo
     Util::Array<float> densities;
     Util::Array<Util::String> colliders;
     SizeT instanceCount;
-    CollisionFeedback feedbackFlag;
     uint16_t collisionGroup;
+    CollisionFeedback feedbackFlag;
+    
 #ifdef NEBULA_DEBUG
     Util::Array<Util::String> shapeDebugNames;
 #endif

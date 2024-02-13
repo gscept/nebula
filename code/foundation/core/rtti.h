@@ -70,9 +70,9 @@ private:
     Util::String name;
     const Core::Rtti* parent;
     Util::FourCC fourCC;
+    SizeT instanceSize;
     Creator creator;
     ArrayCreator arrayCreator;
-    SizeT instanceSize;
 };
 
 //------------------------------------------------------------------------------
