@@ -1034,9 +1034,19 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .pNext = &groupHandlesFeature,
         .graphicsPipelineLibrary = true
     };
+
+    VkPhysicalDevice16BitStorageFeatures buffer16BitFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
+        .pNext = &libraryFeature,
+        .storageBuffer16BitAccess = true,
+        .uniformAndStorageBuffer16BitAccess = true,
+        .storagePushConstant16 = false,
+        .storageInputOutput16 = false
+    };
     if (info.features.enableRayTracing)
     {
-        lastExtension = &libraryFeature;
+        lastExtension = &buffer16BitFeature;
     }
 #pragma endregion
 
