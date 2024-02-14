@@ -551,7 +551,7 @@ BufferSparseCommitChanges(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-DeviceAddress
+CoreGraphics::DeviceAddress
 BufferGetDeviceAddress(const BufferId id)
 {
     VkDevice dev = BufferGetVkDevice(id);

@@ -150,7 +150,7 @@ SizeT BufferSparseGetPageSize(const BufferId id);
 void BufferSparseCommitChanges(const BufferId id);
 
 /// Get buffer device address
-DeviceAddress BufferGetDeviceAddress(const BufferId id);
+CoreGraphics::DeviceAddress BufferGetDeviceAddress(const BufferId id);
 
 //------------------------------------------------------------------------------
 /**
