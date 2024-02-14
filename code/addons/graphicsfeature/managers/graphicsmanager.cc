@@ -27,7 +27,7 @@ __ImplementSingleton(GraphicsManager)
 //------------------------------------------------------------------------------
 /**
 */
-    GraphicsManager::GraphicsManager()
+GraphicsManager::GraphicsManager()
 {
     // empty
 }
@@ -48,7 +48,7 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 {
     Models::ModelContext::RegisterEntity(gid);
     Visibility::ObservableContext::RegisterEntity(gid);
-    if (raytracing)
+    if (raytracing && CoreGraphics::RayTracingSupported)
     {
         Raytracing::RaytracingContext::RegisterEntity(gid);
     }
@@ -59,9 +59,9 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
         [gid, raytracing, t]()
         {
             Models::ModelContext::SetTransform(gid, t);
-            if (raytracing)
+            if (raytracing && CoreGraphics::RayTracingSupported)
             {
-                Raytracing::RaytracingContext::Setup(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFF);
+                Raytracing::RaytracingContext::Setup(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFFFFFFFF);
             }
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
         }
