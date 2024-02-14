@@ -141,16 +141,8 @@ CreateBlas(const BlasCreateInfo& info)
 
     BufferIdLock _1(CoreGraphics::GetVertexBuffer());
     BufferIdLock _2(CoreGraphics::GetIndexBuffer());
-    VkBufferDeviceAddressInfo deviceAddress =
-    {
-        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-        nullptr,
-        VK_NULL_HANDLE
-    };
-    deviceAddress.buffer = BufferGetVk(CoreGraphics::GetVertexBuffer());
-    VkDeviceAddress vboAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
-    deviceAddress.buffer = BufferGetVk(CoreGraphics::GetIndexBuffer());
-    VkDeviceAddress iboAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
+    VkDeviceAddress vboAddr = BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+    VkDeviceAddress iboAddr = BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
 
     MeshIdLock _0(info.mesh);
     CoreGraphics::VertexLayoutId layout = MeshGetVertexLayout(info.mesh);
@@ -188,7 +180,7 @@ CreateBlas(const BlasCreateInfo& info)
         .pNext = nullptr,
         .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
         .geometry = VkAccelerationStructureGeometryDataKHR{ .triangles = setup.triangleData },
-        .flags = 0x0 // TODO, add support for avoiding anyhit or single-invocation anyhit optimizations
+        .flags = VK_GEOMETRY_OPAQUE_BIT_KHR // TODO, add support for avoiding anyhit or single-invocation anyhit optimizations
     };
 
     // Match the number of geometries to the amount of primitive groups
@@ -254,8 +246,7 @@ CreateBlas(const BlasCreateInfo& info)
     CoreGraphics::BufferId scratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
     blasAllocator.Set<Blas_Scratch>(id, scratchBuf);
 
-    deviceAddress.buffer = BufferGetVk(scratchBuf);
-    VkDeviceAddress scratchAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
+    VkDeviceAddress scratchAddr = BufferGetDeviceAddress(scratchBuf);
     setup.buildGeometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = scratchAddr };
 
     // Now create it
