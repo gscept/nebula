@@ -75,10 +75,12 @@ BufferSet::~BufferSet()
 BufferWithStaging::BufferWithStaging(const BufferCreateInfo& createInfo)
 {
     BufferCreateInfo bufferInfo = createInfo;
+    bufferInfo.name = Util::String::Sprintf("%s Host Buffer", createInfo.name);
     bufferInfo.mode = CoreGraphics::HostLocal;
     bufferInfo.usageFlags |= CoreGraphics::TransferBufferSource;
     this->hostBuffers = BufferSet(bufferInfo);
 
+    bufferInfo.name = Util::String::Sprintf("%s Device Buffer", createInfo.name);
     bufferInfo.mode = CoreGraphics::DeviceLocal;
     bufferInfo.usageFlags |= CoreGraphics::TransferBufferDestination;
     this->deviceBuffer = CoreGraphics::CreateBuffer(bufferInfo);
@@ -131,6 +133,7 @@ BufferWithStaging::HostBuffer()
 void
 BufferWithStaging::Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes)
 {
+    n_assert(numBytes > 0);
     CoreGraphics::BufferCopy copy;
     copy.offset = 0;
     CoreGraphics::CmdCopy(cmdBuf, this->hostBuffers.Buffer(), {copy}, this->deviceBuffer, {copy}, numBytes);
