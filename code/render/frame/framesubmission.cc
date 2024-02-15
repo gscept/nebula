@@ -5,6 +5,7 @@
 
 #include "framesubmission.h"
 #include "coregraphics/shaderserver.h"
+#include "materials/materialloader.h"
 
 #include "graphics/globalconstants.h"
 namespace Frame
@@ -82,6 +83,9 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
 
     // Before starting the submission, flush updates
     Graphics::FlushUpdates(submissionBuffer, this->queue);
+
+    // Also flush materials
+    Materials::MaterialLoader::FlushMaterialBuffers(submissionBuffer, this->queue);
 
     for (IndexT i = 0; i < this->compiled.Size(); i++)
     {
