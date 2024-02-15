@@ -116,6 +116,7 @@ enum class MaterialProperties
 
     Num
 };
+__ImplementEnumBitOperators(MaterialProperties);
 
 } // namespace Materials
 

@@ -2,7 +2,8 @@
 //  materials.fxh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
+#pragma once
+#include <lib/std.fxh>
 // This header provides a few helpers to bind a material buffer
 #define MATERIAL_BINDING group(BATCH_GROUP) binding(51)
 
@@ -59,12 +60,12 @@ ptr struct CutoutMaterial
     float cutoutFactor;
 };
 
-ptr struct UnlitMaterial
+ptr alignment(4) struct UnlitMaterial
 {
     textureHandle AlbedoMap;
 };
 
-ptr struct Unlit2Material
+ptr alignment(8) struct Unlit2Material
 {
     textureHandle Layer1;
     textureHandle Layer2;
@@ -106,4 +107,17 @@ ptr struct LegacyMaterial
     textureHandle AlbedoMap;
     textureHandle ParameterMap;
     textureHandle NormalMap;
+};
+
+MATERIAL_BINDING rw_buffer MaterialBindings
+{
+    BRDFMaterial BRDFMaterials;
+    BSDFMaterial BSDFMaterials;
+    GLTFMaterial GLTFMaterials;
+    UnlitMaterial UnlitMaterials;
+    Unlit2Material Unlit2Materials;
+    Unlit3Material Unlit3Materials;
+    Unlit4Material Unlit4Materials;
+    SkyboxMaterial SkyboxMaterials;
+    LegacyMaterial LegacyMaterials;
 };

@@ -2,60 +2,15 @@
 //  raytracetest.fxh
 //  (C) 2023 gscept
 //------------------------------------------------------------------------------
-#include <lib/shared.fxh>
 #include <lib/raytracing.fxh>
-#include <lib/materials.fxh>
-
-group(BATCH_GROUP) accelerationStructure TLAS;
-group(BATCH_GROUP) write rgba16f image2D Output;
-
-MESH_BINDING rw_buffer VertexBase
-{
-    VertexPosUv positions;
-    VertexAttributeNormals normals;
-};
-
-ptr struct MaterialTest
-{
-    vec4 color;
-    float intensity;
-};
-
-group(BATCH_GROUP) rw_buffer Materials
-{
-    MaterialTest MaterialPtr;
-};
-
-struct BRDFObject
-{
-    BRDFMaterial MaterialPtr;
-    VertexPosUv PositionsPtr;
-    VertexAttributeNormals AttributePtr;
-};
-
-MATERIAL_BINDING rw_buffer BRDFObjectBuffer
-{
-    BRDFObject BRDFObjects[];
-};
-
-struct BSDFObject
-{
-    BSDFMaterial MaterialPtr;
-    VertexPosUv PositionsPtr;
-    VertexAttributeNormals AttributePtr;
-};
-
-MATERIAL_BINDING rw_buffer BSDFObjectBuffer
-{
-    BSDFObject BSDFObjects[];
-};
+#include <lib/mie-rayleigh.fxh>
 
 //------------------------------------------------------------------------------
 /**
 */
 shader void 
 Raygen(
-    [ray_payload] out vec3 hitValue
+    [ray_payload] out HitResult Result
 )
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
@@ -66,24 +21,14 @@ Raygen(
     vec4 target = InvProjection * vec4(d.x, d.y, 1, 1);
     vec4 direction = InvView * vec4(normalize(target.xyz), 0);
 
-    vec3 dir = vec3(0, 0, 1);
-    hitValue = vec3(0, 0, 0);
+    Result.radiance = vec3(0, 0, 0);
+    Result.normal = vec3(0, 0, 0);
+    Result.depth = 0;
 
     // Ray trace against BVH
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
+    traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
 
-    imageStore(Output, ivec2(gl_LaunchIDEXT.xy), vec4(hitValue, 0.0f));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-shader void
-ClosestHit(
-    [ray_payload] in vec3 color
-)
-{
-    color = (MaterialPtr + gl_InstanceID).color.xyz;
+    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(Result.radiance, 0.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -91,10 +36,12 @@ ClosestHit(
 */
 shader void
 Miss(
-    [ray_payload] in vec3 color
+    [ray_payload] in HitResult Result
 )
 {
-    color = vec3(0, 0, 1);
+    vec3 dir = normalize(gl_WorldRayDirectionEXT);
+    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    Result.radiance = atmo;
 }
 
 //------------------------------------------------------------------------------
@@ -103,6 +50,5 @@ Miss(
 program Main[string Mask = "test";]
 {
     RayGenerationShader = Raygen();
-    RayClosestHitShader = ClosestHit();
     RayMissShader = Miss();
 };

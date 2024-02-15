@@ -2,13 +2,10 @@
 //  lights_cluster.fx
 //  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/shared.fxh"
-#include "lib/clustering.fxh"
-#include "lib/lighting_functions.fxh"
-#include "lib/preetham.fxh"
-#include "lib/mie-rayleigh.fxh" 
+#include <lib/std.fxh>
+#include <lib/util.fxh>
+#include <lib/shared.fxh>
+#include <lib/clustering.fxh>
 
 write rgba16f image2D Lighting;
 write rgba16f image2D DebugOutput;
@@ -80,25 +77,6 @@ void csCull()
             AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
         }
-
-        /*
-        if (CHECK_FLAG(light.flags, AREA_LIGHT_SHAPE_TUBE))
-        {
-            if (TestAABBOrthoProjection(aabb, light.view))
-            {
-                AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
-                numLights++;
-            }
-        }
-        else
-        {
-            if (TestAABBPerspectiveProjection(aabb, light.view))
-            {
-                AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
-                numLights++;
-            }
-        }
-        */
     }
     AreaLightCountList[index1D] = numLights;
 

@@ -556,7 +556,7 @@ ENDIF()
             raytracingcontext.h
         )
         fips_dir(raytracing/shaders)
-            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx)
+            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx light_grid_cs.fx)
 
         fips_dir(renderutil)
         fips_files(

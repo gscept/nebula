@@ -10,11 +10,14 @@
 #include "coregraphics/meshresource.h"
 #include "coregraphics/shader.h"
 
-#include "raytracing/shaders/raytracetest.h"
+#include "materials/materialloader.h"
+
 #include "raytracing/shaders/raytracetest.h"
 #include "raytracing/shaders/brdfhit.h"
 #include "raytracing/shaders/bsdfhit.h"
 #include "raytracing/shaders/gltfhit.h"
+
+#include "raytracing/shaders/light_grid_cs.h"
 
 namespace Raytracing
 {
@@ -22,7 +25,6 @@ namespace Raytracing
 RaytracingContext::RaytracingAllocator RaytracingContext::raytracingContextAllocator;
 __ImplementContext(RaytracingContext, raytracingContextAllocator);
 
-using ObjectBinding = Brdfhit::Object;
 
 struct
 {
@@ -39,20 +41,18 @@ struct
     Util::HashTable<CoreGraphics::MeshId, Util::Tuple<uint, CoreGraphics::BlasId>> blasLookup;
     CoreGraphics::BufferWithStaging blasInstanceBuffer;
 
-    CoreGraphics::BufferId brdfMaterialBuffer, bsdfMaterialBuffer, gltfMaterialBuffer;
-    CoreGraphics::BufferId bindingBuffer;
-
-    Util::Array<Brdfhit::BRDFMaterial> brdfMaterials;
-    Util::Array<Bsdfhit::BSDFMaterial> bsdfMaterials;
-    Util::Array<Gltfhit::GLTFMaterial> gltfMaterials;
-    Util::Array<ObjectBinding> bindings;
-
-    CoreGraphics::ShaderId raytracingTestShader;
-    CoreGraphics::ShaderProgramId raytracingTestProgram;
     CoreGraphics::ResourceTableSet raytracingTestTables;
     CoreGraphics::TextureId raytracingTestOutput;
-    CoreGraphics::BufferId raytracingTestMaterialBuffer;
-    CoreGraphics::BufferId raytracingTestBindingBuffer;
+
+    CoreGraphics::BufferId geometryBindingBuffer;
+    CoreGraphics::BufferWithStaging objectBindingBuffer;
+    Util::Array<Raytracetest::Object> objects;
+
+    CoreGraphics::BufferId lightGrid;
+    CoreGraphics::BufferId lightGridConstants;
+    CoreGraphics::ShaderId lightGridShader;
+    CoreGraphics::ResourceTableId lightGridResourceTable;
+    CoreGraphics::ShaderProgramId lightGridGenProgram, lightGridCullProgram;
 
     CoreGraphics::PipelineRayTracingTable raytracingBundle;
 
@@ -63,6 +63,7 @@ struct
     SizeT numInstancesToFlush;
 } state;
 
+static uint MaterialPropertyMappings[(uint)Materials::MaterialProperties::Num];
 //------------------------------------------------------------------------------
 /**
 */
@@ -86,26 +87,123 @@ RaytracingContext::~RaytracingContext()
 void
 RaytracingContext::Create(const RaytracingSetupSettings& settings)
 {
-    n_assert(CoreGraphics::RayTracingSupported);
+    if (!CoreGraphics::RayTracingSupported)
+        return;
     __CreateContext();
 
-    state.raytracingTestShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/raytracetest.fxb");
-    state.raytracingTestProgram = CoreGraphics::ShaderGetProgram(state.raytracingTestShader, CoreGraphics::ShaderFeatureMask("test"));
-    state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(state.raytracingTestShader, NEBULA_BATCH_GROUP, 3);
+    auto raygenShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/raytracetest.fxb");
+    auto raygenProgram = CoreGraphics::ShaderGetProgram(raygenShader, CoreGraphics::ShaderFeatureMask("test"));
+    auto brdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/brdfhit.fxb");
+    auto brdfHitProgram = CoreGraphics::ShaderGetProgram(brdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
+    auto bsdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/bsdfhit.fxb");
+    auto bsdfHitProgram = CoreGraphics::ShaderGetProgram(bsdfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
+    auto gltfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/gltfhit.fxb");
+    auto gltfHitProgram = CoreGraphics::ShaderGetProgram(gltfHitShader, CoreGraphics::ShaderFeatureMask("Hit"));
+    state.lightGridShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/light_grid_cs.fxb");
+    state.lightGridCullProgram = CoreGraphics::ShaderGetProgram(state.lightGridShader, CoreGraphics::ShaderFeatureMask("Cull"));
+    state.lightGridGenProgram = CoreGraphics::ShaderGetProgram(state.lightGridShader, CoreGraphics::ShaderFeatureMask("AABBGenerate"));
 
-    state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline({ state.raytracingTestProgram });
+    Util::Array<CoreGraphics::ShaderProgramId> shaderMappings((SizeT)Materials::MaterialProperties::Num + 1, 0);
+    shaderMappings.Append(raygenProgram);
+    shaderMappings.Append(brdfHitProgram);
+    shaderMappings.Append(bsdfHitProgram);
+    shaderMappings.Append(gltfHitProgram);
+    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
+    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
+    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
+    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
+    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
+    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
+
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::BRDF] = 0;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::BSDF] = 1;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::GLTF] = 2;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit2] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit3] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit4] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Skybox] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Legacy] = 0xFFFFFFFF;
+
+    state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(raygenShader, NEBULA_BATCH_GROUP, 3);
+    state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline(shaderMappings);
+
+    Raytracetest::Geometry geometryBindings;
+    geometryBindings.Index32Ptr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
+    geometryBindings.Index16Ptr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
+    geometryBindings.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+    geometryBindings.NormalsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+    geometryBindings.SecondaryUVPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+    geometryBindings.ColorsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+    geometryBindings.SkinPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+
+    CoreGraphics::BufferCreateInfo geometryBindingBufferCreateInfo;
+    geometryBindingBufferCreateInfo.byteSize = Raytracetest::Table_Batch::Geometry::SIZE;
+    geometryBindingBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    geometryBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    geometryBindingBufferCreateInfo.data = &geometryBindings;
+    geometryBindingBufferCreateInfo.dataSize = sizeof(Raytracetest::Geometry);
+    state.geometryBindingBuffer = CoreGraphics::CreateBuffer(geometryBindingBufferCreateInfo);
+
+    CoreGraphics::BufferCreateInfo lightGridInfo;
+    lightGridInfo.name = "RaytracingAABBGrid";
+    lightGridInfo.size = 64 * 64 * 64;
+    lightGridInfo.elementSize = sizeof(LightGridCs::ClusterAABB);
+    lightGridInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    lightGridInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
+    lightGridInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
+    state.lightGrid = CoreGraphics::CreateBuffer(lightGridInfo);
+
+    CoreGraphics::BufferCreateInfo lightGridConstantsInfo;
+    LightGridCs::ClusterUniforms uniformData;
+    uniformData.NumCells[0] = 64;
+    uniformData.NumCells[1] = 64;
+    uniformData.NumCells[2] = 64;
+    lightGridConstantsInfo.byteSize = sizeof(LightGridCs::ClusterUniforms);
+    lightGridConstantsInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    lightGridConstantsInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    lightGridConstantsInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
+    lightGridConstantsInfo.data = &uniformData;
+    lightGridConstantsInfo.dataSize = sizeof(LightGridCs::ClusterUniforms);
+    state.lightGridConstants = CoreGraphics::CreateBuffer(lightGridConstantsInfo);
+
+    state.lightGridResourceTable = CoreGraphics::ShaderCreateResourceTable(state.lightGridShader, NEBULA_BATCH_GROUP, 3);
+    ResourceTableSetRWBuffer(state.lightGridResourceTable, { state.lightGrid, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTable, { state.lightGridConstants, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
+    ResourceTableCommitChanges(state.lightGridResourceTable);
 
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = RaytracingContext::OnRenderDebug;
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    Frame::FrameCode* blasUpdate = state.frameOpAllocator.Alloc<Frame::FrameCode>();
+    Frame::FrameCode* lightGridGen = state.frameOpAllocator.Alloc<Frame::FrameCode>();
+    lightGridGen->SetName("Raytracing Light Grid Update");
+    lightGridGen->domain = CoreGraphics::BarrierDomain::Global;
+    lightGridGen->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridGenProgram);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
+    };
 
+    Frame::FrameCode* lightGridCull = state.frameOpAllocator.Alloc<Frame::FrameCode>();
+    lightGridCull->SetName("Raytracing Light Grid Cull");
+    lightGridCull->domain = CoreGraphics::BarrierDomain::Global;
+    lightGridCull->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridCullProgram);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
+    };
+
+    Frame::FrameCode* blasUpdate = state.frameOpAllocator.Alloc<Frame::FrameCode>();
     blasUpdate->SetName("Bottom Level Acceleration Structure Update");
     blasUpdate->domain = CoreGraphics::BarrierDomain::Global;
     blasUpdate->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
+        if (!state.objects.IsEmpty())
+            state.objectBindingBuffer.Flush(cmdBuf, sizeof(Raytracetest::Object) * state.objects.Size());
         state.blasLock.Enter();
 
         // Update bottom level acceleration structures
@@ -239,33 +337,11 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureInstances;
     state.blasInstanceBuffer = CoreGraphics::BufferWithStaging(bufInfo);
 
-    Util::Array<Raytracetest::MaterialTest> materials;
-    for (uint i = 0; i < 100; i++)
-    {
-        Raytracetest::MaterialTest testMaterial;
-        testMaterial.color[0] = Math::rand();
-        testMaterial.color[1] = Math::rand();
-        testMaterial.color[2] = Math::rand();
-        testMaterial.intensity = Math::rand();
-        materials.Append(testMaterial);
-    }
-
-    bufInfo.elementSize = sizeof(Raytracetest::MaterialTest);
-    bufInfo.size = 100;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress;
-    bufInfo.data = materials.Begin();
-    bufInfo.dataSize = materials.ByteSize();
-    state.raytracingTestMaterialBuffer = CoreGraphics::CreateBuffer(bufInfo);
-
-    Raytracetest::Materials binding;
-    binding.MaterialPtr = CoreGraphics::BufferGetDeviceAddress(state.raytracingTestMaterialBuffer);
-
-    bufInfo.elementSize = sizeof(Raytracetest::Materials);
-    bufInfo.size = 1;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
-    bufInfo.data = &binding;
-    bufInfo.dataSize = sizeof(Raytracetest::Materials);
-    state.raytracingTestBindingBuffer = CoreGraphics::CreateBuffer(bufInfo);
+    CoreGraphics::BufferCreateInfo objectBindingBufferCreateInfo;
+    objectBindingBufferCreateInfo.name = "Raytracing Object Binding Buffer";
+    objectBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::Object) * settings.maxNumAllowedInstances;
+    objectBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    state.objectBindingBuffer = CoreGraphics::BufferWithStaging(objectBindingBufferCreateInfo);
 
     state.raytracingTestOutput = settings.script->GetTexture("RayTracingTestOutput");
 
@@ -278,8 +354,11 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 /**
 */
 void
-RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uint mask)
+RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     Graphics::ContextEntityId contextId = GetContextId(id);
     const Models::NodeInstanceRange& nodes = Models::ModelContext::GetModelRenderableRange(id);
     SizeT numObjects = nodes.end - nodes.begin;
@@ -287,6 +366,7 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
     Memory::RangeAllocation alloc = state.blasInstanceAllocator.Alloc(numObjects);
     state.blasInstances.Resize(alloc.offset + numObjects);
     state.blasInstanceMeshes.Resize(alloc.offset + numObjects);
+    state.objects.Resize(alloc.offset + numObjects);
     
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, numObjects);
@@ -300,7 +380,10 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
             state.blasLock.Enter();
             CoreGraphics::MeshResourceId meshRes = id;
 
+            // Setup material
             Materials::MaterialId mat = pNode->GetMaterial();
+            const MaterialTemplates::Entry* temp = Materials::MaterialGetTemplate(mat);
+            IndexT bufferBinding = Materials::MaterialGetBufferBinding(mat);
 
             // Create Blas if we haven't registered it yet
             CoreGraphics::MeshId mesh = MeshResourceGetMesh(meshRes, pNode->GetMeshIndex());
@@ -322,12 +405,23 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
             auto& [refCount, blas] = state.blasLookup.ValueAtIndex(mesh, blasIndex);
             refCount++;
 
+            Raytracetest::Object constants;
+            constants.MaterialOffset = bufferBinding;
+
+            // Because the smallest machine unit is 4 bytes, the offset must be in integers, not in bytes
+            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, counter);
+            constants.Use16BitIndex = CoreGraphics::MeshGetIndexType(mesh) == CoreGraphics::IndexType::Index16 ? 1 : 0;
+            constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
+            constants.AttrPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
+            constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + CoreGraphics::MeshGetIndexOffset(mesh);
+            state.objects[offset + counter] = constants;
+
             // Setup instance
             CoreGraphics::BlasInstanceCreateInfo createInfo;
             createInfo.flags = flags;
             createInfo.mask = mask;
-            createInfo.shaderOffset = 0;
-            createInfo.instanceIndex = offset + counter;
+            createInfo.shaderOffset = MaterialPropertyMappings[(uint)temp->properties];
+            createInfo.instanceIndex = offset;
             createInfo.blas = blas;
             createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
@@ -348,6 +442,9 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
 void
 RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     if (state.topLevelNeedsReconstruction)
     {
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
@@ -375,11 +472,22 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
         );
         CoreGraphics::ResourceTableSetRWTexture(
             state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableTexture(state.raytracingTestOutput, Raytracetest::Table_Batch::Output_SLOT)
+            CoreGraphics::ResourceTableTexture(state.raytracingTestOutput, Raytracetest::Table_Batch::RaytracingOutput_SLOT)
         );
+
         CoreGraphics::ResourceTableSetRWBuffer(
             state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableBuffer(state.raytracingTestBindingBuffer, Raytracetest::Table_Batch::Materials::SLOT)
+            CoreGraphics::ResourceTableBuffer(state.geometryBindingBuffer, Raytracetest::Table_Batch::Geometry::SLOT)
+        );
+
+        CoreGraphics::ResourceTableSetRWBuffer(
+            state.raytracingTestTables.tables[ctx.bufferIndex],
+            CoreGraphics::ResourceTableBuffer(Materials::MaterialLoader::GetMaterialBindingBuffer(), Raytracetest::Table_Batch::MaterialBindings::SLOT)
+        );
+
+        CoreGraphics::ResourceTableSetRWBuffer(
+            state.raytracingTestTables.tables[ctx.bufferIndex],
+            CoreGraphics::ResourceTableBuffer(state.objectBindingBuffer.DeviceBuffer(), Raytracetest::Table_Batch::ObjectBuffer::SLOT)
         );
 
         CoreGraphics::ResourceTableCommitChanges(state.raytracingTestTables.tables[ctx.bufferIndex]);
@@ -392,6 +500,9 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
 void
 RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     const Util::Array<Graphics::GraphicsEntityId>& entities = RaytracingContext::__state.entities;
 
     if (!entities.IsEmpty())
@@ -445,6 +556,11 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             }
         }, entities.Size(), 1024, { &Models::ModelContext::TransformsUpdateCounter }, &idCounter, &state.jobWaitEvent);
 
+        // Copy over object bindings
+        void* objectData = CoreGraphics::BufferMap(state.objectBindingBuffer.HostBuffer());
+        memcpy(objectData, state.objects.Begin(), sizeof(Raytracetest::Object) * state.objects.Size());
+        CoreGraphics::BufferUnmap(state.objectBindingBuffer.HostBuffer());
+
         state.topLevelNeedsUpdate = true;
     }
     else
@@ -459,6 +575,9 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 void
 RaytracingContext::WaitForJobs(const Graphics::FrameContext& ctx)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     N_MARKER_BEGIN(WaitForRaytracingJobs, Graphics);
     state.jobWaitEvent.Wait();
     N_MARKER_END();
@@ -470,6 +589,8 @@ RaytracingContext::WaitForJobs(const Graphics::FrameContext& ctx)
 void
 RaytracingContext::OnRenderDebug(uint32_t flags)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
 }
 
 //------------------------------------------------------------------------------
@@ -478,6 +599,9 @@ RaytracingContext::OnRenderDebug(uint32_t flags)
 void
 RaytracingContext::Dealloc(Graphics::ContextEntityId id)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     // clean up old stuff, but don't deallocate entity
     Memory::RangeAllocation range = raytracingContextAllocator.Get<Raytracing_Allocation>(id.id);
     SizeT numAllocs = raytracingContextAllocator.Get<Raytracing_NumStructures>(id.id);

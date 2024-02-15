@@ -13,23 +13,254 @@
 namespace Materials
 {
 
+template <typename INTERFACE_TYPE>
+struct MaterialBuffer
+{
+    Ids::IdGenerationPool pool;
+    CoreGraphics::BufferCreateInfo hostBufferCreateInfo, deviceBufferCreateInfo;
+    INTERFACE_TYPE* hostBufferData;
+    CoreGraphics::BufferId hostBuffer, deviceBuffer;
+    Util::PinnedArray<0xFFFF, INTERFACE_TYPE> cpuBuffer;
+    bool dirty;
+
+    MaterialBuffer(const char* name)
+        : dirty(false)
+        , hostBuffer(CoreGraphics::InvalidBufferId)
+        , deviceBuffer(CoreGraphics::InvalidBufferId)
+        , hostBufferData(nullptr)
+    {
+        this->hostBufferCreateInfo.name = Util::String::Sprintf("%s Host Buffer", name);
+        this->hostBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+        this->hostBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+        this->hostBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+
+        this->deviceBufferCreateInfo.name = Util::String::Sprintf("%s Device Buffer", name);
+        this->deviceBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferDestination | CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        this->deviceBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+        this->deviceBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    }
+
+    /// Allocate a new material
+    Ids::Id32 Alloc()
+    {
+        Ids::Id32 ret;
+        if (this->pool.Allocate(ret))
+        {
+            SizeT oldCapacity = this->cpuBuffer.Capacity();
+            this->cpuBuffer.Emplace();
+            SizeT newCapacity = this->cpuBuffer.Capacity();
+
+            // If capacity has changed, we need to reallocate our buffers
+            if (oldCapacity != newCapacity)
+            {
+                // Destroy old buffers
+                if (this->hostBuffer != CoreGraphics::InvalidBufferId)
+                {
+                    CoreGraphics::DestroyBuffer(this->hostBuffer);
+                    CoreGraphics::DestroyBuffer(this->deviceBuffer);
+                }
+
+                // Update size to fit new capacity
+                this->hostBufferCreateInfo.byteSize = sizeof(INTERFACE_TYPE) * newCapacity;
+                this->deviceBufferCreateInfo.byteSize = sizeof(INTERFACE_TYPE) * newCapacity;
+
+                // Create new buffers
+                this->hostBuffer = CoreGraphics::CreateBuffer(this->hostBufferCreateInfo);
+                this->hostBufferData = (INTERFACE_TYPE*)CoreGraphics::BufferMap(this->hostBuffer);
+                this->deviceBuffer = CoreGraphics::CreateBuffer(this->deviceBufferCreateInfo);
+            }
+        }
+        return ret;
+    }
+
+    /// Get material instance for updating
+    INTERFACE_TYPE& Get(Ids::Id32 id)
+    {
+        n_assert(this->pool.IsValid(id));
+        return this->cpuBuffer[Ids::Index(id)];
+    }
+
+    /// Flush
+    void Flush(const CoreGraphics::CmdBufferId id, const CoreGraphics::QueueType queue)
+    {
+        // Copy from cpu buffer to host buffer
+        if (this->dirty)
+        {
+            CoreGraphics::PipelineStage sourceStage = queue == CoreGraphics::GraphicsQueueType ? CoreGraphics::PipelineStage::AllShadersRead : CoreGraphics::PipelineStage::ComputeShaderRead;
+            Memory::CopyElements(this->cpuBuffer.ConstBegin(), this->hostBufferData, this->cpuBuffer.Size());
+
+            CoreGraphics::BarrierPush(
+                id
+                , CoreGraphics::PipelineStage::HostWrite
+                , CoreGraphics::PipelineStage::TransferRead
+                , CoreGraphics::BarrierDomain::Global
+                , {
+                        CoreGraphics::BufferBarrierInfo
+                    {
+                            .buf = this->hostBuffer,
+                            .subres = CoreGraphics::BufferSubresourceInfo{}
+                    }
+                  }
+            );
+            CoreGraphics::BarrierPush(
+                id
+                , sourceStage
+                , CoreGraphics::PipelineStage::TransferWrite
+                , CoreGraphics::BarrierDomain::Global
+                , {
+                        CoreGraphics::BufferBarrierInfo
+                    {
+                            .buf = this->deviceBuffer,
+                            .subres = CoreGraphics::BufferSubresourceInfo{}
+                    }
+                }
+            );
+
+            // Now copy to GPU
+            CoreGraphics::BufferCopy copy;
+            copy.offset = 0;
+            CoreGraphics::CmdCopy(id, this->hostBuffer, { copy }, this->deviceBuffer, { copy }, sizeof(INTERFACE_TYPE) * this->cpuBuffer.Size());
+
+            CoreGraphics::BarrierPop(id);
+            CoreGraphics::BarrierPop(id);
+            this->dirty = false;
+        }
+    }
+};
+
+#define MATERIAL_LIST \
+X(BRDFMaterial) \
+X(BSDFMaterial) \
+X(GLTFMaterial) \
+X(UnlitMaterial) \
+X(Unlit2Material) \
+X(Unlit3Material) \
+X(Unlit4Material) \
+X(SkyboxMaterial) \
+X(LegacyMaterial) \
+
+#define PROPERTIES_LIST \
+X(BRDF) \
+X(BSDF) \
+X(GLTF) \
+X(Unlit) \
+X(Unlit2) \
+X(Unlit3) \
+X(Unlit4) \
+X(Skybox) \
+X(Legacy) \
+
 struct
 {
-    Util::PinnedArray<0xFFFF, MaterialInterface::BRDFMaterial> BRDFMaterials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::BSDFMaterial> BSDFMaterials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::GLTFMaterial> GLTFMaterials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::UnlitMaterial> UnlitMaterials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::Unlit2Material> Unlit2Materials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::Unlit3Material> Unlit3Materials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::Unlit4Material> Unlit4Materials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::SkyboxMaterial> SkyboxMaterials;
-    Util::PinnedArray<0xFFFF, MaterialInterface::LegacyMaterial> LegacyMaterials;
+#define X(x) MaterialBuffer<MaterialInterface::x> x##s = #x;
+    MATERIAL_LIST
+#undef X
 
-    Threading::CriticalSection VariantAllocatorLock;
-    Memory::ArenaAllocator<4096> VariantAllocator;
+    MaterialInterface::MaterialBindings bindings;
+    CoreGraphics::BufferWithStaging materialBindingBuffer;
+
+    Threading::CriticalSection variantAllocatorLock;
+    Memory::ArenaAllocator<4096> variantAllocator;
+
+    union DirtySet
+    {
+        struct
+        {
+            bool graphicsDirty : 1;
+            bool computeDirty : 1;
+        };
+        int bits;
+    } dirtySet;
+
 } state;
 
 __ImplementClass(Materials::MaterialLoader, 'MALO', Resources::ResourceLoader);
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, const char* name, const char* tag, uint& handle, bool& dirtyFlag)
+{
+    if (reader->SetToFirstChild(name))
+    {
+        auto tmp = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag,
+        [&handle, &dirtyFlag](Resources::ResourceId rid) mutable
+        {
+            CoreGraphics::TextureIdLock _0(rid);
+            handle = CoreGraphics::TextureGetBindlessHandle(rid);
+            state.dirtySet.bits = 0x3;
+            dirtyFlag = true;
+        },
+        [&handle, &dirtyFlag](Resources::ResourceId rid) mutable
+        {
+            CoreGraphics::TextureIdLock _0(rid);
+            handle = CoreGraphics::TextureGetBindlessHandle(rid);
+            state.dirtySet.bits = 0x3;
+            dirtyFlag = true;
+        });
+        handle = CoreGraphics::TextureGetBindlessHandle(tmp);
+    }
+    else
+    {
+        CoreGraphics::TextureIdLock _0(def);
+        handle = CoreGraphics::TextureGetBindlessHandle(def);
+    }
+    reader->SetToParent();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LoadVec4(const Ptr<IO::BXmlReader>& reader, const char* name, float value[4], const Math::vec4& def)
+{
+    if (reader->SetToFirstChild(name))
+    {
+        Math::vec4 val = reader->GetVec4("value");
+        val.store(value);
+    }
+    else
+    {
+        def.store(value);
+    }
+    reader->SetToParent();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LoadVec3(const Ptr<IO::BXmlReader>& reader, const char* name, float value[3], const Math::vec4& def)
+{
+    if (reader->SetToFirstChild(name))
+    {
+        Math::vec4 val = reader->GetVec4("value");
+        val.store(value);
+    }
+    else
+    {
+        def.store(value);
+    }
+    reader->SetToParent();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LoadFloat(const Ptr<IO::BXmlReader>& reader, const char* name, float& value, const float def)
+{
+    if (reader->SetToFirstChild(name))
+    {
+        value = reader->GetFloat("value");
+    }
+    else
+    {
+        value = def;
+    }
+    reader->SetToParent();
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -43,158 +274,110 @@ MaterialLoader::Setup()
     // Run generated setup code
     MaterialTemplates::SetupMaterialTemplates();
 
-#define LOAD_TEXTURE(x, def) \
-            if (reader->SetToFirstChild(#x)) \
-            { \
-                Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, \
-                [material](Resources::ResourceId rid) mutable \
-                { \
-                    CoreGraphics::TextureIdLock _0(rid); \
-                    material.x = CoreGraphics::TextureGetBindlessHandle(rid); \
-                }, \
-                [material](Resources::ResourceId rid) mutable \
-                { \
-                    CoreGraphics::TextureIdLock _0(rid); \
-                    material.x = CoreGraphics::TextureGetBindlessHandle(rid); \
-                }); \
-            } \
-            else \
-            {\
-                CoreGraphics::TextureIdLock _0(def); \
-                material.x = CoreGraphics::TextureGetBindlessHandle(def); \
-            }
-        
-#define LOAD_VEC4(x, def) \
-            if (reader->SetToFirstChild(#x)) \
-            { \
-                Math::vec4 val = reader->GetVec4("value"); \
-                val.store(material.x); \
-            }  \
-            else \
-            { \
-                Math::vec4 defaultVal(def);\
-                defaultVal.store(material.x);\
-            }
+    // Create binding buffer
+    CoreGraphics::BufferCreateInfo materialBindingInfo;
+    materialBindingInfo.name = "Material Binding Buffer";
+    materialBindingInfo.byteSize = sizeof(MaterialInterface::MaterialBindings);
+    materialBindingInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    materialBindingInfo.usageFlags = CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    materialBindingInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+    state.materialBindingBuffer = CoreGraphics::BufferWithStaging(materialBindingInfo);
 
-#define LOAD_VEC3(x, def) \
-            if (reader->SetToFirstChild(#x)) \
-            { \
-                Math::vec4 val = reader->GetVec4("value"); \
-                val.store3(material.x); \
-            }  \
-            else \
-            { \
-                Math::vec4 defaultVal(def);\
-                defaultVal.store3(material.x);\
-            }
-
-#define LOAD_FLOAT(x, def) \
-            if (reader->SetToFirstChild(#x)) \
-            { \
-                material.x = reader->GetFloat("value");\
-            }  \
-            else \
-            { \
-                material.x = def;\
-            }
+#define ALLOC_MATERIAL(x) \
+    Ids::Id32 id = state.x##s.Alloc();\
+    state.bindings.x##s = CoreGraphics::BufferGetDeviceAddress(state.x##s.deviceBuffer);\
+    Materials::MaterialSetBufferBinding(mat, id);\
+    MaterialInterface::x& material = state.x##s.Get(id);\
+    state.x##s.dirty = true;
 
     auto gltfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.GLTFMaterials.Size());
-        MaterialInterface::GLTFMaterial& material = state.GLTFMaterials.Emplace();
-        LOAD_TEXTURE(baseColorTexture, CoreGraphics::White2D);
-        LOAD_TEXTURE(normalTexture, CoreGraphics::Green2D);
-        LOAD_TEXTURE(metallicRoughnessTexture, CoreGraphics::Black2D);
-        LOAD_TEXTURE(emissiveTexture, CoreGraphics::Black2D);
-        LOAD_TEXTURE(occlusionTexture, CoreGraphics::Black2D);
-        LOAD_VEC4(baseColorFactor, 1);
-        LOAD_VEC4(emissiveFactor, 1);
-        LOAD_FLOAT(metallicFactor, 1);
-        LOAD_FLOAT(roughnessFactor, 1);
-        LOAD_FLOAT(normalScale, 1);
-        LOAD_FLOAT(alphaCutoff, 1);
+        ALLOC_MATERIAL(GLTFMaterial);
+        LoadTexture(reader, CoreGraphics::White2D, "baseColorTexture", tag.Value(), material.baseColorTexture, state.GLTFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Green2D, "normalTexture", tag.Value(), material.normalTexture, state.GLTFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "metallicRoughnessTexture", tag.Value(), material.metallicRoughnessTexture, state.GLTFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "emissiveTexture", tag.Value(), material.emissiveTexture, state.GLTFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "occlusionTexture", tag.Value(), material.occlusionTexture, state.GLTFMaterials.dirty);
+        LoadVec4(reader, "baseColorFactor", material.baseColorFactor, Math::vec4(1));
+        LoadVec4(reader, "emissiveFactor", material.emissiveFactor, Math::vec4(1));
+        LoadFloat(reader, "metallicFactor", material.metallicFactor, 1);
+        LoadFloat(reader, "roughnessFactor", material.roughnessFactor, 1);
+        LoadFloat(reader, "normalScale", material.normalScale, 1);
+        LoadFloat(reader, "alphaCutoff", material.alphaCutoff, 1);
     };
     this->loaderMap.Add(MaterialProperties::GLTF, gltfLoader);
 
     auto brdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.BRDFMaterials.Size());
-        MaterialInterface::BRDFMaterial& material = state.BRDFMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
-        LOAD_TEXTURE(ParameterMap, CoreGraphics::Black2D);
-        LOAD_TEXTURE(NormalMap, CoreGraphics::Green2D);
-        LOAD_VEC3(MatAlbedoIntensity, 1);
-        LOAD_FLOAT(MatRoughnessIntensity, 1);
+        ALLOC_MATERIAL(BRDFMaterial);
+        LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, state.BRDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "ParameterMap", tag.Value(), material.ParameterMap, state.BRDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, state.BRDFMaterials.dirty);
+        LoadVec3(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
+        LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
     };
     this->loaderMap.Add(MaterialProperties::BRDF, brdfLoader);
 
     auto bsdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.BSDFMaterials.Size());
-        MaterialInterface::BSDFMaterial& material = state.BSDFMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
-        LOAD_TEXTURE(ParameterMap, CoreGraphics::Black2D);
-        LOAD_TEXTURE(NormalMap, CoreGraphics::Green2D);
-        LOAD_TEXTURE(AbsorptionMap, CoreGraphics::Black2D);
-        LOAD_TEXTURE(ScatterMap, CoreGraphics::Black2D);
-        LOAD_VEC3(MatAlbedoIntensity, 1);
-        LOAD_FLOAT(MatRoughnessIntensity, 1);
+        ALLOC_MATERIAL(BSDFMaterial);
+        LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, state.BSDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "ParameterMap", tag.Value(), material.ParameterMap, state.BSDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, state.BSDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "AbsorptionMap", tag.Value(), material.AbsorptionMap, state.BSDFMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "ScatterMap", tag.Value(), material.ScatterMap, state.BSDFMaterials.dirty);
+        LoadVec3(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
+        LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
     };
     this->loaderMap.Add(MaterialProperties::BSDF, bsdfLoader);
 
     auto unlitLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.UnlitMaterials.Size());
-        MaterialInterface::UnlitMaterial& material = state.UnlitMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
+        ALLOC_MATERIAL(UnlitMaterial);
+        LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, state.UnlitMaterials.dirty);
     };
     this->loaderMap.Add(MaterialProperties::Unlit, unlitLoader);
 
     auto unlit2Loader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.Unlit2Materials.Size());
-        MaterialInterface::Unlit2Material& material = state.Unlit2Materials.Emplace();
-        LOAD_TEXTURE(Layer1, CoreGraphics::White2D);
-        LOAD_TEXTURE(Layer2, CoreGraphics::White2D);
+        ALLOC_MATERIAL(Unlit2Material);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer1", tag.Value(), material.Layer1, state.Unlit2Materials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer2", tag.Value(), material.Layer2, state.Unlit2Materials.dirty);
     };
     this->loaderMap.Add(MaterialProperties::Unlit2, unlit2Loader);
 
     auto unlit3Loader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.Unlit3Materials.Size());
-        MaterialInterface::Unlit3Material& material = state.Unlit3Materials.Emplace();
-        LOAD_TEXTURE(Layer1, CoreGraphics::White2D);
-        LOAD_TEXTURE(Layer2, CoreGraphics::White2D);
-        LOAD_TEXTURE(Layer3, CoreGraphics::White2D);
+        ALLOC_MATERIAL(Unlit3Material);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer1", tag.Value(), material.Layer1, state.Unlit3Materials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer2", tag.Value(), material.Layer2, state.Unlit3Materials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer3", tag.Value(), material.Layer3, state.Unlit3Materials.dirty);
     };
     this->loaderMap.Add(MaterialProperties::Unlit3, unlit3Loader);
 
     auto unlit4Loader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.Unlit4Materials.Size());
-        MaterialInterface::Unlit4Material& material = state.Unlit4Materials.Emplace();
-        LOAD_TEXTURE(Layer1, CoreGraphics::White2D);
-        LOAD_TEXTURE(Layer2, CoreGraphics::White2D);
-        LOAD_TEXTURE(Layer3, CoreGraphics::White2D);
-        LOAD_TEXTURE(Layer4, CoreGraphics::White2D);
+        ALLOC_MATERIAL(Unlit4Material);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer1", tag.Value(), material.Layer1, state.Unlit4Materials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer2", tag.Value(), material.Layer2, state.Unlit4Materials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer3", tag.Value(), material.Layer3, state.Unlit4Materials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "Layer4", tag.Value(), material.Layer4, state.Unlit4Materials.dirty);
     };
     this->loaderMap.Add(MaterialProperties::Unlit4, unlit4Loader);
 
     auto skyboxLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.SkyboxMaterials.Size());
-        MaterialInterface::SkyboxMaterial& material = state.SkyboxMaterials.Emplace();
-        LOAD_TEXTURE(SkyLayer1, CoreGraphics::WhiteCube);
-        LOAD_TEXTURE(SkyLayer2, CoreGraphics::WhiteCube);
-        LOAD_FLOAT(Contrast, 1.0f);
-        LOAD_FLOAT(Brightness, 1.0f);
+        ALLOC_MATERIAL(SkyboxMaterial);
+        LoadTexture(reader, CoreGraphics::White2D, "SkyLayer1", tag.Value(), material.SkyLayer1, state.SkyboxMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::White2D, "SkyLayer2", tag.Value(), material.SkyLayer2, state.SkyboxMaterials.dirty);
+        LoadFloat(reader, "Contrast", material.Contrast, 1);
+        LoadFloat(reader, "Brightness", material.Brightness, 1);
     };
     this->loaderMap.Add(MaterialProperties::Skybox, skyboxLoader);
 
     auto legacyLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
-        Materials::MaterialSetBufferBinding(mat, state.LegacyMaterials.Size());
-        MaterialInterface::LegacyMaterial& material = state.LegacyMaterials.Emplace();
-        LOAD_TEXTURE(AlbedoMap, CoreGraphics::White2D);
-        LOAD_TEXTURE(ParameterMap, CoreGraphics::Black2D);
-        LOAD_TEXTURE(NormalMap, CoreGraphics::Green2D);
-        LOAD_VEC4(MatAlbedoIntensity, 1);
-        LOAD_VEC4(MatSpecularIntensity, 1);
-        LOAD_FLOAT(MatRoughnessIntensity, 1);
-        LOAD_FLOAT(MatMetallicIntensity, 1);
-        LOAD_FLOAT(AlphaSensitivity, 1);
-        LOAD_FLOAT(AlphaBlendFactor, 1);
+        ALLOC_MATERIAL(LegacyMaterial);
+        LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, state.LegacyMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Black2D, "ParameterMap", tag.Value(), material.ParameterMap, state.LegacyMaterials.dirty);
+        LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, state.LegacyMaterials.dirty);
+        LoadVec4(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
+        LoadVec4(reader, "MatSpecularIntensity", material.MatSpecularIntensity, Math::vec4(1));
+        LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
+        LoadFloat(reader, "MatMetallicIntensity", material.MatMetallicIntensity, 1);
+        LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 1);
+        LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 1);
     };
     this->loaderMap.Add(MaterialProperties::Legacy, legacyLoader);
 
@@ -251,9 +434,9 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                     {
 
                         // Create variant and allocate memory
-                        state.VariantAllocatorLock.Enter();
-                        void* mem = state.VariantAllocator.Alloc(constant->def->GetSize());
-                        state.VariantAllocatorLock.Leave();
+                        state.variantAllocatorLock.Enter();
+                        void* mem = state.variantAllocator.Alloc(constant->def->GetSize());
+                        state.variantAllocatorLock.Leave();
 
                         MaterialVariant var;
                         var.mem = mem;
@@ -340,6 +523,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             if (reader->SetToFirstChild("Params"))
             {
                 loader(reader, id, tag);
+                state.dirtySet.bits = 0x3;
             }
             reader->SetToParent();
         }
@@ -355,7 +539,85 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
 void*
 MaterialLoader::AllocateConstantMemory(SizeT size)
 {
-    return state.VariantAllocator.Alloc(size);
+    return state.variantAllocator.Alloc(size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialLoader::FlushMaterialBuffers(const CoreGraphics::CmdBufferId id, const CoreGraphics::QueueType queue)
+{
+    uint bits = queue == CoreGraphics::GraphicsQueueType ? 0x1 : 0x2;
+    CoreGraphics::PipelineStage sourceStage = queue == CoreGraphics::GraphicsQueueType ? CoreGraphics::PipelineStage::AllShadersRead : CoreGraphics::PipelineStage::ComputeShaderRead;
+    if (state.dirtySet.bits & bits)
+    {
+        Util::Array<CoreGraphics::BufferBarrierInfo> hostBuffers, deviceBuffers;
+#define X(x) if (state.x##s.hostBuffer != CoreGraphics::InvalidBufferId) \
+            { \
+                hostBuffers.Append({.buf = state.x##s.hostBuffer});\
+                deviceBuffers.Append({.buf = state.x##s.deviceBuffer});\
+            }
+        MATERIAL_LIST
+#undef X
+        hostBuffers.Append({ .buf = state.materialBindingBuffer.HostBuffer() });
+        deviceBuffers.Append({ .buf = state.materialBindingBuffer.DeviceBuffer() });
+
+        CoreGraphics::BufferUpdate(state.materialBindingBuffer.HostBuffer(), state.bindings, 0);
+        CoreGraphics::BarrierPush(
+            id
+            , CoreGraphics::PipelineStage::HostWrite
+            , CoreGraphics::PipelineStage::TransferRead
+            , CoreGraphics::BarrierDomain::Global
+            , hostBuffers
+        );
+
+        CoreGraphics::BarrierPush(
+            id
+            , sourceStage
+            , CoreGraphics::PipelineStage::TransferWrite
+            , CoreGraphics::BarrierDomain::Global
+            , deviceBuffers
+        );
+
+#define X(x) \
+        state.x##s.Flush(id, queue);
+        MATERIAL_LIST
+#undef X
+
+        state.materialBindingBuffer.Flush(id, sizeof(MaterialInterface::MaterialBindings));
+
+        CoreGraphics::BarrierPop(id);
+        CoreGraphics::BarrierPop(id);
+        state.dirtySet.bits &= ~bits;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::BufferId
+MaterialLoader::GetMaterialBindingBuffer()
+{
+    return state.materialBindingBuffer.DeviceBuffer();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::BufferId
+MaterialLoader::GetMaterialBuffer(const MaterialProperties type)
+{
+    switch (type)
+    {
+#define X(x) \
+    case MaterialProperties::x:\
+    return state.x##Materials.deviceBuffer;\
+
+    PROPERTIES_LIST
+#undef X
+    }
+    return CoreGraphics::InvalidBufferId;
 }
 
 //------------------------------------------------------------------------------

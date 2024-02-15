@@ -2,8 +2,15 @@
 //  raytracing.fxh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include <lib/std.fxh>
+#include <lib/shared.fxh>
+#include <lib/materials.fxh>
+
+group(BATCH_GROUP) accelerationStructure TLAS;
+group(BATCH_GROUP) write rgba16f image2D RaytracingOutput;
 
 #define MESH_BINDING group(BATCH_GROUP) binding(50)
+#define OBJECT_BINDING group(BATCH_GROUP) binding(49)
 
 struct HitResult
 {
@@ -13,31 +20,66 @@ struct HitResult
 };
 
 // Declare type for vertex positions and uv
-ptr struct VertexPosUv
+ptr alignment(16) struct VertexPosUv
 {
     vec3 position;
     uint uv;
 };
 
-ptr struct VertexAttributeNormals
+ptr alignment(8) struct VertexAttributeNormals
 {
     uvec2 normal_tangent;
 };
 
-ptr struct VertexAttributeSecondaryUv
+ptr alignment(4) struct VertexAttributeSecondaryUv
 {
     uint uv;
 };
 
-ptr struct VertexAttributeColor
+ptr alignment(4) struct VertexAttributeColor
 {
     uint color;
 };
 
-ptr struct VertexAttributeSkin
+ptr alignment(32) struct VertexAttributeSkin
 {
     vec4 weights;
     uint indices;
+};
+
+ptr alignment(4) struct Indexes32
+{
+    uint index;
+};
+
+ptr alignment(2) struct Indexes16
+{
+    uint16_t index;
+};
+
+MESH_BINDING rw_buffer Geometry
+{
+    Indexes32 Index32Ptr;
+    Indexes16 Index16Ptr;
+    VertexPosUv PositionsPtr;
+    VertexAttributeNormals NormalsPtr;
+    VertexAttributeSecondaryUv SecondaryUVPtr;
+    VertexAttributeColor ColorsPtr;
+    VertexAttributeSkin SkinPtr;
+};
+
+struct Object
+{
+    VertexPosUv PositionsPtr;
+    VertexAttributeNormals AttrPtr;
+    Indexes16 IndexPtr;
+    uint Use16BitIndex;
+    uint MaterialOffset;
+};
+
+OBJECT_BINDING rw_buffer ObjectBuffer
+{
+    Object Objects[];
 };
 
 //------------------------------------------------------------------------------
@@ -99,3 +141,5 @@ UnpackNormal32(uint packedNormal)
     uint z = (packedNormal >> 12) & 0xFF;
     return vec3(x, y, z) / 255.0f;
 }
+
+#define OFFSET_PTR(ptr, offset, type) type(VoidPtr(ptr) + offset)

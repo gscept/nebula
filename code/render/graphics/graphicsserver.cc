@@ -14,6 +14,7 @@
 #include "coreanimation/animationloader.h"
 #include "characters/skeletonloader.h"
 #include "models/modelloader.h"
+#include "materials/materialloader.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "renderutil/geometryhelpers.h"
 #include "io/ioserver.h"
@@ -188,9 +189,6 @@ GraphicsServer::Open()
         this->frameServer = Frame::FrameServer::Create();
         this->frameServer->Open();
 
-        //this->materialServer = Materials::ShaderConfigServer::Create();
-        //this->materialServer->Open();
-
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
         
@@ -230,9 +228,6 @@ GraphicsServer::Close()
 
     this->shapeRenderer->Close();
     this->shapeRenderer = nullptr;
-
-    this->materialServer->Close();
-    this->materialServer = nullptr;
 
     this->frameServer->Close();
     this->frameServer = nullptr;

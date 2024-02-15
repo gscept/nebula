@@ -220,13 +220,13 @@ struct ClusterAABB
     uint featureFlags;
 };
 
-group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS"; ]
+group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RA|RC"; ]
 {
     ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS"; ]
+group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS|RA|RC"; ]
 {
     vec2 FramebufferDimensions;
     vec2 InvFramebufferDimensions;

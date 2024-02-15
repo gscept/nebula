@@ -213,7 +213,7 @@ MaterialSetBufferBinding(const MaterialId id, IndexT index)
 IndexT
 MaterialGetBufferBinding(const MaterialId id)
 {
-    return materialAllocator.Get<Material_BufferOffset>(id.resourceId);
+    return Ids::Index(materialAllocator.Get<Material_BufferOffset>(id.resourceId));
 }
 
 //------------------------------------------------------------------------------

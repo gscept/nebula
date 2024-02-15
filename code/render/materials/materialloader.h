@@ -32,6 +32,12 @@ public:
 
     /// Allocate constant memory explicitly
     static void* AllocateConstantMemory(SizeT size);
+    /// Update GPU buffers
+    static void FlushMaterialBuffers(const CoreGraphics::CmdBufferId id, const CoreGraphics::QueueType queue);
+    /// Get material binding buffer
+    static CoreGraphics::BufferId GetMaterialBindingBuffer();
+    /// Get material buffer
+    static CoreGraphics::BufferId GetMaterialBuffer(const MaterialProperties type);
 private:
 
     /// unload resource (overload to implement resource deallocation)
