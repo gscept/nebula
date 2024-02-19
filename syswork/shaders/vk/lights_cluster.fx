@@ -6,6 +6,7 @@
 #include <lib/util.fxh>
 #include <lib/shared.fxh>
 #include <lib/clustering.fxh>
+#include <lib/lighting_functions.fxh>
 
 write rgba16f image2D Lighting;
 write rgba16f image2D DebugOutput;

@@ -37,7 +37,7 @@ RayGen(
     [ray_payload] out HitResult payload
 )
 {
-    payload.radiance = vec3(0);
+    //payload.radiance = vec3(0);
     payload.normal = vec3(0, 1, 0);
 
     Probe probe = Probes[gl_LaunchIDEXT.x];
@@ -54,7 +54,7 @@ RayGen(
     {
         uint row = gl_LaunchIDEXT.y / NumColorSamples;
         uint column = (gl_LaunchIDEXT.y % NumColorSamples) * NumColorSamples + gl_LaunchIDEXT.x;
-        imageStore(RadianceOutput, ivec2(row, column), vec4(payload.radiance, 0));
+        imageStore(RadianceOutput, ivec2(row, column), vec4(payload.albedo, 0));
         imageStore(NormalOutput, ivec2(row, column), vec4(payload.normal, 0));
     }
     else
@@ -79,8 +79,8 @@ Miss(
     vec3 dir = normalize(gl_WorldRayDirectionEXT);
     vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 
-    payload.radiance = atmo;
-    payload.normal = -gl_WorldRayDirectionEXT;
+    //payload.radiance = atmo;
+    //payload.normal = -gl_WorldRayDirectionEXT;
 }
 
 //------------------------------------------------------------------------------

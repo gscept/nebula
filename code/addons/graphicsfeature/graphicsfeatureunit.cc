@@ -273,6 +273,7 @@ GraphicsFeatureUnit::OnActivate()
         Decals::DecalContext::UpdateViewDependentResources,
         Fog::VolumetricFogContext::UpdateViewDependentResources,
         Lighting::LightContext::UpdateViewDependentResources,
+        Raytracing::RaytracingContext::UpdateViewResources,
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =

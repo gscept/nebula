@@ -63,7 +63,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
 
     BufferCreateInfo bufInfo;
-    bufInfo.byteSize = Bloom::Table_Batch::BloomUniforms::SIZE;
+    bufInfo.byteSize = sizeof(Bloom::BloomUniforms);
     bufInfo.usageFlags = ConstantBuffer;
     bufInfo.mode = DeviceAndHost;
     bufInfo.queueSupport = ComputeQueueSupport;

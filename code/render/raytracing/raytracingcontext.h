@@ -51,6 +51,8 @@ public:
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
     /// Wait for jobs to finish
     static void WaitForJobs(const Graphics::FrameContext& ctx);
+    /// Update view constants
+    static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering

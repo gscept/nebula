@@ -232,6 +232,11 @@
                         "subgraph": {
                             "name": "Sun Terrain Shadows"
                         }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Light Update"
+                        }
                     }
                 ]
             },
@@ -327,7 +332,7 @@
                         "subgraph": {
                             "name": "Raytracing Test"
                         }
-                    }
+                    },
                     {
                         "subgraph": {
                             "name": "StaticUI"

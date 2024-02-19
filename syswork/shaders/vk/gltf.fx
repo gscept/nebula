@@ -24,11 +24,6 @@ group(BATCH_GROUP) shared constant GLTFBlock
     textureHandle occlusionTexture;
 };
 
-float Greyscale(in vec4 color)
-{
-    return dot(color.rgb, vec3(0.299, 0.587, 0.114));
-}
-
 subroutine(CalculateBump) vec3 GLTFNormalMapFunctor(in vec3 tangent, in vec3 normal, in float sign, in vec4 bumpData)
 {
     vec3 tan = normalize(tangent);

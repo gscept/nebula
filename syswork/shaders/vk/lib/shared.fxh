@@ -15,7 +15,7 @@ const int SHADOW_CASTER_COUNT = 16;
 
 #define FLT_MAX     3.40282347E+38F
 #define FLT_MIN     -3.40282347E+38F
-
+ 
 // the texture list can be updated once per tick (frame)
 group(TICK_GROUP) binding(0) texture2D			Textures2D[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2DMS		Textures2DMS[MAX_TEXTURES];
@@ -167,7 +167,7 @@ group(FRAME_GROUP) shared constant ViewConstants
     vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance, w is unused
 };
 
-group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS|CS|PS";]
+group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS|CS|PS|RGS";]
 {
     vec4 CascadeOffset[NUM_CASCADES];
     vec4 CascadeScale[NUM_CASCADES];
@@ -220,13 +220,13 @@ struct ClusterAABB
     uint featureFlags;
 };
 
-group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RA|RC"; ]
+group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RGS"; ]
 {
     ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS|RA|RC"; ]
+group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS|RGS"; ]
 {
     vec2 FramebufferDimensions;
     vec2 InvFramebufferDimensions;
@@ -328,7 +328,7 @@ group(FRAME_GROUP) shared constant LightUniforms [ string Visibility = "CS|VS|PS
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS";]
+group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RGS";]
 {
     uint PointLightCountList[NUM_CLUSTER_ENTRIES];
     uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
@@ -338,7 +338,7 @@ group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS";]
     uint AreaLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
 };
 
-group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS";]
+group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RGS";]
 {
     SpotLight SpotLights[1024];
     SpotLightProjectionExtension SpotLightProjection[256];
@@ -459,9 +459,6 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
     FogSphere FogSpheres[128];
     FogBox FogBoxes[128];
 };
-
-
-
 
 group(PASS_GROUP) inputAttachment InputAttachment0;
 group(PASS_GROUP) inputAttachment InputAttachment1;

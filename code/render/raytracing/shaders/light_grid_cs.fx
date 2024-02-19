@@ -64,6 +64,7 @@ void csCull()
     for (uint i = 0; i < NumAreaLights; i++)
     {
         const AreaLight light = AreaLights[i];
+        // TODO: Area lights needs to be in world space
         if (TestAABBAABB(aabb, light.bboxMin, light.bboxMax))
         {
             AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;

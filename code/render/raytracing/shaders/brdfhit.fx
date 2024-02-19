@@ -15,32 +15,24 @@ ClosestHit(
 )
 {
     Object obj = Objects[gl_InstanceCustomIndexEXT];
+    vec3 barycentricCoords = vec3(1.0f - baryCoords.x - baryCoords.y, baryCoords.x, baryCoords.y);
 
-    // Sample the index buffer
-    uvec3 indexes;
-    if (obj.Use16BitIndex == 1)
-        indexes = uvec3(obj.IndexPtr[gl_PrimitiveID * 3].index, obj.IndexPtr[gl_PrimitiveID * 3 + 1].index, obj.IndexPtr[gl_PrimitiveID * 3 + 2].index);
-    else
-    {
-        Indexes32 i32Ptr = Indexes32(obj.IndexPtr);
-        indexes = uvec3(i32Ptr[gl_PrimitiveID * 3].index, i32Ptr[gl_PrimitiveID * 3 + 1].index, i32Ptr[gl_PrimitiveID * 3 + 2].index);
-    }
-
-    vec2 uv0 = UnpackUV32((obj.PositionsPtr + indexes.x).uv);
-    vec2 uv1 = UnpackUV32((obj.PositionsPtr + indexes.y).uv);
-    vec2 uv2 = UnpackUV32((obj.PositionsPtr + indexes.z).uv);
-    vec2 uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
-
-    vec3 n1 = UnpackNormal32((obj.AttrPtr + indexes.x).normal_tangent.x);
-    vec3 n2 = UnpackNormal32((obj.AttrPtr + indexes.y).normal_tangent.x);
-    vec3 n3 = UnpackNormal32((obj.AttrPtr + indexes.z).normal_tangent.x);
-    vec3 norm = BaryCentricVec3(n1, n2, n3, baryCoords);
+    uvec3 indices;
+    vec2 uv;
+    mat3 tbn;
+    SampleGeometry(obj, gl_PrimitiveID, barycentricCoords, indices, uv, tbn);
 
     BRDFMaterial mat = BRDFMaterials + obj.MaterialOffset;
+    vec4 normals = sample2DLod(mat.NormalMap, Basic2DSampler, uv, 0);
+    vec3 tNormal = TangentSpaceNormal(normals.xy, tbn);
+
     vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0);
-    Result.radiance = albedo.rgb;
-    Result.normal = norm;
-    Result.depth = gl_RayTmaxEXT;
+    vec4 material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
+    Result.alpha = albedo.a;
+    Result.albedo = albedo.rgb;
+    Result.material = material;
+    Result.normal = tNormal;
+    Result.depth = gl_HitTEXT;
 }   
 
 //------------------------------------------------------------------------------

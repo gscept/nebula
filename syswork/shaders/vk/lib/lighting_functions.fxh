@@ -6,6 +6,7 @@
 #include "pbr.fxh"
 #include "ltc.fxh"
 #include "CSM.fxh"
+#include "clustering.fxh"
 
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 0x1;

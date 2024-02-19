@@ -215,7 +215,7 @@ macro(add_shader_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${binaryOutput} -h ${headerOutput}.h -t shader)
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${depoutput} -h ${headerOutput}.h -t shader)
         endif()
 
         # sadly this doesnt work for some reason

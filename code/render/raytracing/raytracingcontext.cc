@@ -9,6 +9,7 @@
 #include "coregraphics/pipeline.h"
 #include "coregraphics/meshresource.h"
 #include "coregraphics/shader.h"
+#include "graphics/globalconstants.h"
 
 #include "materials/materialloader.h"
 
@@ -51,8 +52,9 @@ struct
     CoreGraphics::BufferId lightGrid;
     CoreGraphics::BufferId lightGridConstants;
     CoreGraphics::ShaderId lightGridShader;
-    CoreGraphics::ResourceTableId lightGridResourceTable;
+    CoreGraphics::ResourceTableSet lightGridResourceTables;
     CoreGraphics::ShaderProgramId lightGridGenProgram, lightGridCullProgram;
+    CoreGraphics::BufferId lightGridIndexLists;
 
     CoreGraphics::PipelineRayTracingTable raytracingBundle;
 
@@ -138,7 +140,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     geometryBindings.SkinPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
 
     CoreGraphics::BufferCreateInfo geometryBindingBufferCreateInfo;
-    geometryBindingBufferCreateInfo.byteSize = Raytracetest::Table_Batch::Geometry::SIZE;
+    geometryBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::Geometry);
     geometryBindingBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     geometryBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
     geometryBindingBufferCreateInfo.data = &geometryBindings;
@@ -154,23 +156,31 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     lightGridInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.lightGrid = CoreGraphics::CreateBuffer(lightGridInfo);
 
+    CoreGraphics::BufferCreateInfo indexListInfo;
+    indexListInfo.name = "LightIndexListsBuffer";
+    indexListInfo.byteSize = sizeof(LightGridCs::LightIndexLists);
+    indexListInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    indexListInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
+    indexListInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
+    state.lightGridIndexLists = CoreGraphics::CreateBuffer(indexListInfo);
+
     CoreGraphics::BufferCreateInfo lightGridConstantsInfo;
-    LightGridCs::ClusterUniforms uniformData;
-    uniformData.NumCells[0] = 64;
-    uniformData.NumCells[1] = 64;
-    uniformData.NumCells[2] = 64;
     lightGridConstantsInfo.byteSize = sizeof(LightGridCs::ClusterUniforms);
-    lightGridConstantsInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    lightGridConstantsInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     lightGridConstantsInfo.usageFlags = CoreGraphics::ConstantBuffer;
     lightGridConstantsInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
-    lightGridConstantsInfo.data = &uniformData;
-    lightGridConstantsInfo.dataSize = sizeof(LightGridCs::ClusterUniforms);
     state.lightGridConstants = CoreGraphics::CreateBuffer(lightGridConstantsInfo);
 
-    state.lightGridResourceTable = CoreGraphics::ShaderCreateResourceTable(state.lightGridShader, NEBULA_BATCH_GROUP, 3);
-    ResourceTableSetRWBuffer(state.lightGridResourceTable, { state.lightGrid, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetConstantBuffer(state.lightGridResourceTable, { state.lightGridConstants, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
-    ResourceTableCommitChanges(state.lightGridResourceTable);
+    CoreGraphics::ResourceTableId baseTable = Graphics::GetFrameResourceTable(0);
+    state.lightGridResourceTables = CoreGraphics::ShaderCreateResourceTableSet(state.lightGridShader, NEBULA_FRAME_GROUP, 3);
+    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
+    {
+        ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[i], { state.lightGrid, LightGridCs::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[i], { state.lightGridConstants, LightGridCs::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(LightGridCs::ClusterUniforms), 0 });
+        ResourceTableCommitChanges(state.lightGridResourceTables.tables[i]);
+    }
+
+    Graphics::GetViewConstants();
 
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = RaytracingContext::OnRenderDebug;
@@ -180,22 +190,43 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     Frame::FrameCode* lightGridGen = state.frameOpAllocator.Alloc<Frame::FrameCode>();
     lightGridGen->SetName("Raytracing Light Grid Update");
     lightGridGen->domain = CoreGraphics::BarrierDomain::Global;
+    lightGridGen->queue = CoreGraphics::QueueType::ComputeQueueType;
+    lightGridGen->bufferDeps.Add(state.lightGrid,
+                                  {
+                                      "Light Grid"
+                                      , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                      , CoreGraphics::BufferSubresourceInfo()
+                                  });
     lightGridGen->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridGenProgram);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
     };
 
     Frame::FrameCode* lightGridCull = state.frameOpAllocator.Alloc<Frame::FrameCode>();
     lightGridCull->SetName("Raytracing Light Grid Cull");
     lightGridCull->domain = CoreGraphics::BarrierDomain::Global;
+    lightGridCull->queue = CoreGraphics::QueueType::ComputeQueueType;
+    lightGridCull->bufferDeps.Add(state.lightGrid,
+                                  {
+                                      "Light Grid"
+                                      , CoreGraphics::PipelineStage::ComputeShaderRead
+                                      , CoreGraphics::BufferSubresourceInfo()
+                                  });
+    lightGridCull->bufferDeps.Add(state.lightGridIndexLists,
+                                  {
+                                      "Light Grid Index Lists"
+                                      , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                      , CoreGraphics::BufferSubresourceInfo()
+                                  });
     lightGridCull->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridCullProgram);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
     };
+    Frame::AddSubgraph("Raytracing Light Update", { lightGridGen, lightGridCull });
 
     Frame::FrameCode* blasUpdate = state.frameOpAllocator.Alloc<Frame::FrameCode>();
     blasUpdate->SetName("Bottom Level Acceleration Structure Update");
@@ -319,6 +350,12 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     Frame::FrameCode* testRays = state.frameOpAllocator.Alloc<Frame::FrameCode>();
     testRays->SetName("Ray Tracing Test Shader");
     testRays->domain = CoreGraphics::BarrierDomain::Global;
+    testRays->bufferDeps.Add(state.lightGridIndexLists,
+                              {
+                                "Light Grid Index Lists"
+                                , CoreGraphics::PipelineStage::RayTracingShaderRead
+                                , CoreGraphics::BufferSubresourceInfo()
+                              });
     testRays->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
@@ -503,6 +540,13 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     if (!CoreGraphics::RayTracingSupported)
         return;
 
+    LightGridCs::ClusterUniforms uniformData;
+    uniformData.NumCells[0] = 64;
+    uniformData.NumCells[1] = 64;
+    uniformData.NumCells[2] = 64;
+    CoreGraphics::BufferUpdate(state.lightGridConstants, uniformData);
+    CoreGraphics::BufferFlush(state.lightGridConstants);
+
     const Util::Array<Graphics::GraphicsEntityId>& entities = RaytracingContext::__state.entities;
 
     if (!entities.IsEmpty())
@@ -581,6 +625,19 @@ RaytracingContext::WaitForJobs(const Graphics::FrameContext& ctx)
     N_MARKER_BEGIN(WaitForRaytracingJobs, Graphics);
     state.jobWaitEvent.Wait();
     N_MARKER_END();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+{
+    IndexT tickCbo, viewCbo, shadowCbo;
+    Graphics::GetOffsets(tickCbo, viewCbo, shadowCbo);
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), LightGridCs::Table_Frame::ViewConstants_SLOT, 0, sizeof(LightGridCs::ViewConstants), (SizeT)viewCbo });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), LightGridCs::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(LightGridCs::ShadowViewConstants), (SizeT)shadowCbo });
+    ResourceTableCommitChanges(state.lightGridResourceTables.tables[ctx.bufferIndex]);
 }
 
 //------------------------------------------------------------------------------

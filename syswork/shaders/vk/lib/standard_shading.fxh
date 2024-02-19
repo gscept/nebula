@@ -6,15 +6,15 @@
 #ifndef STANDARD_SHADING_FXH
 #define STANDARD_SHADING_FXH 
 
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/shared.fxh"
-#include "lib/defaultsamplers.fxh"
-#include "lib/pbr.fxh"
-#include "lib/geometrybase.fxh"
-#include "lib/materialparams.fxh"
-#include "lib/clustering.fxh"
-#include "lib/lighting_functions.fxh"
+#include <lib/std.fxh>
+#include <lib/util.fxh>
+#include <lib/shared.fxh>
+#include <lib/defaultsamplers.fxh>
+#include <lib/pbr.fxh>
+#include <lib/geometrybase.fxh>
+#include <lib/materialparams.fxh>
+#include <lib/clustering.fxh>
+#include <lib/lighting_functions.fxh>
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											FINALIZE COLOR

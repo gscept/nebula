@@ -4,6 +4,8 @@
 //------------------------------------------------------------------------------
 #include <lib/raytracing.fxh>
 #include <lib/mie-rayleigh.fxh>
+#include <lib/pbr.fxh>
+#include <lib/lighting_functions.fxh>
 
 //------------------------------------------------------------------------------
 /**
@@ -21,14 +23,21 @@ Raygen(
     vec4 target = InvProjection * vec4(d.x, d.y, 1, 1);
     vec4 direction = InvView * vec4(normalize(target.xyz), 0);
 
-    Result.radiance = vec3(0, 0, 0);
+    Result.albedo = vec3(0, 0, 0);
+    Result.alpha = 0.0f;
+    Result.material = vec4(0, 0, 0, 0);
     Result.normal = vec3(0, 0, 0);
     Result.depth = 0;
 
     // Ray trace against BVH
     traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
 
-    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(Result.radiance, 0.0f));
+    vec3 F0 = CalculateF0(Result.albedo.rgb, Result.material[MAT_METALLIC], vec3(0.04));
+    vec3 light = CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, origin.xyz + direction.xyz * Result.depth);
+    //vec3 dir = normalize(Result.normal);
+    //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+
+    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(light, 0.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +50,7 @@ Miss(
 {
     vec3 dir = normalize(gl_WorldRayDirectionEXT);
     vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
-    Result.radiance = atmo;
+    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(atmo, 0.0f));
 }
 
 //------------------------------------------------------------------------------
