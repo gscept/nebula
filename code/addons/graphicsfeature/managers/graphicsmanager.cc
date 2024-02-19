@@ -61,7 +61,7 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
             Models::ModelContext::SetTransform(gid, t);
             if (raytracing && CoreGraphics::RayTracingSupported)
             {
-                Raytracing::RaytracingContext::Setup(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFFFFFFFF);
+                Raytracing::RaytracingContext::Setup(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFF);
             }
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
         }
