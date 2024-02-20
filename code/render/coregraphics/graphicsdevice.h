@@ -165,6 +165,23 @@ void AddBackBufferTexture(const CoreGraphics::TextureId tex);
 /// remove a render texture
 void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 
+struct TransferLock : public Threading::CriticalScope
+{
+    TransferLock(Threading::CriticalSection* section)
+        : Threading::CriticalScope(section)
+    {}
+
+    ~TransferLock()
+    {
+        CoreGraphics::CmdBufferIdRelease(transferBuffer);
+        CoreGraphics::CmdBufferIdRelease(setupBuffer);
+    }
+    CoreGraphics::CmdBufferId transferBuffer, setupBuffer;
+};
+
+/// Begin a transfer operation
+TransferLock LockTransfer();
+
 /// Lock resource command buffer
 const CoreGraphics::CmdBufferId LockTransferSetupCommandBuffer();
 /// Release lock on resource command buffer

@@ -181,10 +181,9 @@ uint
 LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::TextureId texture, const char* name)
 {
     // use resource submission
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, name);
-    CoreGraphics::CmdBufferId handoverCmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-    CoreGraphics::CmdBeginMarker(handoverCmdBuf, NEBULA_MARKER_TRANSFER, name);
+    CoreGraphics::TransferLock lock = CoreGraphics::LockTransfer();
+    CoreGraphics::CmdBeginMarker(lock.transferBuffer, NEBULA_MARKER_TRANSFER, name);
+    CoreGraphics::CmdBeginMarker(lock.setupBuffer, NEBULA_MARKER_TRANSFER, name);
 
     uint mipIndexToLoad = Util::FirstOne(bitsToLoad);
     uint loadedBits = 0x0;
@@ -196,7 +195,7 @@ LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::Tex
         while (streamData->nextLayerToLoad < streamData->numLayersToLoad)
         {
             // Attempt to upload, if it fails we continue from here next time
-            if (!UploadToTexture(texture, cmdBuf, handoverCmdBuf, streamData->ctx, streamData->nextLayerToLoad, mipToLoad))
+            if (!UploadToTexture(texture, lock.transferBuffer, lock.setupBuffer, streamData->ctx, streamData->nextLayerToLoad, mipToLoad))
             {
                 // If upload fails, escape the loop
                 goto quit_loop;
@@ -212,12 +211,8 @@ LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::Tex
 
 quit_loop:
 
-    CoreGraphics::CmdEndMarker(handoverCmdBuf);
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-    CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::UnlockTransferSetupCommandBuffer();
-
+    CoreGraphics::CmdEndMarker(lock.transferBuffer);
+    CoreGraphics::CmdEndMarker(lock.setupBuffer);
     return loadedBits;
 }
 
