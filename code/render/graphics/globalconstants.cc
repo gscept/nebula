@@ -83,12 +83,12 @@ AllocateGlobalConstants()
     IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
 
     // Bind tables with memory allocated
-    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ViewConstants::SLOT, 0, Shared::Table_Frame::ViewConstants::SIZE, (SizeT)state.viewCboOffset });
-    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ShadowViewConstants::SLOT, 0, Shared::Table_Frame::ShadowViewConstants::SIZE, (SizeT)state.shadowViewCboOffset });
+    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ViewConstants_SLOT, 0, sizeof(Shared::ViewConstants), (SizeT)state.viewCboOffset });
+    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(Shared::ShadowViewConstants), (SizeT)state.shadowViewCboOffset });
     ResourceTableCommitChanges(state.frameResourceTables[bufferedFrameIndex]);
 
     // Update tick resource tables
-    ResourceTableSetConstantBuffer(state.tickResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Tick::PerTickParams::SLOT, 0, Shared::Table_Tick::PerTickParams::SIZE, (SizeT)state.tickCboOffset });
+    ResourceTableSetConstantBuffer(state.tickResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Tick::PerTickParams_SLOT, 0, sizeof(Shared::PerTickParams), (SizeT)state.tickCboOffset });
     ResourceTableCommitChanges(state.tickResourceTables[bufferedFrameIndex]);
 }
 
@@ -192,6 +192,17 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType 
         });
         state.shadowViewConstantsDirty.bits &= ~bits;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GetOffsets(IndexT& tickOffset, IndexT& viewOffset, IndexT& shadowOffset)
+{
+    tickOffset = state.tickCboOffset;
+    viewOffset = state.viewCboOffset;
+    shadowOffset = state.shadowViewCboOffset;
 }
 
 //------------------------------------------------------------------------------

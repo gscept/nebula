@@ -109,6 +109,13 @@ ptr struct LegacyMaterial
     textureHandle NormalMap;
 };
 
+ptr struct TerrainMaterial
+{
+    textureHandle LowresAlbedoFallback;
+    textureHandle LowresNormalFallback;
+    textureHandle LowresMaterialFallback;
+};
+
 MATERIAL_BINDING rw_buffer MaterialBindings
 {
     BRDFMaterial BRDFMaterials;
@@ -120,4 +127,5 @@ MATERIAL_BINDING rw_buffer MaterialBindings
     Unlit4Material Unlit4Materials;
     SkyboxMaterial SkyboxMaterials;
     LegacyMaterial LegacyMaterials;
+    TerrainMaterial TerrainMaterials;
 };

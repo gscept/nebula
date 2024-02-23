@@ -48,13 +48,16 @@ RayGen(
     const uint NumDepthSamples = 8;
 
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probe.position.xyz, 0.01f, direction, MaxDistance, 0);
+    vec3 WorldSpacePos = probe.position.xyz + direction.xyz * payload.depth;
 
     // If launch ID is below 16, it's a color sample
     if (gl_LaunchIDEXT.y < NumColorSamples)
     {
         uint row = gl_LaunchIDEXT.y / NumColorSamples;
         uint column = (gl_LaunchIDEXT.y % NumColorSamples) * NumColorSamples + gl_LaunchIDEXT.x;
-        imageStore(RadianceOutput, ivec2(row, column), vec4(payload.albedo, 0));
+
+        vec3 light = CalculateLightRT(WorldSpacePos, payload.depth / 10000.0f, payload.albedo.rgb, payload.material, payload.normal);
+        imageStore(RadianceOutput, ivec2(row, column), vec4(light, 0));
         imageStore(NormalOutput, ivec2(row, column), vec4(payload.normal, 0));
     }
     else

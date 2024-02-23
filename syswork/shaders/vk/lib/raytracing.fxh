@@ -5,6 +5,8 @@
 #include <lib/std.fxh>
 #include <lib/shared.fxh>
 #include <lib/materials.fxh>
+#include <lib/pbr.fxh>
+#include <lib/lighting_functions.fxh>
 
 group(BATCH_GROUP) accelerationStructure TLAS;
 group(BATCH_GROUP) write rgba16f image2D RaytracingOutput;
@@ -190,3 +192,73 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
 }
 
 #define OFFSET_PTR(ptr, offset, type) type(VoidPtr(ptr) + offset)
+
+
+//------------------------------------------------------------------------------
+/**
+    Calculate 3D index from screen position and depth
+*/
+uint3
+CalculateClusterIndexRT(vec2 screenPos, float depth, float scale, float bias)
+{
+    uint i = uint(screenPos.x);
+    uint j = uint(screenPos.y);
+    uint k = uint(log2(-depth) * scale + bias);
+
+    return uint3(i, j, k);
+}
+
+#define USE_SCALARIZATION_LOOP 0
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, vec3 normal)
+{
+    vec3 clusterCenter = EyePos.xyz - worldSpacePos;
+    uvec3 index3D = uvec3(clusterCenter) / BlockSize.xxx;
+    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
+
+    vec3 light = vec3(0, 0, 0);
+    vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);
+    vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
+    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
+
+#if USE_SCALARIZATION_LOOP
+    // Get the mask for the invocation
+    uint4 laneMask = gl_SubgroupEqMask;
+
+    // Get the execution mask for the wavefront
+    uint4 execMask = subgroupBallot(true);
+    uint firstWaveIndex = subgroupBroadcastFirst(idx);
+
+    // Check if all waves use the same index and do this super cheaply
+    if (subgroupBallot(firstWaveIndex == idx) == execMask)
+    {
+        light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+    }
+    else
+    {
+        // Scalarization loop
+        while ((laneMask & execMask) != uint4(0))
+        {
+            uint scalarIdx = subgroupBroadcastFirst(idx);
+            uint4 currentMask = subgroupBallot(scalarIdx == idx);
+            execMask &= ~currentMask;
+
+            // If this wave uses the cell we loaded into SGPR, use it
+            // this will effectively scalarize the light lists
+            if (scalarIdx == idx)
+            {
+                light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+            }
+        }
+    }
+#else
+    light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, depth);
+#endif
+
+    //light += IBL(albedo, F0, normal, viewVec, material);
+    light += albedo.rgb * material[MAT_EMISSIVE];
+    return light;
+}

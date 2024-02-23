@@ -40,6 +40,7 @@ struct
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 1> frameOpAllocator;
     Util::HashTable<CoreGraphics::MeshId, Util::Tuple<uint, CoreGraphics::BlasId>> blasLookup;
+    Util::HashTable<Graphics::ContextEntityId, Util::Array<CoreGraphics::BlasId>> terrainBlases;
     CoreGraphics::BufferWithStaging blasInstanceBuffer;
 
     CoreGraphics::ResourceTableSet raytracingTestTables;
@@ -126,6 +127,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit4] = 0xFFFFFFFF;
     MaterialPropertyMappings[(uint)Materials::MaterialProperties::Skybox] = 0xFFFFFFFF;
     MaterialPropertyMappings[(uint)Materials::MaterialProperties::Legacy] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Terrain] = 0xFFFFFFFF;
 
     state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(raygenShader, NEBULA_BATCH_GROUP, 3);
     state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline(shaderMappings);
@@ -171,16 +173,14 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     lightGridConstantsInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
     state.lightGridConstants = CoreGraphics::CreateBuffer(lightGridConstantsInfo);
 
-    CoreGraphics::ResourceTableId baseTable = Graphics::GetFrameResourceTable(0);
     state.lightGridResourceTables = CoreGraphics::ShaderCreateResourceTableSet(state.lightGridShader, NEBULA_FRAME_GROUP, 3);
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[i], { state.lightGrid, LightGridCs::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[i], { state.lightGridIndexLists, LightGridCs::Table_Frame::LightIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[i], { state.lightGridConstants, LightGridCs::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(LightGridCs::ClusterUniforms), 0 });
         ResourceTableCommitChanges(state.lightGridResourceTables.tables[i]);
     }
-
-    Graphics::GetViewConstants();
 
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = RaytracingContext::OnRenderDebug;
@@ -362,6 +362,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
         {
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.raytracingBundle.pipeline);
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTestTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, {});
+            CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
         }
     };
@@ -391,7 +392,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 /**
 */
 void
-RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask)
+RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask)
 {
     if (!CoreGraphics::RayTracingSupported)
         return;
@@ -401,9 +402,9 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
     SizeT numObjects = nodes.end - nodes.begin;
     n_assert((state.blasInstances.Size() + numObjects) < state.maxAllowedInstances);
     Memory::RangeAllocation alloc = state.blasInstanceAllocator.Alloc(numObjects);
-    state.blasInstances.Resize(alloc.offset + numObjects);
-    state.blasInstanceMeshes.Resize(alloc.offset + numObjects);
-    state.objects.Resize(alloc.offset + numObjects);
+    state.blasInstances.Extend(alloc.offset + numObjects);
+    state.blasInstanceMeshes.Extend(alloc.offset + numObjects);
+    state.objects.Extend(alloc.offset + numObjects);
     
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, numObjects);
@@ -427,8 +428,18 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
             IndexT blasIndex = state.blasLookup.FindIndex(mesh);
             if (blasIndex == InvalidIndex)
             {
+                const CoreGraphics::VertexLayoutId layout = CoreGraphics::MeshGetVertexLayout(mesh);
+                auto& comps = CoreGraphics::VertexLayoutGetComponents(layout);
+
                 CoreGraphics::BlasCreateInfo createInfo;
-                createInfo.mesh = mesh;
+                createInfo.vbo = CoreGraphics::GetVertexBuffer();
+                createInfo.ibo = CoreGraphics::GetIndexBuffer();
+                createInfo.indexType = CoreGraphics::MeshGetIndexType(mesh);
+                createInfo.positionsFormat = comps[0].GetFormat();
+                createInfo.stride = CoreGraphics::VertexLayoutGetStreamSize(layout, 0);
+                createInfo.vertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+                createInfo.indexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
+                createInfo.primitiveGroups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
                 createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
                 CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
                 state.blases.Append(blas);
@@ -477,6 +488,74 @@ RaytracingContext::Setup(const Graphics::GraphicsEntityId id, CoreGraphics::Blas
 /**
 */
 void
+RaytracingContext::SetupTerrain(
+    const Graphics::GraphicsEntityId id
+    , const CoreGraphics::VertexComponent::Format format
+    , const CoreGraphics::IndexType::Code indexType
+    , const CoreGraphics::VertexAlloc& vertices
+    , const CoreGraphics::VertexAlloc& indices
+    , const CoreGraphics::PrimitiveGroup& patchPrimGroup
+    , SizeT vertexOffsetStride
+    , Util::Array<Math::mat4> transforms
+    , MaterialInterface::TerrainMaterial material
+)
+{
+    Graphics::ContextEntityId contextId = GetContextId(id);
+
+    state.blasLock.Enter();
+    Memory::RangeAllocation alloc = state.blasInstanceAllocator.Alloc(transforms.Size());
+    state.blasInstances.Extend(alloc.offset + transforms.Size());
+    state.blasInstanceMeshes.Extend(alloc.offset + transforms.Size());
+    state.objects.Extend(alloc.offset + transforms.Size());
+
+    raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
+    raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, transforms.Size());
+
+    // For each patch, setup a separate BLAS
+    Util::Array<CoreGraphics::BlasId> blases;
+    IndexT patchCounter = 0;
+    for (IndexT i = alloc.offset; i < alloc.offset + transforms.Size(); i++)
+    {
+        // Create BLAS for terrain
+        CoreGraphics::BlasCreateInfo createInfo;
+        createInfo.vbo = CoreGraphics::GetVertexBuffer();
+        createInfo.ibo = CoreGraphics::GetIndexBuffer();
+        createInfo.indexType = indexType;
+        createInfo.positionsFormat = format;
+        createInfo.stride = vertexOffsetStride;
+        createInfo.vertexOffset = vertices.offset + patchCounter * vertexOffsetStride;
+        createInfo.indexOffset = indices.offset;
+        createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
+        createInfo.primitiveGroups = { patchPrimGroup };
+        CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
+        blases.Append(blas);
+        CoreGraphics::BlasIdLock _0(blas);
+
+        CoreGraphics::BlasInstanceCreateInfo instanceCreateInfo;
+        instanceCreateInfo.flags = CoreGraphics::BlasInstanceFlags::ForceOpaque;
+        instanceCreateInfo.mask = 0xFF;
+        instanceCreateInfo.shaderOffset = MaterialPropertyMappings[(uint)Materials::MaterialProperties::Terrain];
+        instanceCreateInfo.instanceIndex = i;
+        instanceCreateInfo.blas = blas;
+        instanceCreateInfo.transform = transforms[patchCounter++];
+        state.blasInstances[i] = CoreGraphics::CreateBlasInstance(instanceCreateInfo);
+        state.blasInstanceMeshes[i] = CoreGraphics::InvalidMeshId;
+
+        Raytracetest::Object constants;
+        constants.Use16BitIndex = indexType == CoreGraphics::IndexType::Index16 ? 1 : 0;
+        constants.MaterialOffset = Materials::MaterialLoader::RegisterTerrainMaterial(material);
+        constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + indices.offset;
+        constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + vertices.offset;
+        state.objects[i] = constants;
+    }
+    state.terrainBlases.Add(contextId, blases);
+    state.blasLock.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx)
 {
     if (!CoreGraphics::RayTracingSupported)
@@ -514,17 +593,17 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
 
         CoreGraphics::ResourceTableSetRWBuffer(
             state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableBuffer(state.geometryBindingBuffer, Raytracetest::Table_Batch::Geometry::SLOT)
+            CoreGraphics::ResourceTableBuffer(state.geometryBindingBuffer, Raytracetest::Table_Batch::Geometry_SLOT)
         );
 
         CoreGraphics::ResourceTableSetRWBuffer(
             state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableBuffer(Materials::MaterialLoader::GetMaterialBindingBuffer(), Raytracetest::Table_Batch::MaterialBindings::SLOT)
+            CoreGraphics::ResourceTableBuffer(Materials::MaterialLoader::GetMaterialBindingBuffer(), Raytracetest::Table_Batch::MaterialBindings_SLOT)
         );
 
         CoreGraphics::ResourceTableSetRWBuffer(
             state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableBuffer(state.objectBindingBuffer.DeviceBuffer(), Raytracetest::Table_Batch::ObjectBuffer::SLOT)
+            CoreGraphics::ResourceTableBuffer(state.objectBindingBuffer.DeviceBuffer(), Raytracetest::Table_Batch::ObjectBuffer_SLOT)
         );
 
         CoreGraphics::ResourceTableCommitChanges(state.raytracingTestTables.tables[ctx.bufferIndex]);
@@ -633,6 +712,9 @@ RaytracingContext::WaitForJobs(const Graphics::FrameContext& ctx)
 void
 RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     IndexT tickCbo, viewCbo, shadowCbo;
     Graphics::GetOffsets(tickCbo, viewCbo, shadowCbo);
     ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), LightGridCs::Table_Frame::ViewConstants_SLOT, 0, sizeof(LightGridCs::ViewConstants), (SizeT)viewCbo });
@@ -666,16 +748,32 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
     {
         CoreGraphics::DestroyBlasInstance(state.blasInstances[i]);
         CoreGraphics::MeshId mesh = state.blasInstanceMeshes[i];
-        auto& [refCount, blas] = state.blasLookup.ValueAtIndex(mesh, i);
-        if (refCount == 1)
+
+        // Delete a mesh
+        if (mesh != CoreGraphics::InvalidMeshId)
         {
-            CoreGraphics::DestroyBlas(blas);
-            state.blasLookup.EraseIndex(mesh, i);
+            auto& [refCount, blas] = state.blasLookup.ValueAtIndex(mesh, i);
+            if (refCount == 1)
+            {
+                CoreGraphics::DestroyBlas(blas);
+                state.blasLookup.EraseIndex(mesh, i);
+            }
+            else
+                refCount--;
         }
         else
-            refCount--;
+        {
+            IndexT blasesListIndex = state.terrainBlases.FindIndex(id);
+            n_assert(blasesListIndex != InvalidIndex);
+            const Util::Array<CoreGraphics::BlasId> blases = state.terrainBlases.ValueAtIndex(id, blasesListIndex);
+            for (IndexT j = 0; j < blases.Size(); j++)
+            {
+                CoreGraphics::DestroyBlas(blases[j]);
+            }
+        }
         state.blasInstances[i] = CoreGraphics::InvalidBlasInstanceId;
     }
+    
     raytracingContextAllocator.Dealloc(id.id);
     state.topLevelNeedsReconstruction = true;
 }

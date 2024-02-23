@@ -8,7 +8,7 @@
 /**
 */
 shader void
-ClosestHit(
+BoxHit(
     [ray_payload] in HitResult Result,
     [hit_attribute] in vec2 baryCoords
 )
@@ -21,23 +21,23 @@ ClosestHit(
     mat3 tbn;
     SampleGeometry(obj, gl_PrimitiveID, barycentricCoords, indices, uv, tbn);
 
-    BRDFMaterial mat = BRDFMaterials + obj.MaterialOffset;
-    vec4 normals = sample2DLod(mat.NormalMap, Basic2DSampler, uv, 0);
+    TerrainMaterial mat = TerrainMaterials + obj.MaterialOffset;
+    vec4 normals = sample2DLod(mat.LowresNormalFallback, Basic2DSampler, uv, 0);
     vec3 tNormal = TangentSpaceNormal(normals.xy, tbn);
 
-    vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0);
-    vec4 material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
+    vec4 albedo = sample2DLod(mat.LowresAlbedoFallback, Basic2DSampler, uv, 0);
+    vec4 material = sample2DLod(mat.LowresMaterialFallback, Basic2DSampler, uv, 0);
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;
     Result.material = material;
     Result.normal = tNormal;
     Result.depth = gl_HitTEXT;
-}   
+}
 
 //------------------------------------------------------------------------------
 /**
 */
 program Main[string Mask = "Hit"; ]
 {
-    RayClosestHitShader = ClosestHit();
+    RayClosestHitShader = BoxHit();
 };

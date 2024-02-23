@@ -42,8 +42,21 @@ public:
     /// Setup ray tracing context
     static void Create(const RaytracingSetupSettings& settings);
 
-    /// Setup an entity for ray tracing, assumes model context registration
-    static void Setup(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
+    /// Setup a model entity for ray tracing, assumes model context registration
+    static void SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
+    /// Setup a terrain system for ray tracing
+    static void SetupTerrain(
+        const Graphics::GraphicsEntityId id
+        , const CoreGraphics::VertexComponent::Format format
+        , const CoreGraphics::IndexType::Code indexType
+        , const CoreGraphics::VertexAlloc& vertices
+        , const CoreGraphics::VertexAlloc& indices
+        , const CoreGraphics::PrimitiveGroup& patchPrimGroup
+        , SizeT vertexOffsetStride
+        , Util::Array<Math::mat4> transforms
+        , MaterialInterface::TerrainMaterial material
+        
+    );
 
     /// Build top level acceleration
     static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);

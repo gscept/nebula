@@ -120,9 +120,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         transformRange.end = transformRange.allocation.offset + transformNodes.Size();
         if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
         {
-            NodeInstances.transformable.nodeParents.Resize(transformRange.end);
-            NodeInstances.transformable.origTransforms.Resize(transformRange.end);
-            NodeInstances.transformable.nodeTransforms.Resize(transformRange.end);
+            NodeInstances.transformable.nodeParents.Extend(transformRange.end);
+            NodeInstances.transformable.origTransforms.Extend(transformRange.end);
+            NodeInstances.transformable.nodeTransforms.Extend(transformRange.end);
         }
         
         for (SizeT i = 0; i < transformNodes.Size(); i++)
@@ -153,25 +153,25 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
         {
-            NodeInstances.renderable.nodeStates.Resize(stateRange.end);
-            NodeInstances.renderable.nodeTransformIndex.Resize(stateRange.end);
-            NodeInstances.renderable.nodeBoundingBoxes.Resize(stateRange.end);
-            NodeInstances.renderable.origBoundingBoxes.Resize(stateRange.end);
-            NodeInstances.renderable.nodeLodDistances.Resize(stateRange.end);
-            NodeInstances.renderable.nodeLods.Resize(stateRange.end);
-            NodeInstances.renderable.textureLods.Resize(stateRange.end);
-            NodeInstances.renderable.nodeFlags.Resize(stateRange.end);
-            NodeInstances.renderable.nodeMaterials.Resize(stateRange.end);
-            NodeInstances.renderable.nodeMaterialTemplates.Resize(stateRange.end);
-            NodeInstances.renderable.nodeTypes.Resize(stateRange.end);
-            NodeInstances.renderable.nodes.Resize(stateRange.end);
-            NodeInstances.renderable.nodeMeshes.Resize(stateRange.end);
-            NodeInstances.renderable.nodePrimitiveGroup.Resize(stateRange.end);
-            NodeInstances.renderable.nodeDrawModifiers.Resize(stateRange.end); // Base 1 instance 0 offset
-            NodeInstances.renderable.nodeSortId.Resize(stateRange.end);
+            NodeInstances.renderable.nodeStates.Extend(stateRange.end);
+            NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
+            NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
+            NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
+            NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
+            NodeInstances.renderable.nodeLods.Extend(stateRange.end);
+            NodeInstances.renderable.textureLods.Extend(stateRange.end);
+            NodeInstances.renderable.nodeFlags.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMaterials.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMaterialTemplates.Extend(stateRange.end);
+            NodeInstances.renderable.nodeTypes.Extend(stateRange.end);
+            NodeInstances.renderable.nodes.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+            NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
+            NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
 
 #if NEBULA_GRAPHICS_DEBUG
-            NodeInstances.renderable.nodeNames.Resize(stateRange.end);
+            NodeInstances.renderable.nodeNames.Extend(stateRange.end);
 #endif
         }
         for (SizeT i = 0; i < renderNodes.Size(); i++)

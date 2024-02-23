@@ -114,6 +114,9 @@ enum class MaterialProperties
     Skybox,
     Legacy,
 
+    REQUIRED_NUM_CONTENT_LOADERS = Legacy + 1,
+    Terrain,
+
     Num
 };
 __ImplementEnumBitOperators(MaterialProperties);

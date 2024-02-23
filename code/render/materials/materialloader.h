@@ -38,6 +38,8 @@ public:
     static CoreGraphics::BufferId GetMaterialBindingBuffer();
     /// Get material buffer
     static CoreGraphics::BufferId GetMaterialBuffer(const MaterialProperties type);
+    /// Bit of a special way to register a terrain material
+    static IndexT RegisterTerrainMaterial(const MaterialInterface::TerrainMaterial& terrain);
 private:
 
     /// unload resource (overload to implement resource deallocation)

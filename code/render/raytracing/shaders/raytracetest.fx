@@ -5,7 +5,7 @@
 #include <lib/raytracing.fxh>
 #include <lib/mie-rayleigh.fxh>
 #include <lib/pbr.fxh>
-#include <lib/lighting_functions.fxh>
+
 
 //------------------------------------------------------------------------------
 /**
@@ -33,7 +33,10 @@ Raygen(
     traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
 
     vec3 F0 = CalculateF0(Result.albedo.rgb, Result.material[MAT_METALLIC], vec3(0.04));
-    vec3 light = CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, origin.xyz + direction.xyz * Result.depth);
+    vec3 WorldSpacePos = origin.xyz + direction.xyz * Result.depth;
+    vec3 light = vec3(0);
+    light += CalculateLightRT(WorldSpacePos, Result.depth / 10000.0f, Result.albedo.rgb, Result.material, Result.normal);
+    //light += CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, WorldSpacePos);
     //vec3 dir = normalize(Result.normal);
     //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 

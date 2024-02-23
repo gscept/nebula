@@ -556,7 +556,7 @@ ENDIF()
             raytracingcontext.h
         )
         fips_dir(raytracing/shaders)
-            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx light_grid_cs.fx)
+            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx light_grid_cs.fx terrainhit.fx)
 
         fips_dir(renderutil)
         fips_files(
@@ -619,6 +619,10 @@ ENDIF()
                 terraincontext.cc
                 terrainculljob.cc
                 texturetilecache.h
+            )
+        fips_dir(terrain/shaders)
+            add_shaders(
+                terrain.fx terrain_mesh_generate.fx
             )
 
         fips_dir(vegetation)

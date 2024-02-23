@@ -97,8 +97,8 @@ void csClusterAABB()
 
     // Calculate AABB using min and max
     ClusterAABB aabb;
-    aabb.minPoint = vec4(EyePos.xyz + offsetMin * 8, 1);
-    aabb.maxPoint = vec4(EyePos.xyz + offsetMax * 8, 1);
+    aabb.minPoint = vec4(EyePos.xyz + offsetMin * BlockSize.x, 1);
+    aabb.maxPoint = vec4(EyePos.xyz + offsetMax * BlockSize.x, 1);
     vec3 extents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
     float radius = dot(extents, extents);
     aabb.featureFlags = 0;
