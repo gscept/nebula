@@ -130,9 +130,10 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
     CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
     CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
     
-    int loadBits = 0;
+    int loadBits = requestedBits;
 
     // Upload vertices
+    if (loadBits & ~0x1)
     {
         auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
         if (buffer != CoreGraphics::InvalidBufferId)
@@ -154,6 +155,7 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
     }
 
     // Upload indices
+    if (loadBits & ~0x2)
     {
         auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
         if (buffer != CoreGraphics::InvalidBufferId)
