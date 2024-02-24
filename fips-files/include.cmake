@@ -200,6 +200,9 @@ macro(add_shaders_intern)
         cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
         cmake_path(GET rel_path STEM basename)
         cmake_path(GET rel_path PARENT_PATH foldername)
+        
+        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
+        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}/${basename}.h)
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shaders)
@@ -208,7 +211,7 @@ macro(add_shaders_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${CMAKE_BINARY_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader)
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${depoutput} -h ${headerOutput} -t shader)
         endif()
 
         # sadly this doesnt work for some reason
@@ -225,7 +228,7 @@ macro(add_shaders_intern)
 
         set(output ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
         add_custom_command(OUTPUT ${output}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -r ${base_path} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${SHADERC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -237,7 +240,7 @@ macro(add_shaders_intern)
         SOURCE_GROUP(TREE "${base_path}" PREFIX "res\\shaders" FILES ${shd})
         if(N_ENABLE_SHADER_COMMAND_GENERATION)
             # create compile flags file for live shader compile
-            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}")
         endif()
     endif()
 endmacro()
