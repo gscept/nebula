@@ -85,7 +85,8 @@ protected:
         virtual void OnExit() const
         {
             // make sure we gracefully shutdown everything
-            app->Close();
+            if (app->isOpen)
+                app->Close();
         }
 
         GameApplication* app;
