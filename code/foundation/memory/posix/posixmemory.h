@@ -151,7 +151,7 @@ FreeVirtual(void* ptr, size_t size)
 //------------------------------------------------------------------------------
 /**
 */
-void*
+__forceinline void*
 StackAlloc(size_t size)
 {
     return alloca(size);
