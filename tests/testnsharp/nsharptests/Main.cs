@@ -163,13 +163,17 @@ namespace NST
             Verify(position == newPosition);
 
             // TODO: Verify that orientation is OK, and that we have the same representation of orientations real value (w or x)
-            
-            TestMsg testmsg = new TestMsg();
-            testmsg.f = 100.0f;
+
+            TestMsg testmsg = new TestMsg
+            {
+                f = 100.0f
+            };
             entity3.Send(testmsg);
 
-            TestMsg2 testmsg2 = new TestMsg2();
-            testmsg2.f = 200.0f;
+            TestMsg2 testmsg2 = new TestMsg2
+            {
+                f = 200.0f
+            };
             entity3.Send(testmsg2);
 
             Verify(1 == 1);
