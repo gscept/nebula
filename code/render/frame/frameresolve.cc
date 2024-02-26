@@ -50,7 +50,7 @@ FrameResolve::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 
         auto shaderName = Util::String::Sprintf("shd:msaaresolvedepth%d.fxb", samples);
         ShaderId shader = ShaderGet(shaderName);
-        ShaderProgramId program = ShaderGetProgram(shader, ShaderFeatureFromString("Resolve"));
+        ShaderProgramId program = ShaderGetProgram(shader, ShaderFeatureMask("Resolve"));
 
         ret->dispatchDims.x = Math::divandroundup(dimsSource.width, 64);
         ret->dispatchDims.y = dimsSource.height;
@@ -127,8 +127,8 @@ FrameResolve::CompiledImpl::SetupConstants(const IndexT bufferIndex)
     ResourceTableSetConstantBuffer(this->resourceTables[bufferIndex],
                                    {
                                        CoreGraphics::GetConstantBuffer(bufferIndex)
-                                       , Msaaresolvedepth4::Table_Batch::ResolveBlock::SLOT
-                                       , Msaaresolvedepth4::Table_Batch::ResolveBlock::SIZE
+                                       , Msaaresolvedepth4::Table_Batch::ResolveBlock_SLOT
+                                       , sizeof(Msaaresolvedepth4::ResolveBlock)
                                        , (SizeT)offset
                                    });
     ResourceTableCommitChanges(this->resourceTables[bufferIndex]);

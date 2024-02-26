@@ -14,8 +14,8 @@
 #include "threading/lockfreequeue.h"
 #include "materials/material.h"
 
-#include "objects_shared.h"
-#include "particle.h"
+#include "system_shaders/objects_shared.h"
+#include "system_shaders/particle.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -120,9 +120,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         transformRange.end = transformRange.allocation.offset + transformNodes.Size();
         if (NodeInstances.transformable.nodeParents.Size() < transformRange.end)
         {
-            NodeInstances.transformable.nodeParents.Resize(transformRange.end);
-            NodeInstances.transformable.origTransforms.Resize(transformRange.end);
-            NodeInstances.transformable.nodeTransforms.Resize(transformRange.end);
+            NodeInstances.transformable.nodeParents.Extend(transformRange.end);
+            NodeInstances.transformable.origTransforms.Extend(transformRange.end);
+            NodeInstances.transformable.nodeTransforms.Extend(transformRange.end);
         }
         
         for (SizeT i = 0; i < transformNodes.Size(); i++)
@@ -153,25 +153,25 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 
         if (NodeInstances.renderable.nodeStates.Size() < stateRange.end)
         {
-            NodeInstances.renderable.nodeStates.Resize(stateRange.end);
-            NodeInstances.renderable.nodeTransformIndex.Resize(stateRange.end);
-            NodeInstances.renderable.nodeBoundingBoxes.Resize(stateRange.end);
-            NodeInstances.renderable.origBoundingBoxes.Resize(stateRange.end);
-            NodeInstances.renderable.nodeLodDistances.Resize(stateRange.end);
-            NodeInstances.renderable.nodeLods.Resize(stateRange.end);
-            NodeInstances.renderable.textureLods.Resize(stateRange.end);
-            NodeInstances.renderable.nodeFlags.Resize(stateRange.end);
-            NodeInstances.renderable.nodeMaterials.Resize(stateRange.end);
-            NodeInstances.renderable.nodeShaderConfigs.Resize(stateRange.end);
-            NodeInstances.renderable.nodeTypes.Resize(stateRange.end);
-            NodeInstances.renderable.nodes.Resize(stateRange.end);
-            NodeInstances.renderable.nodeMeshes.Resize(stateRange.end);
-            NodeInstances.renderable.nodePrimitiveGroup.Resize(stateRange.end);
-            NodeInstances.renderable.nodeDrawModifiers.Resize(stateRange.end); // Base 1 instance 0 offset
-            NodeInstances.renderable.nodeSortId.Resize(stateRange.end);
+            NodeInstances.renderable.nodeStates.Extend(stateRange.end);
+            NodeInstances.renderable.nodeTransformIndex.Extend(stateRange.end);
+            NodeInstances.renderable.nodeBoundingBoxes.Extend(stateRange.end);
+            NodeInstances.renderable.origBoundingBoxes.Extend(stateRange.end);
+            NodeInstances.renderable.nodeLodDistances.Extend(stateRange.end);
+            NodeInstances.renderable.nodeLods.Extend(stateRange.end);
+            NodeInstances.renderable.textureLods.Extend(stateRange.end);
+            NodeInstances.renderable.nodeFlags.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMaterials.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMaterialTemplates.Extend(stateRange.end);
+            NodeInstances.renderable.nodeTypes.Extend(stateRange.end);
+            NodeInstances.renderable.nodes.Extend(stateRange.end);
+            NodeInstances.renderable.nodeMeshes.Extend(stateRange.end);
+            NodeInstances.renderable.nodePrimitiveGroup.Extend(stateRange.end);
+            NodeInstances.renderable.nodeDrawModifiers.Extend(stateRange.end); // Base 1 instance 0 offset
+            NodeInstances.renderable.nodeSortId.Extend(stateRange.end);
 
 #if NEBULA_GRAPHICS_DEBUG
-            NodeInstances.renderable.nodeNames.Resize(stateRange.end);
+            NodeInstances.renderable.nodeNames.Extend(stateRange.end);
 #endif
         }
         for (SizeT i = 0; i < renderNodes.Size(); i++)
@@ -186,10 +186,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
             if (sNode->GetType() == Models::ParticleSystemNodeType)
             {
-                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock::SLOT;
-                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock::SLOT;
-                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock::SLOT;
-                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT;
+                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock_SLOT;
+                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock_SLOT;
+                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock_SLOT;
+                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT;
 
                 state.resourceTableOffsets.Resize(4);
                 state.resourceTableOffsets[state.objectConstantsIndex] = 0;
@@ -200,9 +200,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             }
             else
             {
-                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
-                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
-                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
+                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
+                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
+                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
                 state.particleConstantsIndex = InvalidIndex;
 
                 state.resourceTableOffsets.Resize(3);
@@ -221,7 +221,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.renderable.textureLods[index] = FLT_MAX;
             NodeInstances.renderable.nodeFlags[index] = Models::NodeInstanceFlags::NodeInstance_Active;
             NodeInstances.renderable.nodeMaterials[index] = sNode->material;
-            NodeInstances.renderable.nodeShaderConfigs[index] = MaterialGetShaderConfig(sNode->material);
+            NodeInstances.renderable.nodeMaterialTemplates[index] = MaterialGetTemplate(sNode->material);
             NodeInstances.renderable.nodeTypes[index] = sNode->GetType();
             NodeInstances.renderable.nodes[index] = sNode;
             NodeInstances.renderable.nodeMeshes[index] = sNode->GetMesh();
@@ -290,9 +290,9 @@ ModelContext::Setup(
 
     NodeInstanceState state;
     state.materialInstance = CreateMaterialInstance(material);
-    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
-    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
-    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
+    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
+    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
+    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
     state.particleConstantsIndex = InvalidIndex;
     state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
@@ -310,7 +310,7 @@ ModelContext::Setup(
     NodeInstances.renderable.textureLods.Append(1.0f);
     NodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
     NodeInstances.renderable.nodeMaterials.Append(material);
-    NodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(material));
+    NodeInstances.renderable.nodeMaterialTemplates.Append(MaterialGetTemplate(material));
     NodeInstances.renderable.nodeTypes.Append(Models::PrimitiveNodeType);
     NodeInstances.renderable.nodes.Append(nullptr);
     NodeInstances.renderable.nodeMeshes.Append(mesh);

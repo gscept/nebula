@@ -544,8 +544,6 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         }
     }
 
-
-
     // transparent archive file system support
     if (this->IsArchiveFileSystemEnabled())
     {
@@ -579,13 +577,13 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
 /**
 */
 Array<String>
-IoServer::ListDirectories(const URI& uri, const String& pattern, bool asFullPath) const
+IoServer::ListDirectories(const URI& uri, const String& pattern, bool asFullPath, bool prioritizeArchive) const
 {
     n_assert(pattern.IsValid());
     Array<String> result;
 
     // transparent archive file system support
-    if (this->IsArchiveFileSystemEnabled())
+    if (this->IsArchiveFileSystemEnabled() && prioritizeArchive)
     {
         Ptr<Archive> archive = ArchiveFileSystem::Instance()->FindArchiveWithDir(uri);
         if (archive.isvalid())

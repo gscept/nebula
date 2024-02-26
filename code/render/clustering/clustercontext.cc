@@ -73,8 +73,8 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    state.clusterShader = ShaderGet("shd:cluster_generate.fxb");
-    state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureFromString("AABBGenerate"));
+    state.clusterShader = ShaderGet("shd:system_shaders/cluster_generate.fxb");
+    state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureMask("AABBGenerate"));
 
     state.window = window;
     state.zNear = ZNear;
@@ -107,8 +107,8 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
     }
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -219,7 +219,7 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         {
             CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-            ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+            ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
             ResourceTableCommitChanges(frameResourceTable);
         }
     }

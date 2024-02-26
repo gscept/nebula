@@ -201,6 +201,10 @@ public:
     
     /// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
     void Resize(SizeT num);
+    /// Resize and fill new elements with arguments
+    template <typename ...ARGS> void Resize(SizeT num, ARGS... args);
+    /// Resize to fit the provided value, but don't shrink if the new size is smaller
+    void Extend(SizeT num);
     /// Fit the size of the array to the amount of elements
     void Fit();
 
@@ -215,7 +219,7 @@ public:
     void clear() noexcept;
     void push_back(const TYPE& item);
 
-    /// grow array
+    /// grow array with grow value
     void Grow();
 protected:
 
@@ -1609,6 +1613,41 @@ Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num)
     }
 
     this->count = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+template<typename ...ARGS>
+void Array<TYPE, SMALL_VECTOR_SIZE>::Resize(SizeT num, ARGS... args)
+{
+    if (num < this->count)
+    {
+        this->DestroyRange(num, this->count);
+    }
+    else if (num > this->capacity)
+    {
+        SizeT oldCapacity = this->capacity;
+        this->GrowTo(num);
+        for (IndexT i = oldCapacity; i < this->capacity; i++)
+            this->elements[i] = TYPE(args...);
+    }
+
+    this->count = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int SMALL_VECTOR_SIZE>
+inline void Array<TYPE, SMALL_VECTOR_SIZE>::Extend(SizeT num)
+{
+    if (num > this->capacity)
+    {
+        this->GrowTo(num);
+        this->count = num;
+    }
 }
 
 //------------------------------------------------------------------------------

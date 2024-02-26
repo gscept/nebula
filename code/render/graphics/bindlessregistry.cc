@@ -3,7 +3,7 @@
 // (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "bindlessregistry.h"
-#include "shared.h"
+#include "system_shaders/shared.h"
 #include "globalconstants.h"
 namespace Graphics
 {
@@ -45,6 +45,7 @@ DestroyBindlessRegistry()
 BindlessIndex
 RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth, bool stencil)
 {
+    Threading::CriticalScope _0(&state.bindResourceCriticalSection);
     BindlessIndex idx = state.texturePool.Alloc();
     IndexT var;
     switch (type)
@@ -80,14 +81,11 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     info.slot = var;
 
     // update textures for all tables
-    state.bindResourceCriticalSection.Enter();
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
     }
-    state.bindResourceCriticalSection.Leave();
-
     return idx;
 }
 
@@ -97,6 +95,7 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
 void 
 ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, BindlessIndex index, bool depth, bool stencil)
 {
+    Threading::CriticalScope _0(&state.bindResourceCriticalSection);
     IndexT var = -1;
     switch (type)
     {
@@ -124,13 +123,11 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     info.slot = var;
 
     // update textures for all tables
-    state.bindResourceCriticalSection.Enter();
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
     }
-    state.bindResourceCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -139,6 +136,7 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
 void 
 UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
 {
+    Threading::CriticalScope _0(&state.bindResourceCriticalSection);
     IndexT var = -1;
     switch (type)
     {
@@ -166,13 +164,11 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     info.slot = var;
 
     // update textures for all tables
-    state.bindResourceCriticalSection.Enter();
     IndexT i;
     for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         ResourceTableSetTexture(Graphics::GetTickResourceTable(i), info);
     }
-    state.bindResourceCriticalSection.Leave();
 
     // Free id at the end
     state.texturePool.Free(id);

@@ -65,6 +65,16 @@ MeshLoader::MeshLoader()
         , VertexComponent{ VertexComponent::IndexName::SkinJIndices, VertexComponent::UByte4, 1 }
     };
     layouts[(uint)CoreGraphics::VertexLayoutType::Skin] = CreateVertexLayout(vlCreateInfo);
+
+    vlCreateInfo.comps = {
+        VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0)
+        , VertexComponent(0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::position
+        , VertexComponent(1, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::stretchPosition
+        , VertexComponent(2, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::color
+        , VertexComponent(3, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::uvMinMax
+        , VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // x: Particle::rotation, y: Particle::size
+    };
+    layouts[(uint)CoreGraphics::VertexLayoutType::Particle] = CreateVertexLayout(vlCreateInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +112,7 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
 /**
 */
 uint
-MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits)
+MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
 {
     ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
 
@@ -120,9 +130,10 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits
     CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
     CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
     
-    int loadBits = 0;
+    int loadBits = requestedBits;
 
     // Upload vertices
+    if (loadBits & ~0x1)
     {
         auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
         if (buffer != CoreGraphics::InvalidBufferId)
@@ -144,6 +155,7 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, uint requestedBits
     }
 
     // Upload indices
+    if (loadBits & ~0x2)
     {
         auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
         if (buffer != CoreGraphics::InvalidBufferId)
@@ -180,7 +192,7 @@ MeshLoader::Unload(const Resources::ResourceId id)
 /**
 */
 uint
-MeshLoader::LodMask(const Ids::Id32 entry, float lod) const
+MeshLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
 {
     return 0x3;
 }

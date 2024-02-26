@@ -71,6 +71,7 @@ struct BufferCreateInfo
         , mode(DeviceLocal)
         , usageFlags(InvalidBufferUsage)
         , queueSupport(AutomaticQueueSupport)
+        , sparse(false)
         , data(nullptr)
         , dataSize(0)
     {}
@@ -82,8 +83,15 @@ struct BufferCreateInfo
     BufferAccessMode mode;
     BufferUsageFlags usageFlags;
     BufferQueueSupportFlags queueSupport;
+    bool sparse;
     const void* data;
     uint dataSize;
+};
+
+struct BufferSparsePage
+{
+    SizeT offset;
+    CoreGraphics::Alloc alloc;
 };
 
 
@@ -130,8 +138,19 @@ void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE
 /// invalidate buffer CPU side, such that any GPU changes will be made visible
 void BufferInvalidate(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
 
+/// Evict a page
+void BufferSparseEvict(const BufferId id, IndexT pageIndex);
+/// Make a page resident
+void BufferSparseMakeResident(const BufferId id, IndexT pageIndex);
+/// Get the page index given an offset
+IndexT BufferSparseGetPageIndex(const BufferId id, SizeT offset);
+/// Get the buffer page size
+SizeT BufferSparseGetPageSize(const BufferId id);
+/// Commit sparse bindings
+void BufferSparseCommitChanges(const BufferId id);
+
 /// Get buffer device address
-DeviceAddress BufferGetDeviceAddress(const BufferId id);
+CoreGraphics::DeviceAddress BufferGetDeviceAddress(const BufferId id);
 
 //------------------------------------------------------------------------------
 /**
@@ -225,5 +244,7 @@ struct BufferWithStaging
     CoreGraphics::BufferId deviceBuffer;
     BufferSet hostBuffers;
 };
+
+
 
 } // namespace CoreGraphics

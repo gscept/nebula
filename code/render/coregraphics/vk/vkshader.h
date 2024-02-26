@@ -104,6 +104,7 @@ struct VkReflectionInfo
         uint32_t byteSize;
         Util::StringAtom name;
     };
+    Util::Array<Util::Array<UniformBuffer>> uniformBuffersPerSet;
     Util::Dictionary<Util::StringAtom, UniformBuffer> uniformBuffersByName;
     Util::Array<UniformBuffer> uniformBuffers;
 
@@ -117,6 +118,8 @@ struct VkReflectionInfo
     };
     Util::Dictionary<Util::StringAtom, Variable> variablesByName;
     Util::Array<Variable> variables;
+
+    Util::Array<uint64> uniformBuffersMask;
 };
 
 enum

@@ -62,8 +62,10 @@ const VkQueue GetCurrentQueue(const CoreGraphics::QueueType type);
 /// Generate or return cached VkPipeline
 VkPipeline GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info);
 
-/// perform a set of sparse bind operations
+/// perform a set of sparse image binding operations
 void SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
+/// Perform a set of sparse binding operations for buffers
+void SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
 
 /// Clear pending resources
 void ClearPending();

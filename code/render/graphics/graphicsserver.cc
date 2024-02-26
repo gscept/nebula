@@ -14,6 +14,7 @@
 #include "coreanimation/animationloader.h"
 #include "characters/skeletonloader.h"
 #include "models/modelloader.h"
+#include "materials/materialloader.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "renderutil/geometryhelpers.h"
 #include "io/ioserver.h"
@@ -56,7 +57,16 @@ GraphicsServer::Open()
     IO::IoServer::Instance()->MountEmbeddedArchive("embed:///export");
 #endif
 
-    this->timer = FrameSync::FrameSyncTimer::HasInstance() ? FrameSync::FrameSyncTimer::Instance() : FrameSync::FrameSyncTimer::Create();
+    if (FrameSync::FrameSyncTimer::HasInstance())
+    {
+        this->timer = FrameSync::FrameSyncTimer::Instance();
+        this->ownsTimer = false;
+    }
+    else
+    {
+        this->timer = FrameSync::FrameSyncTimer::Create();
+        this->ownsTimer = true;
+    }
     this->isOpen = true;
 
     this->displayDevice = CoreGraphics::DisplayDevice::Create();
@@ -88,93 +98,8 @@ GraphicsServer::Open()
 
     if (this->graphicsDevice)
     {
-
-        // Register graphics resource loaders
-        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::TextureLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nax", CoreAnimation::AnimationLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk", Characters::SkeletonLoader::RTTI); 
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx", CoreGraphics::MeshLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::MaterialLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::ModelLoader::RTTI);
-
-        RenderUtil::DrawFullScreenQuad::Setup();
-
-        // load base textures before setting up major subsystems
-        const unsigned char white = 0xFF;
-        const unsigned char black = 0x00;
-        CoreGraphics::TextureCreateInfo texInfo;
-        texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
-
-        texInfo.tag = "system";
-        texInfo.format = CoreGraphics::PixelFormat::R8;
-        texInfo.bindless = false;
-
-        texInfo.type = CoreGraphics::TextureType::Texture1D;
-        texInfo.name = "White1D";
-        texInfo.buffer = &white;
-        CoreGraphics::White1D = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::Texture1DArray;
-        texInfo.name = "White1DArray";
-        texInfo.buffer = &white;
-        CoreGraphics::White1DArray = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::Texture2D;
-        texInfo.name = "White2D";
-        texInfo.buffer = &white;
-        CoreGraphics::White2D = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::Texture2D;
-        texInfo.name = "Black2D";
-        texInfo.buffer = &black;
-        CoreGraphics::Black2D = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::Texture2DArray;
-        texInfo.name = "White2DArray";
-        texInfo.buffer = &white;
-        CoreGraphics::White2DArray = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::Texture3D;
-        texInfo.name = "White3D";
-        texInfo.buffer = &white;
-        CoreGraphics::White3D = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::TextureCube;
-        texInfo.name = "WhiteCube";
-        texInfo.layers = 6;
-        texInfo.buffer = &white;
-        CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
-        texInfo.name = "WhiteCubeArray";
-        texInfo.layers = 6;
-        texInfo.buffer = &white;
-        CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
-
-        const unsigned int red = 0x000000FF;
-        const unsigned int green = 0x0000FF00;
-        const unsigned int blue = 0x00FF0000;
-        texInfo.type = CoreGraphics::TextureType::Texture2D;
-        texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-
-        texInfo.name = "Red2D";
-        texInfo.buffer = &red;
-        texInfo.layers = 1;
-        CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.name = "Green2D";
-        texInfo.buffer = &green;
-        CoreGraphics::Green2D = CoreGraphics::CreateTexture(texInfo);
-
-        texInfo.name = "Blue2D";
-        texInfo.buffer = &blue;
-        CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
-
-        CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
-        CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
-
         // Setup shader server
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
         this->shaderServer = CoreGraphics::ShaderServer::Create();
         this->shaderServer->Open();
 
@@ -185,11 +110,93 @@ GraphicsServer::Open()
         GlobalConstantsCreateInfo globalConstantsInfo;
         CreateGlobalConstants(globalConstantsInfo);
 
+        // Register graphics resource loaders
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("n3", Models::ModelLoader::RTTI);
+
+        RenderUtil::DrawFullScreenQuad::Setup();
+
+        // load base textures before setting up major subsystems
+        const unsigned char white[6] = {0xFF};
+        const unsigned char black[6] = {0x00};
+        CoreGraphics::TextureCreateInfo texInfo;
+        texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+
+        texInfo.tag = "system";
+        texInfo.format = CoreGraphics::PixelFormat::R8;
+        texInfo.bindless = false;
+        texInfo.dataSize = sizeof(unsigned char) * 6;
+
+        texInfo.type = CoreGraphics::TextureType::Texture1D;
+        texInfo.name = "White1D";
+        texInfo.data = &white;
+        CoreGraphics::White1D = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::Texture1DArray;
+        texInfo.name = "White1DArray";
+        texInfo.data = &white;
+        CoreGraphics::White1DArray = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::Texture2D;
+        texInfo.name = "White2D";
+        texInfo.data = &white;
+        CoreGraphics::White2D = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::Texture2D;
+        texInfo.name = "Black2D";
+        texInfo.data = &black;
+        CoreGraphics::Black2D = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::Texture2DArray;
+        texInfo.name = "White2DArray";
+        texInfo.data = &white;
+        CoreGraphics::White2DArray = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::Texture3D;
+        texInfo.name = "White3D";
+        texInfo.data = &white;
+        CoreGraphics::White3D = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::TextureCube;
+        texInfo.name = "WhiteCube";
+        texInfo.layers = 6;
+        texInfo.data = &white;
+        CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
+        texInfo.name = "WhiteCubeArray";
+        texInfo.layers = 6;
+        texInfo.data = &white;
+        CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
+
+        const unsigned int red = 0x000000FF;
+        const unsigned int green = 0x0000FF00;
+        const unsigned int blue = 0x00FF0000;
+        texInfo.type = CoreGraphics::TextureType::Texture2D;
+        texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
+
+        texInfo.name = "Red2D";
+        texInfo.data = &red;
+        texInfo.layers = 1;
+        CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.name = "Green2D";
+        texInfo.data = &green;
+        CoreGraphics::Green2D = CoreGraphics::CreateTexture(texInfo);
+
+        texInfo.name = "Blue2D";
+        texInfo.data = &blue;
+        CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
+
+        CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
+        CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
+
         this->frameServer = Frame::FrameServer::Create();
         this->frameServer->Open();
-
-        this->materialServer = Materials::ShaderConfigServer::Create();
-        this->materialServer->Open();
 
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
@@ -200,6 +207,8 @@ GraphicsServer::Open()
         // start timer
         if (!this->timer->IsTimeRunning())
             this->timer->StartTime();
+
+
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();
@@ -228,9 +237,6 @@ GraphicsServer::Close()
 
     this->shapeRenderer->Close();
     this->shapeRenderer = nullptr;
-
-    this->materialServer->Close();
-    this->materialServer = nullptr;
 
     this->frameServer->Close();
     this->frameServer = nullptr;
@@ -429,7 +435,8 @@ void
 GraphicsServer::RunPreLogic()
 {
     N_SCOPE(PreLogic, Graphics);
-    this->timer->UpdateTimePolling();
+    if (this->ownsTimer)
+        this->timer->UpdateTimePolling();
 
     this->frameContext.frameIndex = this->timer->GetFrameIndex();
     this->frameContext.frameTime = this->timer->GetFrameTime();

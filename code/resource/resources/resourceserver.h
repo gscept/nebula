@@ -74,7 +74,7 @@ public:
     const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
 
     /// register a stream pool, which takes an extension and the RTTI of the resource type to create
-    void RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+    void RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamPool() const;
 

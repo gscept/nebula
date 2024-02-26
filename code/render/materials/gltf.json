@@ -1,0 +1,309 @@
+{
+    "Nebula": {
+        "Templates": [
+            {
+                "name": "GLTF Base",
+                "virtual": true,
+                "desc": "Base material for all GLTF materials",
+                "group": "Standard",
+                "variables": [
+                    {
+                        "name": "baseColorTexture",
+                        "type": "textureHandle",
+                        "defaultValue": "tex:system/placeholder.dds"
+                    },
+                    {
+                        "name": "normalTexture",
+                        "type": "textureHandle",
+                        "defaultValue": "tex:system/nobump.dds"
+                    },
+                    {
+                        "name": "metallicRoughnessTexture",
+                        "type": "textureHandle",
+                        "defaultValue": "tex:system/default_material.dds"
+                    },
+                    {
+                        "name": "emissiveTexture",
+                        "type": "textureHandle",
+                        "defaultValue": "tex:system/white.dds"
+                    },
+                    {
+                        "name": "occlusionTexture",
+                        "type": "textureHandle",
+                        "defaultValue": "tex:system/white.dds"
+                    },
+                    {
+                        "name": "baseColorFactor",
+                        "type": "vec4",
+                        "defaultValue": [ 1.0, 1.0, 1.0, 1.0 ],
+                        "max": [ 1.0, 1.0, 1.0, 1.0 ]
+                    },
+                    {
+                        "name": "emissiveFactor",
+                        "type": "vec4",
+                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ]
+                    },
+                    {
+                        "name": "metallicFactor",
+                        "type": "float",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "roughnessFactor",
+                        "type": "float",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "normalScale",
+                        "type": "float",
+                        "defaultValue": 1.0
+                    }
+                ]
+            },
+            {
+                "name": "GLTF",
+                "inherits": "GLTF Base",
+                "materialProperties": "GLTF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Standard material for static GLTF models",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Static"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Static|Depth"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static"
+                    }
+                ]
+            },
+            {
+                "name": "GLTFDoubleSided",
+                "inherits": "GLTF Base",
+                "materialProperties": "GLTF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Standard material for double sided static GLTF models",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Static"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Static|Depth|DoubleSided"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|DoubleSided"
+                    }
+                ]
+            },
+            {
+                "name": "GLTFAlphaMask",
+                "inherits": "GLTF Base",
+                "materialProperties": "GLTF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Standard material for alpha masked static GLTF models",
+                "group": "Standard",
+                "variables": [
+                    {
+                        "name": "alphaCutoff",
+                        "type": "float",
+                        "defaultValue": 0.0
+                    }
+                ],
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Static"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|Depth|AlphaMask"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|AlphaMask"
+                    }
+                ]
+            },
+            {
+                "name": "GLTFAlphaMaskDoubleSided",
+                "inherits": "GLTF Base",
+                "materialProperties": "GLTF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Standard material for doublesided, alpha masked static GLTF models",
+                "group": "Standard",
+                "variables": [
+                    {
+                        "name": "alphaCutoff",
+                        "type": "float",
+                        "defaultValue": 0.0
+                    }
+                ],
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Static"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|Depth|AlphaMask|DoubleSided"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|AlphaMask|DoubleSided"
+                    }
+                ]
+            },
+            {
+                "name": "GLTFAlphaBlend",
+                "inherits": "GLTF Base",
+                "materialProperties": "GLTF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Standard material for alpha blended static GLTF models",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Static"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryAlphaLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|AlphaBlend"
+                    }
+                ]
+            },
+            {
+                "name": "GLTFAlphaBlendDoubleSided",
+                "inherits": "GLTF Base",
+                "materialProperties": "GLTF",
+                "vertexType": "VertexLayoutType::Normal",
+                "desc": "Standard material for alpha blended, double sided static GLTF models",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Static"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Static|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryAlphaLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Static|AlphaBlend|DoubleSided"
+                    }
+                ]
+            }
+        ]
+    }
+}

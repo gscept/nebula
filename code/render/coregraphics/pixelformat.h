@@ -90,6 +90,8 @@ public:
     static bool ToCompressed(Code code);
     /// calculate texel dimensions
     static SizeT ToTexelSize(Code code);
+    /// Calculate texel block size
+    static SizeT ToBlockSize(Code code);
     /// return true if depth format
     static bool IsDepthFormat(Code code);
     /// return true if depth format

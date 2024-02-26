@@ -317,7 +317,7 @@ VkTypes::AsVkSampleFlags(const SizeT samples)
     case 32: return VK_SAMPLE_COUNT_32_BIT;
     case 64: return VK_SAMPLE_COUNT_64_BIT;
     default:
-        n_error("Unknown sample bits '%d'", samples);
+        n_error("Unknown sample mipBits '%d'", samples);
         return VK_SAMPLE_COUNT_1_BIT;
     }
 }

@@ -42,7 +42,7 @@ public:
 #endif
 
         /// Apply the resource table
-        void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type, IndexT bufferIndex);
+        void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, IndexT bufferIndex);
     };
 
     /// get surface

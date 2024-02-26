@@ -101,7 +101,7 @@ public:
     /// list all files matching a pattern in a directory
     Util::Array<Util::String> ListFiles(const URI& dir, const Util::String& pattern, bool asFullPath=false) const;
     /// list all subdirectories matching a pattern in a directory
-    Util::Array<Util::String> ListDirectories(const URI& dir, const Util::String& pattern, bool asFullPath=false) const;
+    Util::Array<Util::String> ListDirectories(const URI& dir, const Util::String& pattern, bool asFullPath=false, bool prioritizeArchive=true) const;
 
     /// create a temporary file name
     URI CreateTemporaryFilename(const URI& path) const;

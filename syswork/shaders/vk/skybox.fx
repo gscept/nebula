@@ -73,7 +73,6 @@ psMain(in vec3 UV,
     in vec3 Direction,
     [color0] out vec4 Color)
 {
-    vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
     vec3 dir = normalize(Direction);
     vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
     

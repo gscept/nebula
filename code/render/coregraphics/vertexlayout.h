@@ -52,6 +52,7 @@ enum class VertexLayoutType
     Colors,     // Geometry with per-vertex colors
     SecondUV,   // Secondary UV set geometry 
     Skin,       // Skinned geometry with weight and joint indices
+    Particle,   // Special vertex layout for particles
     NumTypes
 };
 

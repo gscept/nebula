@@ -11,6 +11,7 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/pipeline.h"
+#include "coregraphics/shader.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "graphics/cameracontext.h"
@@ -139,12 +140,12 @@ Im3dContext::Create()
     //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
     // allocate imgui shader
-    imState.im3dShader = ShaderServer::Instance()->GetShader("shd:im3d/im3d.fxb");
-    imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Lines"));
-    imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Lines"));
-    imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Points"));
-    imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("Static|Triangles"));
-    imState.depthTriangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureFromString("StaticDepth|Triangles"));
+    imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.fxb");
+    imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Lines"));
+    imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Lines"));
+    imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Points"));
+    imState.triangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Triangles"));
+    imState.depthTriangles = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Triangles"));
     
     imState.depthLayerId = Im3d::MakeId("depthEnabled");
     // create vertex buffer
@@ -174,11 +175,11 @@ Im3dContext::Create()
     };
     op->buildFunc = [](const CoreGraphics::PassId pass, const uint subpass)
     {
-        imState.linesPipeline = CoreGraphics::CreatePipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
-        imState.depthLinesPipeline = CoreGraphics::CreatePipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
-        imState.trianglesPipeline = CoreGraphics::CreatePipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
-        imState.depthTrianglesPipeline = CoreGraphics::CreatePipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
-        imState.pointsPipeline = CoreGraphics::CreatePipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
+        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
     };
     Frame::AddSubgraph("Im3D", { op });
 }

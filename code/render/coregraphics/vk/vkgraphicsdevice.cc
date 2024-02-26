@@ -71,6 +71,21 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     Util::FixedArray<UploadRingBuffer> uploadRingBuffers;
     CoreGraphics::BufferId uploadBuffer;
 
+    struct SparseImageBind
+    {
+        VkImage img;
+        Util::Array<VkSparseMemoryBind> opaqueBinds;
+        Util::Array<VkSparseImageMemoryBind> pageBinds;
+    };
+    Util::Array<SparseImageBind> sparseImageBinds;
+
+    struct SparseBufferBind
+    {
+        VkBuffer buf;
+        Util::Array<VkSparseMemoryBind> binds;
+    };
+    Util::Array<SparseBufferBind> sparseBufferBinds;
+
     struct PendingDeletes
     {
         Util::Array<Util::Tuple<VkDevice, VkImageView, VkImage>> textures;
@@ -83,6 +98,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<CoreGraphics::Alloc> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
+    Util::Array<PendingDeletes> deletesPerSubmission;
     Util::FixedArray<Util::Array<CoreGraphics::SubmissionWaitEvent>> waitEvents;
     CoreGraphics::SubmissionWaitEvent mostRecentEvents[CoreGraphics::QueueType::NumQueueTypes];
 
@@ -502,7 +518,26 @@ GetOrCreatePipeline(
 void 
 SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds)
 {
-    state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, img, opaqueBinds, pageBinds);
+    CoreGraphics::SubmissionWaitEvent sparseWait;
+    sparseWait.timelineIndex = state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, img, opaqueBinds, pageBinds);
+    sparseWait.queue = CoreGraphics::SparseQueueType;
+
+    // Set wait events in graphics device
+    state.waitEvents[state.currentBufferedFrameIndex].Append(sparseWait);
+    state.mostRecentEvents[sparseWait.queue] = sparseWait;
+
+    state.sparseImageBinds.Append(GraphicsDeviceState::SparseImageBind{.img = img, .opaqueBinds = opaqueBinds, .pageBinds = pageBinds});
+    //state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, img, opaqueBinds, pageBinds);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds)
+{
+    state.sparseBufferBinds.Append(GraphicsDeviceState::SparseBufferBind{.buf = buf, .binds = binds});
+    //state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, buf, binds);
 }
 
 //------------------------------------------------------------------------------
@@ -999,9 +1034,19 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .pNext = &groupHandlesFeature,
         .graphicsPipelineLibrary = true
     };
+
+    VkPhysicalDevice16BitStorageFeatures buffer16BitFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
+        .pNext = &libraryFeature,
+        .storageBuffer16BitAccess = true,
+        .uniformAndStorageBuffer16BitAccess = true,
+        .storagePushConstant16 = false,
+        .storageInputOutput16 = false
+    };
     if (info.features.enableRayTracing)
     {
-        lastExtension = &libraryFeature;
+        lastExtension = &buffer16BitFeature;
     }
 #pragma endregion
 
@@ -1435,7 +1480,7 @@ LockTransferSetupCommandBuffer()
     }
     else
     {
-        CmdBufferIdAcquire(state.setupTransferCommandBuffer);
+        CoreGraphics::CmdBufferIdAcquire(state.setupTransferCommandBuffer);
     }
     
     return state.setupTransferCommandBuffer;
@@ -1490,6 +1535,60 @@ UnlockGraphicsSetupCommandBuffer()
 //------------------------------------------------------------------------------
 /**
 */
+const CoreGraphics::CmdBufferId
+LockTransferHandoverSetupCommandBuffer()
+{
+    transferLock.Enter();
+    if (state.handoverTransferCommandBuffer == CoreGraphics::InvalidCmdBufferId)
+    {
+        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+        cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
+        cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
+        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        state.handoverTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+
+        CoreGraphics::CmdBeginRecord(state.handoverTransferCommandBuffer, { true, false, false });
+        CoreGraphics::CmdBeginMarker(state.handoverTransferCommandBuffer, NEBULA_MARKER_PURPLE, "Transfer Handover");
+    }
+    else
+    {
+        CoreGraphics::CmdBufferIdAcquire(state.handoverTransferCommandBuffer);
+    }
+
+    return state.handoverTransferCommandBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+UnlockTransferHandoverSetupCommandBuffer()
+{
+    CoreGraphics::CmdBufferIdRelease(state.handoverTransferCommandBuffer);
+    transferLock.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64
+NextSubmissionIndex(const CoreGraphics::QueueType queue)
+{
+    return state.queueHandler.GetNextTimelineIndex(queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index)
+{
+    return state.queueHandler.Poll(queue, index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 AddSubmissionEvent(const CoreGraphics::SubmissionWaitEvent& event)
 {
@@ -1504,18 +1603,19 @@ CoreGraphics::SubmissionWaitEvent
 SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type)
 {
     // Submit transfer and graphics commands from this frame
-    CoreGraphics::SubmissionWaitEvent transferWait, graphicsWait;
+    CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait;
     transferLock.Enter();
     if (state.setupTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
         CmdBufferIdAcquire(state.setupTransferCommandBuffer);
         CmdEndMarker(state.setupTransferCommandBuffer);
         CmdEndRecord(state.setupTransferCommandBuffer);
-        transferWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.setupTransferCommandBuffer));
-        transferWait.queue = CoreGraphics::TransferQueueType;
+        CoreGraphics::SubmissionWaitEvent uploadWait;
+        uploadWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.setupTransferCommandBuffer));
+        uploadWait.queue = CoreGraphics::TransferQueueType;
 
         // Set wait events in graphics device
-        AddSubmissionEvent(transferWait);
+        AddSubmissionEvent(uploadWait);
 
         // Delete command buffer
         DestroyCmdBuffer(state.setupTransferCommandBuffer);
@@ -1524,22 +1624,40 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         // Reset command buffer id for the next frame
         state.setupTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
     }
+
+    if (state.handoverTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
+    {
+        CmdBufferIdAcquire(state.handoverTransferCommandBuffer);
+        CmdEndMarker(state.handoverTransferCommandBuffer);
+        CmdEndRecord(state.handoverTransferCommandBuffer);
+        handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.handoverTransferCommandBuffer));
+        handoverWait.queue = CoreGraphics::TransferQueueType;
+
+        // Set wait events in graphics device
+        AddSubmissionEvent(handoverWait);
+
+        // Delete command buffer
+        DestroyCmdBuffer(state.handoverTransferCommandBuffer);
+        CmdBufferIdRelease(state.handoverTransferCommandBuffer);
+
+        // Reset command buffer id for the next frame
+        state.handoverTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
+    }
     transferLock.Leave();
 
     setupLock.Enter();
     if (state.setupGraphicsCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
         CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
-
         CmdEndMarker(state.setupGraphicsCommandBuffer);
         CmdEndRecord(state.setupGraphicsCommandBuffer);
         
         graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, CmdBufferGetVk(state.setupGraphicsCommandBuffer));
         graphicsWait.queue = CoreGraphics::GraphicsQueueType;
 
-        // This command buffer will have handover commands, so wait for the previous transfer buffer
-        if (transferWait != nullptr)
-            state.queueHandler.AppendWaitTimeline(transferWait.timelineIndex, CoreGraphics::GraphicsQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, CoreGraphics::TransferQueueType);
+        // This command buffer will have handover commands, so wait for that transfer
+        if (handoverWait != nullptr)
+            state.queueHandler.AppendWaitTimeline(handoverWait.timelineIndex, CoreGraphics::GraphicsQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, CoreGraphics::TransferQueueType);
 
         // Add wait event
         AddSubmissionEvent(graphicsWait);
@@ -1675,7 +1793,8 @@ FinishFrame(IndexT frameIndex)
     }
 
     // Flush all pending submissions on the queues
-    state.queueHandler.FlushSubmissionsTimeline(CoreGraphics::SparseQueueType, nullptr);
+    state.queueHandler.FlushSparseBinds(nullptr);
+    //state.queueHandler.FlushSubmissionsTimeline(CoreGraphics::SparseQueueType, nullptr);
     state.queueHandler.FlushSubmissionsTimeline(CoreGraphics::TransferQueueType, nullptr);
     state.queueHandler.FlushSubmissionsTimeline(CoreGraphics::ComputeQueueType, nullptr);
 
@@ -1687,6 +1806,26 @@ FinishFrame(IndexT frameIndex)
 
     // Flush graphics (main)
     state.queueHandler.FlushSubmissionsTimeline(CoreGraphics::GraphicsQueueType, nullptr);
+
+    if (!state.sparseBufferBinds.IsEmpty() || !state.sparseImageBinds.IsEmpty())
+    {
+        // Bind sparse buffers at the end of the frame
+        for (auto& bind : state.sparseBufferBinds)
+        {
+            state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, bind.buf, bind.binds);
+        }
+
+        // Do the same for images
+        for (auto& bind : state.sparseImageBinds)
+        {
+            state.queueHandler.AppendSparseBind(CoreGraphics::SparseQueueType, bind.img, bind.opaqueBinds, bind.pageBinds);
+        }
+
+        // And flush queues
+        state.queueHandler.FlushSparseBinds(nullptr);
+        state.sparseBufferBinds.Clear();
+        state.sparseImageBinds.Clear();
+    }
 }
 
 //------------------------------------------------------------------------------

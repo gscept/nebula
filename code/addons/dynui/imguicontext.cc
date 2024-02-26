@@ -321,10 +321,10 @@ ImguiContext::Create()
     state.dockOverViewport = false;
 
     // allocate imgui shader
-    state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui.fxb");
+    state.uiShader = CoreGraphics::ShaderGet("shd:imgui/shaders/imgui.fxb");
     state.params.projVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader,"TextProjectionModel");
     state.params.fontVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
-    state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureFromString("Static"));
+    state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureMask("Static"));
 
     state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 
@@ -354,7 +354,7 @@ ImguiContext::Create()
     op->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
     {
         CoreGraphics::InputAssemblyKey inputAssembly { CoreGraphics::PrimitiveTopology::TriangleList, false  };
-        state.pipeline = CoreGraphics::CreatePipeline({ state.prog, pass, subpass, inputAssembly });
+        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
     };
     Frame::AddSubgraph("ImGUI", { op });
 
@@ -532,17 +532,18 @@ ImguiContext::Create()
 #endif
     
     unsigned char* buffer;
-    int width, height, channels;
-    io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &channels);
+    int width, height, bytesPerPixel;
+    io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &bytesPerPixel);
 
     // load image using SOIL
-    // unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * channels, &width, &height, &channels, SOIL_LOAD_AUTO);
+    // unsigned char* texData = SOIL_load_image_from_memory(buffer, width * height * bytesPerPixel, &width, &height, &bytesPerPixel, SOIL_LOAD_AUTO);
 
     CoreGraphics::TextureCreateInfo texInfo;
     texInfo.name = "imgui_font_tex"_atm;
     texInfo.usage = TextureUsage::SampleTexture;
     texInfo.tag = "system"_atm;
-    texInfo.buffer = buffer;
+    texInfo.data = buffer;
+    texInfo.dataSize = width * height * bytesPerPixel;
     texInfo.type = TextureType::Texture2D;
     texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
     texInfo.width = width;

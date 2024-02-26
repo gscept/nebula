@@ -139,26 +139,11 @@ CreateBlas(const BlasCreateInfo& info)
 
     uint flagBits = Util::BitmaskConvert((uint)info.flags, Lookup);
 
-    BufferIdLock _1(CoreGraphics::GetVertexBuffer());
-    BufferIdLock _2(CoreGraphics::GetIndexBuffer());
-    VkBufferDeviceAddressInfo deviceAddress =
-    {
-        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-        nullptr,
-        VK_NULL_HANDLE
-    };
-    deviceAddress.buffer = BufferGetVk(CoreGraphics::GetVertexBuffer());
-    VkDeviceAddress vboAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
-    deviceAddress.buffer = BufferGetVk(CoreGraphics::GetIndexBuffer());
-    VkDeviceAddress iboAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
-
-    MeshIdLock _0(info.mesh);
-    CoreGraphics::VertexLayoutId layout = MeshGetVertexLayout(info.mesh);
-
-    // Get positions format
-    const Util::Array<VertexComponent>& components = VertexLayoutGetComponents(layout);
-    VkFormat positionsFormat = VkTypes::AsVkVertexType(components[0].GetFormat());
-    SizeT stride = VertexLayoutGetStreamSize(layout, 0); // 0 is the position/UV stream
+    BufferIdLock _1(info.vbo);
+    BufferIdLock _2(info.ibo);
+    VkDeviceAddress vboAddr = BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
+    VkDeviceAddress iboAddr = BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
+    VkFormat positionsFormat = VkTypes::AsVkVertexType(info.positionsFormat);
 
     // Assert the vertex format is supported by raytracing
     VkFormatProperties2 formatProps =
@@ -174,11 +159,11 @@ CreateBlas(const BlasCreateInfo& info)
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
         .pNext = nullptr,
         .vertexFormat = positionsFormat,
-        .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + MeshGetVertexOffset(info.mesh, 0)},
-        .vertexStride = (uint64)stride,
-        .maxVertex = MeshGetIndexType(info.mesh) == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
-        .indexType = MeshGetIndexType(info.mesh) == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
-        .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + MeshGetIndexOffset(info.mesh)},
+        .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + info.vertexOffset},
+        .vertexStride = (uint64)info.stride,
+        .maxVertex = info.indexType == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
+        .indexType = info.indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
+        .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + info.indexOffset},
         .transformData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr } // TODO: Support transforms
     };
 
@@ -188,12 +173,11 @@ CreateBlas(const BlasCreateInfo& info)
         .pNext = nullptr,
         .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
         .geometry = VkAccelerationStructureGeometryDataKHR{ .triangles = setup.triangleData },
-        .flags = 0x0 // TODO, add support for avoiding anyhit or single-invocation anyhit optimizations
+        .flags = VK_GEOMETRY_OPAQUE_BIT_KHR // TODO, add support for avoiding anyhit or single-invocation anyhit optimizations
     };
 
     // Match the number of geometries to the amount of primitive groups
-    const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(info.mesh);
-    for (IndexT i = 0; i < groups.Size(); i++)
+    for (IndexT i = 0; i < info.primitiveGroups.Size(); i++)
     {
         setup.geometries.Append(geometry);
     }
@@ -207,7 +191,7 @@ CreateBlas(const BlasCreateInfo& info)
         .mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
         .srcAccelerationStructure = VK_NULL_HANDLE,
         .dstAccelerationStructure = VK_NULL_HANDLE,
-        .geometryCount = (uint)groups.Size(),
+        .geometryCount = (uint)info.primitiveGroups.Size(),
         .pGeometries = setup.geometries.Begin(),
         .ppGeometries = nullptr,
         .scratchData = VkDeviceOrHostAddressKHR{ .hostAddress = nullptr }
@@ -216,14 +200,14 @@ CreateBlas(const BlasCreateInfo& info)
     Util::Array<uint> maxPrimitiveCounts;
 
     // Each primitive group is an individual range
-    for (IndexT i = 0; i < groups.Size(); i++)
+    for (IndexT i = 0; i < info.primitiveGroups.Size(); i++)
     {
-        uint primitiveCount = groups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
+        uint primitiveCount = info.primitiveGroups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
         setup.rangeInfos.Append(
         {
             .primitiveCount = (uint)primitiveCount,
             .primitiveOffset = 0, // Primitive offset is defined in the mesh
-            .firstVertex = (uint)groups[i].GetBaseIndex(),
+            .firstVertex = (uint)info.primitiveGroups[i].GetBaseIndex(),
             .transformOffset = 0
         });
         maxPrimitiveCounts.Append(primitiveCount);
@@ -254,8 +238,7 @@ CreateBlas(const BlasCreateInfo& info)
     CoreGraphics::BufferId scratchBuf = CoreGraphics::CreateBuffer(bufferInfo);
     blasAllocator.Set<Blas_Scratch>(id, scratchBuf);
 
-    deviceAddress.buffer = BufferGetVk(scratchBuf);
-    VkDeviceAddress scratchAddr = vkGetBufferDeviceAddress(dev, &deviceAddress);
+    VkDeviceAddress scratchAddr = BufferGetDeviceAddress(scratchBuf);
     setup.buildGeometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = scratchAddr };
 
     // Now create it

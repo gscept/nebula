@@ -8,7 +8,7 @@
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceserver.h"
 
-#include "objects_shared.h"
+#include "system_shaders/objects_shared.h"
 
 using namespace Util;
 using namespace Math;
@@ -40,7 +40,7 @@ Util::FixedArray<CoreGraphics::ResourceTableId>
 ShaderStateNode::CreateResourceTables()
 {
     if (baseShader == CoreGraphics::InvalidShaderId)
-        baseShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
+        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/objects_shared.fxb"_atm);
 
     Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
 
@@ -48,7 +48,7 @@ ShaderStateNode::CreateResourceTables()
     {
         CoreGraphics::BufferId cbo = CoreGraphics::GetConstantBuffer(i);
         CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        CoreGraphics::ResourceTableSetConstantBuffer(table, { cbo, ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
+        CoreGraphics::ResourceTableSetConstantBuffer(table, { cbo, ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(table);
         ret[i] = table;
     }
@@ -167,7 +167,7 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type, IndexT bufferIndex)
+ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, IndexT bufferIndex)
 {
     // Apply per-draw surface parameters
     if (this->materialInstance != Materials::MaterialInstanceId::Invalid())

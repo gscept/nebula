@@ -30,9 +30,9 @@ public:
     /// set source directory for base shaders
     void AddIncludeDir(const Util::String& incDir);    
     /// set destination directory
-    void SetDstDir(const Util::String& dstDir);
+    void SetDstBinary(const Util::String& dstBinary);
     /// set output header directory
-    void SetHeaderDir(const Util::String& headerDir);
+    void SetDstHeader(const Util::String& dstHeader);
             
     /// set debugging flag
     void SetDebugFlag(bool b);
@@ -58,8 +58,8 @@ private:
     bool CompileSPIRV(const Util::String& src);
     
     Platform::Code platform;    
-    Util::String dstDir;    
-    Util::String headerDir;
+    Util::String dstBinary;    
+    Util::String dstHeader;
     Util::String language;  
     bool quiet;
     bool debug;
@@ -89,18 +89,18 @@ SingleShaderCompiler::SetLanguage( const Util::String& lang )
 /**
 */
 inline void
-SingleShaderCompiler::SetDstDir(const Util::String& d)
+SingleShaderCompiler::SetDstBinary(const Util::String& d)
 {
-    this->dstDir = d;
+    this->dstBinary = d;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void 
-SingleShaderCompiler::SetHeaderDir(const Util::String& headerDir)
+SingleShaderCompiler::SetDstHeader(const Util::String& dstHeader)
 {
-    this->headerDir = headerDir;
+    this->dstHeader = dstHeader;
 }
 
 //------------------------------------------------------------------------------

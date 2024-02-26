@@ -89,6 +89,7 @@ struct GraphicsDeviceState
 
     CoreGraphics::CmdBufferPoolId setupTransferCommandBufferPool;
     CoreGraphics::CmdBufferId setupTransferCommandBuffer;
+    CoreGraphics::CmdBufferId handoverTransferCommandBuffer;
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
     CoreGraphics::CmdBufferId setupGraphicsCommandBuffer;
 
@@ -169,10 +170,19 @@ void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 const CoreGraphics::CmdBufferId LockTransferSetupCommandBuffer();
 /// Release lock on resource command buffer
 void UnlockTransferSetupCommandBuffer();
-/// Lock handover command buffer
+/// Lock immediate graphics command buffer
 const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer();
-/// Release lock on handover command buffer
+/// Release lock on immediate graphics command buffer
 void UnlockGraphicsSetupCommandBuffer();
+/// Lock handover transfer command buffer
+const CoreGraphics::CmdBufferId LockTransferHandoverSetupCommandBuffer();
+/// Release lock on handover command buffer
+void UnlockTransferHandoverSetupCommandBuffer();
+
+/// Get the next submission index for a specific queue
+uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);
+/// Poll a submission for completion
+bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
 
 /// Submit a command buffer, but doesn't necessarily execute it immediately
 SubmissionWaitEvent SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type);

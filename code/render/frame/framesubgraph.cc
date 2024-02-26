@@ -119,7 +119,7 @@ GetSubgraph(const Util::StringAtom name)
         return nameToSubgraph[name];
     else
     {
-        n_printf("No subgraph '%s' found\n", name.Value());
+        n_printf("[FrameScript] - No subgraph '%s' found\n", name.Value());
         return {};
     }
 }

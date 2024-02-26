@@ -108,7 +108,8 @@ struct TextureCreateInfo
         : name(""_atm)
         , usage(CoreGraphics::TextureUsage::SampleTexture)
         , tag(""_atm)
-        , buffer(nullptr)
+        , data(nullptr)
+        , dataSize(0)
         , type(Texture2D)
         , format(CoreGraphics::PixelFormat::R8G8B8A8)
         , width(1)
@@ -132,7 +133,8 @@ struct TextureCreateInfo
     Resources::ResourceName name;
     CoreGraphics::TextureUsage usage;
     Util::StringAtom tag;
-    const void* buffer;
+    const void* data;
+    SizeT dataSize;
     CoreGraphics::TextureType type;
     CoreGraphics::PixelFormat::Code format;
     float width, height, depth;
@@ -240,7 +242,7 @@ void TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer
 void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
 
 /// Update texture from data buffer, returns true if there is enough upload heap space
-bool TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data);
+bool TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, const void* data, SizeT dataSize);
 
 /// clear texture with color
 void TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::TextureSubresourceInfo& subres);

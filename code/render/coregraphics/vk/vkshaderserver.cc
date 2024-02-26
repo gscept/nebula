@@ -10,7 +10,7 @@
 
 #include "graphics/bindlessregistry.h"
 
-#include "shared.h"
+#include "system_shaders/shared.h"
 
 using namespace Resources;
 using namespace CoreGraphics;

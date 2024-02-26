@@ -36,7 +36,12 @@ __ImplementEnumComparisonOperators(AccelerationStructureBuildFlags);
 
 struct BlasCreateInfo
 {
-    CoreGraphics::MeshId mesh;
+    CoreGraphics::BufferId vbo, ibo;
+    CoreGraphics::IndexType::Code indexType;
+    CoreGraphics::VertexComponent::Format positionsFormat;
+    IndexT stride;
+    IndexT vertexOffset, indexOffset;
+    Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
     AccelerationStructureBuildFlags flags;
 };
 
@@ -65,7 +70,7 @@ struct BlasInstanceCreateInfo
     CoreGraphics::BlasId blas;
     Math::mat4 transform;
     uint instanceIndex;         // Readable in the shader as gl_InstanceCustomIndexKHR
-    uint mask;                  // 8 bit visibility mask
+    uchar mask;                  // 8 bit visibility mask
     uint shaderOffset;          // Offset into the shader binding table
     BlasInstanceFlags flags;
 };

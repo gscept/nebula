@@ -1,103 +1,107 @@
 {
-   "Nebula": {
-      "Materials": [         
+    "Nebula": {
+        "Materials": [
             {
-               "Pass": [
-                  {
-                     "batch": "DirectToColor",
-                     "shader": "leveleditor",
-                     "variation": "Alt0"
-                  }
-               ],
-               "Param": [
-                  {
-                     "name": "MatDiffuse",
-                     "type": "vec4",
-                     "defaultValue": [0.0,0.0,0.0,0.0]
-                  }
-               ],
-               "name": "PlacementHandleWireframeNoPick",
-               "vertexType": "special",
-               "desc": "Inhouse material used by level editor to render handles"
+                "Pass": [
+                    {
+                        "batch": "DirectToColor",
+                        "shader": "leveleditor",
+                        "variation": "Alt0"
+                    }
+                ],
+                "Param": [
+                    {
+                        "name": "MatDiffuse",
+                        "type": "vec4",
+                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ]
+                    }
+                ],
+                "name": "PlacementHandleWireframeNoPick",
+                "vertexType": "special",
+                "materialProperties": "Unlit",
+                "desc": "Inhouse material used by level editor to render handles"
             },
             {
-               "Pass": [
-                  {
-                     "batch": "DirectToColor",
-                     "shader": "leveleditor",
-                     "variation": "Alt0|Alt2"
-                  }
-               ],
-               "Param": [
-                  {
-                     "name": "MatDiffuse",
-                     "type": "vec4",
-                     "defaultValue": [0.0,0.0,0.0,0.0]
-                  }
-               ],
-               "name": "PlacementHandleSolidNoPick",
-               "vertexType": "special",
-               "desc": "Inhouse material used by level editor to render handles"
+                "Pass": [
+                    {
+                        "batch": "DirectToColor",
+                        "shader": "leveleditor",
+                        "variation": "Alt0|Alt2"
+                    }
+                ],
+                "Param": [
+                    {
+                        "name": "MatDiffuse",
+                        "type": "vec4",
+                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ]
+                    }
+                ],
+                "name": "PlacementHandleSolidNoPick",
+                "vertexType": "special",
+                "materialProperties": "Unlit",
+                "desc": "Inhouse material used by level editor to render handles"
             },
             {
-               "Pass": [
-                  {
-                     "batch": "DirectToColor",
-                     "shader": "leveleditor",
-                     "variation": "Alt0"
-                  },
-                  {
-                     "batch": "PickingInFront",
-                     "shader": "leveleditor",
-                     "variation": "Alt1"
-                  }
-               ],
-               "Param": [
-                  {
-                     "name": "MatDiffuse",
-                     "type": "vec4",
-                     "defaultValue": [0.0,0.0,0.0,0.0]
-                  },
-                  {
-                     "name": "ObjectId",
-                     "type": "int",
-                     "system": true
-                  }
-               ],
-               "name": "PlacementHandleWireframe",
-               "vertexType": "special",
-               "desc": "Inhouse material used by level editor to render handles"
+                "Pass": [
+                    {
+                        "batch": "DirectToColor",
+                        "shader": "leveleditor",
+                        "variation": "Alt0"
+                    },
+                    {
+                        "batch": "PickingInFront",
+                        "shader": "leveleditor",
+                        "variation": "Alt1"
+                    }
+                ],
+                "Param": [
+                    {
+                        "name": "MatDiffuse",
+                        "type": "vec4",
+                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ]
+                    },
+                    {
+                        "name": "ObjectId",
+                        "type": "int",
+                        "system": true
+                    }
+                ],
+                "name": "PlacementHandleWireframe",
+                "vertexType": "special",
+                "materialProperties": "Unlit",
+                "desc": "Inhouse material used by level editor to render handles"
             },
             {
-               "Pass": [
-                  {
-                     "batch": "DirectToColor",
-                     "shader": "leveleditor",
-                     "variation": "Alt0|Alt2"
-                  },
-                  {
-                     "batch": "PickingInFront",
-                     "shader": "leveleditor",
-                     "variation": "Alt1|Alt2"
-                  }
-               ],
-               "Param": [
-                  {
-                     "name": "MatDiffuse",
-                     "type": "vec4",
-                     "defaultValue": [0.0,0.0,0.0,0.0]
-                  },
-                  {
-                     "name": "ObjectId",
-                     "type": "int",
-                     "system": true
-                  }
-               ],
-               "name": "PlacementHandleSolid",
-               "vertexType": "special",
-               "desc": "Inhouse material used by level editor to render handles"
+                "Pass": [
+                    {
+                        "batch": "DirectToColor",
+                        "shader": "leveleditor",
+                        "variation": "Alt0|Alt2"
+                    },
+                    {
+                        "batch": "PickingInFront",
+                        "shader": "leveleditor",
+                        "variation": "Alt1|Alt2"
+                    }
+                ],
+                "Param": [
+                    {
+                        "name": "MatDiffuse",
+                        "type": "vec4",
+                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ]
+                    },
+                    {
+                        "name": "ObjectId",
+                        "type": "int",
+                        "system": true
+                    }
+                ],
+                "name": "PlacementHandleSolid",
+                "vertexType": "special",
+                "materialProperties": "Unlit",
+                "desc": "Inhouse material used by level editor to render handles"
             }
-         ]
-      
-   }
+        ]
+
+    }
 }

@@ -23,6 +23,51 @@
 namespace Materials
 {
 
+struct MaterialTemplateValue
+{
+    enum Type
+    {
+        Bool,
+        Scalar,
+        Vec2,
+        Vec3,
+        Vec4,
+        Resource,
+        BindlessResource
+    } type;
+
+    union
+    {
+        bool b;
+        float f;
+        Math::vec2 f2;
+        Math::vec3 f3;
+        Math::vec4 f4;
+        const char* resource;
+    } data;
+
+    // Get size of data
+    SizeT GetSize() const
+    {
+        switch (this->type)
+        {
+            case Bool:
+                return 1;
+            case Scalar:
+                return 4;
+            case Vec2:
+                return 8;
+            case Vec3:      // Vec3 expands to Vec4 because neither SSE nor GPU's can actually store only 3 floats
+            case Vec4:
+                return 16;
+            case BindlessResource:
+                return 4;
+            default: 
+                return 1;
+        }
+    }
+
+};
 
 struct ShaderConfigTexture
 {
@@ -35,6 +80,7 @@ struct ShaderConfigTexture
 struct ShaderConfigBatchTexture
 {
     IndexT slot;
+    Materials::MaterialTemplateValue* def;
 };
 
 struct ShaderConfigConstant
@@ -47,86 +93,60 @@ struct ShaderConfigConstant
 struct ShaderConfigBatchConstant
 {
     IndexT offset, slot, group;
+    Materials::MaterialTemplateValue* def;
+
+    // Returns true if valid
+    const bool Valid() const
+    {
+        return offset != InvalidIndex && slot != InvalidIndex && group != InvalidIndex;
+    }
 };
 
-class ShaderConfig
+enum class MaterialProperties
 {
-public:
+    BRDF,
+    BSDF,
+    GLTF,
+    Unlit,
+    Unlit2,
+    Unlit3,
+    Unlit4,
+    Skybox,
+    Legacy,
 
-    /// constructor
-    ShaderConfig();
-    /// destructor
-    ~ShaderConfig();
+    REQUIRED_NUM_CONTENT_LOADERS = Legacy + 1,
+    Terrain,
 
-    /// setup after loading
-    void Setup();
-
-    /// get constant index
-    IndexT GetConstantIndex(const Util::StringAtom& name);
-    /// get texture index
-    IndexT GetTextureIndex(const Util::StringAtom& name);
-
-    /// get default value for constant
-    const MaterialVariant GetConstantDefault(IndexT idx);
-    /// get default value for texture
-    const CoreGraphics::TextureId GetTextureDefault(IndexT idx);
-
-    /// Get batch index from surface config
-    BatchIndex GetBatchIndex(const CoreGraphics::BatchGroup::Code batch);
-
-    /// get name
-    const Util::String& GetName();
-    /// get hash code 
-    const uint32_t HashCode() const;
-
-    /// Bind shader for a batch and return the batch index
-    IndexT BindShader(const CoreGraphics::CmdBufferId buf, CoreGraphics::BatchGroup::Code batch);
-
-private:
-    friend class ShaderConfigServer;
-    friend class MaterialCache;
-    friend MaterialId CreateMaterial(const MaterialCreateInfo& info);
-    friend void MaterialSetConstant(const MaterialId mat, IndexT name, const MaterialVariant& value);
-    friend void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::TextureId tex);
-
-    Util::HashTable<CoreGraphics::BatchGroup::Code, BatchIndex> batchToIndexMap;
-
-    Util::Dictionary<Util::StringAtom, IndexT> textureLookup;
-    Util::Dictionary<Util::StringAtom, IndexT> constantLookup;
-    Util::Array<CoreGraphics::ShaderProgramId> programs;
-    Util::Array<ShaderConfigTexture> textures;
-    Util::Array<ShaderConfigConstant> constants;
-    Util::Array<Util::Array<ShaderConfigBatchTexture>> texturesByBatch;
-    Util::Array<Util::Array<ShaderConfigBatchConstant>> constantsByBatch;
-    bool isVirtual;
-    Util::String name;
-    Util::String description;
-    Util::String group;
-    uint vertexType;
-
-    IndexT uniqueId;
-    static IndexT ShaderConfigUniqueIdCounter;
-
-    CoreGraphics::BatchGroup::Code currentBatch;
-    IndexT currentBatchIndex;
+    Num
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::String&
-ShaderConfig::GetName()
-{
-    return this->name;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const uint32_t
-ShaderConfig::HashCode() const
-{
-    return (uint32_t)this->uniqueId;
-}
+__ImplementEnumBitOperators(MaterialProperties);
 
 } // namespace Materials
+
+namespace MaterialTemplates
+{
+
+struct Entry
+{
+    struct Pass
+    {
+        CoreGraphics::ShaderId shader;
+        CoreGraphics::ShaderProgramId program;
+        uint index;
+    };
+    
+    // Return HashCode for hash table support
+    const uint HashCode() const { return this->uniqueId; }
+    const char* name;
+    uint uniqueId;
+    Materials::MaterialProperties properties;
+    CoreGraphics::VertexLayoutType vertexLayout;
+    Util::Dictionary<const char*, Materials::MaterialTemplateValue*> values;
+    Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass*> passes;
+    Util::Array<Util::Array<Materials::ShaderConfigBatchTexture*>> texturesPerBatch;
+    Util::Array<Util::Array<Materials::ShaderConfigBatchConstant*>> constantsPerBatch;
+    Util::Array<Util::Dictionary<uint, uint>> textureBatchLookup;
+    Util::Array<Util::Dictionary<uint, uint>> constantBatchLookup;
+};
+
+} // namespace MaterialTemplates

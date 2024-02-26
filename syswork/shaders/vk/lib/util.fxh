@@ -233,6 +233,14 @@ const float Key = 0.3f;
 const vec3 Luminance = vec3(0.2126f, 0.7152f, 0.0722f);
 //const vec4 Luminance = vec4(0.299f, 0.587f, 0.114f, 0.0f);
 
+//------------------------------------------------------------------------------
+/**
+*/
+float 
+Greyscale(in vec4 color)
+{
+    return dot(color.rgb, vec3(0.299, 0.587, 0.114));
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -522,6 +530,18 @@ PlaneTBN(vec3 normal)
     tangent = normalize(cross(normal.xyz, tangent));
     vec3 binormal = normalize(cross(normal.xyz, tangent));
     return mat3(tangent, binormal, normal.xyz);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat3
+TangentSpace(vec3 tangent, vec3 normal, float sign)
+{
+    vec3 tan = normalize(tangent);
+    vec3 norm = normalize(normal);
+    vec3 bin = cross(norm, tan) * sign;
+    return mat3(tan, bin, norm);
 }
 
 //------------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
 
-#include "particle.h"
+#include "system_shaders/particle.h"
 
 static CoreGraphics::ShaderId baseShader = CoreGraphics::InvalidShaderId;
 namespace Models
@@ -103,7 +103,7 @@ Util::FixedArray<CoreGraphics::ResourceTableId>
 ParticleSystemNode::CreateResourceTables()
 {
     if (baseShader == CoreGraphics::InvalidShaderId)
-        baseShader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
+        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/particle.fxb"_atm);
 
     Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
 
@@ -111,7 +111,7 @@ ParticleSystemNode::CreateResourceTables()
     {
         BufferId cbo = GetConstantBuffer(i);
         CoreGraphics::ResourceTableId table = ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
+        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
         ResourceTableCommitChanges(table);
         ret[i] = table;
     }

@@ -232,6 +232,16 @@
                         "subgraph": {
                             "name": "Sun Terrain Shadows"
                         }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Light Update"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Terrain Raytracing Mesh Generate"
+                        }
                     }
                 ]
             },
@@ -327,7 +337,7 @@
                         "subgraph": {
                             "name": "Raytracing Test"
                         }
-                    }
+                    },
                     {
                         "subgraph": {
                             "name": "StaticUI"
@@ -609,7 +619,7 @@
                                             "fullscreen_effect": {
                                                 "name": "Finalize",
                                                 "shader_state": {
-                                                    "shader": "finalize",
+                                                    "shader": "shd:system_shaders/finalize.fxb",
                                                     "variables": [
                                                         {
                                                             "semantic": "LuminanceTexture",

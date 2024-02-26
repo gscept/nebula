@@ -8,7 +8,13 @@
 */
 //------------------------------------------------------------------------------
 #include "resources/resourceloader.h"
+#include "materials/shaderconfig.h"
 #include "coregraphics/config.h"
+
+namespace IO
+{
+class BXmlReader;
+}
 
 namespace Materials
 {
@@ -23,10 +29,22 @@ public:
 
     /// update reserved resource, the info struct is loader dependent (overload to implement resource deallocation, remember to set resource state!)
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+
+    /// Allocate constant memory explicitly
+    static void* AllocateConstantMemory(SizeT size);
+    /// Update GPU buffers
+    static void FlushMaterialBuffers(const CoreGraphics::CmdBufferId id, const CoreGraphics::QueueType queue);
+    /// Get material binding buffer
+    static CoreGraphics::BufferId GetMaterialBindingBuffer();
+    /// Get material buffer
+    static CoreGraphics::BufferId GetMaterialBuffer(const MaterialProperties type);
+    /// Bit of a special way to register a terrain material
+    static IndexT RegisterTerrainMaterial(const MaterialInterface::TerrainMaterial& terrain);
 private:
 
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
+    Util::Dictionary<MaterialProperties, void(*)(Ptr<IO::BXmlReader>, Materials::MaterialId, Util::StringAtom)> loaderMap;
 };
 
 } // namespace Materials

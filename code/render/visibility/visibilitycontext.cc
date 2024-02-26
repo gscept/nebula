@@ -286,14 +286,14 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             Materials::MaterialId mat = Materials::InvalidMaterialId;
             static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
             Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
-            Materials::ShaderConfig* currentMaterialType = nullptr;
+            const MaterialTemplates::Entry* currentMaterialType = nullptr;
 
             for (uint32 i = 0; i < numPackets; i++)
             {
                 uint32 index = indexBuffer[i] & 0x00000000FFFFFFFF;
 
                 // If new material, add a new entry into the lookup table
-                auto otherMaterialType = renderables->nodeShaderConfigs[index];
+                auto otherMaterialType = renderables->nodeMaterialTemplates[index];
                 if (currentMaterialType != otherMaterialType)
                 {
                     // Add new draw command and get reference to it

@@ -11,8 +11,8 @@
 
 #include "graphics/globalconstants.h"
 
-#include "histogram_cs.h"
-#include "shared.h"
+#include "system_shaders/histogram_cs.h"
+#include "system_shaders/shared.h"
 #include "core/cvar.h"
 
 namespace PostEffects
@@ -73,8 +73,8 @@ HistogramContext::Create()
 
     histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "r_min_luminance", "0.1", "Minimum luminance, used for auto exposure");
     
-    histogramState.histogramShader = CoreGraphics::ShaderGet("shd:histogram_cs.fxb");
-    histogramState.histogramCategorizeProgram = CoreGraphics::ShaderGetProgram(histogramState.histogramShader, CoreGraphics::ShaderFeatureFromString("HistogramCategorize"));
+    histogramState.histogramShader = CoreGraphics::ShaderGet("shd:system_shaders/histogram_cs.fxb");
+    histogramState.histogramCategorizeProgram = CoreGraphics::ShaderGetProgram(histogramState.histogramShader, CoreGraphics::ShaderFeatureMask("HistogramCategorize"));
 
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.elementSize = sizeof(HistogramCs::HistogramBuffer);
@@ -108,14 +108,14 @@ HistogramContext::Create()
     histogramState.histogramResourceTable = CoreGraphics::ShaderCreateResourceTable(histogramState.histogramShader, NEBULA_BATCH_GROUP);
     CoreGraphics::ResourceTableSetRWBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramCounters,
-        HistogramCs::Table_Batch::HistogramBuffer::SLOT,
+        HistogramCs::Table_Batch::HistogramBuffer_SLOT,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
         0
     });
     CoreGraphics::ResourceTableSetConstantBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramConstants,
-        HistogramCs::Table_Batch::HistogramConstants::SLOT,
+        HistogramCs::Table_Batch::HistogramConstants_SLOT,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramConstants),
         0

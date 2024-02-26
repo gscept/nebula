@@ -2,24 +2,15 @@
 //  unlit.fx
 //  (C) 2012 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#include "lib/std.fxh"
-#include "lib/shared.fxh"
-#include "lib/objects_shared.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
-#include "lib/materialparams.fxh"
+#include <lib/std.fxh>
+#include <lib/shared.fxh>
+#include <lib/objects_shared.fxh>
+#include <lib/util.fxh>
+#include <lib/techniques.fxh>
+#include <lib/materialparams.fxh>
+#include <lib/defaultsamplers.fxh>
 
 float Brightness = 0.0f;
-
-/// Declaring used textures
-sampler2D AlbedoMap;
-
-/// Declaring used samplers
-sampler_state DefaultSampler
-{
-    Samplers = { AlbedoMap };
-};
 
 render_state UnlitOpaqueState
 {
@@ -60,7 +51,7 @@ void
 psMain(in vec2 UV,
     [color0] out vec4 Albedo) 
 {
-    vec4 diffColor = texture(AlbedoMap, UV.xy);
+    vec4 diffColor = sample2D(AlbedoMap, GeometryTextureSampler, UV.xy);
     float alpha = diffColor.a;
     if (alpha < AlphaSensitivity) discard;
     Albedo = diffColor * Brightness;
@@ -74,7 +65,7 @@ void
 psMainAlpha(in vec2 UV,
     [color0] out vec4 Albedo) 
 {
-    vec4 diffColor = texture(AlbedoMap, UV.xy);
+    vec4 diffColor = sample2D(AlbedoMap, GeometryTextureSampler, UV.xy);
     float alpha = diffColor.a;
     if (alpha < AlphaSensitivity) discard;
     Albedo = diffColor * AlphaBlendFactor * Brightness;

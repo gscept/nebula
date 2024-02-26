@@ -183,7 +183,7 @@ inline RangeAllocation
 RangeAllocator::Alloc(uint size, uint alignment)
 {
     // We are not allowed any more allocations
-    uint alignedSize = size + alignment;
+    uint alignedSize = size + alignment - 1;
     if (this->freeStorage < alignedSize)
     {
         return { RangeAllocation::OOM, RangeAllocatorNode::END };
@@ -254,16 +254,19 @@ RangeAllocator::Alloc(uint size, uint alignment)
     if (remainder > 0)
     {
         uint newNodeIndex = this->InsertNode(remainder, node.offset + size);
-        RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
-
-        // If the current node has a next, repoint it to the new block
-        if (node.blockNext != RangeAllocatorNode::END)
+        if (newNodeIndex != RangeAllocatorNode::END)
         {
-            this->nodes[node.blockNext].blockPrev = newNodeIndex;
+            RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
+
+            // If the current node has a next, repoint it to the new block
+            if (node.blockNext != RangeAllocatorNode::END)
+            {
+                this->nodes[node.blockNext].blockPrev = newNodeIndex;
+            }
+            newNode.blockPrev = nodeIndex;
+            newNode.blockNext = node.blockNext;
+            node.blockNext = newNodeIndex;
         }
-        newNode.blockPrev = nodeIndex;
-        newNode.blockNext = node.blockNext;
-        node.blockNext = newNodeIndex;
     }
     
     return { node.offset, nodeIndex };
@@ -334,6 +337,9 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
 inline uint 
 RangeAllocator::InsertNode(uint size, uint offset)
 {
+    if (this->freeNodeIterator == 0xFFFFFFFF)
+        return RangeAllocatorNode::END;
+
     BinIndex index = IndexFromSize(size);
 
     if (this->binHeads[index.index] == RangeAllocatorNode::END)

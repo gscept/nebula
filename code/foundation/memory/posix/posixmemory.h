@@ -150,6 +150,15 @@ FreeVirtual(void* ptr, size_t size)
 
 //------------------------------------------------------------------------------
 /**
+*/
+__forceinline void*
+StackAlloc(size_t size)
+{
+    return alloca(size);
+}
+
+//------------------------------------------------------------------------------
+/**
     Copy a chunk of memory (note the argument order is different from memcpy()!!!)
 */
 __forceinline void

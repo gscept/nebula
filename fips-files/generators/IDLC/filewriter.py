@@ -101,6 +101,8 @@ class FileWriter:
                 else:
                     string = string.replace("\n", indentCorrectedEOL)
 
+        # Untabify
+        string = string.replace('\t', '    ')
         self.file.write(string)
         self.column += len(string)
 

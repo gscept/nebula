@@ -23,6 +23,7 @@ struct VkBufferLoadInfo
     uint32_t size;
     uint32_t elementSize;
     uint32_t byteSize;
+    Ids::Id32 sparseExtension;
 };
 
 struct VkBufferRuntimeInfo
@@ -51,6 +52,27 @@ typedef Ids::IdAllocatorSafe<
     , VkBufferMapInfo
 > VkBufferAllocator;
 extern VkBufferAllocator bufferAllocator;
+
+
+struct BufferSparsePageTable
+{
+    Util::Array<CoreGraphics::BufferSparsePage> pages;
+    Util::Array<VkSparseMemoryBind> pageBindings;
+    uint32_t bindCounts;
+    VkMemoryRequirements memoryReqs;
+};
+
+enum
+{
+    BufferExtension_SparsePageTable,
+    BufferExtension_SparsePendingBinds,
+};
+typedef Ids::IdAllocatorSafe<
+    0xFF
+    , BufferSparsePageTable
+    , Util::Array<VkSparseMemoryBind>
+> VkBufferSparseExtensionAllocator;
+extern VkBufferSparseExtensionAllocator bufferSparseExtensionAllocator;
 
 /// get buffer object
 VkBuffer BufferGetVk(const CoreGraphics::BufferId id);

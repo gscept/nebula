@@ -301,8 +301,8 @@ struct RayDispatchTable
 {
     struct Entry
     {
-        DeviceAddress baseAddress;
-        DeviceSize entrySize;
+        CoreGraphics::DeviceAddress baseAddress;
+        CoreGraphics::DeviceSize entrySize;
         ubyte numEntries;
     };
 

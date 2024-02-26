@@ -8,6 +8,7 @@ namespace GraphicsFeature;
 table TerrainConfig
 {
     use: bool;
+    raytracing: bool = false;
     max_height: float = 128.0;
     min_height: float = 0.0;
     world_size_width: float = 1024.0;

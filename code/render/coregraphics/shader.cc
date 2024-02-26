@@ -19,6 +19,15 @@ ShaderGet(const Resources::ResourceName& name)
 //------------------------------------------------------------------------------
 /**
 */
+CoreGraphics::ShaderFeature::Mask
+ShaderFeatureMask(const Util::String& mask)
+{
+    return ShaderServer::Instance()->FeatureStringToMask(mask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::String
 ConstantTypeToString(const ShaderConstantType& type)
 {
@@ -40,15 +49,6 @@ ConstantTypeToString(const ShaderConstantType& type)
 		n_error("ConstantTypeToString(): invalid type code!");
 		return "";
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const ShaderFeature::Mask
-ShaderFeatureFromString(const Util::String& str)
-{
-	return ShaderServer::Instance()->FeatureStringToMask(str);
 }
 
 } // namespace CoreGraphics

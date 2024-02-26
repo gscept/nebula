@@ -11,23 +11,18 @@
 group(BATCH_GROUP) shared constant GLTFBlock
 {
     // lower camel case names by design, just to keep it consistent with the GLTF standard.
-    textureHandle baseColorTexture;
-    textureHandle normalTexture;
-    textureHandle metallicRoughnessTexture;
-    textureHandle emissiveTexture;
-    textureHandle occlusionTexture;
     vec4 baseColorFactor;
     vec4 emissiveFactor;
     float metallicFactor;
     float roughnessFactor;
     float normalScale;
     float alphaCutoff;
+    textureHandle baseColorTexture;
+    textureHandle normalTexture;
+    textureHandle metallicRoughnessTexture;
+    textureHandle emissiveTexture;
+    textureHandle occlusionTexture;
 };
-
-float Greyscale(in vec4 color)
-{
-    return dot(color.rgb, vec3(0.299, 0.587, 0.114));
-}
 
 subroutine(CalculateBump) vec3 GLTFNormalMapFunctor(in vec3 tangent, in vec3 normal, in float sign, in vec4 bumpData)
 {

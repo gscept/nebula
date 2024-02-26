@@ -33,19 +33,19 @@ UltralightRenderer::UltralightRenderer()
     , renderBufferId(0)
     , geometryId(0)
 {
-    CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:staticui.fxb");
-    ultralightState.ultralightShader1 = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureFromString("Ultralight1"));
-    ultralightState.ultralightShader2 = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureFromString("Ultralight2"));
-    ultralightState.ultralightShader3 = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureFromString("Ultralight3"));
+    CoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:system_shaders/staticui.fxb");
+    ultralightState.ultralightShader1 = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Ultralight1"));
+    ultralightState.ultralightShader2 = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Ultralight2"));
+    ultralightState.ultralightShader3 = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Ultralight3"));
 
     ultralightState.resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
 
     CoreGraphics::ResourceTableSetConstantBuffer(ultralightState.resourceTable,
         {
             CoreGraphics::GetConstantBuffer(0),
-            Staticui::Table_DynamicOffset::PerDrawState::SLOT,
+            Staticui::Table_DynamicOffset::PerDrawState_SLOT,
             0,
-            Staticui::Table_DynamicOffset::PerDrawState::SIZE, 0,
+            sizeof(Staticui::PerDrawState), 0,
             false, true,
         });
     CoreGraphics::ResourceTableCommitChanges(ultralightState.resourceTable);

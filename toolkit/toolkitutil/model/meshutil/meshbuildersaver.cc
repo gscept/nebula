@@ -168,15 +168,15 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
         uint bufferSize = 0;
         auto normalLambda = [](CoreGraphics::NormalVertex& outVtx, const MeshBuilderVertex& vtx)
         {
-            outVtx.normal.x = vtx.attributes.normal.normal.x * 0.5f * 255.0f;
-            outVtx.normal.y = vtx.attributes.normal.normal.y * 0.5f * 255.0f;
-            outVtx.normal.z = vtx.attributes.normal.normal.z * 0.5f * 255.0f;
+            outVtx.normal.x = vtx.attributes.normal.normal.x * 128.0f;
+            outVtx.normal.y = vtx.attributes.normal.normal.y * 128.0f;
+            outVtx.normal.z = vtx.attributes.normal.normal.z * 128.0f;
             outVtx.normal.w = 0.0f;
 
-            outVtx.tangent.x = vtx.attributes.normal.tangent.x * 0.5f * 255.0f;
-            outVtx.tangent.y = vtx.attributes.normal.tangent.y * 0.5f * 255.0f;
-            outVtx.tangent.z = vtx.attributes.normal.tangent.z * 0.5f * 255.0f;
-            outVtx.tangent.w = vtx.attributes.normal.sign > 0.0f ? 0x7F  : 0x80;
+            outVtx.tangent.x = vtx.attributes.normal.tangent.x * 128.0f;
+            outVtx.tangent.y = vtx.attributes.normal.tangent.y * 128.0f;
+            outVtx.tangent.z = vtx.attributes.normal.tangent.z * 128.0f;
+            outVtx.tangent.w = vtx.attributes.normal.sign > 0.0f ? 0x7F : 0x80;
         };
         switch (layout)
         {

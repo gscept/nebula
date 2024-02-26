@@ -6,6 +6,7 @@
 #include "pbr.fxh"
 #include "ltc.fxh"
 #include "CSM.fxh"
+#include "clustering.fxh"
 
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 0x1;
@@ -178,7 +179,6 @@ CalculateSpotLight(
     in vec3 pos,
     in vec3 viewVec, 
     in vec3 normal, 
-    in float depth, 
     in vec4 material, 
     in vec3 diffuseColor,
     in vec3 F0)
@@ -484,7 +484,6 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 p
                 pos,
                 viewVec,
                 normal,
-                depth,
                 material,
                 diffuseColor,
                 F0

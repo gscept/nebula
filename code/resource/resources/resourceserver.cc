@@ -90,7 +90,7 @@ ResourceServer::Close()
 /**
 */
 void
-ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
+ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
 {
     n_assert(this->open);
     n_assert(loaderClass.IsDerivedFrom(ResourceLoader::RTTI));

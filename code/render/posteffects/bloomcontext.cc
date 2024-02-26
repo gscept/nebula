@@ -9,7 +9,7 @@
 #include "graphics/graphicsserver.h"
 #include "bloomcontext.h"
 
-#include "bloom.h"
+#include "system_shaders/bloom.h"
 namespace PostEffects
 {
 
@@ -54,8 +54,8 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     using namespace CoreGraphics;
 
     // setup shaders
-    bloomState.shader = ShaderGet("shd:bloom.fxb");
-    bloomState.program = ShaderGetProgram(bloomState.shader, ShaderFeatureFromString("Bloom"));
+    bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
+    bloomState.program = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Bloom"));
     bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
 
     bloomState.bloomBuffer = script->GetTexture("BloomBuffer");
@@ -63,7 +63,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
 
     BufferCreateInfo bufInfo;
-    bufInfo.byteSize = Bloom::Table_Batch::BloomUniforms::SIZE;
+    bufInfo.byteSize = sizeof(Bloom::BloomUniforms);
     bufInfo.usageFlags = ConstantBuffer;
     bufInfo.mode = DeviceAndHost;
     bufInfo.queueSupport = ComputeQueueSupport;
@@ -94,7 +94,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     ResourceTableSetTexture(bloomState.resourceTable, { bloomState.lightBuffer, Bloom::Table_Batch::Input_SLOT });
     ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.bloomBuffer, Bloom::Table_Batch::BloomOutput_SLOT });
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms::SLOT });
+    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
     ResourceTableCommitChanges(bloomState.resourceTable);
 
     Frame::FrameCode* upscale = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -168,7 +168,7 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
 
     ResourceTableSetTexture(bloomState.resourceTable, { bloomState.lightBuffer, Bloom::Table_Batch::Input_SLOT });
     ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.bloomBuffer, Bloom::Table_Batch::BloomOutput_SLOT });
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms::SLOT });
+    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
     ResourceTableCommitChanges(bloomState.resourceTable);
 }
 

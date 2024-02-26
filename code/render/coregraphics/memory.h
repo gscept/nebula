@@ -13,20 +13,19 @@
 #include "util/array.h"
 #include "ids/idpool.h"
 #include "memory/rangeallocator.h"
-
-
 #if __VULKAN__
 #include "vk/vkloader.h"
+#endif
+namespace CoreGraphics
+{
 
+#if __VULKAN__
 typedef VkDeviceSize DeviceSize;
 typedef VkDeviceMemory DeviceMemory;
 typedef VkDeviceAddress DeviceAddress;
 #else
 #error "coregraphics/memory.h is not supported for the renderer"
 #endif
-
-namespace CoreGraphics
-{
 
 enum MemoryPoolType
 {

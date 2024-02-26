@@ -5,9 +5,9 @@
 #include "frame/framesubgraph.h"
 #include "downsamplingcontext.h"
 
-#include "downsample/downsample_cs_light.h"
-#include "downsample/downsample_cs_depth.h"
-#include "downsample/depth_extract_cs.h"
+#include "system_shaders/downsample/downsample_cs_light.h"
+#include "system_shaders/downsample/downsample_cs_depth.h"
+#include "system_shaders/downsample/depth_extract_cs.h"
 namespace PostEffects
 {
 
@@ -137,13 +137,13 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
     using namespace CoreGraphics;
 
-    state.downsampleColorShader = ShaderGet("shd:downsample/downsample_cs_light.fxb");
-    state.downsampleColorProgram = ShaderGetProgram(state.downsampleColorShader, ShaderFeatureFromString("Downsample"));
-    state.downsampleDepthShader = ShaderGet("shd:downsample/downsample_cs_depth.fxb");
-    state.downsampleDepthProgram = ShaderGetProgram(state.downsampleDepthShader, ShaderFeatureFromString("Downsample"));
+    state.downsampleColorShader = ShaderGet("shd:system_shaders/downsample/downsample_cs_light.fxb");
+    state.downsampleColorProgram = ShaderGetProgram(state.downsampleColorShader, ShaderFeatureMask("Downsample"));
+    state.downsampleDepthShader = ShaderGet("shd:system_shaders/downsample/downsample_cs_depth.fxb");
+    state.downsampleDepthProgram = ShaderGetProgram(state.downsampleDepthShader, ShaderFeatureMask("Downsample"));
 
-    state.extractShader = ShaderGet("shd:downsample/depth_extract_cs.fxb");
-    state.extractProgram = ShaderGetProgram(state.extractShader, ShaderFeatureFromString("Extract"));
+    state.extractShader = ShaderGet("shd:system_shaders/downsample/depth_extract_cs.fxb");
+    state.extractProgram = ShaderGetProgram(state.extractShader, ShaderFeatureMask("Extract"));
 
     state.colorDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleColorShader, NEBULA_BATCH_GROUP);
     state.depthDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleDepthShader, NEBULA_BATCH_GROUP);
@@ -194,22 +194,22 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     CoreGraphics::ResourceTableSetRWBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferCounter,
-        DownsampleCsLight::Table_Batch::AtomicCounter::SLOT,
+        DownsampleCsLight::Table_Batch::AtomicCounter_SLOT,
     });
 
     CoreGraphics::ResourceTableSetConstantBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferConstants,
-        DownsampleCsLight::Table_Batch::DownsampleUniforms::SLOT,
+        DownsampleCsLight::Table_Batch::DownsampleUniforms_SLOT,
     });
 
     CoreGraphics::ResourceTableSetRWBuffer(state.depthDownsampleResourceTable, {
         state.depthBufferCounter,
-        DownsampleCsDepth::Table_Batch::AtomicCounter::SLOT,
+        DownsampleCsDepth::Table_Batch::AtomicCounter_SLOT,
     });
 
     CoreGraphics::ResourceTableSetConstantBuffer(state.depthDownsampleResourceTable, {
         state.depthBufferConstants,
-        DownsampleCsDepth::Table_Batch::DownsampleUniforms::SLOT,
+        DownsampleCsDepth::Table_Batch::DownsampleUniforms_SLOT,
     });
 
     CoreGraphics::ResourceTableSetTexture(state.extractResourceTable, {

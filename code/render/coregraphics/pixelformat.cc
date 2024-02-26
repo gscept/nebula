@@ -155,8 +155,8 @@ PixelFormat::ToSize(Code code)
     case DXT1:
     case DXT1sRGB:
     case DXT1A:
-    case DXT1AsRGB:     
-    case BC4:
+    case DXT1AsRGB:
+        return 1;
     case R32G32F:
     case R32G32:
     case R16G16B16A16F:
@@ -166,9 +166,13 @@ PixelFormat::ToSize(Code code)
     case DXT5:
     case DXT3sRGB:
     case DXT5sRGB:
+        return 1;
+    case BC4:
     case BC5:
+        return 2;
     case BC7:
     case BC7sRGB:
+        return 1;
     case R32G32B32A32F:
     case R32G32B32A32:
         return 16;
@@ -279,10 +283,10 @@ PixelFormat::ToTexelSize(Code code)
         case PixelFormat::R4G4B4A4:         return 4;
         case PixelFormat::DXT1:             return 8;
         case PixelFormat::DXT1A:            return 8;
+        case PixelFormat::DXT1sRGB:         return 8;
+        case PixelFormat::DXT1AsRGB:        return 8;
         case PixelFormat::DXT3:             return 16;
         case PixelFormat::DXT5:             return 16;
-        case PixelFormat::DXT1sRGB:         return 16;
-        case PixelFormat::DXT1AsRGB:        return 16;
         case PixelFormat::DXT3sRGB:         return 16;
         case PixelFormat::DXT5sRGB:         return 16;
         case PixelFormat::BC4:              return 8;
@@ -311,9 +315,35 @@ PixelFormat::ToTexelSize(Code code)
         case PixelFormat::D24S8:            return 5;
         default:
         {
-            n_error("PixelFormat::ToBlockDimensions(): invalid pixel format '%d'", code);
+            n_error("PixelFormat::ToTexelSize(): invalid pixel format '%d'", code);
             return 4;
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+PixelFormat::ToBlockSize(Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::DXT1:
+        case PixelFormat::DXT1A:    
+        case PixelFormat::DXT3:     
+        case PixelFormat::DXT5:     
+        case PixelFormat::DXT1sRGB: 
+        case PixelFormat::DXT1AsRGB:
+        case PixelFormat::DXT3sRGB: 
+        case PixelFormat::DXT5sRGB: 
+        case PixelFormat::BC4:      
+        case PixelFormat::BC5:      
+        case PixelFormat::BC7:      
+        case PixelFormat::BC7sRGB:
+            return 16;
+        default:
+            return 1;
     }
 }
 

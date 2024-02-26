@@ -16,30 +16,40 @@
 #include "coregraphics/texture.h"
 #include "coregraphics/buffer.h"
 #include "materialvariant.h"
-#include <functional>
+
+#include "system_shaders/material_interface.h"
+
+namespace MaterialTemplates
+{
+struct Entry;
+};
+
 namespace Materials
 {
 
-class ShaderConfig;
+struct ShaderConfigBatchConstant;
+struct ShaderConfigBatchTexture;
+
 RESOURCE_ID_TYPE(MaterialId);
 ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialType); // 32 bits instance, 24 bits material, 8 bits type
 
-struct MaterialCreateInfo
-{
-    ShaderConfig* config;
-};
 typedef IndexT BatchIndex;
 
 
 /// Create material
-MaterialId CreateMaterial(const MaterialCreateInfo& info);
+MaterialId CreateMaterial(const MaterialTemplates::Entry* entry);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 
 /// Set constant
-void MaterialSetConstant(const MaterialId mat, IndexT name, const MaterialVariant& value);
+void MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind, const MaterialVariant& value);
 /// Set texture
-void MaterialSetTexture(const MaterialId mat, IndexT name, const CoreGraphics::TextureId tex);
+void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const CoreGraphics::TextureId tex);
+
+/// Set material GPU buffer binding
+void MaterialSetBufferBinding(const MaterialId id, IndexT index);
+/// Get material GPU buffer binding
+IndexT MaterialGetBufferBinding(const MaterialId id);
 
 /// Add texture to LOD update
 void MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex);
@@ -50,9 +60,9 @@ void MaterialSetLowestLod(const MaterialId mat, float lod);
 void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, IndexT index);
 
 /// Get material shader config
-ShaderConfig* MaterialGetShaderConfig(const MaterialId mat);
-/// Get shader config batch index
-Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code);
+const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
+/// Get batch index from code
+const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code);
 /// Get sort code
 uint64_t MaterialGetSortCode(const MaterialId mat);
 
@@ -76,9 +86,8 @@ struct MaterialTexture
     IndexT slot;
 };
 
-enum MaterialMembers
+enum
 {
-    Material_ShaderConfig,
     Material_MinLOD,
     Material_LODTextures,
     Material_Table,
@@ -87,19 +96,22 @@ enum MaterialMembers
     Material_InstanceBuffers,
     Material_Textures,
     Material_Constants,
+    Material_BufferOffset,
+    Material_Template
 };
 
 
 typedef Ids::IdAllocator<
-    ShaderConfig*,
     float,
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
     Util::FixedArray<Util::FixedArray<CoreGraphics::ResourceTableId>>,              // instance level resource table, mapped batch -> table
-    Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
+    Util::FixedArray<Util::Array<Util::Pair<IndexT, CoreGraphics::BufferId>>>,      // surface level constant buffers, mapped batch -> buffers
     Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
-    Util::FixedArray<Util::Array<MaterialConstant>>                                 // constants
+    Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
+    IndexT,                                                                         // global material buffer binding (based on ShaderConfig::PrototypeHash)
+    const MaterialTemplates::Entry*                                                 // template
 > MaterialAllocator;
 extern MaterialAllocator materialAllocator;
 

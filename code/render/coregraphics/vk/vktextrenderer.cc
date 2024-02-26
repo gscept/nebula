@@ -130,7 +130,8 @@ VkTextRenderer::Open()
     texInfo.name = "GlyphTexture"_atm;
     texInfo.usage = TextureUsage::SampleTexture;
     texInfo.tag = "render_system"_atm;
-    texInfo.buffer = bitmap;
+    texInfo.data = bitmap;
+    texInfo.dataSize = sizeof(unsigned char) * GLYPH_TEXTURE_SIZE * GLYPH_TEXTURE_SIZE;
     texInfo.type = TextureType::Texture2D;
     texInfo.format = PixelFormat::R8;
     texInfo.width = GLYPH_TEXTURE_SIZE;
@@ -138,8 +139,8 @@ VkTextRenderer::Open()
     this->glyphTexture = CreateTexture(texInfo);
 
     // create shader instance
-    const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
-    this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
+    const ShaderId shd = CoreGraphics::ShaderGet("shd:system_shaders/text.fxb");
+    this->program = ShaderGetProgram(shd, CoreGraphics::ShaderFeatureMask("Static"));
     this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 1);
     // get variable
 

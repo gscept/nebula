@@ -20,12 +20,16 @@
 #include "debug/framescriptinspector.h"
 #endif
 
+#include "materials/materialtemplates.h"
+#include "materials/base.h"
+#include "materials/materialloader.h"
+
 #include "graphics/globalconstants.h"
 
-#include "shared.h"
-#include "lights_cluster.h"
-#include "combine.h"
-#include "csmblur.h"
+#include "system_shaders/shared.h"
+#include "system_shaders/lights_cluster.h"
+#include "system_shaders/combine.h"
+#include "system_shaders/csmblur.h"
 
 #define CLUSTERED_LIGHTING_DEBUG 0
 
@@ -159,11 +163,11 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 
     using namespace CoreGraphics;
 
-    clusterState.classificationShader = ShaderServer::Instance()->GetShader("shd:lights_cluster.fxb");
+    clusterState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/lights_cluster.fxb");
 
-    clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
+    clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
 #ifdef CLUSTERED_LIGHTING_DEBUG
-    clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
+    clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, CoreGraphics::ShaderFeatureMask("Debug"));
 #endif
 
     textureState.ltcLut0 = Resources::CreateResource("systex:ltc_1.dds", "system", nullptr, nullptr, true);
@@ -190,15 +194,15 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightIndexLists, Shared::Table_Frame::LightIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightsList, Shared::Table_Frame::LightLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightIndexLists, Shared::Table_Frame::LightIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { clusterState.clusterLightsList, Shared::Table_Frame::LightLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(LightsCluster::LightUniforms), 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
     // setup combine
-    combineState.combineShader = ShaderServer::Instance()->GetShader("shd:combine.fxb");
-    combineState.combineProgram = ShaderGetProgram(combineState.combineShader, ShaderServer::Instance()->FeatureStringToMask("Combine"));
+    combineState.combineShader = CoreGraphics::ShaderGet("shd:system_shaders/combine.fxb");
+    combineState.combineProgram = ShaderGetProgram(combineState.combineShader, CoreGraphics::ShaderFeatureMask("Combine"));
     combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
     for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
@@ -572,16 +576,16 @@ LightContext::SetupAreaLight(
     // Last step is to create a geometric proxy for the light source
 
     // Create material
-    Materials::ShaderConfigServer* server = Materials::ShaderConfigServer::Instance();
-    Materials::ShaderConfig* config = server->GetShaderConfig("AreaLight");
-    Materials::MaterialId material = Materials::CreateMaterial({ config });
+    MaterialTemplates::Entry* matTemplate = &MaterialTemplates::base::__AreaLight.entry;
+    Materials::MaterialId material = Materials::CreateMaterial(matTemplate);
 
-    IndexT binding = config->GetConstantIndex("EmissiveColor");
-    Materials::MaterialVariant defaultVal = config->GetConstantDefault(binding);
+    const Materials::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
+    void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
+    const Materials::ShaderConfigBatchConstant* batchConstant = &MaterialTemplates::base::__AreaLight.__LightMeshes_EmissiveColor;
 
-    Materials::MaterialVariant var = server->AllocateVariantMemory(defaultVal.type);
-    var.Set(color * intensity);
-    Materials::MaterialSetConstant(material, binding, var);
+    Materials::MaterialVariant var;
+    var.Set(color * intensity, mem);
+    Materials::MaterialSetConstant(material, batchConstant, var);
 
     CoreGraphics::MeshId mesh;
     switch (shape)
@@ -1305,7 +1309,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(textureState.aoTexture);
     IndexT offset = SetConstants(consts);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms::SLOT, 0, Shared::Table_Frame::LightUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), (SizeT)offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
@@ -1313,7 +1317,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     combineConsts.LowresResolution[0] = 1.0f / dims.width;
     combineConsts.LowresResolution[1] = 1.0f / dims.height;
     offset = SetConstants(combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms::SLOT, 0, Combine::Table_Batch::CombineUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), (SizeT)offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 

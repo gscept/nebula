@@ -13,7 +13,7 @@
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
 #include "effectfactory.h"
-#include "shared.h"
+#include "system_shaders/shared.h"
 
 namespace Graphics
 {

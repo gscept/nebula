@@ -11,8 +11,8 @@
 #include "graphics/view.h"
 #include "ssrcontext.h"
 
-#include "ssr_cs.h"
-#include "ssr_resolve_cs.h"
+#include "system_shaders/ssr_cs.h"
+#include "system_shaders/ssr_resolve_cs.h"
 
 namespace PostEffects
 {
@@ -141,8 +141,8 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     }
 
     // setup programs
-    ssrState.traceProgram = ShaderGetProgram(ssrState.traceShader, ShaderFeatureFromString("Alt0"));
-    ssrState.resolveProgram = ShaderGetProgram(ssrState.resolveShader, ShaderFeatureFromString("Alt0"));
+    ssrState.traceProgram = ShaderGetProgram(ssrState.traceShader, ShaderFeatureMask("Alt0"));
+    ssrState.resolveProgram = ShaderGetProgram(ssrState.resolveShader, ShaderFeatureMask("Alt0"));
 }
 
 //------------------------------------------------------------------------------
@@ -177,7 +177,7 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::Table_Batch::SSRBlock::SLOT, 0, SsrCs::Table_Batch::SSRBlock::SIZE, (SizeT)ssrOffset });
+    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::Table_Batch::SSRBlock_SLOT, 0, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
     ResourceTableCommitChanges(ssrState.ssrTraceTables[bufferIndex]);
 }
 

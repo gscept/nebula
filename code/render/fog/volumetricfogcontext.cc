@@ -13,8 +13,8 @@
 #include "imgui.h"
 #include "graphics/globalconstants.h"
 
-#include "volumefog.h"
-#include "blur/blur_2d_rgba16f_cs.h"
+#include "system_shaders/volumefog.h"
+#include "system_shaders/blur/blur_2d_rgba16f_cs.h"
 namespace Fog
 {
 
@@ -86,7 +86,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    fogState.classificationShader = ShaderServer::Instance()->GetShader("shd:volumefog.fxb");
+    fogState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/volumefog.fxb");
 
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "FogIndexListsBuffer";
@@ -106,8 +106,8 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
     fogState.stagingClusterFogLists = BufferSet(rwbInfo);
 
-    fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
-    fogState.renderProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Render"));
+    fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
+    fogState.renderProgram = ShaderGetProgram(fogState.classificationShader, CoreGraphics::ShaderFeatureMask("Render"));
 
     fogState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
     for (IndexT i = 0; i < fogState.resourceTables.Size(); i++)
@@ -119,15 +119,15 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::Table_Frame::FogIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::Table_Frame::FogLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::Table_Frame::FogIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::Table_Frame::FogLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
-    blurState.blurShader = ShaderServer::Instance()->GetShader("shd:blur/blur_2d_rgba16f_cs.fxb");
-    blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, ShaderServer::Instance()->FeatureStringToMask("Alt0"));
-    blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, ShaderServer::Instance()->FeatureStringToMask("Alt1"));
+    blurState.blurShader = CoreGraphics::ShaderGet("shd:system_shaders/blur/blur_2d_rgba16f_cs.fxb");
+    blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("Alt0"));
+    blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("Alt1"));
     blurState.blurXTable.Resize(CoreGraphics::GetNumBufferedFrames());
     blurState.blurYTable.Resize(CoreGraphics::GetNumBufferedFrames()); 
 
@@ -461,7 +461,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms::SLOT, 0, Shared::Table_Frame::VolumeFogUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), (SizeT)offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables

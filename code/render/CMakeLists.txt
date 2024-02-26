@@ -18,13 +18,13 @@ nebula_begin_module(render)
     endif()
 
     target_precompile_headers(render PRIVATE "render/stdneb.h" "coregraphics/shaderserver.h" "../foundation/core/rtti.h" "graphics/graphicsserver.h" )
-
+     
     if(N_USE_VULKAN)
-        fips_deps(glfw3)
+        fips_deps(glfw3) 
     endif()
-
-    fips_files(render/precompiled.h render/stdneb.h)
-
+     
+    fips_files(render/precompiled.h render/stdneb.h) 
+      
 IF(FALSE) # incrementally enable modules as they get written
         fips_dir(animation)
             fips_files(
@@ -158,6 +158,7 @@ ENDIF()
                 meshresource.h
                 nvx3fileformatstructs.h
                 pass.h
+                pinnedbuffer.h
                 pipeline.h
                 pixelformat.cc
                 pixelformat.h
@@ -404,8 +405,14 @@ ENDIF()
                 frameswap.cc
                 frameswap.h
             )
-
-        fips_dir(graphics)
+        fips_dir(gi)
+            fips_files(
+                ddgicontext.cc
+                ddgicontext.h
+            )
+        fips_dir(gi/shaders)
+            add_shaders(probeupdate.fx)
+        fips_dir(graphics) 
             fips_files(
 				bindlessregistry.cc
 				bindlessregistry.h
@@ -502,17 +509,20 @@ IF(FALSE)
             )
 ENDIF()
         fips_dir(materials)
+			# Add engine templates and generate glue file which is needed by the material system
+			nebula_material_template_compile(base.json gltf.json)
+        	nebula_material_template_glue()
+
             fips_files(
                 material.cc
                 material.h
                 materialloader.cc
                 materialloader.h
                 materialvariant.h
-                shaderconfigserver.cc
-                shaderconfigserver.h
                 shaderconfig.cc
                 shaderconfig.h
             )
+
         fips_dir(models/nodes GROUP "models/nodes")
             fips_files(
                 characternode.cc
@@ -545,6 +555,8 @@ ENDIF()
             raytracingcontext.cc
             raytracingcontext.h
         )
+        fips_dir(raytracing/shaders)
+            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx light_grid_cs.fx terrainhit.fx)
 
         fips_dir(renderutil)
         fips_files(
@@ -607,6 +619,10 @@ ENDIF()
                 terraincontext.cc
                 terrainculljob.cc
                 texturetilecache.h
+            )
+        fips_dir(terrain/shaders)
+            add_shaders(
+                terrain.fx terrain_mesh_generate.fx
             )
 
         fips_dir(vegetation)

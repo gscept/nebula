@@ -24,9 +24,9 @@ struct PipelineCreateInfo
 };
 
 /// Create new pipeline
-PipelineId CreatePipeline(const PipelineCreateInfo& info);
+PipelineId CreateGraphicsPipeline(const PipelineCreateInfo& info);
 /// Destroy pipeline
-void DestroyPipeline(const PipelineId pipeline);
+void DestroyGraphicsPipeline(const PipelineId pipeline);
 
 struct PipelineRayTracingTable
 {
@@ -37,5 +37,7 @@ struct PipelineRayTracingTable
 
 /// Create raytacing pipeline using multiple shader programs
 const PipelineRayTracingTable CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs);
+/// Destroy raytracing pipeline
+void DestroyRaytracingPipeline(const PipelineRayTracingTable& table);
 
 } // namespace CoreGraphics
