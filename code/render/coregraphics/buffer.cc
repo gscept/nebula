@@ -75,12 +75,12 @@ BufferSet::~BufferSet()
 BufferWithStaging::BufferWithStaging(const BufferCreateInfo& createInfo)
 {
     BufferCreateInfo bufferInfo = createInfo;
-    bufferInfo.name = Util::String::Sprintf("%s Host Buffer", createInfo.name);
+    bufferInfo.name = Util::String::Sprintf("%s Host Buffer", createInfo.name.Value());
     bufferInfo.mode = CoreGraphics::HostLocal;
     bufferInfo.usageFlags |= CoreGraphics::TransferBufferSource;
     this->hostBuffers = BufferSet(bufferInfo);
 
-    bufferInfo.name = Util::String::Sprintf("%s Device Buffer", createInfo.name);
+    bufferInfo.name = Util::String::Sprintf("%s Device Buffer", createInfo.name.Value());
     bufferInfo.mode = CoreGraphics::DeviceLocal;
     bufferInfo.usageFlags |= CoreGraphics::TransferBufferDestination;
     this->deviceBuffer = CoreGraphics::CreateBuffer(bufferInfo);

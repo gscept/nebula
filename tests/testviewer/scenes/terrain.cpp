@@ -61,7 +61,8 @@ void OpenScene()
 
     Terrain::TerrainContext::SetupTerrain(terrain,
         "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
-        "systex:black.dds");
+        "systex:black.dds",
+        false);
 
     Terrain::BiomeParameters biomeParams =
     {
