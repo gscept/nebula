@@ -202,12 +202,10 @@ macro(add_shader_intern)
 
         cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
         cmake_path(GET rel_path STEM basename)
-        cmake_path(GET rel_path PARENT_PATH foldername)
-        
-        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}/${basename}.fxb)
-        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}/${basename}.h)
 
-        SET(foldername ${CurDir}${foldername})
+        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.fxb)
+        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}${basename}.h)
+
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
@@ -557,7 +555,7 @@ macro(add_shaders_recursive)
     set(CurDir "")
 
     if (system_shader)
-        SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders" FILES ${FX})
+        SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\${DIR}" FILES ${FX})
     endif()
     
     foreach(CHILD ${CHILDREN})
