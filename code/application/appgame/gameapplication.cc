@@ -33,11 +33,13 @@ using namespace Debug;
 //------------------------------------------------------------------------------
 /**
 */
-GameApplication::GameApplication()
+GameApplication::GameApplication() :
+    exitHandler(this)
 #if __NEBULA_HTTP__
-    :defaultTcpPort(2100)
+    ,defaultTcpPort(2100)
 #endif
 {
+    
     __ConstructSingleton;
 }
 
@@ -169,7 +171,7 @@ GameApplication::Close()
 {
     n_assert(this->IsOpen());
 
-    _discard_timer(GameApplicationFrameTimeAll);
+    //_discard_timer(GameApplicationFrameTimeAll);
 
     // shutdown basic Nebula runtime
     this->CleanupGameFeatures();

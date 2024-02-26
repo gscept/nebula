@@ -74,6 +74,24 @@ protected:
 
     // profiling
     _declare_timer(GameApplicationFrameTimeAll);
+
+    class GameAppExitHandler : public Core::ExitHandler
+    {
+    public:
+        GameAppExitHandler(GameApplication* app) : app(app), Core::ExitHandler()
+        {
+        }
+    private:
+        virtual void OnExit() const
+        {
+            // make sure we gracefully shutdown everything
+            app->Close();
+        }
+
+        GameApplication* app;
+    };
+
+    GameAppExitHandler exitHandler;
 };
 
 } // namespace App
