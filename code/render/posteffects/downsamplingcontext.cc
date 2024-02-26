@@ -194,22 +194,22 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     CoreGraphics::ResourceTableSetRWBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferCounter,
-        DownsampleCsLight::Table_Batch::AtomicCounter::SLOT,
+        DownsampleCsLight::Table_Batch::AtomicCounter_SLOT,
     });
 
     CoreGraphics::ResourceTableSetConstantBuffer(state.colorDownsampleResourceTable, {
         state.colorBufferConstants,
-        DownsampleCsLight::Table_Batch::DownsampleUniforms::SLOT,
+        DownsampleCsLight::Table_Batch::DownsampleUniforms_SLOT,
     });
 
     CoreGraphics::ResourceTableSetRWBuffer(state.depthDownsampleResourceTable, {
         state.depthBufferCounter,
-        DownsampleCsDepth::Table_Batch::AtomicCounter::SLOT,
+        DownsampleCsDepth::Table_Batch::AtomicCounter_SLOT,
     });
 
     CoreGraphics::ResourceTableSetConstantBuffer(state.depthDownsampleResourceTable, {
         state.depthBufferConstants,
-        DownsampleCsDepth::Table_Batch::DownsampleUniforms::SLOT,
+        DownsampleCsDepth::Table_Batch::DownsampleUniforms_SLOT,
     });
 
     CoreGraphics::ResourceTableSetTexture(state.extractResourceTable, {

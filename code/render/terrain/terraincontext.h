@@ -219,7 +219,8 @@ public:
     static void SetupTerrain(
         const Graphics::GraphicsEntityId entity, 
         const Resources::ResourceName& heightMap, 
-        const Resources::ResourceName& decisionMap);
+        const Resources::ResourceName& decisionMap,
+        bool enableRayTracing);
 
     /// setup a new biome
     static TerrainBiomeId CreateBiome(const BiomeSettings& settings);
@@ -280,6 +281,7 @@ private:
         };
         uint loadBits;
         uint lowresGenerated;
+        bool enableRayTracing;
 
         Util::FixedArray<CoreGraphics::ResourceTableId> patchTables;
 

@@ -128,6 +128,7 @@ private:
     Ids::IdGenerationPool entityPool;
 
     Ptr<FrameSync::FrameSyncTimer> timer;
+    bool ownsTimer;
     FrameContext frameContext;
 
     Util::Array<GraphicsContextFunctionBundle*> contexts;

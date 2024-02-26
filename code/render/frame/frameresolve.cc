@@ -127,8 +127,8 @@ FrameResolve::CompiledImpl::SetupConstants(const IndexT bufferIndex)
     ResourceTableSetConstantBuffer(this->resourceTables[bufferIndex],
                                    {
                                        CoreGraphics::GetConstantBuffer(bufferIndex)
-                                       , Msaaresolvedepth4::Table_Batch::ResolveBlock::SLOT
-                                       , Msaaresolvedepth4::Table_Batch::ResolveBlock::SIZE
+                                       , Msaaresolvedepth4::Table_Batch::ResolveBlock_SLOT
+                                       , sizeof(Msaaresolvedepth4::ResolveBlock)
                                        , (SizeT)offset
                                    });
     ResourceTableCommitChanges(this->resourceTables[bufferIndex]);

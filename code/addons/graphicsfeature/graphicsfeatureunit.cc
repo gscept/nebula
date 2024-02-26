@@ -169,7 +169,7 @@ GraphicsFeatureUnit::OnActivate()
 
         this->terrain.entity = Graphics::CreateEntity();
         Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
-        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision);
+        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision, terrainSettings.config->raytracing);
 
         for (IndexT i = 0; i < terrainSettings.biomes.size(); i++)
         {

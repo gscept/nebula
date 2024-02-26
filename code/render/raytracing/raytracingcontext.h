@@ -79,13 +79,21 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
+    enum ObjectType
+    {
+        Dynamic,
+        Static
+    };
+
     enum
     {
         Raytracing_Allocation,
+        Raytracing_ObjectType,
         Raytracing_NumStructures
     };
     typedef Ids::IdAllocator<
         Memory::RangeAllocation,
+        ObjectType,
         uint
     > RaytracingAllocator;
     static RaytracingAllocator raytracingContextAllocator;

@@ -77,7 +77,7 @@ CharacterSkinNode::OnFinishedLoading()
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     for (IndexT i = 0; i < numFrames; i++)
     {
-        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock::SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock_SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
     }
 }

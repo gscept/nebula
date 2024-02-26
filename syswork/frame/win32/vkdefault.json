@@ -237,6 +237,11 @@
                         "subgraph": {
                             "name": "Raytracing Light Update"
                         }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Terrain Raytracing Mesh Generate"
+                        }
                     }
                 ]
             },

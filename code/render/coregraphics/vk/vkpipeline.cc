@@ -22,7 +22,7 @@ using namespace Vulkan;
 /**
 */
 PipelineId
-CreatePipeline(const PipelineCreateInfo& info)
+CreateGraphicsPipeline(const PipelineCreateInfo& info)
 {
     Ids::Id32 ret = pipelineAllocator.Alloc();
     Pipeline& obj = pipelineAllocator.Get<0>(ret);
@@ -79,7 +79,7 @@ CreatePipeline(const PipelineCreateInfo& info)
 /**
 */
 void
-DestroyPipeline(const PipelineId pipeline)
+DestroyGraphicsPipeline(const PipelineId pipeline)
 {
     Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id24);
     vkDestroyPipeline(Vulkan::GetCurrentDevice(), obj.pipeline, nullptr);
@@ -394,6 +394,21 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
     ret.pipeline = pipeId;
 
     return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DestroyRaytracingPipeline(const PipelineRayTracingTable& table)
+{
+    CoreGraphics::DestroyBuffer(table.raygenBindingBuffer);
+    CoreGraphics::DestroyBuffer(table.missBindingBuffer);
+    CoreGraphics::DestroyBuffer(table.hitBindingBuffer);
+    CoreGraphics::DestroyBuffer(table.callableBindingBuffer);
+    Pipeline& obj = pipelineAllocator.Get<0>(table.pipeline.id24);
+    vkDestroyPipeline(Vulkan::GetCurrentDevice(), obj.pipeline, nullptr);
+    pipelineAllocator.Dealloc(table.pipeline.id24);
 }
 
 } // namespace CoreGraphics

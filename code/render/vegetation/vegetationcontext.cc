@@ -300,18 +300,18 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.systemUniforms,
-            Vegetation::Table_System::VegetationGenerateUniforms::SLOT,
+            Vegetation::Table_System::VegetationGenerateUniforms_SLOT,
             0,
-            Vegetation::Table_System::VegetationGenerateUniforms::SIZE,
+            sizeof(Vegetation::VegetationGenerateUniforms),
             0
         });
 
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.materialUniformsBuffer,
-            Vegetation::Table_System::VegetationMaterialUniforms::SLOT,
+            Vegetation::Table_System::VegetationMaterialUniforms_SLOT,
             0,
-            Vegetation::Table_System::VegetationMaterialUniforms::SIZE,
+            sizeof(Vegetation::VegetationMaterialUniforms),
             0
         });
 
@@ -319,7 +319,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.meshInfoBuffer,
-            Vegetation::Table_System::MeshInfoUniforms::SLOT,
+            Vegetation::Table_System::MeshInfoUniforms_SLOT,
             0,
             sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
             0
@@ -328,7 +328,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.grassInfoBuffer,
-            Vegetation::Table_System::GrassInfoUniforms::SLOT,
+            Vegetation::Table_System::GrassInfoUniforms_SLOT,
             0,
             sizeof(Vegetation::GrassInfo) * Vegetation::MAX_GRASS_INFOS,
             0
@@ -337,7 +337,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.grassDrawCallsBuffer,
-            Vegetation::Table_System::IndirectGrassDrawBuffer::SLOT,
+            Vegetation::Table_System::IndirectGrassDrawBuffer_SLOT,
             0,
             BufferGetByteSize(vegetationState.grassDrawCallsBuffer),
             0
@@ -346,7 +346,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.meshDrawCallsBuffer,
-            Vegetation::Table_System::IndirectMeshDrawBuffer::SLOT,
+            Vegetation::Table_System::IndirectMeshDrawBuffer_SLOT,
             0,
             BufferGetByteSize(vegetationState.meshDrawCallsBuffer),
             0
@@ -355,7 +355,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.drawCountBuffer,
-            Vegetation::Table_System::DrawCount::SLOT,
+            Vegetation::Table_System::DrawCount_SLOT,
             0,
             BufferGetByteSize(vegetationState.drawCountBuffer),
             0
@@ -367,7 +367,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.argumentsTable,
         {
             vegetationState.grassArgumentsBuffer,
-            Vegetation::Table_Batch::InstanceGrassArguments::SLOT,
+            Vegetation::Table_Batch::InstanceGrassArguments_SLOT,
             0,
             BufferGetByteSize(vegetationState.grassArgumentsBuffer),
             0
@@ -376,7 +376,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.argumentsTable,
         {
             vegetationState.meshArgumentsBuffer,
-            Vegetation::Table_Batch::InstanceMeshArguments::SLOT,
+            Vegetation::Table_Batch::InstanceMeshArguments_SLOT,
             0,
             BufferGetByteSize(vegetationState.meshArgumentsBuffer),
             0
@@ -392,7 +392,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         ResourceTableSetRWBuffer(vegetationState.indirectArgumentsTable[i],
             {
                 vegetationState.indirectGrassArgumentBuffer[i],
-                Vegetation::Table_Batch::InstanceGrassArguments::SLOT,
+                Vegetation::Table_Batch::InstanceGrassArguments_SLOT,
                 0,
                 BufferGetByteSize(vegetationState.indirectGrassArgumentBuffer[i]),
                 0
@@ -401,7 +401,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         ResourceTableSetRWBuffer(vegetationState.indirectArgumentsTable[i],
             {
                 vegetationState.indirectMeshArgumentsBuffer[i],
-                Vegetation::Table_Batch::InstanceMeshArguments::SLOT,
+                Vegetation::Table_Batch::InstanceMeshArguments_SLOT,
                 0,
                 BufferGetByteSize(vegetationState.indirectMeshArgumentsBuffer[i]),
                 0

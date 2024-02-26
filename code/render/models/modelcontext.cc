@@ -186,10 +186,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
             if (sNode->GetType() == Models::ParticleSystemNodeType)
             {
-                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock::SLOT;
-                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock::SLOT;
-                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock::SLOT;
-                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT;
+                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock_SLOT;
+                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock_SLOT;
+                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock_SLOT;
+                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT;
 
                 state.resourceTableOffsets.Resize(4);
                 state.resourceTableOffsets[state.objectConstantsIndex] = 0;
@@ -200,9 +200,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             }
             else
             {
-                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
-                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
-                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
+                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
+                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
+                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
                 state.particleConstantsIndex = InvalidIndex;
 
                 state.resourceTableOffsets.Resize(3);
@@ -290,9 +290,9 @@ ModelContext::Setup(
 
     NodeInstanceState state;
     state.materialInstance = CreateMaterialInstance(material);
-    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
-    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
-    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
+    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
+    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
+    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
     state.particleConstantsIndex = InvalidIndex;
     state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 

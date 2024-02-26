@@ -60,6 +60,22 @@ public:
 
     CoreGraphics::BarrierDomain domain;
     CoreGraphics::QueueType queue;
+
+    // TODO: Use these for the textureDeps and bufferDeps
+    struct BufferSubresourceDep
+    {
+        Util::StringAtom name;
+        CoreGraphics::PipelineStage stage;
+        CoreGraphics::BufferSubresourceInfo subres;
+    };
+
+    struct TextureSubresourceDep
+    {
+        Util::StringAtom name;
+        CoreGraphics::PipelineStage stage;
+        CoreGraphics::TextureSubresourceInfo subres;
+    };
+
     Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::TextureSubresourceInfo>> textureDeps;
     Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::BufferSubresourceInfo>> bufferDeps;
 

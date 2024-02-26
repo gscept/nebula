@@ -57,7 +57,16 @@ GraphicsServer::Open()
     IO::IoServer::Instance()->MountEmbeddedArchive("embed:///export");
 #endif
 
-    this->timer = FrameSync::FrameSyncTimer::HasInstance() ? FrameSync::FrameSyncTimer::Instance() : FrameSync::FrameSyncTimer::Create();
+    if (FrameSync::FrameSyncTimer::HasInstance())
+    {
+        this->timer = FrameSync::FrameSyncTimer::Instance();
+        this->ownsTimer = false;
+    }
+    else
+    {
+        this->timer = FrameSync::FrameSyncTimer::Create();
+        this->ownsTimer = true;
+    }
     this->isOpen = true;
 
     this->displayDevice = CoreGraphics::DisplayDevice::Create();
@@ -426,7 +435,8 @@ void
 GraphicsServer::RunPreLogic()
 {
     N_SCOPE(PreLogic, Graphics);
-    this->timer->UpdateTimePolling();
+    if (this->ownsTimer)
+        this->timer->UpdateTimePolling();
 
     this->frameContext.frameIndex = this->timer->GetFrameIndex();
     this->frameContext.frameTime = this->timer->GetFrameTime();

@@ -108,14 +108,14 @@ HistogramContext::Create()
     histogramState.histogramResourceTable = CoreGraphics::ShaderCreateResourceTable(histogramState.histogramShader, NEBULA_BATCH_GROUP);
     CoreGraphics::ResourceTableSetRWBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramCounters,
-        HistogramCs::Table_Batch::HistogramBuffer::SLOT,
+        HistogramCs::Table_Batch::HistogramBuffer_SLOT,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
         0
     });
     CoreGraphics::ResourceTableSetConstantBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramConstants,
-        HistogramCs::Table_Batch::HistogramConstants::SLOT,
+        HistogramCs::Table_Batch::HistogramConstants_SLOT,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramConstants),
         0

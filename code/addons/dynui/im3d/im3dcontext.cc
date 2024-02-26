@@ -175,11 +175,11 @@ Im3dContext::Create()
     };
     op->buildFunc = [](const CoreGraphics::PassId pass, const uint subpass)
     {
-        imState.linesPipeline = CoreGraphics::CreatePipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
-        imState.depthLinesPipeline = CoreGraphics::CreatePipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
-        imState.trianglesPipeline = CoreGraphics::CreatePipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
-        imState.depthTrianglesPipeline = CoreGraphics::CreatePipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
-        imState.pointsPipeline = CoreGraphics::CreatePipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
+        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
     };
     Frame::AddSubgraph("Im3D", { op });
 }

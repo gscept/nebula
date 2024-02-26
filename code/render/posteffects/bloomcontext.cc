@@ -94,7 +94,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     ResourceTableSetTexture(bloomState.resourceTable, { bloomState.lightBuffer, Bloom::Table_Batch::Input_SLOT });
     ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.bloomBuffer, Bloom::Table_Batch::BloomOutput_SLOT });
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms::SLOT });
+    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
     ResourceTableCommitChanges(bloomState.resourceTable);
 
     Frame::FrameCode* upscale = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -168,7 +168,7 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
 
     ResourceTableSetTexture(bloomState.resourceTable, { bloomState.lightBuffer, Bloom::Table_Batch::Input_SLOT });
     ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.bloomBuffer, Bloom::Table_Batch::BloomOutput_SLOT });
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms::SLOT });
+    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
     ResourceTableCommitChanges(bloomState.resourceTable);
 }
 
