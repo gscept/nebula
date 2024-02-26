@@ -669,7 +669,7 @@ CmdBarrier(
     VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
     VkDependencyFlags depFlags = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
     uint numBuffers = buffers.Size() + accelerationStructures.Size();
-    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)_malloca(numBuffers * sizeof(VkBufferMemoryBarrier));
+    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)Memory::StackAlloc(numBuffers * sizeof(VkBufferMemoryBarrier));
 
     IndexT i, j = 0;
     for (i = 0; i < buffers.Size(); i++, j++)
@@ -714,7 +714,7 @@ CmdBarrier(
     }
 
     uint numImages = textures.Size();
-    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)_malloca(textures.Size() * sizeof(VkImageMemoryBarrier));
+    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)Memory::StackAlloc(textures.Size() * sizeof(VkImageMemoryBarrier));
     for (i = 0; i < textures.Size(); i++, j++)
     {
         VkImageMemoryBarrier& vkBar = imageBarriers[j];
@@ -784,7 +784,7 @@ CmdHandover(
     VkPipelineStageFlags fromFlags = VkTypes::AsVkPipelineStage(fromStage);
     VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
     uint numBuffers = buffers.Size();
-    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)_malloca(numBuffers * sizeof(VkBufferMemoryBarrier));
+    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)Memory::StackAlloc(numBuffers * sizeof(VkBufferMemoryBarrier));
 
     for (uint32_t i = 0; i < numBuffers; i++)
     {
@@ -804,7 +804,7 @@ CmdHandover(
     }
 
     uint numImages = textures.Size();
-    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)_malloca(textures.Size() * sizeof(VkImageMemoryBarrier));
+    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)Memory::StackAlloc(textures.Size() * sizeof(VkImageMemoryBarrier));
     IndexT i, j = 0;
     for (i = 0; i < textures.Size(); i++, j++)
     {
