@@ -39,7 +39,7 @@ NEBULA_EXPORT bool EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT Math::vec3 EntityGetPosition(uint32_t worldId, uint32_t entity);
+NEBULA_EXPORT Math::float4 EntityGetPosition(uint32_t worldId, uint32_t entity);
 
 //------------------------------------------------------------------------------
 /**
@@ -49,7 +49,7 @@ NEBULA_EXPORT void EntitySetPosition(uint32_t worldId, uint32_t entity, Math::ve
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT Math::quat EntityGetOrientation(uint32_t worldId, uint32_t entity);
+NEBULA_EXPORT Math::float4 EntityGetOrientation(uint32_t worldId, uint32_t entity);
 
 //------------------------------------------------------------------------------
 /**
@@ -59,7 +59,7 @@ NEBULA_EXPORT void EntitySetOrientation(uint32_t worldId, uint32_t entity, Math:
 //------------------------------------------------------------------------------
 /**
 */
-NEBULA_EXPORT Math::vec3 EntityGetScale(uint32_t worldId, uint32_t entity);
+NEBULA_EXPORT Math::float4 EntityGetScale(uint32_t worldId, uint32_t entity);
 
 //------------------------------------------------------------------------------
 /**

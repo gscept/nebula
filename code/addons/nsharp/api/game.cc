@@ -64,12 +64,12 @@ EntityHasComponent(uint32_t worldId, uint32_t entity, uint32_t componentId)
 //------------------------------------------------------------------------------
 /**
 */
-Math::vec3
+Math::float4
 EntityGetPosition(uint32_t worldId, uint32_t entity)
 {
     Game::World* world = Game::GetWorld(worldId);
     Math::vec3 const p = world->GetComponent<Game::Position>(Game::Entity::FromId(entity));
-    return p;
+    return {p.x, p.y, p.z, 0};
 }
 
 //------------------------------------------------------------------------------
@@ -85,12 +85,12 @@ EntitySetPosition(uint32_t worldId, uint32_t entity, Math::vec3 pos)
 //------------------------------------------------------------------------------
 /**
 */
-Math::quat
+Math::float4
 EntityGetOrientation(uint32_t worldId, uint32_t entity)
 {
     Game::World* world = Game::GetWorld(worldId);
     Math::quat const q = world->GetComponent<Game::Orientation>(Game::Entity::FromId(entity));
-    return q;
+    return {q.x, q.y, q.z, q.w};
 }
 
 //------------------------------------------------------------------------------
@@ -106,12 +106,12 @@ EntitySetOrientation(uint32_t worldId, uint32_t entity, Math::quat orientation)
 //------------------------------------------------------------------------------
 /**
 */
-Math::vec3
+Math::float4
 EntityGetScale(uint32_t worldId, uint32_t entity)
 {
     Game::World* world = Game::GetWorld(worldId);
     Math::vec3 const s = world->GetComponent<Game::Scale>(Game::Entity::FromId(entity));
-    return s;
+    return {s.x, s.y, s.z, 0};
 }
 
 //------------------------------------------------------------------------------
