@@ -2,16 +2,20 @@
 # Toolkit
 #-------------------------------------------------------------------------------
 
-find_package(FBX REQUIRED)
+find_package(FBX)
 
 fips_begin_lib(toolkitutil)
-    target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED FBXSDK_NEW_API)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
-    target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
-
+    
     fips_deps(foundation render physics)
-    fips_libs(${FBX_LIBRARY})
+
+    if(FBX_FOUND)
+        target_compile_definitions(toolkitutil PUBLIC FBXSDK_SHARED FBXSDK_NEW_API FBXSDK)
+        target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FBX_INCLUDE_DIRS})
+        fips_libs(${FBX_LIBRARY})
+    endif()
+
     if(FIPS_WINDOWS)
         fips_libs(CMP_Core_MT CMP_Framework_MT)
     else()
@@ -122,25 +126,27 @@ fips_begin_lib(toolkitutil)
                 uniquestring.h
             )
 
-        fips_dir(model/import/fbx)
-            fips_files(
-                nfbxexporter.cc 
-                nfbxexporter.h
-            )
-
-            fips_dir(model/import/fbx/node)
+        if(FBX_FOUND)
+            fips_dir(model/import/fbx)
                 fips_files(
-                    nfbxjointnode.cc
-                    nfbxjointnode.h
-                    nfbxlightnode.cc
-                    nfbxlightnode.h
-                    nfbxmeshnode.cc
-                    nfbxmeshnode.h
-                    nfbxnode.cc
-                    nfbxnode.h
-                    nfbxscene.cc
-                    nfbxscene.h
+                    nfbxexporter.cc 
+                    nfbxexporter.h
                 )
+
+                fips_dir(model/import/fbx/node)
+                    fips_files(
+                        nfbxjointnode.cc
+                        nfbxjointnode.h
+                        nfbxlightnode.cc
+                        nfbxlightnode.h
+                        nfbxmeshnode.cc
+                        nfbxmeshnode.h
+                        nfbxnode.cc
+                        nfbxnode.h
+                        nfbxscene.cc
+                        nfbxscene.h
+                    )
+        endif()
 
         fips_dir(model/import/gltf)
             fips_files(

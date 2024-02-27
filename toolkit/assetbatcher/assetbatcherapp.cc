@@ -3,7 +3,11 @@
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+
+#ifdef FBXSDK
 #include "toolkitutil/model/import/fbx/nfbxexporter.h"
+#endif
+
 #include "assetbatcherapp.h"
 #include "io/assignregistry.h"
 #include "core/coreserver.h"

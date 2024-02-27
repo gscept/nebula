@@ -12,7 +12,7 @@ set (CMAKE_MODULE_PATH "${NROOT}/extlibs/scripts")
 
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
-option(N_MINIMAL_TOOLKIT "Only minimal toolkit" ON)
+option(N_MINIMAL_TOOLKIT "Only minimal toolkit" OFF)
 
 include(create_resource)
 

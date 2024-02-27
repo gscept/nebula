@@ -14,7 +14,7 @@
 
 #include "model/modelwriter.h"
 #include "model/meshutil/meshbuildersaver.h"
-#include "model/import/fbx/node/nfbxscene.h"
+
 #include "model/import/gltf/node/ngltfscene.h"
 #include "model/import/base/uniquestring.h"
 
