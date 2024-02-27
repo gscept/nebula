@@ -347,7 +347,17 @@ BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGra
     trans.store3(&setup.transform.matrix[0][0]);
 
     char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
+    memcpy(ptr, &setup, sizeof(setup));
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset)
+{
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
     memcpy(ptr, &setup, sizeof(setup));
 }
 
@@ -410,13 +420,14 @@ CreateTlas(const TlasCreateInfo& info)
         .scratchData = VkDeviceOrHostAddressKHR{ .hostAddress = nullptr }
     };
 
-    scene.rangeInfos.Append(
-    {
-        .primitiveCount = (uint)info.numInstances,
-        .primitiveOffset = 0, // Primitive offset is defined in the mesh
-        .firstVertex = 0,
-        .transformOffset = 0
-    });
+    scene.rangeInfos = {
+        {
+            .primitiveCount = (uint)info.numInstances,
+            .primitiveOffset = 0, // Primitive offset is defined in the mesh
+            .firstVertex = 0,
+            .transformOffset = 0
+        }
+    };
 
     // Get build sizes
     scene.buildSizes =

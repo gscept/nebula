@@ -81,6 +81,8 @@ BlasInstanceId CreateBlasInstance(const BlasInstanceCreateInfo& info);
 void DestroyBlasInstance(const BlasInstanceId id);
 /// Update blas instance and write to buffer
 void BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset);
+/// Update blas instance and write to buffer
+void BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset);
 /// Get instance size (platform dependent)
 const SizeT BlasInstanceGetSize();
 

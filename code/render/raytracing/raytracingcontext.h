@@ -53,9 +53,9 @@ public:
         , const CoreGraphics::VertexAlloc& indices
         , const CoreGraphics::PrimitiveGroup& patchPrimGroup
         , SizeT vertexOffsetStride
+        , SizeT patchVertexStride
         , Util::Array<Math::mat4> transforms
         , MaterialInterface::TerrainMaterial material
-        
     );
 
     /// Build top level acceleration

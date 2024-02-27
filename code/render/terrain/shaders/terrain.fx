@@ -211,7 +211,7 @@ shader
 void
 vsTerrain(
     [slot=0] in vec3 position
-    , [slot=1] in vec2 uv
+    , [slot=1] in ivec2 uv
     , out vec4 Position
     , out vec3 Normal
     , out float Tessellation
@@ -221,7 +221,7 @@ vsTerrain(
     vec3 offsetPos = position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y);
     vec4 modelSpace = Transform * vec4(offsetPos, 1);
     Position = vec4(offsetPos, 1);
-    vec2 UV = uv + terrainPatch.UvOffset;
+    vec2 UV = UnpackUV(uv) + terrainPatch.UvOffset;
 
     float vertexDistance = distance( Position.xyz, EyePos.xyz);
     float factor = 1.0f - saturate((MinLODDistance - vertexDistance) / (MinLODDistance - MaxLODDistance));

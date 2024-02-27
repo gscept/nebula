@@ -114,6 +114,7 @@ ptr struct TerrainMaterial
     textureHandle LowresAlbedoFallback;
     textureHandle LowresNormalFallback;
     textureHandle LowresMaterialFallback;
+    float WorldSize;
 };
 
 MATERIAL_BINDING rw_buffer MaterialBindings

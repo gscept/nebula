@@ -51,6 +51,12 @@ ptr alignment(32) struct VertexAttributeSkin
     uint indices;
 };
 
+ptr alignment(16) struct VertexTerrain
+{
+    vec3 pos;
+    int uv;
+};
+
 ptr alignment(4) struct Indexes32
 {
     uint index;
@@ -161,6 +167,29 @@ UnpackSign(int packedNormal)
 /**
 */
 void
+SampleTerrain(in Object obj, uint prim, in vec3 baryCoords, float worldSize, out uvec3 indices, out vec2 uv, out mat3 tbn)
+{
+    // Sample the index buffer
+    if (obj.Use16BitIndex == 1)
+        indices = uvec3(obj.IndexPtr[prim * 3].index, obj.IndexPtr[prim * 3 + 1].index, obj.IndexPtr[prim * 3 + 2].index);
+    else
+    {
+        Indexes32 i32Ptr = Indexes32(obj.IndexPtr);
+        indices = uvec3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+    }
+
+    vec2 uv0 = UnpackUV32((obj.PositionsPtr[indices.x]).uv);
+    vec2 uv1 = UnpackUV32((obj.PositionsPtr[indices.y]).uv);
+    vec2 uv2 = UnpackUV32((obj.PositionsPtr[indices.z]).uv);
+    uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+
+    tbn = TangentSpace(vec3(1,0,0), vec3(0,1,0), 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out mat3 tbn)
 {
     // Sample the index buffer
@@ -190,7 +219,6 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
 
     tbn = TangentSpace(tang, norm, sign);
 }
-
 #define OFFSET_PTR(ptr, offset, type) type(VoidPtr(ptr) + offset)
 
 
