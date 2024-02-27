@@ -13,19 +13,20 @@ def run(fips_dir, proj_dir, args) :
     print(proj_dir + "/fips anyfx setup")
     subprocess.call(proj_dir + "/fips anyfx setup", shell=True)
 
-    cfg = config.load(fips_dir, proj_dir, settings.get(proj_dir, 'config'))
-    build_type = cfg[0]['build_type'].lower()
+    # Get config build type
+    # cfg = config.load(fips_dir, proj_dir, settings.get(proj_dir, 'config'))
+    # build_type = cfg[0]['build_type'].lower()
 
     version = "linux"
     if sys.platform == "win32" :
-        # "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -property catalog_productDisplayVersion
         vswhere = os.path.expandvars("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe")
         # catalog_productLine currently gives us Dev17 for example, which is currently the latest version.
         # Just replace the Dev with vc and were good. Note that this might not hold true forever!
         version = subprocess.check_output(vswhere + " -property catalog_productLine").decode("utf-8").rstrip()
         version = version.replace("Dev", "vc")
 
-    subprocess.call(proj_dir + '/fips physx build {} {}'.format(version, build_type), shell=True)
+    subprocess.call(proj_dir + '/fips physx build {} debug'.format(version), shell=True)
+    subprocess.call(proj_dir + '/fips physx build {} release'.format(version), shell=True)
 
     subprocess.call(proj_dir + "/fips ultralight", shell=True)
 
