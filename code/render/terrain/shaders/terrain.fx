@@ -289,7 +289,7 @@ hsTerrain(
     , out vec3 Normal[]
 )
 {
-    Position[gl_InvocationID]   = Transform * position[gl_InvocationID];
+    Position[gl_InvocationID]   = position[gl_InvocationID];
     Normal[gl_InvocationID]     = normal[gl_InvocationID];
 
     // provoking vertex gets to decide tessellation factors

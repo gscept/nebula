@@ -19,8 +19,8 @@ BoxHit(
     uvec3 indices;
     vec2 uv;
     mat3 tbn;
-    TerrainMaterial mat = TerrainMaterials + obj.MaterialOffset;
-    SampleTerrain(obj, gl_PrimitiveID, barycentricCoords, mat.WorldSize, indices, uv, tbn);
+    TerrainMaterial mat = TerrainMaterials[obj.MaterialOffset];
+    SampleTerrain(obj, gl_PrimitiveID, barycentricCoords, indices, uv, tbn);
 
     vec4 normals = sample2DLod(mat.LowresNormalFallback, Basic2DSampler, uv, 0);
     vec3 tNormal = TangentSpaceNormal(normals.xy, tbn);
@@ -28,7 +28,7 @@ BoxHit(
     vec4 albedo = sample2DLod(mat.LowresAlbedoFallback, Basic2DSampler, uv, 0);
     vec4 material = sample2DLod(mat.LowresMaterialFallback, Basic2DSampler, uv, 0);
     Result.alpha = albedo.a;
-    Result.albedo = albedo.rgb;
+    Result.albedo = vec3(uv, 0);
     Result.material = material;
     Result.normal = tNormal;
     Result.depth = gl_HitTEXT;

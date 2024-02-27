@@ -566,8 +566,8 @@ RaytracingContext::SetupTerrain(
         Raytracetest::Object constants;
         constants.Use16BitIndex = indexType == CoreGraphics::IndexType::Index16 ? 1 : 0;
         constants.MaterialOffset = Materials::MaterialLoader::RegisterTerrainMaterial(material);
-        constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + indices.offset;
-        constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + vertices.offset + patchCounter * vertexOffsetStride;
+        constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + createInfo.indexOffset;
+        constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + createInfo.vertexOffset;
         state.objects[i] = constants;
 
         state.numRegisteredInstances++;

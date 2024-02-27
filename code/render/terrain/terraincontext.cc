@@ -677,7 +677,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         };
 
         Frame::AddSubgraph("Terrain Raytracing Mesh Generate", { terrainMeshGenerate });
-    }
+    } 
 
     Frame::FrameCode* terrainPrepare = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
     terrainPrepare->domain = CoreGraphics::BarrierDomain::Global;
@@ -1498,7 +1498,7 @@ TerrainContext::SetupTerrain(
 
                 // setup triangle tris
                 indices.Append(vidx1, vidx3, vidx4);
-                indices.Append(vidx1, vidx4, vidx2);
+                indices.Append(vidx4, vidx2, vidx1);
             }
         }
 
@@ -1574,7 +1574,6 @@ TerrainContext::SetupTerrain(
             mat.LowresAlbedoFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresAlbedo);
             mat.LowresMaterialFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresMaterial);
             mat.LowresNormalFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresNormal);
-            mat.WorldSize = worldSize;
 
             /// Setup with raytracing
             Util::Array<Math::mat4> patchTransforms;
@@ -1768,7 +1767,6 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
     N_SCOPE(TerrainRunJobs, Terrain);
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
     terrainVirtualTileState.indirectionUploadOffsets[ctx.bufferIndex] = 0;
-
 
     if (raytracingState.callbackFrame == ctx.frameIndex)
         raytracingState.terrainSetupCallback();

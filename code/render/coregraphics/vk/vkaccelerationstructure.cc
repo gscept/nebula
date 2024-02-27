@@ -141,8 +141,8 @@ CreateBlas(const BlasCreateInfo& info)
 
     BufferIdLock _1(info.vbo);
     BufferIdLock _2(info.ibo);
-    VkDeviceAddress vboAddr = BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
-    VkDeviceAddress iboAddr = BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
+    VkDeviceAddress vboAddr = BufferGetDeviceAddress(info.vbo);
+    VkDeviceAddress iboAddr = BufferGetDeviceAddress(info.ibo);
     VkFormat positionsFormat = VkTypes::AsVkVertexType(info.positionsFormat);
 
     // Assert the vertex format is supported by raytracing
