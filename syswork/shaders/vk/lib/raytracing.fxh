@@ -21,6 +21,7 @@ struct HitResult
     vec4 material;
     vec3 normal;
     float depth;
+    uint miss;
 };
 
 // Declare type for vertex positions and uv

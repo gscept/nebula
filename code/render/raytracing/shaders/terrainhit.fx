@@ -28,7 +28,7 @@ BoxHit(
     vec4 albedo = sample2DLod(mat.LowresAlbedoFallback, Basic2DSampler, uv, 0);
     vec4 material = sample2DLod(mat.LowresMaterialFallback, Basic2DSampler, uv, 0);
     Result.alpha = albedo.a;
-    Result.albedo = vec3(uv, 0);
+    Result.albedo = albedo.rgb;
     Result.material = material;
     Result.normal = tNormal;
     Result.depth = gl_HitTEXT;

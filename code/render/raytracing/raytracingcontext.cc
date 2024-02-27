@@ -550,7 +550,7 @@ RaytracingContext::SetupTerrain(
         instanceCreateInfo.flags = CoreGraphics::BlasInstanceFlags::NoFlags;
         instanceCreateInfo.mask = 0xFF;
         instanceCreateInfo.shaderOffset = MaterialPropertyMappings[(uint)Materials::MaterialProperties::Terrain];
-        instanceCreateInfo.instanceIndex = 0;
+        instanceCreateInfo.instanceIndex = i;
         instanceCreateInfo.blas = blas;
         instanceCreateInfo.transform = transforms[patchCounter];
         state.blasInstances[i] = CoreGraphics::CreateBlasInstance(instanceCreateInfo);

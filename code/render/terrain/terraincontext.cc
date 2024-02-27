@@ -206,7 +206,7 @@ struct
     SizeT numTris, numPatches;
     bool updateMesh = false;
     std::function<void()> terrainSetupCallback;
-    IndexT callbackFrame;
+    IndexT setupBlasFrame;
 } raytracingState;
 
 struct TerrainVert
@@ -672,7 +672,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 // Avoid more mesh updates
                 raytracingState.updateMesh = false;
 
-                raytracingState.callbackFrame = bufferIndex + CoreGraphics::GetNumBufferedFrames();
+                raytracingState.setupBlasFrame = bufferIndex + CoreGraphics::GetNumBufferedFrames();
             }
         };
 
@@ -1260,22 +1260,6 @@ TerrainContext::SetupTerrain(
     TerrainRuntimeInfo& runtimeInfo = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
     runtimeInfo.enableRayTracing = CoreGraphics::RayTracingSupported & enableRayTracing;
 
-    runtimeInfo.loadBits = 0x0;
-    runtimeInfo.lowresGenerated = false;
-    runtimeInfo.decisionMap = Resources::CreateResource(decisionMap, "terrain"_atm, [&runtimeInfo](Resources::ResourceId id)
-    {
-        runtimeInfo.decisionMap = id;
-        runtimeInfo.lowresGenerated = false;
-        runtimeInfo.loadBits |= TerrainRuntimeInfo::DecisionMapLoaded;
-    }, nullptr, false, false);
-
-    runtimeInfo.heightMap = Resources::CreateResource(heightMap, "terrain"_atm, [&runtimeInfo](Resources::ResourceId id)
-    {
-        runtimeInfo.heightMap = id;
-        runtimeInfo.lowresGenerated = false;
-        runtimeInfo.loadBits |= TerrainRuntimeInfo::HeightMapLoaded;
-    }, nullptr, false, false);
-
     runtimeInfo.worldWidth = terrainState.settings.worldSizeX;
     runtimeInfo.worldHeight = terrainState.settings.worldSizeZ;
     runtimeInfo.maxHeight = terrainState.settings.maxHeight;
@@ -1457,22 +1441,10 @@ TerrainContext::SetupTerrain(
         patchBufferInfo.dataSize = patchData.ByteSize();
         raytracingState.patchBuffer = CoreGraphics::CreateBuffer(patchBufferInfo);
 
-        TerrainMeshGenerate::GenerationConstants generationConstants;
-        Math::mat4 transform;
-        transform.store(generationConstants.Transform);
-        generationConstants.MinHeight = runtimeInfo.minHeight;
-        generationConstants.MaxHeight = runtimeInfo.maxHeight;
-        generationConstants.VerticesPerPatch = numVertsX * numVertsY;
-        generationConstants.WorldSize[0] = runtimeInfo.worldWidth;
-        generationConstants.WorldSize[1] = runtimeInfo.worldHeight;
-        generationConstants.HeightMap = CoreGraphics::TextureGetBindlessHandle(runtimeInfo.heightMap);
-
         CoreGraphics::BufferCreateInfo constantBufferInfo;
         constantBufferInfo.byteSize = patchData.ByteSize();
         constantBufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
-        constantBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        constantBufferInfo.data = &generationConstants;
-        constantBufferInfo.dataSize = sizeof(TerrainMeshGenerate::GenerationConstants);
+        constantBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
         raytracingState.constantsBuffer = CoreGraphics::CreateBuffer(constantBufferInfo);
 
 
@@ -1549,7 +1521,6 @@ TerrainContext::SetupTerrain(
         // Prepare to run a compute shader to displace every vertex based on the height map
         raytracingState.numPatches = runtimeInfo.numTilesY * runtimeInfo.numTilesX;
         raytracingState.numTris = numQuadsY * numQuadsX * 2;
-        raytracingState.updateMesh = true;
 
         Graphics::RegisterEntity<Raytracing::RaytracingContext>(entity);
 
@@ -1605,41 +1576,41 @@ TerrainContext::SetupTerrain(
                 , patchTransforms
                 , mat);
         };
-        raytracingState.callbackFrame = 0xFFFFFFFF;
-
-        /*
-        CoreGraphics::PrimitiveGroup group;
-        group.SetBaseIndex(0);
-        group.SetBaseVertex(0);
-        group.SetNumIndices(indices.Size());
-        group.SetNumVertices(0);
-
-        MaterialInterface::TerrainMaterial mat;
-        mat.LowresAlbedoFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresAlbedo);
-        mat.LowresMaterialFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresMaterial);
-        mat.LowresNormalFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresNormal);
-
-        /// Setup with raytracing
-        Util::Array<Math::mat4> patchTransforms;
-        patchTransforms.Resize(runtimeInfo.sectionBoxes.Size());
-        for (IndexT i = 0; i < runtimeInfo.sectionBoxes.Size(); i++)
-        {
-            const Math::bbox& box = runtimeInfo.sectionBoxes[i];
-            patchTransforms[i] = Math::translation(xyz(box.pmin));
-        }
-
-        Raytracing::RaytracingContext::SetupTerrain(
-            entity
-            , CoreGraphics::VertexComponent::Float3
-            , CoreGraphics::IndexType::Index32
-            , raytracingState.vertexBuffer
-            , raytracingState.indexBuffer
-            , group
-            , vboInfo.elementSize
-            , patchTransforms
-            , mat);
-        */
+        raytracingState.setupBlasFrame = 0xFFFFFFFF;
     }
+
+    runtimeInfo.loadBits = 0x0;
+    runtimeInfo.lowresGenerated = false;
+    runtimeInfo.decisionMap = Resources::CreateResource(decisionMap, "terrain"_atm, [&runtimeInfo](Resources::ResourceId id)
+    {
+        runtimeInfo.decisionMap = id;
+        runtimeInfo.lowresGenerated = false;
+        runtimeInfo.loadBits |= TerrainRuntimeInfo::DecisionMapLoaded;
+    }, nullptr, false, false);
+
+    runtimeInfo.heightMap = Resources::CreateResource(heightMap, "terrain"_atm, [&runtimeInfo, numVertsX, numVertsY](Resources::ResourceId id)
+    {
+        runtimeInfo.heightMap = id;
+        runtimeInfo.lowresGenerated = false;
+        runtimeInfo.loadBits |= TerrainRuntimeInfo::HeightMapLoaded;
+
+        // If we are using raytracing, trigger a raytracing mesh update
+        if (runtimeInfo.enableRayTracing)
+        {
+            raytracingState.updateMesh = true;
+
+            TerrainMeshGenerate::GenerationConstants generationConstants;
+            Math::mat4 transform;
+            transform.store(generationConstants.Transform);
+            generationConstants.MinHeight = runtimeInfo.minHeight;
+            generationConstants.MaxHeight = runtimeInfo.maxHeight;
+            generationConstants.VerticesPerPatch = numVertsX * numVertsY;
+            generationConstants.WorldSize[0] = runtimeInfo.worldWidth;
+            generationConstants.WorldSize[1] = runtimeInfo.worldHeight;
+            generationConstants.HeightMap = CoreGraphics::TextureGetBindlessHandle(runtimeInfo.heightMap);
+            CoreGraphics::BufferUpdate(raytracingState.constantsBuffer, generationConstants);
+        }
+    }, nullptr, false, false);
 }
 
 //------------------------------------------------------------------------------
@@ -1768,7 +1739,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
     terrainVirtualTileState.indirectionUploadOffsets[ctx.bufferIndex] = 0;
 
-    if (raytracingState.callbackFrame == ctx.frameIndex)
+    if (raytracingState.setupBlasFrame == ctx.frameIndex)
         raytracingState.terrainSetupCallback();
 
     n_assert(subtexturesDoneCounter == 0);

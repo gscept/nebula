@@ -121,9 +121,9 @@ csMeshGenerate()
     vec3 P1 = (Transform * vec4(v1.position, 1)).xyz;
     vec3 P2 = (Transform * vec4(v2.position, 1)).xyz;
     vec3 P3 = (Transform * vec4(v3.position, 1)).xyz;
-    vec2 UV1 = (terrainPatch.PosOffset + P1.xz) / WorldSize - 0.5f;
-    vec2 UV2 = (terrainPatch.PosOffset + P2.xz) / WorldSize - 0.5f;
-    vec2 UV3 = (terrainPatch.PosOffset + P3.xz) / WorldSize - 0.5f;
+    vec2 UV1 = (terrainPatch.PosOffset + P1.xz) / WorldSize + 0.5f;
+    vec2 UV2 = (terrainPatch.PosOffset + P2.xz) / WorldSize + 0.5f;
+    vec2 UV3 = (terrainPatch.PosOffset + P3.xz) / WorldSize + 0.5f;
 
     vec2 pixelSize = textureSize(basic2D(HeightMap), 0);
     pixelSize = vec2(1.0f) / pixelSize;
@@ -141,11 +141,11 @@ csMeshGenerate()
     // First output base vertices
     OutputVertex o1, o2, o3;
     o1.position = P1;
-    o1.uv = CompressUV(vec2(1, 1)); //CompressUV(UV1);
+    o1.uv = CompressUV(UV1);
     o2.position = P2;
-    o2.uv = CompressUV(vec2(1, 0)); //CompressUV(UV2);
+    o2.uv = CompressUV(UV2);
     o3.position = P3;
-    o3.uv = CompressUV(vec2(0, 1)); //CompressUV(UV3);
+    o3.uv = CompressUV(UV3);
     OutputVertices[gl_WorkGroupID.y * VerticesPerPatch + indices.x] = o1;
     OutputVertices[gl_WorkGroupID.y * VerticesPerPatch + indices.y] = o2;
     OutputVertices[gl_WorkGroupID.y * VerticesPerPatch + indices.z] = o3;
