@@ -73,7 +73,7 @@ public:
     void RemoveComponent(Entity, ComponentId);
     /// Set the value of an entitys component
     template <typename TYPE>
-    void SetComponent(Entity entity, TYPE value);
+    void SetComponent(Entity entity, TYPE const& value);
     /// Get an entitys component
     template <typename TYPE>
     TYPE GetComponent(Entity entity);
@@ -125,6 +125,8 @@ public:
     void Defragment(MemDb::TableId cat);
     /// Get a pointer to the first instance of a component in a partition of an entity table. Use with caution!
     void* GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, ComponentId const component);
+    /// Get a pointer to the first instance of a column in a partition of an entity table. Use with caution!
+    void* GetColumnData(MemDb::TableId const tid, uint16_t partitionId, MemDb::ColumnIndex const column);
 
 private:
     friend class GameServer;
@@ -269,7 +271,7 @@ World::RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
 */
 template <typename TYPE>
 inline void
-World::SetComponent(Entity entity, TYPE value)
+World::SetComponent(Entity entity, TYPE const& value)
 {
 #if NEBULA_DEBUG
     n_assert2(
@@ -388,5 +390,14 @@ World::AddComponent(Entity entity)
 
     return data;
 }
+
+template<> Game::Position World::GetComponent(Entity entity);
+template<> Game::Orientation World::GetComponent(Entity entity);
+template<> Game::Scale World::GetComponent(Entity entity);
+
+template<> void World::SetComponent(Entity entity, Game::Position const&);
+template<> void World::SetComponent(Entity entity, Game::Orientation const&);
+template<> void World::SetComponent(Entity entity, Game::Scale const&);
+
 
 } // namespace Game

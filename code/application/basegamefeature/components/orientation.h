@@ -33,6 +33,9 @@ struct Orientation::Traits
         "z"
         "w"
     };
+    /// This is the column that the entity orientation will reside in, in every table.
+    /// NOTE: This can never be changed, due to assumptions that have been made.
+    static constexpr uint32_t fixed_column_index = 2;
 };
 
 } // namespace Game

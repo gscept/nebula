@@ -36,6 +36,9 @@ struct Scale::Traits
         "y"
         "z"
     };
+    /// This is the column that the entity scale will reside in, in every table.
+    /// NOTE: This can never be changed, due to assumptions that have been made.
+    static constexpr uint32_t fixed_column_index = 3;
 };
 
 } // namespace Game

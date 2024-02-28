@@ -664,6 +664,16 @@ World::GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, Compone
 //------------------------------------------------------------------------------
 /**
 */
+void*
+World::GetColumnData(MemDb::TableId const tid, uint16_t partitionId, MemDb::ColumnIndex const columnIndex)
+{
+    MemDb::Table& tbl = this->db->GetTable(tid);
+    return tbl.GetBuffer(partitionId, columnIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 MemDb::RowId
 World::GetInstance(Entity entity)
 {
@@ -691,17 +701,17 @@ World::CreateEntityTable(CategoryCreateInfo const& info)
     tableInfo.name = info.name;
     tableInfo.numAttributes = 0;
 
-    if (info.components[0] != GetComponentId<Game::Entity>() &&
-        info.components[1] != GetComponentId<Game::Position>() &&
-        info.components[2] != GetComponentId<Game::Orientation>() &&
-        info.components[3] != GetComponentId<Game::Scale>()
+    if (info.components[Game::Entity::Traits::fixed_column_index] != GetComponentId<Game::Entity>() &&
+        info.components[Game::Position::Traits::fixed_column_index] != GetComponentId<Game::Position>() &&
+        info.components[Game::Orientation::Traits::fixed_column_index] != GetComponentId<Game::Orientation>() &&
+        info.components[Game::Scale::Traits::fixed_column_index] != GetComponentId<Game::Scale>()
         )
     {
         // always have owner and transform as first columns
-        components[0] = GetComponentId<Entity>();
-        components[1] = GetComponentId<Position>();
-        components[2] = GetComponentId<Orientation>();
-        components[3] = GetComponentId<Scale>();
+        components[Game::Entity::Traits::fixed_column_index] = GetComponentId<Entity>();
+        components[Game::Position::Traits::fixed_column_index] = GetComponentId<Position>();
+        components[Game::Orientation::Traits::fixed_column_index] = GetComponentId<Orientation>();
+        components[Game::Scale::Traits::fixed_column_index] = GetComponentId<Scale>();
 
         tableInfo.numAttributes = 4 + info.components.Size();
 
@@ -751,11 +761,10 @@ World::AllocateInstance(Entity entity, MemDb::TableId table)
     this->entityMap[entity.index] = {table, instance};
 
 #if _DEBUG
-    // make sure the first column in always owner
-    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == 0);
-    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Position>()) == 1);
-    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == 2);
-    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == 3);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == Game::Entity::Traits::fixed_column_index);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Position>()) == Game::Position::Traits::fixed_column_index);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == Game::Orientation::Traits::fixed_column_index);
+    n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == Game::Scale::Traits::fixed_column_index);
 #endif
 
     // Set the owner of this instance
@@ -809,10 +818,10 @@ World::AllocateInstance(Entity entity, BlueprintId blueprint)
 
 #if _DEBUG
     // make sure the first column in always owner
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == 0);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) == 1);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == 2);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == 3);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == Game::Entity::Traits::fixed_column_index);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) == Game::Position::Traits::fixed_column_index);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == Game::Orientation::Traits::fixed_column_index);
+    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == Game::Scale::Traits::fixed_column_index);
 #endif
 
     // Set the owner of this instance
@@ -1188,6 +1197,144 @@ Dataset
 World::Query(Filter filter, Util::Array<MemDb::TableId>& tids)
 {
     return Game::Query(this->db, tids, filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+Game::Position
+World::GetComponent(Entity entity)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Getting components from entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    // This is a bit hacky, but we currently assume that position is always in column 1
+    // This avoids a lookup that always evaluates to the same values anyways.
+    MemDb::ColumnIndex const column = Game::Position::Traits::fixed_column_index;
+    Game::Position* ptr = (Game::Position*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    return *(ptr + mapping.instance.index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+Game::Orientation
+World::GetComponent(Entity entity)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Getting components from entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    // This is a bit hacky, but we currently assume that orientation is always in column 2
+    // This avoids a lookup that always evaluates to the same values anyways.
+    MemDb::ColumnIndex const column = Game::Orientation::Traits::fixed_column_index;
+    Game::Orientation* ptr = (Game::Orientation*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    return *(ptr + mapping.instance.index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+Game::Scale
+World::GetComponent(Entity entity)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Getting components from entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    // This is a bit hacky, but we currently assume that scale is always in column 3
+    // This avoids a lookup that always evaluates to the same values anyways.
+    MemDb::ColumnIndex const column = Game::Scale::Traits::fixed_column_index;
+    Game::Scale* ptr = (Game::Scale*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    return *(ptr + mapping.instance.index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+World::SetComponent(Entity entity, Game::Position const& value)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Settings components in arbitrary entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    // This is a bit hacky, but we currently assume that position is always in column 1
+    // This avoids a lookup that always evaluates to the same values anyways.
+    MemDb::ColumnIndex const column = Game::Position::Traits::fixed_column_index;
+    Game::Position* ptr = (Game::Position*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    *(ptr + mapping.instance.index) = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+World::SetComponent(Entity entity, Game::Orientation const& value)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Settings components in arbitrary entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    // This is a bit hacky, but we currently assume that orientation is always in column 2
+    // This avoids a lookup that always evaluates to the same values anyways.
+    MemDb::ColumnIndex const column = Game::Orientation::Traits::fixed_column_index;
+    Game::Orientation* ptr = (Game::Orientation*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    *(ptr + mapping.instance.index) = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+World::SetComponent(Entity entity, Game::Scale const& value)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(),
+        "Settings components in arbitrary entities while executing an async processor is currently not supported!"
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    // This is a bit hacky, but we currently assume that scale is always in column 3
+    // This avoids a lookup that always evaluates to the same values anyways.
+    MemDb::ColumnIndex const column = Game::Scale::Traits::fixed_column_index;
+    Game::Scale* ptr = (Game::Scale*)this->GetColumnData(mapping.table, mapping.instance.partition, column);
+    *(ptr + mapping.instance.index) = value;
 }
 
 } // namespace Game
