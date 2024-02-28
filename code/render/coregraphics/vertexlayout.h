@@ -9,7 +9,6 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "coregraphics/vertexcomponent.h"
-#include "coregraphics/shader.h"
 #include "math/half.h"
 namespace CoreGraphics
 {
@@ -29,7 +28,6 @@ struct VertexLayoutInfo
     Util::StringAtom signature;
     SizeT vertexByteSize;
     Util::Array<VertexComponent> comps;
-    ShaderProgramId shader;
 };
 
 /// create new vertex layout

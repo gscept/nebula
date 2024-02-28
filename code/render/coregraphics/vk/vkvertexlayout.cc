@@ -103,7 +103,6 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
 
     loadInfo.signature = Util::StringAtom(sig);
     loadInfo.vertexByteSize = size;
-    loadInfo.shader = Ids::InvalidId64;
     loadInfo.comps = info.comps;
     vertexLayoutAllocator.Set<VertexSignature_LayoutInfo>(id, loadInfo);
 
