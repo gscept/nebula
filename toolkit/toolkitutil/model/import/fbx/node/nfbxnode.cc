@@ -86,50 +86,26 @@ FbxToMath(const fbxsdk::FbxVector2& vector)
 /**
 */
 void 
-NFbxNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
+NFbxNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
 {
-    node->base.name = UniqueString::New(fbxNode->GetName());
+    node->base.name = UniqueString::New(fbxNode->name.data);
     if (node->base.name == "physics")
     {
         node->base.isPhysics = true;
     }
 
     FbxVector4 translation, rotation, scale;
-    FbxAnimCurveNode* translationCurve = fbxNode->LclTranslation.GetCurveNode();
-    if (translationCurve)
-    {
-        translation[0] = translationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_X, 0.0f);
-        translation[1] = translationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Y, 0.0f);
-        translation[2] = translationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Z, 0.0f);
-    }
-    else
-        translation = fbxNode->LclTranslation.Get();
+    translation[0] = fbxNode->local_transform.translation.x;
+    translation[1] = fbxNode->local_transform.translation.y;
+    translation[2] = fbxNode->local_transform.translation.z;
 
-    FbxAnimCurveNode* rotationCurve = fbxNode->LclRotation.GetCurveNode();
-    if (rotationCurve)
-    {
-        rotation[0] = rotationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_X, 0.0f);
-        rotation[1] = rotationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Y, 0.0f);
-        rotation[2] = rotationCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Z, 0.0f);
-    }
-    else
-    {
-        rotation = fbxNode->LclRotation.Get();
-        // Convert to radians
-        rotation[0] = Math::deg2rad(rotation[0]);
-        rotation[1] = Math::deg2rad(rotation[1]);
-        rotation[2] = Math::deg2rad(rotation[2]);
-    }
+    rotation[0] = fbxNode->local_transform.rotation.x;
+    rotation[1] = fbxNode->local_transform.rotation.y;
+    rotation[2] = fbxNode->local_transform.rotation.z;
 
-    FbxAnimCurveNode* scaleCurve = fbxNode->LclScaling.GetCurveNode();
-    if (scaleCurve)
-    {
-        scale[0] = scaleCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_X, 0.0f);
-        scale[1] = scaleCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Y, 0.0f);
-        scale[2] = scaleCurve->GetChannelValue(FBXSDK_CURVENODE_COMPONENT_Z, 0.0f);
-    }
-    else
-        scale = fbxNode->LclScaling.Get();
+    scale[0] = fbxNode->local_transform.scale.x;
+    scale[1] = fbxNode->local_transform.scale.y;
+    scale[2] = fbxNode->local_transform.scale.z;
 
     translation.FixIncorrectValue();
     rotation.FixIncorrectValue();
@@ -149,12 +125,12 @@ NFbxNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
     Generates animation clips based on node type. Mesh and transform nodes typically has a single set of curves, joint nodes typically has a tree.
 */
 void
-NFbxNode::ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, FbxAnimStack* animStack)
+NFbxNode::ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, ufbx_anim_stack* animStack)
 {
     // Run recursive function to collect animation curves this node hierarchy
     std::function<void(SceneNode*)> recursiveExtract = [&](SceneNode* node)
     {
-        FbxNode* fbxNode = node->fbx.node;
+        ufbx_node* fbxNode = node->fbx.node;
         ExtractAnimationCurves(node, fbxNode, keys, keyTimes, animStack);
         for (const auto& child : node->base.children)
             recursiveExtract(child);
@@ -166,60 +142,55 @@ NFbxNode::ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Arra
 /**
 */
 SizeT
-CountKeys(FbxAnimCurve* fbxCurveX, FbxAnimCurve* fbxCurveY, FbxAnimCurve* fbxCurveZ, Timing::Tick sampleRate, Util::Set<FbxTime>& times)
+CountKeys(ufbx_anim_curve* fbxCurveX, ufbx_anim_curve* fbxCurveY, ufbx_anim_curve* fbxCurveZ, Timing::Tick sampleRate, Util::Set<double>& times)
 {
     // If we have a sample rate, extract keys based on sample frequency
     if (sampleRate != 0)
     {
-        FbxTimeSpan totalSpan;
+        double minTime = DBL_MAX, maxTime = -DBL_MAX;
         if (fbxCurveX != nullptr)
         {
-            FbxTimeSpan localSpan;
-            fbxCurveX->GetTimeInterval(localSpan);
-            totalSpan.UnionAssignment(localSpan);
+            minTime = min(fbxCurveX->keyframes.begin()->time, minTime);
+            maxTime = max(fbxCurveX->keyframes.end()->time, maxTime);
         }
         if (fbxCurveY != nullptr)
         {
-            FbxTimeSpan localSpan;
-            fbxCurveY->GetTimeInterval(localSpan);
-            totalSpan.UnionAssignment(localSpan);
+            minTime = min(fbxCurveY->keyframes.begin()->time, minTime);
+            maxTime = max(fbxCurveY->keyframes.end()->time, maxTime);
         }
         if (fbxCurveZ != nullptr)
         {
-            FbxTimeSpan localSpan;
-            fbxCurveZ->GetTimeInterval(localSpan);
-            totalSpan.UnionAssignment(localSpan);
+            minTime = min(fbxCurveZ->keyframes.begin()->time, minTime);
+            maxTime = max(fbxCurveZ->keyframes.end()->time, maxTime);
         }
-        FbxTime start = totalSpan.GetStart();
-        FbxTime keyEvaluationPoint = start;
-        while (keyEvaluationPoint < totalSpan.GetStop())
+        double keyEvaluationPoint = minTime;
+        while (keyEvaluationPoint < maxTime)
         {
-            auto ms = keyEvaluationPoint.GetMilliSeconds() + 8;
-            keyEvaluationPoint.SetMilliSeconds(ms);
             times.Add(keyEvaluationPoint);
+            keyEvaluationPoint += sampleRate / 1000.0;
         }
     }
     else
     {
         if (fbxCurveX != nullptr)
         {
-            for (IndexT keyIndex = 0; keyIndex < fbxCurveX->KeyGetCount(); keyIndex++)
+            for (IndexT keyIndex = 0; keyIndex < fbxCurveX->keyframes.count; keyIndex++)
             {
-                times.Add(fbxCurveX->KeyGetTime(keyIndex));
+                times.Add(fbxCurveX->keyframes.data[keyIndex].time);
             }
         }
         if (fbxCurveY != nullptr)
         {
-            for (IndexT keyIndex = 0; keyIndex < fbxCurveY->KeyGetCount(); keyIndex++)
+            for (IndexT keyIndex = 0; keyIndex < fbxCurveY->keyframes.count; keyIndex++)
             {
-                times.Add(fbxCurveY->KeyGetTime(keyIndex));
+                times.Add(fbxCurveY->keyframes.data[keyIndex].time);
             }
         }
         if (fbxCurveZ != nullptr)
         {
-            for (IndexT keyIndex = 0; keyIndex < fbxCurveZ->KeyGetCount(); keyIndex++)
+            for (IndexT keyIndex = 0; keyIndex < fbxCurveZ->keyframes.count; keyIndex++)
             {
-                times.Add(fbxCurveZ->KeyGetTime(keyIndex));
+                times.Add(fbxCurveZ->keyframes.data[keyIndex].time);
             }
         }
     }
@@ -230,23 +201,27 @@ CountKeys(FbxAnimCurve* fbxCurveX, FbxAnimCurve* fbxCurveY, FbxAnimCurve* fbxCur
 /**
 */
 void 
-NFbxNode::PrepareAnimation(SceneNode* node, FbxAnimStack* animStack)
+NFbxNode::PrepareAnimation(SceneNode* node, ufbx_anim_stack* animStack)
 {
     // we only need the base (which contains the sum of all layers)
-    FbxNode* fbxNode = node->fbx.node;
-    FbxAnimLayer* animLayer = animStack->GetSrcObject<FbxAnimLayer>(0);
+    ufbx_node* fbxNode = node->fbx.node;
+    ufbx_anim_layer* animLayer = animStack->layers[0];
 
-    FbxAnimCurve* translationCurveX = fbxNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X);
-    FbxAnimCurve* translationCurveY = fbxNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-    FbxAnimCurve* translationCurveZ = fbxNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+    ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);
+    ufbx_anim_prop* rotationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Rotation);
+    ufbx_anim_prop* scalingProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Scaling);
 
-    FbxAnimCurve* rotationCurveX = fbxNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X);
-    FbxAnimCurve* rotationCurveY = fbxNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-    FbxAnimCurve* rotationCurveZ = fbxNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+    ufbx_anim_curve* translationCurveX = translationProperty->anim_value->curves[0];
+    ufbx_anim_curve* translationCurveY = translationProperty->anim_value->curves[1];
+    ufbx_anim_curve* translationCurveZ = translationProperty->anim_value->curves[2];
 
-    FbxAnimCurve* scaleCurveX = fbxNode->LclScaling.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X);
-    FbxAnimCurve* scaleCurveY = fbxNode->LclScaling.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-    FbxAnimCurve* scaleCurveZ = fbxNode->LclScaling.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+    ufbx_anim_curve* rotationCurveX = rotationProperty->anim_value->curves[0];
+    ufbx_anim_curve* rotationCurveY = rotationProperty->anim_value->curves[1];
+    ufbx_anim_curve* rotationCurveZ = rotationProperty->anim_value->curves[2];
+
+    ufbx_anim_curve* scaleCurveX = scalingProperty->anim_value->curves[0];
+    ufbx_anim_curve* scaleCurveY = scalingProperty->anim_value->curves[1];
+    ufbx_anim_curve* scaleCurveZ = scalingProperty->anim_value->curves[2];
 
     AnimBuilderCurve& translationCurve = node->anim.translationCurve;
     AnimBuilderCurve& rotationCurve = node->anim.rotationCurve;
@@ -256,9 +231,9 @@ NFbxNode::PrepareAnimation(SceneNode* node, FbxAnimStack* animStack)
     rotationCurve.curveType = CurveType::Rotation;
     scaleCurve.curveType = CurveType::Scale;
 
-    FbxAnimCurve* translations[] = { translationCurveX, translationCurveY, translationCurveZ };
-    FbxAnimCurve* rotations[] = { rotationCurveX, rotationCurveY, rotationCurveZ };
-    FbxAnimCurve* scalings[] = { scaleCurveX, scaleCurveY, scaleCurveZ };
+    ufbx_anim_curve* translations[] = { translationCurveX, translationCurveY, translationCurveZ };
+    ufbx_anim_curve* rotations[] = { rotationCurveX, rotationCurveY, rotationCurveZ };
+    ufbx_anim_curve* scalings[] = { scaleCurveX, scaleCurveY, scaleCurveZ };
 
     translationCurve.numKeys = CountKeys(translationCurveX, translationCurveY, translationCurveZ, 0, node->fbx.translationKeyTimes);
     rotationCurve.numKeys = CountKeys(rotationCurveX, rotationCurveY, rotationCurveZ, 0, node->fbx.rotationKeyTimes);
@@ -275,25 +250,29 @@ NFbxNode::PrepareAnimation(SceneNode* node, FbxAnimStack* animStack)
 /**
 */
 void
-NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, FbxAnimStack* stack)
+NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, ufbx_anim_stack* animStack)
 {
     if (!node->base.isAnimated)
         return;
 
-    // we only need the base (which contains the sum of all layers)
-    FbxAnimLayer* animLayer = stack->GetSrcObject<FbxAnimLayer>(0);
+    ufbx_node* fbxNode = node->fbx.node;
+    ufbx_anim_layer* animLayer = animStack->layers[0];
 
-    FbxAnimCurve* translationCurveX = fbxNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X);
-    FbxAnimCurve* translationCurveY = fbxNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-    FbxAnimCurve* translationCurveZ = fbxNode->LclTranslation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+    ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);
+    ufbx_anim_prop* rotationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Rotation);
+    ufbx_anim_prop* scalingProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Scaling);
 
-    FbxAnimCurve* rotationCurveX = fbxNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X);
-    FbxAnimCurve* rotationCurveY = fbxNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-    FbxAnimCurve* rotationCurveZ = fbxNode->LclRotation.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+    ufbx_anim_curve* translationCurveX = translationProperty->anim_value->curves[0];
+    ufbx_anim_curve* translationCurveY = translationProperty->anim_value->curves[1];
+    ufbx_anim_curve* translationCurveZ = translationProperty->anim_value->curves[2];
 
-    FbxAnimCurve* scaleCurveX = fbxNode->LclScaling.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_X);
-    FbxAnimCurve* scaleCurveY = fbxNode->LclScaling.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Y);
-    FbxAnimCurve* scaleCurveZ = fbxNode->LclScaling.GetCurve(animLayer, FBXSDK_CURVENODE_COMPONENT_Z);
+    ufbx_anim_curve* rotationCurveX = rotationProperty->anim_value->curves[0];
+    ufbx_anim_curve* rotationCurveY = rotationProperty->anim_value->curves[1];
+    ufbx_anim_curve* rotationCurveZ = rotationProperty->anim_value->curves[2];
+
+    ufbx_anim_curve* scaleCurveX = scalingProperty->anim_value->curves[0];
+    ufbx_anim_curve* scaleCurveY = scalingProperty->anim_value->curves[1];
+    ufbx_anim_curve* scaleCurveZ = scalingProperty->anim_value->curves[2];
 
     AnimBuilderCurve& translationCurve = node->anim.translationCurve;
     AnimBuilderCurve& rotationCurve = node->anim.rotationCurve;
@@ -317,7 +296,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<
 
     struct CurveSet
     {
-        FbxAnimCurve *xCurve, *yCurve, *zCurve;
+        ufbx_anim_curve *xCurve, *yCurve, *zCurve;
     };
     CurveSet translationSet = { translationCurveX, translationCurveY, translationCurveZ };
     CurveSet rotationSet = { rotationCurveX, rotationCurveY, rotationCurveZ };
@@ -328,7 +307,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<
         Math::vec3 defaultValue
         , const CurveSet& curves
         , const float scale
-        , const Util::Set<FbxTime>& times
+        , const Util::Set<double>& times
         , Util::Array<float>& keys
         , Util::Array<Timing::Tick>& keyTimes
         , AnimBuilderCurve& curve
@@ -347,31 +326,31 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<
             float values[3];
 
             if (curves.xCurve != nullptr)
-                values[0] = curves.xCurve->Evaluate(time, &lastX);
+                values[0] = ufbx_evaluate_curve(curves.xCurve, time, lastX);
             else
                 values[0] = defaultValue[0];
 
             if (curves.yCurve != nullptr)
-                values[1] = curves.yCurve->Evaluate(time, &lastY);
+                values[1] =  ufbx_evaluate_curve(curves.yCurve, time, lastX);
             else
                 values[1] = defaultValue[1];
 
             if (curves.zCurve != nullptr)
-                values[2] = curves.zCurve->Evaluate(time, &lastZ);
+                values[2] =  ufbx_evaluate_curve(curves.zCurve, time, lastX);
             else
                 values[2] = defaultValue[2];
 
             keys.Append(values[0] * scale);
             keys.Append(values[1] * scale);
             keys.Append(values[2] * scale);
-            keyTimes.Append(time.GetMilliSeconds());
+            keyTimes.Append(time);
         }
     };
 
     auto extractRotQuat = [](
         Math::quat defaultValue
         , const CurveSet& curves
-        , const Util::Set<FbxTime>& times
+        , const Util::Set<double>& times
         , Util::Array<float>& keys
         , Util::Array<Timing::Tick>& keyTimes
         , AnimBuilderCurve& curve
@@ -392,17 +371,17 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<
             Math::vec3 euler = Math::to_euler(defaultValue);
 
             if (curves.xCurve != nullptr)
-                values[0] = curves.xCurve->Evaluate(time, &lastX);
+                values[0] =  ufbx_evaluate_curve(curves.xCurve, time, lastX);
             else
                 values[0] = euler.x;
 
             if (curves.yCurve != nullptr)
-                values[1] = curves.yCurve->Evaluate(time, &lastY);
+                values[1] =  ufbx_evaluate_curve(curves.yCurve, time, lastX);
             else
                 values[1] = euler.y;
 
             if (curves.zCurve != nullptr)
-                values[2] = curves.zCurve->Evaluate(time, &lastZ);
+                values[2] =  ufbx_evaluate_curve(curves.zCurve, time, lastX);
             else
                 values[2] = euler.z;
             
@@ -413,7 +392,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<
             keys.Append(quat.z);
             keys.Append(quat.w);
 
-            keyTimes.Append(time.GetMilliSeconds());
+            keyTimes.Append(time);
         }
     }; 
 

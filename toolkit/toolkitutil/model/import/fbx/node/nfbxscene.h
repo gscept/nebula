@@ -13,8 +13,7 @@
 #include "model/meshutil/meshbuilder.h"
 #include "toolkit-common/base/exporttypes.h"
 #include "toolkit-common/logger.h"
-
-#include <fbxsdk/core/base/fbxtime.h>
+#include "ufbx/ufbx.h"
 
 namespace fbxsdk
 {
@@ -34,7 +33,7 @@ public:
 
     /// sets up the scene
     void Setup(
-        fbxsdk::FbxScene* scene
+        ufbx_scene* scene
         , const ToolkitUtil::ExportFlags& exportFlags
         , const Ptr<ModelAttributes>& attributes
         , float scale
@@ -45,13 +44,13 @@ private:
 
     /// Parse FBX node hierarchy
     void ParseNodeHierarchy(
-        FbxNode* fbxNode
+        ufbx_node* fbxNode
         , SceneNode* parent
-        , Util::Dictionary<FbxNode*, SceneNode*>& lookup
+        , Util::Dictionary<ufbx_node*, SceneNode*>& lookup
         , Util::Array<SceneNode>& nodes
     );
     /// converts FBX time mode to FPS
-    float TimeModeToFPS(const fbxsdk::FbxTime::EMode& timeMode);
+    float TimeModeToFPS(const ufbx_time_mode timeMode);
 
     ToolkitUtil::Logger* logger;
 };

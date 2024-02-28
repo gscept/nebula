@@ -18,7 +18,7 @@ int JointCounter = 0;
 /**
 */
 void 
-NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
+NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
 {
     NFbxNode::Setup(node, parent, fbxNode);
     FbxSkeleton* joint = fbxNode->GetSkeleton();

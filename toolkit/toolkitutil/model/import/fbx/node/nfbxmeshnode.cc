@@ -25,7 +25,7 @@ void
 NFbxMeshNode::Setup(
     SceneNode* node
     , SceneNode* parent
-    , fbxsdk::FbxNode* fbxNode
+    , ufbx_node* fbxNode
 )
 {
     NFbxNode::Setup(node, parent, fbxNode);
@@ -38,7 +38,7 @@ void
 NFbxMeshNode::ExtractMesh(
     SceneNode* node
     , Util::Array<MeshBuilder>& meshes
-    , const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup
+    , const Util::Dictionary<ufbx_node*, SceneNode*>& nodeLookup
     , const ToolkitUtil::ExportFlags flags
 )
 {

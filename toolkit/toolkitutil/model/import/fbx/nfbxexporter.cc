@@ -11,6 +11,7 @@
 #include "model/skeletonutil/skeletonbuildersaver.h"
 #include "model/modelutil/modeldatabase.h"
 #include "model/modelutil/modelattributes.h"
+#include "ufbx/ufbx.h"
 
 #include <fbxsdk.h>
 
@@ -21,15 +22,11 @@ namespace ToolkitUtil
 {
 __ImplementClass(ToolkitUtil::NFbxExporter, 'FBXE', Base::ExporterBase);
 
-
-fbxsdk::FbxManager* sdkManager = nullptr;
-fbxsdk::FbxIOSettings* ioSettings = nullptr;
 Threading::CriticalSection cs;
 //------------------------------------------------------------------------------
 /**
 */
 NFbxExporter::NFbxExporter() 
-    : progressFbxCallback(0)
 {
     // empty
 }
@@ -48,33 +45,18 @@ NFbxExporter::~NFbxExporter()
 bool 
 NFbxExporter::ParseScene()
 {
-    cs.Enter();
-    if (!sdkManager)
-    {
-        // Create the FBX SDK manager
-        sdkManager = fbxsdk::FbxManager::Create();
-        ioSettings = fbxsdk::FbxIOSettings::Create(sdkManager, "Import settings");
-    }
-    cs.Leave();
 
-    auto scene = fbxsdk::FbxScene::Create(sdkManager, "Export scene");
-    auto importer = fbxsdk::FbxImporter::Create(sdkManager, "Importer");
+    ufbx_coordinate_axes wantedAxes;
+    wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y;
+    wantedAxes.front = UFBX_COORDINATE_AXIS_NEGATIVE_Z;
+    wantedAxes.right = UFBX_COORDINATE_AXIS_POSITIVE_X;
 
-    bool importStatus = importer->Initialize(this->path.LocalPath().AsCharPtr(), -1, NULL);
-    importer->SetProgressCallback(this->progressFbxCallback);
-    if (importStatus)
+    ufbx_error error;
+    ufbx_load_opts opts{.clean_skin_weights = true, .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, .target_axes = wantedAxes, .target_unit_meters = 1.0f};
+    ufbx_scene* scene2 = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
+    if (scene2 == nullptr)
     {
-        importStatus = importer->Import(scene);
-        if (!importStatus)
-        {
-            this->logger->Error("FBX - Failed to open\n");
-            this->SetHasErrors(true);
-            return false;
-        }
-    }
-    else
-    {
-        this->logger->Error("FBX - Failed to initialize\n");
+        this->logger->Error("FBX - Failed to open\n");
         this->SetHasErrors(true);
         return false;
     }

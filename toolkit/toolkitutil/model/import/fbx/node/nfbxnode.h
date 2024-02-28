@@ -13,7 +13,7 @@
 #include "math/mat4.h"
 #include "timing/time.h"
 
-#include <fbxsdk.h>
+#include "ufbx/ufbx.h"
 
 
 namespace ToolkitUtil
@@ -37,17 +37,17 @@ class NFbxNode
 public:
 
     /// Setup base node
-    static void Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode);
+    static void Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode);
 
     /// Generates animation clip
-    static void ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, FbxAnimStack* animStack);
+    static void ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, ufbx_anim_stack* animStack);
     /// Returns true if node is animated
-    static void PrepareAnimation(SceneNode* node, FbxAnimStack* animStack);
+    static void PrepareAnimation(SceneNode* node, ufbx_anim_stack* animStack);
 
 protected:
 
     /// extract animation curves from node
-    static void ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, FbxAnimStack* stack);
+    static void ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, ufbx_anim_stack* animStack);
 }; 
 
 } // namespace ToolkitUtil

@@ -148,8 +148,8 @@ private:
 #ifdef FBXSDK
     struct
     {
-        FbxNode* node;
-        Util::Set<FbxTime> translationKeyTimes, rotationKeyTimes, scaleKeyTimes;
+        ufbx_node* node;
+        Util::Set<double> translationKeyTimes, rotationKeyTimes, scaleKeyTimes;
     } fbx;
 #endif
 };
