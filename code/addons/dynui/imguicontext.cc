@@ -443,7 +443,7 @@ ImguiContext::Create()
     ImVec4* colors = ImGui::GetStyle().Colors;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
     colors[ImGuiCol_Text]                   = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    colors[ImGuiCol_TextDisabled]           = ImVec4(0.27f, 0.27f, 0.27f, 0.50f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.6f, 0.6f, 0.6f, 0.50f);
     colors[ImGuiCol_WindowBg]               = ImVec4(0.33f, 0.33f, 0.33f, 1.00f);
     colors[ImGuiCol_ChildBg]                = ImVec4(0.36f, 0.36f, 0.36f, 0.59f);
     colors[ImGuiCol_PopupBg]                = ImVec4(0.25f, 0.25f, 0.25f, 0.95f);
