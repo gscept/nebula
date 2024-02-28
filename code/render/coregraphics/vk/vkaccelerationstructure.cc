@@ -333,6 +333,8 @@ CreateBlasInstance(const BlasInstanceCreateInfo& info)
 void
 DestroyBlasInstance(const BlasInstanceId id)
 {
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    setup.mask = 0x0; // Disable instance such that TLAS building will ignore it
     blasInstanceAllocator.Dealloc(id.id24);
 }
 
@@ -359,6 +361,16 @@ BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint off
     VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
     char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
     memcpy(ptr, &setup, sizeof(setup));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BlasInstanceSetMask(const BlasInstanceId id, uint mask)
+{
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    setup.mask = mask;
 }
 
 //------------------------------------------------------------------------------

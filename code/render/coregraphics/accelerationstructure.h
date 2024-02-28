@@ -83,6 +83,8 @@ void DestroyBlasInstance(const BlasInstanceId id);
 void BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset);
 /// Update blas instance and write to buffer
 void BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset);
+/// Set blas instance mask, setting it to 0x0 will disable it
+void BlasInstanceSetMask(const BlasInstanceId id, uint mask);
 /// Get instance size (platform dependent)
 const SizeT BlasInstanceGetSize();
 
