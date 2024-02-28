@@ -12,6 +12,7 @@
 #include "game/componentinspection.h"
 #include "editor/cmds.h"
 #include "imgui_internal.h"
+#include "basegamefeature/components/basegamefeature.h"
 
 using namespace Editor;
 
@@ -221,11 +222,19 @@ Inspector::ShowAddComponentMenu()
 
         Util::FixedArray<MemDb::Attribute*> const& components = MemDb::AttributeRegistry::GetAllAttributes();
         SizeT const numComponents = components.Size();
-        Util::StringAtom const ownerAtom = "Owner"_atm;
+
+        Util::FixedArray<Util::StringAtom> disallowed = {
+            Game::Entity::Traits::name,
+            Game::Position::Traits::name,
+            Game::Orientation::Traits::name,
+            Game::Scale::Traits::name,
+            Game::IsActive::Traits::name
+        };
+
         for (SizeT i = 0; i < numComponents; i++)
         {
             MemDb::Attribute* component = components[i];
-            if (component->name == ownerAtom || (component->externalFlags & Game::COMPONENTFLAG_DECAY))
+            if (disallowed.FindIndex(component->name) != -1)
                 continue;
 
             const char* name = component->name.Value();
