@@ -12,8 +12,6 @@
 #include "nfbxlightnode.h"
 #include "timing/timer.h"
 
-#include <fbxsdk.h>
-
 using namespace Util;
 using namespace ToolkitUtil;
 namespace ToolkitUtil
@@ -133,7 +131,7 @@ NFbxScene::Setup(
     this->nodes.Reserve(nodeCount);
 
     // Go through all nodes and add them to our lookup
-    Util::Dictionary<FbxNode*, SceneNode*> nodeLookup;
+    Util::Dictionary<ufbx_node*, SceneNode*> nodeLookup;
     ParseNodeHierarchy(scene->root_node, nullptr, nodeLookup, this->nodes);
 
     // Setup skeleton hierarchy
@@ -174,7 +172,7 @@ NFbxScene::Setup(
                 NFbxNode::ExtractAnimation(node, anim.keys, anim.keyTimes, animStack);
 
                 // Generate one clip per anim stack
-                Scene::GenerateClip(node, anim, animStack->GetName());
+                Scene::GenerateClip(node, anim, Util::String(animStack->name.data, animStack->name.length));
             }
         }
     }

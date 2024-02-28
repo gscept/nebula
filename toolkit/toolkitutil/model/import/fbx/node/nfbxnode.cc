@@ -11,6 +11,7 @@
 #include "model/modelutil/modelattributes.h"
 #include "util/set.h"
 #include "model/import/base/uniquestring.h"
+#include "ufbx/ufbx.h"
 
 namespace ToolkitUtil
 {
@@ -24,14 +25,14 @@ using namespace ToolkitUtil;
 /**
 */
 Math::mat4
-FbxToMath(const fbxsdk::FbxMatrix& matrix)
+FbxToMath(const ufbx_matrix& matrix)
 {
     Math::mat4 ret;
     ret.set(
-        matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
-        matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],
-        matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],
-        matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]);
+        matrix.cols[0].v[0], matrix.cols[0].v[1], matrix.cols[0].v[2], 0.0,
+        matrix.cols[1].v[0], matrix.cols[1].v[1], matrix.cols[1].v[2], 0.0,
+        matrix.cols[2].v[0], matrix.cols[2].v[1], matrix.cols[2].v[2], 0.0,
+        matrix.cols[3].v[0], matrix.cols[3].v[1], matrix.cols[3].v[2], 1.0);
     return ret;
 }
 
@@ -39,31 +40,46 @@ FbxToMath(const fbxsdk::FbxMatrix& matrix)
 /**
 */
 Math::vec4
-FbxToMath(const fbxsdk::FbxVector4& vector)
+FbxToMath(const ufbx_vec3& vector)
 {
     Math::vec4 ret;
     ret.set(
-        vector[0]
-        , vector[1]
-        , vector[2]
-        , vector[3]
+        vector.x
+        , vector.y
+        , vector.z
+        , 0
     );
     return ret;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec4
+FbxToMath(const ufbx_vec4& vector)
+{
+    Math::vec4 ret;
+    ret.set(
+        vector.x
+        , vector.y
+        , vector.z
+        , vector.w
+    );
+    return ret;
+}
 
 //------------------------------------------------------------------------------
 /**
 */
 Math::quat
-FbxToMath(const fbxsdk::FbxQuaternion& quat)
+FbxToMath(const ufbx_quat& quat)
 {
     Math::quat ret;
     ret.set(
-        quat[0]
-        , quat[1]
-        , quat[2]
-        , quat[3]
+        quat.x
+        , quat.y
+        , quat.z
+        , quat.w
     );
     return ret;
 }
@@ -72,12 +88,12 @@ FbxToMath(const fbxsdk::FbxQuaternion& quat)
 /**
 */
 Math::vec2
-FbxToMath(const fbxsdk::FbxVector2& vector)
+FbxToMath(const ufbx_vec2& vector)
 {
     Math::vec2 ret;
     ret.set(
-        vector[0]
-        , vector[1]
+        vector.x
+        , vector.y
     );
     return ret;
 }
@@ -94,23 +110,20 @@ NFbxNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
         node->base.isPhysics = true;
     }
 
-    FbxVector4 translation, rotation, scale;
-    translation[0] = fbxNode->local_transform.translation.x;
-    translation[1] = fbxNode->local_transform.translation.y;
-    translation[2] = fbxNode->local_transform.translation.z;
+    ufbx_vec3 translation, rotation, scale;
+    translation.x = fbxNode->local_transform.translation.x;
+    translation.y = fbxNode->local_transform.translation.y;
+    translation.z = fbxNode->local_transform.translation.z;
 
-    rotation[0] = fbxNode->local_transform.rotation.x;
-    rotation[1] = fbxNode->local_transform.rotation.y;
-    rotation[2] = fbxNode->local_transform.rotation.z;
+    rotation.x = fbxNode->local_transform.rotation.x;
+    rotation.y = fbxNode->local_transform.rotation.y;
+    rotation.z = fbxNode->local_transform.rotation.z;
 
-    scale[0] = fbxNode->local_transform.scale.x;
-    scale[1] = fbxNode->local_transform.scale.y;
-    scale[2] = fbxNode->local_transform.scale.z;
+    scale.x = fbxNode->local_transform.scale.x;
+    scale.y = fbxNode->local_transform.scale.y;
+    scale.z = fbxNode->local_transform.scale.z;
 
-    translation.FixIncorrectValue();
-    rotation.FixIncorrectValue();
-    scale.FixIncorrectValue();
-    node->base.rotation = Math::quatyawpitchroll(rotation[1], rotation[0], rotation[2]);
+    node->base.rotation = Math::quatyawpitchroll(rotation.x, rotation.y, rotation.z);
     node->base.translation = xyz(FbxToMath(translation)) * AdjustedScale;
     node->base.scale = xyz(FbxToMath(scale)) * AdjustedScale;
 
@@ -255,7 +268,6 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
     if (!node->base.isAnimated)
         return;
 
-    ufbx_node* fbxNode = node->fbx.node;
     ufbx_anim_layer* animLayer = animStack->layers[0];
 
     ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);

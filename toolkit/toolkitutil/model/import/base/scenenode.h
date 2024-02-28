@@ -17,10 +17,7 @@
 #include "jobs/jobs.h"
 #include "util/set.h"
 
-#ifdef FBXSDK
-#include <fbxsdk.h>
-#endif
-
+struct ufbx_node;
 namespace ToolkitUtil
 {
 

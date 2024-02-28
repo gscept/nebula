@@ -15,11 +15,6 @@
 #include "toolkit-common/logger.h"
 #include "ufbx/ufbx.h"
 
-namespace fbxsdk
-{
-    class FbxScene;
-}
-
 namespace ToolkitUtil
 {
 

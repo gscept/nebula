@@ -6,6 +6,7 @@
 #include "nfbxnode.h"
 #include "nfbxlightnode.h"
 #include "model/import/base/scenenode.h"
+#include "ufbx/ufbx.h"
 
 namespace ToolkitUtil
 {
@@ -17,16 +18,16 @@ void
 NFbxLightNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
 {
     NFbxNode::Setup(node, parent, fbxNode);
-    FbxLight* light = fbxNode->GetLight();
-    switch (light->LightType)
+    ufbx_light* light = fbxNode->light;
+    switch (light->type)
     {
-        case FbxLight::ePoint:
+        case UFBX_LIGHT_POINT:
             node->light.lightType = SceneNode::Pointlight;
             break;
-        case FbxLight::eSpot:
+        case UFBX_LIGHT_SPOT:
             node->light.lightType = SceneNode::Spotlight;
             break;
-        case FbxLight::eArea:
+        case UFBX_LIGHT_AREA:
             node->light.lightType = SceneNode::AreaLight;
             break;
         default:

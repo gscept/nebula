@@ -21,8 +21,7 @@ void
 NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
 {
     NFbxNode::Setup(node, parent, fbxNode);
-    FbxSkeleton* joint = fbxNode->GetSkeleton();
-    node->skeleton.isSkeletonRoot = joint->IsSkeletonRoot();
+    node->skeleton.isSkeletonRoot = ufbx_as_bone(&fbxNode->element);
 }
 
 } // namespace ToolkitUtil

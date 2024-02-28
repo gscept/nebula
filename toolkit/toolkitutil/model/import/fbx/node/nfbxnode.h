@@ -12,19 +12,24 @@
 #include "math/vec4.h"
 #include "math/mat4.h"
 #include "timing/time.h"
-
-#include "ufbx/ufbx.h"
-
+struct ufbx_node;
+struct ufbx_matrix;
+struct ufbx_vec4;
+struct ufbx_vec3;
+struct ufbx_vec2;
+struct ufbx_anim_stack;
 
 namespace ToolkitUtil
 {
 
-/// Convert FbxMatrix to Math::mat4
-Math::mat4 FbxToMath(const fbxsdk::FbxMatrix& matrix);
-/// Convert FbxVector4 to Math::vec4
-Math::vec4 FbxToMath(const fbxsdk::FbxVector4& vec);
-/// Convert FbxVector2 to Math::vec2
-Math::vec2 FbxToMath(const fbxsdk::FbxVector2& vec);
+/// Convert ufbx_matrix to Math::mat4
+Math::mat4 FbxToMath(const ufbx_matrix& matrix);
+/// Convert ufbx_vec4 to Math::vec4
+Math::vec4 FbxToMath(const ufbx_vec4& vector);
+/// Convert ufbx_vec3 to Math::vec3
+Math::vec4 FbxToMath(const ufbx_vec3& vector);
+/// Convert ufbx_vec2 to Math::vec2
+Math::vec2 FbxToMath(const ufbx_vec2& vector);
 
 class SceneNode;
 class NFbxScene;

@@ -52,9 +52,9 @@ NFbxExporter::ParseScene()
     wantedAxes.right = UFBX_COORDINATE_AXIS_POSITIVE_X;
 
     ufbx_error error;
-    ufbx_load_opts opts{.clean_skin_weights = true, .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, .target_axes = wantedAxes, .target_unit_meters = 1.0f};
-    ufbx_scene* scene2 = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
-    if (scene2 == nullptr)
+    ufbx_load_opts opts{.clean_skin_weights = true, .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, .target_axes = wantedAxes};
+    ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
+    if (scene == nullptr)
     {
         this->logger->Error("FBX - Failed to open\n");
         this->SetHasErrors(true);
@@ -69,9 +69,6 @@ NFbxExporter::ParseScene()
     fbxScene->SetCategory(this->category);
     fbxScene->Setup(scene, this->exportFlags, attributes, this->sceneScale, this->logger);
     this->scene = fbxScene;
-
-    scene->Destroy(true);
-    importer->Destroy(true);
 
     return true;
 }
