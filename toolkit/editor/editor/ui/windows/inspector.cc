@@ -100,12 +100,11 @@ Inspector::Run()
         (entityMapping.table != lastEntityMapping.table || entityMapping.instance != lastEntityMapping.instance);
     lastEntityMapping = Editor::state.editorWorld->GetEntityMapping(entity);
 
-    Util::StringAtom const ownerAtom = "Owner"_atm;
     for (int i = 0; i < components.Size(); i++)
     {
         auto component = components[i];
 
-        if (MemDb::AttributeRegistry::GetAttribute(component)->name == ownerAtom)
+        if (component == Game::GetComponentId<Game::Entity>())
         {
             continue;
         }
@@ -113,11 +112,16 @@ Inspector::Run()
         ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
         ImGui::SameLine();
 
-        if (ImGui::Button("Remove"))
+        if (component != Game::GetComponentId<Game::Position>() &&
+            component != Game::GetComponentId<Game::Orientation>() &&
+            component != Game::GetComponentId<Game::Scale>())
         {
-            Edit::RemoveComponent(entity, component);
-            ImGui::PopID();
-            return; // return, otherwise we're reading stale data.
+            if (ImGui::Button("Remove"))
+            {
+                Edit::RemoveComponent(entity, component);
+                ImGui::PopID();
+                return; // return, otherwise we're reading stale data.
+            }
         }
 
         auto& tempComponent = this->tempComponents[i];

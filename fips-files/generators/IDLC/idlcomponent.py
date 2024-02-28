@@ -139,7 +139,7 @@ def WriteComponentHeaderDeclarations(f, document):
         if (len(c.variables) > 0):
             f.WriteLine('static constexpr const char* field_names[num_fields] = {')
             for v in c.variables:
-                f.WriteLine('    "{}"'.format(v.name))
+                f.WriteLine('    "{}",'.format(v.name))
             f.WriteLine('};')
         f.DecreaseIndent()
         f.WriteLine("};")

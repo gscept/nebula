@@ -195,4 +195,60 @@ ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
         *commit = true;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Math::vec3>(ComponentId component, void* data, bool* commit)
+{
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+
+    ImGui::Text(desc->name.Value());
+    if (ImGui::InputFloat3("##vec", (float*)data))
+        *commit = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Game::Position>(ComponentId component, void* data, bool* commit)
+{
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+
+    ImGui::SameLine();
+    if (ImGui::InputFloat3("##pos", (float*)data))
+        *commit = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Game::Orientation>(ComponentId component, void* data, bool* commit)
+{
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+
+    ImGui::SameLine();
+    if (ImGui::InputFloat4("##orient", (float*)data))
+        *commit = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
+{
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+
+    ImGui::SameLine();
+    if (ImGui::InputFloat3("##scl", (float*)data))
+        *commit = true;
+}
+
 } // namespace Game
