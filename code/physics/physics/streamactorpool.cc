@@ -17,6 +17,7 @@
 #include "coregraphics/nvx3fileformatstructs.h"
 #include "coregraphics/primitivegroup.h"
 #include "coregraphics/load/glimltypes.h"
+#include "coregraphics/indextype.h"
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceLoader);
 

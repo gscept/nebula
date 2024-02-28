@@ -9,6 +9,7 @@
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include "coregraphics/indextype.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/vertexlayout.h"
 
