@@ -25,14 +25,24 @@ def run(fips_dir, proj_dir, args) :
             if not os.path.isfile(target) or force:
                 log.info(log.YELLOW + "Compiling anyfxcompiler")
                 if sys.platform == "win32" :
-                    subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build.bat")
-                else :
-                    subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build.sh")                
-            else :
-                log.info(log.YELLOW + "anyfxcompiler already built, skipping")
+                    ext = ".bat"
+                else:
+                    ext = ".sh"
+
+                if (len(args) > 2 and args[2] == 'quiet'):
+                    ret_code = subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build{}".format(ext), stdout=subprocess.DEVNULL)
+                else:
+                    ret_code = subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build{}".format(ext))
+                    
+                if ret_code == 0:
+                    log.info(log.GREEN + "AnyFX compiler built successfully.")
+                else:
+                    log.info(log.RED + "AnyFX compiler failed to build!")
+            else:
+                log.info(log.YELLOW + "AnyFX compiler already built, skipping")
 
 def help():
     """print 'anyfx' help"""
     log.info(log.YELLOW +
-             "fips anyfx setup [force]\n"
+             "fips anyfx setup [force] [quiet]\n"
              "  compiles anyfxcompiler for platform\n")

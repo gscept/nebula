@@ -10,8 +10,9 @@ import subprocess
 
 def run(fips_dir, proj_dir, args) :
     """run the 'bootstrap' verb"""
-    print(proj_dir + "/fips anyfx setup")
-    subprocess.call(proj_dir + "/fips anyfx setup", shell=True)
+
+    log.info("[BOOTSTRAP]: " + log.BLUE + "-- AnyFX --" + log.DEF)
+    subprocess.call(proj_dir + "/fips anyfx setup force quiet", shell=True)
 
     # Get config build type
     # cfg = config.load(fips_dir, proj_dir, settings.get(proj_dir, 'config'))
@@ -25,14 +26,21 @@ def run(fips_dir, proj_dir, args) :
         version = subprocess.check_output(vswhere + " -property catalog_productLine").decode("utf-8").rstrip()
         version = version.replace("Dev", "vc")
 
+    log.info("[BOOTSTRAP]: " + log.BLUE + "-- PhysX --" + log.DEF)
     subprocess.call(proj_dir + '/fips physx build {} debug'.format(version), shell=True)
     subprocess.call(proj_dir + '/fips physx build {} release'.format(version), shell=True)
 
+    log.info("[BOOTSTRAP]: " + log.BLUE + "-- UltraLight --" + log.DEF)
     subprocess.call(proj_dir + "/fips ultralight", shell=True)
 
+    log.info("[BOOTSTRAP]: " + log.BLUE + "-- Python Deps --" + log.DEF)
+    log.info(log.YELLOW + "Installing required python dependencies..." + log.DEF)
+
+    subprocess.call("pip install py7zr", stdout=subprocess.DEVNULL)
+    
     # TODO: we should build the assetbatcher as well, without support for fbx unless we have the SDK installed.
 
-    log.info("Bootstrap finished.")
+    log.info("[BOOTSTRAP]: " + log.YELLOW + "Bootstrap finished.")
 
 def help():
     """print 'bootstrap' help"""
