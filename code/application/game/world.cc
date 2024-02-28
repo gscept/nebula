@@ -234,6 +234,7 @@ World::ManageEntities()
 void
 World::Reset()
 {
+    this->cacheValid = false;
     this->db->Reset();
 }
 

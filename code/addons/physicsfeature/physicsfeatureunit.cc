@@ -118,10 +118,12 @@ PhysicsFeatureUnit::OnDeactivate()
 void
 PhysicsFeatureUnit::OnBeforeCleanup(Game::World* world)
 {
-    n_assert(this->physicsWorlds.Contains(world));
-    IndexT scene = this->physicsWorlds[world];
-    Physics::FlushSimulation(scene);
-    FeatureUnit::OnBeforeCleanup(world);
+    if (this->physicsWorlds.Contains(world))
+    {
+        IndexT scene = this->physicsWorlds[world];
+        Physics::FlushSimulation(scene);
+        FeatureUnit::OnBeforeCleanup(world);
+    }
 }
 
 //------------------------------------------------------------------------------

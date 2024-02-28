@@ -97,12 +97,7 @@ StopGame()
     Game::World::Override(state.editorWorld, gameWorld);
 
     // update the editables so that they point to the correct game entities.
-    Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId("Owner"_atm);
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.numInclusive = 1;
-
-    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
     Game::Dataset data = state.editorWorld->Query(filter);
 
     for (int v = 0; v < data.numViews; v++)

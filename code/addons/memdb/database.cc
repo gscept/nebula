@@ -262,6 +262,7 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
             dstPart->freeIds = srcPart->freeIds;
             dstPart->table = &dstTable;
             dstPart->version = srcPart->version;
+            dstPart->validRows = srcPart->validRows;
 
             dstTable.currentPartition = srcPart == srcTable.currentPartition ? dstPart : dstTable.currentPartition;
 
