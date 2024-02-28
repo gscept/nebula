@@ -122,6 +122,9 @@ AudioDevice::LoadClip(Resources::ResourceName const& name)
 void
 AudioDevice::UnloadClip(ClipId const clip)
 {
+    if (clip == InvalidClipId)
+        return;
+
     uint& refCount = this->wavs.Get<WavAllocator::REFCOUNT>(clip.id);
     refCount--;
     if (refCount == 0)

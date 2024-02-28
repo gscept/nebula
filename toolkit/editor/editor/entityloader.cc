@@ -81,50 +81,33 @@ LoadEntities(const char* filePath)
 
             if (reader->SetToFirstChild("components"))
             {
-                if (reader->HasChildren())
+                uint numChildren = reader->CurrentSize();
+                for (uint childIndex = 0; childIndex < numChildren; childIndex++)
                 {
-                    reader->SetToFirstChild();
-                    do
+                    Util::String const componentName = reader->GetChildNodeName(childIndex);
+                    MemDb::AttributeId descriptor = MemDb::AttributeRegistry::GetAttributeId(componentName);
+                    if (descriptor == MemDb::AttributeId::Invalid())
                     {
-                        Util::StringAtom const componentName = reader->GetCurrentNodeName();
-                        MemDb::AttributeId descriptor = MemDb::AttributeRegistry::GetAttributeId(componentName);
-                        if (descriptor == MemDb::AttributeId::Invalid())
-                        {
-                            n_warning(
-                                "Warning: Entity '%s' contains invalid component named '%s'.\n",
-                                entityName.AsCharPtr(),
-                                componentName.Value()
-                            );
-                            continue;
-                        }
+                        n_warning(
+                            "Warning: Entity '%s' contains invalid component named '%s'.\n",
+                            entityName.AsCharPtr(),
+                            componentName.AsCharPtr()
+                        );
+                        continue;
+                    }
 
-                        if (!Editor::state.editorWorld->HasComponent(editorEntity, descriptor))
-                        {
-                            Edit::AddComponent(editorEntity, descriptor);
-                        }
+                    if (!Editor::state.editorWorld->HasComponent(editorEntity, descriptor))
+                    {
+                        Edit::AddComponent(editorEntity, descriptor);
+                    }
 
-                        if (MemDb::AttributeRegistry::TypeSize(descriptor) > 0)
-                        {
-                            if (scratchBuffer.Size() < MemDb::AttributeRegistry::TypeSize(descriptor))
-                                scratchBuffer.Reserve(MemDb::AttributeRegistry::TypeSize(descriptor));
-                            Game::ComponentSerialization::Deserialize(reader, descriptor, scratchBuffer.GetPtr());
-                            Edit::SetComponent(editorEntity, descriptor, scratchBuffer.GetPtr());
-                        }
-                    } while (reader->SetToNextChild());
-                }
-                reader->SetToParent();
-            }
-            if (reader->SetToFirstChild("removed_components"))
-            {
-                n_assert(reader->IsArray());
-
-                Util::Array<Util::String> values;
-                reader->Get<Util::Array<Util::String>>(values);
-                for (auto s : values)
-                {
-                    Game::ComponentId const component = MemDb::AttributeRegistry::GetAttributeId(s);
-                    if (component != Game::ComponentId::Invalid())
-                        Edit::RemoveComponent(editorEntity, component);
+                    if (MemDb::AttributeRegistry::TypeSize(descriptor) > 0)
+                    {
+                        if (scratchBuffer.Size() < MemDb::AttributeRegistry::TypeSize(descriptor))
+                            scratchBuffer.Reserve(MemDb::AttributeRegistry::TypeSize(descriptor));
+                        Game::ComponentSerialization::Deserialize(reader, descriptor, scratchBuffer.GetPtr());
+                        Edit::SetComponent(editorEntity, descriptor, scratchBuffer.GetPtr());
+                    }
                 }
 
                 reader->SetToParent();
@@ -150,14 +133,9 @@ SaveEntities(const char* filePath)
     {
         writer->BeginObject("entities");
 
-        Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId("Owner"_atm);
-        filterInfo.access[0] = Game::AccessMode::READ;
-        filterInfo.numInclusive = 1;
-
-        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+        Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
         Game::Dataset data = state.editorWorld->Query(filter);
-        Game::ComponentId ownerPid = Game::GetComponentId("Owner"_atm);
+        Game::ComponentId entityPID = Game::GetComponentId<Game::Entity>();
 
         for (int v = 0; v < data.numViews; v++)
         {
@@ -183,7 +161,7 @@ SaveEntities(const char* filePath)
                     for (auto component : table.GetAttributes())
                     {
                         uint32_t const flags = MemDb::AttributeRegistry::Flags(component);
-                        if (component != ownerPid && (flags & Game::ComponentFlags::COMPONENTFLAG_DECAY) == 0)
+                        if (component != entityPID && (flags & Game::ComponentFlags::COMPONENTFLAG_DECAY) == 0)
                         {
                             SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                             if (typeSize > 0)

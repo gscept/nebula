@@ -56,6 +56,9 @@ public:
     bool SetToNextChild();
     /// set current node to parent, return false if no parent exists
     bool SetToParent();
+    
+    /// gets the childname of the child at index, or empty string if no child exists or has no name.
+    Util::String GetChildNodeName(SizeT childIndex);
 
     /// check if current node is an array
     bool IsArray() const;    

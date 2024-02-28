@@ -307,6 +307,24 @@ JsonReader::SetToParent()
 
 //------------------------------------------------------------------------------
 /**
+*/
+Util::String
+JsonReader::GetChildNodeName(SizeT childIndex)
+{
+    n_assert(this->IsOpen());
+    n_assert(0 != this->curNode);
+    n_assert(0 <= this->childIdx);
+
+    if (this->childIdx < (IndexT)this->parents.Peek()->size())
+    {
+        return this->curNode->get_key_name_at_index(this->childIdx);
+    }
+
+    return "";
+}
+
+//------------------------------------------------------------------------------
+/**
  
 */
 bool

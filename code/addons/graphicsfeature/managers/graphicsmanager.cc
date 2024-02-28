@@ -72,6 +72,32 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 /**
 */
 void
+DeregisterModelEntity(Model const* model)
+{
+    if (model->graphicsEntityId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (model->raytracing && CoreGraphics::RayTracingSupported &&
+        Raytracing::RaytracingContext::IsEntityRegistered(model->graphicsEntityId))
+    {
+        Raytracing::RaytracingContext::RegisterEntity(model->graphicsEntityId);
+    }
+    if (Visibility::ObservableContext::IsEntityRegistered(model->graphicsEntityId))
+    {
+        Visibility::ObservableContext::DeregisterEntity(model->graphicsEntityId);
+    }
+    if (Models::ModelContext::IsEntityRegistered(model->graphicsEntityId))
+    {
+        Models::ModelContext::DeregisterEntity(model->graphicsEntityId);
+    }
+
+    Graphics::DestroyEntity(model->graphicsEntityId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::InitCreatePointLightProcessor()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
@@ -123,9 +149,7 @@ GraphicsManager::OnDecay()
     Model* data = (Model*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
-        Visibility::ObservableContext::DeregisterEntity(data[i].graphicsEntityId);
-        Models::ModelContext::DeregisterEntity(data[i].graphicsEntityId);
-        Graphics::DestroyEntity(data[i].graphicsEntityId);
+        DeregisterModelEntity(data + i);
     }
 }
 
@@ -187,12 +211,7 @@ GraphicsManager::OnCleanup(Game::World* world)
 {
     n_assert(GraphicsManager::HasInstance());
 
-    Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId<Model>();
-    filterInfo.access[0] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 1;
-
-    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder().Including<Model>().Build();
     Game::Dataset data = world->Query(filter);
 
     for (int v = 0; v < data.numViews; v++)
@@ -202,17 +221,7 @@ GraphicsManager::OnCleanup(Game::World* world)
 
         for (IndexT i = 0; i < view.numInstances; ++i)
         {
-            Model const& model = modelData[i];
-
-            if (Models::ModelContext::IsEntityRegistered(model.graphicsEntityId))
-            {
-                if (Visibility::ObservableContext::IsEntityRegistered(model.graphicsEntityId))
-                    Visibility::ObservableContext::DeregisterEntity(model.graphicsEntityId);
-
-                Models::ModelContext::DeregisterEntity(model.graphicsEntityId);
-            }
-
-            Graphics::DestroyEntity(model.graphicsEntityId);
+            DeregisterModelEntity(modelData + i);
         }
     }
 
