@@ -74,7 +74,7 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 void
 DeregisterModelEntity(Model const* model)
 {
-    if (model->graphicsEntityId == Graphics::InvalidGraphicsEntityId)
+    if ((Graphics::GraphicsEntityId)model->graphicsEntityId == Graphics::InvalidGraphicsEntityId)
         return;
 
     if (model->raytracing && CoreGraphics::RayTracingSupported &&
