@@ -33,7 +33,7 @@ def run(fips_dir, proj_dir, args) :
 
                 vcstring = args[1] + "win64"
                 physxbuild = os.path.abspath(proj_dir + "/../physx/physx")
-                #subprocess.run([physxbuild + "/generate_projects.bat", vcstring] , cwd = physxbuild)
+                subprocess.run([physxbuild + "/generate_projects.bat", vcstring] , cwd = physxbuild, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                 vswhere = os.path.expandvars("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe")
                 # figure out a version number for vswhere
@@ -51,7 +51,7 @@ def run(fips_dir, proj_dir, args) :
                     
                     log.optional("Using Visual Studio from", devenvPath)
 
-                    log.info("Compiling PhysX, this might take a while...")
+                    log.info(log.YELLOW + "Compiling PhysX, this might take a while..." + log.DEF)
                     log.info("Building " + buildconfig + " version...")
                     retcode = subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/" + vcstring +"/PhysXSDK.sln /Build " + args[2] + " /Project INSTALL")
                     if retcode == 0:
@@ -61,9 +61,8 @@ def run(fips_dir, proj_dir, args) :
                 else:
                     log.optional("Using MSBuild from", devenvPath)
 
-                    log.info("Compiling PhysX, this might take a while.")
+                    log.info(log.YELLOW + "Compiling PhysX, this might take a while..." + log.DEF)
                     log.info("Building " + buildconfig + " version...")
-                    #-noConsoleLogger
                     retcode = subprocess.call(devenvPath + " " + proj_dir+"/../physx/physx/compiler/" + vcstring +"/INSTALL.vcxproj /verbosity:quiet /noLogo /noConsoleLogger /property:Configuration=" + buildconfig)
                     if retcode == 0:
                         log.colored(log.GREEN, "PhysX " + buildconfig + " build completed.")
