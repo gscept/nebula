@@ -85,8 +85,8 @@ LoadEntities(const char* filePath)
                 for (uint childIndex = 0; childIndex < numChildren; childIndex++)
                 {
                     Util::String const componentName = reader->GetChildNodeName(childIndex);
-                    MemDb::AttributeId descriptor = MemDb::AttributeRegistry::GetAttributeId(componentName);
-                    if (descriptor == MemDb::AttributeId::Invalid())
+                    MemDb::AttributeId attributeId = MemDb::AttributeRegistry::GetAttributeId(componentName);
+                    if (attributeId == MemDb::AttributeId::Invalid())
                     {
                         n_warning(
                             "Warning: Entity '%s' contains invalid component named '%s'.\n",
@@ -96,17 +96,19 @@ LoadEntities(const char* filePath)
                         continue;
                     }
 
-                    if (!Editor::state.editorWorld->HasComponent(editorEntity, descriptor))
+                    if (!Editor::state.editorWorld->HasComponent(editorEntity, attributeId))
                     {
-                        Edit::AddComponent(editorEntity, descriptor);
+                        Edit::AddComponent(editorEntity, attributeId);
                     }
-
-                    if (MemDb::AttributeRegistry::TypeSize(descriptor) > 0)
+                    
+                    SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(attributeId);
+                    if (typeSize > 0)
                     {
-                        if (scratchBuffer.Size() < MemDb::AttributeRegistry::TypeSize(descriptor))
-                            scratchBuffer.Reserve(MemDb::AttributeRegistry::TypeSize(descriptor));
-                        Game::ComponentSerialization::Deserialize(reader, descriptor, scratchBuffer.GetPtr());
-                        Edit::SetComponent(editorEntity, descriptor, scratchBuffer.GetPtr());
+                        if (scratchBuffer.Size() < typeSize)
+                            scratchBuffer.Reserve(typeSize);
+
+                        Game::ComponentSerialization::Deserialize(reader, attributeId, scratchBuffer.GetPtr());
+                        Edit::SetComponent(editorEntity, attributeId, scratchBuffer.GetPtr());
                     }
                 }
 

@@ -113,7 +113,7 @@ public:
     /// Deallocate an entity id. Use this with caution!
     void DeallocateEntity(Entity entity);
     /// Allocate an entity instance in a table. Use this with caution!
-    MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table);
+    MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data = nullptr);
     /// Allocate an entity instance from a blueprint. Use this with caution!
     MemDb::RowId AllocateInstance(Entity entity, BlueprintId blueprint);
     /// Allocate an entity instance from a template. Use this with caution!

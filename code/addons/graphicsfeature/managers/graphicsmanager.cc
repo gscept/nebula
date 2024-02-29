@@ -58,6 +58,8 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
         "NONE",
         [gid, raytracing, t]()
         {
+            if (!Graphics::GraphicsServer::Instance()->IsValidGraphicsEntity(gid))
+                return;
             Visibility::ObservableContext::RegisterEntity(gid);
             Models::ModelContext::SetTransform(gid, t);
             if (raytracing && CoreGraphics::RayTracingSupported)

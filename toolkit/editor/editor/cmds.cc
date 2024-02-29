@@ -145,11 +145,9 @@ InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
         }
         MemDb::Table& gameTable = defaultWorld->GetDatabase()->GetTable(gameTableId);
 
-        //Util::Blob const blob = editorTable.SerializeInstance(mapping.instance);
+        Util::Blob const blob = editorTable.SerializeInstance(mapping.instance);
 
-        // TODO: Check out how we copy entities between table when instantiating from templates.
-
-        MemDb::RowId gameRow = defaultWorld->AllocateInstance(edit.gameEntity, gameTableId);
+        MemDb::RowId gameRow = defaultWorld->AllocateInstance(edit.gameEntity, gameTableId, &blob);
     }
 
     return true;

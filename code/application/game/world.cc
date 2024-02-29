@@ -726,7 +726,7 @@ World::CreateEntityTable(CategoryCreateInfo const& info)
 /**
 */
 MemDb::RowId
-World::AllocateInstance(Entity entity, MemDb::TableId table)
+World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data)
 {
     n_assert(this->pool.IsValid(entity));
     n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
@@ -750,7 +750,12 @@ World::AllocateInstance(Entity entity, MemDb::TableId table)
     n_assert(tbl.GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == Game::Scale::Traits::fixed_column_index);
 #endif
 
-    // Set the owner of this instance
+    if (data != nullptr)
+    {
+        tbl.DeserializeInstance(*data, instance);
+    }
+
+    // Set the owner of this instance.
     Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[instance.index] = entity;
 
@@ -811,7 +816,8 @@ World::AllocateInstance(Entity entity, BlueprintId blueprint)
 #endif
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table).GetBuffer(mapping.instance.partition, 0);
+    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table)
+                               .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[mapping.instance.index] = entity;
 
     InitializeAllComponents(entity, mapping.table, mapping.instance);
@@ -838,7 +844,8 @@ World::AllocateInstance(Entity entity, TemplateId templateId)
     this->entityMap[entity.index] = mapping;
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table).GetBuffer(mapping.instance.partition, 0);
+    Game::Entity* owners = (Game::Entity*)this->db->GetTable(mapping.table)
+                               .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[mapping.instance.index] = entity;
 
     InitializeAllComponents(entity, mapping.table, mapping.instance);

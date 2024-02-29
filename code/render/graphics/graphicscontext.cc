@@ -30,6 +30,7 @@ GraphicsContext::~GraphicsContext()
 void
 GraphicsContext::InternalRegisterEntity(const Graphics::GraphicsEntityId id, Graphics::GraphicsContextState&& state)
 {
+    n_assert(GraphicsServer::Instance()->IsValidGraphicsEntity(id));
     n_assert(!state.entitySliceMap.Contains(id));
     Graphics::ContextEntityId allocId = state.Alloc();
     state.entitySliceMap.Add(id, allocId);
