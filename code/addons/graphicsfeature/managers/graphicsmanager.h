@@ -15,6 +15,7 @@
 #include "game/manager.h"
 #include "game/category.h"
 #include "graphics/graphicsentity.h"
+#include "graphicsfeature/components/graphicsfeature.h"
 
 namespace GraphicsFeature
 {
@@ -29,14 +30,19 @@ public:
     /// destroy entity manager
     static void Destroy();
 
+    /// called automatically when a model needs to be initialized
+    static void InitModel(Game::World*, Game::Entity, Model*);
+    /// called automatically when a model needs to be initialized
+    static void InitPointLight(Game::World* world, Game::Entity entity, PointLight* light);
+
 private:
     /// constructor
     GraphicsManager();
     /// destructor
     ~GraphicsManager();
 
+
     void InitCreatePointLightProcessor();
-    void InitCreateModelProcessor();
     void InitUpdateModelTransformProcessor();
     static void OnDecay();
 

@@ -41,6 +41,7 @@ Create()
     Game::TimeManager::SetGlobalTimeFactor(0.0f);
 
     state.editorWorld = Game::GameServer::Instance()->CreateWorld(WORLD_EDITOR);
+    state.editorWorld->componentInitializationEnabled = false;
 
     Game::GameServer::Instance()->SetupEmptyWorld(state.editorWorld);
 }

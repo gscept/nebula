@@ -38,7 +38,7 @@ struct Dataset
         /// partition identifier
         uint16_t partitionId = 0xFFFF;
         /// number of instances in view
-        uint32_t numInstances = 0;
+        uint16_t numInstances = 0;
         /// component buffers. @note Can be NULL if a queried component has no fields
         void* buffers[MAX_COMPONENT_BUFFERS];
         /// which instances are valid in this buffer

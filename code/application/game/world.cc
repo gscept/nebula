@@ -36,8 +36,6 @@ World::World(uint32_t hash)
 {
     this->db = MemDb::Database::Create();
     // clang-format off
-    this->pipeline.RegisterFrameEvent( 5,    "OnActivate");
-    this->pipeline.RegisterFrameEvent( 8,    "ActivateEntities");
     this->pipeline.RegisterFrameEvent( 10,   "OnBeginFrame");
     this->pipeline.RegisterFrameEvent( 100,  "OnFrame");
     this->pipeline.RegisterFrameEvent( 200,  "OnEndFrame");
@@ -94,18 +92,6 @@ World::DeallocateEntity(Entity entity)
 void
 World::Start()
 {
-    auto const ActivateEntities =
-    [](World* world, Game::Entity const& entity)
-    {
-        world->AddComponent<Game::IsActive>(entity);
-    };
-
-    ProcessorBuilder builder(this, "AddIsActiveComponentToNewEntities");
-    builder.On("ActivateEntities")
-        .Excluding<Game::IsActive>()
-        .Func(ActivateEntities)
-        .Build();
-
     this->pipeline.Begin();
 }
 
@@ -115,12 +101,6 @@ World::Start()
 void
 World::BeginFrame()
 {
-    this->pipeline.RunThru("OnActivate");
-    ExecuteAddComponentCommands();
-
-    this->pipeline.RunThru("ActivateEntities");
-    ExecuteAddComponentCommands();
-
     this->pipeline.RunThru("OnBeginFrame");
     ExecuteAddComponentCommands();
 }
@@ -362,14 +342,17 @@ World::AddComponent(Entity entity, Game::ComponentId id)
     };
     this->addStagedQueue.Append(cmd);
 
-    MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
-    ComponentInterface* cInterface;
-    cInterface = static_cast<ComponentInterface*>(attr);
-
-    if (cInterface->Init != nullptr)
+    if (this->componentInitializationEnabled)
     {
-        // run initialization function if it exists.
-        cInterface->Init(this, entity, data);
+        MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
+        ComponentInterface* cInterface;
+        cInterface = static_cast<ComponentInterface*>(attr);
+
+        if (cInterface->Init != nullptr)
+        {
+            // run initialization function if it exists.
+            cInterface->Init(this, entity, data);
+        }
     }
 }
 
@@ -768,7 +751,7 @@ World::AllocateInstance(Entity entity, MemDb::TableId table)
 #endif
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, 0);
+    Game::Entity* owners = (Game::Entity*)tbl.GetBuffer(instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[instance.index] = entity;
 
     InitializeAllComponents(entity, table, instance);
@@ -782,9 +765,12 @@ World::AllocateInstance(Entity entity, MemDb::TableId table)
 void
 World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row)
 {
+    if (!this->componentInitializationEnabled)
+        return;
+
     MemDb::Table& tbl = this->db->GetTable(tableId);
     auto const& attributes = tbl.GetAttributes();
-    for (IndexT i = 2; i < attributes.Size(); i++) // skip first two, since they're always owner and transform
+    for (IndexT i = 4; i < attributes.Size(); i++) // skip first four, since they're always owner and TRS
     {
         MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(attributes[i]);
         ComponentInterface* cInterface;
@@ -1159,6 +1145,30 @@ World::Override(World* src, World* dst)
     dst->db = MemDb::Database::Create();
     src->db->Copy(dst->db);
 
+    if (src->componentInitializationEnabled == false && dst->componentInitializationEnabled)
+    {
+        // Initialize all component if the source db haven't already.
+        Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
+        Game::Dataset data = dst->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            Game::Entity const* const entities = (Game::Entity*)view.buffers[0];
+
+            for (uint16_t i = 0; i < view.numInstances; ++i)
+            {
+                Game::Entity const& entity = entities[i];
+                MemDb::RowId row = {
+                    .partition = view.partitionId,
+                    .index = i
+                };
+                dst->InitializeAllComponents(entity, view.tableId, row);
+            }
+        }
+        Game::DestroyFilter(filter);
+    }
+
     dst->PrefilterProcessors();
 }
 
@@ -1291,7 +1301,7 @@ World::SetComponent(Entity entity, Game::Position const& value)
     *(ptr + mapping.instance.index) = value;
 }
 
-//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------§
 /**
 */
 template <>

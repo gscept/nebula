@@ -122,18 +122,34 @@ InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
 
     Editor::state.editorWorld->SetComponentValue(editorEntity, component, value, size);
+    
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
     if (defaultWorld->IsValid(edit.gameEntity))
     {
-        defaultWorld->SetComponentValue(edit.gameEntity, component, value, size);
-        if (component == Game::GetComponentId<GraphicsFeature::Model>())
+        // Remove default world entity instance and create a new one from the data in editor world. Then 
+        defaultWorld->DeallocateInstance(edit.gameEntity);
+
+        MemDb::Table const& editorTable = Editor::state.editorWorld->GetDatabase()->GetTable(mapping.table);
+        MemDb::TableSignature signature = editorTable.GetSignature();
+        
+        MemDb::TableId gameTableId = defaultWorld->GetDatabase()->FindTable(signature);
+        if (gameTableId == MemDb::TableId::Invalid())
         {
-            auto modelEntityDataPid = Game::GetComponentId<GraphicsFeature::Model>();
-            if (defaultWorld->HasComponent(edit.gameEntity, modelEntityDataPid))
-            {
-                defaultWorld->RemoveComponent<GraphicsFeature::Model>(edit.gameEntity);
-            }
+            // TODO: Maybe generalize this into a function in database?
+            auto const& attributes = editorTable.GetAttributes();
+            MemDb::TableCreateInfo tableInfo;
+            tableInfo.attributeIds = &attributes[0];
+            tableInfo.numAttributes = attributes.Size();
+            tableInfo.name = editorTable.name.Value();
+            gameTableId = defaultWorld->GetDatabase()->CreateTable(tableInfo);
         }
+        MemDb::Table& gameTable = defaultWorld->GetDatabase()->GetTable(gameTableId);
+
+        //Util::Blob const blob = editorTable.SerializeInstance(mapping.instance);
+
+        // TODO: Check out how we copy entities between table when instantiating from templates.
+
+        MemDb::RowId gameRow = defaultWorld->AllocateInstance(edit.gameEntity, gameTableId);
     }
 
     return true;

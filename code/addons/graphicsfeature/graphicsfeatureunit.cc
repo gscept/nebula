@@ -76,8 +76,8 @@ void
 GraphicsFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    world->RegisterType<PointLight>({ .decay = true });
-    world->RegisterType<Model>({ .decay = true });
+    world->RegisterType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
+    world->RegisterType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     world->RegisterType<Camera>();
 }
 
@@ -374,7 +374,7 @@ GraphicsFeatureUnit::OnBeginFrame()
         break;
     }
 
-    //if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
+    if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
         Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
 
 }

@@ -41,55 +41,44 @@ PhysicsManager::~PhysicsManager()
 /**
 */
 void
-PhysicsManager::InitCreateActorProcessor()
+PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, PhysicsFeature::PhysicsActor* actor)
 {
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    Game::ProcessorBuilder(world, "PhysicsManager.CreateActors"_atm)
-        .On("OnActivate")
-        .Func(
-            [](Game::World* world,
-               Game::Entity const& owner,
-               Game::Position const& position,
-               Game::Orientation const& orientation,
-               Game::Scale const& scale,
-               PhysicsFeature::PhysicsActor& actor)
-            {
-                auto res = actor.resource;
-                if (res == "mdl:")
-                {
-                    n_assert(world->HasComponent(owner, Game::GetComponentId<GraphicsFeature::Model>()));
-                    Util::String modelRes = world->GetComponent<GraphicsFeature::Model>(owner).resource.Value();
-                    Util::String fileName = modelRes.ExtractFileName();
-                    fileName.StripFileExtension();
-                    res = Util::String::Sprintf(
-                        "phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr()
-                    );
-                    actor.resource = res;
-                }
+    auto res = actor->resource;
+    if (res == "mdl:")
+    {
+        n_assert(world->HasComponent<GraphicsFeature::Model>(entity));
+        Util::String modelRes = world->GetComponent<GraphicsFeature::Model>(entity).resource.Value();
+        Util::String fileName = modelRes.ExtractFileName();
+        fileName.StripFileExtension();
+        res = Util::String::Sprintf(
+            "phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr()
+        );
+        actor->resource = res;
+    }
 
-                Math::mat4 worldTransform = Math::trs(position, orientation, scale);
+    Math::mat4 worldTransform = Math::trs(
+        world->GetComponent<Game::Position>(entity),
+        world->GetComponent<Game::Orientation>(entity),
+        world->GetComponent<Game::Scale>(entity)
+    );
 
-                Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
-                Physics::ActorId actorid =
-                    Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor.actorType, Ids::Id32(owner));
-                actor.actorId = actorid.id;
+    Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
+    Physics::ActorId actorid =
+        Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id32(entity));
+    actor->actorId = actorid.id;
 
-                if (actor.actorType == Physics::ActorType::Kinematic)
-                {
-                    world->AddComponent<PhysicsFeature::IsKinematic>(owner);
-                }
-
-                if (world->HasComponent(owner, Game::GetComponentId<Game::Velocity>()))
-                {
-                    Physics::ActorContext::SetLinearVelocity(actorid, world->GetComponent<Game::Velocity>(owner));
-                }
-                if (world->HasComponent(owner, Game::GetComponentId<Game::AngularVelocity>()))
-                {
-                    Physics::ActorContext::SetAngularVelocity(actorid, world->GetComponent<Game::AngularVelocity>(owner));
-                }
-            }
-        )
-        .Build();
+    if (actor->actorType == Physics::ActorType::Kinematic)
+    {
+        world->AddComponent<PhysicsFeature::IsKinematic>(entity);
+    }
+    if (world->HasComponent<Game::Velocity>(entity))
+    {
+        Physics::ActorContext::SetLinearVelocity(actorid, world->GetComponent<Game::Velocity>(entity));
+    }
+    if (world->HasComponent< Game::AngularVelocity>(entity))
+    {
+        Physics::ActorContext::SetAngularVelocity(actorid, world->GetComponent<Game::AngularVelocity>(entity));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +145,6 @@ PhysicsManager::Create()
     n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = new PhysicsManager;
 
-    Singleton->InitCreateActorProcessor();
     Singleton->InitPollTransformProcessor();
 
     Game::ManagerAPI api;

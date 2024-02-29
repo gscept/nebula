@@ -405,6 +405,17 @@ min(unsigned int a, unsigned int b)
 
 //------------------------------------------------------------------------------
 /**
+    branchless min for uints
+*/
+template<>
+__forceinline uint16_t
+min(uint16_t a, uint16_t b)
+{
+    return b ^ ((a ^ b) & -(a < b));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 template<typename TYPE0, typename ...TYPEN>
 __forceinline TYPE0

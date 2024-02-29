@@ -40,6 +40,7 @@ GraphicsManager::~GraphicsManager()
     // empty
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -47,7 +48,6 @@ void
 RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceName const res, bool const raytracing, Math::mat4 const& t)
 {
     Models::ModelContext::RegisterEntity(gid);
-    Visibility::ObservableContext::RegisterEntity(gid);
     if (raytracing && CoreGraphics::RayTracingSupported)
     {
         Raytracing::RaytracingContext::RegisterEntity(gid);
@@ -58,6 +58,7 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
         "NONE",
         [gid, raytracing, t]()
         {
+            Visibility::ObservableContext::RegisterEntity(gid);
             Models::ModelContext::SetTransform(gid, t);
             if (raytracing && CoreGraphics::RayTracingSupported)
             {
@@ -80,7 +81,7 @@ DeregisterModelEntity(Model const* model)
     if (model->raytracing && CoreGraphics::RayTracingSupported &&
         Raytracing::RaytracingContext::IsEntityRegistered(model->graphicsEntityId))
     {
-        Raytracing::RaytracingContext::RegisterEntity(model->graphicsEntityId);
+        Raytracing::RaytracingContext::DeregisterEntity(model->graphicsEntityId);
     }
     if (Visibility::ObservableContext::IsEntityRegistered(model->graphicsEntityId))
     {
@@ -92,49 +93,6 @@ DeregisterModelEntity(Model const* model)
     }
 
     Graphics::DestroyEntity(model->graphicsEntityId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsManager::InitCreatePointLightProcessor()
-{
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    Game::ProcessorBuilder(world, "GraphicsManager.CreatePointLights"_atm)
-        .On("OnActivate")
-        .Func(
-            [](Game::World* world, Game::Entity const& owner, Game::Position const& position, GraphicsFeature::PointLight& light)
-            {
-                light.graphicsEntityId = Graphics::CreateEntity().id;
-
-                // TODO: This is not finished, and needs revisiting
-                Lighting::LightContext::RegisterEntity(light.graphicsEntityId);
-                Lighting::LightContext::SetPosition(light.graphicsEntityId, position);
-            }
-        )
-        .Build();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsManager::InitCreateModelProcessor()
-{
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    Game::ProcessorBuilder(world, "GraphicsManager.CreateModels"_atm)
-        .On("OnActivate")
-        .Func(
-            [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model& model)
-            {
-                auto res = model.resource;
-                model.graphicsEntityId = Graphics::CreateEntity().id;
-                Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                RegisterModelEntity(model.graphicsEntityId, model.resource, model.raytracing, worldTransform);
-            }
-        )
-        .Build();
 }
 
 //------------------------------------------------------------------------------
@@ -182,7 +140,6 @@ GraphicsManager::Create()
     n_assert(!GraphicsManager::HasInstance());
     GraphicsManager::Singleton = new GraphicsManager;
 
-    Singleton->InitCreateModelProcessor();
     Singleton->InitUpdateModelTransformProcessor();
 
     Game::ManagerAPI api;
@@ -200,6 +157,35 @@ GraphicsManager::Destroy()
 {
     delete GraphicsManager::Singleton;
     GraphicsManager::Singleton = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLight* light)
+{
+    light->graphicsEntityId = Graphics::CreateEntity().id;
+
+    // TODO: This is not finished, and needs revisiting
+    Game::Position pos = world->GetComponent<Game::Position>(entity);
+    Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model)
+{
+    auto res = model->resource;
+    model->graphicsEntityId = Graphics::CreateEntity().id;
+    Game::Position pos = world->GetComponent<Game::Position>(entity);
+    Game::Orientation orient = world->GetComponent<Game::Orientation>(entity);
+    Game::Scale scale = world->GetComponent<Game::Scale>(entity);
+    Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+    RegisterModelEntity(model->graphicsEntityId, model->resource, model->raytracing, worldTransform);
 }
 
 //------------------------------------------------------------------------------

@@ -41,7 +41,7 @@ void
 PhysicsFeatureUnit::OnAttach()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    world->RegisterType<PhysicsActor>({ .decay = true });
+    world->RegisterType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
     world->RegisterType<IsKinematic>();
 }
 

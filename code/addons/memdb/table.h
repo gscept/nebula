@@ -96,7 +96,7 @@ public:
     void* GetBuffer(uint16_t partition, ColumnIndex cid);
 
     /// Serialize a row into a blob.
-    Util::Blob SerializeInstance(RowId row);
+    Util::Blob SerializeInstance(RowId row) const;
     /// deserialize a blob into a row
     void DeserializeInstance(Util::Blob const& data, RowId row);
 

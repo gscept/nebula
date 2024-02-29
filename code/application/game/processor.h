@@ -55,13 +55,13 @@ private:
     {
         return [func, bufferStartOffset](World* world, Game::Dataset::View const& view)
         {
-            uint32_t i = 0;
+            uint16_t i = 0;
             while (i < view.numInstances)
             {
                 // check validity of instances in sections of 64 instances
                 if (!view.validInstances.SectionIsNull(i / 64))
                 {
-                    uint32_t const end = Math::min(i + 64, view.numInstances);
+                    uint16_t const end = Math::min<uint16_t>(i + uint16_t(64), view.numInstances);
                     for (uint32_t instance = i; instance < end; ++instance)
                     {
                         // make sure the instance we're processing is valid

@@ -18,6 +18,7 @@
 #include "processor.h"
 #include "memory/arenaallocator.h"
 #include "frameevent.h"
+#include "util/blob.h"
 
 namespace MemDb { class Database; }
 
@@ -127,6 +128,9 @@ public:
     void* GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, ComponentId const component);
     /// Get a pointer to the first instance of a column in a partition of an entity table. Use with caution!
     void* GetColumnData(MemDb::TableId const tid, uint16_t partitionId, MemDb::ColumnIndex const column);
+    
+    /// Disable if initialization of components is not required (ex. when running as editor db)
+    bool componentInitializationEnabled = true;
 
 private:
     friend class GameServer;
@@ -211,9 +215,10 @@ private:
 
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);
 
+    /// Run OnInit on all components. Use with caution, since they can only be initialized once and the function doesn't check for this.
     void InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
 
-/// used to allocate entity ids for this world
+    /// used to allocate entity ids for this world
     EntityPool pool;
     /// Number of entities alive
     SizeT numEntities;

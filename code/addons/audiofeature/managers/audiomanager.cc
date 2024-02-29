@@ -53,49 +53,38 @@ AudioManager::OnDecay()
 /**
 */
 void
-ActivateAudioEmitter(Game::World* world, Game::Entity const& entity, AudioEmitter& emitter)
+AudioManager::InitAudioEmitter(Game::World* world, Game::Entity entity, AudioEmitter* emitter)
 {
     Ptr<Audio::AudioDevice> audioDevice = Audio::AudioDevice::Instance();
-    emitter.clipId = audioDevice->LoadClip(emitter.clipResource).id;
-    if (emitter.autoplay)
+    emitter->clipId = audioDevice->LoadClip(emitter->clipResource).id;
+    if (emitter->autoplay)
     {
-        Audio::ClipInstanceId clipInstanceId =
-            audioDevice->Play(emitter.clipId, emitter.volume, emitter.pan, emitter.loop, emitter.clock);
-        ClipInstance* instance = world->AddComponent<ClipInstance>(entity);
-        instance->id = clipInstanceId.id;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ActivateSpatialAudioEmitter(
-    Game::World* world,
-    Game::Entity const& entity,
-    AudioEmitter& emitter,
-    SpatialAudioEmission const& spatial,
-    Game::Position const& position
-)
-{
-    Ptr<Audio::AudioDevice> audioDevice = Audio::AudioDevice::Instance();
-    emitter.clipId = audioDevice->LoadClip(emitter.clipResource).id;
-    if (emitter.autoplay)
-    {
-        // TODO: We need a velocity component that we can read from
-        Math::vec3 velocity = Math::vec3(0);
-        Audio::ClipInstanceId clipInstanceId = audioDevice->PlaySpatial(
-            emitter.clipId,
-            emitter.volume,
-            position,
-            velocity,
-            spatial.minDistance,
-            spatial.maxDistance,
-            emitter.loop,
-            emitter.clock
-        );
-        ClipInstance* instance = world->AddComponent<ClipInstance>(entity);
-        instance->id = clipInstanceId.id;
+        if (world->HasComponent<SpatialAudioEmission>(entity))
+        {
+            SpatialAudioEmission const spatial = world->GetComponent<SpatialAudioEmission>(entity);
+            Game::Position position = world->GetComponent<Game::Position>(entity);
+            // TODO: We need a velocity component that we can read from
+            Math::vec3 velocity = Math::vec3(0);
+            Audio::ClipInstanceId clipInstanceId = audioDevice->PlaySpatial(
+                emitter->clipId,
+                emitter->volume,
+                position,
+                velocity,
+                spatial.minDistance,
+                spatial.maxDistance,
+                emitter->loop,
+                emitter->clock
+            );
+            ClipInstance* instance = world->AddComponent<ClipInstance>(entity);
+            instance->id = clipInstanceId.id;
+        }
+        else
+        {
+            Audio::ClipInstanceId clipInstanceId =
+                audioDevice->Play(emitter->clipId, emitter->volume, emitter->pan, emitter->loop, emitter->clock);
+            ClipInstance* instance = world->AddComponent<ClipInstance>(entity);
+            instance->id = clipInstanceId.id;
+        }
     }
 }
 
@@ -186,17 +175,6 @@ AudioManager::Create()
     AudioManager::Singleton = new AudioManager;
 
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-
-    ProcessorBuilder(world, "AudioManager.ActivateAudioEmitter")
-        .Excluding<SpatialAudioEmission>()
-        .Func(ActivateAudioEmitter)
-        .On("OnActivate")
-        .Build();
-
-    ProcessorBuilder(world, "AudioManager.ActivateSpatialAudioEmitter")
-        .Func(ActivateSpatialAudioEmitter)
-        .On("OnActivate")
-        .Build();
 
     ProcessorBuilder(world, "AudioManager.ValidateClipInstances")
         .Func(ValidateClipInstances)

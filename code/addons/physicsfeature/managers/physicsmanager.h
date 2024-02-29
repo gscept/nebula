@@ -33,13 +33,14 @@ public:
     /// destroy entity manager
     static void Destroy();
 
+    static void InitPhysicsActor(Game::World*, Game::Entity, PhysicsFeature::PhysicsActor*);
+
 private:
     /// constructor
     PhysicsManager();
     /// destructor
     ~PhysicsManager();
 
-    void InitCreateActorProcessor();
     void InitPollTransformProcessor();
 
     static void OnDecay();

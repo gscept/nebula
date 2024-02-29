@@ -11,6 +11,7 @@
 #include "core/singleton.h"
 #include "game/manager.h"
 #include "game/category.h"
+#include "audiofeature/components/audiofeature.h"
 
 namespace AudioFeature
 {
@@ -24,6 +25,8 @@ public:
 
     /// destroy entity manager
     static void Destroy();
+
+    static void InitAudioEmitter(Game::World*, Game::Entity, AudioEmitter*);
 
 private:
     /// constructor

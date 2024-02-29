@@ -459,7 +459,7 @@ Table::GetBuffer(uint16_t partition, ColumnIndex cid)
 /**
 */
 Util::Blob
-Table::SerializeInstance(RowId row)
+Table::SerializeInstance(RowId row) const
 {
     Util::Blob blob;
     Partition* part = this->partitions[row.partition];
