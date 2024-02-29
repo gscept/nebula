@@ -335,6 +335,44 @@ EntitySystemTest::Run()
     StepFrame();
 
     {
+        Entity entity = world->CreateEntity({ .templateId = playerBlueprint, .immediate = true });
+
+        Game::Position pos = world->GetComponent<Game::Position>(entity);
+        Game::Orientation orient = world->GetComponent<Game::Orientation>(entity);
+        Game::Scale scale = world->GetComponent<Game::Scale>(entity);
+        
+        Game::Position pos2 = pos + vec3(1, 1, 1);
+        Game::Orientation orient2 = orient * quat(2, 2, 2, 2);
+        Game::Scale scale2 = scale + vec3(1, 1, 1);
+
+        world->SetComponent(entity, pos2);
+        world->SetComponent(entity, orient2);
+        world->SetComponent(entity, scale2);
+
+        // Verify that set and get is actually working
+        VERIFY(world->GetComponent<Game::Position>(entity) != pos);
+        VERIFY(world->GetComponent<Game::Position>(entity) == pos2);
+
+        VERIFY(world->GetComponent<Game::Orientation>(entity) != orient);
+        VERIFY(world->GetComponent<Game::Orientation>(entity) == orient2);
+
+        VERIFY(world->GetComponent<Game::Scale>(entity) != scale);
+        VERIFY(world->GetComponent<Game::Scale>(entity) == scale2);
+
+        world->AddComponent<TestResource>(entity);
+        
+        StepFrame();
+
+        TestResource testResource = world->GetComponent<TestResource>(entity);
+        TestResource testResource2;
+        testResource2.resource = "fjidklshjfkdshjkfds"_atm;
+        world->SetComponent<TestResource>(entity, testResource2);
+
+        VERIFY(world->GetComponent<TestResource>(entity).resource != testResource.resource);
+        VERIFY(world->GetComponent<TestResource>(entity).resource == testResource2.resource);
+    }
+
+    {
         Entity entity = world->CreateEntity({.templateId = playerBlueprint, .immediate = true});
 
         // create a temporary component.
