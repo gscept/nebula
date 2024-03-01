@@ -122,7 +122,7 @@ void
 ComponentDrawFuncT<bool>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::Checkbox("##input_data", (bool*)data))
         *commit = true;
     ImGui::PopID();
@@ -137,7 +137,7 @@ ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputInt("##input_data", (int*)data))
         *commit = true;
     ImGui::PopID();
@@ -152,7 +152,7 @@ ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputInt("##input_data", (int*)data))
         *commit = true;
     ImGui::PopID();
@@ -167,7 +167,7 @@ ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
     
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat("##float_input", (float*)data))
         *commit = true;
     ImGui::PopID();
@@ -181,7 +181,7 @@ void
 ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     ImGui::Text(((Util::StringAtom*)data)->Value());
     if (ImGui::BeginDragDropTarget())
     {
@@ -206,7 +206,7 @@ ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
     
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat4("##row0", (float*)data))
         *commit = true;
     if (ImGui::InputFloat4("##row1", (float*)data + 4))
@@ -227,7 +227,7 @@ ComponentDrawFuncT<Math::vec3>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat3("##vec", (float*)data))
         *commit = true;
     ImGui::PopID();
@@ -243,7 +243,7 @@ ComponentDrawFuncT<Game::Position>(ComponentId component, void* data, bool* comm
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     ImGui::SameLine();
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat3("##pos", (float*)data))
         *commit = true;
     ImGui::PopID();
@@ -259,7 +259,7 @@ ComponentDrawFuncT<Game::Orientation>(ComponentId component, void* data, bool* c
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     ImGui::SameLine();
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat4("##orient", (float*)data))
         *commit = true;
     ImGui::PopID();
@@ -275,7 +275,7 @@ ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     ImGui::SameLine();
-    ImGui::PushID(component.id + 0x125233);
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat3("##scl", (float*)data))
         *commit = true;
     ImGui::PopID();
