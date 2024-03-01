@@ -54,8 +54,8 @@ void InspectorDrawField(ComponentId component, void* data, bool* commit)
 {
     if constexpr (i < TYPE::Traits::num_fields)
     {
-        using field_tuple = TYPE::Traits::field_types;
-        using field_type = std::tuple_element<i, field_tuple>::type;
+        using field_tuple = typename TYPE::Traits::field_types;
+        using field_type = typename std::tuple_element<i, field_tuple>::type;
         ImGui::Text(TYPE::Traits::field_names[i]);
         ImGui::SameLine();
         ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
