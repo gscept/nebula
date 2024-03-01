@@ -36,6 +36,12 @@ struct Scale::Traits
         "y"
         "z"
     };
+    using field_types = std::tuple<float, float, float>;
+    static constexpr size_t field_byte_offsets[num_fields] = {
+        offsetof(Scale, x),
+        offsetof(Scale, y),
+        offsetof(Scale, z)
+    };
     /// This is the column that the entity scale will reside in, in every table.
     /// NOTE: This can never be changed, due to assumptions that have been made.
     static constexpr uint32_t fixed_column_index = 3;

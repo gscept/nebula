@@ -43,6 +43,12 @@ struct Velocity::Traits
         "y",
         "z"
     };
+    using field_types = std::tuple<float, float, float>;
+    static constexpr size_t field_byte_offsets[num_fields] = {
+        offsetof(Velocity, x),
+        offsetof(Velocity, y),
+        offsetof(Velocity, z)
+    };
 };
 
 //------------------------------------------------------------------------------
@@ -59,6 +65,12 @@ struct AngularVelocity::Traits
         "x",
         "y",
         "z"
+    };
+    using field_types = std::tuple<float, float, float>;
+    static constexpr size_t field_byte_offsets[num_fields] = {
+        offsetof(AngularVelocity, x),
+        offsetof(AngularVelocity, y),
+        offsetof(AngularVelocity, z)
     };
 };
 

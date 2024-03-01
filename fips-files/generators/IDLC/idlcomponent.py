@@ -131,6 +131,7 @@ def WriteComponentHeaderDeclarations(f, document):
         f.WriteLine('struct {}::Traits'.format(c.componentName))
         f.WriteLine("{")
         f.IncreaseIndent()
+        f.WriteLine('static_assert(std::is_standard_layout<{}>());'.format(c.componentName))
         f.WriteLine("Traits() = delete;")
         f.WriteLine('using type = {};'.format(c.componentName))
         f.WriteLine('static constexpr auto name = "{}";'.format(c.componentName))
@@ -141,6 +142,21 @@ def WriteComponentHeaderDeclarations(f, document):
             for v in c.variables:
                 f.WriteLine('    "{}",'.format(v.name))
             f.WriteLine('};')
+        if (len(c.variables) > 0):
+            f.WriteLine('using field_types = std::tuple<')
+            for i, v in enumerate(c.variables):
+                f.Write('    {}'.format(IDLTypes.GetCppTypeString(v.type)))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('>;')
+        if (len(c.variables) > 0):
+            f.WriteLine('static constexpr size_t field_byte_offsets[num_fields] = {')
+            for v in c.variables:
+                f.WriteLine('    offsetof({}, {}),'.format(c.componentName, v.name))
+            f.WriteLine('};')
+        
         f.DecreaseIndent()
         f.WriteLine("};")
 

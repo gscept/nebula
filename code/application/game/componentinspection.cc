@@ -119,12 +119,28 @@ ComponentDrawFuncT<Game::Entity>(ComponentId component, void* data, bool* commit
 */
 template<>
 void
+ComponentDrawFuncT<bool>(ComponentId component, void* data, bool* commit)
+{
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+    ImGui::PushID(component.id + 0x125233);
+    if (ImGui::Checkbox("##input_data", (bool*)data))
+        *commit = true;
+    ImGui::PopID();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
 ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
-    
-    if (ImGui::InputInt(desc->name.Value(), (int*)data))
+
+    ImGui::PushID(component.id + 0x125233);
+    if (ImGui::InputInt("##input_data", (int*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -135,9 +151,11 @@ void
 ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
-    
-    if (ImGui::InputInt(desc->name.Value(), (int*)data))
+
+    ImGui::PushID(component.id + 0x125233);
+    if (ImGui::InputInt("##input_data", (int*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -149,8 +167,10 @@ ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
     
-    if (ImGui::InputFloat(desc->name.Value(), (float*)data))
+    ImGui::PushID(component.id + 0x125233);
+    if (ImGui::InputFloat("##float_input", (float*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -161,7 +181,8 @@ void
 ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
-    ImGui::Text("%s: %s", desc->name.Value(), ((Util::StringAtom*)data)->Value());
+    ImGui::PushID(component.id + 0x125233);
+    ImGui::Text(((Util::StringAtom*)data)->Value());
     if (ImGui::BeginDragDropTarget())
     {
         auto payload = ImGui::AcceptDragDropPayload("resource");
@@ -173,6 +194,7 @@ ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* co
         }
         ImGui::EndDragDropTarget();
     }
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -184,7 +206,7 @@ ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
     
-    ImGui::Text(desc->name.Value());
+    ImGui::PushID(component.id + 0x125233);
     if (ImGui::InputFloat4("##row0", (float*)data))
         *commit = true;
     if (ImGui::InputFloat4("##row1", (float*)data + 4))
@@ -193,6 +215,7 @@ ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
         *commit = true;
     if (ImGui::InputFloat4("##row3", (float*)data + 12))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -204,9 +227,10 @@ ComponentDrawFuncT<Math::vec3>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
-    ImGui::Text(desc->name.Value());
+    ImGui::PushID(component.id + 0x125233);
     if (ImGui::InputFloat3("##vec", (float*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -219,8 +243,10 @@ ComponentDrawFuncT<Game::Position>(ComponentId component, void* data, bool* comm
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     ImGui::SameLine();
+    ImGui::PushID(component.id + 0x125233);
     if (ImGui::InputFloat3("##pos", (float*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -233,8 +259,10 @@ ComponentDrawFuncT<Game::Orientation>(ComponentId component, void* data, bool* c
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     ImGui::SameLine();
+    ImGui::PushID(component.id + 0x125233);
     if (ImGui::InputFloat4("##orient", (float*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 //------------------------------------------------------------------------------
@@ -247,8 +275,10 @@ ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
     ImGui::SameLine();
+    ImGui::PushID(component.id + 0x125233);
     if (ImGui::InputFloat3("##scl", (float*)data))
         *commit = true;
+    ImGui::PopID();
 }
 
 } // namespace Game

@@ -18,6 +18,7 @@
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
+#include "basegamefeature/components/velocity.h"
 #include "imgui.h"
 
 namespace Game
@@ -44,24 +45,44 @@ private:
     Util::Array<DrawFunc> inspectors;
 };
 
+template<typename TYPE>
+void
+ComponentDrawFuncT(ComponentId component, void* data, bool* commit);
+
+template<typename TYPE, std::size_t i = 0>
+void InspectorDrawField(ComponentId component, void* data, bool* commit)
+{
+    if constexpr (i < TYPE::Traits::num_fields)
+    {
+        using field_tuple = TYPE::Traits::field_types;
+        using field_type = std::tuple_element<i, field_tuple>::type;
+        ImGui::Text(TYPE::Traits::field_names[i]);
+        ImGui::SameLine();
+        ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
+        InspectorDrawField<TYPE, i + 1>(component, data, commit);
+    }
+}
+
 //------------------------------------------------------------------------------
 /**
 */
 template<typename TYPE>
 void
-ComponentDrawFuncT(ComponentId, void*, bool*)
+ComponentDrawFuncT(ComponentId component, void* data, bool* commit)
 {
-    if constexpr (TYPE::Traits::num_fields > 0)
+    if constexpr (requires { &TYPE::Traits::num_fields; })
     {
-        for (size_t i = 0; i < TYPE::Traits::num_fields; i++)
+        if constexpr (TYPE::Traits::num_fields > 0 && !std::is_enum<TYPE>())
         {
-            ImGui::Text(TYPE::Traits::field_names[i]);
+            //UnrollTypesAndInspect<TYPE>(std::make_index_sequence<TYPE::Traits::num_fields>(), component, data, commit);
+            InspectorDrawField<TYPE>(component, data, commit);
         }
     }
     return;
 }
 
 template<> void ComponentDrawFuncT<Game::Entity>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<bool>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<int>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<uint>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<float>(ComponentId, void*, bool*);

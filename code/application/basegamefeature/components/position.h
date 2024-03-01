@@ -32,6 +32,12 @@ struct Position::Traits
         "y"
         "z"
     };
+    using field_types = std::tuple<float, float, float>;
+    static constexpr size_t field_byte_offsets[num_fields] = {
+        offsetof(Position, x),
+        offsetof(Position, y),
+        offsetof(Position, z)
+    };
     /// This is the column that the entity position will reside in, in every table.
     /// NOTE: This can never be changed, due to assumptions that have been made.
     static constexpr uint32_t fixed_column_index = 1;
