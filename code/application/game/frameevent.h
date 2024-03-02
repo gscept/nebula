@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "game/processor.h"
+#include "threading/assertingmutex.h"
 
 namespace Game
 {
@@ -35,6 +36,8 @@ public:
     FrameEvent() = default;
     ~FrameEvent();
 
+    class Batch;
+
     void Run(World* world);
     void AddProcessor(Processor* processor);
 
@@ -46,10 +49,10 @@ public:
     Util::StringAtom name;
     int order = 100;
 
+    Util::Array<Batch const*> const GetBatches() const;
+
 private:
     friend FramePipeline;
-
-    class Batch;
 
     /// Which pipeline is this event attached to
     FramePipeline* pipeline;
@@ -87,6 +90,8 @@ public:
     /// sorting order in frame event
     int order = 100;
     bool async = false;
+
+    Util::Array<Processor const*> GetProcessors() const;
 
 private:
     void ExecuteAsync(World* world);
@@ -127,6 +132,9 @@ public:
     void Prefilter(bool force = false);
     /// add a table to the caches of any processors that accepts it, that is attached to this frame event
     void CacheTable(MemDb::TableId, MemDb::TableSignature const&);
+
+    // get read copy of frame events. This is not thread safe to read from!
+    Util::Array<FrameEvent const*> const GetFrameEvents() const;
 
 private:
     friend FrameEvent;

@@ -12,7 +12,8 @@ namespace Game
 using ComponentArray = Util::FixedArray<ComponentId>;
 using AccessModeArray = Util::FixedArray<AccessMode>;
 
-static Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, AccessModeArray> filterAllocator;
+// 0: inclusiveMask, 1: exclusiveMask, 2: inclusiveComponents, 3: accessmodes, 4: exclusiveComponents
+static Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, AccessModeArray, ComponentArray> filterAllocator;
 
 //------------------------------------------------------------------------------
 /**
@@ -57,6 +58,15 @@ Util::FixedArray<AccessMode> const&
 AccessModesInFilter(Filter filter)
 {
     return filterAllocator.Get<3>(filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::FixedArray<ComponentId> const&
+ExcludedComponentsInFilter(Filter filter)
+{
+    return filterAllocator.Get<4>(filter);
 }
 
 //------------------------------------------------------------------------------
@@ -172,7 +182,12 @@ FilterBuilder::CreateFilter(FilterCreateInfo info)
 #endif
 
     filterAllocator.Set(
-        filter, InclusiveTableMask(inclusiveArray), ExclusiveTableMask(exclusiveArray), inclusiveArray, accessArray
+        filter,
+        InclusiveTableMask(inclusiveArray),
+        ExclusiveTableMask(exclusiveArray),
+        inclusiveArray,
+        accessArray,
+        exclusiveArray
     );
 
     return filter;

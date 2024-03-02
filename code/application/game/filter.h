@@ -36,8 +36,10 @@ InclusiveTableMask const& GetInclusiveTableMask(Filter);
 ExclusiveTableMask const& GetExclusiveTableMask(Filter);
 /// retrieve the inclusive component array
 Util::FixedArray<ComponentId> const& ComponentsInFilter(Filter);
-/// retrieve the inclusive component array
+/// retrieve the inclusive access mode array
 Util::FixedArray<AccessMode> const& AccessModesInFilter(Filter);
+/// retrieve the excluded component array
+Util::FixedArray<ComponentId> const& ExcludedComponentsInFilter(Filter);
 
 class FilterBuilder
 {

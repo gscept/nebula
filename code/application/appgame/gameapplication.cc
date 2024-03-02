@@ -257,7 +257,7 @@ GameApplication::StepFrame()
 
     // trigger end of frame for feature units
     this->gameServer->OnEndFrame();
-    
+
     GameApplication::FrameIndex++;
 
     _stop_timer(GameApplicationFrameTimeAll);

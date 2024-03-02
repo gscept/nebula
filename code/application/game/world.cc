@@ -1027,19 +1027,86 @@ World::SetComponentValue(Game::Entity entity, Game::ComponentId component, void*
 void
 World::RenderDebug()
 {
-    /*
     ImGui::Text("World Hash: %s", Util::FourCC(this->hash).AsString().AsCharPtr());
     ImGui::Separator();
     static bool showProcessors = true;
-    ImGui::Checkbox("Show processors", &showProcessors);
+    ImGui::Checkbox("Show Frame Pipeline", &showProcessors);
     if (showProcessors)
     {
-        ImGui::Text("Processors (?):");
+        ImGui::Text("Pipeline (?):");
         if (ImGui::IsItemHovered())
         {
-            ImGui::SetTooltip("Processors are executed _after_ feature units for each event.");
+            //ImGui::SetTooltip("Processors are executed _after_ feature units for each event.");
+            ImGui::SetTooltip("The pipeline that makes up the frame.\nThis consists of multiple frame events, possibly bundled in frame batches.");
         }
 
+        auto const events = this->pipeline.GetFrameEvents();
+
+        for (IndexT i = 0; i < events.Size(); i++)
+        {
+            ImGui::TextColored({0.8f, 0.4f, 0.8f, 1.0f}, "Event: %s", events[i]->name.Value());
+            ImGui::SameLine();
+            ImGui::Text(" | Order: %i", events[i]->order);
+
+            auto const batches = events[i]->GetBatches();
+            ImGui::Indent();
+            for (IndexT b = 0; b < batches.Size(); b++)
+            {
+                auto const batch = batches[b];
+                ImGui::TextColored({0.4f, 0.8f, 0.8f, 1.0f}, "Batch #%i", b);
+                ImGui::SameLine();
+                ImGui::Text(" | Order: %i", batch->order);
+                ImGui::SameLine();
+                ImGui::Text(" | Async: %s", batch->async ? "true" : "false");
+                auto const processors = batch->GetProcessors();
+                ImGui::Indent();
+                for (IndexT p = 0; p < processors.Size(); p++)
+                {
+                    Game::Processor const* const processor = processors[p];
+                    ImGui::TextColored({0.8f, 0.8f, 0.4f, 1.0f}, processor->name.AsCharPtr());
+                    ImGui::SameLine();
+                    ImGui::Text(" | Async: %s", processor->async ? "true" : "false");
+                    ImGui::SameLine();
+                    ImGui::TextColored({0.5,0.5,0.9f,1.0f}, " | Filter : %i", processor->filter);
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::Indent();
+                        auto const compsInc = Game::ComponentsInFilter(processor->filter);
+                        if (compsInc.Size() > 0)
+                        {
+                            ImGui::TextColored({0.1f, 0.8f, 0.1f, 1.0f},"Includes entities with components:");
+                            ImGui::BeginChild(1, ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * compsInc.Size()));
+                            {
+                                for (auto c : compsInc)
+                                {
+                                    const char* componentName = MemDb::AttributeRegistry::GetAttribute(c)->name.Value();
+                                    ImGui::Selectable(componentName);
+                                }
+                                ImGui::EndChild();
+                            }
+                        }
+                        auto const compsEx = Game::ExcludedComponentsInFilter(processor->filter);
+                        if (compsEx.Size() > 0)
+                        {
+                            ImGui::TextColored({0.8, 0.2, 0.2, 1.0f}, "Excludes entities with components:");
+                            ImGui::BeginChild(2, ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * compsEx.Size()));
+                            {
+                                for (auto c : compsEx)
+                                {
+                                    const char* componentName = MemDb::AttributeRegistry::GetAttribute(c)->name.Value();
+                                    ImGui::Selectable(componentName);
+                                }
+                                ImGui::EndChild();
+                            }
+                        }
+                        ImGui::Unindent();
+                    }
+                }
+                ImGui::Unindent();
+            }
+            ImGui::Unindent();
+        }
+        /*
         auto PrintCallbackInfo = [](Game::World::CallbackInfo const& callback)
         {
             Game::ProcessorInfo const& info = Game::GameServer::Instance()->GetProcessorInfo(callback.handle);
@@ -1073,7 +1140,7 @@ World::RenderDebug()
         ImGui::TextDisabled("-- OnActivate --");
         for (auto const& callback : this->onActivateCallbacks)
             PrintCallbackInfo(callback);
-
+        */
         ImGui::Separator();
     }
 
@@ -1135,7 +1202,6 @@ World::RenderDebug()
         }
     }
     ImGui::EndChild();
-    */
 }
 
 //------------------------------------------------------------------------------

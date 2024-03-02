@@ -122,6 +122,21 @@ FrameEvent::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& signatur
 //------------------------------------------------------------------------------
 /**
 */
+Util::Array<FrameEvent::Batch const*> const
+FrameEvent::GetBatches() const
+{
+    Util::Array<FrameEvent::Batch const*> batches;
+    for (IndexT i = 0; i < this->batches.Size(); i++)
+    {
+        batches.Append(this->batches[i]);
+    }
+
+    return batches;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FrameEvent::Batch::~Batch()
 {
     for (SizeT i = 0; i < this->processors.Size(); i++)
@@ -225,6 +240,21 @@ FrameEvent::Batch::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& s
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Processor const*>
+FrameEvent::Batch::GetProcessors() const
+{
+    Util::Array<Processor const*> procs;
+    for (IndexT i = 0; i < this->processors.Size(); i++)
+    {
+        procs.Append(this->processors[i]);
+    }
+
+    return procs;
 }
 
 //------------------------------------------------------------------------------
@@ -447,6 +477,21 @@ FramePipeline::CacheTable(MemDb::TableId tid, MemDb::TableSignature const& signa
     {
         this->frameEvents[i]->CacheTable(tid, signature);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<FrameEvent const*> const
+FramePipeline::GetFrameEvents() const
+{
+    Util::Array<FrameEvent const*> events;
+    for (IndexT i = 0; i < this->frameEvents.Size(); i++)
+    {
+        events.Append(this->frameEvents[i]);
+    }
+
+    return events;
 }
 
 } // namespace Game

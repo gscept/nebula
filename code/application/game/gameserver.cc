@@ -19,9 +19,9 @@ __ImplementSingleton(Game::GameServer);
 //------------------------------------------------------------------------------
 /**
 */
-GameServer::GameServer() :
-    isOpen(false),
-    isStarted(false)
+GameServer::GameServer()
+    : isOpen(false),
+      isStarted(false)
 {
     __ConstructSingleton;
     _setup_grouped_timer(GameServerOnBeginFrame, "Game Subsystem");
@@ -149,14 +149,14 @@ GameServer::Start()
     n_assert(this->isOpen);
     n_assert(!this->isStarted);
 
-	// prefilter all worlds
-	for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
-	{
-		if (this->state.worlds[worldIndex] != nullptr)
-		{
+    // prefilter all worlds
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
             this->state.worlds[worldIndex]->PrefilterProcessors();
-		}
-	}
+        }
+    }
 
     // call the OnStart method on all gameFeatures
     int i;
@@ -246,7 +246,6 @@ GameServer::OnBeginFrame()
         }
     }
 
-
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
@@ -275,7 +274,7 @@ GameServer::OnFrame()
 
     _start_timer(GameServerOnFrame);
 
-    // call trigger functions on game features   
+    // call trigger functions on game features
     IndexT i;
     SizeT num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
@@ -329,7 +328,7 @@ GameServer::OnEndFrame()
     _start_timer(GameServerManageEntities);
 
     n_assert(GameServer::HasInstance());
-    
+
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)

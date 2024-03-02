@@ -132,6 +132,8 @@ public:
     /// Disable if initialization of components is not required (ex. when running as editor db)
     bool componentInitializationEnabled = true;
 
+    void RenderDebug();
+
 private:
     friend class GameServer;
     friend class BlueprintManager;
@@ -184,7 +186,6 @@ private:
     void EndFrame();
     void OnLoad();
     void OnSave();
-    void RenderDebug();
     void ManageEntities();
     void Reset();
     void PrefilterProcessors();
