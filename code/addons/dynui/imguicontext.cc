@@ -403,6 +403,7 @@ ImguiContext::Create()
     Ptr<DisplayDevice> display = DisplayDevice::Instance();
     DisplayMode mode = CoreGraphics::WindowGetDisplayMode(display->GetCurrentWindow());
 
+    float scaleFactor = mode.GetContentScale();
     // setup Imgui
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -437,6 +438,8 @@ ImguiContext::Create()
     style.WindowBorderSize = 1.0f;
     style.PopupBorderSize = 0.0f;
     style.ChildBorderSize = 0.0f;
+
+    style.ScaleAllSizes(scaleFactor);
   
     ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
     ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
@@ -524,11 +527,11 @@ ImguiContext::Create()
     config.OversampleH = 3;
     config.OversampleV = 1;
 #if __WIN32__
-    state.normalFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 14, &config);
-    state.smallFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 12, &config);
+    state.normalFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 14, &config);
+    state.smallFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", scaleFactor * 12, &config);
 #else
-    state.normalFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 14, &config);
-    state.smallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 12, &config);
+    state.normalFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", scaleFactor * 14, &config);
+    state.smallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", scaleFactor * 12, &config);
 #endif
     
     unsigned char* buffer;

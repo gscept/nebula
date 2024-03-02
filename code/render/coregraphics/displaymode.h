@@ -59,6 +59,10 @@ public:
     void SetRefreshRate( uint refreshRate );
     /// gives you the refresh rate
     uint GetRefreshRate() const;
+    /// set content scale factor
+    void SetContentScale(float s);
+    /// get content scale factor
+    float GetContentScale() const;
 
 
 private:
@@ -69,6 +73,7 @@ private:
     SizeT height;
     uint refreshRate;
     float aspectRatio;
+    float contentScale;
     PixelFormat::Code pixelFormat;
     
 };
@@ -84,6 +89,7 @@ DisplayMode::DisplayMode() :
     height(768),
     refreshRate(60),
     aspectRatio(4.0f / 3.0f),
+    contentScale(1.0f),
     pixelFormat(PixelFormat::SRGBA8)
 {
     // empty
@@ -101,6 +107,7 @@ DisplayMode::DisplayMode(uint x, uint y, SizeT w, SizeT h) :
     height(h),
     refreshRate(60),
     aspectRatio(float(w) / float(h)),
+    contentScale(1.0f),
     pixelFormat(PixelFormat::SRGBA8)
 {
     // empty
@@ -118,6 +125,7 @@ DisplayMode::DisplayMode(SizeT w, SizeT h, PixelFormat::Code p) :
     height(h),
     refreshRate(60),
     aspectRatio(float(w) / float(h)),
+    contentScale(1.0f),
     pixelFormat(p)
 {
     // empty
@@ -134,6 +142,7 @@ DisplayMode::DisplayMode(uint x, uint y, SizeT w, SizeT h, PixelFormat::Code p) 
     height(h),
     refreshRate(60),
     aspectRatio(float(w) / float(h)),
+    contentScale(1.0f),
     pixelFormat(p)
 {
     // empty
@@ -150,7 +159,8 @@ DisplayMode::operator==(const DisplayMode& rhs) const
             (this->width == rhs.width) &&
             (this->height == rhs.height) &&
             (this->refreshRate == rhs.refreshRate) && 
-            (this->aspectRatio == rhs.aspectRatio) &&            
+            (this->aspectRatio == rhs.aspectRatio) &&
+            (this->contentScale == rhs.contentScale) &&
             (this->pixelFormat == rhs.pixelFormat));
 }
 
@@ -269,6 +279,24 @@ inline float
 DisplayMode::GetAspectRatio() const
 {
     return this->aspectRatio;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+DisplayMode::SetContentScale(float a)
+{
+    this->contentScale = a;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline float
+DisplayMode::GetContentScale() const
+{
+    return this->contentScale;
 }
 
 //------------------------------------------------------------------------------

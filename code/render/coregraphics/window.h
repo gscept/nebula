@@ -77,5 +77,7 @@ const Util::StringAtom& WindowGetTitle(const WindowId id);
 const Util::StringAtom& WindowGetIcon(const WindowId id);
 /// get render texture associated with window
 const CoreGraphics::TextureId& WindowGetTexture(const WindowId id);
+/// retrieve window content scaling (ratio between current DPI and platform default DPI)
+Math::vec2 WindowGetContentScale(const WindowId id);
 
 } // CoreGraphics

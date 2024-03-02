@@ -353,6 +353,14 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     // if Vulkan, context is created and managed by render device
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 #endif
+    // scale window according to platform dpi
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+    float xScale, yScale;
+    glfwGetMonitorContentScale(monitor, &xScale, &yScale);
+    float contentScale = Math::max(xScale, yScale);
+    mode.SetWidth(info.mode.GetWidth() * contentScale);
+    mode.SetHeight(info.mode.GetHeight() * contentScale);
+    mode.SetContentScale(contentScale);
 
     // set user pointer to this window
     WindowId* ptr = new WindowId;
@@ -409,7 +417,6 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 #endif
 
     glfwWindowAllocator.Get<GLFW_Window>(windowId) = wnd;
-    glfwWindowAllocator.Get<GLFW_DisplayMode>(windowId) = info.mode;
 
     // notify window is opened
     GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowOpen, id));

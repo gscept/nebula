@@ -286,7 +286,7 @@ GameApplication::StepFrame()
 void
 GameApplication::SetupGameFeatures()
 {
-
+    // create any features in derived class
 }
 
 //------------------------------------------------------------------------------
