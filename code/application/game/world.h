@@ -368,7 +368,7 @@ World::AddComponent(Entity entity)
     n_assert2(!this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!");
 #endif
     Game::ComponentId id = Game::GetComponentId<TYPE>();
-#if _DEBUG
+#if NEBULA_DEBUG
     n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));
     //n_assert(!this->HasComponent<TYPE>(entity));
 #endif

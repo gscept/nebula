@@ -95,7 +95,7 @@ Math::vec4
 CalculateZenithLuminanceYxy(float t, float thetaS)
 {
     float chi = (4.0 / 9.0 - t / 120.0) * (PI - 2.0 * thetaS);
-    float Yz = (4.0453 * t - 4.9710) * tan(chi) - 0.2155 * t + 2.4192;
+    float Yz = (4.0453 * t - 4.9710) * Math::tan(chi) - 0.2155 * t + 2.4192;
 
     float theta2 = thetaS * thetaS;
     float theta3 = theta2 * thetaS;
@@ -175,7 +175,7 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     D.store(tickParams.D);
     E.store(tickParams.E);
 
-    float thetaS = acos(Math::dot3(sunDir, Math::vec4(0, 1, 0, 0)));
+    float thetaS = Math::acos(Math::dot3(sunDir, Math::vec4(0, 1, 0, 0)));
     Z = CalculateZenithLuminanceYxy(envState.skyTurbidity, thetaS);
     Z.store(tickParams.Z);
 

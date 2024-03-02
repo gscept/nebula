@@ -70,6 +70,8 @@ public:
     void Realloc(SizeT capacity, SizeT grow);
     /// Resize to fit, destroys elements outside of new size
     void Resize(SizeT num);
+    /// Resize to fit the provided value, but don't shrink if the new size is smaller
+    void Extend(SizeT num);
 
     /// Free memory
     void Free();
@@ -617,6 +619,20 @@ PinnedArray<MAX_ALLOCS, TYPE>::Resize(SizeT num)
     }
 
     this->count = num;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<int MAX_ALLOCS, class TYPE>
+inline void
+PinnedArray<MAX_ALLOCS, TYPE>::Extend(SizeT num)
+{
+    if (num > this->capacity)
+    {
+        this->GrowTo(num);
+    }
+    this->count = Math::max(num, this->count);
 }
 
 //------------------------------------------------------------------------------

@@ -89,7 +89,7 @@ GeometryHelpers::CreateDisk(SizeT numPoints)
     for (int i = 0; i < numPoints + 1; i++)
     {
         Vertex v;
-        v.pos = Math::float3{ sin(i * 2 * N_PI / float(numPoints)) * 0.5f, cos(i * 2 * N_PI / float(numPoints)) * 0.5f, 0 };
+        v.pos = Math::float3{ Math::sin(i * 2 * N_PI / float(numPoints)) * 0.5f, Math::cos(i * 2 * N_PI / float(numPoints)) * 0.5f, 0};
         v.uv = Math::float2{ 0, 0 };
         vertices.Append(v);
         indices.Append(i + 1);

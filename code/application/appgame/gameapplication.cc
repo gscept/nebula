@@ -16,6 +16,7 @@
 #include "io/fswrapper.h"
 #include "jobs2/jobs2.h"
 #include "input/inputserver.h"
+#include "basegamefeature/basegamefeatureunit.h"
 
 #include "profiling/profiling.h"
 
@@ -147,7 +148,11 @@ GameApplication::Open()
         // create our game server and open it
         this->gameServer = Game::GameServer::Create();
         this->gameServer->SetCmdLineArgs(this->GetCmdLineArgs());
-        
+
+        // always attach the base game feature
+        this->baseGameFeature = BaseGameFeature::BaseGameFeatureUnit::Create();
+        this->gameServer->AttachGameFeature(this->baseGameFeature);
+
         // create and add new game features
         this->SetupGameFeatures();
         // open the game server
@@ -174,17 +179,20 @@ GameApplication::Close()
     //_discard_timer(GameApplicationFrameTimeAll);
 
     // shutdown basic Nebula runtime
-    this->CleanupGameFeatures();
     this->gameServer->Stop();
+    this->gameServer->CleanupWorld(Game::GetWorld(WORLD_DEFAULT));
+
     this->gameServer->Close();
+
+    this->CleanupGameFeatures();
+    this->gameServer->RemoveGameFeature(this->baseGameFeature);
+    this->baseGameFeature->Release();
+    this->baseGameFeature = nullptr;
+
     this->gameServer = nullptr;
 
     this->gameContentServer->Discard();
     this->gameContentServer = nullptr;
-
-    this->ioInterface->Close();
-    this->ioInterface = nullptr;
-    this->ioServer = nullptr;
 
     this->resourceServer->Close();
     this->resourceServer = nullptr;
@@ -198,6 +206,10 @@ GameApplication::Close()
     this->httpInterface->Close();
     this->httpInterface = nullptr;
 #endif
+
+    this->ioInterface->Close();
+    this->ioInterface = nullptr;
+    this->ioServer = nullptr;
 
     this->coreServer->Close();
     this->coreServer = nullptr;
@@ -274,7 +286,7 @@ GameApplication::StepFrame()
 void
 GameApplication::SetupGameFeatures()
 {
-    // create any features in derived class
+
 }
 
 //------------------------------------------------------------------------------

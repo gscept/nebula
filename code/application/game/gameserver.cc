@@ -31,9 +31,6 @@ GameServer::GameServer()
 
     this->state.templateDatabase = MemDb::Database::Create();
     this->CreateWorld(WORLD_DEFAULT);
-
-    // always attach the base game feature
-    this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
 }
 
 //------------------------------------------------------------------------------

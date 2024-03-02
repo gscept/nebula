@@ -336,7 +336,11 @@ PhysxState::FlushSimulation(IndexT sceneId)
 {
     n_assert(this->activeSceneIds.FindIndex(sceneId) != InvalidIndex);
     Physics::Scene& scene = this->activeScenes[sceneId];
-    scene.scene->fetchResults(true);
+    if (scene.isSimulating)
+    {
+        scene.scene->fetchResults(true);
+        scene.isSimulating = false;
+    }
 }
 
 PhysxState state;

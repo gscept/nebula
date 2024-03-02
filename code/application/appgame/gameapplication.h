@@ -22,6 +22,7 @@
 #include "resources/resourceserver.h"
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"     
+#include "basegamefeature/basegamefeatureunit.h"
 
 //------------------------------------------------------------------------------
 namespace App
@@ -59,6 +60,7 @@ protected:
     Ptr<Resources::ResourceServer> resourceServer;
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
+    Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
 
     
 #if __NEBULA_HTTP__

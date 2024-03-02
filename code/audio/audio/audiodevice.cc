@@ -37,7 +37,7 @@ AudioDevice::Open()
 {
     soloud = new SoLoud::Soloud;
     soloud->init(SoLoud::Soloud::CLIP_ROUNDOFF);
-
+    soloud->setMaxActiveVoiceCount(32);
     this->ResetListener();
 
     _setup_grouped_timer(AudioOnFrameTime, "Audio Subsystem");
@@ -56,6 +56,8 @@ AudioDevice::Close()
     delete soloud;
 
     _discard_timer(AudioOnFrameTime);
+    _end_counter(AudioNumberOfSoundsPlaying);
+    _discard_counter(AudioNumberOfSoundsPlaying);
 
     return true;
 }
@@ -71,9 +73,9 @@ AudioDevice::OnFrame()
     soloud->update3dAudio();
 
     _stop_timer(AudioOnFrameTime);
-    //_begin_counter(AudioNumberOfSoundsPlaying);
-    //_set_counter(AudioNumberOfSoundsPlaying, soloud->getActiveVoiceCount());
-    //_end_counter(AudioNumberOfSoundsPlaying);
+    _begin_counter(AudioNumberOfSoundsPlaying);
+    _set_counter(AudioNumberOfSoundsPlaying, soloud->getActiveVoiceCount());
+    _end_counter(AudioNumberOfSoundsPlaying);
 }
 
 //------------------------------------------------------------------------------
