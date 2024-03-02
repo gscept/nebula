@@ -1,7 +1,7 @@
 nebula_begin_module(audiofeature)
 fips_deps(audio application)
 fips_ide_group(features)
-target_precompile_headers(audiofeature REUSE_FROM application)
+target_precompile_headers(audiofeature PRIVATE <application/stdneb.h>)
 fips_files(
 		audiofeatureunit.h
 		audiofeatureunit.cc

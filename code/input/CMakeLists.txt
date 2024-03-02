@@ -2,7 +2,7 @@ nebula_begin_module(input)
 
 #get_filename_component(PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ ABSOLUTE)
 target_include_directories(input PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_precompile_headers(input REUSE_FROM foundation)
+target_precompile_headers(input PRIVATE <foundation/stdneb.h>)
 fips_deps(foundation)
 
 fips_dir(input)

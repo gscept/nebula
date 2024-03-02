@@ -2,7 +2,7 @@ fips_begin_lib(attr)
 fips_ide_group(addons)
 target_include_directories(attr PUBLIC ${CODE_ROOT}/foundation)
 fips_deps(foundation)
-target_precompile_headers(attr REUSE_FROM foundation)
+target_precompile_headers(attr PRIVATE <foundation/stdneb.h>)
 fips_files(
     attrexithandler.cc
     attrexithandler.h

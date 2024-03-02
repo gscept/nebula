@@ -5,7 +5,7 @@
 fips_begin_lib(toolkit-common)
     target_include_directories(toolkit-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     
-    target_precompile_headers(toolkit-common REUSE_FROM foundation)
+    target_precompile_headers(toolkit-common PRIVATE <foundation/stdneb.h>)
     fips_deps(foundation)
         fips_files(
             applauncher.cc

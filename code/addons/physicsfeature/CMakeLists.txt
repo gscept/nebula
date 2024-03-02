@@ -1,6 +1,6 @@
 nebula_begin_module(physicsfeature)
 fips_deps(physics application graphicsfeature)
-target_precompile_headers(physicsfeature REUSE_FROM application)
+target_precompile_headers(physicsfeature PRIVATE <application/stdneb.h>)
 fips_ide_group(features)
 fips_files(
 		physicsfeatureunit.h

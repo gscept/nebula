@@ -1,7 +1,7 @@
 nebula_begin_module(graphicsfeature)
 nebula_flatc(SYSTEM graphicsfeature/graphicsfeatureschema.fbs graphicsfeature/terrainschema.fbs graphicsfeature/vegetationschema.fbs)
 fips_deps(render application dynui staticui nflatbuffer)
-target_precompile_headers(graphicsfeature REUSE_FROM application)
+target_precompile_headers(graphicsfeature PRIVATE <application/stdneb.h>)
 fips_ide_group(features)
 fips_files(
 	graphicsfeatureunit.h
