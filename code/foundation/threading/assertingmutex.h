@@ -24,7 +24,7 @@ public:
     /// unlock mutex
     void Unlock();
 private:
-    volatile int locked;
+    std::atomic_int locked;
 };
 
 struct AssertingScope
