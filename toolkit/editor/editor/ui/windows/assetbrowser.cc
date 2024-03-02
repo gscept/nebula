@@ -204,7 +204,8 @@ AssetBrowser::DisplayFileTree()
             Util::String const& name = fileList[n];
             ImGui::PushID(n);
             ImGui::BeginGroup();
-            ImGui::ImageButton(name.AsCharPtr(), &UIManager::Icons::game, { (float)itemSize, (float)itemSize });
+            //ImGui::ImageButton(name.AsCharPtr(), &UIManager::Icons::game, { (float)itemSize, (float)itemSize });
+            ImGui::Button("X", { (float)itemSize, (float)itemSize });
             ImGui::BeginChild("##filename00", { (float)itemSize, ImGui::GetTextLineHeight()}, false, ImGuiWindowFlags_NoScrollbar);
             ImGui::Text(name.AsCharPtr());
             if (ImGui::IsItemHovered())
