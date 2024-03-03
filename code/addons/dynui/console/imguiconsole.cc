@@ -454,7 +454,7 @@ ImguiConsole::RenderContent()
     // Command-line / Input ----------------------------------------------------
     
     ImGui::Columns(2, 0, false);
-    ImGui::SetColumnWidth(0, 40.0f);
+    ImGui::SetColumnWidth(0, 50.0f);
     if (!this->scriptServer.isvalid() || this->command[0] == '>')
     {
         this->cmdMode = CommandMode::CVar;
