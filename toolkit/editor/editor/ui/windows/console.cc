@@ -38,6 +38,12 @@ Console::Console()
 */
 Console::~Console()
 {
+    if (this->consoleHandler.isvalid())
+    {
+        this->consoleHandler->Discard();
+        this->consoleHandler = nullptr;
+        this->console = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
