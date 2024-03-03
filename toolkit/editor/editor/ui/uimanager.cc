@@ -38,7 +38,7 @@ namespace Icons
     texturehandle_t light;
 }
 
-Icons::texturehandle_t LoadIcon(const char* resource)
+Icons::texturehandle_t NLoadIcon(const char* resource)
 {
     return Resources::CreateResource(resource, "EditorIcons"_atm, nullptr, nullptr, true).HashCode64();
 }
@@ -61,12 +61,12 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");
     windowServer->RegisterWindow("Presentation::Previewer", "Previewer");
     
-    Icons::play          = LoadIcon("systex:icon_play.dds");
-    Icons::pause         = LoadIcon("systex:icon_pause.dds");
-    Icons::stop          = LoadIcon("systex:icon_stop.dds");
-    Icons::environment   = LoadIcon("systex:icon_environment.dds");
-    Icons::game          = LoadIcon("systex:icon_game.dds");
-    Icons::light         = LoadIcon("systex:icon_light.dds");
+    Icons::play          = NLoadIcon("systex:icon_play.dds");
+    Icons::pause         = NLoadIcon("systex:icon_pause.dds");
+    Icons::stop          = NLoadIcon("systex:icon_stop.dds");
+    Icons::environment   = NLoadIcon("systex:icon_environment.dds");
+    Icons::game          = NLoadIcon("systex:icon_game.dds");
+    Icons::light         = NLoadIcon("systex:icon_light.dds");
     
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Y", "Edit");

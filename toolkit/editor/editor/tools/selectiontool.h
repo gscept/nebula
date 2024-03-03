@@ -21,6 +21,7 @@ class SelectionTool
 public:
 	static Util::Array<Editor::Entity> const& Selection();
 	static void RenderGizmo();
+	static bool IsTransforming();
 
 private:
 	friend Edit::CMDSetSelection;

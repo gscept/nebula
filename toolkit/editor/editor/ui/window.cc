@@ -11,22 +11,22 @@ namespace Presentation
 
 __ImplementClass(Presentation::BaseWindow, 'bWnd', Core::RefCounted)
 
-//------------------------------------------------------------------------------
-/**
+    //------------------------------------------------------------------------------
+    /**
 */
-BaseWindow::BaseWindow() :
-    additionalFlags((ImGuiWindowFlags_)0),
-    name("UNNAMED WINDOW"),
-    open(true)
+    BaseWindow::BaseWindow()
+    : additionalFlags((ImGuiWindowFlags_)0),
+      name("UNNAMED WINDOW"),
+      open(true)
 {
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-BaseWindow::BaseWindow(Util::String name) :
-    name(name),
-    open(false)
+BaseWindow::BaseWindow(Util::String name)
+    : name(name),
+      open(false)
 {
 }
 
@@ -40,8 +40,8 @@ BaseWindow::~BaseWindow()
 //------------------------------------------------------------------------------
 /**
 */
-const
-Util::String & BaseWindow::GetName() const
+const Util::String&
+BaseWindow::GetName() const
 {
     return this->name;
 }
@@ -50,7 +50,7 @@ Util::String & BaseWindow::GetName() const
 /**
 */
 void
-BaseWindow::SetName(const char * name)
+BaseWindow::SetName(const char* name)
 {
     this->name = name;
 }
@@ -68,7 +68,7 @@ BaseWindow::GetCategory() const
 /**
 */
 void
-BaseWindow::SetCategory(const char * category)
+BaseWindow::SetCategory(const char* category)
 {
     this->category = category;
 }
@@ -113,6 +113,33 @@ BaseWindow::GetAdditionalFlags() const
 /**
 */
 Math::vec2
+BaseWindow::GetWindowPadding() const
+{
+    if (this->usesCustomWindowPadding)
+    {
+        return this->windowPadding;
+    }
+    else
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        return {style.WindowPadding.x, style.WindowPadding.y};
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BaseWindow::SetWindowPadding(const Math::vec2& padding)
+{
+    this->usesCustomWindowPadding = true;
+    this->windowPadding = padding;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec2
 BaseWindow::GetPosition() const
 {
     ImVec2 pos;
@@ -124,7 +151,8 @@ BaseWindow::GetPosition() const
     else
     {
         // check if we've got any settings for this window.
-        ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
+        ImGuiWindowSettings* imWindowSettings =
+            ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
         if (imWindowSettings != nullptr)
         {
             pos.x = imWindowSettings->Pos.x;
@@ -133,11 +161,11 @@ BaseWindow::GetPosition() const
         else
         {
             // Nothing found, return default
-            pos = { 0, 0 };
+            pos = {0, 0};
         }
     }
-    
-    return { pos.x, pos.y };
+
+    return {pos.x, pos.y};
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +184,8 @@ BaseWindow::GetSize() const
     else
     {
         // check if we've got any settings for this window.
-        ImGuiWindowSettings* imWindowSettings = ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
+        ImGuiWindowSettings* imWindowSettings =
+            ImGui::FindWindowSettingsByID(ImHashStr(this->name.AsCharPtr(), this->name.Length()));
         if (imWindowSettings != nullptr)
         {
             size = imWindowSettings->Size;
@@ -164,19 +193,18 @@ BaseWindow::GetSize() const
         else
         {
             // Nothing found, return default
-            size = { 0, 0 };
+            size = {0, 0};
         }
     }
 
-
-    return { (float)size.x, (float)size.y };
+    return {(float)size.x, (float)size.y};
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-BaseWindow::SetPosition(const Math::vec2 & pos)
+BaseWindow::SetPosition(const Math::vec2& pos)
 {
     ImGuiWindow* imwindow = ImGui::FindWindowByName(this->name.AsCharPtr());
     if (imwindow != nullptr)
@@ -202,7 +230,7 @@ BaseWindow::SetPosition(const Math::vec2 & pos)
 /**
 */
 void
-BaseWindow::SetSize(const Math::vec2 & size)
+BaseWindow::SetSize(const Math::vec2& size)
 {
     ImGuiWindow* imwindow = ImGui::FindWindowByName(this->name.AsCharPtr());
     if (imwindow != nullptr)

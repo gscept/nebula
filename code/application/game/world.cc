@@ -1161,7 +1161,7 @@ World::RenderDebug()
             ImGui::BeginGroup();
             ImGui::Text("[%i] ", entityIndex);
             ImGui::SameLine();
-            ImGui::TextColored({1, 0.3f, 0, 1}, "tid:%i, row:%i", entity.table, entity.instance);
+            ImGui::TextColored({1, 0.3f, 0, 1}, "tid:%i, parition: %i, index: %i", entity.table, entity.instance.partition, entity.instance.index);
             if (entity.table != MemDb::TableId::Invalid())
             {
                 ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());

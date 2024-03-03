@@ -11,6 +11,7 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
+#include "core/cvar.h"
 
 #include "graphics/globalconstants.h"
 
@@ -38,7 +39,7 @@ struct
     CoreGraphics::TextureId defaultEnvironmentMap;
     CoreGraphics::TextureId defaultIrradianceMap;
 
-    bool showUI = true;
+    Core::CVar* r_show_env_params;
 } envState;
 
 __ImplementPluginContext(EnvironmentContext);
@@ -86,6 +87,8 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
             envState.defaultIrradianceMap = id;
             Resources::SetMinLod(id, 0.0f, false);
         });
+
+    envState.r_show_env_params = Core::CVarCreate(Core::CVar_Int, "r_show_env_params", "0", "Show/hide environment parameters debug ui");
 }
 
 //------------------------------------------------------------------------------
@@ -212,12 +215,13 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 void 
 EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-    if (envState.showUI)
+    int showUI = Core::CVarReadInt(envState.r_show_env_params);
+    if (showUI)
     {
         float col[4];
         envState.fogColor.storeu(col);
         Shared::PerTickParams tickParams = Graphics::GetTickParams();
-        if (ImGui::Begin("Enviroment Params"))
+        if (ImGui::Begin("Environment Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
             ImGui::SliderFloat("Bloom Intensity", &envState.bloomIntensity, 0, 1.0f);

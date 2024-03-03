@@ -25,6 +25,8 @@ Scene::Scene()
     viewPort.SetStage(GraphicsFeature::GraphicsFeatureUnit::Instance()->GetDefaultStage());
     viewPort.SetFrameBuffer("ColorBufferNoGUI");
 
+    this->SetWindowPadding({0, 0});
+
     this->additionalFlags = ImGuiWindowFlags_MenuBar;
 }
 
@@ -51,8 +53,8 @@ Scene::Update()
 void
 Scene::Run()
 {
-   viewPort.Render();
-   Tools::SelectionTool::RenderGizmo();
+    viewPort.Render();
+    Tools::SelectionTool::RenderGizmo();
 }
 
 } // namespace Presentation

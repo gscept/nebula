@@ -45,6 +45,8 @@ InternalCreateEntity(Editor::Entity id, Util::StringAtom templateName)
     edit.name = templateName.AsString().ExtractFileName();
     edit.templateId = tid;
 
+    edit.version++;
+
     return true;
 }
 
@@ -83,6 +85,8 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     Editor::Editable& edit = Editor::state.editables[editorEntity.index];
     edit.gameEntity = entity;
 
+    edit.version++;
+
     return true;
 }
 
@@ -107,6 +111,8 @@ InternalDestroyEntity(Editor::Entity editorEntity)
 
     // Make sure the editor world is always defragged
     Editor::state.editorWorld->Defragment(mapping.table);
+
+    edit.version++;
 }
 
 //------------------------------------------------------------------------------
@@ -150,6 +156,8 @@ InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
         MemDb::RowId gameRow = defaultWorld->AllocateInstance(edit.gameEntity, gameTableId, &blob);
     }
 
+    edit.version++;
+
     return true;
 }
 
@@ -170,6 +178,8 @@ InternalAddProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
 
     Game::GetWorld(WORLD_DEFAULT)->AddComponent(edit.gameEntity, component);
     
+    edit.version++;
+
     return true;
 }
 
@@ -189,6 +199,8 @@ InternalRemoveProperty(Editor::Entity editorEntity, Game::ComponentId component)
     Editor::state.editorWorld->RemoveComponent(editorEntity, component);
     Game::GetWorld(WORLD_DEFAULT)->RemoveComponent(edit.gameEntity, component);
     
+    edit.version++;
+
     return true;
 }
 

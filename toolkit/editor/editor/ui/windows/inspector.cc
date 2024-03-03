@@ -70,12 +70,13 @@ Inspector::Run()
     Editor::Editable& edit = Editor::state.editables[entity.index];
 
     static char name[128];
-    if (this->latestInspectedEntity != entity)
+    if (this->latestInspectedEntity != entity || this->latestEntityVersion != edit.version)
     {
         edit.name.CopyToBuffer(name, 128);
         for (auto& c : this->tempComponents)
             c.isDirty = false; // reset dirty status if we switch entity
         this->latestInspectedEntity = entity;
+        this->latestEntityVersion = edit.version;
     }
 
     if (ImGui::InputText("##EntityName", name, 128, ImGuiInputTextFlags_EnterReturnsTrue))

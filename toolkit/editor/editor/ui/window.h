@@ -39,6 +39,12 @@ public:
 
     const ImGuiWindowFlags_& GetAdditionalFlags() const;
 
+    /// Retrieve window padding from window
+    Math::vec2 GetWindowPadding() const;
+
+    /// Set window padding
+    void SetWindowPadding(const Math::vec2& padding);
+
     /// Retrieve position from window
     Math::vec2 GetPosition() const;
 
@@ -53,12 +59,17 @@ public:
 
 
 protected:
+    friend class WindowServer;
+
     ImGuiWindowFlags_ additionalFlags;
     Util::String name;
     /// category that window is a part of.
     Util::String category;
     bool open;
 
+private:
+    Math::vec2 windowPadding;
+    bool usesCustomWindowPadding = false;
 };
 
 } // namespace Presentation

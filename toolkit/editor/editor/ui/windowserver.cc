@@ -106,11 +106,17 @@ WindowServer::RunAll()
         
         if (it->Open())
         {
+            if (it->usesCustomWindowPadding)
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {it->windowPadding.x, it->windowPadding.y});
+
             if (ImGui::Begin(it->GetName().AsCharPtr(), &it->Open(), it->GetAdditionalFlags()))
             {
                 it->Run();
             }
             ImGui::End();
+
+            if (it->usesCustomWindowPadding)
+                ImGui::PopStyleVar();
         }
     }
 }

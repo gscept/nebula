@@ -20,6 +20,7 @@
 Util::Array<Editor::Entity> Tools::SelectionTool::selection = {};
 static bool isDirty = false;
 static Im3d::Mat4 tempTransform;
+static bool isTransforming = false;
 
 namespace Tools
 {
@@ -53,7 +54,7 @@ SelectionTool::RenderGizmo()
 
 	Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-	bool isTransforming = Im3d::Gizmo("GizmoEntity", tempTransform);
+	isTransforming = Im3d::Gizmo("GizmoEntity", tempTransform);
 	Math::vec3 pos;
 	Math::quat rot;
 	Math::vec3 scale;
@@ -91,6 +92,15 @@ SelectionTool::RenderGizmo()
 		}
 	}
 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+SelectionTool::IsTransforming()
+{
+    return isTransforming;
 }
 
 } // namespace Tools

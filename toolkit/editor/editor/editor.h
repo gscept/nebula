@@ -30,6 +30,9 @@ struct Editable
     Game::TemplateId templateId;
     /// which game entity in the game database the editable is associated with
     Game::Entity gameEntity = Game::Entity::Invalid();
+    /// version of editable. Bump if something has changed about the entity.
+    uint64_t version = 0;
+
 };
 
 struct EditorState

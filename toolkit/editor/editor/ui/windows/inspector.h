@@ -36,6 +36,7 @@ private:
     };
     Util::Array<IntermediateComponents> tempComponents;
     Editor::Entity latestInspectedEntity;
+    uint64_t latestEntityVersion;
 };
 __RegisterClass(Inspector)
 

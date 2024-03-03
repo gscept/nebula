@@ -9,6 +9,7 @@
 #include "graphics/stage.h"
 #include "imgui.h"
 #include "dynui/imguicontext.h"
+#include "editor/editor/tools/selectiontool.h"
 
 namespace Presentation
 {
@@ -73,6 +74,19 @@ Viewport::SetFrameBuffer(Util::String const& name)
 /**
 */
 void
+Viewport::Update()
+{
+    if (this->hovered && !Tools::SelectionTool::IsTransforming())
+    {
+        camera.Update();
+        this->hovered = false;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 Viewport::Render()
 {
     Ptr<Frame::FrameServer> frameServer = Frame::FrameServer::Instance();
@@ -82,7 +96,9 @@ Viewport::Render()
     {
         if (ImGui::BeginMenu("Camera"))
         {
-            if (ImGui::MenuItem("Perspective", (const char*)0, this->camera.GetProjectionMode() == Editor::Camera::ProjectionMode::PERSPECTIVE))
+            if (ImGui::MenuItem(
+                    "Perspective", (const char*)0, this->camera.GetProjectionMode() == Editor::Camera::ProjectionMode::PERSPECTIVE
+                ))
             {
                 this->camera.SetProjectionMode(Editor::Camera::ProjectionMode::PERSPECTIVE);
             }
@@ -96,7 +112,11 @@ Viewport::Render()
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::MenuItem("Orthographic", (const char*)0, this->camera.GetProjectionMode() == Editor::Camera::ProjectionMode::ORTHOGRAPHIC))
+            if (ImGui::MenuItem(
+                    "Orthographic",
+                    (const char*)0,
+                    this->camera.GetProjectionMode() == Editor::Camera::ProjectionMode::ORTHOGRAPHIC
+                ))
             {
                 this->camera.SetProjectionMode(Editor::Camera::ProjectionMode::ORTHOGRAPHIC);
             }
@@ -104,11 +124,15 @@ Viewport::Render()
             {
                 static const float min = 1.0f;
                 static const float max = 100.0f;
-                if (ImGui::SliderScalar("Width", ImGuiDataType_Float, &this->camera.orthoWidth, &min, &max, "%.3f", ImGuiSliderFlags_None))
+                if (ImGui::SliderScalar(
+                        "Width", ImGuiDataType_Float, &this->camera.orthoWidth, &min, &max, "%.3f", ImGuiSliderFlags_None
+                    ))
                 {
                     this->camera.SetProjectionMode(Editor::Camera::ProjectionMode::ORTHOGRAPHIC);
                 }
-                if (ImGui::SliderScalar("Height", ImGuiDataType_Float, &this->camera.orthoHeight, &min, &max, "%.3f", ImGuiSliderFlags_None))
+                if (ImGui::SliderScalar(
+                        "Height", ImGuiDataType_Float, &this->camera.orthoHeight, &min, &max, "%.3f", ImGuiSliderFlags_None
+                    ))
                 {
                     this->camera.SetProjectionMode(Editor::Camera::ProjectionMode::ORTHOGRAPHIC);
                 }
@@ -119,18 +143,32 @@ Viewport::Render()
             {
                 this->camera.SetCameraMode(Editor::Camera::CameraMode::ORBIT);
             }
-            if (ImGui::MenuItem("Free Camera", (const char*)0, this->camera.GetCameraMode() == Editor::Camera::CameraMode::FREECAM))
+            if (ImGui::MenuItem(
+                    "Free Camera", (const char*)0, this->camera.GetCameraMode() == Editor::Camera::CameraMode::FREECAM
+                ))
             {
                 this->camera.SetCameraMode(Editor::Camera::CameraMode::FREECAM);
             }
             ImGui::Separator();
             // TODO: These should center either around 0,0 or around the currently selected object(s).
-            if (ImGui::MenuItem("Top")){}
-            if (ImGui::MenuItem("Bottom")) {}
-            if (ImGui::MenuItem("Left")) {}
-            if (ImGui::MenuItem("Right")) {}
-            if (ImGui::MenuItem("Front")) {}
-            if (ImGui::MenuItem("Back")) {}
+            if (ImGui::MenuItem("Top"))
+            {
+            }
+            if (ImGui::MenuItem("Bottom"))
+            {
+            }
+            if (ImGui::MenuItem("Left"))
+            {
+            }
+            if (ImGui::MenuItem("Right"))
+            {
+            }
+            if (ImGui::MenuItem("Front"))
+            {
+            }
+            if (ImGui::MenuItem("Back"))
+            {
+            }
 
             ImGui::EndMenu();
         }
@@ -167,9 +205,20 @@ Viewport::Render()
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
-    ImGui::ImageButton("textureinfo", (void*)&textureInfo, imageSize, ImVec2(0, 0), ImVec2(1, 1));
+    ImGui::Image((void*)&textureInfo, imageSize, ImVec2(0, 0), ImVec2(1, 1));
     
     this->hovered = ImGui::IsItemHovered();
+
+    if (this->hovered)
+    {
+        ImGui::GetIO().WantCaptureKeyboard = false;
+        ImGui::GetIO().WantCaptureMouse = false;
+    }
+    else
+    {
+        ImGui::GetIO().WantCaptureKeyboard = true;
+        ImGui::GetIO().WantCaptureMouse = true;
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -41,15 +41,7 @@ public:
     void SetStage(Ptr<Graphics::Stage> const& stage);
     void SetFrameBuffer(Util::String const& name);
 
-    void Update()
-    {
-        if (this->hovered)
-        {
-            camera.Update();
-            this->hovered = false;
-        }
-
-    }
+    void Update();
 
     void SetHovered(bool val)
     {
