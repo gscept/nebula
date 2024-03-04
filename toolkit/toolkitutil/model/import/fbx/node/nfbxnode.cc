@@ -189,21 +189,21 @@ CountKeys(ufbx_anim_curve* fbxCurveX, ufbx_anim_curve* fbxCurveY, ufbx_anim_curv
         {
             for (IndexT keyIndex = 0; keyIndex < fbxCurveX->keyframes.count; keyIndex++)
             {
-                times.Add(fbxCurveX->keyframes.data[keyIndex].time);
+                times.Add(fbxCurveX->keyframes[keyIndex].time);
             }
         }
         if (fbxCurveY != nullptr)
         {
             for (IndexT keyIndex = 0; keyIndex < fbxCurveY->keyframes.count; keyIndex++)
             {
-                times.Add(fbxCurveY->keyframes.data[keyIndex].time);
+                times.Add(fbxCurveY->keyframes[keyIndex].time);
             }
         }
         if (fbxCurveZ != nullptr)
         {
             for (IndexT keyIndex = 0; keyIndex < fbxCurveZ->keyframes.count; keyIndex++)
             {
-                times.Add(fbxCurveZ->keyframes.data[keyIndex].time);
+                times.Add(fbxCurveZ->keyframes[keyIndex].time);
             }
         }
     }
@@ -220,21 +220,45 @@ NFbxNode::PrepareAnimation(SceneNode* node, ufbx_anim_stack* animStack)
     ufbx_node* fbxNode = node->fbx.node;
     ufbx_anim_layer* animLayer = animStack->layers[0];
 
+    //ufbx_prop* prop = ufbx_get_prop_element(&fbxNode->element, &fbxNode->props, UFBX_Lcl_Translation);
+
+
     ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);
     ufbx_anim_prop* rotationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Rotation);
     ufbx_anim_prop* scalingProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Scaling);
 
-    ufbx_anim_curve* translationCurveX = translationProperty->anim_value->curves[0];
-    ufbx_anim_curve* translationCurveY = translationProperty->anim_value->curves[1];
-    ufbx_anim_curve* translationCurveZ = translationProperty->anim_value->curves[2];
+    ufbx_anim_curve* translationCurveX = nullptr;
+    ufbx_anim_curve* translationCurveY = nullptr;
+    ufbx_anim_curve* translationCurveZ = nullptr;
 
-    ufbx_anim_curve* rotationCurveX = rotationProperty->anim_value->curves[0];
-    ufbx_anim_curve* rotationCurveY = rotationProperty->anim_value->curves[1];
-    ufbx_anim_curve* rotationCurveZ = rotationProperty->anim_value->curves[2];
+    ufbx_anim_curve* rotationCurveX = nullptr;
+    ufbx_anim_curve* rotationCurveY = nullptr;
+    ufbx_anim_curve* rotationCurveZ = nullptr;
 
-    ufbx_anim_curve* scaleCurveX = scalingProperty->anim_value->curves[0];
-    ufbx_anim_curve* scaleCurveY = scalingProperty->anim_value->curves[1];
-    ufbx_anim_curve* scaleCurveZ = scalingProperty->anim_value->curves[2];
+    ufbx_anim_curve* scaleCurveX = nullptr;
+    ufbx_anim_curve* scaleCurveY = nullptr;
+    ufbx_anim_curve* scaleCurveZ = nullptr;
+
+    if (translationProperty)
+    {
+        translationCurveX = translationProperty->anim_value->curves[0];
+        translationCurveY = translationProperty->anim_value->curves[1];
+        translationCurveZ = translationProperty->anim_value->curves[2];
+    }
+
+    if (rotationProperty)
+    {
+        rotationCurveX = rotationProperty->anim_value->curves[0];
+        rotationCurveY = rotationProperty->anim_value->curves[1];
+        rotationCurveZ = rotationProperty->anim_value->curves[2];
+    }
+
+    if (scalingProperty)
+    {
+        scaleCurveX = scalingProperty->anim_value->curves[0];
+        scaleCurveY = scalingProperty->anim_value->curves[1];
+        scaleCurveZ = scalingProperty->anim_value->curves[2];
+    }
 
     AnimBuilderCurve& translationCurve = node->anim.translationCurve;
     AnimBuilderCurve& rotationCurve = node->anim.rotationCurve;

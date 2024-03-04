@@ -8,7 +8,6 @@
     (C) 2022 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include <fbxsdk.h>
 #include "model/import/base/scenenode.h"
 namespace ToolkitUtil
 {

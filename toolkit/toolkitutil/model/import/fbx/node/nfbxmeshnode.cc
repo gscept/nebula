@@ -50,7 +50,7 @@ NFbxMeshNode::ExtractMesh(
     
     if (node->fbx.node->materials.count)
     {
-        ufbx_material* mat = node->fbx.node->materials.data[0];
+        ufbx_material* mat = node->fbx.node->materials[0];
         node->mesh.material = Util::String(mat->name.data, mat->name.length);
     }
 
@@ -104,7 +104,7 @@ NFbxMeshNode::ExtractMesh(
     node->mesh.meshFlags = (ToolkitUtil::MeshFlags)meshMask;
 
     // Proceed to extract mesh
-    size_t vertexCount = fbxMesh->vertex_position.indices.count;
+    size_t vertexCount = fbxMesh->vertex_position.values.count;
     size_t polyCount = fbxMesh->faces.count;
     size_t uvCount = fbxMesh->uv_sets.count;
     size_t normalCount = fbxMesh->vertex_normal.indices.count;
@@ -114,8 +114,8 @@ NFbxMeshNode::ExtractMesh(
     // this is here just to inform if an artist has forgot to apply a UV set or the mesh has no normals prior to importing
     if (vertexCount > 0)
     {
-        n_assert2(uvCount > 0, "You need at least one UV-channel or no shader will be applicable!");
-        n_assert2(normalCount > 0, "You need at least one set of normals or no shader will be applicable!");
+        n_assert_fmt(uvCount > 0, "You need at least one UV-channel or no shader will be applicable!");
+        n_assert_fmt(normalCount > 0, "You need at least one set of normals or no shader will be applicable!");
     }
 
     // get scale
@@ -126,11 +126,11 @@ NFbxMeshNode::ExtractMesh(
     Util::FixedArray<Math::vec4> controlPoints;
     controlPoints.Resize((SizeT)vertexCount);
 
-    mesh.NewMesh(controlPoints.Size(), fbxMesh->num_triangles);
+    mesh.NewMesh(controlPoints.Size(), (SizeT)fbxMesh->num_triangles);
     mesh.SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
     for (IndexT i = 0; i < controlPoints.Size(); i++)
     {
-        ufbx_vec3 v = fbxMesh->vertex_position.values.data[fbxMesh->vertex_position.indices.data[i]];
+        ufbx_vec3 v = fbxMesh->vertex_position.values[fbxMesh->vertex_position.indices[i]];
         controlPoints[i] = FbxToMath(v) * vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
         componentMask |= MeshBuilderVertex::Position;
     }
@@ -162,9 +162,9 @@ NFbxMeshNode::ExtractMesh(
 
     // Convert all meshes to map their indexes to once value per vertex
     if (uvCount > 0)
-        uv0Elements = &fbxMesh->uv_sets.data[0].vertex_uv;
+        uv0Elements = &fbxMesh->uv_sets[0].vertex_uv;
     if (uvCount > 1)
-        uv1Elements = &fbxMesh->uv_sets.data[1].vertex_uv;
+        uv1Elements = &fbxMesh->uv_sets[1].vertex_uv;
     if (colorCount > 0)
         colorElements = &fbxMesh->vertex_color;
     if (normalCount > 0)
@@ -176,17 +176,18 @@ NFbxMeshNode::ExtractMesh(
     int vertexId = 0;
     for (int polygonIndex = 0; polygonIndex < polyCount; polygonIndex++)
     {
-        const ufbx_face& face = fbxMesh->faces.data[polygonIndex];
+        const ufbx_face& face = fbxMesh->faces[polygonIndex];
         size_t requiredIndices = (face.num_indices - 2) * 3;
         uint32_t* indices = (uint32_t*)Memory::StackAlloc(requiredIndices * sizeof(uint32));
-        ufbx_triangulate_face(indices, requiredIndices, fbxMesh, face);
+        uint status = ufbx_triangulate_face(indices, requiredIndices, fbxMesh, face);
+        n_assert_fmt(status != 0, "Triangulation failed on polygon %d", polygonIndex);
         for (int tri = 0; tri < requiredIndices / 3; tri++)
         {
             MeshBuilderTriangle meshTriangle;
             for (int triangleVertexIndex = 0; triangleVertexIndex < 3; triangleVertexIndex++)
             {
                 // we want to offset the vertex index with the current size of the mesh
-                int polygonVertex = indices[tri * 3 + triangleVertexIndex];
+                int polygonVertex = fbxMesh->vertex_position.indices[indices[tri * 3 + triangleVertexIndex]];
                 MeshBuilderVertex meshVertex;
                 meshVertex.SetPosition(controlPoints[polygonVertex]);
 
@@ -285,11 +286,11 @@ NFbxMeshNode::ExtractMesh(
     {
         node->mesh.lodIndex = node->base.parent->base.children.FindIndex(node);
         if (lodGroup->lod_levels.count > node->mesh.lodIndex - 1)
-            node->mesh.minLodDistance = lodGroup->lod_levels.data[node->mesh.lodIndex - 1].distance;
+            node->mesh.minLodDistance = lodGroup->lod_levels[node->mesh.lodIndex - 1].distance;
         else
             node->mesh.minLodDistance = 0;
         if (lodGroup->lod_levels.count > node->mesh.lodIndex)
-            node->mesh.maxLodDistance = lodGroup->lod_levels.data[node->mesh.lodIndex].distance;
+            node->mesh.maxLodDistance = lodGroup->lod_levels[node->mesh.lodIndex].distance;
         else
             node->mesh.maxLodDistance = 0;
     }
@@ -308,13 +309,13 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
     Util::FixedArray<Util::Array<std::tuple<int, float>>> keyWeightPairs((SizeT)vertexCount);
     for (int skinIndex = 0; skinIndex < skinCount; skinIndex++)
     {
-        ufbx_skin_deformer* skin = fbxMesh->skin_deformers.data[skinIndex];
+        ufbx_skin_deformer* skin = fbxMesh->skin_deformers[skinIndex];
         size_t clusterCount = skin->clusters.count;
         node->base.isSkin = true;
 
         for (int clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++)
         {
-            ufbx_skin_cluster* cluster = skin->clusters.data[clusterIndex];
+            ufbx_skin_cluster* cluster = skin->clusters[clusterIndex];
             ufbx_node* joint = cluster->bone_node;
             SceneNode* jointNode = nodeLookup[joint];
             n_assert(jointNode != nullptr);
@@ -332,7 +333,7 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             size_t clusterVertexIndexCount = cluster->vertices.count;
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
             {
-                int vertex = cluster->vertices.data[vertexIndex];
+                int vertex = cluster->vertices[vertexIndex];
                 float weight = cluster->weights[vertexIndex];
                 if (weight > 0)
                     keyWeightPairs[vertex].Append(std::make_tuple(jointNode->skeleton.jointIndex, weight));

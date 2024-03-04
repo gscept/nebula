@@ -13,8 +13,6 @@
 #include "model/modelutil/modelattributes.h"
 #include "ufbx/ufbx.h"
 
-#include <fbxsdk.h>
-
 using namespace Util;
 using namespace IO;
 using namespace ToolkitUtil;
@@ -45,14 +43,13 @@ NFbxExporter::~NFbxExporter()
 bool 
 NFbxExporter::ParseScene()
 {
-
     ufbx_coordinate_axes wantedAxes;
     wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y;
     wantedAxes.front = UFBX_COORDINATE_AXIS_NEGATIVE_Z;
     wantedAxes.right = UFBX_COORDINATE_AXIS_POSITIVE_X;
 
     ufbx_error error;
-    ufbx_load_opts opts{.clean_skin_weights = true, .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, .target_axes = wantedAxes};
+    ufbx_load_opts opts{.clean_skin_weights = true, .strict = true, .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, .target_axes = wantedAxes};
     ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
     if (scene == nullptr)
     {
@@ -69,6 +66,8 @@ NFbxExporter::ParseScene()
     fbxScene->SetCategory(this->category);
     fbxScene->Setup(scene, this->exportFlags, attributes, this->sceneScale, this->logger);
     this->scene = fbxScene;
+
+    ufbx_free_scene(scene);
 
     return true;
 }

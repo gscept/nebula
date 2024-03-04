@@ -8,7 +8,6 @@
 #include "model/skeletonutil/skeletonbuilder.h"
 #include "nfbxmeshnode.h"
 #include "nfbxjointnode.h"
-#include "nfbxtransformnode.h"
 #include "nfbxlightnode.h"
 #include "timing/timer.h"
 
@@ -79,10 +78,10 @@ NFbxScene::ParseNodeHierarchy(
         }
     }
 
-    int numChildren = fbxNode->children.count;
-    for (int i = 0; i < numChildren; i++)
+    size_t numChildren = fbxNode->children.count;
+    for (size_t i = 0; i < numChildren; i++)
     {
-        ufbx_node* child = fbxNode->children.data[i];
+        ufbx_node* child = fbxNode->children[i];
         ParseNodeHierarchy(child, &node, lookup, nodes);
     }
 }
@@ -127,8 +126,8 @@ NFbxScene::Setup(
         
     // Get number of meshes
     
-    int nodeCount = scene->nodes.count;
-    this->nodes.Reserve(nodeCount);
+    size_t nodeCount = scene->nodes.count;
+    this->nodes.Reserve((SizeT)nodeCount);
 
     // Go through all nodes and add them to our lookup
     Util::Dictionary<ufbx_node*, SceneNode*> nodeLookup;
@@ -154,10 +153,10 @@ NFbxScene::Setup(
 
     // Extract animation curves
     
-    int animStackCount = scene->anim_stacks.count;
-    for (int animStackIndex = 0; animStackIndex < animStackCount; animStackIndex++)
+    size_t animStackCount = scene->anim_stacks.count;
+    for (size_t animStackIndex = 0; animStackIndex < animStackCount; animStackIndex++)
     {
-        ufbx_anim_stack* animStack = scene->anim_stacks.data[animStackIndex];
+        ufbx_anim_stack* animStack = scene->anim_stacks[animStackIndex];
         for (int nodeIndex = 0; nodeIndex < this->nodes.Size(); nodeIndex++)
         {
             SceneNode* node = &this->nodes[nodeIndex];
