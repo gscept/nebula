@@ -147,12 +147,13 @@ ResourceLoader::Update(IndexT frameIndex)
     IndexT i;
     for (i = this->pendingLoads.Size() - 1; i >= 0; i--)
     {
+        this->asyncSection.Enter();
+
         // get pending element
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
         resourceLoad.frame = frameIndex;
 
         // If already loaded, just return
-        this->asyncSection.Enter();
         Resource::State state = this->states[resourceLoad.entry];
         this->asyncSection.Leave();
         if ((resourceLoad.mode == _PendingResourceLoad::None) && (state == Resource::Loaded || state == Resource::Failed))
@@ -264,7 +265,7 @@ ResourceLoader::GetPlaceholder(const Resources::ResourceName& name)
 /**
 */
 Resource::State
-_LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad& res)
+_LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad res)
 {
     loader->asyncSection.Enter();
     Resource::State state = loader->states[res.entry];
@@ -384,7 +385,7 @@ ResourceLoader::LoadImmediate(_PendingResourceLoad& res)
 /**
 */
 void
-ResourceLoader::LoadAsync(_PendingResourceLoad& res)
+ResourceLoader::LoadAsync(_PendingResourceLoad res)
 {
     // Create callable function
     auto loadFunc = std::bind(_LoadInternal, this, res);
