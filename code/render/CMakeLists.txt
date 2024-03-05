@@ -511,7 +511,7 @@ ENDIF()
         fips_dir(materials)
 			# Add engine templates and generate glue file which is needed by the material system
 			nebula_material_template_compile(base.json gltf.json)
-        	nebula_material_template_glue()
+            nebula_project_material_template_compile()
 
             fips_files(
                 material.cc
