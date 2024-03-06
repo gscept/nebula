@@ -26,7 +26,15 @@
         "type": "uint",
         "default": -1
       },
-      "raytracing": "bool"
+      "raytracing": "bool",
+      "anim": {
+          "type": "resource",
+          "default": ""
+      },
+      "skeleton":  {
+          "type": "resource",
+          "default": ""
+      }
     },
     "Camera": {
       "viewHandle": {

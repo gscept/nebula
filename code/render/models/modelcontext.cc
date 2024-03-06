@@ -777,10 +777,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 uint offset = CoreGraphics::SetConstants(block);
                 NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
 
+                /*
                 if (NodeInstances.renderable.nodeStates[j].skinningConstantsIndex != InvalidIndex)
                 {
                     NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].skinningConstantsIndex] = defaultJointsOffset;
                 }
+                */
             }
         }
     }, nodeInstanceStateRanges.Size(), 256, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
