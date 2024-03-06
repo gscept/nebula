@@ -130,7 +130,7 @@ NFbxMeshNode::ExtractMesh(
     mesh.SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
     for (IndexT i = 0; i < controlPoints.Size(); i++)
     {
-        ufbx_vec3 v = fbxMesh->vertex_position.values[fbxMesh->vertex_position.indices[i]];
+        ufbx_vec3 v = fbxMesh->vertex_position.values[i];
         controlPoints[i] = FbxToMath(v) * vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
         componentMask |= MeshBuilderVertex::Position;
     }
@@ -173,7 +173,7 @@ NFbxMeshNode::ExtractMesh(
         tangentElements = &fbxMesh->vertex_tangent;
 
     // setup triangles
-    int vertexId = 0;
+    int vertexId = 0; 
     for (int polygonIndex = 0; polygonIndex < polyCount; polygonIndex++)
     {
         const ufbx_face& face = fbxMesh->faces[polygonIndex];
@@ -187,12 +187,13 @@ NFbxMeshNode::ExtractMesh(
             for (int triangleVertexIndex = 0; triangleVertexIndex < 3; triangleVertexIndex++)
             {
                 // we want to offset the vertex index with the current size of the mesh
-                int polygonVertex = fbxMesh->vertex_position.indices[indices[tri * 3 + triangleVertexIndex]];
+                int baseIndex = indices[tri * 3 + triangleVertexIndex];
+                int polygonVertex = fbxMesh->vertex_position.indices[baseIndex];
                 MeshBuilderVertex meshVertex;
                 meshVertex.SetPosition(controlPoints[polygonVertex]);
 
                 // extract uvs from the 0th channel
-                Math::vec2 uv = Extract(uv0Elements, polygonVertex);
+                Math::vec2 uv = Extract(uv0Elements, baseIndex);
                 meshVertex.SetUv(uv);
                 componentMask |= MeshBuilderVertex::Uvs;
 
@@ -208,7 +209,7 @@ NFbxMeshNode::ExtractMesh(
                     if (AllBits(node->mesh.meshFlags, HasMultipleUVs))
                     {
                         // simply extract two uvs
-                        Math::vec2 uv2 = Extract(uv1Elements, polygonVertex);
+                        Math::vec2 uv2 = Extract(uv1Elements, baseIndex);
                         meshVertex.SetSecondaryUv(uv2);
                     }
                     else
@@ -225,7 +226,7 @@ NFbxMeshNode::ExtractMesh(
                     if (AllBits(node->mesh.meshFlags, HasVertexColors))
                     {
                         // extract colors
-                        Math::vec4 color = Extract(colorElements, polygonVertex);
+                        Math::vec4 color = Extract(colorElements, baseIndex);
                         meshVertex.SetColor(color);
                     }
                     else
@@ -236,13 +237,13 @@ NFbxMeshNode::ExtractMesh(
                     componentMask |= MeshBuilderVertex::Color;
                 }
 
-                Math::vec4 normal = Extract(normalElements, polygonVertex);
+                Math::vec4 normal = Extract(normalElements, baseIndex);
                 meshVertex.SetNormal(xyz(normal));
                 componentMask |= MeshBuilderVertex::Normals;
 
                 if (AllBits(node->mesh.meshFlags, HasTangents))
                 {
-                    Math::vec4 tangent = Extract(tangentElements, polygonVertex);
+                    Math::vec4 tangent = Extract(tangentElements, baseIndex);
                     meshVertex.SetTangent(xyz(tangent));
                     meshVertex.SetSign(-tangent.w);
                     componentMask |= MeshBuilderVertex::Tangents;
@@ -333,7 +334,7 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             size_t clusterVertexIndexCount = cluster->vertices.count;
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
             {
-                int vertex = cluster->vertices[vertexIndex];
+                int vertex = cluster->vertices[vertexIndex]; 
                 float weight = cluster->weights[vertexIndex];
                 if (weight > 0)
                     keyWeightPairs[vertex].Append(std::make_tuple(jointNode->skeleton.jointIndex, weight));

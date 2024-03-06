@@ -49,7 +49,7 @@ NFbxScene::ParseNodeHierarchy(
         case UFBX_ELEMENT_BONE:
         {
             node.Setup(SceneNode::NodeType::Joint);
-            NFbxJointNode::Setup(&node, parent, fbxNode);
+            NFbxJointNode::Setup(&node, parent, fbxNode); 
             break;
         }
         case UFBX_ELEMENT_MESH:

@@ -45,11 +45,19 @@ NFbxExporter::ParseScene()
 {
     ufbx_coordinate_axes wantedAxes;
     wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y;
-    wantedAxes.front = UFBX_COORDINATE_AXIS_NEGATIVE_Z;
+    wantedAxes.front = UFBX_COORDINATE_AXIS_POSITIVE_Z;
     wantedAxes.right = UFBX_COORDINATE_AXIS_POSITIVE_X;
 
     ufbx_error error;
-    ufbx_load_opts opts{.clean_skin_weights = true, .strict = true, .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, .target_axes = wantedAxes};
+    ufbx_load_opts opts 
+    {
+        .clean_skin_weights = true, 
+        .strict = true, 
+        .geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY, 
+        .pivot_handling = UFBX_PIVOT_HANDLING_RETAIN, 
+        .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, 
+        .target_axes = wantedAxes
+    };
     ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
     if (scene == nullptr)
     {
