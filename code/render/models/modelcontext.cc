@@ -737,11 +737,18 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     n_assert(ConstantsUpdateCounter == 0);
     ConstantsUpdateCounter = 1;
 
+    // Create a set of default joints
+    static Util::FixedArray<Math::mat4> defaultJoints(256);
+    ObjectsShared::JointBlock joints;
+    memcpy(joints.JointPalette, defaultJoints.Begin(), sizeof(ObjectsShared::JointBlock::JointPalette));
+    uint defaultJointsOffset = CoreGraphics::SetConstants(joints);
+
     Jobs2::JobDispatch(
         [
             nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
             , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
             , cameraTransform
+            , defaultJointsOffset
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
@@ -757,10 +764,11 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             SizeT j;
             for (j = stateRange.begin; j < stateRange.end; j++)
             {
-                Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
+                Math::mat4 transform = NodeInstances.transformable
+                                           .nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
 
                 // Allocate object constants
-                alignas(16) ObjectsShared::ObjectBlock block;
+                ObjectsShared::ObjectBlock block;
                 transform.store(block.Model);
                 inverse(transform).store(block.InvModel);
                 block.DitherFactor = NodeInstances.renderable.nodeLods[j];
@@ -768,6 +776,11 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
                 uint offset = CoreGraphics::SetConstants(block);
                 NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
+
+                if (NodeInstances.renderable.nodeStates[j].skinningConstantsIndex != InvalidIndex)
+                {
+                    NodeInstances.renderable.nodeStates[j].resourceTableOffsets[NodeInstances.renderable.nodeStates[j].skinningConstantsIndex] = defaultJointsOffset;
+                }
             }
         }
     }, nodeInstanceStateRanges.Size(), 256, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
