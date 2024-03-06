@@ -27,7 +27,7 @@ Math::mat4 FbxToMath(const ufbx_matrix& matrix);
 /// Convert ufbx_vec4 to Math::vec4
 Math::vec4 FbxToMath(const ufbx_vec4& vector);
 /// Convert ufbx_vec3 to Math::vec3
-Math::vec4 FbxToMath(const ufbx_vec3& vector);
+Math::vec3 FbxToMath(const ufbx_vec3& vector);
 /// Convert ufbx_vec2 to Math::vec2
 Math::vec2 FbxToMath(const ufbx_vec2& vector);
 

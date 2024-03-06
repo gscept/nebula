@@ -46,7 +46,7 @@ protected:
     /// Helper to extract color data
     static Math::vec4 Extract(const ufbx_vertex_vec4* data, int polygonVertex);
     /// Helper to extract generic 4 float vector data
-    static Math::vec4 Extract(const ufbx_vertex_vec3* data, int polygonVertex);
+    static Math::vec3 Extract(const ufbx_vertex_vec3* data, int polygonVertex);
     /// extracts skin data
     static void ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, const Util::Dictionary<ufbx_node*, SceneNode*>& nodeLookup, ufbx_mesh* fbxMesh);
     /// generates rigid weights for parented joints
@@ -77,7 +77,7 @@ NFbxMeshNode::Extract(const ufbx_vertex_vec4* data, int polygonVertex)
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::vec4
+inline Math::vec3
 NFbxMeshNode::Extract(const ufbx_vertex_vec3* data, int polygonVertex)
 {
     ufbx_vec3 n = data->values.data[data->indices.data[polygonVertex]];

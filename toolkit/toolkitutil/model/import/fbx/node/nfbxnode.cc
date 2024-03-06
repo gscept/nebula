@@ -39,15 +39,14 @@ FbxToMath(const ufbx_matrix& matrix)
 //------------------------------------------------------------------------------
 /**
 */
-Math::vec4
+Math::vec3
 FbxToMath(const ufbx_vec3& vector)
 {
-    Math::vec4 ret;
+    Math::vec3 ret;
     ret.set(
         vector.x
         , vector.y
         , vector.z
-        , 0
     );
     return ret;
 }
@@ -110,22 +109,9 @@ NFbxNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
         node->base.isPhysics = true;
     }
 
-    ufbx_vec3 translation, rotation, scale;
-    translation.x = fbxNode->local_transform.translation.x;
-    translation.y = fbxNode->local_transform.translation.y;
-    translation.z = fbxNode->local_transform.translation.z;
-
-    rotation.x = fbxNode->local_transform.rotation.x;
-    rotation.y = fbxNode->local_transform.rotation.y;
-    rotation.z = fbxNode->local_transform.rotation.z;
-
-    scale.x = fbxNode->local_transform.scale.x;
-    scale.y = fbxNode->local_transform.scale.y;
-    scale.z = fbxNode->local_transform.scale.z;
-
-    node->base.rotation = Math::quatyawpitchroll(rotation.x, rotation.y, rotation.z);
-    node->base.translation = xyz(FbxToMath(translation)) * AdjustedScale;
-    node->base.scale = xyz(FbxToMath(scale)) * AdjustedScale;
+    node->base.rotation = FbxToMath(fbxNode->local_transform.rotation);
+    node->base.translation = xyz(FbxToMath(fbxNode->local_transform.translation)) * AdjustedScale;
+    node->base.scale = xyz(FbxToMath(fbxNode->local_transform.scale)) * AdjustedScale;
 
     node->fbx.node = fbxNode;
     node->base.parent = parent;
@@ -314,9 +300,9 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
     AnimBuilderCurve& rotationCurve = node->anim.rotationCurve;
     AnimBuilderCurve& scaleCurve = node->anim.scaleCurve;
 
-    Math::vec3 defaultTrans = node->base.translation * (1.0f / AdjustedScale);
-    Math::quat defaultRot = node->base.rotation;
-    Math::vec3 defaultScale = node->base.scale * (1.0f / AdjustedScale);
+    ufbx_vec3 defaultTrans = translationProperty->anim_value->default_value;
+    ufbx_vec3 defaultRot = rotationProperty->anim_value->default_value;
+    ufbx_vec3 defaultScale = scalingProperty->anim_value->default_value;
 
     translationCurve.curveType = CurveType::Translation;
     rotationCurve.curveType = CurveType::Rotation;
@@ -335,12 +321,12 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
         ufbx_anim_curve *xCurve, *yCurve, *zCurve;
     };
     CurveSet translationSet = { translationCurveX, translationCurveY, translationCurveZ };
-    CurveSet rotationSet = { rotationCurveX, rotationCurveY, rotationCurveZ };
+    CurveSet rotationSet = { rotationCurveX, rotationCurveY, rotationCurveZ }; 
     CurveSet scaleSet = { scaleCurveX, scaleCurveY, scaleCurveZ };
 
     // get scale
     auto extractPosScale = [](
-        Math::vec3 defaultValue
+        ufbx_vec3 defaultValue
         , const CurveSet& curves
         , const float scale
         , const Util::Set<double>& times
@@ -360,33 +346,22 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
         for (const auto& time : totalTimes)
         {
             float values[3];
-
-            if (curves.xCurve != nullptr)
-                values[0] = ufbx_evaluate_curve(curves.xCurve, time, lastX);
-            else
-                values[0] = defaultValue[0];
-
-            if (curves.yCurve != nullptr)
-                values[1] =  ufbx_evaluate_curve(curves.yCurve, time, lastX);
-            else
-                values[1] = defaultValue[1];
-
-            if (curves.zCurve != nullptr)
-                values[2] =  ufbx_evaluate_curve(curves.zCurve, time, lastX);
-            else
-                values[2] = defaultValue[2];
+            values[0] = ufbx_evaluate_curve(curves.xCurve, time, defaultValue.x);
+            values[1] = ufbx_evaluate_curve(curves.yCurve, time, defaultValue.y);
+            values[2] = ufbx_evaluate_curve(curves.zCurve, time, defaultValue.z);
 
             keys.Append(values[0] * scale);
             keys.Append(values[1] * scale);
             keys.Append(values[2] * scale);
-            keyTimes.Append(time);
+            keyTimes.Append(time * 1000);
         }
     };
 
     auto extractRotQuat = [](
-        Math::quat defaultValue
+        ufbx_vec3 defaultValue
         , const CurveSet& curves
         , const Util::Set<double>& times
+        , ufbx_rotation_order rotationOrder
         , Util::Array<float>& keys
         , Util::Array<Timing::Tick>& keyTimes
         , AnimBuilderCurve& curve
@@ -403,38 +378,23 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
         for (const auto& time : totalTimes)
         {
             float values[3];
-
-            Math::vec3 euler = Math::to_euler(defaultValue);
-
-            if (curves.xCurve != nullptr)
-                values[0] =  ufbx_evaluate_curve(curves.xCurve, time, lastX);
-            else
-                values[0] = euler.x;
-
-            if (curves.yCurve != nullptr)
-                values[1] =  ufbx_evaluate_curve(curves.yCurve, time, lastX);
-            else
-                values[1] = euler.y;
-
-            if (curves.zCurve != nullptr)
-                values[2] =  ufbx_evaluate_curve(curves.zCurve, time, lastX);
-            else
-                values[2] = euler.z;
+            values[0] = ufbx_evaluate_curve(curves.xCurve, time, defaultValue.x);
+            values[1] = ufbx_evaluate_curve(curves.yCurve, time, defaultValue.y); 
+            values[2] = ufbx_evaluate_curve(curves.zCurve, time, defaultValue.z);
             
-
-            Math::quat quat = quatyawpitchroll(Math::deg2rad(values[1]), Math::deg2rad(values[0]), Math::deg2rad(values[2]));
+            ufbx_quat quat = ufbx_euler_to_quat(ufbx_vec3 {values[0], values[1], values[2]}, rotationOrder);
             keys.Append(quat.x);
             keys.Append(quat.y);
             keys.Append(quat.z);
             keys.Append(quat.w);
 
-            keyTimes.Append(time);
+            keyTimes.Append(time * 1000);
         }
     }; 
 
     // Extract keys
     extractPosScale(defaultTrans, translationSet, AdjustedScale, node->fbx.translationKeyTimes, keys, keyTimes, translationCurve);
-    extractRotQuat(defaultRot, rotationSet, node->fbx.rotationKeyTimes, keys, keyTimes, rotationCurve);
+    extractRotQuat(defaultRot, rotationSet, node->fbx.rotationKeyTimes, node->fbx.node->rotation_order, keys, keyTimes, rotationCurve);
     extractPosScale(defaultScale, scaleSet, 1.0f, node->fbx.scaleKeyTimes, keys, keyTimes, scaleCurve);
 }
 

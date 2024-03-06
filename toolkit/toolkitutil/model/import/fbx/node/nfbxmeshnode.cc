@@ -237,15 +237,15 @@ NFbxMeshNode::ExtractMesh(
                     componentMask |= MeshBuilderVertex::Color;
                 }
 
-                Math::vec4 normal = Extract(normalElements, baseIndex);
-                meshVertex.SetNormal(xyz(normal));
+                Math::vec3 normal = Extract(normalElements, baseIndex);
+                meshVertex.SetNormal(normal);
                 componentMask |= MeshBuilderVertex::Normals;
 
                 if (AllBits(node->mesh.meshFlags, HasTangents))
                 {
-                    Math::vec4 tangent = Extract(tangentElements, baseIndex);
-                    meshVertex.SetTangent(xyz(tangent));
-                    meshVertex.SetSign(-tangent.w);
+                    Math::vec3 tangent = Extract(tangentElements, baseIndex);
+                    meshVertex.SetTangent(tangent);
+                    //meshVertex.SetSign(-tangent.w);
                     componentMask |= MeshBuilderVertex::Tangents;
                 }
                 else
@@ -308,6 +308,7 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
     size_t skinCount = fbxMesh->skin_deformers.count;
     
     Util::FixedArray<Util::Array<std::tuple<int, float>>> keyWeightPairs((SizeT)vertexCount);
+    ufbx_matrix geometricTransform = ufbx_transform_to_matrix(&node->fbx.node->geometry_transform);
     for (int skinIndex = 0; skinIndex < skinCount; skinIndex++)
     {
         ufbx_skin_deformer* skin = fbxMesh->skin_deformers[skinIndex];
@@ -323,12 +324,17 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             n_assert(jointNode->skeleton.bindMatrix == Math::mat4());
             n_assert(jointNode->type == SceneNode::NodeType::Joint);
 
+            
+            ufbx_matrix inversedPose = ufbx_matrix_invert(&cluster->bind_to_world);
+            ufbx_matrix transformMatrix = cluster->geometry_to_bone;
+            transformMatrix = ufbx_matrix_mul(&inversedPose, &transformMatrix);
+            inversedPose = ufbx_matrix_mul(&transformMatrix, &geometricTransform);
             // Calculate inverse transform for skinned vertices
             //ufbx_matrix inversedPose = ufbx_matrix_invert(&cluster->mesh_node_to_bone);
             //ufbx_matrix transformMatrix = cluster->geometry_to_bone;
             //ufbx_matrix geometryMatrix = ufbx_transform_to_matrix(&geometricTransform);
             //jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&inversedPose, &ufbx_matrix_mul(&transformMatrix, &geometryMatrix)));
-            jointNode->skeleton.bindMatrix = FbxToMath(cluster->geometry_to_bone);
+            jointNode->skeleton.bindMatrix = FbxToMath(inversedPose);
             jointNode->skeleton.bindMatrix.position *= Math::vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
 
             size_t clusterVertexIndexCount = cluster->vertices.count;
