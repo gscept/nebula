@@ -41,6 +41,21 @@ enum NodeBits
 };
 __ImplementEnumBitOperators(NodeBits);
 
+enum class LoadBits
+{
+    NoBits = N_BIT(0),
+    MeshBit = N_BIT(1),
+    AnimBit = N_BIT(2),
+    MaterialBit = N_BIT(3)
+};
+__ImplementEnumBitOperators(LoadBits);
+
+struct ModelStreamingData
+{
+    LoadBits requiredBits;
+    LoadBits loadedBits;
+};
+
 struct NodeInstanceRange
 {
     Memory::RangeAllocation allocation;

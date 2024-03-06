@@ -52,7 +52,7 @@ protected:
     friend class Models::ModelContext;
 
     /// called once when all pending resource have been loaded
-    virtual void OnFinishedLoading() override;
+    virtual void OnFinishedLoading(ModelStreamingData* streamingData) override;
     /// parse data tag (called by loader code)
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 

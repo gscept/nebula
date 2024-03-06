@@ -42,45 +42,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     if (FourCC('MESH') == fourcc)
     {
         // Get mesh resource
-        Resources::ResourceName meshName = reader->ReadString();
-
-        // Load directly, since the model is already loaded on a thread, this is fine
-        //this->primitiveGroupIndex = 0;
-        this->res = Resources::CreateResource(
-            meshName,
-            tag,
-            [this](Resources::ResourceId id)
-            {
-                this->res = id;
-                CoreGraphics::MeshResourceId meshRes = this->res;
-                this->mesh = MeshResourceGetMesh(meshRes, this->loadContext.meshIndex);
-                this->vbo = CoreGraphics::MeshGetVertexBuffer(this->mesh, 0);
-                this->ibo = CoreGraphics::MeshGetIndexBuffer(this->mesh);
-                this->topology = CoreGraphics::MeshGetTopology(this->mesh);
-                this->baseVboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 0);
-                this->attributesVboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 1);
-                this->iboOffset = CoreGraphics::MeshGetIndexOffset(this->mesh);
-                this->indexType = CoreGraphics::MeshGetIndexType(this->mesh);
-                this->vertexLayout = CoreGraphics::MeshGetVertexLayout(this->mesh);
-                this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->mesh)[this->loadContext.primIndex];
-
-                this->loadSuccess = true;
-            },
-            nullptr,
-            false
-        );
-
-        CoreGraphics::MeshResourceId meshRes = this->res;
-        this->mesh = MeshResourceGetMesh(meshRes, 0);
-        this->vbo = CoreGraphics::MeshGetVertexBuffer(this->mesh, 0);
-        this->ibo = CoreGraphics::MeshGetIndexBuffer(this->mesh);
-        this->topology = CoreGraphics::MeshGetTopology(this->mesh);
-        this->baseVboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 0);
-        this->attributesVboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 1);
-        this->iboOffset = CoreGraphics::MeshGetIndexOffset(this->mesh);
-        this->indexType = CoreGraphics::MeshGetIndexType(this->mesh);
-        this->vertexLayout = CoreGraphics::MeshGetVertexLayout(this->mesh);
-        this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->mesh)[0];
+        this->meshResource = reader->ReadString();
     }
     else if (FourCC('MSHI') == fourcc)
     {
@@ -107,6 +69,37 @@ void
 PrimitiveNode::Unload()
 {
     Resources::DiscardResource(this->res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PrimitiveNode::OnFinishedLoading(ModelStreamingData* streamingData)
+{
+    ShaderStateNode::OnFinishedLoading(streamingData);
+    streamingData->requiredBits |= LoadBits::MeshBit;
+    Resources::CreateResource(
+        this->meshResource,
+        tag,
+        [this, streamingData](Resources::ResourceId id)
+        {
+            this->res = id;
+            CoreGraphics::MeshResourceId meshRes = this->res;
+            this->mesh = MeshResourceGetMesh(meshRes, this->loadContext.meshIndex);
+            this->vbo = CoreGraphics::MeshGetVertexBuffer(this->mesh, 0);
+            this->ibo = CoreGraphics::MeshGetIndexBuffer(this->mesh);
+            this->topology = CoreGraphics::MeshGetTopology(this->mesh);
+            this->baseVboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 0);
+            this->attributesVboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 1);
+            this->iboOffset = CoreGraphics::MeshGetIndexOffset(this->mesh);
+            this->indexType = CoreGraphics::MeshGetIndexType(this->mesh);
+            this->vertexLayout = CoreGraphics::MeshGetVertexLayout(this->mesh);
+            this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->mesh)[this->loadContext.primIndex];
+            streamingData->loadedBits |= LoadBits::MeshBit;
+        },
+        nullptr
+    );
 }
 
 } // namespace Models

@@ -71,9 +71,9 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
 /**
 */
 void 
-CharacterSkinNode::OnFinishedLoading()
+CharacterSkinNode::OnFinishedLoading(ModelStreamingData* streamingData)
 {
-    PrimitiveNode::OnFinishedLoading();
+    PrimitiveNode::OnFinishedLoading(streamingData);
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     for (IndexT i = 0; i < numFrames; i++)
     {

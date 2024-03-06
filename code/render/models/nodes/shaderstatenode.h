@@ -60,7 +60,7 @@ protected:
     /// unload data
     virtual void Unload() override;
     /// called when loading finished
-    virtual void OnFinishedLoading() override;
+    virtual void OnFinishedLoading(ModelStreamingData* streamingData) override;
     
     Resources::ResourceId materialRes;
     Materials::MaterialId material;

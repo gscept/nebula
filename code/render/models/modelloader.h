@@ -48,6 +48,11 @@ private:
     /// unload resource
     void Unload(const Resources::ResourceId id) override;
 
+    /// Stream texture
+    uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
+    /// Create load mask based on LOD
+    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
+
     /// used for looking up constructors
     Util::Dictionary<Util::FourCC, std::function<Models::ModelNode* ()>> nodeConstructors;
 

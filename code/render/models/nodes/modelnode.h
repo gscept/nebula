@@ -95,7 +95,7 @@ protected:
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate);
 
     /// call when model node data is finished loading (not accounting for secondary resources)
-    virtual void OnFinishedLoading();
+    virtual void OnFinishedLoading(ModelStreamingData* streamingData);
 
     /// discard node
     virtual void Discard();

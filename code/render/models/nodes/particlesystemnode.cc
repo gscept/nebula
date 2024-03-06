@@ -76,13 +76,18 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 /**
 */
 void
-ParticleSystemNode::OnFinishedLoading()
+ParticleSystemNode::OnFinishedLoading(ModelStreamingData* streamingData)
 {
     // skip state node intentionally because we don't want its setup
-    TransformNode::OnFinishedLoading();
+    TransformNode::OnFinishedLoading(streamingData);
 
     // load surface ourselves since state node does the resource table setup too, but we need it explicit
-    this->material = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+    streamingData->requiredBits |= LoadBits::MaterialBit;
+    Resources::CreateResource(this->materialName, this->tag, [this, streamingData](Resources::ResourceId id)
+        {
+            streamingData->loadedBits |= LoadBits::MaterialBit;
+            this->material = id;
+        });
 
     float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 
