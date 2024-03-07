@@ -53,10 +53,11 @@ NFbxExporter::ParseScene()
     {
         .clean_skin_weights = true, 
         .strict = true, 
-        .geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY, 
+        .geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_PRESERVE, 
         .pivot_handling = UFBX_PIVOT_HANDLING_RETAIN, 
-        .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY, 
-        .target_axes = wantedAxes
+        .space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS, 
+        .target_axes = wantedAxes,
+        .target_unit_meters = (ufbx_real)0.01f / this->sceneScale 
     };
     ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
     if (scene == nullptr)

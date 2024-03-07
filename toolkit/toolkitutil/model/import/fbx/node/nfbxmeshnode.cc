@@ -123,7 +123,7 @@ NFbxMeshNode::ExtractMesh(
     node->mesh.groupId = groupId;
 
     MeshBuilderVertex::ComponentMask componentMask = 0x0;
-    Util::FixedArray<Math::vec4> controlPoints;
+    Util::FixedArray<Math::vec3> controlPoints;
     controlPoints.Resize((SizeT)vertexCount);
 
     mesh.NewMesh(controlPoints.Size(), (SizeT)fbxMesh->num_triangles);
@@ -131,7 +131,7 @@ NFbxMeshNode::ExtractMesh(
     for (IndexT i = 0; i < controlPoints.Size(); i++)
     {
         ufbx_vec3 v = fbxMesh->vertex_position.values[i];
-        controlPoints[i] = FbxToMath(v) * vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
+        controlPoints[i] = FbxToMath(v);
         componentMask |= MeshBuilderVertex::Position;
     }
 
@@ -190,7 +190,7 @@ NFbxMeshNode::ExtractMesh(
                 int baseIndex = indices[tri * 3 + triangleVertexIndex];
                 int polygonVertex = fbxMesh->vertex_position.indices[baseIndex];
                 MeshBuilderVertex meshVertex;
-                meshVertex.SetPosition(controlPoints[polygonVertex]);
+                meshVertex.SetPosition(Math::vec4(controlPoints[polygonVertex], 1));
 
                 // extract uvs from the 0th channel
                 Math::vec2 uv = Extract(uv0Elements, baseIndex);
@@ -324,18 +324,15 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             n_assert(jointNode->skeleton.bindMatrix == Math::mat4());
             n_assert(jointNode->type == SceneNode::NodeType::Joint);
 
-            
-            ufbx_matrix inversedPose = ufbx_matrix_invert(&cluster->bind_to_world);
-            ufbx_matrix transformMatrix = cluster->geometry_to_bone;
-            transformMatrix = ufbx_matrix_mul(&inversedPose, &transformMatrix);
-            inversedPose = ufbx_matrix_mul(&transformMatrix, &geometricTransform);
             // Calculate inverse transform for skinned vertices
-            //ufbx_matrix inversedPose = ufbx_matrix_invert(&cluster->mesh_node_to_bone);
+            //ufbx_matrix inversedPose = ufbx_matrix_invert(&cluster->bind_to_world);
+            //ufbx_matrix transformMatrix = cluster->geometry_to_bone;
+            //transformMatrix = ufbx_matrix_mul(&inversedPose, &transformMatrix);
             //ufbx_matrix transformMatrix = cluster->geometry_to_bone;
             //ufbx_matrix geometryMatrix = ufbx_transform_to_matrix(&geometricTransform);
-            //jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&inversedPose, &ufbx_matrix_mul(&transformMatrix, &geometryMatrix)));
-            jointNode->skeleton.bindMatrix = FbxToMath(cluster->geometry_to_bone);
-            jointNode->skeleton.bindMatrix.position *= Math::vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
+            //ufbx_matrix temp = ufbx_matrix_mul(&transformMatrix, &geometricTransform);
+            //jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&inversedPose, &temp));
+            jointNode->skeleton.bindMatrix = FbxToMath(cluster->geometry_to_world);
 
             size_t clusterVertexIndexCount = cluster->vertices.count;
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)

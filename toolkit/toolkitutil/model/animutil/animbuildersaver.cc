@@ -75,7 +75,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
         nax3.numIntervals = 0;
         for (const auto& curve : anim.curves)
         {
-            nax3.numIntervals += curve.numKeys - 1;
+            nax3.numIntervals += curve.numKeys == 0 ? 0 : curve.numKeys - 1;
         }
 
         // write header

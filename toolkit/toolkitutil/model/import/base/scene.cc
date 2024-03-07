@@ -277,13 +277,13 @@ Scene::GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::Strin
 {
     Util::Array<AnimBuilderCurve> curves;
 
-    std::function<void(Util::Array<AnimBuilderCurve>&, SceneNode*)> collectCurves = [&](Util::Array<AnimBuilderCurve>& curves, SceneNode* node)
+    std::function<void(Util::Array<AnimBuilderCurve>&, SceneNode*)> collectCurves = [&](Util::Array<AnimBuilderCurve>& curves, SceneNode* curNode)
     {
-        curves.Append(node->anim.translationCurve);
-        curves.Append(node->anim.rotationCurve);
-        curves.Append(node->anim.scaleCurve);
+        curves.Append(curNode->anim.translationCurve);
+        curves.Append(curNode->anim.rotationCurve);
+        curves.Append(curNode->anim.scaleCurve);
 
-        for (auto child : node->base.children)
+        for (auto child : curNode->base.children)
             collectCurves(curves, child);
     };
     collectCurves(curves, node);

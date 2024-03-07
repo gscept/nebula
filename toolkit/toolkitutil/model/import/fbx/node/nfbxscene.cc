@@ -134,7 +134,7 @@ NFbxScene::Setup(
     ParseNodeHierarchy(scene->root_node, nullptr, nodeLookup, this->nodes);
 
     // Setup skeleton hierarchy
-    this->SetupSkeletons();
+    this->SetupSkeletons(); 
 
     // Extract data from nodes
     for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)

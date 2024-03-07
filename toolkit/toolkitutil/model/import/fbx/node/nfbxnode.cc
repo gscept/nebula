@@ -109,9 +109,23 @@ NFbxNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
         node->base.isPhysics = true;
     }
 
-    node->base.rotation = FbxToMath(fbxNode->local_transform.rotation);
-    node->base.translation = xyz(FbxToMath(fbxNode->local_transform.translation)) * AdjustedScale;
-    node->base.scale = xyz(FbxToMath(fbxNode->local_transform.scale)) * AdjustedScale;
+    ufbx_prop* translationProp = ufbx_find_prop(&fbxNode->props, UFBX_Lcl_Translation); 
+    if (translationProp != nullptr)
+        node->base.translation = FbxToMath(translationProp->value_vec3);
+    else
+        node->base.translation = xyz(FbxToMath(fbxNode->local_transform.translation));
+    
+    ufbx_prop* rotationProp = ufbx_find_prop(&fbxNode->props, UFBX_Lcl_Rotation);
+    if (rotationProp != nullptr)
+        node->base.rotation = FbxToMath(ufbx_euler_to_quat(rotationProp->value_vec3, fbxNode->rotation_order));
+    else
+        node->base.rotation = FbxToMath(fbxNode->local_transform.rotation);
+
+    ufbx_prop* scalingProp = ufbx_find_prop(&fbxNode->props, UFBX_Lcl_Scaling);
+    if (scalingProp != nullptr)
+        node->base.scale = FbxToMath(scalingProp->value_vec3);
+    else
+        node->base.scale = xyz(FbxToMath(fbxNode->local_transform.scale));
 
     node->fbx.node = fbxNode;
     node->base.parent = parent;
@@ -129,8 +143,7 @@ NFbxNode::ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Arra
     // Run recursive function to collect animation curves this node hierarchy
     std::function<void(SceneNode*)> recursiveExtract = [&](SceneNode* node)
     {
-        ufbx_node* fbxNode = node->fbx.node;
-        ExtractAnimationCurves(node, fbxNode, keys, keyTimes, animStack);
+        ExtractAnimationCurves(node, node->fbx.node, keys, keyTimes, animStack);
         for (const auto& child : node->base.children)
             recursiveExtract(child);
     };
@@ -208,6 +221,8 @@ NFbxNode::PrepareAnimation(SceneNode* node, ufbx_anim_stack* animStack)
 
     //ufbx_prop* prop = ufbx_get_prop_element(&fbxNode->element, &fbxNode->props, UFBX_Lcl_Translation);
 
+    ufbx_prop* rotationPivot = ufbx_find_prop(&node->fbx.node->props, UFBX_RotationPivot);
+    ufbx_prop* scalePivot = ufbx_find_prop(&node->fbx.node->props, UFBX_ScalingPivot);
 
     ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);
     ufbx_anim_prop* rotationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Rotation);
@@ -244,7 +259,7 @@ NFbxNode::PrepareAnimation(SceneNode* node, ufbx_anim_stack* animStack)
         scaleCurveX = scalingProperty->anim_value->curves[0];
         scaleCurveY = scalingProperty->anim_value->curves[1];
         scaleCurveZ = scalingProperty->anim_value->curves[2];
-    }
+    } 
 
     AnimBuilderCurve& translationCurve = node->anim.translationCurve;
     AnimBuilderCurve& rotationCurve = node->anim.rotationCurve;
@@ -280,6 +295,8 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
 
     ufbx_anim_layer* animLayer = animStack->layers[0];
 
+    ufbx_prop* rotationOrder = ufbx_find_prop(&fbxNode->props, UFBX_RotationOrder);
+    ufbx_rotation_order rotOrder = (ufbx_rotation_order)rotationOrder->value_int;
     ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);
     ufbx_anim_prop* rotationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Rotation);
     ufbx_anim_prop* scalingProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Scaling);
@@ -342,7 +359,6 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
         keys.Reserve(times.Size() * 3);
         keyTimes.Reserve(times.Size());
         const auto& totalTimes = times.KeysAsArray();
-        int lastX = 0, lastY = 0, lastZ = 0;
         for (const auto& time : totalTimes)
         {
             float values[3];
@@ -374,7 +390,6 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
         keys.Reserve(times.Size() * 3);
         keyTimes.Reserve(times.Size());
         const auto& totalTimes = times.KeysAsArray();
-        int lastX = 0, lastY = 0, lastZ = 0;
         for (const auto& time : totalTimes)
         {
             float values[3];
@@ -393,7 +408,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
     }; 
 
     // Extract keys
-    extractPosScale(defaultTrans, translationSet, AdjustedScale, node->fbx.translationKeyTimes, keys, keyTimes, translationCurve);
+    extractPosScale(defaultTrans, translationSet, 1.0f, node->fbx.translationKeyTimes, keys, keyTimes, translationCurve);
     extractRotQuat(defaultRot, rotationSet, node->fbx.rotationKeyTimes, node->fbx.node->rotation_order, keys, keyTimes, rotationCurve);
     extractPosScale(defaultScale, scaleSet, 1.0f, node->fbx.scaleKeyTimes, keys, keyTimes, scaleCurve);
 }
