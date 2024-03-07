@@ -14,7 +14,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #add_subdirectory(texturebatcher3)
 #add_subdirectory(shaderbatcher)
 
-fips_ide_group(toolkit)
+fips_ide_group(Toolkit)
 add_subdirectory(toolkit-common)
 
 # these need fbx

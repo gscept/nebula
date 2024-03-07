@@ -334,7 +334,7 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             //ufbx_matrix transformMatrix = cluster->geometry_to_bone;
             //ufbx_matrix geometryMatrix = ufbx_transform_to_matrix(&geometricTransform);
             //jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&inversedPose, &ufbx_matrix_mul(&transformMatrix, &geometryMatrix)));
-            jointNode->skeleton.bindMatrix = FbxToMath(inversedPose);
+            jointNode->skeleton.bindMatrix = FbxToMath(cluster->geometry_to_bone);
             jointNode->skeleton.bindMatrix.position *= Math::vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
 
             size_t clusterVertexIndexCount = cluster->vertices.count;
