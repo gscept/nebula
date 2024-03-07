@@ -27,7 +27,8 @@ public:
     void SetCategoryName(Util::String const& categoryName);
     void SetExportSubDirectory(Util::String const& subDir);
 
-    void ExportAll();
+    /// export all .sur files. returns the exported files paths
+    Util::Array<IO::URI> ExportAll();
 
     void ExtractMaterial(SurfaceBuilder& builder, Gltf::Material const& material);
 private:

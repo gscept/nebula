@@ -50,7 +50,6 @@ bool
 NglTFExporter::ParseScene()
 {
     this->gltfScene = Gltf::Document();
-    this->exportedMeshes.Clear();
     bool res = this->gltfScene.Deserialize(this->path.LocalPath().AsCharPtr());
     
     if (!res)
@@ -75,7 +74,8 @@ NglTFExporter::ParseScene()
         extractor.SetCategoryName(this->category);
         extractor.SetDocument(&this->gltfScene);
         extractor.SetExportSubDirectory(this->file);
-        extractor.ExportAll();
+        Util::Array<IO::URI> outputs = extractor.ExportAll();
+        this->outputFiles.AppendArray(outputs);
     }
 
     static const Util::String tmpDir = "temp:textureconverter";
@@ -259,6 +259,12 @@ NglTFExporter::ParseScene()
             };
             Threading::Event event;
             Jobs2::JobDispatch(job, gltfScene.images.Size(), 1, imageJob, nullptr, nullptr, &event);
+
+            for (IndexT i = 0; i < gltfScene.images.Size(); i++)
+            {
+                auto dstFile = Util::String("tex:") + this->category + "/" + this->file + "/" + Util::String::FromInt(i);
+                outputFiles.Append(dstFile);
+            }
 
             event.Wait();
 

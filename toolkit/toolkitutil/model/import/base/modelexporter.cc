@@ -67,6 +67,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     // Reset all unique strings
     UniqueString::Reset();
 
+    outputFiles.Clear();
 
     this->path = file;
     String localPath = file.GetHostAndLocalPath();
@@ -138,6 +139,11 @@ ModelExporter::ExportFile(const IO::URI& file)
     {
         this->logger->Error("Failed to save NVX file : % s\n", destinationFiles[DestinationFile::Mesh].LocalPath().AsCharPtr());
     }
+    else
+    {
+        outputFiles.Append(destinationFiles[DestinationFile::Mesh]);
+    }
+    
 
     // Delete merged meshes after export
     for (auto mesh : mergedMeshes)
@@ -167,6 +173,10 @@ ModelExporter::ExportFile(const IO::URI& file)
         {
             this->logger->Error("Failed to save physics NVX file : % s\n", destinationFiles[DestinationFile::Physics].LocalPath().AsCharPtr());
         }
+        else
+        {
+            outputFiles.Append(destinationFiles[DestinationFile::Physics]);
+        }
 
         timer.Stop();
 
@@ -191,6 +201,10 @@ ModelExporter::ExportFile(const IO::URI& file)
         {
             this->logger->Error("Failed to save animation file: %s\n", destinationFiles[DestinationFile::Animation].LocalPath().AsCharPtr());
         }
+        else
+        {
+            outputFiles.Append(destinationFiles[DestinationFile::Animation]);
+        }
 
         timer.Stop();
         this->logger->Print("%s %s\n", Format("Generated animation: %s", Text(destinationFiles[DestinationFile::Animation].LocalPath()).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr()).AsCharPtr(), Format("(%.2f ms)", timer.GetTime() * 1000.0f).AsCharPtr());
@@ -204,6 +218,10 @@ ModelExporter::ExportFile(const IO::URI& file)
         if (!SkeletonBuilderSaver::Save(destinationFiles[DestinationFile::Skeleton], this->scene->skeletons, this->platform))
         {
             this->logger->Error("Failed to save skeleton file: %s\n", destinationFiles[DestinationFile::Skeleton].LocalPath().AsCharPtr());
+        }
+        else
+        {
+            outputFiles.Append(destinationFiles[DestinationFile::Skeleton]);
         }
 
         timer.Stop(); 
@@ -221,6 +239,8 @@ ModelExporter::ExportFile(const IO::URI& file)
         , physicsMeshExportName
         , this->exportFlags
     );
+
+    WriteIntermediateFile(file, outputFiles);
 
     totalTime.Stop();
     this->logger->Unindent();

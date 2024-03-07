@@ -34,7 +34,6 @@ public:
 private:
 
     Gltf::Document gltfScene;
-    Util::Array<Util::String> exportedMeshes;
     TextureConverter* texConverter;
 };
 

@@ -43,6 +43,9 @@ public:
     /// returns true if exporter is open
     bool IsOpen() const;
 
+    /// call this after exporting a file. This will generate an intermediate file that is used to keep track of source <-> export linkage
+    void WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::URI> const& output);
+
     /// exports a single file
     virtual void ExportFile(const IO::URI& file);
     /// exports a single directory
@@ -91,6 +94,10 @@ protected:
     void ReportError(const char* error, ...);
     /// checks whether or not a file needs to be updated 
     bool NeedsConversion(const Util::String& src, const Util::String& dst);
+    /// validate the intermediate file and fix any problems
+    void ValidateIntermediateFile(Util::String const& filePath);
+    /// Recursively validate all intermediate files in directory and subdirs
+    void RecurseValidateIntermediates(Util::String const& dir);
 
     Util::String category;
     Util::String file;

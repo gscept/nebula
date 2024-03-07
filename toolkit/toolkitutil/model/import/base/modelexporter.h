@@ -46,7 +46,8 @@ protected:
     Util::String file;
     IO::URI path;
 
-    Util::Array<Util::String> exportedMeshes;
+    /// work array for output files that should be written to intermediate.
+    Util::Array<IO::URI> outputFiles;
 
     Scene* scene;
     TextureConverter* texConverter;

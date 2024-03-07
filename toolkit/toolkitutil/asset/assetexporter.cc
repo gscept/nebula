@@ -9,6 +9,7 @@
 #include "toolkit-common/toolkitconsolehandler.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "toolkit-common/text.h"
+#include "io/jsonreader.h"
 
 using namespace Util;
 using namespace IO;
@@ -66,6 +67,8 @@ AssetExporter::Close()
 void
 AssetExporter::UpdateSource()
 {
+    this->RecurseValidateIntermediates("intermediate:");
+
     if (this->textureAttrTable.IsValid()) 
         this->textureAttrTable.Discard();
     this->textureAttrTable.Setup("src:assets/");

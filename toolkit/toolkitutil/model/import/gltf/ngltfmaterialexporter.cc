@@ -31,9 +31,10 @@ NglTFMaterialExtractor::~NglTFMaterialExtractor()
 //------------------------------------------------------------------------------
 /**
 */
-void
+Util::Array<IO::URI>
 NglTFMaterialExtractor::ExportAll()
 {
+    Util::Array<IO::URI> outputFiles;
     String surfaceExportPath = "sur:" + this->catName + "/" + this->subDir;
     this->texCatDir = "tex:" + this->catName;
     this->textureDir = texCatDir + "/" + this->subDir + "/";
@@ -88,9 +89,12 @@ NglTFMaterialExtractor::ExportAll()
                 material.name = "unnamed_";
                 material.name.AppendInt(i);
             }
-            builder.ExportBinary(surfaceExportPath + "/" + material.name + ".sur");
+            IO::URI output = surfaceExportPath + "/" + material.name + ".sur";
+            builder.ExportBinary(output.AsString());
+            outputFiles.Append(std::move(output));
         }
     }
+    return outputFiles;
 }
 
 //------------------------------------------------------------------------------

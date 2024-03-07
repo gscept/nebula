@@ -136,6 +136,7 @@ AssetBatcherApp::DoWork()
     // override dests with settings from projectinfo
     AssignRegistry::Instance()->SetAssign(Assign("tex", this->projectInfo.GetAttr("TextureDestDir")));
     AssignRegistry::Instance()->SetAssign(Assign("export", this->projectInfo.GetAttr("DestDir")));
+    AssignRegistry::Instance()->SetAssign(Assign("intermediate", this->projectInfo.GetAttr("IntermediateDir")));
 
     bool force = false;
     if (this->args.HasArg("-work"))
