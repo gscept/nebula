@@ -392,6 +392,29 @@ ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4
 //------------------------------------------------------------------------------
 /**
 */
+Math::bbox
+ModelContext::ComputeBoundingBox(const Graphics::GraphicsEntityId id)
+{
+    Math::bbox bbox;
+    const ContextEntityId cid = GetContextId(id);
+    Util::Array<Math::bbox> const& bboxes = GetModelRenderableBoundingBoxes();
+
+    const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
+    const NodeInstanceRange& stateRange = nodeInstanceStateRanges[cid.id];
+
+    bbox.begin_extend();
+    for (SizeT j = stateRange.begin; j < stateRange.end; j++)
+    {
+        Math::bbox box = NodeInstances.renderable.nodeBoundingBoxes[j];
+        bbox.extend(box);
+    }
+    bbox.end_extend();
+    return bbox;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Math::mat4
 ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 {

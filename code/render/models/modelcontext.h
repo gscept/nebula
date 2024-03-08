@@ -95,6 +95,9 @@ public:
     /// get the transform for a model
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
 
+    /// Compute the bounding box for a model
+    static Math::bbox ComputeBoundingBox(const Graphics::GraphicsEntityId id);
+
     /// Get node index based on name
     static IndexT GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
     /// Setup material instance context
