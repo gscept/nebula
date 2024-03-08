@@ -302,7 +302,7 @@ ExporterBase::WriteIntermediateFile(const IO::URI& sourceFile, Util::Array<IO::U
 	IO::URI intermediateDir = intermediateFile.ExtractDirName();
 	if (!ioServer->DirectoryExists(intermediateDir))
 	{
-		ioServer->CreateDirectoryA(intermediateDir);
+		ioServer->CreateDirectory(intermediateDir);
 	}
 	writer->SetStream(ioServer->CreateStream(intermediateFile));
 	if (writer->Open())
