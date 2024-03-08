@@ -12,7 +12,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #add_subdirectory(textool)
 #add_subdirectory(levelviewer)
 #add_subdirectory(texturebatcher3)
-#add_subdirectory(raytrace)
 #add_subdirectory(shaderbatcher)
 
 fips_ide_group(toolkit)
