@@ -85,10 +85,10 @@ SelectionTool::RenderGizmo()
 		if (world->HasComponent<GraphicsFeature::Model>(gameEntity))
 		{
 			// TODO: Fixme!
-			//Graphics::GraphicsEntityId const gfxEntity = Game::GetComponent<GraphicsFeature::ModelEntityData>(Game::GetWorld(WORLD_DEFAULT), gameEntity, mdlPid).gid;
-			//Math::bbox const bbox = Models::ModelContext::GetBoundingBox(gfxEntity);
-			//Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
-			//Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
+			Graphics::GraphicsEntityId const gfxEntity = world->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
+			Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
+			Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
+			Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
 		}
 	}
 

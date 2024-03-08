@@ -26,6 +26,11 @@ fips_dir(.)
 
     fips_files_ex(scripts/ *.py GROUP "scripts")
 
+fips_dir(render)
+    fips_files(
+        pickingcontext.h
+        pickingcontext.cc
+    )
 fips_dir(editorfeature)
     fips_files(
         editorfeatureunit.cc
