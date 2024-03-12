@@ -52,7 +52,7 @@ Alloc(HeapType heapType, size_t size, size_t align)
         if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
             ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
         {
-            n_printf("Allocate(size=%d, heapType=%d): 0x%lx\n", size, heapType, (uintptr_t) allocPtr);
+            n_printf("Allocate(size=%zx, heapType=%d): 0x%llx\n", size, heapType, (uintptr_t) allocPtr);
         }
     #endif
     return allocPtr;
@@ -83,7 +83,7 @@ Realloc(HeapType heapType, void* ptr, size_t size)
         if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
             ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
         {
-            n_printf("Reallocate(size=%d, heapType=%d): 0x%lx\n", size, heapType, (uintptr_t) allocPtr);
+            n_printf("Reallocate(size=%zx, heapType=%d): 0x%llx\n", size, heapType, (uintptr_t)allocPtr);
         }
     #endif
     return allocPtr;
@@ -116,7 +116,7 @@ Free(HeapType heapType, void* ptr)
             if (MemoryLoggingEnabled && (size >= MemoryLoggingThreshold) &&
                 ((MemoryLoggingHeapType == InvalidHeapType) || (MemoryLoggingHeapType == heapType)))
             {
-                n_printf("Mem::Free(heapType=%d, ptr=0x%lx, allocSize=%d)\n", heapType, (uintptr_t) ptr, size);
+                n_printf("Mem::Free(heapType=%d, ptr=0x%llx, allocSize=%zx)\n", heapType, (uintptr_t)ptr, size);
             }
         #endif
     }
