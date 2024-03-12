@@ -97,6 +97,7 @@ nebula_begin_module(foundation)
             bitfield.h
             blob.cc
             blob.h
+            bvh.h
             commandlineargs.cc
             commandlineargs.h
             crc.cc

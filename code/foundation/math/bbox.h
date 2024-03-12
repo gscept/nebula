@@ -15,6 +15,7 @@
 #include "math/clipstatus.h"
 #include "math/sse.h"
 #include "util/array.h"
+#include "math/line.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -65,6 +66,8 @@ public:
     void affine_transform(const mat4& m);
     /// check for intersection with axis aligned bounding box
     bool intersects(const bbox& box) const;
+    /// check for intersection with ray. parameter t will be filled with the "time" of intersection along `line.m`.
+    bool intersects(const line& ray, float& t) const;
     /// check if this box completely contains the parameter box
     bool contains(const bbox& box) const;
     /// return true if this box contains the position
@@ -83,6 +86,8 @@ public:
     void get_clipplanes(const mat4& viewProjection, Util::Array<vec4>& outPlanes) const;
     /// convert to any type
     template<typename T> T as() const;
+    /// calculate half-area of the surface of the box. If you need the full area, just multiply by 2.
+    float area() const;
 
     point pmin;
     point pmax;
@@ -286,6 +291,50 @@ bbox::intersects(const bbox& box) const
     bool lt = less_any(this->pmax, box.pmin);
     bool gt = greater_any(this->pmin, box.pmax);
     return !(lt || gt);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Ray/AABB Slab test from Real-Time Collision Detection by Christer Ericsson
+    Assumes ray is normalized.
+*/
+inline bool
+bbox::intersects(const line& ray, float& tmin) const
+{
+    tmin = 0.0f;
+    float tmax = 1e30f;
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (fabs(ray.m[i]) < 0.00001f)
+        {
+            // ray is parallel to slab, no hit if start is not in slab
+            if (ray.b[i] < this->pmin[i] || ray.b[i] > this->pmax[i])
+            {
+                tmin = 1e30f;
+                return false;
+            }
+        }
+        else
+        {
+            float ood = 1.0f / ray.m[i];
+            float t1 = (this->pmin[i] - ray.b[i]) * ood;
+            float t2 = (this->pmax[i] - ray.b[i]) * ood;
+            if (t1 > t2)
+                std::swap(t1, t2);
+            if (t1 > tmin)
+                tmin = t1;
+            if (t2 < tmax)
+                tmax = t2;
+            if (tmin > tmax)
+            {
+                tmin = 1e30f;
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -505,6 +554,16 @@ bbox::clipstatus(const vec4* x_columns, const vec4* y_columns, const vec4* z_col
     if (0 == orFlags)       return ClipStatus::Inside;
     else if (0 != andFlags) return ClipStatus::Outside;
     else                    return ClipStatus::Clipped;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline float
+bbox::area() const
+{
+    Math::vec3 extent = this->pmax - this->pmin;
+    return extent.x * extent.y + extent.y * extent.z + extent.z * extent.x;
 }
 
 } // namespace Math
