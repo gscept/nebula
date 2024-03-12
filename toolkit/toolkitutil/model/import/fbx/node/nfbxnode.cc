@@ -276,6 +276,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
 
     ufbx_anim_layer* animLayer = animStack->layers[0];
 
+    ufbx_prop* preRotationProperty = ufbx_find_prop(&fbxNode->props, UFBX_PreRotation);
     ufbx_anim_prop* translationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Translation);
     ufbx_anim_prop* rotationProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Rotation);
     ufbx_anim_prop* scalingProperty = ufbx_find_anim_prop(animLayer, &fbxNode->element, UFBX_Lcl_Scaling);
@@ -296,9 +297,15 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
     AnimBuilderCurve& rotationCurve = node->anim.rotationCurve;
     AnimBuilderCurve& scaleCurve = node->anim.scaleCurve;
 
-    ufbx_vec3 defaultTrans = fbxNode->local_transform.translation;
-    ufbx_vec3 defaultRot = ufbx_quat_to_euler(fbxNode->local_transform.rotation, fbxNode->rotation_order);
-    ufbx_vec3 defaultScale = fbxNode->local_transform.scale;
+    ufbx_vec3 defaultTrans = translationProperty->anim_value->default_value;
+    ufbx_vec3 defaultRot = rotationProperty->anim_value->default_value;
+    ufbx_vec3 defaultScale = scalingProperty->anim_value->default_value;
+
+    ufbx_quat preRotation = {0, 0, 0, 1};
+    if (preRotationProperty)
+    {
+        preRotation = ufbx_euler_to_quat(preRotationProperty->value_vec3, fbxNode->rotation_order);
+    }
 
     translationCurve.curveType = CurveType::Translation;
     rotationCurve.curveType = CurveType::Rotation;
@@ -352,8 +359,9 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
         }
     };
 
-    auto extractRotQuat = [](
+    auto extractRotaQuat = [](
         ufbx_vec3 defaultValue
+        , ufbx_quat preRotation
         , const CurveSet& curves
         , const Util::Set<double>& times
         , ufbx_rotation_order rotationOrder
@@ -377,6 +385,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
             values[2] = ufbx_evaluate_curve(curves.zCurve, time, defaultValue.z);
             
             ufbx_quat quat = ufbx_euler_to_quat(ufbx_vec3 {values[0], values[1], values[2]}, rotationOrder);
+            quat = ufbx_quat_mul(preRotation, quat);
             keys.Append(quat.x);
             keys.Append(quat.y);
             keys.Append(quat.z);
@@ -388,7 +397,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
 
     // Extract keys
     extractPosScale(defaultTrans, translationSet, 1.0f, node->fbx.translationKeyTimes, keys, keyTimes, translationCurve);
-    extractRotQuat(defaultRot, rotationSet, node->fbx.rotationKeyTimes, fbxNode->rotation_order, keys, keyTimes, rotationCurve);
+    extractRotaQuat(defaultRot, preRotation, rotationSet, node->fbx.rotationKeyTimes, fbxNode->rotation_order, keys, keyTimes, rotationCurve);
     extractPosScale(defaultScale, scaleSet, 1.0f, node->fbx.scaleKeyTimes, keys, keyTimes, scaleCurve);
 }
 
