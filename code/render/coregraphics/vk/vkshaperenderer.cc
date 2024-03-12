@@ -235,7 +235,6 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
         if (this->shapes[shaderType].Size() > 0)
         {
             CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
-            CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
             IndexT i;
@@ -269,6 +268,7 @@ VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const M
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
     const MeshId mesh = this->meshes[shapeType];
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, CoreGraphics::MeshGetVertexLayout(mesh));
     CoreGraphics::CmdSetIndexBuffer(cmdBuf, MeshGetIndexType(mesh), CoreGraphics::GetIndexBuffer(), MeshGetIndexOffset(mesh));
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), MeshGetVertexOffset(mesh, 0));
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
@@ -300,6 +300,7 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
 
     // set resources
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, MeshGetVertexLayout(mesh));
     CoreGraphics::CmdSetIndexBuffer(cmdBuf, MeshGetIndexType(mesh), MeshGetIndexBuffer(mesh), MeshGetIndexOffset(mesh));
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, MeshGetVertexBuffer(mesh, 0), MeshGetVertexOffset(mesh, 0));
 
