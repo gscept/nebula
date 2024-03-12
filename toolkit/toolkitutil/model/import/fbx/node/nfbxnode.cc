@@ -304,7 +304,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
     ufbx_quat preRotation = {0, 0, 0, 1};
     if (preRotationProperty)
     {
-        preRotation = ufbx_euler_to_quat(preRotationProperty->value_vec3, fbxNode->rotation_order);
+        preRotation = ufbx_euler_to_quat(preRotationProperty->value_vec3, UFBX_ROTATION_ORDER_XYZ);
     }
 
     translationCurve.curveType = CurveType::Translation;
