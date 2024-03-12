@@ -90,12 +90,6 @@ SysFunc::Setup()
 void
 SysFunc::Exit(int exitCode)
 {
-    // delete string atom tables
-    delete globalStringAtomTable;
-    #if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
-        delete localStringAtomTable;
-    #endif
-
     // first produce a RefCount leak report
     #if NEBULA_DEBUG
     Core::RefCounted::DumpRefCountingLeaks();
@@ -109,6 +103,12 @@ SysFunc::Exit(int exitCode)
         exitHandler = exitHandler->Next();
     }
 
+    // delete string atom tables
+    delete globalStringAtomTable;
+#if NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES
+    delete localStringAtomTable;
+#endif
+
     // shutdown the C runtime, this cleans up static objects but doesn't shut 
     // down the process
     _cexit();
@@ -118,6 +118,7 @@ SysFunc::Exit(int exitCode)
 
     // shutdown global factory object
     Core::Factory::Destroy();
+
 
     // report mem leaks
     #if NEBULA_MEMORY_ADVANCED_DEBUGGING
