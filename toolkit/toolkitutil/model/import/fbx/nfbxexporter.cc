@@ -44,7 +44,7 @@ bool
 NFbxExporter::ParseScene()
 {
     ufbx_coordinate_axes wantedAxes;
-    wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y;
+    wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y; 
     wantedAxes.front = UFBX_COORDINATE_AXIS_POSITIVE_Z;
     wantedAxes.right = UFBX_COORDINATE_AXIS_POSITIVE_X;
 
@@ -53,10 +53,10 @@ NFbxExporter::ParseScene()
     {
         .clean_skin_weights = true, 
         .strict = true, 
-        .geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_PRESERVE, 
-        .pivot_handling = UFBX_PIVOT_HANDLING_RETAIN, 
-        .space_conversion = UFBX_SPACE_CONVERSION_ADJUST_TRANSFORMS, 
-        .target_axes = wantedAxes,
+        .geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY,
+        .pivot_handling = UFBX_PIVOT_HANDLING_ADJUST_TO_PIVOT,
+        .space_conversion = UFBX_SPACE_CONVERSION_TRANSFORM_ROOT,
+        .target_axes = ufbx_axes_left_handed_y_up,
         .target_unit_meters = (ufbx_real)0.01f / this->sceneScale 
     };
     ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);

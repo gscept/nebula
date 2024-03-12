@@ -320,6 +320,18 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             ufbx_skin_cluster* cluster = skin->clusters[clusterIndex];
             ufbx_node* joint = cluster->bone_node;
             SceneNode* jointNode = nodeLookup[joint];
+            ufbx_pose* bindPose = cluster->bone_node->bind_pose;
+
+            ufbx_bone_pose* jointPose = nullptr;
+            for (int bindPoseIndex = 0; bindPoseIndex < bindPose->bone_poses.count; bindPoseIndex++)
+            {
+                if (bindPose->bone_poses[bindPoseIndex].bone_node == joint)
+                {
+                    jointPose = &bindPose->bone_poses[bindPoseIndex];
+                    break;
+                }
+            }
+
             n_assert(jointNode != nullptr);
             n_assert(jointNode->skeleton.bindMatrix == Math::mat4());
             n_assert(jointNode->type == SceneNode::NodeType::Joint);
@@ -331,8 +343,10 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indice
             //ufbx_matrix transformMatrix = cluster->geometry_to_bone;
             //ufbx_matrix geometryMatrix = ufbx_transform_to_matrix(&geometricTransform);
             //ufbx_matrix temp = ufbx_matrix_mul(&transformMatrix, &geometricTransform);
-            //jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&inversedPose, &temp));
-            jointNode->skeleton.bindMatrix = FbxToMath(cluster->geometry_to_world);
+            //jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&inversedPose, &temp)); 
+            ufbx_matrix nodeTransform = ufbx_transform_to_matrix(&cluster->bone_node->local_transform);
+            ufbx_matrix worldToNode = ufbx_matrix_invert(&jointPose->bone_to_parent);
+            jointNode->skeleton.bindMatrix = FbxToMath(ufbx_matrix_mul(&worldToNode, &nodeTransform));
 
             size_t clusterVertexIndexCount = cluster->vertices.count;
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
