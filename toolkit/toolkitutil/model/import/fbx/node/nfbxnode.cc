@@ -396,7 +396,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Arra
     }; 
 
     // Extract keys
-    extractPosScale(defaultTrans, translationSet, 1.0f, node->fbx.translationKeyTimes, keys, keyTimes, translationCurve);
+    extractPosScale(defaultTrans, translationSet, fbxNode->adjust_translation_scale, node->fbx.translationKeyTimes, keys, keyTimes, translationCurve);
     extractRotaQuat(defaultRot, preRotation, rotationSet, node->fbx.rotationKeyTimes, fbxNode->rotation_order, keys, keyTimes, rotationCurve);
     extractPosScale(defaultScale, scaleSet, 1.0f, node->fbx.scaleKeyTimes, keys, keyTimes, scaleCurve);
 }
