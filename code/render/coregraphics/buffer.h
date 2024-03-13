@@ -152,6 +152,9 @@ void BufferSparseCommitChanges(const BufferId id);
 /// Get buffer device address
 CoreGraphics::DeviceAddress BufferGetDeviceAddress(const BufferId id);
 
+/// Shortcut for creating a staging buffer and copy
+void BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, const void* data, const uint size);
+
 //------------------------------------------------------------------------------
 /**
 */

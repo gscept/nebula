@@ -18,11 +18,12 @@ int JointCounter = 0;
 /**
 */
 void 
-NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
+NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode)
 {
     NFbxNode::Setup(node, parent, fbxNode);
-    FbxSkeleton* joint = fbxNode->GetSkeleton();
-    node->skeleton.isSkeletonRoot = joint->IsSkeletonRoot();
+    ufbx_bone* bone = ufbx_as_bone(fbxNode->attrib);
+    ufbx_node* parentFbx = fbxNode->parent;
+    node->skeleton.isSkeletonRoot = parent == nullptr || parentFbx->attrib_type == UFBX_ELEMENT_UNKNOWN;
 }
 
 } // namespace ToolkitUtil

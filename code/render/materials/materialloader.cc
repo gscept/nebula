@@ -488,7 +488,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                                     CoreGraphics::TextureIdLock _0(rid);
                                     var.Set(CoreGraphics::TextureGetBindlessHandle(rid), mem);
                                     MaterialSetConstant(id, constant, var);
-                                });
+                                }, immediate);
                                 CoreGraphics::TextureIdLock _0(tex);
                                 var.Set(CoreGraphics::TextureGetBindlessHandle(tex), mem);
 
@@ -516,7 +516,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                         {
                             CoreGraphics::TextureIdLock _0(rid);
                             MaterialSetTexture(id, texture, rid);
-                        });
+                        }, immediate);
 
                         CoreGraphics::TextureIdLock _0(tex);
                         MaterialSetTexture(id, texture, tex);

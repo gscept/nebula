@@ -195,11 +195,11 @@ protected:
     /// Load immediately
     Resource::State LoadImmediate(_PendingResourceLoad& res);
     /// Load async
-    void LoadAsync(_PendingResourceLoad& res);
+    void LoadAsync(_PendingResourceLoad res);
     /// run callbacks
     void RunCallbacks(Resource::State status, const Resources::ResourceId id);
 
-    friend Resource::State _LoadInternal(ResourceLoader* loader, const _PendingResourceLoad& res);
+    friend Resource::State _LoadInternal(ResourceLoader* loader, const _PendingResourceLoad res);
 
     struct _PlaceholderResource
     {

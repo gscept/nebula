@@ -134,7 +134,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     if (this->mode & ExportModes::FBX)
     {
         this->logger->Print("\nFBXs ----------------\n");
-#ifdef FBXSDK
+
         // export FBX sources
         Array<String> files = ioServer->ListFiles(assetPath, "*.fbx");
         this->fbxExporter = ToolkitUtil::NFbxExporter::Create();
@@ -159,9 +159,6 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         }
         this->fbxExporter->Close();
         this->fbxExporter = nullptr;
-#else
-        this->logger->Print("\nFBX SDK not found. FBX export is disabled.\n");
-#endif
     }
 
     if (this->mode & ExportModes::Models)

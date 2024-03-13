@@ -12,10 +12,7 @@
 //------------------------------------------------------------------------------
 #include "toolkit-common/base/exporterbase.h"
 
-#ifdef FBXSDK
 #include "model/import/fbx/nfbxexporter.h"
-#endif
-
 #include "texutil/textureconverter.h"
 #include "model/modelutil/modelbuilder.h"
 #include "model/modelutil/modeldatabase.h"
@@ -83,9 +80,7 @@ public:
     const Util::Array<ToolkitUtil::ToolLog> & GetMessages() const;
 
 private:
-#ifdef FBXSDK
     Ptr<ToolkitUtil::NFbxExporter> fbxExporter;
-#endif
     Ptr<ToolkitUtil::NglTFExporter> gltfExporter;
     ToolkitUtil::TextureConverter textureExporter;
     Ptr<ToolkitUtil::SurfaceExporter> surfaceExporter;

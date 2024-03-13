@@ -52,7 +52,7 @@ protected:
     /// parse data tag (called by loader code)
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
     /// called when loading finished
-    virtual void OnFinishedLoading() override;
+    virtual void OnFinishedLoading(ModelStreamingData* streamingData) override;
 
     Util::Array<Fragment> skinFragments;
 };

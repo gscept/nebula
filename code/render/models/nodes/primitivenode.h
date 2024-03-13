@@ -42,6 +42,10 @@ protected:
     /// unload data
     virtual void Unload() override;
 
+    /// called once when all pending resource have been loaded
+    virtual void OnFinishedLoading(ModelStreamingData* streamingData) override;
+
+    Resources::ResourceName meshResource;
     Resources::ResourceId res;
     CoreGraphics::MeshId mesh;
 
@@ -50,7 +54,6 @@ protected:
         uint16 meshIndex;
         uint16 primIndex;
     } loadContext;
-    bool loadSuccess = false;
 
     CoreGraphics::BufferId vbo, ibo;
     IndexT baseVboOffset, attributesVboOffset, iboOffset;

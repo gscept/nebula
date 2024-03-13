@@ -15,6 +15,8 @@ using namespace IO;
 namespace Models
 {
 
+
+
 __ImplementClass(Models::ModelLoader, 'SMPO', Resources::ResourceLoader);
 //------------------------------------------------------------------------------
 /**
@@ -73,6 +75,15 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
         // make sure it really it's actually an n3 file and check the version
         // also, we assume that the file has host-native endianess (that's
         // ensured by the asset tools)
+
+        auto streamData = (ModelStreamingData*)Memory::Alloc(Memory::ScratchHeap, sizeof(ModelStreamingData));
+        memset(streamData, 0x0, sizeof(ModelStreamingData));
+        streamData->requiredBits = LoadBits::NoBits;
+        streamData->loadedBits = LoadBits::NoBits;
+
+        this->streams[entry].stream = stream;
+        this->streams[entry].data = streamData;
+
         FourCC magic = reader->ReadUInt();
         uint version = reader->ReadUInt();
         if (magic != FourCC('NEB3'))
@@ -138,7 +149,7 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
                 // end of current ModelNode
                 n_assert(!nodeStack.IsEmpty());
                 Models::ModelNode* node = nodeStack.Pop();
-                node->OnFinishedLoading();
+                node->OnFinishedLoading(streamData);
             }
             else
             {
@@ -179,6 +190,31 @@ ModelLoader::Unload(const Resources::ResourceId id)
     }
 
     DestroyModel(model);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+ModelLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
+{
+    // The requested bits have already been issued for loading, so just return what's been loaded
+    ResourceLoader::StreamData& streamData = this->streams[entry.loaderInstanceId];
+    ModelStreamingData* modelStreamingData = static_cast<ModelStreamingData*>(streamData.data);
+    uint loadedBits = this->loadedBits[entry.loaderInstanceId];
+    loadedBits |= modelStreamingData->loadedBits;
+    return loadedBits;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+ModelLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
+{
+    ResourceLoader::StreamData& streamData = this->streams[entry];
+    ModelStreamingData* modelStreamingData = static_cast<ModelStreamingData*>(streamData.data);
+    return (uint)modelStreamingData->requiredBits;
 }
 
 } // namespace Models

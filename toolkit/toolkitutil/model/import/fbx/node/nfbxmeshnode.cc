@@ -7,6 +7,7 @@
 #include "nfbxmeshnode.h"
 #include "model/meshutil/meshbuildervertex.h"
 #include "nfbxscene.h"
+#include "ufbx/ufbx.h"
 
 namespace ToolkitUtil
 {
@@ -25,7 +26,7 @@ void
 NFbxMeshNode::Setup(
     SceneNode* node
     , SceneNode* parent
-    , fbxsdk::FbxNode* fbxNode
+    , ufbx_node* fbxNode
 )
 {
     NFbxNode::Setup(node, parent, fbxNode);
@@ -38,7 +39,7 @@ void
 NFbxMeshNode::ExtractMesh(
     SceneNode* node
     , Util::Array<MeshBuilder>& meshes
-    , const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup
+    , const Util::Dictionary<ufbx_node*, SceneNode*>& nodeLookup
     , const ToolkitUtil::ExportFlags flags
 )
 {
@@ -46,17 +47,18 @@ NFbxMeshNode::ExtractMesh(
 
     // Add a single mesh primitive for FBX nodes
     MeshBuilder& mesh = meshes.Emplace();
+    
+    if (node->fbx.node->materials.count)
+    {
+        ufbx_material* mat = node->fbx.node->materials[0];
+        node->mesh.material = Util::String(mat->name.data, mat->name.length);
+    }
 
-    if (node->fbx.node->GetMaterialCount())
-        node->mesh.material = node->fbx.node->GetMaterial(0)->GetName();
-
-    FbxMesh* fbxMesh = node->fbx.node->GetMesh();
-    if (!fbxMesh->IsTriangleMesh())
-        n_error("Node '%s' -> Mesh '%s' is not a triangle mesh. Make sure your exported meshes are triangulated!\n", node->fbx.node->GetName(), fbxMesh->GetName());
+    ufbx_mesh* fbxMesh = node->fbx.node->mesh;
 
     // create mask
     uint meshMask = ToolkitUtil::NoMeshFlags;
-    if (fbxMesh->GetDeformerCount(FbxDeformer::eSkin) > 0)
+    if (fbxMesh->skin_deformers.count > 0)
     {
         meshMask |= ToolkitUtil::HasSkin;
     }
@@ -68,32 +70,26 @@ NFbxMeshNode::ExtractMesh(
         node->mesh.material = "physics";
     }
 
-    if (fbxMesh->GetUVLayerCount() > 1)
+    if (fbxMesh->uv_sets.count > 1)
         meshMask |= HasMultipleUVs;
 
-    if (fbxMesh->GetElementVertexColorCount() > 0)
+    if (fbxMesh->vertex_color.values.count > 0)
         meshMask |= HasVertexColors;
 
-    if (fbxMesh->GetElementTangentCount() > 0)
+    if (fbxMesh->vertex_tangent.values.count > 0)
         meshMask |= HasTangents;
 
-    if (fbxMesh->GetElementNormalCount() > 0)
+    if (fbxMesh->vertex_normal.values.count > 0)
         meshMask |= HasNormals;
 
     // Provoke generation of LOD groups
-    FbxLODGroup* lodGroup = nullptr;
-    if (node->fbx.node->GetParent() != nullptr)
+    ufbx_lod_group* lodGroup = nullptr;
+    if (node->fbx.node->parent != nullptr)
     {
-        lodGroup = node->fbx.node->GetParent()->GetLodGroup();
-        if (lodGroup != nullptr)
-        {
-            // DO NOT REMOVE THIS. IF YOU DO, YOU DON'T GET THE LODS PROPERLY.
-            // ALSO CALLED A FUCKING BUG.
-            int numThresholds = lodGroup->GetNumThresholds();
-            int displayLevels = lodGroup->GetNumDisplayLevels();
-        }
+        lodGroup = ufbx_as_lod_group(&node->fbx.node->parent->element);
     }
 
+    /* TODO: Generate tangents?
     if (AllBits(meshMask, HasNormals))
     {
         bool res = fbxMesh->GenerateTangentsData(0, true);
@@ -101,22 +97,25 @@ NFbxMeshNode::ExtractMesh(
         meshMask |= HasTangents;
     }
 
+    */
+
+
     // set mask
     node->mesh.meshFlags = (ToolkitUtil::MeshFlags)meshMask;
 
     // Proceed to extract mesh
-    int vertexCount = fbxMesh->GetControlPointsCount();
-    int polyCount = fbxMesh->GetPolygonCount();
-    int uvCount = fbxMesh->GetUVLayerCount();
-    int normalCount = fbxMesh->GetElementNormalCount();
-    int tangentCount = fbxMesh->GetElementTangentCount();
-    int colorCount = fbxMesh->GetElementVertexColorCount();
+    size_t vertexCount = fbxMesh->vertex_position.values.count;
+    size_t polyCount = fbxMesh->faces.count;
+    size_t uvCount = fbxMesh->uv_sets.count;
+    size_t normalCount = fbxMesh->vertex_normal.indices.count;
+    size_t tangentCount = fbxMesh->vertex_tangent.indices.count;
+    size_t colorCount = fbxMesh->vertex_color.indices.count;
 
     // this is here just to inform if an artist has forgot to apply a UV set or the mesh has no normals prior to importing
     if (vertexCount > 0)
     {
-        n_assert2(uvCount > 0, "You need at least one UV-channel or no shader will be applicable!");
-        n_assert2(normalCount > 0, "You need at least one set of normals or no shader will be applicable!");
+        n_assert_msg(uvCount > 0, "You need at least one UV-channel or no shader will be applicable!");
+        n_assert_msg(normalCount > 0, "You need at least one set of normals or no shader will be applicable!");
     }
 
     // get scale
@@ -124,16 +123,15 @@ NFbxMeshNode::ExtractMesh(
     node->mesh.groupId = groupId;
 
     MeshBuilderVertex::ComponentMask componentMask = 0x0;
-    Util::FixedArray<Math::vec4> controlPoints;
-    controlPoints.Resize(fbxMesh->GetControlPointsCount());
+    Util::FixedArray<Math::vec3> controlPoints;
+    controlPoints.Resize((SizeT)vertexCount);
 
-    mesh.NewMesh(controlPoints.Size(), controlPoints.Size() * 3);
+    mesh.NewMesh(controlPoints.Size(), (SizeT)fbxMesh->num_triangles);
     mesh.SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
     for (IndexT i = 0; i < controlPoints.Size(); i++)
     {
-        FbxVector4 v = fbxMesh->GetControlPointAt(i);
-        v.FixIncorrectValue();
-        controlPoints[i] = FbxToMath(v) * vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
+        ufbx_vec3 v = fbxMesh->vertex_position.values[i];
+        controlPoints[i] = FbxToMath(v);
         componentMask |= MeshBuilderVertex::Position;
     }
 
@@ -158,111 +156,118 @@ NFbxMeshNode::ExtractMesh(
         componentMask |= MeshBuilderVertex::SkinWeights | MeshBuilderVertex::SkinIndices;
     }
 
-    typedef fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector4>* FbxVec4Array;
-    typedef fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector2>* FbxVec2Array;
-    typedef fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxColor>* FbxColorArray;
-    typedef fbxsdk::FbxLayerElementTemplate<int>* FbxIndexArray;
-
-    FbxVec2Array uv0Elements = nullptr, uv1Elements = nullptr;
-    FbxColorArray colorElements = nullptr;
-    FbxVec4Array normalElements = nullptr, tangentElements = nullptr;
+    ufbx_vertex_vec2* uv0Elements = nullptr, *uv1Elements = nullptr;
+    ufbx_vertex_vec4* colorElements = nullptr;
+    ufbx_vertex_vec3* normalElements = nullptr, *tangentElements = nullptr;
 
     // Convert all meshes to map their indexes to once value per vertex
     if (uvCount > 0)
-        uv0Elements = fbxMesh->GetElementUV(0);
+        uv0Elements = &fbxMesh->uv_sets[0].vertex_uv;
     if (uvCount > 1)
-        uv1Elements = fbxMesh->GetElementUV(1);
+        uv1Elements = &fbxMesh->uv_sets[1].vertex_uv;
     if (colorCount > 0)
-        colorElements = fbxMesh->GetElementVertexColor(0);
+        colorElements = &fbxMesh->vertex_color;
     if (normalCount > 0)
-        normalElements = fbxMesh->GetElementNormal(0);
+        normalElements = &fbxMesh->vertex_normal;
     if (tangentCount > 0)
-        tangentElements = fbxMesh->GetElementTangent(0);
+        tangentElements = &fbxMesh->vertex_tangent;
 
     // setup triangles
-    int vertexId = 0;
+    int vertexId = 0; 
     for (int polygonIndex = 0; polygonIndex < polyCount; polygonIndex++)
     {
-        int polygonSize = fbxMesh->GetPolygonSize(polygonIndex);
-        n_assert2(polygonSize == 3, "Some polygons seem to not be triangulated, this is not accepted");
-        MeshBuilderTriangle meshTriangle;
-        for (int polygonVertexIndex = 0; polygonVertexIndex < polygonSize; polygonVertexIndex++)
+        const ufbx_face& face = fbxMesh->faces[polygonIndex];
+        size_t requiredIndices = (face.num_indices - 2) * 3;
+        uint32_t* indices = (uint32_t*)Memory::StackAlloc(requiredIndices * sizeof(uint32));
+        uint status = ufbx_triangulate_face(indices, requiredIndices, fbxMesh, face);
+        n_assert_fmt(status != 0, "Triangulation failed on polygon %d", polygonIndex);
+        for (int tri = 0; tri < requiredIndices / 3; tri++)
         {
-            // we want to offset the vertex index with the current size of the mesh
-            int polygonVertex = fbxMesh->GetPolygonVertex(polygonIndex, polygonVertexIndex);
-            MeshBuilderVertex meshVertex;
-            meshVertex.SetPosition(controlPoints[polygonVertex]);
-
-            // extract uvs from the 0th channel
-            Math::vec2 uv = Extract(uv0Elements, polygonVertex, vertexId);
-            meshVertex.SetUv(uv);
-            componentMask |= MeshBuilderVertex::Uvs;
-
-            if (AllBits(componentMask, MeshBuilderVertex::SkinWeights | MeshBuilderVertex::SkinIndices))
+            MeshBuilderTriangle meshTriangle;
+            for (int triangleVertexIndex = 0; triangleVertexIndex < 3; triangleVertexIndex++)
             {
-                meshVertex.SetSkinWeights(skinWeights[polygonVertex]);
-                meshVertex.SetSkinIndices(skinIndices[polygonVertex]);
-            }
+                // we want to offset the vertex index with the current size of the mesh
+                int baseIndex = indices[tri * 3 + triangleVertexIndex];
+                int polygonVertex = fbxMesh->vertex_position.indices[baseIndex];
+                MeshBuilderVertex meshVertex;
+                meshVertex.SetPosition(Math::vec4(controlPoints[polygonVertex], 1));
 
-            // extract multilayered uvs, or ordinary uvs if we're not importing as multilayered
-            if (AllBits(flags, ToolkitUtil::ImportSecondaryUVs))
-            {
-                if (AllBits(node->mesh.meshFlags, HasMultipleUVs))
+                // extract uvs from the 0th channel
+                Math::vec2 uv = Extract(uv0Elements, baseIndex);
+                meshVertex.SetUv(uv);
+                componentMask |= MeshBuilderVertex::Uvs;
+
+                if (AllBits(componentMask, MeshBuilderVertex::SkinWeights | MeshBuilderVertex::SkinIndices))
                 {
-                    // simply extract two uvs
-                    Math::vec2 uv2 = Extract(uv1Elements, polygonVertex, vertexId);
-                    meshVertex.SetSecondaryUv(uv2);
+                    meshVertex.SetSkinWeights(skinWeights[polygonVertex]);
+                    meshVertex.SetSkinIndices(skinIndices[polygonVertex]);
+                }
+
+                // extract multilayered uvs, or ordinary uvs if we're not importing as multilayered
+                if (AllBits(flags, ToolkitUtil::ImportSecondaryUVs))
+                {
+                    if (AllBits(node->mesh.meshFlags, HasMultipleUVs))
+                    {
+                        // simply extract two uvs
+                        Math::vec2 uv2 = Extract(uv1Elements, baseIndex);
+                        meshVertex.SetSecondaryUv(uv2);
+                    }
+                    else
+                    {
+                        // if mesh has none, flood to 0
+                        meshVertex.SetSecondaryUv(Math::vec2(0, 0));
+                    }
+                    componentMask |= MeshBuilderVertex::SecondUv;
+                }
+
+                // extract colors if so requested
+                if (AllBits(flags, ToolkitUtil::ImportColors))
+                {
+                    if (AllBits(node->mesh.meshFlags, HasVertexColors))
+                    {
+                        // extract colors
+                        Math::vec4 color = Extract(colorElements, baseIndex);
+                        meshVertex.SetColor(color);
+                    }
+                    else
+                    {
+                        // set vertex color to be white if no vertex colors can be extracted from FBX
+                        meshVertex.SetColor(Math::vec4(1));
+                    }
+                    componentMask |= MeshBuilderVertex::Color;
+                }
+
+                Math::vec3 normal = Extract(normalElements, baseIndex);
+                meshVertex.SetNormal(normal);
+                componentMask |= MeshBuilderVertex::Normals;
+
+                if (AllBits(node->mesh.meshFlags, HasTangents))
+                {
+                    Math::vec3 tangent = Extract(tangentElements, baseIndex);
+                    meshVertex.SetTangent(tangent);
+                    //meshVertex.SetSign(-tangent.w);
+                    componentMask |= MeshBuilderVertex::Tangents;
                 }
                 else
                 {
-                    // if mesh has none, flood to 0
-                    meshVertex.SetSecondaryUv(Math::vec2(0, 0));
+                    meshVertex.SetTangent({ 0, 0, 0 });
+                    meshVertex.SetSign(0);
                 }
-                componentMask |= MeshBuilderVertex::SecondUv;
+
+                mesh.AddVertex(meshVertex);
+                meshTriangle.SetVertexIndex(triangleVertexIndex, vertexId);
+
+                vertexId++;
             }
-
-            // extract colors if so requested
-            if (AllBits(flags, ToolkitUtil::ImportColors))
-            {
-                if (AllBits(node->mesh.meshFlags, HasVertexColors))
-                {
-                    // extract colors
-                    Math::vec4 color = Extract(colorElements, polygonVertex, vertexId);
-                    meshVertex.SetColor(color);
-                }
-                else
-                {
-                    // set vertex color to be white if no vertex colors can be extracted from FBX
-                    meshVertex.SetColor(Math::vec4(1));
-                }
-                componentMask |= MeshBuilderVertex::Color;
-            }
-
-            Math::vec4 normal = Extract(normalElements, polygonVertex, vertexId);
-            meshVertex.SetNormal(xyz(normal));
-            componentMask |= MeshBuilderVertex::Normals;
-
-            if (AllBits(node->mesh.meshFlags, HasTangents))
-            {
-                Math::vec4 tangent = Extract(tangentElements, polygonVertex, vertexId);
-                meshVertex.SetTangent(xyz(tangent));
-                meshVertex.SetSign(-tangent.w);
-                componentMask |= MeshBuilderVertex::Tangents;
-            }
-            else
-            {
-                meshVertex.SetTangent({ 0, 0, 0 });
-                meshVertex.SetSign(0);
-            }
-
-            mesh.AddVertex(meshVertex);
-            meshTriangle.SetVertexIndex(polygonVertexIndex, vertexId);
-
-            vertexId++;
+            mesh.AddTriangle(meshTriangle);
         }
-        mesh.AddTriangle(meshTriangle);
     }
 
+    if (AllBits(node->mesh.meshFlags, HasNormals))
+    {
+        mesh.CalculateTangents();
+        componentMask |= MeshBuilderVertex::Tangents;
+    }
 
     // flip uvs if checked
     if (AllBits(flags, ToolkitUtil::FlipUVs))
@@ -281,38 +286,15 @@ NFbxMeshNode::ExtractMesh(
     if (lodGroup != nullptr)
     {
         node->mesh.lodIndex = node->base.parent->base.children.FindIndex(node);
-        FbxDistance dist;
-        if (lodGroup->GetThreshold(node->mesh.lodIndex - 1, dist))
-            node->mesh.minLodDistance = dist.value() * SceneScale;
+        if (lodGroup->lod_levels.count > node->mesh.lodIndex - 1)
+            node->mesh.minLodDistance = lodGroup->lod_levels[node->mesh.lodIndex - 1].distance;
         else
             node->mesh.minLodDistance = 0;
-
-        if (lodGroup->GetThreshold(node->mesh.lodIndex, dist))
-            node->mesh.maxLodDistance = dist.value() * SceneScale;
+        if (lodGroup->lod_levels.count > node->mesh.lodIndex)
+            node->mesh.maxLodDistance = lodGroup->lod_levels[node->mesh.lodIndex].distance;
         else
             node->mesh.maxLodDistance = 0;
     }
-
-    // clear up FBX mesh
-    fbxMesh->Destroy();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-FbxAMatrix 
-GetGeometryTransformation(FbxNode* inNode)
-{
-    if (!inNode)
-    {
-        throw std::runtime_error("Null for mesh geometry");
-    }
-
-    const FbxVector4 lT = inNode->GetGeometricTranslation(FbxNode::eSourcePivot);
-    const FbxVector4 lR = inNode->GetGeometricRotation(FbxNode::eSourcePivot);
-    const FbxVector4 lS = inNode->GetGeometricScaling(FbxNode::eSourcePivot);
-
-    return FbxAMatrix(lT, lR, lS);
 }
 
 //------------------------------------------------------------------------------
@@ -320,42 +302,35 @@ GetGeometryTransformation(FbxNode* inNode)
     Hmm, maybe a way to check if we have more than 255 indices, then we should switch to using Joint indices as complete uints?
 */
 void 
-NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup, fbxsdk::FbxMesh* fbxMesh)
+NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, const Util::Dictionary<ufbx_node*, SceneNode*>& nodeLookup, ufbx_mesh* fbxMesh)
 {
-    int vertexCount = fbxMesh->GetControlPointsCount();
-    int skinCount = fbxMesh->GetDeformerCount(FbxDeformer::eSkin);
+    size_t vertexCount = fbxMesh->num_vertices;
+    size_t skinCount = fbxMesh->skin_deformers.count;
     
-    Util::FixedArray<Util::Array<std::tuple<int, float>>> keyWeightPairs(vertexCount);
-    FbxAMatrix geometricTransform = GetGeometryTransformation(node->fbx.node);
+    Util::FixedArray<Util::Array<std::tuple<int, float>>> keyWeightPairs((SizeT)vertexCount);
+    ufbx_matrix geometricTransform = ufbx_transform_to_matrix(&node->fbx.node->geometry_transform);
     for (int skinIndex = 0; skinIndex < skinCount; skinIndex++)
     {
-        FbxSkin* skin = static_cast<FbxSkin*>(fbxMesh->GetDeformer(skinIndex, FbxDeformer::eSkin));
-        int clusterCount = skin->GetClusterCount();
+        ufbx_skin_deformer* skin = fbxMesh->skin_deformers[skinIndex];
+        size_t clusterCount = skin->clusters.count;
         node->base.isSkin = true;
 
         for (int clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++)
         {
-            FbxCluster* cluster = skin->GetCluster(clusterIndex);
-            FbxNode* joint = cluster->GetLink();
+            ufbx_skin_cluster* cluster = skin->clusters[clusterIndex];
+            ufbx_node* joint = cluster->bone_node;
             SceneNode* jointNode = nodeLookup[joint];
+
             n_assert(jointNode != nullptr);
-            n_assert(jointNode->skeleton.bindMatrix == Math::mat4());
+            n_assert(jointNode->skeleton.bindMatrix == Math::mat4()); 
             n_assert(jointNode->type == SceneNode::NodeType::Joint);
+            jointNode->skeleton.bindMatrix = FbxToMath(cluster->geometry_to_bone);
 
-            // Calculate inverse transform for skinned vertices
-            FbxAMatrix linkMatrix, transformMatrix;
-            cluster->GetTransformLinkMatrix(linkMatrix);
-            cluster->GetTransformMatrix(transformMatrix);
-            FbxAMatrix inversedPose = linkMatrix.Inverse();
-            inversedPose = inversedPose * transformMatrix * geometricTransform;
-            jointNode->skeleton.bindMatrix = FbxToMath(inversedPose);
-            jointNode->skeleton.bindMatrix.position *= Math::vec4(AdjustedScale, AdjustedScale, AdjustedScale, 1);
-
-            int clusterVertexIndexCount = cluster->GetControlPointIndicesCount();
+            size_t clusterVertexIndexCount = cluster->vertices.count;
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
             {
-                int vertex = cluster->GetControlPointIndices()[vertexIndex];
-                float weight = cluster->GetControlPointWeights()[vertexIndex];
+                int vertex = cluster->vertices[vertexIndex]; 
+                float weight = cluster->weights[vertexIndex];
                 if (weight > 0)
                     keyWeightPairs[vertex].Append(std::make_tuple(jointNode->skeleton.jointIndex, weight));
             }

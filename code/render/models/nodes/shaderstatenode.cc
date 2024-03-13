@@ -152,13 +152,17 @@ ShaderStateNode::Unload()
 /**
 */
 void
-ShaderStateNode::OnFinishedLoading()
+ShaderStateNode::OnFinishedLoading(ModelStreamingData* streamingData)
 {
-    TransformNode::OnFinishedLoading();
+    TransformNode::OnFinishedLoading(streamingData);
 
     // load surface immediately, however it will load textures async
-    this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->material = this->materialRes;
+    streamingData->requiredBits |= LoadBits::MaterialBit;
+    Resources::CreateResource(this->materialName, this->tag, [this, streamingData](Resources::ResourceId id)
+        {
+            streamingData->loadedBits |= LoadBits::MaterialBit;
+            this->material = id;
+        });
 
     this->resourceTables = ShaderStateNode::CreateResourceTables();
 }

@@ -424,6 +424,7 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         if (skeleton == InvalidSkeletonId)
             continue;
         const Util::FixedArray<Math::mat4>& bindPose = Characters::SkeletonGetBindPose(skeleton);
+        const Util::FixedArray<Characters::CharacterJoint>& joints = Characters::SkeletonGetJoints(skeleton);
         const Util::FixedArray<Math::mat4>& jointPalette = context->jointPalettes->Get(index);
         const Util::FixedArray<Math::mat4>& scaledJointPalette = context->scaledJointPalettes->Get(index);
         const Util::FixedArray<Math::vec4>& idleSamples = Characters::SkeletonGetIdleSamples(skeleton);
@@ -622,6 +623,8 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             Math::mat4& unscaledMatrix = unscaledMatrixBase[jointIndex];
             Math::mat4& scaledMatrix = scaledMatrixBase[jointIndex];
 
+            Math::vec3 baseScale = xyz(idleSamples[jointIndex * 3 + 2]);
+
             // update unscaled matrix
             // animation rotation
             scaledMatrix = Math::affine(scale, rotate, translate);
@@ -810,6 +813,9 @@ CharacterContext::OnRenderDebug(uint32 flags)
     IndexT i;
     for (i = 0; i < jointPalettes.Size(); i++)
     {
+        if (modelContexts[i] == Graphics::InvalidGraphicsEntityId)
+            continue;
+
         const Util::FixedArray<Math::mat4>& jointsPalette = jointPalettes[i];
         const Math::mat4& transform = Models::ModelContext::GetTransform(modelContexts[i]);
         IndexT j;

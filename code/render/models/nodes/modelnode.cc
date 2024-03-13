@@ -78,7 +78,7 @@ ModelNode::Unload()
 /**
 */
 void
-ModelNode::OnFinishedLoading()
+ModelNode::OnFinishedLoading(ModelStreamingData* streamingData)
 {
     this->uniqueId = ModelNodeUniqueIdCounter++;
 }

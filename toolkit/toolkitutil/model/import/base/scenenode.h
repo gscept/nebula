@@ -17,10 +17,7 @@
 #include "jobs/jobs.h"
 #include "util/set.h"
 
-#ifdef FBXSDK
-#include <fbxsdk.h>
-#endif
-
+struct ufbx_node;
 namespace ToolkitUtil
 {
 
@@ -61,14 +58,12 @@ public:
     void CalculateGlobalTransforms();
 
 private:
-#ifdef FBXSDK
     friend class NFbxNode;
     friend class NFbxJointNode;
     friend class NFbxLightNode;
     friend class NFbxMeshNode;
     friend class NFbxTransformNode;
     friend class NFbxScene;
-#endif
 
     friend class NglTFScene;
     friend class NglTFNode;
@@ -145,12 +140,10 @@ private:
         //ToolkitUtil::MeshBuilder                        mesh;
     } mesh;
 
-#ifdef FBXSDK
     struct
     {
-        FbxNode* node;
-        Util::Set<FbxTime> translationKeyTimes, rotationKeyTimes, scaleKeyTimes;
+        ufbx_node* node;
+        Util::Set<double> translationKeyTimes, rotationKeyTimes, scaleKeyTimes;
     } fbx;
-#endif
 };
 } // namespace ToolkitUtil

@@ -564,4 +564,32 @@ BufferGetDeviceAddress(const BufferId id)
     return vkGetBufferDeviceAddress(dev, &deviceAddress);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, const void* data, const uint size)
+{
+    // Create buffer to copy from
+    CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.byteSize = size;
+    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+    bufInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+    bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+    bufInfo.data = data;
+    bufInfo.dataSize = size;
+    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
+
+    // Perform copy on the setup queue
+    CoreGraphics::BufferCopy from, to;
+    from.offset = 0;
+    to.offset = offset;
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdCopy(cmdBuf, buf, { from }, dest, { to }, size);
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+    // Destroy the buffer
+    CoreGraphics::DestroyBuffer(buf);
+}
+
 } // namespace CoreGraphics

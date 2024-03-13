@@ -9,6 +9,7 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "raytracing/raytracingcontext.h"
+#include "characters/charactercontext.h"
 #include "game/gameserver.h"
 #include "graphicsfeature/components/graphicsfeature.h"
 #include "basegamefeature/components/basegamefeature.h"
@@ -45,18 +46,29 @@ GraphicsManager::~GraphicsManager()
 /**
 */
 void
-RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceName const res, bool const raytracing, Math::mat4 const& t)
+RegisterModelEntity(
+    Graphics::GraphicsEntityId const gid
+    , Resources::ResourceName const res
+    , Resources::ResourceName const anim
+    , Resources::ResourceName const skeleton
+    , bool const raytracing
+    , Math::mat4 const& t
+)
 {
     Models::ModelContext::RegisterEntity(gid);
     if (raytracing && CoreGraphics::RayTracingSupported)
     {
         Raytracing::RaytracingContext::RegisterEntity(gid);
     }
+    if (anim.IsValid() && skeleton.IsValid())
+    {
+        Characters::CharacterContext::RegisterEntity(gid);
+    }
     Models::ModelContext::Setup(
         gid,
         res,
         "NONE",
-        [gid, raytracing, t]()
+        [gid, anim, skeleton, raytracing, t]()
         {
             if (!Graphics::GraphicsServer::Instance()->IsValidGraphicsEntity(gid))
                 return;
@@ -65,6 +77,11 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
             if (raytracing && CoreGraphics::RayTracingSupported)
             {
                 Raytracing::RaytracingContext::SetupModel(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFF);
+            }
+            if (anim.IsValid() && skeleton.IsValid())
+            {
+                Characters::CharacterContext::Setup(gid, skeleton, 0, anim, 0, "NONE");
+                Characters::CharacterContext::PlayClip(gid, nullptr, 0, 0, Characters::EnqueueMode::Replace);
             }
             Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
         }
@@ -187,7 +204,7 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
     Game::Orientation orient = world->GetComponent<Game::Orientation>(entity);
     Game::Scale scale = world->GetComponent<Game::Scale>(entity);
     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-    RegisterModelEntity(model->graphicsEntityId, model->resource, model->raytracing, worldTransform);
+    RegisterModelEntity(model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform);
 }
 
 //------------------------------------------------------------------------------

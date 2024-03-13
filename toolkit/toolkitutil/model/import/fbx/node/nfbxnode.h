@@ -12,19 +12,24 @@
 #include "math/vec4.h"
 #include "math/mat4.h"
 #include "timing/time.h"
-
-#include <fbxsdk.h>
-
+struct ufbx_node;
+struct ufbx_matrix;
+struct ufbx_vec4;
+struct ufbx_vec3;
+struct ufbx_vec2;
+struct ufbx_anim_stack;
 
 namespace ToolkitUtil
 {
 
-/// Convert FbxMatrix to Math::mat4
-Math::mat4 FbxToMath(const fbxsdk::FbxMatrix& matrix);
-/// Convert FbxVector4 to Math::vec4
-Math::vec4 FbxToMath(const fbxsdk::FbxVector4& vec);
-/// Convert FbxVector2 to Math::vec2
-Math::vec2 FbxToMath(const fbxsdk::FbxVector2& vec);
+/// Convert ufbx_matrix to Math::mat4
+Math::mat4 FbxToMath(const ufbx_matrix& matrix);
+/// Convert ufbx_vec4 to Math::vec4
+Math::vec4 FbxToMath(const ufbx_vec4& vector);
+/// Convert ufbx_vec3 to Math::vec3
+Math::vec3 FbxToMath(const ufbx_vec3& vector);
+/// Convert ufbx_vec2 to Math::vec2
+Math::vec2 FbxToMath(const ufbx_vec2& vector);
 
 class SceneNode;
 class NFbxScene;
@@ -37,17 +42,17 @@ class NFbxNode
 public:
 
     /// Setup base node
-    static void Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode);
+    static void Setup(SceneNode* node, SceneNode* parent, ufbx_node* fbxNode);
 
     /// Generates animation clip
-    static void ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, FbxAnimStack* animStack);
+    static void ExtractAnimation(SceneNode* node, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, ufbx_anim_stack* animStack);
     /// Returns true if node is animated
-    static void PrepareAnimation(SceneNode* node, FbxAnimStack* animStack);
+    static void PrepareAnimation(SceneNode* node, ufbx_anim_stack* animStack);
 
 protected:
 
     /// extract animation curves from node
-    static void ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, FbxAnimStack* stack);
+    static void ExtractAnimationCurves(SceneNode* node, ufbx_node* fbxNode, Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, ufbx_anim_stack* animStack);
 }; 
 
 } // namespace ToolkitUtil

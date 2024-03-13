@@ -154,6 +154,10 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     return;
 
                 // Get node range and update ids buffer
+                Graphics::GraphicsEntityId gid = idData[index];
+                if (gid == Graphics::InvalidGraphicsEntityId)
+                    continue;
+
                 const Models::NodeInstanceRange& NodeInstances = Models::ModelContext::GetModelRenderableRange(idData[index]);
                 const uint numNodes = NodeInstances.end - NodeInstances.begin;
                 uint offset = Threading::Interlocked::Add(&counter, numNodes);
@@ -185,7 +189,10 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     static Threading::AtomicCounter completionCounter;
     completionCounter = observerResults.Size();
-    Threading::Event* finishedEvent = new Threading::Event;
+    Threading::Event* finishedEvent = nullptr;
+
+    if (NodeInstances.nodeStates.Size() > 0)
+        finishedEvent = new Threading::Event;
 
     for (i = 0; i < observerResults.Size(); i++)
     {
@@ -361,7 +368,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             }
         }, nodes.Size(), waitCounters, &completionCounter, finishedEvent);
     }
-    waitEvents.Enqueue(finishedEvent);
+
+    if (finishedEvent != nullptr)
+        waitEvents.Enqueue(finishedEvent);
 }
 
 //------------------------------------------------------------------------------

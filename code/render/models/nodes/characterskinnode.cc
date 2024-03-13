@@ -71,13 +71,13 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
 /**
 */
 void 
-CharacterSkinNode::OnFinishedLoading()
+CharacterSkinNode::OnFinishedLoading(ModelStreamingData* streamingData)
 {
-    PrimitiveNode::OnFinishedLoading();
+    PrimitiveNode::OnFinishedLoading(streamingData);
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     for (IndexT i = 0; i < numFrames; i++)
     {
-        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock_SLOT, 0, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0, false, true });
+        CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTables[i], { CoreGraphics::GetConstantBuffer(i), ObjectsShared::Table_DynamicOffset::JointBlock_SLOT, 0, (SizeT)(sizeof(Math::mat4) * 256), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(this->resourceTables[i]);
     }
 }

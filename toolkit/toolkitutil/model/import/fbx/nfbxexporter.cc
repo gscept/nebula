@@ -11,8 +11,7 @@
 #include "model/skeletonutil/skeletonbuildersaver.h"
 #include "model/modelutil/modeldatabase.h"
 #include "model/modelutil/modelattributes.h"
-
-#include <fbxsdk.h>
+#include "ufbx/ufbx.h"
 
 using namespace Util;
 using namespace IO;
@@ -21,15 +20,11 @@ namespace ToolkitUtil
 {
 __ImplementClass(ToolkitUtil::NFbxExporter, 'FBXE', Base::ExporterBase);
 
-
-fbxsdk::FbxManager* sdkManager = nullptr;
-fbxsdk::FbxIOSettings* ioSettings = nullptr;
 Threading::CriticalSection cs;
 //------------------------------------------------------------------------------
 /**
 */
 NFbxExporter::NFbxExporter() 
-    : progressFbxCallback(0)
 {
     // empty
 }
@@ -48,33 +43,26 @@ NFbxExporter::~NFbxExporter()
 bool 
 NFbxExporter::ParseScene()
 {
-    cs.Enter();
-    if (!sdkManager)
-    {
-        // Create the FBX SDK manager
-        sdkManager = fbxsdk::FbxManager::Create();
-        ioSettings = fbxsdk::FbxIOSettings::Create(sdkManager, "Import settings");
-    }
-    cs.Leave();
+    ufbx_coordinate_axes wantedAxes;
+    wantedAxes.up = UFBX_COORDINATE_AXIS_POSITIVE_Y; 
+    wantedAxes.front = UFBX_COORDINATE_AXIS_POSITIVE_Z;
+    wantedAxes.right = UFBX_COORDINATE_AXIS_POSITIVE_X;
 
-    auto scene = fbxsdk::FbxScene::Create(sdkManager, "Export scene");
-    auto importer = fbxsdk::FbxImporter::Create(sdkManager, "Importer");
-
-    bool importStatus = importer->Initialize(this->path.LocalPath().AsCharPtr(), -1, NULL);
-    importer->SetProgressCallback(this->progressFbxCallback);
-    if (importStatus)
+    ufbx_error error;
+    ufbx_load_opts opts 
     {
-        importStatus = importer->Import(scene);
-        if (!importStatus)
-        {
-            this->logger->Error("FBX - Failed to open\n");
-            this->SetHasErrors(true);
-            return false;
-        }
-    }
-    else
+        .clean_skin_weights = true, 
+        .strict = true, 
+        .geometry_transform_handling = UFBX_GEOMETRY_TRANSFORM_HANDLING_MODIFY_GEOMETRY,
+        .pivot_handling = UFBX_PIVOT_HANDLING_RETAIN, 
+        .space_conversion = UFBX_SPACE_CONVERSION_MODIFY_GEOMETRY,
+        .target_axes = ufbx_axes_right_handed_y_up,
+        .target_unit_meters = (ufbx_real)0.01f / this->sceneScale
+    };
+    ufbx_scene* scene = ufbx_load_file_len(this->path.LocalPath().AsCharPtr(), this->path.LocalPath().Length(), &opts, &error);
+    if (scene == nullptr)
     {
-        this->logger->Error("FBX - Failed to initialize\n");
+        this->logger->Error("FBX - Failed to open\n");
         this->SetHasErrors(true);
         return false;
     }
@@ -88,8 +76,7 @@ NFbxExporter::ParseScene()
     fbxScene->Setup(scene, this->exportFlags, attributes, this->sceneScale, this->logger);
     this->scene = fbxScene;
 
-    scene->Destroy(true);
-    importer->Destroy(true);
+    ufbx_free_scene(scene);
 
     return true;
 }

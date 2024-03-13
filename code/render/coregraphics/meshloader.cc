@@ -98,7 +98,7 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
 
     if (resIdExt == "nvx")
     {
-        this->SetupMeshFromNvx(stream, entry, ret);
+        this->SetupMeshFromNvx(stream, entry, ret, immediate);
         return ret;
     }
     else
@@ -130,10 +130,10 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
     CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
     CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
     
-    int loadBits = requestedBits;
+    int loadBits = 0x0;
 
     // Upload vertices
-    if (loadBits & ~0x1)
+    if (requestedBits & ~0x1)
     {
         auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
         if (buffer != CoreGraphics::InvalidBufferId)
@@ -155,7 +155,7 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
     }
 
     // Upload indices
-    if (loadBits & ~0x2)
+    if (requestedBits & ~0x2)
     {
         auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
         if (buffer != CoreGraphics::InvalidBufferId)
@@ -203,7 +203,7 @@ MeshLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
     native binary mesh file format).
 */
 void
-MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource)
+MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource, bool immediate)
 {
     n_assert(stream.isvalid());
 
@@ -234,8 +234,8 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
         n_assert(header->numMeshes > 0);
         auto vertexRanges = (Nvx3VertexRange*)(header + 1);
         auto groups = (Nvx3Group*)(vertexRanges + header->numMeshes);
-        //auto vertexData = (ubyte*)(groups + header->numGroups);
-        //auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
+        auto vertexData = (ubyte*)(groups + header->numGroups);
+        auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
         //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
         meshes.Resize(header->numMeshes);
@@ -255,6 +255,11 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             // Allocate vertices from global repository
             vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
             streamData->vertexAllocationOffset = vertexAllocation;
+
+            if (immediate)
+            {
+                BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocationOffset.offset, vertexData, header->vertexDataSize);
+            }
         }
 
         // Upload index data
@@ -262,6 +267,11 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             // Allocate vertices from global repository
             indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
             streamData->indexAllocationOffset = indexAllocation;
+
+            if (immediate)
+            {
+                BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocationOffset.offset, indexData, header->indexDataSize);
+            }
         }
 
         for (uint i = 0; i < header->numGroups; i++)

@@ -8,11 +8,8 @@
 #include "model/skeletonutil/skeletonbuilder.h"
 #include "nfbxmeshnode.h"
 #include "nfbxjointnode.h"
-#include "nfbxtransformnode.h"
 #include "nfbxlightnode.h"
 #include "timing/timer.h"
-
-#include <fbxsdk.h>
 
 using namespace Util;
 using namespace ToolkitUtil;
@@ -38,37 +35,36 @@ NFbxScene::~NFbxScene()
 */
 void
 NFbxScene::ParseNodeHierarchy(
-    FbxNode* fbxNode
+    ufbx_node* fbxNode
     , SceneNode* parent
-    , Util::Dictionary<FbxNode*, SceneNode*>& lookup
+    , Util::Dictionary<ufbx_node*, SceneNode*>& lookup
     , Util::Array<SceneNode>& nodes
 )
 {
     SceneNode& node = nodes.Emplace();
     lookup.Add(fbxNode, &node);
-    const FbxNodeAttribute* attr = fbxNode->GetNodeAttribute();
-    const FbxNodeAttribute::EType type = attr == nullptr ? FbxNodeAttribute::EType::eNull : attr->GetAttributeType();
-    switch (type)
+    ufbx_element_type attr = fbxNode->attrib_type;
+    switch (attr)
     {
-        case FbxNodeAttribute::EType::eSkeleton:
+        case UFBX_ELEMENT_BONE:
         {
             node.Setup(SceneNode::NodeType::Joint);
-            NFbxJointNode::Setup(&node, parent, fbxNode);
+            NFbxJointNode::Setup(&node, parent, fbxNode); 
             break;
         }
-        case FbxNodeAttribute::EType::eMesh:
+        case UFBX_ELEMENT_MESH:
         {
             node.Setup(SceneNode::NodeType::Mesh);
             NFbxNode::Setup(&node, parent, fbxNode);
             break;
         }
-        case FbxNodeAttribute::EType::eLODGroup:
+        case UFBX_ELEMENT_LOD_GROUP:
         {
             node.Setup(SceneNode::NodeType::Lod);
             NFbxNode::Setup(&node, parent, fbxNode);
             break;
         }
-        case FbxNodeAttribute::EType::eLight:
+        case UFBX_ELEMENT_LIGHT:
         {
             node.Setup(SceneNode::NodeType::Light);
             NFbxLightNode::Setup(&node, parent, fbxNode);
@@ -82,10 +78,10 @@ NFbxScene::ParseNodeHierarchy(
         }
     }
 
-    int numChildren = fbxNode->GetChildCount();
-    for (int i = 0; i < numChildren; i++)
+    size_t numChildren = fbxNode->children.count;
+    for (size_t i = 0; i < numChildren; i++)
     {
-        FbxNode* child = fbxNode->GetChild(i);
+        ufbx_node* child = fbxNode->children[i];
         ParseNodeHierarchy(child, &node, lookup, nodes);
     }
 }
@@ -95,14 +91,14 @@ NFbxScene::ParseNodeHierarchy(
 */
 void
 NFbxScene::Setup(
-    FbxScene* scene
+    ufbx_scene* scene
     , const ExportFlags& exportFlags
     , const Ptr<ModelAttributes>& attributes
     , float scale
     , ToolkitUtil::Logger* logger
 )
 {
-    n_assert(scene);
+    n_assert(scene != nullptr);
 
     // set export settings
     this->flags = exportFlags;
@@ -112,51 +108,25 @@ NFbxScene::Setup(
     SceneScale = scale;
     AdjustedScale = SceneScale;
 
-    float fps = TimeModeToFPS(scene->GetGlobalSettings().GetTimeMode());
-
-    auto axisSystem = scene->GetGlobalSettings().GetAxisSystem();
-    FbxAxisSystem newSystem(FbxAxisSystem::eOpenGL);
-    if (axisSystem != newSystem)
-    {
-        newSystem.DeepConvertScene(scene);
-        this->logger->Print("FBX - Converting coordinate system\n");
-
-    }
-
+    
+    float fps = TimeModeToFPS(scene->settings.time_mode);
     // handle special case for custom FPS
     if (fps == -1)
     {
-        fps = (float)scene->GetGlobalSettings().GetCustomFrameRate();
+        fps = scene->settings.frames_per_second;
     }
-    scene->GetRootNode()->ResetPivotSetAndConvertAnimation(fps);
     AnimationFrameRate = fps;
 
-    // split meshes based on material
-    FbxGeometryConverter* converter = new FbxGeometryConverter(sdkManager);
-    bool triangulated = converter->Triangulate(scene, true);
-    converter->RemoveBadPolygonsFromMeshes(scene);
-    n_assert(triangulated);
-    delete converter;
-
-    this->logger->Print("FBX - Triangulating\n");
-
-
-    // Okay so we want to do this, we really do, but if we do, 
-    // the GetSrcObjectCount will give us an INCORRECT amount of meshes, 
-    // and getting the mesh will give us invalid meshes...
-    //bool foo = converter->SplitMeshesPerMaterial(scene, true);
-    //delete converter;
-        
     // Get number of meshes
-    int nodeCount = scene->GetSrcObjectCount<FbxNode>();
-    this->nodes.Reserve(nodeCount);
+    size_t nodeCount = scene->nodes.count;
+    this->nodes.Reserve((SizeT)nodeCount);
 
     // Go through all nodes and add them to our lookup
-    Util::Dictionary<FbxNode*, SceneNode*> nodeLookup;
-    ParseNodeHierarchy(scene->GetRootNode(), nullptr, nodeLookup, this->nodes);
+    Util::Dictionary<ufbx_node*, SceneNode*> nodeLookup;
+    ParseNodeHierarchy(scene->root_node, nullptr, nodeLookup, this->nodes);
 
     // Setup skeleton hierarchy
-    this->SetupSkeletons();
+    this->SetupSkeletons(); 
 
     // Extract data from nodes
     for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
@@ -174,11 +144,11 @@ NFbxScene::Setup(
     this->ExtractSkeletons();
 
     // Extract animation curves
-    int animStackCount = scene->GetSrcObjectCount<FbxAnimStack>();
-    for (int animStackIndex = 0; animStackIndex < animStackCount; animStackIndex++)
+    
+    size_t animStackCount = scene->anim_stacks.count;
+    for (size_t animStackIndex = 0; animStackIndex < animStackCount; animStackIndex++)
     {
-        FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(animStackIndex);
-        scene->SetCurrentAnimationStack(animStack);
+        ufbx_anim_stack* animStack = scene->anim_stacks[animStackIndex];
         for (int nodeIndex = 0; nodeIndex < this->nodes.Size(); nodeIndex++)
         {
             SceneNode* node = &this->nodes[nodeIndex];
@@ -193,7 +163,7 @@ NFbxScene::Setup(
                 NFbxNode::ExtractAnimation(node, anim.keys, anim.keyTimes, animStack);
 
                 // Generate one clip per anim stack
-                Scene::GenerateClip(node, anim, animStack->GetName());
+                Scene::GenerateClip(node, anim, Util::String(animStack->name.data, animStack->name.length));
             }
         }
     }
@@ -203,22 +173,22 @@ NFbxScene::Setup(
 /**
 */
 float
-NFbxScene::TimeModeToFPS(const FbxTime::EMode& timeMode)
+NFbxScene::TimeModeToFPS(const ufbx_time_mode timeMode)
 {
     switch (timeMode)
     {
-        case FbxTime::eFrames100: return 100;
-        case FbxTime::eFrames120: return 120;
-        case FbxTime::eFrames1000: return 1000;
-        case FbxTime::eFrames30: return 30;
-        case FbxTime::eFrames30Drop: return 30;
-        case FbxTime::eFrames48: return 48;
-        case FbxTime::eFrames50: return 50;
-        case FbxTime::eFrames60: return 60;
-        case FbxTime::eNTSCDropFrame: return 29.97002617f;
-        case FbxTime::eNTSCFullFrame: return 29.97002617f;
-        case FbxTime::ePAL: return 25;
-        case FbxTime::eCustom: return -1; // invalid mode, has to be handled separately
+        case UFBX_TIME_MODE_100_FPS: return 100;
+        case UFBX_TIME_MODE_120_FPS: return 120;
+        case UFBX_TIME_MODE_1000_FPS: return 1000;
+        case UFBX_TIME_MODE_30_FPS: return 30;
+        case UFBX_TIME_MODE_30_FPS_DROP: return 30;
+        case UFBX_TIME_MODE_48_FPS: return 48;
+        case UFBX_TIME_MODE_50_FPS: return 50;
+        case UFBX_TIME_MODE_60_FPS: return 60;
+        case UFBX_TIME_MODE_NTSC_DROP_FRAME: return 29.97002617f;
+        case UFBX_TIME_MODE_NTSC_FULL_FRAME: return 29.97002617f;
+        case UFBX_TIME_MODE_PAL: return 25;
+        case UFBX_TIME_MODE_CUSTOM: return -1; // invalid mode, has to be handled separately
         default: return 24;
     }
 }

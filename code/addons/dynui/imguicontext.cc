@@ -162,6 +162,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
 
                 // set texture in shader, we shouldn't have to put it into ImGui
                 CoreGraphics::TextureId texture = tex.nebulaHandle;
+                CoreGraphics::TextureIdLock _0(texture);
                 CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
                 auto usage = CoreGraphics::TextureGetUsage(texture);
                 if (usage & CoreGraphics::TextureUsage::RenderTexture || usage & CoreGraphics::TextureUsage::ReadWriteTexture)
