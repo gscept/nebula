@@ -245,7 +245,7 @@ NFbxMeshNode::ExtractMesh(
                 {
                     Math::vec3 tangent = Extract(tangentElements, baseIndex);
                     meshVertex.SetTangent(tangent);
-                    //meshVertex.SetSign(-tangent.w);
+                    meshVertex.SetSign(1.0f);
                     componentMask |= MeshBuilderVertex::Tangents;
                 }
                 else
