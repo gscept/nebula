@@ -1,0 +1,12 @@
+{
+	"namespace": "Editor",
+	"components": {
+		"EditorEntity": {
+			"id": {
+				"type": "uint",
+				"default": -1,
+				"description": "The editor entitys id."
+			}
+		}
+	}
+}

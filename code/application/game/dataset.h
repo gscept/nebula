@@ -43,6 +43,8 @@ struct Dataset
         void* buffers[MAX_COMPONENT_BUFFERS];
         /// which instances are valid in this buffer
         decltype(MemDb::Table::Partition::validRows) validInstances;
+        /// which instances are marked as modified in this buffer. Note that you need to manually mark the entity as modified. @see Game::World::MarkAsModified
+        decltype(MemDb::Table::Partition::modifiedRows) modifiedInstances;
     };
 
     /// number of views in views array

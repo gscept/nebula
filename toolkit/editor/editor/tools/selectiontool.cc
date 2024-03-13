@@ -16,6 +16,13 @@
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
+#include "graphicsfeature/graphicsfeatureunit.h"
+#include "editor/components/editorcomponents.h"
+#include "input/inputserver.h"
+#include "input/mouse.h"
+#include "util/bvh.h"
+#include "renderutil/mouserayutil.h"
+#include "camera.h"
 
 Util::Array<Editor::Entity> Tools::SelectionTool::selection = {};
 static bool isDirty = false;
@@ -32,6 +39,80 @@ Util::Array<Editor::Entity> const&
 SelectionTool::Selection()
 {
     return SelectionTool::selection;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
+{
+	Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
+	bool performPicking = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && !isTransforming;
+
+	if (performPicking)
+	{
+		selection.Clear();
+		
+		Math::vec2 mousePos = mouse->GetScreenPosition();
+		//TODO: move mousepos to viewport space
+		mousePos -= viewPortPosition;
+		mousePos = { mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y };
+		
+		Math::mat4 const camTransform = Math::inverse(camera->GetViewTransform());
+		Math::mat4 const invProj = Math::inverse(camera->GetProjectionTransform());
+
+		Math::line ray = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
+
+		Util::Bvh bvh;
+		
+		Util::Array<Editor::EditorEntity> editorEntities;
+		Util::Array<Math::bbox> bboxes;
+
+		Game::Filter filter = Game::FilterBuilder().Including<
+			const Game::Entity, 
+			const GraphicsFeature::Model, 
+			const Editor::EditorEntity
+		>().Build();
+
+		Game::Dataset dataset = Game::GetWorld(WORLD_DEFAULT)->Query(filter);
+
+		for (IndexT v = 0; v < dataset.numViews; v++)
+		{
+			Game::Dataset::View const* view = dataset.views + v;
+			for (IndexT i = 0; i < view->numInstances; i++)
+			{
+				Game::Entity const& gameEntity = *((Game::Entity*)view->buffers[0] + i);
+				GraphicsFeature::Model const& model = *((GraphicsFeature::Model*)view->buffers[1] + i);
+				Editor::EditorEntity const& editorEntity = *((Editor::EditorEntity*)view->buffers[2] + i);
+
+				Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(model.graphicsEntityId);
+				editorEntities.Append(editorEntity);
+				bboxes.Append(bbox);
+			}
+		}
+
+		if (bboxes.Size() > 0)
+		{
+			bvh.Build(bboxes.Begin(), bboxes.Size());
+			Util::Array<uint32_t> intersectionIndices = bvh.Intersect(ray);
+
+			for (IndexT i = 0; i < intersectionIndices.Size(); i++)
+			{
+				uint32_t const idx = intersectionIndices[i];
+				Editor::EditorEntity const& editorEntity = editorEntities[idx];
+				Math::bbox const& bbox = bboxes[idx];
+
+				float t;
+				if (bbox.intersects(ray, t))
+				{
+					selection.Append(editorEntity.id);
+				}
+			}
+		}
+
+		Game::DestroyFilter(filter);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -63,9 +144,11 @@ SelectionTool::RenderGizmo()
 	if (isTransforming)
 	{
 		isDirty = true;
-		world->SetComponent<Game::Position>(Editor::state.editables[selection[0].index].gameEntity, { pos });
-        world->SetComponent<Game::Orientation>(Editor::state.editables[selection[0].index].gameEntity, { rot } );
-        world->SetComponent<Game::Scale>(Editor::state.editables[selection[0].index].gameEntity, { scale } );
+		Game::Entity const gameEntity = Editor::state.editables[selection[0].index].gameEntity;
+		world->SetComponent<Game::Position>(gameEntity, { pos });
+		world->SetComponent<Game::Orientation>(gameEntity, { rot });
+		world->SetComponent<Game::Scale>(gameEntity, { scale });
+		world->MarkAsModified(gameEntity);
 	}
 	else if(isDirty)
 	{
@@ -91,7 +174,6 @@ SelectionTool::RenderGizmo()
 			Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
 		}
 	}
-
 }
 
 //------------------------------------------------------------------------------

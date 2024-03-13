@@ -54,6 +54,10 @@ fips_dir(editor)
             editorbindings.cc
             editorbindings.h
         )
+    fips_dir(editor/components)
+        nebula_idl_compile(
+			editorcomponents.json
+		)
     fips_dir(editor/ui)
         fips_files(
             uimanager.cc

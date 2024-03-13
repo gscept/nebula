@@ -20,6 +20,8 @@ public:
     EditorFeatureUnit();
     ~EditorFeatureUnit();
 
+    virtual void OnAttach();
+
     /// Called upon activation of feature unit
     virtual void OnActivate();
     /// Called upon deactivation of feature unit

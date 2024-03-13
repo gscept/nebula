@@ -61,6 +61,16 @@ ProcessorBuilder::Async()
 /**
 */
 ProcessorBuilder&
+ProcessorBuilder::OnlyModified()
+{
+    this->onlyModified = true;
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ProcessorBuilder&
 ProcessorBuilder::Order(int order)
 {
     this->order = order;
@@ -78,7 +88,12 @@ ProcessorBuilder::Build()
     processor->async = this->async;
     processor->order = this->order;
     processor->filter = this->filterBuilder.Build();
-    processor->callback = this->func;
+
+    if (this->onlyModified)
+        processor->callback = this->funcModified;
+    else
+        processor->callback = this->func;
+
     FrameEvent* frameEvent = world->GetFramePipeline().GetFrameEvent(this->onEvent);
     frameEvent->AddProcessor(processor);
     return processor;

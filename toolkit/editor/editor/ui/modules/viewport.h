@@ -53,6 +53,12 @@ public:
         return this->hovered;
     }
 
+    Editor::Camera camera;
+    /// the latest actual position of the viewport. This is in normalized space (0...1)
+    Math::vec2 lastViewportImagePosition;
+    /// the latest actual size of the viewport. This is in normalized space (0...1)
+    Math::vec2 lastViewportImageSize;
+
 private:
     RenderMode renderMode = TexturedLit;
 
@@ -61,7 +67,6 @@ private:
 
     Resources::ResourceId resourceId;
 
-    Editor::Camera camera;
     bool hovered = false;
 
     Util::String frameBuffer;

@@ -6,6 +6,16 @@
 #include "editorfeatureunit.h"
 #include "editor/editor.h"
 #include "editor/ui/uimanager.h"
+#include "editor/components/editorcomponents.h"
+#include "graphicsfeature/components/graphicsfeature.h"
+
+// TEMP: Move this to editor game manager
+#include "game/world.h"
+#include "basegamefeature/components/position.h"
+#include "basegamefeature/components/orientation.h"
+#include "basegamefeature/components/scale.h"
+#include "graphicsfeature/components/graphicsfeature.h"
+#include "models/modelcontext.h"
 
 namespace EditorFeature
 {
@@ -33,14 +43,40 @@ EditorFeatureUnit::~EditorFeatureUnit()
 /**
 */
 void
+EditorFeatureUnit::OnAttach()
+{
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    world->RegisterType<Editor::EditorEntity>();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 EditorFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
     if (this->args.GetBoolFlag("-editor"))
     {
         this->AttachManager(Editor::UIManager::Create());
-
+        
         Editor::Create();
+
+        // TODO: move this to a game manager that is created by the editor
+
+        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+        Game::ProcessorBuilder(world, "EditorGameManager.UpdateModelTransforms"_atm)
+            .OnlyModified()
+            .Func(
+                [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
+                {
+                    Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+                    Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
+                }
+            )
+            .Build();
+
         //if (!Editor::ConnectToBackend(...))
         //    Editor::SpawnLocalBackend();
     }

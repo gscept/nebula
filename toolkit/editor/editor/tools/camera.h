@@ -46,6 +46,12 @@ public:
 
     void SetTransform(Math::mat4 const& val);
 
+    Math::mat4 GetViewTransform() const;
+
+    Math::mat4 GetProjectionTransform() const;
+
+
+
 public:
     // Perspective settings
     float fov = 75.0f;

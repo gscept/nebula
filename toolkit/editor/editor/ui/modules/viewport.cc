@@ -203,10 +203,17 @@ Viewport::Render()
     float ratio = (float)dims.height / (float)dims.width;
     imageSize.y = imageSize.x * ratio;
 
+    ImVec2 cursorPos = ImGui::GetCursorPos();
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 imagePosition = {cursorPos.x + windowPos.x, cursorPos.y + windowPos.y };
+
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
     ImGui::Image((void*)&textureInfo, imageSize, ImVec2(0, 0), ImVec2(1, 1));
     
+    this->lastViewportImagePosition = { imagePosition.x / dims.width, imagePosition.y / dims.height };
+    this->lastViewportImageSize = { imageSize.x / dims.width, imageSize.y / dims.height };
+
     this->hovered = ImGui::IsItemHovered();
 
     if (this->hovered)

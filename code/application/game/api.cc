@@ -81,6 +81,7 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
                     Dataset::View* view = data.views + data.numViews;
                     view->tableId = tids[tableIndex];
                     view->validInstances = part->validRows;
+                    view->modifiedInstances = part->modifiedRows;
 
                     IndexT i = 0;
                     for (auto component : components)

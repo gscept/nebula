@@ -10,6 +10,7 @@
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "graphicsfeature/components/graphicsfeature.h"
+#include "editor/components/editorcomponents.h"
 
 namespace Edit
 {
@@ -35,6 +36,9 @@ InternalCreateEntity(Editor::Entity id, Util::StringAtom templateName)
     createInfo.immediate = true;
     createInfo.templateId = tid;
     Game::Entity const entity = gameWorld->CreateEntity(createInfo);
+
+    Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(entity);
+    editorEntityComponent->id = (uint)id;
 
     if (Editor::state.editables.Size() >= id.index)
         Editor::state.editables.Append({});
@@ -69,6 +73,9 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     MemDb::RowId instance = gameWorld->AllocateInstance(entity, gameTable);
     gameWorld->GetDatabase()->GetTable(gameTable).DeserializeInstance(entityState, instance);
     gameWorld->SetComponent<Game::Entity>(entity, entity);
+
+    Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(entity);
+    editorEntityComponent->id = (uint)editorEntity;
 
     if (Editor::state.editorWorld->HasInstance(editorEntity))
     {
@@ -132,28 +139,8 @@ InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
     if (defaultWorld->IsValid(edit.gameEntity))
     {
-        // Remove default world entity instance and create a new one from the data in editor world. Then 
-        defaultWorld->DeallocateInstance(edit.gameEntity);
-
-        MemDb::Table const& editorTable = Editor::state.editorWorld->GetDatabase()->GetTable(mapping.table);
-        MemDb::TableSignature signature = editorTable.GetSignature();
-        
-        MemDb::TableId gameTableId = defaultWorld->GetDatabase()->FindTable(signature);
-        if (gameTableId == MemDb::TableId::Invalid())
-        {
-            // TODO: Maybe generalize this into a function in database?
-            auto const& attributes = editorTable.GetAttributes();
-            MemDb::TableCreateInfo tableInfo;
-            tableInfo.attributeIds = &attributes[0];
-            tableInfo.numAttributes = attributes.Size();
-            tableInfo.name = editorTable.name.Value();
-            gameTableId = defaultWorld->GetDatabase()->CreateTable(tableInfo);
-        }
-        MemDb::Table& gameTable = defaultWorld->GetDatabase()->GetTable(gameTableId);
-
-        Util::Blob const blob = editorTable.SerializeInstance(mapping.instance);
-
-        MemDb::RowId gameRow = defaultWorld->AllocateInstance(edit.gameEntity, gameTableId, &blob);
+        defaultWorld->SetComponentValue(edit.gameEntity, component, value, size);
+        defaultWorld->MarkAsModified(edit.gameEntity);
     }
 
     edit.version++;

@@ -55,6 +55,7 @@ Scene::Run()
 {
     viewPort.Render();
     Tools::SelectionTool::RenderGizmo();
+    Tools::SelectionTool::Update(this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera);
 }
 
 } // namespace Presentation

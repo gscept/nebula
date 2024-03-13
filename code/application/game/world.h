@@ -106,6 +106,9 @@ public:
     /// Get the frame pipeline
     FramePipeline& GetFramePipeline();
 
+    /// Mark an entity as modified in its table.
+    void MarkAsModified(Game::Entity entity);
+
     // -- Internal methods -- Use with caution! --
 
     /// Allocate an entity id. Use this with caution!

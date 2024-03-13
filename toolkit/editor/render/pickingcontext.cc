@@ -37,8 +37,6 @@ PickingContext::SetupEntity(Graphics::GraphicsEntityId id, Game::Entity editorEn
 	Graphics::ContextEntityId const cid = GetContextId(id);
 
 	allocator.Get<0>(cid.id) = editorEntity;
-
-	
 }
 
 } // namespace Editor

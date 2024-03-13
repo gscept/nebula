@@ -1256,6 +1256,18 @@ World::GetFramePipeline()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+World::MarkAsModified(Game::Entity entity)
+{
+    EntityMapping mapping = this->GetEntityMapping(entity);
+    MemDb::Table& table = this->db->GetTable(mapping.table);
+    MemDb::Table::Partition* partition = table.GetPartition(mapping.instance.partition);
+    partition->modifiedRows.SetBit(mapping.instance.index);
+}
+
+//------------------------------------------------------------------------------
+/**
     @returns    Dataset with category table views.
 
     @note       The category table view buffer can be NULL if the filter contains

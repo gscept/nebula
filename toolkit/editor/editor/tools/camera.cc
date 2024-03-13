@@ -184,5 +184,23 @@ Camera::SetTransform(Math::mat4 const& val)
     CameraContext::SetView(this->cameraEntityId, val);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Math::mat4
+Camera::GetViewTransform() const
+{
+    return CameraContext::GetView(this->cameraEntityId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::mat4
+Camera::GetProjectionTransform() const
+{
+    return CameraContext::GetProjection(this->cameraEntityId);
+}
+
 
 } // namespace Editor

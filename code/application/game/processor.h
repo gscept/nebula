@@ -83,6 +83,43 @@ private:
             }
         };
     }
+
+    template <typename... COMPONENTS>
+    static std::function<void(World*, Dataset::View const&)>
+    ForEachModified(std::function<void(World*, COMPONENTS...)> func, uint8_t bufferStartOffset)
+    {
+        return [func, bufferStartOffset](World* world, Game::Dataset::View const& view)
+        {
+            uint16_t i = 0;
+            while (i < view.numInstances)
+            {
+                
+                // check validity of instances in sections of 64 instances
+                uint64_t section = i / 64;
+                if (!view.validInstances.SectionIsNull(section) && !view.modifiedInstances.SectionIsNull(section))
+                {
+                    uint16_t const end = Math::min<uint16_t>(i + uint16_t(64), view.numInstances);
+                    for (uint32_t instance = i; instance < end; ++instance)
+                    {
+                        // make sure the instance we're processing is valid
+                        if (view.validInstances.IsSet(instance) && view.modifiedInstances.IsSet(instance))
+                        {
+                            UpdateExpander<COMPONENTS...>(
+                                world,
+                                func,
+                                view,
+                                instance,
+                                bufferStartOffset,
+                                std::make_index_sequence<sizeof...(COMPONENTS)>()
+                            );
+                        }
+                    }
+                }
+                // progress 64 instances, which corresponds to 1 section
+                i += 64;
+            }
+        };
+    }
 };
 
 class ProcessorBuilder
@@ -116,6 +153,9 @@ public:
     /// processor should run async
     ProcessorBuilder& Async();
     
+    /// entities must be marked as modified for them to actually be processed
+    ProcessorBuilder& OnlyModified();
+
     /// Set the sorting order for the processor
     ProcessorBuilder& Order(int order);
 
@@ -127,8 +167,10 @@ private:
     Util::StringAtom name;
     Util::StringAtom onEvent;
     std::function<void(World*, Dataset::View const&)> func = nullptr;
+    std::function<void(World*, Dataset::View const&)> funcModified = nullptr;
     FilterBuilder filterBuilder;
     bool async = false;
+    bool onlyModified = false;
     int order = 100;
 };
 
@@ -152,6 +194,7 @@ ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
     uint8_t const bufferStartOffset = this->filterBuilder.GetNumInclusive();
     this->filterBuilder.Including<COMPONENTS...>();
     this->func = Processor::ForEach(func, bufferStartOffset);
+    this->funcModified = Processor::ForEachModified(func, bufferStartOffset);
     return *this;
 }
 
