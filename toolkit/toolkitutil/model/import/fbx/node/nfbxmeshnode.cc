@@ -114,8 +114,8 @@ NFbxMeshNode::ExtractMesh(
     // this is here just to inform if an artist has forgot to apply a UV set or the mesh has no normals prior to importing
     if (vertexCount > 0)
     {
-        n_assert_fmt(uvCount > 0, "You need at least one UV-channel or no shader will be applicable!");
-        n_assert_fmt(normalCount > 0, "You need at least one set of normals or no shader will be applicable!");
+        n_assert_msg(uvCount > 0, "You need at least one UV-channel or no shader will be applicable!");
+        n_assert_msg(normalCount > 0, "You need at least one set of normals or no shader will be applicable!");
     }
 
     // get scale
