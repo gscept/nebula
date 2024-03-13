@@ -419,7 +419,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
         Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
         Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, offset = alloc.offset, counter, i, pNode](Resources::ResourceId id)
         {
-            state.blasLock.Enter();
+            Threading::CriticalScope _s(&state.blasLock);
             CoreGraphics::MeshResourceId meshRes = id;
 
             // Setup material
@@ -480,12 +480,15 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             createInfo.blas = blas;
             createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
+            // Disable instance if the vertex layout isn't supported
+            if (temp->vertexLayout != CoreGraphics::VertexLayoutType::Normal)
+                createInfo.mask = 0x0;
+
             CoreGraphics::BlasIdLock _0(createInfo.blas);
             state.blasInstances[offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
             state.blasInstanceMeshes[offset + counter] = mesh;
 
             state.topLevelNeedsReconstruction = true;
-            state.blasLock.Leave();
         });
         counter++;
     }
