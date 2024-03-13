@@ -809,7 +809,7 @@ CharacterContext::OnRenderDebug(uint32 flags)
 {
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<Graphics::GraphicsEntityId>& modelContexts = characterContextAllocator.GetArray<EntityId>();
-    const Math::mat4 scale = Math::scaling(1.1f, 1.1f, 1.1f);
+    const Math::mat4 scale = Math::scaling(0.1f, 0.1f, 0.1f);
     IndexT i;
     for (i = 0; i < jointPalettes.Size(); i++)
     {
