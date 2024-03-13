@@ -144,7 +144,6 @@ NFbxScene::Setup(
     this->ExtractSkeletons();
 
     // Extract animation curves
-    
     size_t animStackCount = scene->anim_stacks.count;
     for (size_t animStackIndex = 0; animStackIndex < animStackCount; animStackIndex++)
     {

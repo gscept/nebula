@@ -157,15 +157,15 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
     // access 255 individual joints
     for (IndexT i = 0; i < outMeshNodes.Size(); i++)
     {
-        SceneNode* node = outMeshNodes[i];
+        SceneNode* node = outMeshNodes[i]; 
         if (node->base.isSkin)
         {
             MeshBuilder* mesh = outMeshes[node->mesh.meshIndex];
             Util::Set<IndexT> joints;
             SizeT baseTriangle = 0;
             SizeT numTriangles = 0;
-            MeshBuilderGroup group;
-            group.SetFirstTriangleIndex(baseTriangle);
+            IndexT currentGroup = node->mesh.groupId;
+            MeshBuilderGroup& group = outGroups[currentGroup];
             for (IndexT j = 0; j < mesh->GetNumTriangles(); j++)
             {
                 const MeshBuilderTriangle& tri = mesh->TriangleAt(j);
@@ -190,7 +190,8 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
                 if (joints.Size() + uniqueJoints.Size() >= 256)
                 {
                     // Create new group and joint lookup whenever we hit the max allowed
-                    node->skin.skinFragments.Append(outGroups.Size());
+                    currentGroup = groupId++;
+                    node->skin.skinFragments.Append(currentGroup);
                     node->skin.jointLookup.Append(joints);
 
                     group.SetFirstTriangleIndex(baseTriangle);
@@ -210,12 +211,11 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
                 }                
             }
 
-            // Add the last group
-            node->skin.skinFragments.Append(outGroups.Size());
+            // Change the group the mesh node pointed to initially
+            node->skin.skinFragments.Append(node->mesh.groupId);
             node->skin.jointLookup.Append(joints);
             group.SetFirstTriangleIndex(baseTriangle);
-            group.SetNumTriangles(numTriangles);
-            outGroups.Append(group);
+            group.SetNumTriangles(numTriangles); 
 
             // Fixup joint indices, by moving the range of joints per fragment to 0-255
             int jointOffset = 0;
