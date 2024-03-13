@@ -364,10 +364,10 @@ GraphicsFeatureUnit::OnBeginFrame()
         uiFunc();
     }
 
-    this->gfxServer->RenderDebug(0);
     switch (Core::CVarReadInt(this->r_debug))
     {
     case 2:
+        this->gfxServer->RenderDebug(0);
     case 1:
         Game::GameServer::Instance()->RenderDebug();
     default:
