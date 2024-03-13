@@ -38,18 +38,26 @@ ptr alignment(8) struct VertexAttributeNormals
 
 ptr alignment(4) struct VertexAttributeSecondaryUv
 {
+    ivec2 normal_tangent;
     uint uv;
 };
 
 ptr alignment(4) struct VertexAttributeColor
 {
+    ivec2 normal_tangent;
     uint color;
 };
 
-ptr alignment(32) struct VertexAttributeSkin
+ptr alignment(4) struct VertexAttributeSkin
 {
+    ivec2 normal_tangent;
     vec4 weights;
     uint indices;
+};
+
+ptr alignment(4) struct VertexAttributeDummy
+{
+    uint dummy;
 };
 
 ptr alignment(4) struct Indexes32
@@ -76,10 +84,11 @@ MESH_BINDING rw_buffer Geometry
 struct Object
 {
     VertexPosUv PositionsPtr;
-    VertexAttributeNormals AttrPtr;
+    VertexAttributeDummy AttrPtr;
     Indexes16 IndexPtr;
     uint Use16BitIndex;
     uint MaterialOffset;
+    uint VertexLayout;
 };
 
 OBJECT_BINDING rw_buffer ObjectBuffer
@@ -200,17 +209,42 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
     vec2 uv1 = UnpackUV32((obj.PositionsPtr[indices.y]).uv);
     vec2 uv2 = UnpackUV32((obj.PositionsPtr[indices.z]).uv);
     uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+    
+    vec3 n1, n2, n3;
+    vec3 t1, t2, t3;
+    float sign;
 
-    vec3 n1 = UnpackNormal32((obj.AttrPtr[indices.x]).normal_tangent.x);
-    vec3 n2 = UnpackNormal32((obj.AttrPtr[indices.y]).normal_tangent.x);
-    vec3 n3 = UnpackNormal32((obj.AttrPtr[indices.z]).normal_tangent.x);
+    
+    switch (obj.VertexLayout)
+    {
+        case 1: // Normal
+        {
+            VertexAttributeNormals attrs = VertexAttributeNormals(obj.AttrPtr);
+            n1 = UnpackNormal32(attrs[indices.x].normal_tangent.x);
+            n2 = UnpackNormal32(attrs[indices.y].normal_tangent.x);
+            n3 = UnpackNormal32(attrs[indices.z].normal_tangent.x);
+            t1 = UnpackNormal32(attrs[indices.x].normal_tangent.y);
+            t2 = UnpackNormal32(attrs[indices.y].normal_tangent.y);
+            t3 = UnpackNormal32(attrs[indices.z].normal_tangent.y);
+            sign = UnpackSign(attrs[indices.x].normal_tangent.y);
+            break;
+        }
+        case 4: // Skin
+        {
+            VertexAttributeSkin attrs = VertexAttributeSkin(obj.AttrPtr);
+            n1 = UnpackNormal32(attrs[indices.x].normal_tangent.x);
+            n2 = UnpackNormal32(attrs[indices.y].normal_tangent.x);
+            n3 = UnpackNormal32(attrs[indices.z].normal_tangent.x);
+            t1 = UnpackNormal32(attrs[indices.x].normal_tangent.y);
+            t2 = UnpackNormal32(attrs[indices.y].normal_tangent.y);
+            t3 = UnpackNormal32(attrs[indices.z].normal_tangent.y);
+            sign = UnpackSign(attrs[indices.x].normal_tangent.y);
+            break;
+        }
+    }
+    
     vec3 norm = BaryCentricVec3(n1, n2, n3, baryCoords);
-
-    vec3 t1 = UnpackNormal32((obj.AttrPtr[indices.x]).normal_tangent.y);
-    vec3 t2 = UnpackNormal32((obj.AttrPtr[indices.y]).normal_tangent.y);
-    vec3 t3 = UnpackNormal32((obj.AttrPtr[indices.z]).normal_tangent.y);
     vec3 tang = BaryCentricVec3(t1, t2, t3, baryCoords);
-    float sign = UnpackSign((obj.AttrPtr[indices.x]).normal_tangent.y);
 
     tbn = TangentSpace(tang, norm, sign);
 }
