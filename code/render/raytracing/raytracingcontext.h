@@ -30,6 +30,12 @@ enum ObjectType
     ParticleObject
 };
 
+enum UpdateType
+{
+    Dynamic,
+    Static
+};
+
 class RaytracingContext : public Graphics::GraphicsContext
 {
     __DeclareContext();
@@ -44,18 +50,21 @@ public:
 
     /// Setup a model entity for ray tracing, assumes model context registration
     static void SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
+
     /// Setup a terrain system for ray tracing
-    static void SetupTerrain(
+    static void SetupMesh(
         const Graphics::GraphicsEntityId id
+        , const UpdateType objectType
         , const CoreGraphics::VertexComponent::Format format
         , const CoreGraphics::IndexType::Code indexType
         , const CoreGraphics::VertexAlloc& vertices
         , const CoreGraphics::VertexAlloc& indices
         , const CoreGraphics::PrimitiveGroup& patchPrimGroup
-        , SizeT vertexOffsetStride
-        , SizeT patchVertexStride
-        , Util::Array<Math::mat4> transforms
-        , MaterialInterface::TerrainMaterial material
+        , const SizeT vertexOffsetStride
+        , const SizeT patchVertexStride
+        , const Util::Array<Math::mat4> transforms
+        , const uint MaterialTableOffset
+        , const CoreGraphics::VertexLayoutType vertexLayout
     );
 
     /// Build top level acceleration
@@ -79,21 +88,17 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    enum ObjectType
-    {
-        Dynamic,
-        Static
-    };
+
 
     enum
     {
         Raytracing_Allocation,
-        Raytracing_ObjectType,
+        Raytracing_UpdateType,
         Raytracing_NumStructures
     };
     typedef Ids::IdAllocator<
         Memory::RangeAllocation,
-        ObjectType,
+        Raytracing::UpdateType,
         uint
     > RaytracingAllocator;
     static RaytracingAllocator raytracingContextAllocator;

@@ -21,7 +21,7 @@
 #include "texturetilecache.h"
 
 #include "resources/resourceserver.h"
-#include "gliml.h"
+#include "materials/materialloader.h"
 
 #include "terrain/shaders/terrain.h"
 #include "terrain/shaders/terrain_mesh_generate.h"
@@ -1564,8 +1564,10 @@ TerrainContext::SetupTerrain(
                 }
             }
 
-            Raytracing::RaytracingContext::SetupTerrain(
+            uint materialOffset = Materials::MaterialLoader::RegisterTerrainMaterial(mat);
+            Raytracing::RaytracingContext::SetupMesh(
                 entity
+                , Raytracing::UpdateType::Static
                 , CoreGraphics::VertexComponent::Float3
                 , CoreGraphics::IndexType::Index32
                 , raytracingState.vertexBuffer
@@ -1574,7 +1576,8 @@ TerrainContext::SetupTerrain(
                 , vertexElementSize
                 , vertexBufferByteSize
                 , patchTransforms
-                , mat);
+                , materialOffset
+                , CoreGraphics::VertexLayoutType::Normal);
         };
         raytracingState.setupBlasFrame = 0xFFFFFFFF;
     }

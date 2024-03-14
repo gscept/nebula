@@ -10,7 +10,7 @@
 #include "coregraphics/meshresource.h"
 #include "coregraphics/shader.h"
 #include "graphics/globalconstants.h"
-
+#include "materials/shaderconfig.h"
 #include "materials/materialloader.h"
 
 #include "raytracing/shaders/raytracetest.h"
@@ -411,7 +411,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, numObjects);
-    raytracingContextAllocator.Set<Raytracing_ObjectType>(contextId.id, ObjectType::Dynamic);
+    raytracingContextAllocator.Set<Raytracing_UpdateType>(contextId.id, UpdateType::Dynamic);
 
     IndexT counter = 0;
     for (IndexT i = nodes.begin; i < nodes.end; i++)
@@ -469,6 +469,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
             constants.AttrPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
             constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + CoreGraphics::MeshGetIndexOffset(mesh);
+            constants.VertexLayout = (uint)temp->vertexLayout;
             state.objects[offset + counter] = constants;
 
             // Setup instance
@@ -481,9 +482,6 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             createInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
             // Disable instance if the vertex layout isn't supported
-            if (temp->vertexLayout != CoreGraphics::VertexLayoutType::Normal)
-                createInfo.mask = 0x0;
-
             CoreGraphics::BlasIdLock _0(createInfo.blas);
             state.blasInstances[offset + counter] = CoreGraphics::CreateBlasInstance(createInfo);
             state.blasInstanceMeshes[offset + counter] = mesh;
@@ -499,18 +497,19 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
 //------------------------------------------------------------------------------
 /**
 */
-void
-RaytracingContext::SetupTerrain(
+void RaytracingContext::SetupMesh(
     const Graphics::GraphicsEntityId id
+    , const UpdateType objectType
     , const CoreGraphics::VertexComponent::Format format
     , const CoreGraphics::IndexType::Code indexType
     , const CoreGraphics::VertexAlloc& vertices
     , const CoreGraphics::VertexAlloc& indices
     , const CoreGraphics::PrimitiveGroup& patchPrimGroup
-    , SizeT vertexOffsetStride
-    , SizeT patchVertexStride
-    , Util::Array<Math::mat4> transforms
-    , MaterialInterface::TerrainMaterial material
+    , const SizeT vertexOffsetStride
+    , const SizeT patchVertexStride
+    , const Util::Array<Math::mat4> transforms
+    , const uint MaterialTableOffset
+    , const CoreGraphics::VertexLayoutType vertexLayout
 )
 {
     Graphics::ContextEntityId contextId = GetContextId(id);
@@ -523,7 +522,7 @@ RaytracingContext::SetupTerrain(
 
     raytracingContextAllocator.Set<Raytracing_Allocation>(contextId.id, alloc);
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, transforms.Size());
-    raytracingContextAllocator.Set<Raytracing_ObjectType>(contextId.id, ObjectType::Static);
+    raytracingContextAllocator.Set<Raytracing_UpdateType>(contextId.id, objectType);
 
     // For each patch, setup a separate BLAS
     Util::Array<CoreGraphics::BlasId> blases;
@@ -565,9 +564,10 @@ RaytracingContext::SetupTerrain(
 
         Raytracetest::Object constants;
         constants.Use16BitIndex = indexType == CoreGraphics::IndexType::Index16 ? 1 : 0;
-        constants.MaterialOffset = Materials::MaterialLoader::RegisterTerrainMaterial(material);
+        constants.MaterialOffset = MaterialTableOffset;
         constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + createInfo.indexOffset;
         constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + createInfo.vertexOffset;
+        constants.VertexLayout = (uint)vertexLayout;
         state.objects[i] = constants;
 
         state.numRegisteredInstances++;
@@ -680,13 +680,13 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 // Get node range and update ids buffer
                 Graphics::GraphicsEntityId gid = ids[index];
                 Graphics::ContextEntityId cid = GetContextId(gid);
-                const ObjectType type = raytracingContextAllocator.Get<Raytracing_ObjectType>(cid.id);
+                const UpdateType type = raytracingContextAllocator.Get<Raytracing_UpdateType>(cid.id);
                 const Memory::RangeAllocation alloc = raytracingContextAllocator.Get<Raytracing_Allocation>(cid.id);
                 const SizeT numObjects = raytracingContextAllocator.Get<Raytracing_NumStructures>(cid.id);
                 if (numObjects == 0)
                     continue;
 
-                if (type == ObjectType::Static)
+                if (type == UpdateType::Static)
                 {
                     for (IndexT j = 0; j < numObjects; j++)
                     {
