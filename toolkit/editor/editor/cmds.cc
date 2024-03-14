@@ -297,15 +297,15 @@ struct CMDSetSelection : public Edit::Command
             this->oldSelection = Tools::SelectionTool::Selection();
             this->initialized = true;
         }
-        Tools::SelectionTool::selection = newSelection;
-        Tools::SelectionTool::selection.Sort();
+        Tools::SelectionTool::state.selection = newSelection;
+        Tools::SelectionTool::state.selection.Sort();
         return true;
     };
     bool
     Unexecute() override
     {
-        Tools::SelectionTool::selection = oldSelection;
-        Tools::SelectionTool::selection.Sort();
+        Tools::SelectionTool::state.selection = oldSelection;
+        Tools::SelectionTool::state.selection.Sort();
         return true;
     };
     Util::Array<Editor::Entity> newSelection;

@@ -54,8 +54,15 @@ void
 Scene::Run()
 {
     viewPort.Render();
-    Tools::SelectionTool::RenderGizmo();
-    Tools::SelectionTool::Update(this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera);
+    Tools::SelectionTool::RenderGizmo(
+        this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera
+    );
+    if (viewPort.IsHovered())
+    {
+        Tools::SelectionTool::Update(
+            this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera
+        );
+    }
 }
 
 } // namespace Presentation

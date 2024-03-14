@@ -16,6 +16,8 @@
 #include "util/random.h"
 #include "commandmanager.h"
 
+#include "editor/components/editorcomponents.h"
+
 namespace Editor
 {
 
@@ -112,6 +114,9 @@ StopGame()
             Editable& edit = state.editables[editorEntity.index];
             // NOTE: assumes the game entity id will be the same as the editor entity id when we've just copied the world.
             edit.gameEntity = editorEntity;
+
+            Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(edit.gameEntity);
+            editorEntityComponent->id = (uint)editorEntity;
         }
     }
 
@@ -119,7 +124,6 @@ StopGame()
 
     Game::TimeManager::SetGlobalTimeFactor(0.0f);
 }
-
 
 } // namespace Editor
 
