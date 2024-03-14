@@ -72,7 +72,7 @@ public:
 //------------------------------------------------------------------------------
 /**
 */
-Bvh::~Bvh()
+inline Bvh::~Bvh()
 {
     this->Clear();
 }
@@ -80,7 +80,7 @@ Bvh::~Bvh()
 //------------------------------------------------------------------------------
 /**
 */
-void
+inline void
 Bvh::Build(Math::bbox* bboxes, uint32_t numBoxes)
 {
     this->Clear();
@@ -103,7 +103,7 @@ Bvh::Build(Math::bbox* bboxes, uint32_t numBoxes)
 //------------------------------------------------------------------------------
 /**
 */
-Util::Array<uint32_t>
+inline Util::Array<uint32_t>
 Bvh::Intersect(Math::line line)
 {
     Util::Array<uint32_t> ret;
@@ -170,7 +170,7 @@ Bvh::Intersect(Math::line line)
 //------------------------------------------------------------------------------
 /**
 */
-void
+inline void
 Bvh::UpdateNodeBounds(Bvh::Node* node, Math::bbox* bboxes)
 {
     node->bbox.begin_extend();
@@ -187,7 +187,7 @@ Bvh::UpdateNodeBounds(Bvh::Node* node, Math::bbox* bboxes)
 //------------------------------------------------------------------------------
 /**
 */
-void
+inline void
 Bvh::Subdivide(Bvh::Node* node, Math::bbox* bboxes)
 {
     if (node->count <= 2)
@@ -236,7 +236,7 @@ Bvh::Subdivide(Bvh::Node* node, Math::bbox* bboxes)
 //------------------------------------------------------------------------------
 /**
 */
-float
+inline float
 Bvh::FindBestSplitPlane(Bvh::Node* node, Math::bbox* bboxes, int& axis, float& splitPos)
 {
     constexpr uint32_t intervals = 8;
@@ -315,7 +315,7 @@ Bvh::FindBestSplitPlane(Bvh::Node* node, Math::bbox* bboxes, int& axis, float& s
 //------------------------------------------------------------------------------
 /**
 */
-void
+inline void
 Bvh::Clear()
 {
     if (this->nodes != nullptr)
