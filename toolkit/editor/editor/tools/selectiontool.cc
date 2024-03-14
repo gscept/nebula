@@ -97,6 +97,8 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 			bvh.Build(bboxes.Begin(), bboxes.Size());
 			Util::Array<uint32_t> intersectionIndices = bvh.Intersect(ray);
 
+			Util::Array<Editor::Entity> newSelection;
+
 			for (IndexT i = 0; i < intersectionIndices.Size(); i++)
 			{
 				uint32_t const idx = intersectionIndices[i];
@@ -106,9 +108,10 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 				float t;
 				if (bbox.intersects(ray, t))
 				{
-					selection.Append(editorEntity.id);
+					newSelection.Append(editorEntity.id);
 				}
 			}
+			Edit::SetSelection(newSelection);
 		}
 
 		Game::DestroyFilter(filter);
@@ -121,6 +124,16 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 void
 SelectionTool::RenderGizmo()
 {
+	for (size_t i = 0; i < selection.Size(); i++)
+	{
+		if (!Editor::state.editorWorld->IsValid(selection[i]) || !Editor::state.editorWorld->HasInstance(selection[i]))
+		{
+			selection.EraseIndex(i);
+			i--;
+			continue;
+		}
+	}
+
     if (selection.IsEmpty())
 		return;
 	

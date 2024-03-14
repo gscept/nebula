@@ -87,7 +87,9 @@ Toolbar::Run()
     if (ImGui::Button("Create"))
     {
         if (selected != nullptr)
+        {
             Edit::CreateEntity(selected);
+        }
     }
     
     IMGUI_VERTICAL_SEPARATOR;
