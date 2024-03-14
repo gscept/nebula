@@ -17,9 +17,12 @@ const int SHADOW_CASTER_COUNT = 16;
 #define FLT_MIN     -3.40282347E+38F
  
 // the texture list can be updated once per tick (frame)
+group(TICK_GROUP) binding(0) texture1D			Textures1D[MAX_TEXTURES];
+group(TICK_GROUP) binding(0) texture1DArray 	Textures1DArray[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2D			Textures2D[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2DMS		Textures2DMS[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) textureCube		TexturesCube[MAX_TEXTURES];
+group(TICK_GROUP) binding(0) textureCubeArray	TexturesCubeArray[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture3D			Textures3D[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2DArray	    Textures2DArray[MAX_TEXTURES];
 group(TICK_GROUP) sampler_state		Basic2DSampler {};

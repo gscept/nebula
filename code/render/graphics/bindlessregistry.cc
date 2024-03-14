@@ -50,6 +50,14 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     IndexT var;
     switch (type)
     {
+    case CoreGraphics::Texture1D:
+        n_assert(!state.texturePool.IsFull());
+        var = Shared::Table_Tick::Textures1D_SLOT;
+        break;
+    case CoreGraphics::Texture1DArray:
+        n_assert(!state.texturePool.IsFull());
+        var = Shared::Table_Tick::Textures1DArray_SLOT;
+        break;
     case CoreGraphics::Texture2D:
         n_assert(!state.texturePool.IsFull());
         var = Shared::Table_Tick::Textures2D_SLOT;
@@ -65,6 +73,10 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     case CoreGraphics::TextureCube:
         n_assert(!state.texturePool.IsFull());
         var = Shared::Table_Tick::TexturesCube_SLOT;
+        break;
+    case CoreGraphics::TextureCubeArray:
+        n_assert(!state.texturePool.IsFull());
+        var = Shared::Table_Tick::TexturesCubeArray_SLOT;
         break;
     default:
         n_error("Should not happen");
@@ -99,6 +111,12 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     IndexT var = -1;
     switch (type)
     {
+    case CoreGraphics::Texture1D:
+        var = Shared::Table_Tick::Textures1D_SLOT;
+        break;
+    case CoreGraphics::Texture1DArray:
+        var = Shared::Table_Tick::Textures1DArray_SLOT;
+        break;
     case CoreGraphics::Texture2D:
         var = Shared::Table_Tick::Textures2D_SLOT;
         break;
@@ -110,6 +128,9 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
         break;
     case CoreGraphics::TextureCube:
         var = Shared::Table_Tick::TexturesCube_SLOT;
+        break;
+    case CoreGraphics::TextureCubeArray:
+        var = Shared::Table_Tick::TexturesCubeArray_SLOT;
         break;
     default: n_error("unhandled enum"); break;
     }
@@ -140,6 +161,12 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     IndexT var = -1;
     switch (type)
     {
+    case CoreGraphics::Texture1D:
+        var = Shared::Table_Tick::Textures1D_SLOT;
+        break;
+    case CoreGraphics::Texture1DArray:
+        var = Shared::Table_Tick::Textures1DArray_SLOT;
+        break;
     case CoreGraphics::Texture2D:
         var = Shared::Table_Tick::Textures2D_SLOT;
         break;
@@ -151,6 +178,9 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
         break;
     case CoreGraphics::TextureCube:
         var = Shared::Table_Tick::TexturesCube_SLOT;
+        break;
+    case CoreGraphics::TextureCubeArray:
+        var = Shared::Table_Tick::TexturesCubeArray_SLOT;
         break;
     default: n_error("unhandled enum"); break;
     }    

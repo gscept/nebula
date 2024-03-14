@@ -128,7 +128,7 @@ GraphicsServer::Open()
 
         texInfo.tag = "system";
         texInfo.format = CoreGraphics::PixelFormat::R8;
-        texInfo.bindless = false;
+        texInfo.bindless = true;
         texInfo.dataSize = sizeof(unsigned char) * 6;
 
         texInfo.type = CoreGraphics::TextureType::Texture1D;
