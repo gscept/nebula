@@ -32,6 +32,11 @@ struct plane
     /// construct from SSE 128 byte float array
     plane(const __m128 & rhs);
 
+    /// check intersection against line
+    bool intersect(line const& line, point& outIntersectPoint);
+    /// get normal from plane
+    vector get_normal() const;
+
     /// set content
     void set(scalar a, scalar b, scalar c, scalar d);
 
@@ -87,6 +92,36 @@ __forceinline
 plane::plane(const __m128& rhs)
 {
     this->vec = rhs;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+plane::intersect(line const& line, point& outIntersectPoint)
+{
+    Math::vector dv = line.m;
+    Math::vector n = this->get_normal();
+    float d = (this->d - Math::dot(n, line.b)) / Math::dot(n, dv);
+
+    if (d >= 0.0f && d <= 1.0f)
+    {
+        outIntersectPoint = line.b + d * dv;
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vector
+plane::get_normal() const
+{
+    vector res;
+    res.vec = _mm_and_ps(this->vec, _mask_xyz);
+    return res;
 }
 
 //------------------------------------------------------------------------------
