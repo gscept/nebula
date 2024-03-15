@@ -234,12 +234,12 @@ LoadVec4(const Ptr<IO::BXmlReader>& reader, const char* name, float value[4], co
 /**
 */
 void
-LoadVec3(const Ptr<IO::BXmlReader>& reader, const char* name, float value[3], const Math::vec4& def)
+LoadVec3(const Ptr<IO::BXmlReader>& reader, const char* name, float value[3], const Math::vec3& def)
 {
     if (reader->SetToFirstChild(name))
     {
         Math::vec4 val = reader->GetVec4("value");
-        val.store(value);
+        val.store3(value);
     }
     else
     {
@@ -315,7 +315,7 @@ MaterialLoader::Setup()
         LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, state.BRDFMaterials.dirty);
         LoadTexture(reader, CoreGraphics::Black2D, "ParameterMap", tag.Value(), material.ParameterMap, state.BRDFMaterials.dirty);
         LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, state.BRDFMaterials.dirty);
-        LoadVec3(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
+        LoadVec3(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec3(1));
         LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
     };
     this->loaderMap.Add(MaterialProperties::BRDF, brdfLoader);
@@ -328,7 +328,7 @@ MaterialLoader::Setup()
         LoadTexture(reader, CoreGraphics::Green2D, "NormalMap", tag.Value(), material.NormalMap, state.BSDFMaterials.dirty);
         LoadTexture(reader, CoreGraphics::Black2D, "AbsorptionMap", tag.Value(), material.AbsorptionMap, state.BSDFMaterials.dirty);
         LoadTexture(reader, CoreGraphics::Black2D, "ScatterMap", tag.Value(), material.ScatterMap, state.BSDFMaterials.dirty);
-        LoadVec3(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec4(1));
+        LoadVec3(reader, "MatAlbedoIntensity", material.MatAlbedoIntensity, Math::vec3(1));
         LoadFloat(reader, "MatRoughnessIntensity", material.MatRoughnessIntensity, 1);
     };
     this->loaderMap.Add(MaterialProperties::BSDF, bsdfLoader);
@@ -531,11 +531,9 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         if (loaderIndex != InvalidIndex)
         {
             auto loader = this->loaderMap.ValueAtIndex(loaderIndex);
-            if (reader->SetToFirstChild("Params"))
-            {
-                loader(reader, id, tag);
-                state.dirtySet.bits = 0x3;
-            }
+            reader->SetToFirstChild("Params");
+            loader(reader, id, tag);
+            state.dirtySet.bits = 0x3;
             reader->SetToParent();
         }
 

@@ -141,8 +141,8 @@ CreateBlas(const BlasCreateInfo& info)
 
     BufferIdLock _1(info.vbo);
     BufferIdLock _2(info.ibo);
-    VkDeviceAddress vboAddr = BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer());
-    VkDeviceAddress iboAddr = BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer());
+    VkDeviceAddress vboAddr = BufferGetDeviceAddress(info.vbo);
+    VkDeviceAddress iboAddr = BufferGetDeviceAddress(info.ibo);
     VkFormat positionsFormat = VkTypes::AsVkVertexType(info.positionsFormat);
 
     // Assert the vertex format is supported by raytracing
@@ -333,6 +333,8 @@ CreateBlasInstance(const BlasInstanceCreateInfo& info)
 void
 DestroyBlasInstance(const BlasInstanceId id)
 {
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    setup.mask = 0x0; // Disable instance such that TLAS building will ignore it
     blasInstanceAllocator.Dealloc(id.id24);
 }
 
@@ -347,8 +349,28 @@ BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGra
     trans.store3(&setup.transform.matrix[0][0]);
 
     char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
-
     memcpy(ptr, &setup, sizeof(setup));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset)
+{
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
+    memcpy(ptr, &setup, sizeof(setup));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BlasInstanceSetMask(const BlasInstanceId id, uint mask)
+{
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    setup.mask = mask;
 }
 
 //------------------------------------------------------------------------------
@@ -410,13 +432,14 @@ CreateTlas(const TlasCreateInfo& info)
         .scratchData = VkDeviceOrHostAddressKHR{ .hostAddress = nullptr }
     };
 
-    scene.rangeInfos.Append(
-    {
-        .primitiveCount = (uint)info.numInstances,
-        .primitiveOffset = 0, // Primitive offset is defined in the mesh
-        .firstVertex = 0,
-        .transformOffset = 0
-    });
+    scene.rangeInfos = {
+        {
+            .primitiveCount = (uint)info.numInstances,
+            .primitiveOffset = 0, // Primitive offset is defined in the mesh
+            .firstVertex = 0,
+            .transformOffset = 0
+        }
+    };
 
     // Get build sizes
     scene.buildSizes =

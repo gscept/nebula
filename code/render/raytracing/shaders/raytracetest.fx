@@ -28,6 +28,7 @@ Raygen(
     Result.material = vec4(0, 0, 0, 0);
     Result.normal = vec3(0, 0, 0);
     Result.depth = 0;
+    Result.miss = 0;
 
     // Ray trace against BVH
     traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
@@ -35,12 +36,20 @@ Raygen(
     vec3 F0 = CalculateF0(Result.albedo.rgb, Result.material[MAT_METALLIC], vec3(0.04));
     vec3 WorldSpacePos = origin.xyz + direction.xyz * Result.depth;
     vec3 light = vec3(0);
-    light += CalculateLightRT(WorldSpacePos, Result.depth / 10000.0f, Result.albedo.rgb, Result.material, Result.normal);
+    if (Result.miss == 1)
+    {
+        vec3 dir = normalize(direction.xyz);
+        light += CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    }
+    else
+    {
+        light += CalculateLightRT(WorldSpacePos, Result.depth / 10000.0f, Result.albedo.rgb, Result.material, Result.normal);
+    }
     //light += CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, WorldSpacePos);
     //vec3 dir = normalize(Result.normal);
     //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 
-    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(light, 0.0f));
+    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(light / 10.0f, 0.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -51,9 +60,7 @@ Miss(
     [ray_payload] in HitResult Result
 )
 {
-    vec3 dir = normalize(gl_WorldRayDirectionEXT);
-    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
-    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(atmo, 0.0f));
+    Result.miss = 1;
 }
 
 //------------------------------------------------------------------------------

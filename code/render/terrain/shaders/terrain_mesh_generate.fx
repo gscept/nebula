@@ -5,20 +5,16 @@
 
 #include <lib/std.fxh>
 #include <lib/shared.fxh>
-struct Quad
-{
-    uvec4 indices;
-};
 
 group(BATCH_GROUP) rw_buffer IndexInput
 {
-    Quad Quads[];
+    uint Indices[];
 };
 
 struct InputVertex
 {
     vec3 position;
-    vec2 uv;
+    int uv;
 };
 
 group(BATCH_GROUP) rw_buffer VertexInput
@@ -26,15 +22,10 @@ group(BATCH_GROUP) rw_buffer VertexInput
     InputVertex InputVertices[];
 };
 
-group(BATCH_GROUP) rw_buffer IndexOutput
-{
-    uvec3 Indices[];
-};
-
 struct OutputVertex
 {
     vec3 position;
-    uint uv;
+    int uv;
 };
 
 group(BATCH_GROUP) rw_buffer VertexOutput
@@ -45,9 +36,11 @@ group(BATCH_GROUP) rw_buffer VertexOutput
 group(BATCH_GROUP) constant GenerationConstants
 {
     mat4 Transform;
-
+    vec2 WorldSize;
     float MinHeight;
     float MaxHeight;
+
+    uint VerticesPerPatch;
     //uint NumSubdivisions;
     textureHandle HeightMap;
 };
@@ -66,12 +59,12 @@ group(BATCH_GROUP) rw_buffer TerrainPatchData[string Visibility = "CS";]
 //------------------------------------------------------------------------------
 /**
 */
-uint
+int
 CompressUV(vec2 uv)
 {
-    uint x = uint(uv.x * 1000);
-    uint y = uint(uv.y * 1000);
-    return (x & 0xFFFF) & ((y & 0xFFFF) << 16);
+    int x = int(uv.x * 1000);
+    int y = int(uv.y * 1000);
+    return (x & 0xFFFF) | ((y & 0xFFFF) << 16);
 }
 
 //------------------------------------------------------------------------------
@@ -116,20 +109,21 @@ csMeshGenerate()
 {
     TerrainPatch terrainPatch = Patches[gl_WorkGroupID.y];
 
-    Quad q = Quads[gl_GlobalInvocationID.x];
-    InputVertex v1 = InputVertices[q.indices.x];
-    InputVertex v2 = InputVertices[q.indices.y];
-    InputVertex v3 = InputVertices[q.indices.z];
-    InputVertex v4 = InputVertices[q.indices.w];
+    uvec3 indices = uvec3(
+        Indices[gl_GlobalInvocationID.x * 3]
+        , Indices[gl_GlobalInvocationID.x * 3 + 1]
+        , Indices[gl_GlobalInvocationID.x * 3 + 2]
+    );
+    InputVertex v1 = InputVertices[indices.x];
+    InputVertex v2 = InputVertices[indices.y];
+    InputVertex v3 = InputVertices[indices.z];
 
-    vec2 UV1 = v1.uv + terrainPatch.UvOffset;
-    vec2 UV2 = v2.uv + terrainPatch.UvOffset;
-    vec2 UV3 = v3.uv + terrainPatch.UvOffset;
-    vec2 UV4 = v4.uv + terrainPatch.UvOffset;
-    vec3 P1 = (Transform * vec4(v1.position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y), 1)).xyz;
-    vec3 P2 = (Transform * vec4(v2.position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y), 1)).xyz;
-    vec3 P3 = (Transform * vec4(v3.position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y), 1)).xyz;
-    vec3 P4 = (Transform * vec4(v4.position + vec3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y), 1)).xyz;
+    vec3 P1 = (Transform * vec4(v1.position, 1)).xyz;
+    vec3 P2 = (Transform * vec4(v2.position, 1)).xyz;
+    vec3 P3 = (Transform * vec4(v3.position, 1)).xyz;
+    vec2 UV1 = (terrainPatch.PosOffset + P1.xz) / WorldSize + 0.5f;
+    vec2 UV2 = (terrainPatch.PosOffset + P2.xz) / WorldSize + 0.5f;
+    vec2 UV3 = (terrainPatch.PosOffset + P3.xz) / WorldSize + 0.5f;
 
     vec2 pixelSize = textureSize(basic2D(HeightMap), 0);
     pixelSize = vec2(1.0f) / pixelSize;
@@ -145,17 +139,16 @@ csMeshGenerate()
     P3.y = MinHeight + h3 * (MaxHeight - MinHeight);
 
     // First output base vertices
-    OutputVertices[q.indices.x].position = P1;
-    OutputVertices[q.indices.x].uv = CompressUV(v1.uv);
-    OutputVertices[q.indices.y].position = P2;
-    OutputVertices[q.indices.y].uv = CompressUV(v2.uv);
-    OutputVertices[q.indices.z].position = P3;
-    OutputVertices[q.indices.z].uv = CompressUV(v3.uv);
-    OutputVertices[q.indices.w].position = P4;
-    OutputVertices[q.indices.w].uv = CompressUV(v4.uv);
-
-    Indices[gl_GlobalInvocationID.x * 2] = uvec3(q.indices.x, q.indices.y, q.indices.z);
-    Indices[gl_GlobalInvocationID.x * 2 + 1] = uvec3(q.indices.x, q.indices.z, q.indices.w);
+    OutputVertex o1, o2, o3;
+    o1.position = P1;
+    o1.uv = CompressUV(UV1);
+    o2.position = P2;
+    o2.uv = CompressUV(UV2);
+    o3.position = P3;
+    o3.uv = CompressUV(UV3);
+    OutputVertices[gl_WorkGroupID.y * VerticesPerPatch + indices.x] = o1;
+    OutputVertices[gl_WorkGroupID.y * VerticesPerPatch + indices.y] = o2;
+    OutputVertices[gl_WorkGroupID.y * VerticesPerPatch + indices.z] = o3;
 
     // Then subdivide, which will output indices
     //Subdivide(tri, 1);

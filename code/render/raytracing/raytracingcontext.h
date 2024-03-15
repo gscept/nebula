@@ -10,8 +10,8 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
-#include <array>
 #include "system_shaders/cluster_generate.h"
+#include "materials/shaderconfig.h"
 
 namespace Raytracing
 {
@@ -30,6 +30,12 @@ enum ObjectType
     ParticleObject
 };
 
+enum UpdateType
+{
+    Dynamic,
+    Static
+};
+
 class RaytracingContext : public Graphics::GraphicsContext
 {
     __DeclareContext();
@@ -45,18 +51,23 @@ public:
     /// Setup a model entity for ray tracing, assumes model context registration
     static void SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
     /// Setup a terrain system for ray tracing
-    static void SetupTerrain(
+    static void SetupMesh(
         const Graphics::GraphicsEntityId id
+        , const UpdateType objectType
         , const CoreGraphics::VertexComponent::Format format
         , const CoreGraphics::IndexType::Code indexType
         , const CoreGraphics::VertexAlloc& vertices
         , const CoreGraphics::VertexAlloc& indices
         , const CoreGraphics::PrimitiveGroup& patchPrimGroup
-        , SizeT vertexOffsetStride
-        , Util::Array<Math::mat4> transforms
-        , MaterialInterface::TerrainMaterial material
-        
+        , const SizeT vertexOffsetStride
+        , const SizeT patchVertexStride
+        , const Util::Array<Math::mat4> transforms
+        , const uint materialTableOffset
+        , const Materials::MaterialProperties shader
+        , const CoreGraphics::VertexLayoutType vertexLayout
     );
+    /// Invalidate a BLAS (for example, when the mesh has morphed) associated with a graphics entity
+    static void InvalidateBLAS(const Graphics::GraphicsEntityId id);
 
     /// Build top level acceleration
     static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);
@@ -79,22 +90,20 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    enum ObjectType
-    {
-        Dynamic,
-        Static
-    };
+
 
     enum
     {
         Raytracing_Allocation,
-        Raytracing_ObjectType,
-        Raytracing_NumStructures
+        Raytracing_UpdateType,
+        Raytracing_NumStructures,
+        Raytracing_Blases
     };
     typedef Ids::IdAllocator<
         Memory::RangeAllocation,
-        ObjectType,
-        uint
+        Raytracing::UpdateType,
+        uint,
+        Util::FixedArray<CoreGraphics::BlasId>
     > RaytracingAllocator;
     static RaytracingAllocator raytracingContextAllocator;
 };
