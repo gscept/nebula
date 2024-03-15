@@ -10,8 +10,8 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
-#include <array>
 #include "system_shaders/cluster_generate.h"
+#include "materials/shaderconfig.h"
 
 namespace Raytracing
 {
@@ -50,7 +50,6 @@ public:
 
     /// Setup a model entity for ray tracing, assumes model context registration
     static void SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
-
     /// Setup a terrain system for ray tracing
     static void SetupMesh(
         const Graphics::GraphicsEntityId id
@@ -63,9 +62,12 @@ public:
         , const SizeT vertexOffsetStride
         , const SizeT patchVertexStride
         , const Util::Array<Math::mat4> transforms
-        , const uint MaterialTableOffset
+        , const uint materialTableOffset
+        , const Materials::MaterialProperties shader
         , const CoreGraphics::VertexLayoutType vertexLayout
     );
+    /// Invalidate a BLAS (for example, when the mesh has morphed) associated with a graphics entity
+    static void InvalidateBLAS(const Graphics::GraphicsEntityId id);
 
     /// Build top level acceleration
     static void ReconstructTopLevelAcceleration(const Graphics::FrameContext& ctx);
@@ -94,12 +96,14 @@ private:
     {
         Raytracing_Allocation,
         Raytracing_UpdateType,
-        Raytracing_NumStructures
+        Raytracing_NumStructures,
+        Raytracing_Blases
     };
     typedef Ids::IdAllocator<
         Memory::RangeAllocation,
         Raytracing::UpdateType,
-        uint
+        uint,
+        Util::FixedArray<CoreGraphics::BlasId>
     > RaytracingAllocator;
     static RaytracingAllocator raytracingContextAllocator;
 };

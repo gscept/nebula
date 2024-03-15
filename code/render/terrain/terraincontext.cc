@@ -1524,60 +1524,55 @@ TerrainContext::SetupTerrain(
 
         Graphics::RegisterEntity<Raytracing::RaytracingContext>(entity);
 
-        // Save a callback function to actually generate the BLAS for the terrain, this should run when the compute shader is done with the terrain mesh
-        raytracingState.terrainSetupCallback = [
-            entity
-                , vertexElementSize = vboInfo.elementSize
-                , vertexBufferByteSize = verts.ByteSize()
-                , numTilesY = runtimeInfo.numTilesX
-                , numTilesX = runtimeInfo.numTilesX
-                , numIndices = indices.Size()
-                , worldSize = runtimeInfo.worldHeight
-                , &boxes = runtimeInfo.sectionBoxes]()
+        CoreGraphics::PrimitiveGroup group;
+        group.SetBaseIndex(0);
+        group.SetBaseVertex(0);
+        group.SetNumIndices(indices.Size());
+        group.SetNumVertices(0);
+
+        MaterialInterface::TerrainMaterial mat;
+        mat.LowresAlbedoFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresAlbedo);
+        mat.LowresMaterialFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresMaterial);
+        mat.LowresNormalFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresNormal);
+
+        /// Setup with raytracing
+        Util::Array<Math::mat4> patchTransforms;
+        patchTransforms.Resize(runtimeInfo.sectionBoxes.Size());
+        uint patchCounter = 0;
+        for (uint y = 0; y < runtimeInfo.numTilesY; y++)
         {
-            CoreGraphics::PrimitiveGroup group;
-            group.SetBaseIndex(0);
-            group.SetBaseVertex(0);
-            group.SetNumIndices(numIndices);
-            group.SetNumVertices(0);
-
-            MaterialInterface::TerrainMaterial mat;
-            mat.LowresAlbedoFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresAlbedo);
-            mat.LowresMaterialFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresMaterial);
-            mat.LowresNormalFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresNormal);
-
-            /// Setup with raytracing
-            Util::Array<Math::mat4> patchTransforms;
-            patchTransforms.Resize(boxes.Size());
-            uint patchCounter = 0;
-            for (uint y = 0; y < numTilesY; y++)
+            for (uint x = 0; x < runtimeInfo.numTilesX; x++)
             {
-                for (uint x = 0; x < numTilesX; x++)
-                {
-                    Math::point pt(
-                        x * terrainState.settings.tileWidth - terrainState.settings.worldSizeX / 2 + terrainState.settings.tileWidth / 2,
-                        terrainState.settings.minHeight,
-                        y * terrainState.settings.tileHeight - terrainState.settings.worldSizeZ / 2 + terrainState.settings.tileHeight / 2
-                    );
+                Math::point pt(
+                    x * terrainState.settings.tileWidth - terrainState.settings.worldSizeX / 2 + terrainState.settings.tileWidth / 2,
+                    terrainState.settings.minHeight,
+                    y * terrainState.settings.tileHeight - terrainState.settings.worldSizeZ / 2 + terrainState.settings.tileHeight / 2
+                );
 
-                    patchTransforms[patchCounter++].translate(xyz(pt));
-                }
+                patchTransforms[patchCounter++].translate(xyz(pt));
             }
+        }
 
-            uint materialOffset = Materials::MaterialLoader::RegisterTerrainMaterial(mat);
-            Raytracing::RaytracingContext::SetupMesh(
-                entity
-                , Raytracing::UpdateType::Static
-                , CoreGraphics::VertexComponent::Float3
-                , CoreGraphics::IndexType::Index32
-                , raytracingState.vertexBuffer
-                , raytracingState.indexBuffer
-                , group
-                , vertexElementSize
-                , vertexBufferByteSize
-                , patchTransforms
-                , materialOffset
-                , CoreGraphics::VertexLayoutType::Normal);
+        uint materialOffset = Materials::MaterialLoader::RegisterTerrainMaterial(mat);
+        Raytracing::RaytracingContext::SetupMesh(
+            entity
+            , Raytracing::UpdateType::Static
+            , CoreGraphics::VertexComponent::Float3
+            , CoreGraphics::IndexType::Index32
+            , raytracingState.vertexBuffer
+            , raytracingState.indexBuffer
+            , group
+            , vboInfo.elementSize
+            , verts.ByteSize()
+            , patchTransforms
+            , materialOffset
+            , Materials::MaterialProperties::Terrain
+            , CoreGraphics::VertexLayoutType::Normal);
+
+        // Invalidate the BLAS when the compute shader has displaced all terrain patches
+        raytracingState.terrainSetupCallback = [entity]()
+        {
+            Raytracing::RaytracingContext::InvalidateBLAS(entity);
         };
         raytracingState.setupBlasFrame = 0xFFFFFFFF;
     }
