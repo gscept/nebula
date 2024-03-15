@@ -12,6 +12,8 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "io/filedialog.h"
 
+#include "editor/tools/selectiontool.h"
+
 using namespace Editor;
 
 namespace Presentation
@@ -105,6 +107,15 @@ Toolbar::Run()
     if (ImGui::Button("Pause")) { PauseGame(); }
     ImGui::SameLine();
     if (ImGui::Button("Stop")) { StopGame(); }
+
+    IMGUI_VERTICAL_SEPARATOR;
+
+    bool snapToGridIncrements = Tools::SelectionTool::SnapToGridIncrements();
+    if (ImGui::Checkbox("Grid snap", &snapToGridIncrements))
+    {
+        Tools::SelectionTool::SnapToGridIncrements(snapToGridIncrements);
+    }
+
 }
 
 } // namespace Presentation

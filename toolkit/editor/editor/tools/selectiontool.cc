@@ -241,6 +241,12 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
             if (state.translation.plane.intersect(ray, mousePosOnWorldPlane))
             {
                 state.translation.delta = mousePosOnWorldPlane.vec - state.translation.startPos;
+                if (state.translation.useGridIncrements)
+                {
+                    state.translation.delta.x = Math::round(state.translation.delta.x / state.grid.size) * state.grid.size;
+                    state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
+                    state.translation.delta.z = Math::round(state.translation.delta.z / state.grid.size) * state.grid.size;
+                }
             }
         }
         else // y axis translation
@@ -264,6 +270,10 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
             if (plane.intersect(ray, mousePosOnWorldPlane))
             {
                 state.translation.delta.y = (mousePosOnWorldPlane.vec - state.translation.startPos).y;
+                if (state.translation.useGridIncrements)
+                {
+                    state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
+                }
                 state.translation.plane = Math::plane(state.translation.startPos + state.translation.delta, Math::vector(0, 1, 0));
             }
         }
@@ -378,6 +388,24 @@ SelectionTool::GetSelectedEntityUnderMouse(
     }
 
     return closestEntity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SelectionTool::SnapToGridIncrements(bool value)
+{
+    state.translation.useGridIncrements = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+SelectionTool::SnapToGridIncrements()
+{
+    return state.translation.useGridIncrements;
 }
 
 } // namespace Tools

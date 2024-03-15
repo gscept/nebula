@@ -37,6 +37,9 @@ public:
         Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera
     );
 
+    static void SnapToGridIncrements(bool value);
+    static bool SnapToGridIncrements();
+
 private:
     friend Edit::CMDSetSelection;
     
