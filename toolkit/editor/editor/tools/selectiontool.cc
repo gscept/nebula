@@ -254,17 +254,9 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
             // find a good plane
             Game::Position gameEntityPos = defaultWorld->GetComponent<Game::Position>(Editor::state.editables[state.translation.originEntity.index].gameEntity);
 
-            Math::vector xDir = Math::vector(1, 0, 0);
-            Math::vector zDir = Math::vector(0, 0, 1);
-            float px = Math::abs(Math::dot(ray.m, xDir));
-            float pz = Math::abs(Math::dot(ray.m, zDir));
-
-            Math::vector planeNormal;
-            if (px > pz)
-                planeNormal = xDir;
-            else
-                planeNormal = zDir;
-
+            Math::vector planeNormal = Math::cross(Math::normalize(ray.m), Math::vector(0,1,0));
+            planeNormal = Math::cross(planeNormal, Math::vector(0, 1, 0));
+            
             Math::plane plane = Math::plane(gameEntityPos, planeNormal);
             Math::point mousePosOnWorldPlane;
             if (plane.intersect(ray, mousePosOnWorldPlane))
@@ -304,6 +296,7 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
             }
             Edit::CommandManager::EndMacro();
             state.translation.isDirty = false;
+            state.translation.delta = Math::vec3(0);
         }
         else
         {
