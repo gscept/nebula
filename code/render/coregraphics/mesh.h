@@ -16,9 +16,9 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/primitivegroup.h"
+#include "coregraphics/vertexlayout.h"
 namespace CoreGraphics
 {
-
 struct VertexAlloc
 {
     uint size, offset, node;

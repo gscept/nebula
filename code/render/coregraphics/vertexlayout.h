@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "coregraphics/vertexcomponent.h"
-#include "math/half.h"
+#include "resources/resourceid.h"
 namespace CoreGraphics
 {
 

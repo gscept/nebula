@@ -11,7 +11,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/primitivetopology.h"
-#include "coregraphics/vertexlayout.h"
 #include "math/bbox.h"
 
 //------------------------------------------------------------------------------
