@@ -139,7 +139,7 @@ InternalSetProperty(Editor::Entity editorEntity, Game::ComponentId component, vo
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
     if (defaultWorld->IsValid(edit.gameEntity))
     {
-        defaultWorld->SetComponentValue(edit.gameEntity, component, value, size);
+        defaultWorld->ReinitializeComponent(edit.gameEntity, component, value, size);
         defaultWorld->MarkAsModified(edit.gameEntity);
     }
 

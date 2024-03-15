@@ -89,6 +89,9 @@ public:
     /// Set the value of a component by providing a pointer and type size
     void SetComponentValue(Entity entity, ComponentId component, void* value, uint64_t size);
     
+    /// Set the value of a component by providing a pointer and type size, then reinitialize the component
+    void ReinitializeComponent(Entity entity, ComponentId component, void* value, uint64_t size);
+    
     /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
     Dataset Query(Filter filter);
     /// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables.

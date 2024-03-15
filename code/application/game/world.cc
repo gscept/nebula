@@ -863,11 +863,11 @@ World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
 
     // migrate managed properies to decay buffers so that we can allow the managers
     // to clean up any externally allocated resources.
-    Util::Array<ComponentId> const& pids = this->db->GetTable(table).GetAttributes();
-    const MemDb::ColumnIndex numColumns = pids.Size();
+    Util::Array<ComponentId> const& cids = this->db->GetTable(table).GetAttributes();
+    const MemDb::ColumnIndex numColumns = cids.Size();
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
-        Game::ComponentId component = pids[column.id];
+        Game::ComponentId component = cids[column.id];
         this->DecayComponent(component, table, column, instance);
     }
 
@@ -1020,6 +1020,45 @@ World::SetComponentValue(Game::Entity entity, Game::ComponentId component, void*
     byte* valuePtr = ptr + (mapping.instance.index * size);
     Memory::Copy(value, valuePtr, size);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, void* value, uint64_t size)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        size == MemDb::AttributeRegistry::TypeSize(component),
+        "ReinitializeComponent: Provided value's type is not the correct size for the given ComponentId."
+    );
+#endif
+
+    EntityMapping mapping = this->GetEntityMapping(entity);
+
+    MemDb::ColumnIndex const columnIndex = this->db->GetTable(mapping.table).GetAttributeIndex(component);
+
+    // Decay the old component, this will allow systems to clean up any resources used before reinitializing
+    this->DecayComponent(component, mapping.table, columnIndex, mapping.instance);
+
+    byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);
+    byte* valuePtr = ptr + (mapping.instance.index * size);
+    Memory::Copy(value, valuePtr, size);
+
+    if (this->componentInitializationEnabled)
+    {
+        MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(component);
+        ComponentInterface* cInterface;
+        cInterface = static_cast<ComponentInterface*>(attr);
+
+        if (cInterface->Init != nullptr)
+        {
+            // run initialization function if it exists.
+            cInterface->Init(this, entity, valuePtr);
+        }
+    }
+}
+
 
 //------------------------------------------------------------------------------
 /**
