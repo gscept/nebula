@@ -97,7 +97,7 @@ Camera::Update()
 	this->freeCamUtil.SetMouseMovement({ -io.MouseDelta.x, -io.MouseDelta.y });
 	this->freeCamUtil.SetAccelerateButton(io.KeyShift);
 
-	this->freeCamUtil.SetRotateButton(io.MouseDown[Input::MouseButton::LeftButton]);
+	this->freeCamUtil.SetRotateButton(io.MouseDown[Input::MouseButton::RightButton]);
 	this->freeCamUtil.Update();
 
 	switch (this->cameraMode)

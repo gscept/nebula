@@ -56,7 +56,7 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
 
-    bool performPicking = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && !state.translation.isTransforming;
+    bool performPicking = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && state.picking.pauseCounter == 0;
     SelectionMode mode = keyboard->KeyPressed(Input::Key::LeftControl) ? SelectionMode::Append : SelectionMode::Replace;
 
     if (performPicking)
@@ -166,10 +166,30 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
 
-    // TODO: Only start translating if the mouse has moved more that a small distance
-    //       Store mouse pos on button down, then check for > 4 pixel diff, then start transforming if button pressed.
-    state.translation.isTransforming = mouse->ButtonPressed(Input::MouseButton::Code::LeftButton);
+    if (mouse->ButtonDown(Input::MouseButton::Code::LeftButton))
+    {
+        state.translation.mousePosOnStart = mouse->GetScreenPosition();
+    }
 
+    if (!state.translation.dragTimer.Running() && state.translation.pickingPaused)
+    {
+        state.translation.pickingPaused = false;
+        state.picking.pauseCounter--;
+    }
+
+    // Only start translating if the mouse has moved more that a small distance
+    if (!state.translation.dragTimer.Running())
+    {
+        float mouseDistance = (mouse->GetScreenPosition() - state.translation.mousePosOnStart).length();
+        if (mouseDistance > 0.0015f && mouse->ButtonPressed(Input::MouseButton::Code::LeftButton))
+        {
+            state.translation.dragTimer.Reset();
+            state.translation.dragTimer.Start();
+            state.picking.pauseCounter++;
+            state.translation.pickingPaused = true;
+        }
+    }
+    
     Math::vec2 mousePos = mouse->GetScreenPosition();
     mousePos -= viewPortPosition;
     mousePos = {mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y};
@@ -179,32 +199,73 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
 
     Math::line ray = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
 
-    if (state.translation.isTransforming && !state.translation.isDirty)
+    if (state.translation.dragTimer.Running() && !state.translation.isDirty)
     {
-        state.translation.isDirty = true;
-
-        // TODO: get the entity that is under the mouse and base the plane on it's center instead of the last selected.
-        Game::Position entityPos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection.Back());
-        state.translation.plane = Math::plane(entityPos, Math::vector(0, 1, 0));
-        Math::point startPos;
-        if (state.translation.plane.intersect(ray, startPos))
+        state.translation.originEntity = GetSelectedEntityUnderMouse(viewPortPosition, viewPortSize, camera);
+        if (state.translation.originEntity == Editor::Entity::Invalid())
         {
-            state.translation.startPos = startPos.vec;
+            // failed to find entity. Cancel translation attempt
+            state.translation.dragTimer.Stop();
         }
         else
         {
-            // failed to find plane. Cancel translation attempt
-            state.translation.isTransforming = false;
-            state.translation.isDirty = false;
+            Game::Position entityPos = Editor::state.editorWorld->GetComponent<Game::Position>(state.translation.originEntity);
+            state.translation.plane = Math::plane(entityPos, Math::vector(0, 1, 0));
+            Math::point startPos;
+            if (state.translation.plane.intersect(ray, startPos))
+            {
+                state.translation.startPos = startPos.vec;
+                state.translation.isDirty = true;
+            }
+            else
+            {
+                // failed to find plane. Cancel translation attempt
+                state.translation.dragTimer.Stop();
+            }
         }
     }
 
-    if (state.translation.isTransforming)
+    bool const applyTransform = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && state.translation.dragTimer.Running();
+    if (applyTransform)
     {
-        Math::point mousePosOnWorldPlane;
-        if (state.translation.plane.intersect(ray, mousePosOnWorldPlane))
+        state.translation.dragTimer.Stop();
+    }
+
+    if (state.translation.dragTimer.Running())
+    {
+        bool xzAxis = !keyboard->KeyPressed(Input::Key::LeftMenu);
+        
+        if (xzAxis)
         {
-            state.translation.delta = mousePosOnWorldPlane.vec - state.translation.startPos;
+            Math::point mousePosOnWorldPlane;
+            if (state.translation.plane.intersect(ray, mousePosOnWorldPlane))
+            {
+                state.translation.delta = mousePosOnWorldPlane.vec - state.translation.startPos;
+            }
+        }
+        else // y axis translation
+        {
+            // find a good plane
+            Game::Position gameEntityPos = defaultWorld->GetComponent<Game::Position>(Editor::state.editables[state.translation.originEntity.index].gameEntity);
+
+            Math::vector xDir = Math::vector(1, 0, 0);
+            Math::vector zDir = Math::vector(0, 0, 1);
+            float px = Math::abs(Math::dot(ray.m, xDir));
+            float pz = Math::abs(Math::dot(ray.m, zDir));
+
+            Math::vector planeNormal;
+            if (px > pz)
+                planeNormal = xDir;
+            else
+                planeNormal = zDir;
+
+            Math::plane plane = Math::plane(gameEntityPos, planeNormal);
+            Math::point mousePosOnWorldPlane;
+            if (plane.intersect(ray, mousePosOnWorldPlane))
+            {
+                state.translation.delta.y = (mousePosOnWorldPlane.vec - state.translation.startPos).y;
+                state.translation.plane = Math::plane(state.translation.startPos + state.translation.delta, Math::vector(0, 1, 0));
+            }
         }
 
         for (IndexT i = 0; i < state.selection.Size(); i++)
@@ -219,8 +280,9 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
     }
     else if (state.translation.isDirty)
     {
-        // TODO: Only apply the translation if the translation has happened for more than ~200ms
-        if (state.translation.delta != Math::vec3(0))
+        // Only apply the translation if the translation has happened for more than some threshold duration
+        constexpr float minDragTime = 0.1f;
+        if (state.translation.delta != Math::vec3(0) && state.translation.dragTimer.GetTime() > minDragTime)
         {
             // User has release gizmo, we can set real transform and add to undo queue
             Edit::CommandManager::BeginMacro("Translate entities", false);
@@ -231,8 +293,18 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
                 Edit::SetComponent(state.selection[i], Game::GetComponentId<Game::Position>(), &pos);
             }
             Edit::CommandManager::EndMacro();
-            state.translation.isTransforming = false;
             state.translation.isDirty = false;
+        }
+        else
+        {
+            // Reset game entity position to be same as editors
+            for (IndexT i = 0; i < state.selection.Size(); i++)
+            {
+                Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection[i]);
+                Game::Entity const gameEntity = Editor::state.editables[state.selection[i].index].gameEntity;
+                defaultWorld->SetComponent<Game::Position>(gameEntity, pos);
+                defaultWorld->MarkAsModified(gameEntity);
+            }
         }
     }
 
@@ -256,7 +328,56 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
 bool
 SelectionTool::IsTransforming()
 {
-    return state.translation.isTransforming;
+    return state.translation.dragTimer.Running();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Editor::Entity
+SelectionTool::GetSelectedEntityUnderMouse(
+    Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera
+)
+{
+    Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
+
+    float closestDistance = 1e30f;
+    Editor::Entity closestEntity = Editor::Entity::Invalid();
+
+    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
+    Math::vec2 mousePos = mouse->GetScreenPosition();
+    
+    mousePos -= viewPortPosition;
+    mousePos = {mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y};
+
+    Math::mat4 const camTransform = Math::inverse(camera->GetViewTransform());
+    Math::mat4 const invProj = Math::inverse(camera->GetProjectionTransform());
+
+    Math::line ray = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
+
+    for (IndexT i = 0; i < state.selection.Size(); i++)
+    {
+        Editor::Entity editorEntity = state.selection[i];
+        Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
+        if (defaultWorld->HasComponent<GraphicsFeature::Model>(gameEntity))
+        {
+            Graphics::GraphicsEntityId const gfxEntity =
+                defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
+            Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
+            
+            float dist;
+            if (bbox.intersects(ray, dist))
+            {
+                if (dist < closestDistance)
+                {
+                    closestDistance = dist;
+                    closestEntity = editorEntity;
+                }
+            }
+        }
+    }
+
+    return closestEntity;
 }
 
 } // namespace Tools

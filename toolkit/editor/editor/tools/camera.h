@@ -68,7 +68,7 @@ private:
     SizeT screenWidth = 0;
     SizeT screenHeight = 0;
 
-    CameraMode cameraMode = CameraMode::ORBIT;
+    CameraMode cameraMode = CameraMode::FREECAM;
     ProjectionMode projectionMode = ProjectionMode::PERSPECTIVE;
 	float zoomIn = 0.0f;
 	float zoomOut = 0.0f;
