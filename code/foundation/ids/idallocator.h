@@ -73,7 +73,7 @@ public:
     /// Set elements
     inline void Set(const Ids::Id32 id, TYPES... values)
     {
-        Util::ArrayAllocator<TYPES...>::template Set(Ids::Index(id), values...);
+        Util::ArrayAllocator<TYPES...>::Set(Ids::Index(id), values...);
     }
 
     /// Get element
@@ -163,7 +163,7 @@ public:
     /// Set elements
     inline void Set(const Ids::Id32 id, TYPES... values)
     {
-        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::template Set(Ids::Index(id), values...);
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Set(Ids::Index(id), values...);
     }
 
     /// Get element
