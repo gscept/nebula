@@ -1139,7 +1139,7 @@ translation(const vec3& t)
 __forceinline mat4
 trs(const vec3& position, const quat& rotation, const vec3& scale)
 {
-    return Math::translation(position) * Math::rotationquat(rotation) * Math::scaling(scale);
+    return Math::affine(scale, rotation, position);
 }
 
 //------------------------------------------------------------------------------
