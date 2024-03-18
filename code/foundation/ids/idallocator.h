@@ -67,27 +67,27 @@ public:
     template<int MEMBER>
     inline void Set(const Ids::Id32 id, const Util::tuple_array_t<MEMBER, TYPES...>& type)
     {
-        Util::ArrayAllocator<TYPES...>::Set<MEMBER>(Ids::Index(id), type);
+        Util::ArrayAllocator<TYPES...>::template Set<MEMBER>(Ids::Index(id), type);
     }
 
     /// Set elements
     inline void Set(const Ids::Id32 id, TYPES... values)
     {
-        Util::ArrayAllocator<TYPES...>::Set(Ids::Index(id), values...);
+        Util::ArrayAllocator<TYPES...>::template Set(Ids::Index(id), values...);
     }
 
     /// Get element
     template<int MEMBER>
     inline Util::tuple_array_t<MEMBER, TYPES...>& Get(const Ids::Id32 id)
     {
-        return Util::ArrayAllocator<TYPES...>::Get<MEMBER>(Ids::Index(id));
+        return Util::ArrayAllocator<TYPES...>::template Get<MEMBER>(Ids::Index(id));
     }
 
     /// Const get element
     template<int MEMBER>
     inline const Util::tuple_array_t<MEMBER, TYPES...>& ConstGet(const Ids::Id32 id) const
     {
-        return Util::ArrayAllocator<TYPES...>::ConstGet<MEMBER>(Ids::Index(id));
+        return Util::ArrayAllocator<TYPES...>::template ConstGet<MEMBER>(Ids::Index(id));
     }
 
     /// Get the free ids list from the pool
@@ -157,27 +157,27 @@ public:
     template<int MEMBER>
     inline void Set(const Ids::Id32 id, const Util::tuple_array_t<MEMBER, TYPES...>& type)
     {
-        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Set<MEMBER>(Ids::Index(id), type);
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::template Set<MEMBER>(Ids::Index(id), type);
     }
 
     /// Set elements
     inline void Set(const Ids::Id32 id, TYPES... values)
     {
-        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Set(Ids::Index(id), values...);
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::template Set(Ids::Index(id), values...);
     }
 
     /// Get element
     template<int MEMBER>
     inline Util::tuple_array_t<MEMBER, TYPES...>& Get(const Ids::Id32 id)
     {
-        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Get<MEMBER>(Ids::Index(id));
+        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::template Get<MEMBER>(Ids::Index(id));
     }
 
     /// Const get element
     template<int MEMBER>
     inline const Util::tuple_array_t<MEMBER, TYPES...>& ConstGet(const Ids::Id32 id) const
     {
-        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::ConstGet<MEMBER>(Ids::Index(id));
+        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::template ConstGet<MEMBER>(Ids::Index(id));
     }
 
     /// Get the free ids list from the pool
