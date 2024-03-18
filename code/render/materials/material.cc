@@ -148,9 +148,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             CoreGraphics::ResourceTableCommitChanges(table);
     }
 
-    MaterialId ret;
-    ret.resourceId = id;
-    ret.resourceType = CoreGraphics::MaterialIdType;
+    MaterialId ret = id;
     return ret;
 }
 
@@ -160,7 +158,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
 void
 DestroyMaterial(const MaterialId id)
 {
-    materialAllocator.Dealloc(id.resourceId);
+    materialAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -169,8 +167,8 @@ DestroyMaterial(const MaterialId id)
 void
 MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind, const MaterialVariant& value)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.resourceId);
-    const auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(mat.resourceId);
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(mat.id);
 
     for (const auto& pass : temp->passes)
     {
@@ -190,10 +188,10 @@ MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind,
 void
 MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const CoreGraphics::TextureId tex)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.resourceId);
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
     for (const auto& pass : temp->passes)
     {
-        CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_Table>(mat.resourceId)[pass.Value()->index];
+        CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_Table>(mat.id)[pass.Value()->index];
         CoreGraphics::ResourceTableSetTexture(table, { tex, bind->slot, 0, CoreGraphics::InvalidSamplerId, false });
     }
 }
@@ -204,7 +202,7 @@ MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, c
 void
 MaterialSetBufferBinding(const MaterialId id, IndexT index)
 {
-    materialAllocator.Set<Material_BufferOffset>(id.resourceId, index);
+    materialAllocator.Set<Material_BufferOffset>(id.id, index);
 }
 
 //------------------------------------------------------------------------------
@@ -213,7 +211,7 @@ MaterialSetBufferBinding(const MaterialId id, IndexT index)
 IndexT
 MaterialGetBufferBinding(const MaterialId id)
 {
-    return Ids::Index(materialAllocator.Get<Material_BufferOffset>(id.resourceId));
+    return Ids::Index(materialAllocator.Get<Material_BufferOffset>(id.id));
 }
 
 //------------------------------------------------------------------------------
@@ -223,10 +221,10 @@ void
 MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex)
 {
     Threading::CriticalScope scope(&materialTextureLoadSection);
-    materialAllocator.Get<Material_LODTextures>(mat.resourceId).Append(tex);
+    materialAllocator.Get<Material_LODTextures>(mat.id).Append(tex);
 
     // When a new texture is added, make sure to update it's LOD as well
-    Resources::SetMinLod(tex, materialAllocator.Get<Material_MinLOD>(mat.resourceId), false);
+    Resources::SetMinLod(tex, materialAllocator.Get<Material_MinLOD>(mat.id), false);
 }
 
 //------------------------------------------------------------------------------
@@ -236,8 +234,8 @@ void
 MaterialSetLowestLod(const MaterialId mat, float lod)
 {
     Threading::CriticalScope scope(&materialTextureLoadSection);
-    Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_LODTextures>(mat.resourceId);
-    float& minLod = materialAllocator.Get<Material_MinLOD>(mat.resourceId);
+    Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_LODTextures>(mat.id);
+    float& minLod = materialAllocator.Get<Material_MinLOD>(mat.id);
     if (minLod <= lod)
         return;
     minLod = lod;
@@ -254,7 +252,7 @@ MaterialSetLowestLod(const MaterialId mat, float lod)
 const MaterialTemplates::Entry*
 MaterialGetTemplate(const MaterialId mat)
 {
-    return materialAllocator.Get<Material_Template>(mat.resourceId);
+    return materialAllocator.Get<Material_Template>(mat.id);
 }
 
 //------------------------------------------------------------------------------
@@ -263,7 +261,7 @@ MaterialGetTemplate(const MaterialId mat)
 const Materials::BatchIndex
 MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code)
 {
-    return materialAllocator.Get<Material_Template>(mat.resourceId)->passes[code]->index;
+    return materialAllocator.Get<Material_Template>(mat.id)->passes[code]->index;
 }
 
 //------------------------------------------------------------------------------
@@ -272,7 +270,7 @@ MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code
 uint64_t
 MaterialGetSortCode(const MaterialId mat)
 {
-    return materialAllocator.Get<Material_Template>(mat.resourceId)->uniqueId;
+    return materialAllocator.Get<Material_Template>(mat.id)->uniqueId;
 }
 
 //------------------------------------------------------------------------------
@@ -281,7 +279,7 @@ MaterialGetSortCode(const MaterialId mat)
 void
 MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, IndexT index)
 {
-    CoreGraphics::CmdSetResourceTable(buf, materialAllocator.Get<Material_Table>(id.resourceId)[index], NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    CoreGraphics::CmdSetResourceTable(buf, materialAllocator.Get<Material_Table>(id.id)[index], NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -295,8 +293,7 @@ CreateMaterialInstance(const MaterialId material)
     // create id
     MaterialInstanceId ret;
     ret.instance = inst;
-    ret.materialId = material.resourceId;
-    ret.materialType = material.resourceType;
+    ret.material = material.id;
     return ret;
 }
 

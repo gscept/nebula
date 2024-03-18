@@ -30,6 +30,7 @@
 #include "util/tupleutility.h"
 #include "util/arrayallocator.h"
 #include "util/arrayallocatorsafe.h"
+#include "idgenerationpool.h"
 
 namespace Ids
 {
@@ -42,36 +43,57 @@ public:
     IdAllocator(uint32_t maxid = 0xFFFFFFFF) : maxId(maxid) {};
     
     /// Allocate an object. 
-    uint32_t Alloc()
+    Ids::Id32 Alloc()
     {
         /// @note   This purposefully hides the default allocation method and should definetly not be virtual!
-        
-        uint32_t index;
-        if (this->freeIds.Size() > 0)
+        Ids::Id32 id;
+        if (this->pool.Allocate(id))
         {
-            index = this->freeIds.Back();
-            this->freeIds.EraseBack();
-        }
-        else
-        {
-            index = Util::ArrayAllocator<TYPES...>::Alloc();
-            n_assert2(this->maxId > index, "max amount of allocations exceeded!\n");
+            Util::ArrayAllocator<TYPES...>::Alloc();
+            n_assert2(this->maxId > Ids::Index(id), "max amount of allocations exceeded!\n");
         }
 
-        return index;
+        return id;
     }
 
     /// Deallocate an object. Just places it in freeids array for recycling
-    void Dealloc(uint32_t index)
+    void Dealloc(Ids::Id32 id)
     {
         // TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
-        this->freeIds.Append(index);
+        this->pool.Deallocate(id);
     }
 
-    /// Returns the list of free ids.
-    Util::Array<uint32_t>& FreeIds()
+    /// Set element
+    template<int MEMBER>
+    inline void Set(const Ids::Id32 id, const Util::tuple_array_t<MEMBER, TYPES...>& type)
     {
-        return this->freeIds;
+        Util::ArrayAllocator<TYPES...>::Set<MEMBER>(Ids::Index(id), type);
+    }
+
+    /// Set elements
+    inline void Set(const Ids::Id32 id, TYPES... values)
+    {
+        Util::ArrayAllocator<TYPES...>::Set(Ids::Index(id), values...);
+    }
+
+    /// Get element
+    template<int MEMBER>
+    inline Util::tuple_array_t<MEMBER, TYPES...>& Get(const Ids::Id32 id)
+    {
+        return Util::ArrayAllocator<TYPES...>::Get<MEMBER>(Ids::Index(id));
+    }
+
+    /// Const get element
+    template<int MEMBER>
+    inline const Util::tuple_array_t<MEMBER, TYPES...>& ConstGet(const Ids::Id32 id) const
+    {
+        return Util::ArrayAllocator<TYPES...>::ConstGet<MEMBER>(Ids::Index(id));
+    }
+
+    /// Get the free ids list from the pool
+    inline Util::Queue<Id32>& FreeIds()
+    {
+        return this->pool.FreeIds();
     }
 
     /// return number of allocated ids
@@ -82,7 +104,7 @@ public:
 
 private:
     uint32_t maxId = 0xFFFFFFFF;
-    Util::Array<uint32_t> freeIds;
+    Ids::IdGenerationPool pool;
 };
 
 #define _DECL_ACQUIRE_RELEASE(ty) \
@@ -98,12 +120,8 @@ private:
     };
 
 #define _IMPL_ACQUIRE_RELEASE(ty, allocator) \
-    bool ty##Acquire(const ty id) { return allocator.Acquire(id.id24); } \
-    void ty##Release(const ty id) { allocator.Release(id.id24); }
-
-#define _IMPL_ACQUIRE_RELEASE_RESOURCE(ty, allocator) \
-    bool ty##Acquire(const ty id) { return allocator.Acquire(id.resourceId); } \
-    void ty##Release(const ty id) { allocator.Release(id.resourceId); }
+    bool ty##Acquire(const ty id) { return allocator.Acquire(id.id); } \
+    void ty##Release(const ty id) { allocator.Release(id.id); }
 
 template<int MAX_ALLOCS, class... TYPES>
 class IdAllocatorSafe : public Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>
@@ -115,40 +133,86 @@ public:
     };
 
     /// Allocate an object. 
-    uint32_t Alloc()
+    Ids::Id32 Alloc()
     {
         /// @note   This purposefully hides the default allocation method and should definitely not be virtual!
         this->allocationLock.Lock();
-        uint32_t index;
-        if (this->freeIds.Size() > 0)
+        Ids::Id32 id;
+        if (this->pool.Allocate(id))
         {
-            index = this->freeIds.Back();
-            this->owners[index] = Threading::Thread::GetMyThreadId();
-            this->freeIds.EraseBack();
+            alloc_for_each_in_tuple(this->objects);
+            this->owners.Append(Threading::Thread::GetMyThreadId());
+            n_assert2(MAX_ALLOCS > Ids::Index(id), "max amount of allocations exceeded!\n");
         }
         else
         {
-            alloc_for_each_in_tuple(this->objects);
-            index = this->size++;
-            this->owners.Append(Threading::Thread::GetMyThreadId());
-            n_assert2(MAX_ALLOCS > index, "max amount of allocations exceeded!\n");
+            this->owners[Ids::Index(id)] = Threading::Thread::GetMyThreadId();
         }
         this->allocationLock.Unlock();
 
-        return index;
+        return id;
+    }
+
+    /// Set element
+    template<int MEMBER>
+    inline void Set(const Ids::Id32 id, const Util::tuple_array_t<MEMBER, TYPES...>& type)
+    {
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Set<MEMBER>(Ids::Index(id), type);
+    }
+
+    /// Set elements
+    inline void Set(const Ids::Id32 id, TYPES... values)
+    {
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Set(Ids::Index(id), values...);
+    }
+
+    /// Get element
+    template<int MEMBER>
+    inline Util::tuple_array_t<MEMBER, TYPES...>& Get(const Ids::Id32 id)
+    {
+        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Get<MEMBER>(Ids::Index(id));
+    }
+
+    /// Const get element
+    template<int MEMBER>
+    inline const Util::tuple_array_t<MEMBER, TYPES...>& ConstGet(const Ids::Id32 id) const
+    {
+        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::ConstGet<MEMBER>(Ids::Index(id));
+    }
+
+    /// Get the free ids list from the pool
+    inline Util::Queue<Id32>& FreeIds()
+    {
+        return this->pool.FreeIds();
+    }
+
+    /// Spinlock to acquire 
+    void TryAcquire(const Ids::Id32 id)
+    {
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::TryAcquire(Ids::Index(id));
+    }
+    /// Acquire element, asserts if false and returns true if this call acquired
+    bool Acquire(const Ids::Id32 id)
+    {
+        return Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Acquire(Ids::Index(id));
+    }
+    /// Release an object, the next thread that acquires may use this instance as it fits
+    void Release(const Ids::Id32 id)
+    {
+        Util::ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Release(Ids::Index(id));
     }
 
     /// Deallocate an object. Just places it in freeids array for recycling
-    void Dealloc(uint32_t index)
+    void Dealloc(Ids::Id32 id)
     {
         // TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
         this->allocationLock.Lock();
-        this->freeIds.Append(index);
+        this->pool.Deallocate(id);
         this->allocationLock.Unlock();
     }
 
 private:
-    Util::Array<uint32_t> freeIds;
+    Ids::IdGenerationPool pool;
 };
 
 } // namespace Ids

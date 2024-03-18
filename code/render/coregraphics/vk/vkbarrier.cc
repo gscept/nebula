@@ -24,7 +24,7 @@ VkBarrierAllocator barrierAllocator(0x00FFFFFF);
 const VkBarrierInfo&
 BarrierGetVk(const CoreGraphics::BarrierId id)
 {
-    return barrierAllocator.Get<Barrier_Info>(id.id24);
+    return barrierAllocator.Get<Barrier_Info>(id.id);
 }
 }
 
@@ -126,9 +126,7 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.numMemoryBarriers = 1;
     }
 
-    BarrierId eventId;
-    eventId.id24 = id;
-    eventId.id8 = BarrierIdType;
+    BarrierId eventId = id;
     return eventId;
 }
 
@@ -138,7 +136,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 void
 DestroyBarrier(const BarrierId id)
 {
-    barrierAllocator.Dealloc(id.id24);
+    barrierAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -147,8 +145,8 @@ DestroyBarrier(const BarrierId id)
 void
 BarrierReset(const BarrierId id)
 {
-    VkBarrierInfo& vkInfo = barrierAllocator.Get<Barrier_Info>(id.id24);
-    Util::Array<CoreGraphics::TextureId>& rts = barrierAllocator.Get<Barrier_Textures>(id.id24);
+    VkBarrierInfo& vkInfo = barrierAllocator.Get<Barrier_Info>(id.id);
+    Util::Array<CoreGraphics::TextureId>& rts = barrierAllocator.Get<Barrier_Textures>(id.id);
 
     IndexT i;
     for (i = 0; i < rts.Size(); i++)

@@ -649,9 +649,7 @@ MaterialLoader::RegisterTerrainMaterial(const MaterialInterface::TerrainMaterial
 void
 MaterialLoader::Unload(const Resources::ResourceId id)
 {
-    MaterialId material;
-    material.resourceId = id.resourceId;
-    material.resourceType = id.resourceType;
+    MaterialId material = id.resource;
     DestroyMaterial(material);
 }
 

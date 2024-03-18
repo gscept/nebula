@@ -77,9 +77,7 @@ ShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
         return Resources::Resource::Failed;
     }
 
-    ShaderId shader;
-    shader.resourceId = id.resourceId;
-    shader.resourceType = id.resourceType;
+    ShaderId shader = id.resource;
     ReloadShader(shader, effect);
     return Resources::Resource::Loaded;
 }
@@ -90,9 +88,7 @@ ShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
 void
 ShaderLoader::Unload(const Resources::ResourceId res)
 {
-    ShaderId id;
-    id.resourceId = res.resourceId;
-    id.resourceType = res.resourceType;
+    ShaderId id = res.resource;
     CoreGraphics::DestroyShader(id);
 }
 

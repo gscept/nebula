@@ -125,7 +125,7 @@ Filter
 FilterBuilder::CreateFilter(FilterCreateInfo info)
 {
     n_assert(info.numInclusive > 0);
-    uint32_t filter = filterAllocator.Alloc();
+    Ids::Id32 filter = filterAllocator.Alloc();
 
     ComponentArray inclusiveArray;
     inclusiveArray.Resize(info.numInclusive);

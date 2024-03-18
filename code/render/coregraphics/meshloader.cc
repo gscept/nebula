@@ -94,7 +94,7 @@ MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, con
     n_assert(stream.isvalid());
     String resIdExt = this->names[entry].AsString().GetFileExtension();
 
-    MeshResourceId ret = { meshResourceAllocator.Alloc(), MeshIdType };
+    MeshResourceId ret = meshResourceAllocator.Alloc();
 
     if (resIdExt == "nvx")
     {
@@ -304,7 +304,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
     }
 
     // Update mesh allocator
-    meshResourceAllocator.Set<0>(meshResource.resourceId, meshes);
+    meshResourceAllocator.Set<0>(meshResource.id, meshes);
 }
 
 } // namespace CoreGraphics

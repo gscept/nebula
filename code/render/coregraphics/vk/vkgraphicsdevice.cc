@@ -2567,7 +2567,7 @@ ObjectSetName(const SemaphoreId id, const char* name)
         VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
         nullptr,
         VK_OBJECT_TYPE_SEMAPHORE,
-        (uint64_t)SemaphoreGetVk(id.id24),
+        (uint64_t)SemaphoreGetVk(id.id),
         name
     };
     VkDevice dev = GetCurrentDevice();

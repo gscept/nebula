@@ -27,7 +27,7 @@ VkEventAllocator eventAllocator(0x00FFFFFF);
 const VkEventInfo&
 EventGetVk(const CoreGraphics::EventId id)
 {
-    return eventAllocator.Get<Event_Info>(id.id24);
+    return eventAllocator.Get<Event_Info>(id.id);
 }
 }
 
@@ -123,9 +123,7 @@ CreateEvent(const EventCreateInfo& info)
         vkInfo.numMemoryBarriers = 1;
     }
 
-    EventId eventId;
-    eventId.id24 = id;
-    eventId.id8 = EventIdType;
+    EventId eventId = id;
     return eventId;
 }
 
@@ -135,10 +133,10 @@ CreateEvent(const EventCreateInfo& info)
 void
 DestroyEvent(const EventId id)
 {
-    VkEventInfo& vkInfo = eventAllocator.Get<Event_Info>(id.id24);
-    const VkDevice& dev = eventAllocator.Get<Event_Device>(id.id24);
+    VkEventInfo& vkInfo = eventAllocator.Get<Event_Info>(id.id);
+    const VkDevice& dev = eventAllocator.Get<Event_Device>(id.id);
     vkDestroyEvent(dev, vkInfo.event, nullptr);
-    eventAllocator.Dealloc(id.id24);
+    eventAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -147,7 +145,7 @@ DestroyEvent(const EventId id)
 void
 EventSignal(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage stage)
 {
-    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
+    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
     vkCmdSetEvent(CmdBufferGetVk(buf), info.event, VkTypes::AsVkPipelineStage(stage));
 }
 
@@ -157,7 +155,7 @@ EventSignal(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGra
 void
 EventWait(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage waitStage, const CoreGraphics::PipelineStage signalStage)
 {
-    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
+    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
     vkCmdWaitEvents(CmdBufferGetVk(buf), 1, &info.event,
         VkTypes::AsVkPipelineStage(waitStage),
         VkTypes::AsVkPipelineStage(signalStage),
@@ -175,7 +173,7 @@ EventWait(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraph
 void
 EventReset(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage stage)
 {
-    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
+    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
     vkCmdResetEvent(CmdBufferGetVk(buf), info.event, VkTypes::AsVkPipelineStage(stage));
 }
 
@@ -185,7 +183,7 @@ EventReset(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGrap
 void
 EventWaitAndReset(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage waitStage, const CoreGraphics::PipelineStage signalStage)
 {
-    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
+    VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
     vkCmdWaitEvents(CmdBufferGetVk(buf), 1, &info.event,
         VkTypes::AsVkPipelineStage(waitStage),
         VkTypes::AsVkPipelineStage(signalStage),
@@ -204,8 +202,8 @@ EventWaitAndReset(const EventId id, const CoreGraphics::CmdBufferId buf, const C
 bool 
 EventPoll(const EventId id)
 {
-    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
-    VkDevice dev = eventAllocator.Get<Event_Device>(id.id24);
+    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
+    VkDevice dev = eventAllocator.Get<Event_Device>(id.id);
     VkResult res = vkGetEventStatus(dev, info.event);
     return res == VK_EVENT_SET;
 }
@@ -216,8 +214,8 @@ EventPoll(const EventId id)
 void 
 EventHostReset(const EventId id)
 {
-    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
-    VkDevice dev = eventAllocator.Get<Event_Device>(id.id24);
+    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
+    VkDevice dev = eventAllocator.Get<Event_Device>(id.id);
     vkResetEvent(dev, info.event);
 }
 
@@ -227,8 +225,8 @@ EventHostReset(const EventId id)
 void 
 EventHostSignal(const EventId id)
 {
-    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
-    VkDevice dev = eventAllocator.Get<Event_Device>(id.id24);
+    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
+    VkDevice dev = eventAllocator.Get<Event_Device>(id.id);
     vkSetEvent(dev, info.event);
 }
 
@@ -238,8 +236,8 @@ EventHostSignal(const EventId id)
 void
 EventHostWait(const EventId id)
 {
-    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id24);
-    VkDevice dev = eventAllocator.Get<Event_Device>(id.id24);
+    const VkEventInfo& info = eventAllocator.Get<Event_Info>(id.id);
+    VkDevice dev = eventAllocator.Get<Event_Device>(id.id);
     VkResult res;
     while (true)
     {

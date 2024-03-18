@@ -31,7 +31,7 @@ struct ShaderConfigBatchConstant;
 struct ShaderConfigBatchTexture;
 
 RESOURCE_ID_TYPE(MaterialId);
-ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialType); // 32 bits instance, 24 bits material, 8 bits type
+ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialGeneration, material); // 32 bits instance, 24 bits material, 8 bits type
 
 typedef IndexT BatchIndex;
 

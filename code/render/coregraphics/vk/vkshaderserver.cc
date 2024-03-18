@@ -98,7 +98,7 @@ VkShaderServer::UpdateResources()
         const _PendingView& pend = pendingViewsThisFrame[i];
 
         TextureIdLock _0(pend.tex);
-        VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.resourceId);
+        VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.id);
         VkImageView oldView = info.view;
         VkResult res = vkCreateImageView(GetCurrentDevice(), &pend.createInfo, nullptr, &info.view);
         n_assert(res == VK_SUCCESS);

@@ -63,8 +63,8 @@ StreamActorPool::Setup()
 ActorId
 StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, ActorType type, uint64_t userData, IndexT scene)
 {
-    __LockName(&this->allocator, lock, id.resourceId);
-    ActorInfo& info = this->allocator.Get<0>(id.resourceId);
+    __LockName(&this->allocator, lock, id.id);
+    ActorInfo& info = this->allocator.Get<0>(id.id);
 
     Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
     Math::decompose(trans, outScale, outRotation, outTranslation);
@@ -114,8 +114,8 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
-        __LockName(&this->allocator, lock, actor.res.resourceId);
-        ActorInfo& info = this->allocator.Get<0>(actor.res.resourceId);
+        __LockName(&this->allocator, lock, actor.res.id);
+        ActorInfo& info = this->allocator.Get<0>(actor.res.id);
         info.instanceCount--;
     }
     ActorContext::DiscardActor(id);
@@ -516,9 +516,7 @@ StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAto
     Ids::Id32 id = allocator.Alloc();
     allocator.Set<Actor_Info>(id, actorInfo);
 
-    ActorResourceId ret;
-    ret.resourceId = id;
-    ret.resourceType = Physics::ActorIdType;
+    ActorResourceId ret = id;
     return ret;
 }
 
@@ -528,8 +526,8 @@ StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAto
 void
 StreamActorPool::Unload(const Resources::ResourceId id)
 {
-    __LockName(&this->allocator, lock, id.resourceId);
-    ActorInfo& info = this->allocator.Get<0>(id.resourceId);
+    __LockName(&this->allocator, lock, id.resource);
+    ActorInfo& info = this->allocator.Get<0>(id.resource);
     n_assert2(info.instanceCount == 0, "Actor has active Instances");
     const Util::StringAtom tag = this->GetTag(id);
     
@@ -538,7 +536,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
         i->release();
     }
     info.shapes.Clear();
-    allocator.Dealloc(id.resourceId);
+    allocator.Dealloc(id.resource);
 }
 
 

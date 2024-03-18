@@ -22,7 +22,7 @@ VkTextureViewAllocator textureViewAllocator(0x00FFFFFF);
 const VkImageView 
 TextureViewGetVk(const TextureViewId id)
 {
-    return textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24).view;
+    return textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id).view;
 }
 
 //------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ TextureViewGetVk(const TextureViewId id)
 const VkDevice
 TextureViewGetVkDevice(const CoreGraphics::TextureViewId id)
 {
-    return textureViewAllocator.Get<TextureView_LoadInfo>(id.id24).dev;
+    return textureViewAllocator.Get<TextureView_LoadInfo>(id.id).dev;
 }
 
 } // namespace Vulkan
@@ -92,9 +92,7 @@ CreateTextureView(const TextureViewCreateInfo& info)
     VkResult stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
     n_assert(stat == VK_SUCCESS);
 
-    TextureViewId ret;
-    ret.id24 = id;
-    ret.id8 = TextureViewIdType;
+    TextureViewId ret = id;
 
 #if NEBULA_GRAPHICS_DEBUG
     ObjectSetName(ret, info.name.Value());
@@ -109,10 +107,10 @@ CreateTextureView(const TextureViewCreateInfo& info)
 void 
 DestroyTextureView(const TextureViewId id)
 {
-    //VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
-    //VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
+    //VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id);
+    //VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id);
     CoreGraphics::DelayedDeleteTextureView(id);
-    textureViewAllocator.Dealloc(id.id24);
+    textureViewAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -121,8 +119,8 @@ DestroyTextureView(const TextureViewId id)
 void
 TextureViewReload(const TextureViewId id)
 {
-    VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
-    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
+    VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id);
+    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id);
 
     // First destroy the old view
     CoreGraphics::DelayedDeleteTextureView(id);
@@ -166,7 +164,7 @@ TextureViewReload(const TextureViewId id)
 TextureId
 TextureViewGetTexture(const TextureViewId id)
 {
-    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
+    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id);
     return loadInfo.tex;
 }
 

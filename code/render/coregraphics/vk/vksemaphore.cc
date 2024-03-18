@@ -22,7 +22,7 @@ VkSemaphore
 SemaphoreGetVk(const CoreGraphics::SemaphoreId& id)
 {
     if (id == CoreGraphics::SemaphoreId::Invalid()) return VK_NULL_HANDLE;
-    else                                            return semaphoreAllocator.Get<Semaphore_VkHandle>(id.id24);
+    else                                            return semaphoreAllocator.Get<Semaphore_VkHandle>(id.id);
 }
 }
 
@@ -58,9 +58,7 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
     VkResult res = vkCreateSemaphore(dev, &cinfo, nullptr, &semaphoreAllocator.Get<Semaphore_VkHandle>(id));
     n_assert(res == VK_SUCCESS);
 
-    SemaphoreId ret;
-    ret.id24 = id;
-    ret.id8 = SemaphoreIdType;
+    SemaphoreId ret = id;
     return ret;
 }
 
@@ -70,8 +68,8 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
 void
 DestroySemaphore(const SemaphoreId& semaphore)
 {
-    vkDestroySemaphore(semaphoreAllocator.Get<Semaphore_Device>(semaphore.id24), semaphoreAllocator.Get<Semaphore_VkHandle>(semaphore.id24), nullptr);
-    semaphoreAllocator.Dealloc(semaphore.id24);
+    vkDestroySemaphore(semaphoreAllocator.Get<Semaphore_Device>(semaphore.id), semaphoreAllocator.Get<Semaphore_VkHandle>(semaphore.id), nullptr);
+    semaphoreAllocator.Dealloc(semaphore.id);
 }
 
 //------------------------------------------------------------------------------
@@ -80,7 +78,7 @@ DestroySemaphore(const SemaphoreId& semaphore)
 uint64 
 SemaphoreGetValue(const SemaphoreId& semaphore)
 {
-    return semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24);
+    return semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id);
 }
 
 //------------------------------------------------------------------------------
@@ -89,13 +87,13 @@ SemaphoreGetValue(const SemaphoreId& semaphore)
 void 
 SemaphoreSignal(const SemaphoreId& semaphore)
 {
-    switch (semaphoreAllocator.Get<Semaphore_Type>(semaphore.id24))
+    switch (semaphoreAllocator.Get<Semaphore_Type>(semaphore.id))
     {
     case SemaphoreType::Binary:
-        semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24) = 1;
+        semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id) = 1;
         break;
     case SemaphoreType::Timeline:
-        semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24)++;
+        semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id)++;
         break;
     }
 }
@@ -106,10 +104,10 @@ SemaphoreSignal(const SemaphoreId& semaphore)
 void 
 SemaphoreReset(const SemaphoreId& semaphore)
 {
-    switch (semaphoreAllocator.Get<Semaphore_Type>(semaphore.id24))
+    switch (semaphoreAllocator.Get<Semaphore_Type>(semaphore.id))
     {
     case SemaphoreType::Binary:
-        semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id24) = 0;
+        semaphoreAllocator.Get<Semaphore_LastIndex>(semaphore.id) = 0;
         break;
     default: n_error("unhandled enum"); break;
     }

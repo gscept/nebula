@@ -289,9 +289,7 @@ TextureLoader::StreamResource(const Resources::ResourceId entry, IndexT frameInd
     uint bitsToLoad = requestedBits;
 
     // Setup texture id
-    TextureId texture;
-    texture.resourceId = entry.resourceId;
-    texture.resourceType = entry.resourceType;
+    TextureId texture = entry.resource;
     TextureIdAcquire(texture);
 
     // First, poll all submissions to find what's finished loading
@@ -342,9 +340,7 @@ TextureLoader::Unload(const Resources::ResourceId id)
     // Free streamer alloc
     this->streams[id.loaderInstanceId].stream->MemoryUnmap();
     Memory::Free(Memory::ScratchHeap, this->streams[id.loaderInstanceId].data);
-    TextureId tex;
-    tex.resourceId = id.resourceId;
-    tex.resourceType = id.resourceType;
+    TextureId tex = id.resource;
     CoreGraphics::DestroyTexture(tex);
 }
 

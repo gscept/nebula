@@ -116,12 +116,6 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
         return HttpStatus::NotFound;
     }
 
-    if (id.resourceType != ShaderIdType)
-    {
-        // id is not a shader type!
-        return HttpStatus::NotFound;
-    }
-
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
     htmlWriter->SetTitle("Nebula Shader Info");

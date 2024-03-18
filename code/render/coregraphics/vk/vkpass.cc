@@ -23,7 +23,7 @@ VkPassAllocator passAllocator(0x00FFFFFF);
 const VkRenderPassBeginInfo&
 PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<Pass_VkRenderPassBeginInfo>(id.id24);
+    return passAllocator.Get<Pass_VkRenderPassBeginInfo>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 const VkGraphicsPipelineCreateInfo&
 PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<Pass_VkRuntimeInfo>(id.id24).framebufferPipelineInfo;
+    return passAllocator.Get<Pass_VkRuntimeInfo>(id.id).framebufferPipelineInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 const SizeT 
 PassGetVkNumAttachments(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).attachments.Size();
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id).attachments.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ PassGetVkNumAttachments(const CoreGraphics::PassId& id)
 const VkDevice
 PassGetVkDevice(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).dev;
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id).dev;
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ PassGetVkDevice(const CoreGraphics::PassId& id)
 const VkFramebuffer
 PassGetVkFramebuffer(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).framebuffer;
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id).framebuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ PassGetVkFramebuffer(const CoreGraphics::PassId& id)
 const VkRenderPass
 PassGetVkRenderPass(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).pass;
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id).pass;
 }
 
 } // namespace Vulkan
@@ -473,7 +473,7 @@ GetSubpassInfo(
 void
 SetupPass(const PassId pid)
 {
-    Ids::Id32 id = pid.id24;
+    Ids::Id32 id = pid.id;
     VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id);
     VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id);
     VkRenderPassBeginInfo& beginInfo = passAllocator.Get<Pass_VkRenderPassBeginInfo>(id);
@@ -705,10 +705,7 @@ CreatePass(const PassCreateInfo& info)
         }
     }
 
-    PassId ret;
-    ret.id24 = id;
-    ret.id8 = PassIdType;
-
+    PassId ret = id;
     SetupPass(ret);
 
     return ret;
@@ -720,8 +717,8 @@ CreatePass(const PassCreateInfo& info)
 void
 DestroyPass(const PassId id)
 {
-    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id24);
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
 
     for (IndexT i = 0; i < loadInfo.attachments.Size(); i++)
         CoreGraphics::DestroyTextureView(loadInfo.attachments[i]);
@@ -741,7 +738,7 @@ DestroyPass(const PassId id)
 void
 PassWindowResizeCallback(const PassId id)
 {
-    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id24);
+    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id);
 
     // destroy pass and our descriptor set
     vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);
@@ -761,7 +758,7 @@ PassWindowResizeCallback(const PassId id)
 const Util::Array<CoreGraphics::TextureViewId>&
 PassGetAttachments(const CoreGraphics::PassId id)
 {
-    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).attachments;
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id).attachments;
 }
 
 //------------------------------------------------------------------------------
@@ -770,7 +767,7 @@ PassGetAttachments(const CoreGraphics::PassId id)
 const uint32_t
 PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass)
 {
-    return passAllocator.Get<Pass_SubpassAttachments>(id.id24)[subpass];
+    return passAllocator.Get<Pass_SubpassAttachments>(id.id)[subpass];
 }
 
 //------------------------------------------------------------------------------
@@ -779,7 +776,7 @@ PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass
 const CoreGraphics::ResourceTableId
 PassGetResourceTable(const CoreGraphics::PassId id)
 {
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
     return runtimeInfo.passDescriptorSet;
 }
 
@@ -789,7 +786,7 @@ PassGetResourceTable(const CoreGraphics::PassId id)
 const Util::StringAtom 
 PassGetName(const CoreGraphics::PassId id)
 {
-    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).name;
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id).name;
 }
 
 //------------------------------------------------------------------------------
@@ -798,7 +795,7 @@ PassGetName(const CoreGraphics::PassId id)
 const Util::FixedArray<Math::rectangle<int>>&
 PassGetRects(const CoreGraphics::PassId& id)
 {
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
     return info.subpassRects[info.currentSubpassIndex];
 }
 
@@ -808,7 +805,7 @@ PassGetRects(const CoreGraphics::PassId& id)
 const Util::FixedArray<Math::rectangle<int>>&
 PassGetViewports(const CoreGraphics::PassId& id)
 {
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
     return info.subpassViewports[info.currentSubpassIndex];
 }
 

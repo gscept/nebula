@@ -17,7 +17,7 @@ VkSamplerAllocator samplerAllocator;
 const VkSampler&
 SamplerGetVk(const CoreGraphics::SamplerId& id)
 {
-    return samplerAllocator.Get<1>(id.id24);
+    return samplerAllocator.Get<1>(id.id);
 }
 
 } // namespace Vulkan
@@ -262,16 +262,12 @@ CreateSampler(const SamplerCreateInfo& info)
 
         UniqueSamplerHashes.Add(hash, id);
 
-        SamplerId ret;
-        ret.id24 = id;
-        ret.id8 = SamplerIdType;
+        SamplerId ret = id;
         return ret;
     }
     else
     {
-        SamplerId ret;
-        ret.id24 = UniqueSamplerHashes.ValueAtIndex(i);
-        ret.id8 = SamplerIdType;
+        SamplerId ret = UniqueSamplerHashes.ValueAtIndex(i);
         return ret;
     }
 }
@@ -282,12 +278,12 @@ CreateSampler(const SamplerCreateInfo& info)
 void
 DestroySampler(const SamplerId& id)
 {
-    UniqueSamplerHashes.Erase(samplerAllocator.Get<2>(id.id24));
-    VkDevice& dev = samplerAllocator.Get<0>(id.id24);
-    VkSampler& sampler = samplerAllocator.Get<1>(id.id24);
+    UniqueSamplerHashes.Erase(samplerAllocator.Get<2>(id.id));
+    VkDevice& dev = samplerAllocator.Get<0>(id.id);
+    VkSampler& sampler = samplerAllocator.Get<1>(id.id);
     vkDestroySampler(dev, sampler, nullptr);
 
-    samplerAllocator.Dealloc(id.id24);
+    samplerAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------

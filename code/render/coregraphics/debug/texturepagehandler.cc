@@ -193,12 +193,6 @@ TexturePageHandler::HandleImageRequest(const Dictionary<String,String>& query, c
         return HttpStatus::NotFound;
     }
 
-    if (id.resourceType != TextureIdType)
-    {
-        // resource exists but is not a texture
-        return HttpStatus::NotFound;
-    }
-
     // attach a StreamTextureSaver to the texture
     // NOTE: the StreamSaver is expected to set the media type on the stream!
     HttpStatus::Code httpStatus = HttpStatus::InternalServerError;
@@ -223,12 +217,6 @@ TexturePageHandler::HandleTextureInfoRequest(const Util::String& resId, const Pt
 
     if (!resManager->HasResource(id))
     {
-        return HttpStatus::NotFound;
-    }
-
-    if (id.resourceType != TextureIdType)
-    {
-        // resource exists but is not a texture
         return HttpStatus::NotFound;
     }
 

@@ -40,9 +40,7 @@ CreateMesh(const MeshCreateInfo& info)
     meshAllocator.Set<Mesh_Internals>(id, internals);
     meshAllocator.Release(id);
 
-    MeshId ret;
-    ret.id24 = id;
-    ret.id8 = MeshIdType;
+    MeshId ret = id;
     return ret;
 }
 
@@ -52,12 +50,12 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
-    const CoreGraphics::VertexAlloc& vertices = meshAllocator.ConstGet<Mesh_Internals>(id.id24).vertexAllocation;
-    const CoreGraphics::VertexAlloc& indices = meshAllocator.ConstGet<Mesh_Internals>(id.id24).indexAllocation;
+    const CoreGraphics::VertexAlloc& vertices = meshAllocator.ConstGet<Mesh_Internals>(id.id).vertexAllocation;
+    const CoreGraphics::VertexAlloc& indices = meshAllocator.ConstGet<Mesh_Internals>(id.id).indexAllocation;
 
     CoreGraphics::DeallocateVertices(vertices);
     CoreGraphics::DeallocateIndices(indices);
-    meshAllocator.Dealloc(id.id24);
+    meshAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +64,7 @@ DestroyMesh(const MeshId id)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).primitiveGroups;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).primitiveGroups;
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +73,7 @@ MeshGetPrimitiveGroups(const MeshId id)
 const CoreGraphics::PrimitiveGroup
 MeshGetPrimitiveGroup(const MeshId id, const IndexT group)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).primitiveGroups[group];
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).primitiveGroups[group];
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +82,7 @@ MeshGetPrimitiveGroup(const MeshId id, const IndexT group)
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).streams[stream].vertexBuffer;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].vertexBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -93,7 +91,7 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 const void
 MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream)
 {
-    meshAllocator.ConstGet<Mesh_Internals>(id.id24).streams[stream].vertexBuffer = buffer;
+    meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].vertexBuffer = buffer;
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +100,7 @@ MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream)
 const uint
 MeshGetVertexOffset(const MeshId id, const IndexT stream)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).streams[stream].offset;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].offset;
 }
 
 //------------------------------------------------------------------------------
@@ -111,7 +109,7 @@ MeshGetVertexOffset(const MeshId id, const IndexT stream)
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).indexBuffer;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).indexBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -120,7 +118,7 @@ MeshGetIndexBuffer(const MeshId id)
 const uint
 MeshGetIndexOffset(const MeshId id)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).indexBufferOffset;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).indexBufferOffset;
 }
 
 //------------------------------------------------------------------------------
@@ -129,7 +127,7 @@ MeshGetIndexOffset(const MeshId id)
 const IndexType::Code
 MeshGetIndexType(const MeshId id)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).indexType;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).indexType;
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +136,7 @@ MeshGetIndexType(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).primitiveTopology;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).primitiveTopology;
 }
 
 //------------------------------------------------------------------------------
@@ -147,7 +145,7 @@ MeshGetTopology(const MeshId id)
 const CoreGraphics::VertexLayoutId
 MeshGetVertexLayout(const MeshId id)
 {
-    return meshAllocator.ConstGet<Mesh_Internals>(id.id24).vertexLayout;
+    return meshAllocator.ConstGet<Mesh_Internals>(id.id).vertexLayout;
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +154,7 @@ MeshGetVertexLayout(const MeshId id)
 const void
 MeshBind(const MeshId id, const CoreGraphics::CmdBufferId cmd)
 {
-    const auto& internals = meshAllocator.ConstGet<Mesh_Internals>(id.id24);
+    const auto& internals = meshAllocator.ConstGet<Mesh_Internals>(id.id);
 
     CoreGraphics::CmdSetPrimitiveTopology(cmd, internals.primitiveTopology);
     CoreGraphics::CmdSetVertexLayout(cmd, internals.vertexLayout);

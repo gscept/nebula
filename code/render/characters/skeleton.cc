@@ -20,9 +20,7 @@ CreateSkeleton(const SkeletonCreateInfo& info)
     skeletonAllocator.Set<Skeleton_JointNameMap>(id, info.jointIndexMap);
     skeletonAllocator.Set<Skeleton_IdleSamples>(id, info.idleSamples);
 
-    SkeletonId ret;
-    ret.id24 = id;
-    ret.id8 = CoreGraphics::SkeletonIdType;
+    SkeletonId ret = id;
     return ret;
 }
 
@@ -32,7 +30,7 @@ CreateSkeleton(const SkeletonCreateInfo& info)
 void 
 DestroySkeleton(const SkeletonId id)
 {
-    skeletonAllocator.Dealloc(id.id24);
+    skeletonAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +39,7 @@ DestroySkeleton(const SkeletonId id)
 const SizeT 
 SkeletonGetNumJoints(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_Joints>(id.id24).Size();
+    return skeletonAllocator.Get<Skeleton_Joints>(id.id).Size();
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +48,7 @@ SkeletonGetNumJoints(const SkeletonId id)
 const Util::FixedArray<CharacterJoint>& 
 SkeletonGetJoints(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_Joints>(id.id24);
+    return skeletonAllocator.Get<Skeleton_Joints>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +57,7 @@ SkeletonGetJoints(const SkeletonId id)
 const Util::FixedArray<Math::mat4>&
 SkeletonGetBindPose(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_BindPose>(id.id24);
+    return skeletonAllocator.Get<Skeleton_BindPose>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +66,7 @@ SkeletonGetBindPose(const SkeletonId id)
 const IndexT 
 SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name)
 {
-    return skeletonAllocator.Get<Skeleton_JointNameMap>(id.id24)[name];
+    return skeletonAllocator.Get<Skeleton_JointNameMap>(id.id)[name];
 }
 
 //------------------------------------------------------------------------------
@@ -77,7 +75,7 @@ SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name)
 const Util::FixedArray<Math::vec4>&
 SkeletonGetIdleSamples(const SkeletonId id)
 {
-    return skeletonAllocator.Get<Skeleton_IdleSamples>(id.id24);
+    return skeletonAllocator.Get<Skeleton_IdleSamples>(id.id);
 }
 
 } // namespace Characters

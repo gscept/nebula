@@ -178,9 +178,7 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
 void
 ModelLoader::Unload(const Resources::ResourceId id)
 {
-    ModelId model;
-    model.resourceId = id.resourceId;
-    model.resourceType = id.resourceType;
+    ModelId model = id.resource;
     const Util::Array<Models::ModelNode*>& nodes = ModelGetNodes(model);
 
     // unload nodes

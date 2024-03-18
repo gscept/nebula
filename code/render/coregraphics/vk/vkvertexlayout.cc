@@ -20,7 +20,7 @@ VkPipelineVertexInputStateCreateInfo*
 VertexLayoutGetDerivative(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader)
 {
     Threading::CriticalScope scope(&vertexSignatureMutex);
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = vertexLayoutAllocator.Get<VertexSignature_ProgramLayoutMapping>(layout.resourceId);
+    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = vertexLayoutAllocator.Get<VertexSignature_ProgramLayoutMapping>(layout.id);
     const Ids::Id64 shaderHash = shader.HashCode64();
 
     IndexT i = hashTable.FindIndex(shaderHash);
@@ -31,8 +31,8 @@ VertexLayoutGetDerivative(const CoreGraphics::VertexLayoutId layout, const CoreG
     else
     {
         const VkProgramReflectionInfo& program = ShaderGetProgramReflection(shader);
-        const BindInfo& bindInfo = vertexLayoutAllocator.Get<VertexSignature_BindInfo>(layout.resourceId);
-        const VkPipelineVertexInputStateCreateInfo& baseInfo = vertexLayoutAllocator.Get<VertexSignature_VkPipelineInfo>(layout.resourceId);
+        const BindInfo& bindInfo = vertexLayoutAllocator.Get<VertexSignature_BindInfo>(layout.id);
+        const VkPipelineVertexInputStateCreateInfo& baseInfo = vertexLayoutAllocator.Get<VertexSignature_VkPipelineInfo>(layout.id);
 
         IndexT index = hashTable.Add(shaderHash, {});
         DerivativeLayout& layout = hashTable.ValueAtIndex(shaderHash, index);
@@ -70,7 +70,7 @@ const VertexLayoutVkBindInfo&
 VertexLayoutGetVkBindInfo(const CoreGraphics::VertexLayoutId layout)
 {
     Threading::CriticalScope scope(&vertexSignatureMutex);
-    return vertexLayoutAllocator.Get<VertexSignature_DynamicBindInfo>(layout.resourceId);
+    return vertexLayoutAllocator.Get<VertexSignature_DynamicBindInfo>(layout.id);
 }
 
 } // namespace Vulkan
@@ -193,9 +193,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
         .pVertexAttributeDescriptions = bindInfo.attrs.Begin()
     };
 
-    VertexLayoutId ret;
-    ret.resourceId = id;
-    ret.resourceType = VertexLayoutIdType;
+    VertexLayoutId ret = id;
     return ret;
 }
 
@@ -205,7 +203,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
 void
 DestroyVertexLayout(const VertexLayoutId id)
 {
-    vertexLayoutAllocator.Dealloc(id.resourceId);
+    vertexLayoutAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -214,7 +212,7 @@ DestroyVertexLayout(const VertexLayoutId id)
 const SizeT
 VertexLayoutGetSize(const VertexLayoutId id)
 {
-    return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.resourceId).vertexByteSize;
+    return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.id).vertexByteSize;
 }
 
 //------------------------------------------------------------------------------
@@ -223,7 +221,7 @@ VertexLayoutGetSize(const VertexLayoutId id)
 const SizeT
 VertexLayoutGetStreamSize(const VertexLayoutId id, IndexT stream)
 {
-    return vertexLayoutAllocator.Get<VertexSignature_StreamSize>(id.resourceId)[stream];
+    return vertexLayoutAllocator.Get<VertexSignature_StreamSize>(id.id)[stream];
 }
 
 //------------------------------------------------------------------------------
@@ -232,7 +230,7 @@ VertexLayoutGetStreamSize(const VertexLayoutId id, IndexT stream)
 const Util::Array<VertexComponent>&
 VertexLayoutGetComponents(const VertexLayoutId id)
 {
-    return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.resourceId).comps;
+    return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.id).comps;
 }
 
 } // namespace Vulkan

@@ -29,7 +29,7 @@ VkDescriptorSetLayout EmptySetLayout;
 const VkDescriptorSet&
 ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 {
-    return resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    return resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 const IndexT
 ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id)
 {
-    return resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
+    return resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id)
 const VkDevice&
 ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id)
 {
-    return resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    return resourceTableAllocator.Get<ResourceTable_Device>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ SetupEmptyDescriptorSetLayout()
 const VkDescriptorSetLayout&
 ResourceTableLayoutGetVk(const CoreGraphics::ResourceTableLayoutId& id)
 {
-    return resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(id.id24);
+    return resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -97,14 +97,14 @@ ResourceTableLayoutGetVk(const CoreGraphics::ResourceTableLayoutId& id)
 void
 ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, uint overallocationSize, IndexT& outIndex, VkDescriptorSet& outSet)
 {
-    Util::Array<uint32_t>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24);
+    Util::Array<uint32_t>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id);
     VkDescriptorPool pool = VK_NULL_HANDLE;
     for (IndexT i = 0; i < freeItems.Size(); i++)
     {
         // if free, return
         if (freeItems[i] > 0)
         {
-            pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24)[i];
+            pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id)[i];
             outIndex = i;
             break;
         }
@@ -113,7 +113,7 @@ ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, con
     // no pool found, allocate new pool
     if (pool == VK_NULL_HANDLE)
     {
-        Util::Array<VkDescriptorPoolSize> poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayout_PoolSizes>(id.id24);
+        Util::Array<VkDescriptorPoolSize> poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayout_PoolSizes>(id.id);
         for (IndexT i = 0; i < poolSizes.Size(); i++)
         {
             poolSizes[i].descriptorCount *= overallocationSize;
@@ -134,9 +134,9 @@ ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, con
         n_assert(res == VK_SUCCESS);
 
         // add to list of pools, and set new pointer to the new pool
-        resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24).Append(pool);
+        resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id).Append(pool);
         freeItems.Append(overallocationSize);
-        outIndex = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24).Size() - 1;
+        outIndex = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id).Size() - 1;
     }
 
     VkDescriptorSetAllocateInfo dsetAlloc =
@@ -161,10 +161,10 @@ ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, con
 void
 ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, const VkDescriptorSet& set, const IndexT index)
 {
-    VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24)[index];
+    VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id)[index];
     VkResult res = vkFreeDescriptorSets(dev, pool, 1, &set);
     n_assert(res == VK_SUCCESS);
-    resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24)[index]++;
+    resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id)[index]++;
 }
 
 //------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, c
 const VkDescriptorPool&
 ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
 {
-    return resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24)[index];
+    return resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -182,7 +182,7 @@ ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId
 uint*
 ResourceTableLayoutGetFreeItemsCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
 {
-    Util::Array<uint>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24);
+    Util::Array<uint>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id);
     return &freeItems[index];
 }
 
@@ -192,7 +192,7 @@ ResourceTableLayoutGetFreeItemsCounter(const CoreGraphics::ResourceTableLayoutId
 const VkPipelineLayout&
 ResourcePipelineGetVk(const CoreGraphics::ResourcePipelineId& id)
 {
-    return resourcePipelineAllocator.Get<1>(id.id24);
+    return resourcePipelineAllocator.Get<1>(id.id);
 }
 
 } // namespace Vulkan
@@ -223,9 +223,7 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
     layout = info.layout;
     ResourceTableLayoutAllocTable(layout, dev, info.overallocationSize, poolIndex, set);
 
-    ResourceTableId ret;
-    ret.id24 = id;
-    ret.id8 = ResourceTableIdType;
+    ResourceTableId ret = id;
     return ret;
 }
 
@@ -238,7 +236,7 @@ DestroyResourceTable(const ResourceTableId id)
     n_assert(id != InvalidResourceTableId);
     CoreGraphics::DelayedDeleteDescriptorSet(id);
 
-    resourceTableAllocator.Dealloc(id.id24);
+    resourceTableAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -247,7 +245,7 @@ DestroyResourceTable(const ResourceTableId id)
 const ResourceTableLayoutId&
 ResourceTableGetLayout(ResourceTableId id)
 {
-    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
+    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -256,12 +254,12 @@ ResourceTableGetLayout(ResourceTableId id)
 void
 ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex, const ResourceTableId to, IndexT toSlot, IndexT toIndex, const SizeT numResources)
 {
-    VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
-    VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
+    VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id);
+    VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id);
 
-    Threading::SpinlockScope scope1(&resourceTableAllocator.Get<ResourceTable_Lock>(from.id24));
-    Threading::SpinlockScope scope2(&resourceTableAllocator.Get<ResourceTable_Lock>(to.id24));
-    Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
+    Threading::SpinlockScope scope1(&resourceTableAllocator.Get<ResourceTable_Lock>(from.id));
+    Threading::SpinlockScope scope2(&resourceTableAllocator.Get<ResourceTable_Lock>(to.id));
+    Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id);
 
     VkCopyDescriptorSet copy =
     {
@@ -284,10 +282,10 @@ ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex,
 void
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -295,8 +293,8 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = nullptr;
 
-    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
-    const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayout_ImmutableSamplerFlags>(layout.id24);
+    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id);
+    const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayout_ImmutableSamplerFlags>(layout.id);
 
     VkDescriptorImageInfo img;
     if (immutable[tex.slot])
@@ -341,10 +339,10 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 void 
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -352,8 +350,8 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     write.pNext = nullptr;
 
-    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
-    const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayout_ImmutableSamplerFlags>(layout.id24);
+    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id);
+    const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayout_ImmutableSamplerFlags>(layout.id);
 
     VkDescriptorImageInfo img;
     if (immutable[tex.slot])
@@ -396,10 +394,10 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 void
 ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInputAttachment& tex)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -436,10 +434,10 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 void
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -476,10 +474,10 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 void 
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tex.slot != InvalidIndex);
 
@@ -517,10 +515,10 @@ void
 ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
     n_assert(!buf.texelBuffer);
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(buf.slot != InvalidIndex);
 
@@ -564,10 +562,10 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
 void 
 ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(buf.slot != InvalidIndex);
 
@@ -610,10 +608,10 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 void
 ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(samp.slot != InvalidIndex);
 
@@ -650,10 +648,10 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 void
 ResourceTableSetAccelerationStructure(const ResourceTableId id, const ResourceTableTlas& tlas)
 {
-    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
 
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
 
     n_assert(tlas.slot != InvalidIndex);
 
@@ -694,10 +692,10 @@ ResourceTableCommitChanges(const ResourceTableId id)
     n_assert(!ResourceTableBlocked);
 
     // resource tables are blocked, add to pending write queue
-    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
-    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
-    Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id));
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id);
+    Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id);
 
     // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
     // we need to re-assign the pointers, but thankfully they have values from before
@@ -1075,10 +1073,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         n_assert(res == VK_SUCCESS);
     }
 
-    ResourceTableLayoutId ret;
-    ret.id24 = id;
-    ret.id8 = ResourceTableLayoutIdType;
-
+    ResourceTableLayoutId ret = id;
     return ret;
 }
 
@@ -1088,18 +1083,18 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 void
 DestroyResourceTableLayout(const ResourceTableLayoutId& id)
 {
-    VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayout_Device>(id.id24);
-    VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(id.id24);
+    VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayout_Device>(id.id);
+    VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(id.id);
     vkDestroyDescriptorSetLayout(dev, layout, nullptr);
 
     // destroy all pools
-    Util::Array<VkDescriptorPool>& pools = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24);
+    Util::Array<VkDescriptorPool>& pools = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id);
     for (IndexT i = 0; i < pools.Size(); i++)
         vkDestroyDescriptorPool(dev, pools[i], nullptr);
 
     pools.Clear();
 
-    resourceTableLayoutAllocator.Dealloc(id.id24);
+    resourceTableLayoutAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -1123,7 +1118,7 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
         {
             layouts.Append(EmptySetLayout);
         }
-        layouts.Append(resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(info.tables[i].id24));
+        layouts.Append(resourceTableLayoutAllocator.Get<ResourceTableLayout_SetLayout>(info.tables[i].id));
     }
 
     VkPushConstantRange push;
@@ -1144,9 +1139,7 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
     VkResult res = vkCreatePipelineLayout(dev, &crInfo, nullptr, &layout);
     n_assert(res == VK_SUCCESS);
 
-    ResourcePipelineId ret;
-    ret.id24 = id;
-    ret.id8 = ResourcePipelineIdType;
+    ResourcePipelineId ret = id;
     return ret;
 }
 
@@ -1156,11 +1149,11 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 void
 DestroyResourcePipeline(const ResourcePipelineId& id)
 {
-    VkDevice& dev = resourcePipelineAllocator.Get<0>(id.id24);
-    VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id.id24);
+    VkDevice& dev = resourcePipelineAllocator.Get<0>(id.id);
+    VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id.id);
     vkDestroyPipelineLayout(dev, layout, nullptr);
 
-    resourcePipelineAllocator.Dealloc(id.id24);
+    resourcePipelineAllocator.Dealloc(id.id);
 }
 
 } // namespace CoreGraphics
