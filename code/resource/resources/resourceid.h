@@ -27,20 +27,22 @@
 #include "util/stringatom.h"
 #include "ids/id.h"
 #include "core/debug.h"
+#include "ids/idgenerationpool.h"
 namespace Resources
 {
 typedef Util::StringAtom ResourceName;
-ID_24_8_24_8_NAMED_TYPE(ResourceId, loaderInstanceId, loaderIndex, resourceId, resourceType);               // 24 bits: loader resource id, 8 bits: loader index, 24 bits: unique resource id, 8 bits: resource type
+ID_24_8_24_8_NAMED_TYPE(ResourceId, loaderInstanceId, loaderIndex, resourceId, generation, loader, resource);               // 24 bits: loader resource id, 8 bits: loader index, 24 bits: unique resource id, 8 bits: generation
 
 // define a generic typed ResourceId, this is so we can have specialized allocators, but have a common pool implementation...
-ID_24_8_NAMED_TYPE(ResourceUnknownId, resourceId, resourceType);
+ID_24_8_NAMED_TYPE(ResourceUnknownId, resourceId, generation, id);
 
 } // namespace Resource
 
 #define RESOURCE_ID_TYPE(type) struct type : public Resources::ResourceUnknownId { \
         constexpr type() {};\
         constexpr type(const Resources::ResourceUnknownId& res) : Resources::ResourceUnknownId(res) {};\
-        constexpr type(const Resources::ResourceId& res) : Resources::ResourceUnknownId(res.resourceId, res.resourceType) {};\
-        constexpr type(const Ids::Id24 id, const Ids::Id8 type) : Resources::ResourceUnknownId(id, type) {};\
+        constexpr type(const Resources::ResourceId& res) : Resources::ResourceUnknownId(res.resourceId, res.generation) {};\
+        constexpr type(const Ids::Id24 id, const Ids::Id8 generation) : Resources::ResourceUnknownId(id, generation) {};\
+        constexpr type(const Ids::Id32 id) : Resources::ResourceUnknownId(Ids::Index(id), Ids::Generation(id)) {};\
     }; \
     static constexpr type Invalid##type = Resources::InvalidResourceUnknownId;

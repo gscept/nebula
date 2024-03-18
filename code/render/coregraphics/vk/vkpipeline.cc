@@ -72,7 +72,7 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     obj.pipeline = pipeline;
     obj.layout = programInfo.layout;
     obj.pass = info.pass;
-    return PipelineId{ ret, PipelineIdType };
+    return PipelineId{ ret };
 }
 
 //------------------------------------------------------------------------------
@@ -81,9 +81,9 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
 void
 DestroyGraphicsPipeline(const PipelineId pipeline)
 {
-    Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id24);
+    Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id);
     vkDestroyPipeline(Vulkan::GetCurrentDevice(), obj.pipeline, nullptr);
-    pipelineAllocator.Dealloc(pipeline.id24);
+    pipelineAllocator.Dealloc(pipeline.id);
 }
 
 //------------------------------------------------------------------------------
@@ -388,9 +388,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
     Ids::Id32 id = pipelineAllocator.Alloc();
     pipelineAllocator.Set<Pipeline_Object>(id, { .pipeline = pipeline, .layout = createInfo.layout, .pass = InvalidPassId });
 
-    PipelineId pipeId;
-    pipeId.id24 = id;
-    pipeId.id8 = PipelineIdType;
+    PipelineId pipeId = id;
     ret.pipeline = pipeId;
 
     return ret;
@@ -406,9 +404,9 @@ DestroyRaytracingPipeline(const PipelineRayTracingTable& table)
     CoreGraphics::DestroyBuffer(table.missBindingBuffer);
     CoreGraphics::DestroyBuffer(table.hitBindingBuffer);
     CoreGraphics::DestroyBuffer(table.callableBindingBuffer);
-    Pipeline& obj = pipelineAllocator.Get<0>(table.pipeline.id24);
+    Pipeline& obj = pipelineAllocator.Get<0>(table.pipeline.id);
     vkDestroyPipeline(Vulkan::GetCurrentDevice(), obj.pipeline, nullptr);
-    pipelineAllocator.Dealloc(table.pipeline.id24);
+    pipelineAllocator.Dealloc(table.pipeline.id);
 }
 
 } // namespace CoreGraphics

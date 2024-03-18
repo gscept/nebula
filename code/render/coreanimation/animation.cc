@@ -23,9 +23,7 @@ CreateAnimation(const AnimationCreateInfo& info)
     animAllocator.Set<Anim_ClipIndices>(id, info.indices);
     animAllocator.Set<Anim_KeyBuffer>(id, info.keyBuffer);
 
-    AnimationId ret;
-    ret.id24 = id;
-    ret.id8 = CoreGraphics::AnimResourceIdType;
+    AnimationId ret = id;
     return ret;
 }
 
@@ -34,13 +32,13 @@ CreateAnimation(const AnimationCreateInfo& info)
 */
 void DestroyAnimation(const AnimationId id)
 {
-    animAllocator.Get<Anim_Clips>(id.id24).Clear();
-    animAllocator.Get<Anim_Curves>(id.id24).Clear();
-    animAllocator.Get<Anim_Events>(id.id24).Clear();
-    animAllocator.Get<Anim_ClipIndices>(id.id24).Clear();
-    animAllocator.Get<Anim_KeyBuffer>(id.id24)->Discard();
-    animAllocator.Set<Anim_KeyBuffer>(id.id24, nullptr);
-    animAllocator.Dealloc(id.id24);
+    animAllocator.Get<Anim_Clips>(id.id).Clear();
+    animAllocator.Get<Anim_Curves>(id.id).Clear();
+    animAllocator.Get<Anim_Events>(id.id).Clear();
+    animAllocator.Get<Anim_ClipIndices>(id.id).Clear();
+    animAllocator.Get<Anim_KeyBuffer>(id.id)->Discard();
+    animAllocator.Set<Anim_KeyBuffer>(id.id, nullptr);
+    animAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -49,7 +47,7 @@ void DestroyAnimation(const AnimationId id)
 const Util::FixedArray<AnimClip>&
 AnimGetClips(const AnimationId& id)
 {
-    return animAllocator.Get<Anim_Clips>(id.id24);
+    return animAllocator.Get<Anim_Clips>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -58,7 +56,7 @@ AnimGetClips(const AnimationId& id)
 const AnimClip& 
 AnimGetClip(const AnimationId& id, const IndexT index)
 {
-    return animAllocator.Get<Anim_Clips>(id.id24)[index];
+    return animAllocator.Get<Anim_Clips>(id.id)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -67,7 +65,7 @@ AnimGetClip(const AnimationId& id, const IndexT index)
 const Ptr<AnimKeyBuffer>&
 AnimGetBuffer(const AnimationId& id)
 {
-    return animAllocator.Get<Anim_KeyBuffer>(id.id24);
+    return animAllocator.Get<Anim_KeyBuffer>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +74,7 @@ AnimGetBuffer(const AnimationId& id)
 const Util::FixedArray<AnimCurve>&
 AnimGetCurves(const AnimationId& id)
 {
-    return animAllocator.Get<Anim_Curves>(id.id24);
+    return animAllocator.Get<Anim_Curves>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +83,7 @@ AnimGetCurves(const AnimationId& id)
 const IndexT
 AnimGetIndex(const AnimationId& id, const Util::StringAtom& name)
 {
-    return animAllocator.Get<Anim_ClipIndices>(id.id24)[name];
+    return animAllocator.Get<Anim_ClipIndices>(id.id)[name];
 }
 
 } // namespace CoreAnimation

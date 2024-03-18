@@ -17,7 +17,7 @@ VkBufferSparseExtensionAllocator bufferSparseExtensionAllocator;
 VkBuffer 
 BufferGetVk(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id24).buf;
+    return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).buf;
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ BufferGetVk(const CoreGraphics::BufferId id)
 VkDeviceMemory 
 BufferGetVkMemory(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).mem.mem;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).mem.mem;
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ BufferGetVkMemory(const CoreGraphics::BufferId id)
 VkDevice 
 BufferGetVkDevice(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).dev;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).dev;
 }
 
 } // namespace Vulkan
@@ -267,9 +267,7 @@ CreateBuffer(const BufferCreateInfo& info)
     loadInfo.byteSize = size;
     loadInfo.elementSize = info.elementSize;
 
-    BufferId ret;
-    ret.id8 = BufferIdType;
-    ret.id24 = id;
+    BufferId ret = id;
 
 #if NEBULA_GRAPHICS_DEBUG
     ObjectSetName(ret, info.name.Value());
@@ -286,14 +284,14 @@ CreateBuffer(const BufferCreateInfo& info)
 void 
 DestroyBuffer(const BufferId id)
 {
-    bufferAllocator.Acquire(id.id24);
-    VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id24);
+    bufferAllocator.Acquire(id.id);
+    VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id);
     
     CoreGraphics::DelayedDeleteBuffer(id);
     CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     loadInfo.mem = CoreGraphics::Alloc{};
-    bufferAllocator.Dealloc(id.id24);
-    bufferAllocator.Release(id.id24);
+    bufferAllocator.Dealloc(id.id);
+    bufferAllocator.Release(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -302,7 +300,7 @@ DestroyBuffer(const BufferId id)
 const BufferUsageFlags 
 BufferGetType(const BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id24).usageFlags;
+    return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).usageFlags;
 }
 
 //------------------------------------------------------------------------------
@@ -311,7 +309,7 @@ BufferGetType(const BufferId id)
 const SizeT 
 BufferGetSize(const BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).size;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).size;
 }
 
 //------------------------------------------------------------------------------
@@ -320,7 +318,7 @@ BufferGetSize(const BufferId id)
 const SizeT 
 BufferGetElementSize(const BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).elementSize;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).elementSize;
 }
 
 //------------------------------------------------------------------------------
@@ -329,7 +327,7 @@ BufferGetElementSize(const BufferId id)
 const SizeT 
 BufferGetByteSize(const BufferId id)
 {
-    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).byteSize;
+    return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).byteSize;
 }
 
 //------------------------------------------------------------------------------
@@ -347,7 +345,7 @@ BufferGetUploadMaxSize()
 void* 
 BufferMap(const BufferId id)
 {
-    const VkBufferMapInfo& mapInfo = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id24);
+    const VkBufferMapInfo& mapInfo = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id);
     n_assert2(mapInfo.mappedMemory != nullptr, "Buffer must be created as dynamic or mapped to support mapping");
     return mapInfo.mappedMemory;
 }
@@ -367,10 +365,10 @@ BufferUnmap(const BufferId id)
 void
 BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset)
 {
-    const VkBufferMapInfo& map = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id24);
+    const VkBufferMapInfo& map = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id);
 
 #if NEBULA_DEBUG
-    const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size + offset <= (uint)setup.byteSize);
 #endif
     byte* buf = (byte*)map.mappedMemory + offset;
@@ -393,7 +391,7 @@ BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const vo
 void
 BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern)
 {
-    const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     
     int remainingBytes = setup.byteSize;
     uint numChunks = Math::divandroundup(setup.byteSize, BufferGetUploadMaxSize());
@@ -416,7 +414,7 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 void 
 BufferFlush(const BufferId id, IndexT offset, SizeT size)
 {
-    const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Flush(loadInfo.dev, loadInfo.mem, offset, size);
 }
@@ -427,7 +425,7 @@ BufferFlush(const BufferId id, IndexT offset, SizeT size)
 void 
 BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
 {
-    const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24);
+    const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
     Invalidate(loadInfo.dev, loadInfo.mem, offset, size);
 }
@@ -438,8 +436,8 @@ BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
 void
 BufferSparseEvict(const BufferId id, IndexT pageIndex)
 {
-    __Lock(bufferAllocator, id.id24);
-    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    __Lock(bufferAllocator, id.id);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).sparseExtension;
     n_assert(sparseExtension != 0xFFFFFFFF);
     const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
 
@@ -471,8 +469,8 @@ BufferSparseEvict(const BufferId id, IndexT pageIndex)
 void
 BufferSparseMakeResident(const BufferId id, IndexT pageIndex)
 {
-    __Lock(bufferAllocator, id.id24);
-    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    __Lock(bufferAllocator, id.id);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).sparseExtension;
     n_assert(sparseExtension != 0xFFFFFFFF);
     const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
 
@@ -501,8 +499,8 @@ BufferSparseMakeResident(const BufferId id, IndexT pageIndex)
 IndexT
 BufferSparseGetPageIndex(const BufferId id, SizeT offset)
 {
-    __Lock(bufferAllocator, id.id24);
-    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    __Lock(bufferAllocator, id.id);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).sparseExtension;
     n_assert(sparseExtension != 0xFFFFFFFF);
     const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
 
@@ -516,8 +514,8 @@ BufferSparseGetPageIndex(const BufferId id, SizeT offset)
 SizeT
 BufferSparseGetPageSize(const BufferId id)
 {
-    __Lock(bufferAllocator, id.id24);
-    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    __Lock(bufferAllocator, id.id);
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).sparseExtension;
     n_assert(sparseExtension != 0xFFFFFFFF);
     const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
     return table.memoryReqs.alignment;
@@ -529,9 +527,9 @@ BufferSparseGetPageSize(const BufferId id)
 void
 BufferSparseCommitChanges(const BufferId id)
 {
-    __Lock(bufferAllocator, id.id24);
-    VkBuffer buf = bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id24).buf;
-    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id24).sparseExtension;
+    __Lock(bufferAllocator, id.id);
+    VkBuffer buf = bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).buf;
+    Ids::Id32 sparseExtension = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).sparseExtension;
     n_assert(sparseExtension != 0xFFFFFFFF);
     const BufferSparsePageTable& table = bufferSparseExtensionAllocator.ConstGet<BufferExtension_SparsePageTable>(sparseExtension);
 

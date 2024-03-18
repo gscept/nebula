@@ -216,16 +216,16 @@ ResourceLoader::SetupIdFromEntry(const Ids::Id32 entry, ResourceId& cacheEntry)
     {
         case Resource::State::Loaded:
             cacheEntry.resourceId = this->resources[entry].resourceId;
-            cacheEntry.resourceType = this->resources[entry].resourceType;
+            cacheEntry.generation = this->resources[entry].generation;
             break;
         case Resource::State::Failed:
             cacheEntry.resourceId = this->failResourceId.resourceId;
-            cacheEntry.resourceType = this->failResourceId.resourceType;
+            cacheEntry.generation = this->failResourceId.generation;
             break;
         case Resource::State::Pending:
         case Resource::State::Unloaded:
             cacheEntry.resourceId = this->placeholderResourceId.resourceId;
-            cacheEntry.resourceType = this->placeholderResourceId.resourceType;
+            cacheEntry.generation = this->placeholderResourceId.generation;
             break;
     }
 }
@@ -291,7 +291,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
             // If new resource, initialize it
             ResourceUnknownId internalResource = loader->InitializeResource(res.entry, res.tag, stream, res.immediate);
             resource.resourceId = internalResource.resourceId;
-            resource.resourceType = internalResource.resourceType;
+            resource.generation = internalResource.generation;
             requestedBits = loader->LodMask(res.entry, res.lod, !res.immediate);
 
             if (res.immediate)
@@ -314,7 +314,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
                 // If the initialize failed, it means the file is invalid or can't be found
                 state = Resource::Failed;
                 resource.resourceId = loader->failResourceId.resourceId;
-                resource.resourceType = loader->failResourceId.resourceType;
+                resource.generation = loader->failResourceId.generation;
                 n_printf("[RESOURCE LOADER] Failed to load resource %s\n", loader->names[res.entry].Value());
                 goto skip_stream;
             }
@@ -322,7 +322,7 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
         else
         {
             resource.resourceId = loader->failResourceId.resourceId;
-            resource.resourceType = loader->failResourceId.resourceType;
+            resource.generation = loader->failResourceId.generation;
             n_printf("[RESOURCE LOADER] Failed to open resource %s\n", loader->names[res.entry].Value());
             state = Resource::Failed;
             goto skip_stream;

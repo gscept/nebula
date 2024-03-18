@@ -186,16 +186,15 @@ inline void
 GraphicsContext::InternalDefragment(ID_ALLOCATOR& allocator, Graphics::GraphicsContextState&& state)
 {
     auto& freeIds = allocator.FreeIds();
-    uint32_t index;
-    uint32_t oldIndex;
+    Ids::Id32 index;
+    Ids::Id32 oldIndex;
     Graphics::GraphicsEntityId lastId;
     IndexT mapIndex;
     uint32_t dataSize;
     SizeT size = freeIds.Size();
     for (SizeT i = size - 1; i >= 0; --i)
     {
-        index = freeIds.Back();
-        freeIds.EraseBack();
+        index = freeIds.Dequeue();
         dataSize = (uint32_t)allocator.Size();
         if (index >= dataSize)
         {
@@ -214,7 +213,7 @@ GraphicsContext::InternalDefragment(ID_ALLOCATOR& allocator, Graphics::GraphicsC
         }
         else
         {
-            freeIds.Append(index);
+            freeIds.Enqueue(index);
             i++;
         }
     }

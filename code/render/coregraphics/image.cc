@@ -423,9 +423,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
         stream->Unmap();
         stream->Close();
 
-        ImageId ret;
-        ret.id24 = id;
-        ret.id8 = ImageIdType;
+        ImageId ret = id;
         return ret;
     }
 #endif
@@ -445,7 +443,7 @@ ImageId CreateImage(const ImageCreateInfoData& info)
 */
 void DestroyImage(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     Memory::Free(Memory::ResourceHeap, loadInfo.buffer);
 }
 
@@ -454,7 +452,7 @@ void DestroyImage(const ImageId id)
 */
 ImageDimensions ImageGetDimensions(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return ImageDimensions{ loadInfo.width, loadInfo.height, loadInfo.depth };
 }
 
@@ -464,7 +462,7 @@ ImageDimensions ImageGetDimensions(const ImageId id)
 const byte* 
 ImageGetBuffer(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return loadInfo.buffer;
 }
 
@@ -474,7 +472,7 @@ ImageGetBuffer(const ImageId id)
 const byte* 
 ImageGetRedPtr(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return &loadInfo.buffer[loadInfo.redOffset];
 }
 
@@ -484,7 +482,7 @@ ImageGetRedPtr(const ImageId id)
 const byte* 
 ImageGetGreenPtr(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return &loadInfo.buffer[loadInfo.greenOffset];
 }
 
@@ -494,7 +492,7 @@ ImageGetGreenPtr(const ImageId id)
 const byte* 
 ImageGetBluePtr(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return &loadInfo.buffer[loadInfo.blueOffset];
 }
 
@@ -504,7 +502,7 @@ ImageGetBluePtr(const ImageId id)
 const byte* 
 ImageGetAlphaPtr(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return &loadInfo.buffer[loadInfo.alphaOffset];
 }
 
@@ -514,7 +512,7 @@ ImageGetAlphaPtr(const ImageId id)
 const SizeT 
 ImageGetPixelStride(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return CoreGraphics::PixelFormat::ToSize(loadInfo.format);
 }
 
@@ -524,7 +522,7 @@ ImageGetPixelStride(const ImageId id)
 ImageChannelPrimitive
 ImageGetChannelPrimitive(const ImageId id)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id24);
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return loadInfo.primitive;
 }
 

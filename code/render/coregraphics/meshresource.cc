@@ -14,7 +14,7 @@ MeshResourceAllocator meshResourceAllocator;
 const MeshId
 MeshResourceGetMesh(const MeshResourceId id, const IndexT index)
 {
-    return meshResourceAllocator.Get<0>(id.resourceId)[index];
+    return meshResourceAllocator.Get<0>(id.id)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ MeshResourceGetMesh(const MeshResourceId id, const IndexT index)
 const SizeT
 MeshResourceGetNumMeshes(const MeshResourceId id)
 {
-    return meshResourceAllocator.Get<0>(id.resourceId).Size();
+    return meshResourceAllocator.Get<0>(id.id).Size();
 }
 
 //------------------------------------------------------------------------------
@@ -31,12 +31,12 @@ MeshResourceGetNumMeshes(const MeshResourceId id)
 */
 void DestroyMeshResource(const MeshResourceId id)
 {
-    auto meshes = meshResourceAllocator.Get<0>(id.resourceId);
+    auto meshes = meshResourceAllocator.Get<0>(id.id);
     for (IndexT i = 0; i < meshes.Size(); i++)
     {
         DestroyMesh(meshes[i]);
     }
-    meshResourceAllocator.Dealloc(id.resourceId);
+    meshResourceAllocator.Dealloc(id.id);
 }
 
 } // namespace CoreGraphics

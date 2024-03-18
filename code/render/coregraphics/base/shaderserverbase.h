@@ -148,9 +148,7 @@ ShaderServerBase::GetShader(Resources::ResourceName resId) const
 {
     n_assert_fmt(this->shaders.Contains(resId), "%s not found!\n This might be a problem with your export. Check the exports folder!\n", resId.Value());
     Resources::ResourceId shader = this->shaders[resId];
-    CoreGraphics::ShaderId ret;
-    ret.resourceId = shader.resourceId;
-    ret.resourceType = shader.resourceType;
+    CoreGraphics::ShaderId ret = shader.resource;
     return ret;
 }
 

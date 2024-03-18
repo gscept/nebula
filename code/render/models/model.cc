@@ -20,9 +20,7 @@ CreateModel(const ModelCreateInfo& info)
     modelAllocator.Set<Model_BoundingBox>(id, info.boundingBox);
     modelAllocator.Set<Model_Nodes>(id, info.nodes);
 
-    ModelId ret;
-    ret.resourceId = id;
-    ret.resourceType = CoreGraphics::ModelIdType;
+    ModelId ret = id;
     return ret;
 }
 
@@ -32,8 +30,8 @@ CreateModel(const ModelCreateInfo& info)
 void
 DestroyModel(const ModelId id)
 {
-    modelAllocator.Get<Model_Nodes>(id.resourceId).Clear();
-    modelAllocator.Dealloc(id.resourceId);
+    modelAllocator.Get<Model_Nodes>(id.id).Clear();
+    modelAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +40,7 @@ DestroyModel(const ModelId id)
 const Util::Array<Models::ModelNode*>&
 ModelGetNodes(const ModelId id)
 {
-    return modelAllocator.Get<Model_Nodes>(id.resourceId);
+    return modelAllocator.Get<Model_Nodes>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -51,7 +49,7 @@ ModelGetNodes(const ModelId id)
 const Math::bbox&
 ModelGetBoundingBox(const ModelId id)
 {
-    return modelAllocator.Get<Model_BoundingBox>(id.resourceId);
+    return modelAllocator.Get<Model_BoundingBox>(id.id);
 }
 
 } // namespace Models

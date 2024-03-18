@@ -24,7 +24,7 @@ VkTlasAllocator tlasAllocator;
 const VkDevice
 BlasGetVkDevice(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.ConstGet<Blas_Device>(id.id24);
+    return blasAllocator.ConstGet<Blas_Device>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ BlasGetVkDevice(const CoreGraphics::BlasId id)
 const VkBuffer
 BlasGetVkBuffer(const CoreGraphics::BlasId id)
 {
-    return BufferGetVk(blasAllocator.ConstGet<Blas_Buffer>(id.id24));
+    return BufferGetVk(blasAllocator.ConstGet<Blas_Buffer>(id.id));
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ BlasGetVkBuffer(const CoreGraphics::BlasId id)
 const VkAccelerationStructureKHR
 BlasGetVk(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.ConstGet<Blas_Handle>(id.id24);
+    return blasAllocator.ConstGet<Blas_Handle>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ BlasGetVk(const CoreGraphics::BlasId id)
 const VkAccelerationStructureBuildGeometryInfoKHR&
 BlasGetVkBuild(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.ConstGet<Blas_Geometry>(id.id24).buildGeometryInfo;
+    return blasAllocator.ConstGet<Blas_Geometry>(id.id).buildGeometryInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ BlasGetVkBuild(const CoreGraphics::BlasId id)
 const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>&
 BlasGetVkRanges(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.ConstGet<Blas_Geometry>(id.id24).rangeInfos;
+    return blasAllocator.ConstGet<Blas_Geometry>(id.id).rangeInfos;
 }
 
 //------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ BlasGetVkRanges(const CoreGraphics::BlasId id)
 const VkDevice
 TlasGetVkDevice(const CoreGraphics::TlasId id)
 {
-    return tlasAllocator.ConstGet<Tlas_Device>(id.id24);
+    return tlasAllocator.ConstGet<Tlas_Device>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ TlasGetVkDevice(const CoreGraphics::TlasId id)
 const VkBuffer
 TlasGetVkBuffer(const CoreGraphics::TlasId id)
 {
-    return BufferGetVk(tlasAllocator.ConstGet<Tlas_Buffer>(id.id24));
+    return BufferGetVk(tlasAllocator.ConstGet<Tlas_Buffer>(id.id));
 }
 
 //------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ TlasGetVkBuffer(const CoreGraphics::TlasId id)
 const VkAccelerationStructureKHR
 TlasGetVk(const CoreGraphics::TlasId id)
 {
-    return tlasAllocator.ConstGet<Tlas_Handle>(id.id24);
+    return tlasAllocator.ConstGet<Tlas_Handle>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ TlasGetVk(const CoreGraphics::TlasId id)
 const VkAccelerationStructureBuildGeometryInfoKHR&
 TlasGetVkBuild(const CoreGraphics::TlasId id)
 {
-    return tlasAllocator.ConstGet<Tlas_Scene>(id.id24).geometryInfo;
+    return tlasAllocator.ConstGet<Tlas_Scene>(id.id).geometryInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ TlasGetVkBuild(const CoreGraphics::TlasId id)
 const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>&
 TlasGetVkRanges(const CoreGraphics::TlasId id)
 {
-    return tlasAllocator.ConstGet<Tlas_Scene>(id.id24).rangeInfos;
+    return tlasAllocator.ConstGet<Tlas_Scene>(id.id).rangeInfos;
 }
 
 } // namespace Vulkan
@@ -260,9 +260,7 @@ CreateBlas(const BlasCreateInfo& info)
     blasAllocator.Set<Blas_Handle>(id, as);
     setup.buildGeometryInfo.dstAccelerationStructure = as;
 
-    BlasId ret;
-    ret.id24 = id;
-    ret.id8 = BlasIdType;
+    BlasId ret = id;
     return ret;
 }
 
@@ -272,10 +270,10 @@ CreateBlas(const BlasCreateInfo& info)
 void
 DestroyBlas(const BlasId blas)
 {
-    blasAllocator.Dealloc(blas.id24);
     CoreGraphics::DelayedDeleteBlas(blas);
-    CoreGraphics::DestroyBuffer(blasAllocator.Get<Blas_Buffer>(blas.id24));
-    CoreGraphics::DestroyBuffer(blasAllocator.Get<Blas_Scratch>(blas.id24));
+    CoreGraphics::DestroyBuffer(blasAllocator.Get<Blas_Buffer>(blas.id));
+    CoreGraphics::DestroyBuffer(blasAllocator.Get<Blas_Scratch>(blas.id));
+    blasAllocator.Dealloc(blas.id);
 }
 
 //------------------------------------------------------------------------------
@@ -319,10 +317,7 @@ CreateBlasInstance(const BlasInstanceCreateInfo& info)
 
     blasInstanceAllocator.Set<BlasInstance_Transform>(id, info.transform);
 
-    BlasInstanceId ret;
-    ret.id24 = id;
-    ret.id8 = BlasInstanceIdType;
-
+    BlasInstanceId ret = id;
     BlasInstanceIdRelease(ret);
     return ret;
 }
@@ -333,9 +328,9 @@ CreateBlasInstance(const BlasInstanceCreateInfo& info)
 void
 DestroyBlasInstance(const BlasInstanceId id)
 {
-    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     setup.mask = 0x0; // Disable instance such that TLAS building will ignore it
-    blasInstanceAllocator.Dealloc(id.id24);
+    blasInstanceAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -344,7 +339,7 @@ DestroyBlasInstance(const BlasInstanceId id)
 void
 BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGraphics::BufferId buf, uint offset)
 {
-    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     Math::mat4 trans = Math::transpose(transform);
     trans.store3(&setup.transform.matrix[0][0]);
 
@@ -358,7 +353,7 @@ BlasInstanceUpdate(const BlasInstanceId id, const Math::mat4& transform, CoreGra
 void
 BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint offset)
 {
-    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     char* ptr = (char*)CoreGraphics::BufferMap(buf) + offset;
     memcpy(ptr, &setup, sizeof(setup));
 }
@@ -369,7 +364,7 @@ BlasInstanceUpdate(const BlasInstanceId id, CoreGraphics::BufferId buf, uint off
 void
 BlasInstanceSetMask(const BlasInstanceId id, uint mask)
 {
-    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id24);
+    VkAccelerationStructureInstanceKHR& setup = blasInstanceAllocator.Get<BlasInstance_Instance>(id.id);
     setup.mask = mask;
 }
 
@@ -526,9 +521,7 @@ CreateTlas(const TlasCreateInfo& info)
     tlasAllocator.Set<Tlas_Handle>(id, as);
     scene.geometryInfo.dstAccelerationStructure = as;
 
-    TlasId ret;
-    ret.id24 = id;
-    ret.id8 = TlasIdType;
+    TlasId ret = id;
     return ret;
 }
 
@@ -539,10 +532,10 @@ void
 DestroyTlas(const TlasId tlas)
 {
     CoreGraphics::DelayedDeleteTlas(tlas);
-    CoreGraphics::DestroyBuffer(tlasAllocator.Get<Tlas_Buffer>(tlas.id24));
-    CoreGraphics::DestroyBuffer(tlasAllocator.Get<Tlas_BuildScratch>(tlas.id24));
-    CoreGraphics::DestroyBuffer(tlasAllocator.Get<Tlas_UpdateScratch>(tlas.id24));
-    tlasAllocator.Dealloc(tlas.id24);
+    CoreGraphics::DestroyBuffer(tlasAllocator.Get<Tlas_Buffer>(tlas.id));
+    CoreGraphics::DestroyBuffer(tlasAllocator.Get<Tlas_BuildScratch>(tlas.id));
+    CoreGraphics::DestroyBuffer(tlasAllocator.Get<Tlas_UpdateScratch>(tlas.id));
+    tlasAllocator.Dealloc(tlas.id);
 }
 
 //------------------------------------------------------------------------------
@@ -551,9 +544,9 @@ DestroyTlas(const TlasId tlas)
 void
 TlasInitBuild(const TlasId tlas)
 {
-    SceneSetup& scene = tlasAllocator.Get<Tlas_Scene>(tlas.id24);
+    SceneSetup& scene = tlasAllocator.Get<Tlas_Scene>(tlas.id);
     scene.geometryInfo.mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-    scene.geometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = tlasAllocator.Get<Tlas_BuildScratchAddr>(tlas.id24) };
+    scene.geometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = tlasAllocator.Get<Tlas_BuildScratchAddr>(tlas.id) };
 }
 
 //------------------------------------------------------------------------------
@@ -562,9 +555,9 @@ TlasInitBuild(const TlasId tlas)
 void
 TlasInitUpdate(const TlasId tlas)
 {
-    SceneSetup& scene = tlasAllocator.Get<Tlas_Scene>(tlas.id24);
+    SceneSetup& scene = tlasAllocator.Get<Tlas_Scene>(tlas.id);
     scene.geometryInfo.mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-    scene.geometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = tlasAllocator.Get<Tlas_UpdateScratchAddr>(tlas.id24) };
+    scene.geometryInfo.scratchData = VkDeviceOrHostAddressKHR{ .deviceAddress = tlasAllocator.Get<Tlas_UpdateScratchAddr>(tlas.id) };
 }
 
 } // namespace CoreGraphics

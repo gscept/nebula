@@ -274,7 +274,7 @@ FrameScript::Build()
         {
             CoreGraphics::BarrierCreateInfo inf =
             {
-                Util::String::Sprintf("End of Frame Texture Reset Transition %d", tex.resourceId),
+                Util::String::Sprintf("End of Frame Texture Reset Transition %d", tex.id),
                 CoreGraphics::BarrierDomain::Global,
                 fromStage,
                 toStage,

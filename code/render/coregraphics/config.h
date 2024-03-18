@@ -34,45 +34,6 @@ union InputAssemblyKey
     bool operator<(const InputAssemblyKey& rhs) const { return this->key < rhs.key; }
 };
 
-enum IdType
-{
-    BufferIdType,
-    TextureIdType,
-    TextureViewIdType,
-    VertexLayoutIdType,
-    ShaderIdType,
-    ShaderProgramIdType,
-    ShaderStateIdType,
-    ShaderInstanceIdType,
-    ShaderConstantIdType,
-    CommandBufferIdType,
-    CommandBufferPoolIdType,
-    MeshIdType,
-    MeshResourceIdType,
-    ModelIdType,
-    EventIdType,
-    BarrierIdType,
-    SemaphoreIdType,
-    FenceIdType,
-    WindowIdType,
-    SkeletonIdType,
-    SkeletonResourceIdType,
-    PassIdType,
-    AnimResourceIdType,
-    AnimIdType,
-    ResourceTableIdType,
-    ResourceTableLayoutIdType,
-    ResourcePipelineIdType,
-    SamplerIdType,
-    MaterialIdType,
-    SubmissionContextIdType,
-    PipelineIdType,
-    ImageIdType,
-    BlasIdType,
-    BlasInstanceIdType,
-    TlasIdType
-};
-
 enum QueueType
 {
     GraphicsQueueType,

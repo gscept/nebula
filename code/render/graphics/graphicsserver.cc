@@ -287,7 +287,7 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
     {
         if (this->contexts[i]->OnWindowResized != nullptr)
         {
-            this->contexts[i]->OnWindowResized(wndId.id24, mode.GetWidth(), mode.GetHeight());
+            this->contexts[i]->OnWindowResized(wndId.id, mode.GetWidth(), mode.GetHeight());
         }
     }
 }

@@ -14,7 +14,7 @@ AnimationResourceAllocator animationResourceAllocator;
 const AnimationId
 AnimationResourceGetAnimation(const AnimationResourceId id, IndexT index)
 {
-    return animationResourceAllocator.Get<0>(id.resourceId)[index];
+    return animationResourceAllocator.Get<0>(id.id)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -23,12 +23,12 @@ AnimationResourceGetAnimation(const AnimationResourceId id, IndexT index)
 void
 DestroyAnimationResource(const AnimationResourceId id)
 {
-    auto animations = animationResourceAllocator.Get<0>(id.resourceId);
+    auto animations = animationResourceAllocator.Get<0>(id.id);
     for (IndexT i = 0; i < animations.Size(); i++)
     {
         DestroyAnimation(animations[i]);
     }
-    animationResourceAllocator.Dealloc(id.resourceId);
+    animationResourceAllocator.Dealloc(id.id);
 }
 
 } // namespace CoreAnimation

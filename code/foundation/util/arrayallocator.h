@@ -67,7 +67,7 @@ public:
 
     /// same as 32 bit get, but const
     template <int MEMBER>
-    const tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index) const;
+    const tuple_array_t<MEMBER, TYPES...>& ConstGet(const uint32_t index) const;
 
     /// set single item
     template <int MEMBER>
@@ -268,7 +268,7 @@ ArrayAllocator<TYPES...>::Get(const uint32_t index)
 template<class ...TYPES>
 template<int MEMBER>
 inline const tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocator<TYPES...>::Get(const uint32_t index) const
+ArrayAllocator<TYPES...>::ConstGet(const uint32_t index) const
 {
     return std::get<MEMBER>(this->objects)[index];
 }

@@ -16,7 +16,7 @@ SkeletonResourceAllocator skeletonResourceAllocator;
 const SkeletonId
 SkeletonResourceGetSkeleton(const SkeletonResourceId id, IndexT index)
 {
-    return skeletonResourceAllocator.Get<0>(id.resourceId)[index];
+    return skeletonResourceAllocator.Get<0>(id.id)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -26,12 +26,12 @@ SkeletonResourceGetSkeleton(const SkeletonResourceId id, IndexT index)
 void
 DestroySkeletonResource(const SkeletonResourceId id)
 {
-    auto skeletons = skeletonResourceAllocator.Get<0>(id.resourceId);
+    auto skeletons = skeletonResourceAllocator.Get<0>(id.id);
     for (IndexT i = 0; i < skeletons.Size(); i++)
     {
         DestroySkeleton(skeletons[i]);
     }
-    skeletonResourceAllocator.Dealloc(id.resourceId);
+    skeletonResourceAllocator.Dealloc(id.id);
 }
 
 } // namespace Characters

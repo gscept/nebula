@@ -49,7 +49,7 @@ struct ResourcePipelineId;
 struct ResourceTableSet;
 
 RESOURCE_ID_TYPE(ShaderId);             
-ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programType, shaderId, shaderType);     // 32 bits shader, 24 bits program, 8 bits type
+ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programGeneration, shaderId, shaderGeneration, program, shader);     // 32 bits shader, 24 bits program, 8 bits type
 
 ID_32_TYPE(DerivativeStateId);          // 32 bits derivative state (already created from an ordinary state)
 

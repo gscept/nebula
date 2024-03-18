@@ -92,9 +92,7 @@ SkeletonLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
 
     auto id = skeletonResourceAllocator.Alloc();
     skeletonResourceAllocator.Set<0>(id, skeletons);
-    SkeletonResourceId ret;
-    ret.resourceId = id;
-    ret.resourceType = CoreGraphics::SkeletonResourceIdType;
+    SkeletonResourceId ret = id;
     return ret;
 }
 

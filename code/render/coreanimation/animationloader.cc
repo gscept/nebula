@@ -134,9 +134,7 @@ AnimationLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAto
 
     auto id = animationResourceAllocator.Alloc();
     animationResourceAllocator.Set<0>(id, animations);
-    AnimationResourceId ret;
-    ret.resourceId = id;
-    ret.resourceType = CoreGraphics::AnimResourceIdType;
+    AnimationResourceId ret = id;
     return ret;
 }
 

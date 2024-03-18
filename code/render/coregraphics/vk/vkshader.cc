@@ -521,14 +521,12 @@ CreateShader(const ShaderCreateInfo& info)
     // load effect from memory
     AnyFX::ShaderEffect* effect = info.effect;
 
-    uint32_t id = shaderAlloc.Alloc();
+    Ids::Id32 id = shaderAlloc.Alloc();
     VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id);
     VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id);
     VkShaderRuntimeInfo& runtimeInfo = shaderAlloc.Get<Shader_RuntimeInfo>(id);
 
-    ShaderId ret;
-    ret.resourceId = id;
-    ret.resourceType = CoreGraphics::ShaderIdType;
+    ShaderId ret = id;
 
     setupInfo.id = ShaderIdentifier::FromName(info.name);
     setupInfo.name = info.name;
@@ -620,9 +618,8 @@ CreateShader(const ShaderCreateInfo& info)
 
             // make an ID which is the shader id and program id
             ShaderProgramId shaderProgramId;
+            shaderProgramId.shader = ret.id;
             shaderProgramId.programId = programId;
-            shaderProgramId.shaderId = ret.resourceId;
-            shaderProgramId.shaderType = ret.resourceType;
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
 
@@ -646,8 +643,8 @@ CreateShader(const ShaderCreateInfo& info)
 void
 DeleteShader(const ShaderId id)
 {
-    VkShaderSetupInfo& setup = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
-    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(id.resourceId);
+    VkShaderSetupInfo& setup = shaderAlloc.Get<Shader_SetupInfo>(id.id);
+    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(id.id);
     ShaderCleanup(setup.dev, setup.immutableSamplers, setup.descriptorSetLayouts, setup.uniformBufferMap, setup.pipelineLayout);
 
     for (IndexT i = 0; i < runtime.programMap.Size(); i++)
@@ -666,7 +663,7 @@ void
 DestroyShader(const ShaderId id)
 {
     DeleteShader(id);
-    shaderAlloc.Dealloc(id.resourceId);
+    shaderAlloc.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -676,9 +673,9 @@ void
 ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
 {
     DeleteShader(id);
-    VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId);
-    VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
-    VkShaderRuntimeInfo& runtimeInfo = shaderAlloc.Get<Shader_RuntimeInfo>(id.resourceId);
+    VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id.id);
+    VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id.id);
+    VkShaderRuntimeInfo& runtimeInfo = shaderAlloc.Get<Shader_RuntimeInfo>(id.id);
 
     reflectionInfo.uniformBuffers.Clear();
     reflectionInfo.uniformBuffersByName.Clear();
@@ -755,7 +752,7 @@ ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect)
 CoreGraphics::ShaderProgramId
 ShaderGetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
 {
-    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(shaderId.resourceId);
+    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(shaderId.id);
     IndexT i = runtime.programMap.FindIndex(mask);
     if (i == InvalidIndex)  return CoreGraphics::InvalidShaderProgramId;
     else                    return runtime.programMap.ValueAtIndex(i);
@@ -767,7 +764,7 @@ ShaderGetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics
 const CoreGraphics::ResourceTableId
 ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
     if (idx == InvalidIndex) return CoreGraphics::InvalidResourceTableId;
     else
@@ -787,7 +784,7 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
 ResourceTableSet
 ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
     if (idx == InvalidIndex) return CoreGraphics::ResourceTableSet();
     else
@@ -807,7 +804,7 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
 const bool
 ShaderHasResourceTable(const ShaderId id, const IndexT group)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     return info.descriptorSetLayoutMap.FindIndex(group) != InvalidIndex;
 }
 
@@ -817,7 +814,7 @@ ShaderHasResourceTable(const ShaderId id, const IndexT group)
 const CoreGraphics::BufferId
 ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode)
 {
-    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersByName;
+    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffersByName;
     IndexT i = uniformBuffers.FindIndex(name);
     if (i != InvalidIndex)
     {
@@ -849,7 +846,7 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAt
 const CoreGraphics::BufferId
 ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode)
 {
-    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers;
+    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffers;
     const VkReflectionInfo::UniformBuffer& buffer = uniformBuffers[cbIndex];
     if (buffer.byteSize > 0)
     {
@@ -875,7 +872,7 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex
 const BufferId
 ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT cbIndex, BufferAccessMode mode)
 {
-    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersPerSet;
+    const auto& uniformBuffers = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffersPerSet;
     const auto& buffer = uniformBuffers[group][cbIndex];
     if (buffer.byteSize > 0)
     {
@@ -913,7 +910,7 @@ ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot)
 const IndexT
 ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT index = info.constantBindings.FindIndex(name.Value());
     if (index == InvalidIndex)  return INT32_MAX; // invalid binding
     else                        return info.constantBindings.ValueAtIndex(index);
@@ -925,7 +922,7 @@ ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom
 const IndexT
 ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     return info.constantBindings.ValueAtIndex(cIndex);
 }
 
@@ -935,7 +932,7 @@ ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex)
 const SizeT
 ShaderGetConstantBindingsCount(const CoreGraphics::ShaderId id)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     return info.constantBindings.Size();
 }
 
@@ -945,7 +942,7 @@ ShaderGetConstantBindingsCount(const CoreGraphics::ShaderId id)
 CoreGraphics::ResourceTableLayoutId
 ShaderGetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group)
 {
-    const VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     uint layout = setupInfo.descriptorSetLayoutMap[group];
     return Util::Get<1>(setupInfo.descriptorSetLayouts[layout]);
 }
@@ -956,7 +953,7 @@ ShaderGetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group
 CoreGraphics::ResourcePipelineId
 ShaderGetResourcePipeline(const CoreGraphics::ShaderId id)
 {
-    return shaderAlloc.Get<Shader_SetupInfo>(id.resourceId).pipelineLayout;
+    return shaderAlloc.Get<Shader_SetupInfo>(id.id).pipelineLayout;
 }
 
 //------------------------------------------------------------------------------
@@ -965,7 +962,7 @@ ShaderGetResourcePipeline(const CoreGraphics::ShaderId id)
 const Resources::ResourceName
 ShaderGetName(const ShaderId id)
 {
-    return shaderAlloc.Get<Shader_SetupInfo>(id.resourceId).name;
+    return shaderAlloc.Get<Shader_SetupInfo>(id.id).name;
 }
 
 //------------------------------------------------------------------------------
@@ -974,7 +971,7 @@ ShaderGetName(const ShaderId id)
 const SizeT
 ShaderGetConstantCount(const CoreGraphics::ShaderId id)
 {
-    return shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables.Size();
+    return shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variables.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -983,7 +980,7 @@ ShaderGetConstantCount(const CoreGraphics::ShaderId id)
 const CoreGraphics::ShaderConstantType
 ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 {
-    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables[i];
+    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variables[i];
     switch (var.type)
     {
         case AnyFX::Double:
@@ -1074,7 +1071,7 @@ ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 const CoreGraphics::ShaderConstantType
 ShaderGetConstantType(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName[name];
+    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variablesByName[name];
     switch (var.type)
     {
         case AnyFX::Double:
@@ -1165,7 +1162,7 @@ ShaderGetConstantType(const CoreGraphics::ShaderId id, const Util::StringAtom& n
 const Util::StringAtom
 ShaderGetConstantBlockName(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName[name];
+    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variablesByName[name];
     return var.blockName;
 }
 
@@ -1175,7 +1172,7 @@ ShaderGetConstantBlockName(const CoreGraphics::ShaderId id, const Util::StringAt
 const Util::StringAtom
 ShaderGetConstantBlockName(const CoreGraphics::ShaderId id, const IndexT cIndex)
 {
-    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables[cIndex];
+    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variables[cIndex];
     return var.blockName;
 }
 
@@ -1185,7 +1182,7 @@ ShaderGetConstantBlockName(const CoreGraphics::ShaderId id, const IndexT cIndex)
 const Util::StringAtom
 ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 {
-    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables[i];
+    const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variables[i];
     return var.name;
 }
 
@@ -1195,10 +1192,10 @@ ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 const IndexT
 ShaderGetConstantGroup(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-    IndexT idx = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName.FindIndex(name);
+    IndexT idx = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variablesByName.FindIndex(name);
     if (idx != InvalidIndex)
     {
-        const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName.ValueAtIndex(idx);
+        const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variablesByName.ValueAtIndex(idx);
         return var.blockSet;
     }
     else
@@ -1211,10 +1208,10 @@ ShaderGetConstantGroup(const CoreGraphics::ShaderId id, const Util::StringAtom& 
 const IndexT
 ShaderGetConstantSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-    IndexT idx = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName.FindIndex(name);
+    IndexT idx = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variablesByName.FindIndex(name);
     if (idx != InvalidIndex)
     {
-        const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName.ValueAtIndex(idx);
+        const VkReflectionInfo::Variable& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).variablesByName.ValueAtIndex(idx);
         return var.blockBinding;
     }
     else
@@ -1227,7 +1224,7 @@ ShaderGetConstantSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& n
 const SizeT
 ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id)
 {
-    return shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers.Size();
+    return shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffers.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -1236,7 +1233,7 @@ ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id)
 const SizeT
 ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 {
-    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
+    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffers[i];
     return var.byteSize;
 }
 
@@ -1246,7 +1243,7 @@ ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 const Util::StringAtom
 ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 {
-    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
+    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffers[i];
     return var.name;
 }
 
@@ -1256,7 +1253,7 @@ ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 const IndexT
 ShaderGetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, const IndexT i)
 {
-    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
+    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffers[i];
     return var.binding;
 }
 
@@ -1266,7 +1263,7 @@ ShaderGetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, const Index
 const IndexT
 ShaderGetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const IndexT i)
 {
-    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
+    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffers[i];
     return var.set;
 }
 
@@ -1276,7 +1273,7 @@ ShaderGetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const Inde
 const uint64
 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
 {
-    const auto& masks = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersMask;
+    const auto& masks = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffersMask;
     if (masks.Size() > group)
         return masks[group];
     else
@@ -1289,7 +1286,7 @@ ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
 const uint64
 ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i)
 {
-    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersPerSet[group][i];
+    const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffersPerSet[group][i];
     return var.byteSize;
 }
 
@@ -1299,7 +1296,7 @@ ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT 
 const IndexT
 ShaderGetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
+    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT index = info.resourceIndexMap.FindIndex(name);
     if (index == InvalidIndex)  return index;
     else                        return info.resourceIndexMap.ValueAtIndex(index);
@@ -1311,7 +1308,7 @@ ShaderGetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& n
 const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>&
 ShaderGetPrograms(const CoreGraphics::ShaderId id)
 {
-    return shaderAlloc.Get<Shader_RuntimeInfo>(id.resourceId).programMap;
+    return shaderAlloc.Get<Shader_RuntimeInfo>(id.id).programMap;
 }
 
 //------------------------------------------------------------------------------
@@ -1329,7 +1326,7 @@ ShaderGetProgramName(CoreGraphics::ShaderProgramId id)
 const CoreGraphics::ShaderProgramId
 ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask)
 {
-    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(id.resourceId);
+    VkShaderRuntimeInfo& runtime = shaderAlloc.Get<Shader_RuntimeInfo>(id.id);
     IndexT i = runtime.programMap.FindIndex(mask);
     if (i == InvalidIndex)  return CoreGraphics::InvalidShaderProgramId;
     else                    return runtime.programMap.ValueAtIndex(i);

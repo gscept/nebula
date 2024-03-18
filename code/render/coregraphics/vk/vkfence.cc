@@ -19,7 +19,7 @@ VkFence
 FenceGetVk(const CoreGraphics::FenceId id)
 {
     if (id == CoreGraphics::FenceId::Invalid()) return VK_NULL_HANDLE;
-    else                                        return fenceAllocator.Get<1>(id.id24).fence;
+    else                                        return fenceAllocator.Get<1>(id.id).fence;
 }
 
 }
@@ -51,9 +51,7 @@ CreateFence(const FenceCreateInfo& info)
     fenceAllocator.Get<0>(id) = dev;
     fenceAllocator.Get<1>(id).fence = fence;
     
-    FenceId ret;
-    ret.id24 = id;
-    ret.id8 = FenceIdType;
+    FenceId ret = id;
     return ret;
 }
 
@@ -63,10 +61,10 @@ CreateFence(const FenceCreateInfo& info)
 void
 DestroyFence(const FenceId id)
 {
-    VkFenceInfo& vkInfo = fenceAllocator.Get<1>(id.id24);
-    const VkDevice& dev = fenceAllocator.Get<0>(id.id24);
+    VkFenceInfo& vkInfo = fenceAllocator.Get<1>(id.id);
+    const VkDevice& dev = fenceAllocator.Get<0>(id.id);
     vkDestroyFence(dev, vkInfo.fence, nullptr);
-    fenceAllocator.Dealloc(id.id24);
+    fenceAllocator.Dealloc(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +73,7 @@ DestroyFence(const FenceId id)
 bool 
 FencePeek(const FenceId id)
 {
-    return vkGetFenceStatus(fenceAllocator.Get<0>(id.id24), fenceAllocator.Get<1>(id.id24).fence) == VK_SUCCESS;
+    return vkGetFenceStatus(fenceAllocator.Get<0>(id.id), fenceAllocator.Get<1>(id.id).fence) == VK_SUCCESS;
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +82,7 @@ FencePeek(const FenceId id)
 bool 
 FenceReset(const FenceId id)
 {
-    return vkResetFences(fenceAllocator.Get<0>(id.id24), 1, &fenceAllocator.Get<1>(id.id24).fence) == VK_SUCCESS;
+    return vkResetFences(fenceAllocator.Get<0>(id.id), 1, &fenceAllocator.Get<1>(id.id).fence) == VK_SUCCESS;
 }
 
 //------------------------------------------------------------------------------
@@ -93,8 +91,8 @@ FenceReset(const FenceId id)
 bool 
 FenceWait(const FenceId id, const uint64 time)
 {
-    VkFence fence = fenceAllocator.Get<1>(id.id24).fence;
-    VkDevice dev = fenceAllocator.Get<0>(id.id24);
+    VkFence fence = fenceAllocator.Get<1>(id.id).fence;
+    VkDevice dev = fenceAllocator.Get<0>(id.id);
     VkResult res = vkWaitForFences(dev, 1, &fence, false, time);
     return res == VK_SUCCESS || res == VK_TIMEOUT;
 }
@@ -105,8 +103,8 @@ FenceWait(const FenceId id, const uint64 time)
 bool 
 FenceWaitAndReset(const FenceId id, const uint64 time)
 {
-    VkFence fence = fenceAllocator.Get<1>(id.id24).fence;
-    VkDevice dev = fenceAllocator.Get<0>(id.id24);
+    VkFence fence = fenceAllocator.Get<1>(id.id).fence;
+    VkDevice dev = fenceAllocator.Get<0>(id.id);
     VkResult res = vkWaitForFences(dev, 1, &fence, false, time);
     if (res == VK_SUCCESS)
     {

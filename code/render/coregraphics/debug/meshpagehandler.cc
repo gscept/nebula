@@ -130,12 +130,6 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
         return HttpStatus::NotFound;
     }
 
-    if (id.resourceType != MeshResourceIdType)
-    {
-        // resource exists but is not a mesh
-        return HttpStatus::NotFound;
-    }
-
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
     htmlWriter->SetTitle("Nebula Mesh Info");
@@ -297,13 +291,6 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
     {
         return HttpStatus::NotFound;
     }
-    if (id.resourceType != MeshIdType)
-    {
-        // resource exists but is not a mesh
-        return HttpStatus::NotFound;
-    }
-
-
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
