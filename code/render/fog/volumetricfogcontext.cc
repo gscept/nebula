@@ -126,8 +126,8 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     }
 
     blurState.blurShader = CoreGraphics::ShaderGet("shd:system_shaders/blur/blur_2d_rgba16f_cs.fxb");
-    blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("Alt0"));
-    blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("Alt1"));
+    blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurX"));
+    blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurY"));
     blurState.blurXTable.Resize(CoreGraphics::GetNumBufferedFrames());
     blurState.blurYTable.Resize(CoreGraphics::GetNumBufferedFrames()); 
 

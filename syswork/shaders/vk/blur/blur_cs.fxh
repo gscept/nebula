@@ -62,7 +62,6 @@ sampler_state InputSampler
 #define BLUR_TILE_WIDTH (256 - KERNEL_RADIUS * 2)
 const uint BlurTileWidth = BLUR_TILE_WIDTH;
 #define SHARED_MEM_SIZE (KERNEL_RADIUS + BLUR_TILE_WIDTH + KERNEL_RADIUS)
-const uint BlurSamplesWidth = SHARED_MEM_SIZE;
 
 const float weights[] = {
 #if GAUSSIAN_KERNEL_SIZE_65 // sigma 10
@@ -129,11 +128,12 @@ csMainX()
 
 		int i;
 #pragma unroll
-        for (i = -KERNEL_RADIUS; i < KERNEL_RADIUS; ++i)
+        for (i = 0; i <= KERNEL_RADIUS * 2; ++i)
 		{
-            int j = max(0, min(int(gl_LocalInvocationID.x) + i, SHARED_MEM_SIZE - 1));
-            blurTotal += weights[i + KERNEL_RADIUS] * SharedMemory[j];
+            int j = min(int(gl_LocalInvocationID.x) + i, SHARED_MEM_SIZE - 1);
+            blurTotal += SharedMemory[j];
         }
+        blurTotal /= KERNEL_RADIUS * 2.0f;
 
 #if IMAGE_IS_ARRAY
 		imageStore(BlurImageX, ivec3(writePos, y, z), RESULT_TO_VEC4(blurTotal));
@@ -183,11 +183,12 @@ csMainY()
 
 		int i;
 #pragma unroll
-        for (i = -KERNEL_RADIUS; i < KERNEL_RADIUS; ++i)
+        for (i = 0; i <= KERNEL_RADIUS * 2; ++i)
 		{
-            int j = max(0, min(int(gl_LocalInvocationID.x) + i, SHARED_MEM_SIZE - 1));
-            blurTotal += weights[i + KERNEL_RADIUS] * SharedMemory[j];
+            int j = min(int(gl_LocalInvocationID.x) + i, SHARED_MEM_SIZE - 1);
+            blurTotal += SharedMemory[j];
         }
+        blurTotal /= KERNEL_RADIUS * 2.0f;
 
 #if IMAGE_IS_ARRAY
 		imageStore(BlurImageY, ivec3(x, writePos, z), RESULT_TO_VEC4(blurTotal));
