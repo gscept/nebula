@@ -1079,7 +1079,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     directionalLightAllocator.Get<DirectionalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
     directionalLightAllocator.Get<DirectionalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
     Math::vec4 viewSpaceLightDir = viewTransform * Math::vec4(directionalLightAllocator.Get<DirectionalLight_Direction>(globalLightId), 0.0f);
-    normalize(viewSpaceLightDir).store3(params.GlobalLightDir);
     params.GlobalBackLightOffset = directionalLightAllocator.Get<DirectionalLight_BacklightOffset>(globalLightId);
 
     params.ltcLUT0 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut0);

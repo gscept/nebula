@@ -35,7 +35,6 @@
 #define NEBULA_SEMANTIC_LIGHTPOSRANGE              "LightPosRange"
 #define NEBULA_SEMANTIC_LIGHTCOLOR                 "LightColor"
 #define NEBULA_SEMANTIC_LIGHTSHADOWBIAS            "LightShadowBias"
-#define NEBULA_SEMANTIC_GLOBALLIGHTDIR             "GlobalLightDir"
 #define NEBULA_SEMANTIC_GLOBALLIGHTDIRWORLDSPACE   "GlobalLightDirWorldspace"
 #define NEBULA_SEMANTIC_GLOBALLIGHTCOLOR           "GlobalLightColor"
 #define NEBULA_SEMANTIC_GLOBALAMBIENTLIGHTCOLOR    "GlobalAmbientLightColor"
@@ -158,4 +157,3 @@
 #define NEBULA_SEMANTIC_RENDERCUBEFACE             "RenderCubeFace"
 
 //------------------------------------------------------------------------------
-    
