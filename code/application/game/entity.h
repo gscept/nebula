@@ -63,6 +63,9 @@ struct Entity::Traits
     static constexpr const char* field_names[num_fields] = {
         "id"
     };
+    static constexpr const char* field_typenames[num_fields] = {
+        "uint"
+    };
     static constexpr size_t field_byte_offsets[num_fields] = { 0 };
 
     /// This is the column that the entity "owner" will reside in, in every table.

@@ -82,6 +82,7 @@ public:
         this->fullyQualifiedName = T::Traits::fully_qualified_name;
         this->numFields = T::Traits::num_fields;
         this->fieldNames = (const char**)T::Traits::field_names;
+        this->fieldTypenames = (const char**)T::Traits::field_typenames;
         this->fieldByteOffsets = (const size_t*)T::Traits::field_byte_offsets;
     }
 
@@ -91,6 +92,7 @@ public:
     const char* GetName() const { return componentName; }
     const char* GetFullyQualifiedName() const { return fullyQualifiedName; }
     const char** GetFieldNames() const { return fieldNames; };
+    const char** GetFieldTypenames() const { return fieldTypenames; };
     const size_t* GetFieldByteOffsets() const { return fieldByteOffsets; };
     size_t const GetNumFields() const { return numFields; };
 
@@ -98,6 +100,7 @@ private:
     const char* componentName = nullptr;
     const char* fullyQualifiedName = nullptr;
     const char** fieldNames = nullptr;
+    const char** fieldTypenames = nullptr;
     const size_t* fieldByteOffsets = nullptr;
     size_t numFields = 0;
 };

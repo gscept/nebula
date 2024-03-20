@@ -32,6 +32,11 @@ struct Position::Traits
         "y",
         "z"
     };
+    static constexpr const char* field_typenames[num_fields] = {
+        "float",
+        "float",
+        "float"
+    };
     using field_types = std::tuple<float, float, float>;
     static constexpr size_t field_byte_offsets[num_fields] = {
         offsetof(Position, x),
