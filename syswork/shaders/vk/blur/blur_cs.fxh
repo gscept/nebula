@@ -59,7 +59,7 @@ sampler_state InputSampler
 #define GAUSSIAN_KERNEL_SIZE_65 1
 #endif
 
-#define BLUR_TILE_WIDTH 256
+#define BLUR_TILE_WIDTH (64 - KERNEL_RADIUS * 2)
 const uint BlurTileWidth = BLUR_TILE_WIDTH;
 #define SHARED_MEM_SIZE (KERNEL_RADIUS + BLUR_TILE_WIDTH + KERNEL_RADIUS)
 
@@ -100,21 +100,21 @@ csMainX()
 	ivec2 size = imageSize(BlurImageX).xy;
 
 	// calculate offsets
-	const uint         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
-	const uint           tileEnd = tileStart + BLUR_TILE_WIDTH;
-	const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
-	const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
+	const int         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
+	const int           tileEnd = tileStart + BLUR_TILE_WIDTH;
+	const int        apronStart = int(tileStart) - KERNEL_RADIUS;
+	const int          apronEnd = tileEnd + KERNEL_RADIUS;
 
-	const uint x = apronStart + gl_LocalInvocationID.x;
-	const uint y = gl_WorkGroupID.y;
-	const uint z = gl_WorkGroupID.z;
-
+    const int x = max(0, min(apronStart + int(gl_LocalInvocationID.x), size.x - 1));
+    const int y = int(gl_WorkGroupID.y);
+    
 	// load into workgroup saved memory, this allows us to use the original pixel even though
 	// we might have replaced it with the result from this thread!
 #if IMAGE_IS_ARRAY
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2DArray(InputImageX, InputSampler), ivec3(x, y, z), 0));
+	const uint z = gl_WorkGroupID.z;
+	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2DArray(InputImageX, InputSampler, ivec3(x, y, z), 0));
 #else
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2D(InputImageX, InputSampler), ivec2(x, y), 0));
+    SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2D(InputImageX, InputSampler, ivec2(x, y), 0));
 #endif
 	groupMemoryBarrier();
 	barrier();
@@ -127,29 +127,17 @@ csMainX()
 		IMAGE_LOAD_VEC blurTotal = IMAGE_LOAD_VEC(0);
 
 		int i;
-        uint max;
 #pragma unroll
-		for (i = 0; i < KERNEL_RADIUS * 2 + 1; ++i)
+        for (i = 0; i <= KERNEL_RADIUS * 2; ++i)
 		{
-			// Sample the pre-filtered data with step size = 2 pixels
-			uint j = uint(i) + gl_LocalInvocationID.x;
-            IMAGE_LOAD_VEC samp;
-            if (j >= tileEndClamped)
-                samp = SharedMemory[max];
-            else
-            {
-                samp = SharedMemory[j];
-                max = j;
-            }
-			float weight = weights[i];
-			blurTotal += weight * samp;
-		}
+            int j = max(0, min(int(gl_LocalInvocationID.x) + i, SHARED_MEM_SIZE - 1));
+            blurTotal += weights[i] * SharedMemory[j];
+        }
 
-		IMAGE_LOAD_VEC color = blurTotal;
 #if IMAGE_IS_ARRAY
-		imageStore(BlurImageX, ivec3(writePos, y, z), RESULT_TO_VEC4(color));
+		imageStore(BlurImageX, ivec3(writePos, y, z), RESULT_TO_VEC4(blurTotal));
 #else
-		imageStore(BlurImageX, ivec2(writePos, y), RESULT_TO_VEC4(color));
+        imageStore(BlurImageX, ivec2(writePos, y), RESULT_TO_VEC4(blurTotal));
 #endif
 	}
 }
@@ -166,21 +154,21 @@ csMainY()
 	ivec2 size = imageSize(BlurImageY).xy;
 
 	// calculate offsets
-	const uint         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
-	const uint           tileEnd = tileStart + BLUR_TILE_WIDTH;
-	const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
-	const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
+	const int         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
+	const int           tileEnd = tileStart + BLUR_TILE_WIDTH;
+	const int        apronStart = int(tileStart) - KERNEL_RADIUS;
+	const int          apronEnd = tileEnd + KERNEL_RADIUS;
 
-	const uint x = gl_WorkGroupID.y;
-	const uint y = apronStart + gl_LocalInvocationID.x;
-	const uint z = gl_WorkGroupID.z;
+    const int x = int(gl_WorkGroupID.y);
+    const int y = max(0, min(apronStart + int(gl_LocalInvocationID.x), size.y - 1));
 
 	// load into workgroup saved memory, this allows us to use the original pixel even though
 	// we might have replaced it with the result from this thread!
 #if IMAGE_IS_ARRAY
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2DArray(InputImageY, InputSampler), ivec3(x, y, z), 0));
+	const uint z = gl_WorkGroupID.z;
+	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2DArray(InputImageY, InputSampler, ivec3(x, y, z), 0));
 #else
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(texelFetch(sampler2D(InputImageY, InputSampler), ivec2(x, y), 0));
+    SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2D(InputImageY, InputSampler, ivec2(x, y), 0));
 #endif
 	groupMemoryBarrier();
 	barrier();
@@ -192,30 +180,17 @@ csMainY()
 	{
 		IMAGE_LOAD_VEC blurTotal = IMAGE_LOAD_VEC(0);
 
-		int i;
-        uint max;
 #pragma unroll
-		for (i = 0; i < KERNEL_RADIUS * 2 + 1; ++i)
+        for (int i = 0; i <= KERNEL_RADIUS * 2; ++i)
 		{
-			// Sample the pre-filtered data with step size = 2 pixels
-			uint j = uint(i) + gl_LocalInvocationID.x;
-            IMAGE_LOAD_VEC samp;
-            if (j >= tileEndClamped)
-                samp = SharedMemory[max];
-            else
-            {
-                samp = SharedMemory[j];
-                max = j;
-            }
-			float weight = weights[i];
-			blurTotal += weight * samp;
-		}
+            int j = max(0, min(int(gl_LocalInvocationID.x) + i, SHARED_MEM_SIZE - 1));
+            blurTotal += weights[i] * SharedMemory[j];
+        }
 
-		IMAGE_LOAD_VEC color = blurTotal;
 #if IMAGE_IS_ARRAY
-		imageStore(BlurImageY, ivec3(x, writePos, z), RESULT_TO_VEC4(color));
+		imageStore(BlurImageY, ivec3(x, writePos, z), RESULT_TO_VEC4(blurTotal));
 #else
-		imageStore(BlurImageY, ivec2(x, writePos), RESULT_TO_VEC4(color));
+        imageStore(BlurImageY, ivec2(x, writePos), RESULT_TO_VEC4(blurTotal));
 #endif
 	}
 }
