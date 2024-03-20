@@ -2,10 +2,9 @@
 //  hbaoblur_cs.fx
 //  (C) 2014 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
+#include <lib/std.fxh>
+#include <lib/util.fxh>
+#include <lib/techniques.fxh>
 
 constant HBAOBlur
 {
@@ -66,14 +65,14 @@ csMainX()
     ivec2 size = textureSize(sampler2D(HBAOX, LinearState), 0);
     
     // calculate offsets
-    const uint         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
-    const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
-    const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
+    const int         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
+    const int           tileEnd = tileStart + HBAO_TILE_WIDTH;
+    const int        apronStart = int(tileStart) - KERNEL_RADIUS;
+    const int          apronEnd = tileEnd   + KERNEL_RADIUS;
     
-    const uint x = apronStart + gl_LocalInvocationID.x;
-    const uint y = gl_WorkGroupID.y;
-    SharedMemory[gl_LocalInvocationID.x] = texelFetch(sampler2D(HBAOX, LinearState), ivec2(x, y), 0).xy;
+    const int x = max(0, apronStart + int(gl_LocalInvocationID.x));
+    const int y = int(gl_WorkGroupID.y);
+    SharedMemory[gl_LocalInvocationID.x] = imageFetch2D(HBAOX, LinearState, ivec2(x, y), 0).xy;
     groupMemoryBarrier();
     barrier();
     
@@ -131,14 +130,14 @@ csMainY()
     vec2 inverseSize = 1 / vec2(size);
     
     // calculate offsets
-    const uint         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
-    const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
-    const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
+    const int         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
+    const int           tileEnd = tileStart + HBAO_TILE_WIDTH;
+    const int        apronStart = int(tileStart) - KERNEL_RADIUS;
+    const int          apronEnd = tileEnd   + KERNEL_RADIUS;
     
-    const uint x = gl_WorkGroupID.y;
-    const uint y = apronStart + gl_LocalInvocationID.x;
-    SharedMemory[gl_LocalInvocationID.x] = texelFetch(sampler2D(HBAOY, LinearState), ivec2(x, y), 0).xy;
+    const int x = int(gl_WorkGroupID.y);
+    const int y = max(0, apronStart + int(gl_LocalInvocationID.x));
+    SharedMemory[gl_LocalInvocationID.x] = imageFetch2D(HBAOY, LinearState, ivec2(x, y), 0).xy;
     groupMemoryBarrier();
     barrier();
     

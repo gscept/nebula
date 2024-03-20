@@ -68,9 +68,6 @@ group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; AddressU = Cla
 
 #define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
 
-#define imageFetch2D(image, sampler, uv, lod)                   texelFetch(sampler2D(image, sampler), uv, lod)
-#define imageFetch2DArray(image, sampler, uv, lod)              texelFetch(sampler2DArray(image, sampler), uv, lod)
-
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared constant PerTickParams
 {
@@ -101,7 +98,6 @@ group(TICK_GROUP) shared constant PerTickParams
     float GlobalLightShadowIntensity;
     vec2 GlobalLightShadowMapSize;
     vec4 GlobalLightDirWorldspace;
-    vec4 GlobalLightDir;
     vec4 GlobalLightColor;
     vec4 GlobalBackLightColor;
     vec4 GlobalAmbientLightColor;

@@ -10,7 +10,8 @@
 
   (C) 2016 Individual contributors, see AUTHORS file
 */
-#include "../lib/shared.fxh"
+#include <lib/shared.fxh>
+#include <lib/techniques.fxh>
 
 #if IMAGE_IS_RGBA16F
 #define IMAGE_FORMAT_TYPE rgba16f

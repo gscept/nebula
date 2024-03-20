@@ -89,4 +89,7 @@ int2 NPixelSize(Texture2D tex, int lod)
 }
 #endif // platform
 
+#define imageFetch2D(image, sampler, uv, lod)                   texelFetch(sampler2D(image, sampler), uv, lod)
+#define imageFetch2DArray(image, sampler, uv, lod)              texelFetch(sampler2DArray(image, sampler), uv, lod)
+
 #endif // STD_H
