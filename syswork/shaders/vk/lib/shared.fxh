@@ -52,7 +52,7 @@ group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; AddressU = Cla
 #define fetch2D(handle, sampler, uv, lod)					    texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
 #define fetch2DMS(handle, sampler, uv, lod)					    texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
 #define fetchCube(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
-#define fetchArray(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define fetch2DArray(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 #define fetch3D(handle, sampler, uvw, lod)					    texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
 #define fetchStencil(handle, sampler, uv, lod)				    (floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
 
@@ -67,6 +67,9 @@ group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; AddressU = Cla
 #define make_sampler3D(handle, sampler)						    sampler3D(Textures3D[handle], sampler)
 
 #define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
+
+#define imageFetch2D(image, sampler, uv, lod)                   texelFetch(sampler2D(image, sampler), uv, lod)
+#define imageFetch2DArray(image, sampler, uv, lod)              texelFetch(sampler2DArray(image, sampler), uv, lod)
 
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared constant PerTickParams
