@@ -1,0 +1,45 @@
+//------------------------------------------------------------------------------
+//
+//    Level format
+//
+//    (C) 2024 Individual contributors, see AUTHORS file
+
+include "foundation/math.fbs";
+
+namespace Game.Serialization;
+
+table ComponentField
+{
+    name : string;
+    // TODO: Add field type and size for validation
+}
+
+table ComponentDescription
+{
+    name : string;
+    size : uint;
+    fields : [ComponentField];
+}
+
+table Column
+{
+    bytes : [ubyte];
+}
+
+table EntityGroup
+{
+    components : [uint]; // index in Level.components
+    num_rows : uint;
+    columns : [Column];
+}
+
+table Level
+{
+    component_descriptions : [ComponentDescription];
+    tables : [EntityGroup];
+    strings : [string]; // all strings used in components
+}
+
+root_type Level;
+file_identifier "NLVL";
+file_extension "nlvl";

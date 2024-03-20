@@ -20,10 +20,18 @@
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
+#include "io/binaryreader.h"
+#include "io/ioserver.h"
+#include "basegamefeature/level.h"
+#include "flat/game/level.h"
 
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    TODO: move into world
+*/
 static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 
 //------------------------------------------------------------------------------
@@ -48,6 +56,203 @@ World::World(uint32_t hash)
 World::~World()
 {
     this->db = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PackedLevel*
+World::PreloadLevel(Util::String const& path)
+{
+    PackedLevel* level = new PackedLevel();
+    level->world = this;
+
+    Ptr<IO::BinaryReader> reader = IO::BinaryReader::Create();
+    reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    reader->SetMemoryMappingEnabled(true);
+    reader->Open();
+
+    ubyte* data = reader->mapCursor;
+
+    auto flatLevel = Game::Serialization::GetLevel(data);
+    auto flatTables = flatLevel->tables();
+
+    Util::FixedArray<ComponentId> componentIds(flatLevel->component_descriptions()->size());
+    uint componentIndex = 0;
+    for (auto desc : *flatLevel->component_descriptions())
+    {
+        const char* componentName = desc->name()->c_str();
+        ComponentId cid = MemDb::AttributeRegistry::GetAttributeId(componentName);
+        componentIds[componentIndex++] = cid;
+
+        // TODO: Validate all fields in debug and assert if incorrect!
+    }
+
+    for (auto table : *flatTables)
+    {
+        Game::PackedLevel::EntityGroup entityGroup;
+
+        Util::FixedArray<ComponentId> components(table->components()->size());
+        componentIndex = 0;
+        for (auto c : *table->components())
+        {
+            ComponentId cid = componentIds[c];
+            components[componentIndex++] = cid;
+        }
+        MemDb::TableId const tableId = this->CreateEntityTable({.name="", .components=components});
+        entityGroup.dstTable = tableId;
+        entityGroup.numRows = table->num_rows();
+
+        n_assert(entityGroup.numRows > 0);
+
+        size_t bytesInColumn = 0;
+        for (auto column : *table->columns())
+        {
+            bytesInColumn += column->bytes()->size();
+        }
+
+        n_assert(bytesInColumn > 0);
+
+        entityGroup.columns = new byte[bytesInColumn];
+
+        size_t offset = 0;
+        for (auto column : *table->columns())
+        {
+            Memory::Copy(column->bytes()->data(), entityGroup.columns + offset, column->bytes()->size());
+            offset += column->bytes()->size();
+        }
+
+        // TODO: Patch resource types 
+
+        level->tables.Append(std::move(entityGroup));
+    }
+
+    reader->Close();
+
+    return level;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::UnloadLevel(PackedLevel* level)
+{
+    delete level;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+World::ExportLevel(Util::String const& path)
+{
+    using namespace Game::Serialization;
+    using namespace flatbuffers;
+
+    flatbuffers::FlatBufferBuilder builder;
+
+    Util::HashTable<Game::ComponentId, IndexT> componentsUsed;
+
+    std::vector<Offset<ComponentDescription>> descriptions;
+
+    Ptr<MemDb::Database> db = this->GetDatabase();
+
+    std::vector<Offset<EntityGroup>> entityGroups;
+
+    db->ForEachTable(
+        [&](MemDb::TableId tid)
+        {
+            // necessary to defragment first, since we might have invalid instances in the partitions.
+            this->Defragment(tid);
+
+            std::vector<uint> components;
+            std::vector<Offset<Column>> columns;
+
+            MemDb::Table& table = db->GetTable(tid);
+
+            auto const& attributes = table.GetAttributes();
+            for (IndexT columnIndex = 0; columnIndex < attributes.Size(); columnIndex++)
+            {
+                Game::ComponentId cid = attributes[columnIndex];
+                Game::ComponentInterface const* cInterface =
+                    static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
+
+                if (!componentsUsed.Contains(cid))
+                {
+                    std::vector<Offset<ComponentField>> fields;
+
+                    {
+                        for (IndexT i = 0; i < cInterface->GetNumFields(); i++)
+                        {
+                            auto field_name = builder.CreateString(cInterface->GetFieldNames()[i]);
+                            // TODO: Add field type and size for validation
+
+                            auto component_field = CreateComponentField(builder, field_name);
+
+                            fields.push_back(component_field);
+                        }
+                    }
+
+                    auto vector_fields = builder.CreateVector(fields);
+                    auto component_name = builder.CreateString(cInterface->GetName());
+                    auto component_description =
+                        CreateComponentDescription(builder, component_name, cInterface->typeSize, vector_fields);
+
+                    descriptions.push_back(component_description);
+                    componentsUsed.Add(cid, (IndexT)(descriptions.size() - 1));
+                    components.push_back((uint32_t)(descriptions.size() - 1));
+                }
+                else
+                {
+                    components.push_back(componentsUsed[cid]);
+                }
+
+                // pack data from all partitions into single buffer
+                SizeT const columnDataSize = table.GetNumRows() * cInterface->typeSize;
+                ubyte* columnData = new ubyte[columnDataSize];
+
+                MemDb::Table::Partition* currentPartition = table.GetFirstActivePartition();
+
+                IndexT columnDataOffset = 0;
+                while (currentPartition != nullptr)
+                {
+                    SizeT numBytesToCopy = currentPartition->numRows * cInterface->typeSize;
+                    Memory::Copy((ubyte*)currentPartition->columns[columnIndex], columnData + columnDataOffset, numBytesToCopy);
+                    columnDataOffset += numBytesToCopy;
+
+                    currentPartition = currentPartition->next;
+                }
+
+                auto vector_bytes = builder.CreateVector((ubyte*)columnData, columnDataSize);
+                auto flat_column = CreateColumn(builder, vector_bytes);
+
+                columns.push_back(flat_column);
+
+                delete[] columnData;
+            }
+
+            auto vector_components = builder.CreateVector(components);
+            auto vector_columns = builder.CreateVector(columns);
+
+            auto flat_table = CreateEntityGroup(builder, vector_components, table.GetNumRows(), vector_columns);
+
+            entityGroups.push_back(flat_table);
+        }
+    );
+
+    auto vector_entity_groups = builder.CreateVector(entityGroups);
+    auto vector_descs = builder.CreateVector(descriptions);
+
+    auto flat_level = CreateLevel(builder, vector_descs, vector_entity_groups);
+
+    builder.Finish(flat_level);
+
+    Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
+    writer->SetStream(IO::IoServer::Instance()->CreateStream(path));
+    writer->Open();
+    writer->WriteRawData(builder.GetBufferPointer(), builder.GetSize());
+    writer->Close();
 }
 
 //------------------------------------------------------------------------------
@@ -321,7 +526,7 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
 //------------------------------------------------------------------------------
 /**
 */
-void
+void*
 World::AddComponent(Entity entity, Game::ComponentId id)
 {
 #if NEBULA_DEBUG
@@ -354,6 +559,8 @@ World::AddComponent(Entity entity, Game::ComponentId id)
             cInterface->Init(this, entity, data);
         }
     }
+
+    return data;
 }
 
 //------------------------------------------------------------------------------
@@ -1200,7 +1407,7 @@ World::RenderDebug()
             ImGui::BeginGroup();
             ImGui::Text("[%i] ", entityIndex);
             ImGui::SameLine();
-            ImGui::TextColored({1, 0.3f, 0, 1}, "tid:%i, parition: %i, index: %i", entity.table, entity.instance.partition, entity.instance.index);
+            ImGui::TextColored({1, 0.3f, 0, 1}, "tid:%i, partition: %i, index: %i", entity.table, entity.instance.partition, entity.instance.index);
             if (entity.table != MemDb::TableId::Invalid())
             {
                 ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());

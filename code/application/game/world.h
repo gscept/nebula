@@ -25,6 +25,8 @@ namespace MemDb { class Database; }
 namespace Game
 {
 
+class PackedLevel;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -82,7 +84,7 @@ public:
     template <typename TYPE>
     TYPE* AddComponent(Entity entity);
     /// Add a component to an entity. This queues the component in a command buffer to be added later.
-    void AddComponent(Entity entity, ComponentId component);
+    void* AddComponent(Entity entity, ComponentId component);
     /// Get a decay buffer for the given component
     ComponentDecayBuffer const GetDecayBuffer(ComponentId component);
 
@@ -103,17 +105,24 @@ public:
     /// Create a table in the entity database that has a specific set of components
     MemDb::TableId CreateEntityTable(CategoryCreateInfo const& info);
 
-    /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
-    static void Override(World* src, World* dst);
-
     /// Get the frame pipeline
     FramePipeline& GetFramePipeline();
 
     /// Mark an entity as modified in its table.
     void MarkAsModified(Game::Entity entity);
 
+    /// preload a level that can be instantiated
+    PackedLevel* PreloadLevel(Util::String const& path);
+    /// unload a preloaded level
+    void UnloadLevel(PackedLevel* level);
+
+    /// Export the world as a level
+    void ExportLevel(Util::String const& path);
+
     // -- Internal methods -- Use with caution! --
 
+    /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
+    static void Override(World* src, World* dst);
     /// Allocate an entity id. Use this with caution!
     Entity AllocateEntity();
     /// Deallocate an entity id. Use this with caution!
@@ -143,23 +152,8 @@ public:
 private:
     friend class GameServer;
     friend class BlueprintManager;
+    friend class PackedLevel;
     
-    /// These are registered to the attribute registry so that we can add more functionality to attributes
-    class ComponentInterface : public MemDb::Attribute
-    {
-    public:
-        /// construct from template type, with default value.
-        template <typename T>
-        explicit ComponentInterface(Util::StringAtom name, T const& defaultValue, uint32_t flags)
-            : Attribute(name, defaultValue, flags)
-        {
-            // empty
-        }
-
-        using ComponentInitFunc = void (*)(Game::World*, Game::Entity, void*);
-        ComponentInitFunc Init = nullptr;
-    };
-
     struct AllocateInstanceCommand
     {
         Game::Entity entity;

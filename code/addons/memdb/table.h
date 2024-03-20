@@ -129,10 +129,11 @@ public:
     /// name of the table
     Util::StringAtom name;
 
-private:
     /// Create a new partition for this table. Adds it to the list of partitions and the vacancy list
     Partition* NewPartition();
 
+private:
+    
     TableSignature signature;
 
     /// table identifier

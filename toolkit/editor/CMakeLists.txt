@@ -48,6 +48,8 @@ fips_dir(editor)
         commandmanager.cc
         entityloader.h
         entityloader.cc
+        level.h
+        level.cc
     )
     fips_dir(editor/bindings)
         fips_files(

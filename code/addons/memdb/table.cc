@@ -84,9 +84,6 @@ Table::NewPartition()
         partition = this->freePartitions.PopBack();
     }
 
-    
-
-
     partition->next = this->firstActivePartition;
     if (this->firstActivePartition != nullptr)
     {

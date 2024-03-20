@@ -32,8 +32,8 @@ struct Scale::Traits
     static constexpr auto fully_qualified_name = "Game.Scale";
     static constexpr size_t num_fields = 3;
     static constexpr const char* field_names[num_fields] = {
-        "x"
-        "y"
+        "x",
+        "y",
         "z"
     };
     using field_types = std::tuple<float, float, float>;

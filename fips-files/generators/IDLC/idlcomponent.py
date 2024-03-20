@@ -142,7 +142,6 @@ def WriteComponentHeaderDeclarations(f, document):
             for v in c.variables:
                 f.WriteLine('    "{}",'.format(v.name))
             f.WriteLine('};')
-        if (len(c.variables) > 0):
             f.WriteLine('using field_types = std::tuple<')
             for i, v in enumerate(c.variables):
                 f.Write('    {}'.format(IDLTypes.GetCppTypeString(v.type)))
@@ -151,11 +150,15 @@ def WriteComponentHeaderDeclarations(f, document):
                 else:
                     f.WriteLine("")
             f.WriteLine('>;')
-        if (len(c.variables) > 0):
             f.WriteLine('static constexpr size_t field_byte_offsets[num_fields] = {')
             for v in c.variables:
                 f.WriteLine('    offsetof({}, {}),'.format(c.componentName, v.name))
             f.WriteLine('};')
+        else:
+            f.WriteLine('static constexpr const char** field_names = nullptr;')
+            f.WriteLine('static constexpr size_t* field_byte_offsets = nullptr;')
+
+
         
         f.DecreaseIndent()
         f.WriteLine("};")

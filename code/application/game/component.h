@@ -68,6 +68,42 @@ struct ComponentRegisterInfo
 
 //------------------------------------------------------------------------------
 /**
+    These are registered to the attribute registry so that we can add more functionality to attributes
+*/
+class ComponentInterface : public MemDb::Attribute
+{
+public:
+    /// construct from template type, with default value.
+    template <typename T>
+    explicit ComponentInterface(Util::StringAtom name, T const& defaultValue, uint32_t flags)
+        : Attribute(name, defaultValue, flags)
+    {
+        this->componentName = T::Traits::name;
+        this->fullyQualifiedName = T::Traits::fully_qualified_name;
+        this->numFields = T::Traits::num_fields;
+        this->fieldNames = (const char**)T::Traits::field_names;
+        this->fieldByteOffsets = (const size_t*)T::Traits::field_byte_offsets;
+    }
+
+    using ComponentInitFunc = void (*)(Game::World*, Game::Entity, void*);
+    ComponentInitFunc Init = nullptr;
+
+    const char* GetName() const { return componentName; }
+    const char* GetFullyQualifiedName() const { return fullyQualifiedName; }
+    const char** GetFieldNames() const { return fieldNames; };
+    const size_t* GetFieldByteOffsets() const { return fieldByteOffsets; };
+    size_t const GetNumFields() const { return numFields; };
+
+private:
+    const char* componentName = nullptr;
+    const char* fullyQualifiedName = nullptr;
+    const char** fieldNames = nullptr;
+    const size_t* fieldByteOffsets = nullptr;
+    size_t numFields = 0;
+};
+
+//------------------------------------------------------------------------------
+/**
     -- Template implementations --
 */
 //------------------------------------------------------------------------------

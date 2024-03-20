@@ -28,9 +28,9 @@ struct Orientation::Traits
     static constexpr auto fully_qualified_name = "Game.Orientation";
     static constexpr size_t num_fields = 4;
     static constexpr const char* field_names[num_fields] = {
-        "x"
-        "y"
-        "z"
+        "x",
+        "y",
+        "z",
         "w"
     };
     using field_types = std::tuple<float, float, float, float>;

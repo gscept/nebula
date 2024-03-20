@@ -59,11 +59,12 @@ struct Entity::Traits
     using type = Entity;
     static constexpr auto name = "Entity";
     static constexpr auto fully_qualified_name = "Game.Entity";
-    static constexpr size_t num_fields = 2;
+    static constexpr size_t num_fields = 1;
     static constexpr const char* field_names[num_fields] = {
-        "index",
-        "generation"
+        "id"
     };
+    static constexpr size_t field_byte_offsets[num_fields] = { 0 };
+
     /// This is the column that the entity "owner" will reside in, in every table.
     /// NOTE: This can never be changed, due to assumptions that have been made.
     static constexpr uint32_t fixed_column_index = 0;

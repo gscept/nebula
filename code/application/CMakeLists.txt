@@ -57,6 +57,8 @@ nebula_begin_module(application)
         fips_files(
             basegamefeatureunit.h
             basegamefeatureunit.cc
+            level.h
+            level.cc
         )
         fips_dir(basegamefeature/managers)
             fips_files(
@@ -84,6 +86,7 @@ nebula_begin_module(application)
         )
     fips_dir(.)
 
+nebula_flatc(SYSTEM game/level.fbs)
 nebula_end_module()
 
 if(FIPS_WINDOWS)
