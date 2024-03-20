@@ -4,8 +4,6 @@
 //
 //    (C) 2024 Individual contributors, see AUTHORS file
 
-include "foundation/math.fbs";
-
 namespace Game.Serialization;
 
 table ComponentField
