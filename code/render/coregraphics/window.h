@@ -54,6 +54,8 @@ void WindowMakeCurrent(const WindowId id);
 void WindowPresent(const WindowId id, const IndexT frameIndex);
 /// poll events for window
 void WindowPollEvents();
+/// Do new frame stuff for window
+void WindowNewFrame(const WindowId id);
 /// toggle fullscreen
 void WindowApplyFullscreen(const WindowId id, Adapter::Code monitor, bool b);
 /// set if the cursor should be visible

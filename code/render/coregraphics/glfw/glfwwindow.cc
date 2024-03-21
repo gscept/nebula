@@ -596,27 +596,6 @@ WindowPresent(const WindowId id, const IndexT frameIndex)
         glfwSwapBuffers(wnd);
 #endif
         frame = frameIndex;
-
-        ResizeInfo& info = glfwWindowAllocator.Get<GLFW_ResizeInfo>(id.id);
-        if (!info.done)
-        {
-            info.done = true;
-
-            CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
-            mode.SetWidth(info.newWidth);
-            mode.SetHeight(info.newHeight);
-            mode.SetAspectRatio(info.newWidth / float(info.newHeight));
-
-            // resize default render target
-            // WindowResize(id, width, height);
-#if __VULKAN__
-            // recreate swapchain
-            Vulkan::RecreateVulkanSwapchain(id, mode, info.vsync, "RESIZED"_atm);
-#endif
-
-            // notify event listeners we resized
-            GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
-        }
     }
 }
 
@@ -627,6 +606,34 @@ void
 WindowPollEvents()
 {
     glfwPollEvents();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowNewFrame(const WindowId id)
+{
+    ResizeInfo& info = glfwWindowAllocator.Get<GLFW_ResizeInfo>(id.id);
+    if (!info.done)
+    {
+        info.done = true;
+
+        CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id);
+        mode.SetWidth(info.newWidth);
+        mode.SetHeight(info.newHeight);
+        mode.SetAspectRatio(info.newWidth / float(info.newHeight));
+
+        // resize default render target
+        // WindowResize(id, width, height);
+#if __VULKAN__
+        // recreate swapchain
+        Vulkan::RecreateVulkanSwapchain(id, mode, info.vsync, "RESIZED"_atm);
+#endif
+
+        // notify event listeners we resized
+        GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
+    }
 }
 
 //------------------------------------------------------------------------------

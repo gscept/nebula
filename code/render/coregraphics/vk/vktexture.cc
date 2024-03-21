@@ -728,11 +728,13 @@ DeleteTexture(const TextureId id)
         if (runtimeInfo.type != TextureType::InvalidTextureType)
             Graphics::UnregisterTexture(bind, runtimeInfo.type);
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
+        loadInfo.stencilExtension = Ids::InvalidId32;
     }
 
     if (loadInfo.swapExtension != Ids::InvalidId32)
     {
         textureSwapExtensionAllocator.Dealloc(loadInfo.swapExtension);
+        loadInfo.swapExtension = Ids::InvalidId32;
     }
 
     // if sparse, run through and dealloc pages
