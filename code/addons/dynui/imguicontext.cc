@@ -355,6 +355,8 @@ ImguiContext::Create()
     op->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
     {
         CoreGraphics::InputAssemblyKey inputAssembly { CoreGraphics::PrimitiveTopology::TriangleList, false  };
+        if (state.pipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
         state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
     };
     Frame::AddSubgraph("ImGUI", { op });

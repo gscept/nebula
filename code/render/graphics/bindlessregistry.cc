@@ -159,34 +159,42 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
 {
     Threading::CriticalScope _0(&state.bindResourceCriticalSection);
     IndexT var = -1;
+    CoreGraphics::TextureId fallback;
     switch (type)
     {
     case CoreGraphics::Texture1D:
         var = Shared::Table_Tick::Textures1D_SLOT;
+        fallback = CoreGraphics::White1D;
         break;
     case CoreGraphics::Texture1DArray:
         var = Shared::Table_Tick::Textures1DArray_SLOT;
+        fallback = CoreGraphics::White1DArray;
         break;
     case CoreGraphics::Texture2D:
+        fallback = CoreGraphics::White2D;
         var = Shared::Table_Tick::Textures2D_SLOT;
         break;
     case CoreGraphics::Texture2DArray:
+        fallback = CoreGraphics::White2DArray;
         var = Shared::Table_Tick::Textures2DArray_SLOT;
         break;
     case CoreGraphics::Texture3D:
+        fallback = CoreGraphics::White3D;
         var = Shared::Table_Tick::Textures3D_SLOT;
         break;
     case CoreGraphics::TextureCube:
+        fallback = CoreGraphics::WhiteCube;
         var = Shared::Table_Tick::TexturesCube_SLOT;
         break;
     case CoreGraphics::TextureCubeArray:
+        fallback = CoreGraphics::WhiteCubeArray;
         var = Shared::Table_Tick::TexturesCubeArray_SLOT;
         break;
     default: n_error("unhandled enum"); break;
     }    
 
     CoreGraphics::ResourceTableTexture info;
-    info.tex = CoreGraphics::InvalidTextureId;
+    info.tex = fallback;
     info.index = id;
     info.sampler = CoreGraphics::InvalidSamplerId;
     info.isDepth = false;

@@ -175,10 +175,24 @@ Im3dContext::Create()
     };
     op->buildFunc = [](const CoreGraphics::PassId pass, const uint subpass)
     {
+        if (imState.linesPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(imState.linesPipeline);
         imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+
+        if (imState.depthLinesPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(imState.depthLinesPipeline);
         imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+
+        if (imState.trianglesPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(imState.trianglesPipeline);
         imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+
+        if (imState.depthTrianglesPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(imState.depthTrianglesPipeline);
         imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+
+        if (imState.pointsPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
         imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
     };
     Frame::AddSubgraph("Im3D", { op });

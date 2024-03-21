@@ -907,6 +907,7 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
     rtinfo.height = (float)swapchainExtent.height;
     rtinfo.windowTexture = true;
     rtinfo.defaultLayout = CoreGraphics::ImageLayout::TransferSource;
+    rtinfo.bindless = false;
     glfwWindowAllocator.Get<GLFW_Texture>(id.id) = CreateTexture(rtinfo);
 
     // add to graphics device for swapbuffers

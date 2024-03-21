@@ -397,6 +397,7 @@ SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT h
     tinfo.format = CoreGraphics::PixelFormat::R16G16F;
     tinfo.windowRelative = true;
     tinfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    tinfo.bindless = false;
 
     ssaoState.internalTargets[0] = CreateTexture(tinfo);
     tinfo.name = "HBAO-Internal1";
