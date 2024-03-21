@@ -32,10 +32,11 @@ GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
     {
         case DisplayEvent::WindowResized:
         {
+            pipelineDatabase->RecreatePipelines();
+
             // Run subsystems that require some reaction to the window resize event
             frameServer->OnWindowResize();
             graphicsServer->OnWindowResized(displayEvent.GetWindowId());
-            pipelineDatabase->RecreatePipelines();
             return true;
         }
         default:

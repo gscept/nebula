@@ -360,7 +360,7 @@ VkPipelineDatabase::RecreatePipelines()
                     Tier4Node* t4 = t3->children.ValueAtIndex(l);
                     vkDestroyPipeline(this->dev, t4->pipeline, nullptr);
                     t4->pipeline = VK_NULL_HANDLE;
-                    t4->initial = true;
+                    t1->initial = t2->initial = t3->initial = t4->initial = true;
                 }
             }
         }
