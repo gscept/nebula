@@ -1591,6 +1591,7 @@ TerrainContext::SetupTerrain(
         runtimeInfo.heightMap = id;
         runtimeInfo.lowresGenerated = false;
         runtimeInfo.loadBits |= TerrainRuntimeInfo::HeightMapLoaded;
+        terrainState.updateShadowMap = true;
 
         // If we are using raytracing, trigger a raytracing mesh update
         if (runtimeInfo.enableRayTracing)
