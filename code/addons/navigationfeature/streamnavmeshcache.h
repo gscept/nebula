@@ -9,9 +9,10 @@
 //------------------------------------------------------------------------------
 
 #include "core/refcounted.h"
-#include "resources/resourcestreamcache.h"
+#include "resources/resourceloader.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "flat/navigation/navmesh.h"
+#include "ids/idallocator.h"
 
 class dtNavMesh;
 class dtNavMeshQuery;
@@ -28,7 +29,7 @@ enum NavigationIdType
 
 RESOURCE_ID_TYPE(NavMeshId);
 
-class StreamNavMeshCache : public Resources::ResourceStreamCache
+class StreamNavMeshCache : public Resources::ResourceLoader
 {
     __DeclareClass(StreamNavMeshCache);
 
@@ -47,17 +48,22 @@ public:
 
 private:
     /// perform actual load, override in subclass
-    LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate) override;
+    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate) override;
     /// unload resource
     void Unload(const Resources::ResourceId id);
 
-    Ids::IdAllocatorSafe<
-        Util::String,
+    enum
+    {
+        Nav_Name,
+        Nav_Mesh,
+        Nav_Query,
+        Nav_MeshInfo
+    };
+    Ids::IdAllocatorSafe<0xff,
+        Util::StringAtom,
         dtNavMesh*,
         dtNavMeshQuery*,
         NavMeshT> allocator;
-    __ImplementResourceAllocatorTypedSafe(allocator, NavMeshIdType);
-
 };
 }
 

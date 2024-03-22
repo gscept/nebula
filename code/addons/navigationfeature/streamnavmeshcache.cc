@@ -10,7 +10,7 @@
 namespace Navigation
 {
 
-__ImplementClass(Navigation::StreamNavMeshCache, 'NVMC', Resources::ResourceStreamCache);
+__ImplementClass(Navigation::StreamNavMeshCache, 'NVMC', Resources::ResourceLoader);
 
 
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ StreamNavMeshCache::GetLoadedMeshes()
     meshes.Reserve(this->ids.Size());
     for (auto const& mesh : this->ids)
     {
-        meshes.Append(mesh.Value());
+        meshes.Append(this->GetId(mesh.Key()));
     }
     return meshes;
 }
@@ -58,49 +58,48 @@ StreamNavMeshCache::GetLoadedMeshes()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceCache::LoadStatus
-StreamNavMeshCache::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceUnknownId StreamNavMeshCache::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());
-    n_assert(this->GetState(res) == Resources::Resource::Pending);
-
-    /// during the load-phase, we can safetly get the structs
-    this->Lock(Util::ArrayAllocatorAccess::Read);
-    NavMeshT& meshInfo = this->allocator.Get<3>(res.resourceId);
-    Util::String& name = this->allocator.Get<0>(res.resourceId);
-    dtNavMesh*& navMesh = this->allocator.Get<1>(res.resourceId);
-    dtNavMeshQuery*& navMeshQuery = this->allocator.Get<2>(res.resourceId);
-    this->Unlock(Util::ArrayAllocatorAccess::Read);
-
-    if (stream->Open())
+    n_assert(stream->CanBeMapped());
+    if (!stream->Open())
     {
-        void* buf = stream->Map();
-        if (buf == nullptr)
-        {
-            return Failed;
-        }
-
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<Navigation::NavMesh>(meshInfo, (uint8_t*)buf);
-        stream->Unmap();
-
-        name = meshInfo.name;
-
-        Ptr<IO::Stream> storedNavMesh = IO::IoServer::Instance()->CreateStream(meshInfo.file);
-        if (storedNavMesh->Open())
-        {
-            unsigned char* navData = (unsigned char*)storedNavMesh->Map();
-            IO::Stream::Size navDataSize = storedNavMesh->GetSize();
-            navMesh = dtAllocNavMesh();
-            navMeshQuery = dtAllocNavMeshQuery();
-            if (DT_SUCCESS == navMesh->init(navData, navDataSize, 0))
-            {
-                navMeshQuery->init(navMesh, MAX_NAV_NODES);
-                return Success;
-            }
-            storedNavMesh->Unmap();
-        }
+        return InvalidNavMeshId;
     }
-    return Failed;
+   
+    void* buf = stream->Map();
+    if (buf == nullptr)
+    {
+        return InvalidNavMeshId;
+    }
+
+    NavMeshId ret = { this->allocator.Alloc(), NavMeshIdType };
+
+    NavMeshT& meshInfo = this->allocator.Get<Nav_MeshInfo>(ret.resourceId);
+    dtNavMesh*& navMesh = this->allocator.Get<Nav_Mesh>(ret.resourceId);
+    dtNavMeshQuery*& navMeshQuery = this->allocator.Get<Nav_Query>(ret.resourceId);
+
+
+    Flat::FlatbufferInterface::DeserializeFlatbuffer<Navigation::NavMesh>(meshInfo, (uint8_t*)buf);
+    stream->Unmap();
+
+    this->allocator.Set<Nav_Name>(ret.resourceId, meshInfo.name);
+
+    Ptr<IO::Stream> storedNavMesh = IO::IoServer::Instance()->CreateStream(meshInfo.file);
+    if (storedNavMesh->Open())
+    {
+        unsigned char* navData = (unsigned char*)storedNavMesh->Map();
+        IO::Stream::Size navDataSize = storedNavMesh->GetSize();
+        navMesh = dtAllocNavMesh();
+        navMeshQuery = dtAllocNavMeshQuery();
+        if (DT_SUCCESS == navMesh->init(navData, navDataSize, 0))
+        {
+            navMeshQuery->init(navMesh, MAX_NAV_NODES);
+            return ret;
+        }
+        storedNavMesh->Unmap();
+    }
+    return InvalidNavMeshId;
 }
 
 //------------------------------------------------------------------------------
@@ -109,15 +108,11 @@ StreamNavMeshCache::LoadFromStream(const Resources::ResourceId res, const Util::
 void
 StreamNavMeshCache::Unload(const Resources::ResourceId res)
 {
-    this->Lock(Util::ArrayAllocatorAccess::Read);
-    NavMeshT& meshInfo = this->allocator.Get<3>(res.resourceId);
-    Util::String& name = this->allocator.Get<0>(res.resourceId);
-    dtNavMesh*& navMesh = this->allocator.Get<1>(res.resourceId);
-    dtNavMeshQuery*& navMeshQuery = this->allocator.Get<2>(res.resourceId);
+    dtNavMesh*& navMesh = this->allocator.Get<Nav_Mesh>(res.resourceId);
+    dtNavMeshQuery*& navMeshQuery = this->allocator.Get<Nav_Query>(res.resourceId);
     dtFreeNavMesh(navMesh);
     dtFreeNavMeshQuery(navMeshQuery);
-    this->Unlock(Util::ArrayAllocatorAccess::Read);
-    this->states[res.poolId] = Resources::Resource::State::Unloaded;
+    this->allocator.Dealloc(res.resourceId);
 }
 
 }

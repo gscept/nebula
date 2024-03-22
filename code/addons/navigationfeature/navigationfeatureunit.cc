@@ -46,7 +46,7 @@ NavigationFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    Resources::ResourceServer::Instance()->RegisterStreamPool("navmesh", Navigation::StreamNavMeshCache::RTTI);
+    Resources::ResourceServer::Instance()->RegisterStreamLoader("navmesh", Navigation::StreamNavMeshCache::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("nav", "export:navigation"));
 
     Navigation::navMeshCache = Resources::GetStreamPool<Navigation::StreamNavMeshCache>();

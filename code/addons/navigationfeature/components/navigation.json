@@ -1,0 +1,10 @@
+{
+  "namespace": "NavigationFeature",
+  "components": {
+  "navigationAgent": {
+      "AgentKind": "string",
+      "MaxSpeed": "float",
+      "MaxTurnSpeed": "float"
+    }
+  }
+}

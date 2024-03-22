@@ -7,6 +7,7 @@
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"
 #include "memory/memory.h"
+#include "coregraphics/mesh.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/primitivegroup.h"
 #include "io/ioserver.h"

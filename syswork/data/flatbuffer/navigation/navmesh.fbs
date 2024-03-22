@@ -19,10 +19,10 @@ table GeometryEntry
 table NavMesh
 {
 	name : string;
-	agent_kind : Agent;
-	navmesh_settings : NavMeshSettings;
-	sources : [GeometryEntry];
-	area_modifiers : [NavAreaModifier];
+	agent_kind : Agent (cpp_ptr_type: "std::shared_ptr");
+	navmesh_settings : NavMeshSettings (cpp_ptr_type: "std::shared_ptr");
+	sources : [GeometryEntry] (cpp_ptr_type: "std::shared_ptr");
+	area_modifiers : [NavAreaModifier] (cpp_ptr_type: "std::shared_ptr");
 	bounds_center : Flat.Vec3 (native_inline);
 	bounds_extents : Flat.Vec3 (native_inline);
 	file : string;

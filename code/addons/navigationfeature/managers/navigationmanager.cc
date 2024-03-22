@@ -5,7 +5,7 @@
 #include "application/stdneb.h"
 #include "navigationmanager.h"
 #include "game/gameserver.h"
-#include "properties/navigation.h"
+#include "components/navigation.h"
 
 namespace NavigationFeature
 {
@@ -163,9 +163,8 @@ void NavigationManager::InitUpdateAgentTransformProcessor()
 Game::ManagerAPI
 NavigationManager::Create()
 {
-	n_assert(NavigationFeature::Details::navigation_registered);
 	n_assert(!NavigationManager::HasInstance());
-    NavigationManager::Singleton = n_new(NavigationManager);
+    NavigationManager::Singleton = new NavigationManager;
 
     /*
     Game::PropertyCreateInfo info;
@@ -192,7 +191,7 @@ NavigationManager::Create()
 void
 NavigationManager::Destroy()
 {
-    n_delete(NavigationManager::Singleton);
+    delete NavigationManager::Singleton;
     NavigationManager::Singleton = nullptr;
 }
 
