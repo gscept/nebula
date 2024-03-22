@@ -14,9 +14,10 @@ fips_files(
 			navigationmanager.h
 			navigationmanager.cc
 		)
-	fips_dir(properties)
-		nebula_add_nidl(
-			navigation.nidl
+
+	fips_dir(components)
+		nebula_idl_compile(
+			navigation.json
 		)
     fips_dir(recast)
         fips_files(recastutil.h

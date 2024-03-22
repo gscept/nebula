@@ -2,7 +2,7 @@ namespace Navigation;
 
 table Agent
 {
-	name : string;
+	name : string ;
 	comment : string;
 	agent_radius : float;
 	agent_height : float;
