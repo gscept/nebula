@@ -12,6 +12,7 @@
 #include "game/entity.h"
 #include "game/componentserialization.h"
 #include "game/componentinspection.h"
+#include "util/bitfield.h"
 
 namespace Game
 {

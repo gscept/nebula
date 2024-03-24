@@ -93,6 +93,8 @@ Table::NewPartition()
 
     this->numActivePartitions++;
 
+    this->currentPartition = partition;
+       
     return partition;
 }
 
@@ -237,6 +239,15 @@ SizeT
 Table::GetNumRows() const
 {
     return this->totalNumRows;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Table::SetNumRows(SizeT value)
+{
+    this->totalNumRows = value;
 }
 
 //------------------------------------------------------------------------------
@@ -400,7 +411,7 @@ Table::GetFirstActivePartition()
 /**
 */
 uint16_t
-Table::GetNumActivePartitions()
+Table::GetNumActivePartitions() const
 {
     return this->numActivePartitions;
 }
@@ -409,9 +420,18 @@ Table::GetNumActivePartitions()
 /**
 */
 uint16_t
-Table::GetNumPartitions()
+Table::GetNumPartitions() const
 {
     return this->partitions.Size();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Table::Partition*
+Table::GetCurrentPartition()
+{
+    return this->currentPartition;
 }
 
 //------------------------------------------------------------------------------

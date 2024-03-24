@@ -72,6 +72,8 @@ public:
     void RemoveRow(RowId row);
     /// Get total number of rows in a table
     SizeT GetNumRows() const;
+    /// set total number of rows in a table. This does not allocate any memory or create instaces, thus should pretty much never be used.
+    void SetNumRows(SizeT value);
     /// Set all row values to default
     void SetToDefault(RowId row);
 
@@ -85,9 +87,11 @@ public:
     /// Get first active partition with entities
     Partition* GetFirstActivePartition();
     /// Get number of partitions that contain entities
-    uint16_t GetNumActivePartitions();
+    uint16_t GetNumActivePartitions() const;
     /// Get number of partitions in table
-    uint16_t GetNumPartitions();
+    uint16_t GetNumPartitions() const;
+    /// Get current partition
+    Partition* GetCurrentPartition();
     ///
     Partition* GetPartition(uint16_t partitionId);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
@@ -133,14 +137,13 @@ public:
     Partition* NewPartition();
 
 private:
-    
-    TableSignature signature;
 
+    /// the signature of this table. Contains one bit set to true for every attribute that exists in the table.
+    TableSignature signature;
     /// table identifier
     TableId tid = TableId::Invalid();
-
+    /// sum of all rows in all partitions of this table, 
     uint32_t totalNumRows = 0;
-
     /// Current partition that we'll be using when allocating data.
     Partition* currentPartition = nullptr;
     /// All partitions, even null partitions
@@ -157,8 +160,6 @@ private:
     Util::Array<AttributeId> attributes;
     /// maps attr id -> index in columns array
     Util::HashTable<AttributeId, IndexT, 32, 1> columnRegistry;
-
-    uint64_t partitionCleanerCounter = 0;
 };
 
 //------------------------------------------------------------------------------

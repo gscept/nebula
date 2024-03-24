@@ -25,20 +25,19 @@ PackedLevel::Instantiate() const
         EntityGroup const& dataTable = this->tables[i];
         MemDb::Table& table = this->world->GetDatabase()->GetTable(dataTable.dstTable);
 
-        SizeT numNewPartitions = ((dataTable.numRows - 1) / MemDb::Table::Partition::CAPACITY) + 1;
-
         SizeT numRowsLeft = dataTable.numRows;
 
+        MemDb::Table::Partition* partition = table.GetCurrentPartition();
+        if (partition == nullptr || partition->numRows == MemDb::Table::Partition::CAPACITY)
+            partition = table.NewPartition();
+
+    
         // Create new partitions and fill them with data from table
         SizeT byteOffset = 0;
-        for (IndexT p = 0; p < numNewPartitions; p++)
+        while (numRowsLeft > 0)
         {
-            MemDb::Table::Partition* partition = table.NewPartition();
-
-            SizeT numRows = Math::min(numRowsLeft, (SizeT)MemDb::Table::Partition::CAPACITY);
-            numRowsLeft -= (SizeT)MemDb::Table::Partition::CAPACITY;
-
-            partition->numRows = numRows;
+            SizeT numRows = Math::min(numRowsLeft, (SizeT)MemDb::Table::Partition::CAPACITY - (SizeT)partition->numRows);
+            numRowsLeft -= (SizeT)MemDb::Table::Partition::CAPACITY - partition->numRows;
 
             SizeT const numColumns = table.GetAttributes().Size();
             for (IndexT columnIndex = 0; columnIndex < numColumns; columnIndex++)
@@ -46,11 +45,11 @@ PackedLevel::Instantiate() const
                 // TODO: maybe store this in the EntityGroup upon preloading.
                 SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(table.GetAttributes()[columnIndex]);
                 SizeT const numBytes = numRows * typeSize;
-                Memory::Copy(dataTable.columns + byteOffset, partition->columns[columnIndex], numBytes);
+                Memory::Copy(dataTable.columns + byteOffset, (byte*)partition->columns[columnIndex] + (partition->numRows * typeSize), numBytes);
                 byteOffset += numBytes;
             }
 
-            for (uint16_t rowIndex = 0; rowIndex < numRows; rowIndex++)
+            for (uint16_t rowIndex = partition->numRows; rowIndex < partition->numRows + numRows; rowIndex++)
             {
                 Game::Entity entity = this->world->AllocateEntity();
 
@@ -68,7 +67,14 @@ PackedLevel::Instantiate() const
                 // TODO: could initialize all components of a specific type at the same time
                 this->world->InitializeAllComponents(entity, mapping.table, mapping.instance);
             }
+
+            partition->numRows += numRows;
+            if (partition->numRows == MemDb::Table::Partition::CAPACITY)
+                partition = table.NewPartition();
         }
+
+        // update table numRows total
+        table.SetNumRows(table.GetNumRows() + dataTable.numRows);
     }
 
     return entities;

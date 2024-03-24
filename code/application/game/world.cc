@@ -88,6 +88,14 @@ World::PreloadLevel(Util::String const& path)
         // TODO: Validate all fields in debug and assert if incorrect!
     }
 
+    Util::FixedArray<Util::StringAtom> strings(flatLevel->strings()->size());
+
+    for (uint32_t i = 0; i < flatLevel->strings()->size(); i++)
+    {
+        Util::StringAtom strAtm = (*flatLevel->strings())[i]->data();
+        strings[i] = strAtm;
+    }
+
     for (auto table : *flatTables)
     {
         Game::PackedLevel::EntityGroup entityGroup;
@@ -122,7 +130,42 @@ World::PreloadLevel(Util::String const& path)
             offset += column->bytes()->size();
         }
 
-        // TODO: Patch resource types 
+        // Patch strings
+        offset = 0;
+        for (componentIndex = 0; componentIndex < components.Size(); componentIndex++)
+        {
+            ComponentId const cid = components[componentIndex];
+            Game::ComponentInterface const* cInterface =
+                static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
+
+            for (IndexT i = 0; i < cInterface->GetNumFields(); i++)
+            {
+                auto fieldTypename = cInterface->GetFieldTypenames()[i];
+                // Check for strings and unpack them
+                // TODO: This could be improved and generalized so that we can
+                //       do the same for entity references and other reference types
+                if (Util::String::StrCmp(fieldTypename, "Resources::ResourceName") == 0 ||
+                    Util::String::StrCmp(fieldTypename, "string") == 0 ||
+                    Util::String::StrCmp(fieldTypename, "Util::StringAtom") == 0)
+                {
+                    ubyte* it = entityGroup.columns + offset;
+                    it += cInterface->GetFieldByteOffsets()[i];
+                    while (it < entityGroup.columns + bytesInColumn)
+                    {
+                        static_assert(sizeof(Util::StringAtom) == sizeof(uint64_t));
+
+                        Util::StringAtom* asStringAtom = reinterpret_cast<Util::StringAtom*>(it);
+                        uint64_t* asInt = reinterpret_cast<uint64_t*>(it);
+
+                        *asStringAtom = strings[*asInt];
+
+                        it += cInterface->typeSize;
+                    }
+                }
+            }
+
+            offset += (*table->columns())[componentIndex]->bytes()->size();
+        }
 
         level->tables.Append(std::move(entityGroup));
     }
@@ -160,6 +203,9 @@ World::ExportLevel(Util::String const& path)
 
     std::vector<Offset<EntityGroup>> entityGroups;
 
+    std::vector<Offset<String>> strings;
+    Util::HashTable<Util::StringAtom, uint> stringTable;
+
     db->ForEachTable(
         [&](MemDb::TableId tid)
         {
@@ -170,6 +216,9 @@ World::ExportLevel(Util::String const& path)
             std::vector<Offset<Column>> columns;
 
             MemDb::Table& table = db->GetTable(tid);
+
+            if (table.GetNumRows() == 0)
+                return;
 
             auto const& attributes = table.GetAttributes();
             for (IndexT columnIndex = 0; columnIndex < attributes.Size(); columnIndex++)
@@ -224,12 +273,57 @@ World::ExportLevel(Util::String const& path)
                     currentPartition = currentPartition->next;
                 }
 
+                for (IndexT i = 0; i < cInterface->GetNumFields(); i++)
+                {
+                    auto fieldTypename = cInterface->GetFieldTypenames()[i];
+                    // Check for strings and serialize them
+                    // TODO: This could be improved and generalized so that we can
+                    //       do the same for entity references and other reference types
+                    if (Util::String::StrCmp(fieldTypename, "Resources::ResourceName") == 0 ||
+                        Util::String::StrCmp(fieldTypename, "string") == 0 ||
+                        Util::String::StrCmp(fieldTypename, "Util::StringAtom") == 0 
+                        )
+                    {
+                        // This is a stringatom field, so we to serialize the
+                        // string into the string table, and replace the
+                        // pointer with an index into this table
+                        ubyte* it = columnData;
+                        it += cInterface->GetFieldByteOffsets()[i];
+                        while (it < columnData + columnDataSize)
+                        {
+                            static_assert(sizeof(Util::StringAtom) == sizeof(uint64_t));
+
+                            Util::StringAtom* asStringAtom = reinterpret_cast<Util::StringAtom*>(it);
+                            uint64_t* asInt = reinterpret_cast<uint64_t*>(it);
+
+                            IndexT const stringTableIndex = stringTable.FindIndex(*asStringAtom);
+                            uint64_t stringIndex;
+                            if (stringTableIndex == InvalidIndex)
+                            {
+                                auto flat_string = builder.CreateString(asStringAtom->Value());
+                                stringIndex = strings.size();
+                                strings.push_back(flat_string);
+
+                                stringTable.Add(*asStringAtom, stringIndex);
+                            }
+                            else
+                            {
+                                stringIndex = stringTable.ValueAtIndex(*asStringAtom, stringTableIndex);
+                            }
+                            *asInt = stringIndex;
+
+                            it += cInterface->typeSize;
+                        }
+                    }
+                }
+
                 auto vector_bytes = builder.CreateVector((ubyte*)columnData, columnDataSize);
                 auto flat_column = CreateColumn(builder, vector_bytes);
 
                 columns.push_back(flat_column);
 
                 delete[] columnData;
+                int dfhjkslfhjds = 0;
             }
 
             auto vector_components = builder.CreateVector(components);
@@ -243,8 +337,9 @@ World::ExportLevel(Util::String const& path)
 
     auto vector_entity_groups = builder.CreateVector(entityGroups);
     auto vector_descs = builder.CreateVector(descriptions);
+    auto vector_strings = builder.CreateVector(strings);
 
-    auto flat_level = CreateLevel(builder, vector_descs, vector_entity_groups);
+    auto flat_level = CreateLevel(builder, vector_descs, vector_entity_groups, vector_strings);
 
     builder.Finish(flat_level);
 
@@ -1429,6 +1524,10 @@ World::RenderDebug()
                             ImGui::Text("_flag_: %s", MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
                             ImGui::Separator();
                             continue;
+                        }
+                        else
+                        {
+                            ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
                         }
                         void* data = this->GetInstanceBuffer(table, row.partition, component);
                         data = (byte*)data + (row.index * typeSize);
