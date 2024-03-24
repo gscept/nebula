@@ -237,7 +237,6 @@ SetupTexture(const TextureId id)
     __Lock(textureAllocator, id.id);
     Vulkan::VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Vulkan::Texture_RuntimeInfo>(id.id);
     Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id.id);
-    Vulkan::VkTextureWindowInfo& windowInfo = textureAllocator.Get<Vulkan::Texture_WindowInfo>(id.id);
 
     VkFormat vkformat = VkTypes::AsVkFormat(loadInfo.format);
 
@@ -268,207 +267,93 @@ SetupTexture(const TextureId id)
     if (loadInfo.usage & TextureUsage::RenderTexture)
         usage |= (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-    if (!loadInfo.windowTexture)
+    VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
+    VkImageViewType viewType = VkTypes::AsVkImageViewType(runtimeInfo.type);
+    VkImageType type = VkTypes::AsVkImageType(runtimeInfo.type);
+
+    // if read-write, we will almost definitely use this texture on multiple queues
+    VkSharingMode sharingMode = (loadInfo.usage & TextureUsage::ReadWriteTexture) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const Util::Set<uint32_t>& queues = CoreGraphics::GetQueueIndices();
+
+    if (queues.Size() <= 1)
+        sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+
+    VkImageCreateFlags createFlags = 0;
+
+    if (loadInfo.alias != CoreGraphics::InvalidTextureId)
+        createFlags |= VK_IMAGE_CREATE_ALIAS_BIT;
+    if (viewType == VK_IMAGE_VIEW_TYPE_CUBE || viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
+        createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    if (loadInfo.sparse)
+        createFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
+
+    VkImageCreateInfo imgInfo =
     {
-        VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
-        VkImageViewType viewType = VkTypes::AsVkImageViewType(runtimeInfo.type);
-        VkImageType type = VkTypes::AsVkImageType(runtimeInfo.type);
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        createFlags,
+        type,
+        vkformat,
+        extents,
+        loadInfo.mips,
+        loadInfo.layers,
+        samples,
+        VK_IMAGE_TILING_OPTIMAL,
+        usage,
+        sharingMode,
+        sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.Size() : 0u,
+        sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.KeysAsArray().Begin() : nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED
+    };
 
-        // if read-write, we will almost definitely use this texture on multiple queues
-        VkSharingMode sharingMode = (loadInfo.usage & TextureUsage::ReadWriteTexture) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-        const Util::Set<uint32_t>& queues = CoreGraphics::GetQueueIndices();
+    VkResult stat = vkCreateImage(loadInfo.dev, &imgInfo, nullptr, &loadInfo.img);
+    n_assert(stat == VK_SUCCESS);
 
-        if (queues.Size() <= 1)
-            sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+    // Setup subresource range
+    VkImageSubresourceRange viewRange;
+    viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
+    viewRange.baseMipLevel = loadInfo.minMip;
+    viewRange.levelCount = loadInfo.mips - loadInfo.minMip;
+    viewRange.baseArrayLayer = 0;
+    viewRange.layerCount = loadInfo.layers;
 
-        VkImageCreateFlags createFlags = 0;
+    // if we have a sparse texture, don't allocate any memory or load any pixels
+    if (loadInfo.sparse)
+    {
+        n_assert(loadInfo.data == nullptr);
+        loadInfo.sparseExtension = textureSparseExtensionAllocator.Alloc();
 
-        if (loadInfo.alias != CoreGraphics::InvalidTextureId)
-            createFlags |= VK_IMAGE_CREATE_ALIAS_BIT;
-        if (viewType == VK_IMAGE_VIEW_TYPE_CUBE || viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
-            createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-        if (loadInfo.sparse)
-            createFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
-
-        VkImageCreateInfo imgInfo =
+        // setup sparse and commit the initial page updates
+        SetupSparse(loadInfo.dev, loadInfo.img, loadInfo.sparseExtension, loadInfo);
+        TextureSparseCommitChanges(id);
+    }
+    else
+    {
+        // if we don't use aliasing, create new memory
+        if (loadInfo.alias == CoreGraphics::InvalidTextureId)
         {
-            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            nullptr,
-            createFlags,
-            type,
-            vkformat,
-            extents,
-            loadInfo.mips,
-            loadInfo.layers,
-            samples,
-            VK_IMAGE_TILING_OPTIMAL,
-            usage,
-            sharingMode,
-            sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.Size() : 0u,
-            sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.KeysAsArray().Begin() : nullptr,
-            VK_IMAGE_LAYOUT_UNDEFINED
-        };
-
-        VkResult stat = vkCreateImage(loadInfo.dev, &imgInfo, nullptr, &loadInfo.img);
-        n_assert(stat == VK_SUCCESS);
-
-        // Setup subresource range
-        VkImageSubresourceRange viewRange;
-        viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
-        viewRange.baseMipLevel = loadInfo.minMip;
-        viewRange.levelCount = loadInfo.mips - loadInfo.minMip;
-        viewRange.baseArrayLayer = 0;
-        viewRange.layerCount = loadInfo.layers;
-
-        // if we have a sparse texture, don't allocate any memory or load any pixels
-        if (loadInfo.sparse)
-        {
-            n_assert(loadInfo.data == nullptr);
-            loadInfo.sparseExtension = textureSparseExtensionAllocator.Alloc();
-
-            // setup sparse and commit the initial page updates
-            SetupSparse(loadInfo.dev, loadInfo.img, loadInfo.sparseExtension, loadInfo);
-            TextureSparseCommitChanges(id);
+            // allocate memory backing
+            CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, CoreGraphics::MemoryPool_DeviceLocal);
+            VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, alloc.mem, alloc.offset);
+            n_assert(res == VK_SUCCESS);
+            loadInfo.mem = alloc;
         }
         else
         {
-            // if we don't use aliasing, create new memory
-            if (loadInfo.alias == CoreGraphics::InvalidTextureId)
-            {
-                // allocate memory backing
-                CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, CoreGraphics::MemoryPool_DeviceLocal);
-                VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, alloc.mem, alloc.offset);
-                n_assert(res == VK_SUCCESS);
-                loadInfo.mem = alloc;
-            }
-            else
-            {
-                // otherwise use other image memory to create alias
-                CoreGraphics::Alloc mem = textureAllocator.Get<Texture_LoadInfo>(loadInfo.alias.id).mem;
-                loadInfo.mem = mem;
-                VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem.mem, loadInfo.mem.offset);
-                n_assert(res == VK_SUCCESS);
-            }
-
-            // if we have initial data to setup, perform a data transfer
-            if (loadInfo.data != nullptr)
-            {
-                // use resource submission
-                CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-
-                // Initial state will be transfer
-                CoreGraphics::CmdBarrier(cmdBuf,
-                    CoreGraphics::PipelineStage::ImageInitial,
-                    CoreGraphics::PipelineStage::TransferWrite,
-                    CoreGraphics::BarrierDomain::Global,
-                    {
-                        TextureBarrierInfo
-                        {
-                            id,
-                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
-                        }
-                    });
-
-                uint size = PixelFormat::ToTexelSize(loadInfo.format);
-                uint texelSize = PixelFormat::ToBlockSize(loadInfo.format);
-                uint offset = 0;
-                for (IndexT j = viewRange.baseArrayLayer; j < viewRange.baseArrayLayer + viewRange.layerCount; j++)
-                {
-                    for (IndexT i = viewRange.baseMipLevel; i < viewRange.baseMipLevel + viewRange.levelCount; i++)
-                    {
-                        uint mipWidth = extents.width >> i;
-                        uint mipHeight = extents.height >> i;
-                        n_assert(offset < loadInfo.dataSize);
-                        SizeT uploadSize = Math::ceil((mipWidth * mipHeight * size) / (float)texelSize);
-                        CoreGraphics::TextureUpdate(cmdBuf, id, mipWidth, mipHeight, i, j, (char*)loadInfo.data + offset, uploadSize);
-                        offset += uploadSize;
-                    }
-                }
-
-                CoreGraphics::CmdBarrier(cmdBuf,
-                    CoreGraphics::PipelineStage::TransferWrite,
-                    CoreGraphics::PipelineStage::GraphicsShadersRead,
-                    CoreGraphics::BarrierDomain::Global,
-                    {
-                        TextureBarrierInfo
-                        {
-                            id,
-                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
-                        }
-                    });
-                CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-                // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
-                loadInfo.data = nullptr;
-            }
+            // otherwise use other image memory to create alias
+            CoreGraphics::Alloc mem = textureAllocator.Get<Texture_LoadInfo>(loadInfo.alias.id).mem;
+            loadInfo.mem = mem;
+            VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem.mem, loadInfo.mem.offset);
+            n_assert(res == VK_SUCCESS);
         }
 
-        // if used for render, find appropriate renderable format
-        if (loadInfo.usage & TextureUsage::RenderTexture)
+        // if we have initial data to setup, perform a data transfer
+        if (loadInfo.data != nullptr)
         {
-            if (!isDepthFormat)
-            {
-                VkFormatProperties formatProps;
-                vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), vkformat, &formatProps);
-                n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
-                    formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
-                    formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-            }
-        }
+            // use resource submission
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
-        VkComponentMapping mapping;
-        mapping.r = VkSwizzle[(uint)loadInfo.swizzle.red];
-        mapping.g = VkSwizzle[(uint)loadInfo.swizzle.green];
-        mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
-        mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
-
-        VkImageViewCreateInfo viewCreate =
-        {
-            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            nullptr,
-            0,
-            loadInfo.img,
-            viewType,
-            vkformat,
-            mapping,
-            viewRange
-        };
-        stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
-        n_assert(stat == VK_SUCCESS);
-
-        // setup stencil image
-        if (isDepthFormat)
-        {
-            // setup stencil extension
-            TextureViewCreateInfo viewCreate;
-            viewCreate.format = loadInfo.format;
-            viewCreate.numLayers = loadInfo.layers;
-            viewCreate.numMips = viewRange.levelCount;
-            viewCreate.startLayer = 0;
-            viewCreate.startMip = viewRange.baseMipLevel;
-            viewCreate.tex = id;
-            viewCreate.bits = ImageBits::StencilBits;
-            TextureViewId stencilView = CreateTextureView(viewCreate);
-
-            loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();
-            textureStencilExtensionAllocator.Set<TextureExtension_StencilInfo>(loadInfo.stencilExtension, stencilView);
-            textureStencilExtensionAllocator.Set<TextureExtension_StencilBind>(loadInfo.stencilExtension, 0xFFFFFFFF);
-        }
-
-        // use setup submission
-        CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-
-        CoreGraphics::TextureSubresourceInfo subres(
-            isDepthFormat ? CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::ColorBits
-            , viewRange.baseMipLevel
-            , viewRange.levelCount
-            , viewRange.baseArrayLayer
-            , viewRange.layerCount);
-
-        // If render target or texture has clear, transition to write and clear it
-        if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::RenderTexture))
-        {
-            // The first barrier is to transition from the initial layout to transfer for clear
+            // Initial state will be transfer
             CoreGraphics::CmdBarrier(cmdBuf,
                 CoreGraphics::PipelineStage::ImageInitial,
                 CoreGraphics::PipelineStage::TransferWrite,
@@ -477,56 +362,134 @@ SetupTexture(const TextureId id)
                     TextureBarrierInfo
                     {
                         id,
-                        subres
+                        CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                     }
                 });
 
-            if (!isDepthFormat)
+            uint size = PixelFormat::ToTexelSize(loadInfo.format);
+            uint texelSize = PixelFormat::ToBlockSize(loadInfo.format);
+            uint offset = 0;
+            for (IndexT j = viewRange.baseArrayLayer; j < viewRange.baseArrayLayer + viewRange.layerCount; j++)
             {
-                // Clear color
-                TextureClearColor(cmdBuf
-                                  , id
-                                  , { loadInfo.clearColorF4.x, loadInfo.clearColorF4.y, loadInfo.clearColorF4.z, loadInfo.clearColorF4.w }
-                                  , CoreGraphics::ImageLayout::TransferDestination, subres
-                );
-
-                // Transition back to color read if color render target
-                CoreGraphics::CmdBarrier(cmdBuf,
-                    CoreGraphics::PipelineStage::TransferWrite,
-                    CoreGraphics::PipelineStage::AllShadersRead,
-                    CoreGraphics::BarrierDomain::Global,
-                    {
-                        TextureBarrierInfo
-                        {
-                            id,
-                            subres
-                        }
-                    });
+                for (IndexT i = viewRange.baseMipLevel; i < viewRange.baseMipLevel + viewRange.levelCount; i++)
+                {
+                    uint mipWidth = extents.width >> i;
+                    uint mipHeight = extents.height >> i;
+                    n_assert(offset < loadInfo.dataSize);
+                    SizeT uploadSize = Math::ceil((mipWidth * mipHeight * size) / (float)texelSize);
+                    CoreGraphics::TextureUpdate(cmdBuf, id, mipWidth, mipHeight, i, j, (char*)loadInfo.data + offset, uploadSize);
+                    offset += uploadSize;
+                }
             }
-            else
-            {
-                // Clear depth and stencil
-                TextureClearDepthStencil(cmdBuf, id, loadInfo.clearDepthStencil.depth, loadInfo.clearDepthStencil.stencil, CoreGraphics::ImageLayout::TransferDestination, subres);
 
-                // Transition to depth read
-                CoreGraphics::CmdBarrier(cmdBuf,
-                    CoreGraphics::PipelineStage::TransferWrite,
-                    CoreGraphics::PipelineStage::DepthStencilRead,
-                    CoreGraphics::BarrierDomain::Global,
-                    {
-                        TextureBarrierInfo
-                        {
-                            id,
-                            subres
-                        }
-                    });
-            }
-        }
-        else if (AnyBits(loadInfo.usage, DeviceExclusive | ReadWriteTexture))
-        {
-            // Transition device-only textures to read state
             CoreGraphics::CmdBarrier(cmdBuf,
-                CoreGraphics::PipelineStage::ImageInitial,
+                CoreGraphics::PipelineStage::TransferWrite,
+                CoreGraphics::PipelineStage::GraphicsShadersRead,
+                CoreGraphics::BarrierDomain::Global,
+                {
+                    TextureBarrierInfo
+                    {
+                        id,
+                        CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
+                    }
+                });
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+            // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
+            loadInfo.data = nullptr;
+        }
+    }
+
+    // if used for render, find appropriate renderable format
+    if (loadInfo.usage & TextureUsage::RenderTexture)
+    {
+        if (!isDepthFormat)
+        {
+            VkFormatProperties formatProps;
+            vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), vkformat, &formatProps);
+            n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
+                formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
+                formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+        }
+    }
+
+    VkComponentMapping mapping;
+    mapping.r = VkSwizzle[(uint)loadInfo.swizzle.red];
+    mapping.g = VkSwizzle[(uint)loadInfo.swizzle.green];
+    mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
+    mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
+
+    VkImageViewCreateInfo viewCreate =
+    {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        nullptr,
+        0,
+        loadInfo.img,
+        viewType,
+        vkformat,
+        mapping,
+        viewRange
+    };
+    stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
+    n_assert(stat == VK_SUCCESS);
+
+    // setup stencil image
+    if (isDepthFormat)
+    {
+        // setup stencil extension
+        TextureViewCreateInfo viewCreate;
+        viewCreate.format = loadInfo.format;
+        viewCreate.numLayers = loadInfo.layers;
+        viewCreate.numMips = viewRange.levelCount;
+        viewCreate.startLayer = 0;
+        viewCreate.startMip = viewRange.baseMipLevel;
+        viewCreate.tex = id;
+        viewCreate.bits = ImageBits::StencilBits;
+        TextureViewId stencilView = CreateTextureView(viewCreate);
+
+        loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();
+        textureStencilExtensionAllocator.Set<TextureExtension_StencilInfo>(loadInfo.stencilExtension, stencilView);
+        textureStencilExtensionAllocator.Set<TextureExtension_StencilBind>(loadInfo.stencilExtension, 0xFFFFFFFF);
+    }
+
+    // use setup submission
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+
+    CoreGraphics::TextureSubresourceInfo subres(
+        isDepthFormat ? CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::ColorBits
+        , viewRange.baseMipLevel
+        , viewRange.levelCount
+        , viewRange.baseArrayLayer
+        , viewRange.layerCount);
+
+    // If render target or texture has clear, transition to write and clear it
+    if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::RenderTexture))
+    {
+        // The first barrier is to transition from the initial layout to transfer for clear
+        CoreGraphics::CmdBarrier(cmdBuf,
+            CoreGraphics::PipelineStage::ImageInitial,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                TextureBarrierInfo
+                {
+                    id,
+                    subres
+                }
+            });
+
+        if (!isDepthFormat)
+        {
+            // Clear color
+            TextureClearColor(cmdBuf
+                                , id
+                                , { loadInfo.clearColorF4.x, loadInfo.clearColorF4.y, loadInfo.clearColorF4.z, loadInfo.clearColorF4.w }
+                                , CoreGraphics::ImageLayout::TransferDestination, subres
+            );
+
+            // Transition back to color read if color render target
+            CoreGraphics::CmdBarrier(cmdBuf,
+                CoreGraphics::PipelineStage::TransferWrite,
                 CoreGraphics::PipelineStage::AllShadersRead,
                 CoreGraphics::BarrierDomain::Global,
                 {
@@ -537,105 +500,61 @@ SetupTexture(const TextureId id)
                     }
                 });
         }
-
-        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-        // register image with shader server
-        if (loadInfo.bindless)
-        {
-            if (runtimeInfo.bind == 0xFFFFFFFF)
-                runtimeInfo.bind = Graphics::RegisterTexture(id, runtimeInfo.type, isDepthFormat);
-            else
-                Graphics::ReregisterTexture(id, runtimeInfo.type, runtimeInfo.bind, isDepthFormat);
-
-            // if this is a depth-stencil texture, also register the stencil
-            if (isDepthFormat)
-            {
-                __Lock(textureStencilExtensionAllocator, loadInfo.stencilExtension);
-                IndexT& bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
-                bind = Graphics::RegisterTexture(id, runtimeInfo.type, false, true);
-            }
-        }
         else
-            runtimeInfo.bind = 0xFFFFFFFF;
+        {
+            // Clear depth and stencil
+            TextureClearDepthStencil(cmdBuf, id, loadInfo.clearDepthStencil.depth, loadInfo.clearDepthStencil.stencil, CoreGraphics::ImageLayout::TransferDestination, subres);
 
+            // Transition to depth read
+            CoreGraphics::CmdBarrier(cmdBuf,
+                CoreGraphics::PipelineStage::TransferWrite,
+                CoreGraphics::PipelineStage::DepthStencilRead,
+                CoreGraphics::BarrierDomain::Global,
+                {
+                    TextureBarrierInfo
+                    {
+                        id,
+                        subres
+                    }
+                });
+        }
     }
-    else // setup as window texture
+    else if (AnyBits(loadInfo.usage, DeviceExclusive | ReadWriteTexture))
     {
-        // get submission context
-        n_assert(windowInfo.window != CoreGraphics::InvalidWindowId);
-        const CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-        const VkCommandBuffer vkCmdBuf = CmdBufferGetVk(cmdBuf);
-
-        // setup swap extension
-        loadInfo.swapExtension = textureSwapExtensionAllocator.Alloc();
-        VkTextureSwapInfo& swapInfo = textureSwapExtensionAllocator.Get<TextureExtension_SwapInfo>(loadInfo.swapExtension);
-
-        VkBackbufferInfo& backbufferInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_Backbuffer>(windowInfo.window.id);
-        swapInfo.swapimages = backbufferInfo.backbuffers;
-        swapInfo.swapviews = backbufferInfo.backbufferViews;
-        VkClearColorValue clear = { { 0, 0, 0, 0 } };
-
-        VkImageSubresourceRange subres;
-        subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        subres.baseArrayLayer = 0;
-        subres.baseMipLevel = 0;
-        subres.layerCount = 1;
-        subres.levelCount = 1;
-
-        // We need to transition all the backbuffers to transfer, clear them, and transition them to renderable.
-        // But because we're accessing the swapimages, we can't use the CoreGraphics barriers and clear...
-        Util::FixedArray<VkImageMemoryBarrier> swapbufferBarriers(swapInfo.swapimages.Size());
-        for (IndexT i = 0; i < swapbufferBarriers.Size(); i++)
-        {
-            swapbufferBarriers[i].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            swapbufferBarriers[i].pNext = nullptr;
-            swapbufferBarriers[i].srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-            swapbufferBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            swapbufferBarriers[i].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            swapbufferBarriers[i].newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            swapbufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            swapbufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-            swapbufferBarriers[i].image = swapInfo.swapimages[i];
-            swapbufferBarriers[i].subresourceRange = subres;
-        }
-        vkCmdPipelineBarrier(vkCmdBuf,
-            VkTypes::AsVkPipelineStage(CoreGraphics::PipelineStage::HostWrite), VkTypes::AsVkPipelineStage(CoreGraphics::PipelineStage::TransferWrite),
-            0,
-            0, nullptr,
-            0, nullptr,
-            swapbufferBarriers.Size(), swapbufferBarriers.Begin());
-
-        // clear textures
-        IndexT i;
-        for (i = 0; i < swapInfo.swapimages.Size(); i++)
-        {
-            vkCmdClearColorImage(vkCmdBuf, swapInfo.swapimages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1, &subres);
-
-            swapbufferBarriers[i].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            swapbufferBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            swapbufferBarriers[i].oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            swapbufferBarriers[i].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        }
-
-        vkCmdPipelineBarrier(vkCmdBuf,
-            VkTypes::AsVkPipelineStage(CoreGraphics::PipelineStage::TransferWrite), VkTypes::AsVkPipelineStage(CoreGraphics::PipelineStage::Present),
-            0,
-            0, nullptr,
-            0, nullptr,
-            swapbufferBarriers.Size(), swapbufferBarriers.Begin());
-        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-        n_assert(runtimeInfo.type == Texture2D);
-        n_assert(loadInfo.mips == 1);
-        n_assert(loadInfo.samples == 1);
-
-        loadInfo.img = swapInfo.swapimages[0];
-        loadInfo.mem.mem = VK_NULL_HANDLE;
-
-        runtimeInfo.view = backbufferInfo.backbufferViews[0];
+        // Transition device-only textures to read state
+        CoreGraphics::CmdBarrier(cmdBuf,
+            CoreGraphics::PipelineStage::ImageInitial,
+            CoreGraphics::PipelineStage::AllShadersRead,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                TextureBarrierInfo
+                {
+                    id,
+                    subres
+                }
+            });
     }
+
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+    // register image with shader server
+    if (loadInfo.bindless)
+    {
+        if (runtimeInfo.bind == 0xFFFFFFFF)
+            runtimeInfo.bind = Graphics::RegisterTexture(id, runtimeInfo.type, isDepthFormat);
+        else
+            Graphics::ReregisterTexture(id, runtimeInfo.type, runtimeInfo.bind, isDepthFormat);
+
+        // if this is a depth-stencil texture, also register the stencil
+        if (isDepthFormat)
+        {
+            __Lock(textureStencilExtensionAllocator, loadInfo.stencilExtension);
+            IndexT& bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
+            bind = Graphics::RegisterTexture(id, runtimeInfo.type, false, true);
+        }
+    }
+    else
+        runtimeInfo.bind = 0xFFFFFFFF;
 }
 
 //------------------------------------------------------------------------------
@@ -644,14 +563,16 @@ SetupTexture(const TextureId id)
 const TextureId
 CreateTexture(const TextureCreateInfo& info)
 {
-     /// during the load-phase, we can safetly get the structs
+    if (info.windowRelative)
+        n_assert(info.type == CoreGraphics::Texture2D);
+
+    /// during the load-phase, we can safetly get the structs
     Ids::Id32 id = textureAllocator.Alloc();
 
     TextureId ret = id;
 
     Vulkan::VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Vulkan::Texture_RuntimeInfo>(id);
     Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id);
-    Vulkan::VkTextureWindowInfo& windowInfo = textureAllocator.Get<Vulkan::Texture_WindowInfo>(id);
 
     // create adjusted info
     TextureCreateInfoAdjusted adjustedInfo = TextureGetAdjustedInfo(info);
@@ -676,26 +597,18 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.clear = adjustedInfo.clear;
     loadInfo.clearColorF4 = adjustedInfo.clearColorF4;
     loadInfo.defaultLayout = adjustedInfo.defaultLayout;
-    loadInfo.windowTexture = adjustedInfo.windowTexture;
     loadInfo.windowRelative = adjustedInfo.windowRelative;
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
-    runtimeInfo.bind = 0xFFFFFFFF;
 
     // borrow buffer pointer
     loadInfo.data = adjustedInfo.data;
     loadInfo.dataSize = adjustedInfo.dataSize;
-    windowInfo.window = adjustedInfo.window;
+    loadInfo.window = adjustedInfo.window;
 
-    if (loadInfo.windowTexture)
-    {
-        runtimeInfo.type = Texture2D;
-    }
-    else
-    {
-        runtimeInfo.type = adjustedInfo.type;
-    }
+    runtimeInfo.bind = 0xFFFFFFFF;
+    runtimeInfo.type = adjustedInfo.type;
 
     loadInfo.stencilExtension = Ids::InvalidId32;
     loadInfo.swapExtension = Ids::InvalidId32;
@@ -778,14 +691,11 @@ DeleteTexture(const TextureId id)
     }
 
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
-    if (!loadInfo.windowTexture)
-    {
-        if (runtimeInfo.bind != 0xFFFFFFFF)
-            Graphics::UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
-        CoreGraphics::DelayedDeleteTexture(id);
-        runtimeInfo.view = VK_NULL_HANDLE;
-        loadInfo.img = VK_NULL_HANDLE;
-    }
+    if (runtimeInfo.bind != 0xFFFFFFFF)
+        Graphics::UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+    CoreGraphics::DelayedDeleteTexture(id);
+    runtimeInfo.view = VK_NULL_HANDLE;
+    loadInfo.img = VK_NULL_HANDLE;
 }
 
 //------------------------------------------------------------------------------
@@ -912,68 +822,21 @@ TextureGetStencilBindlessHandle(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-IndexT
-TextureSwapBuffers(const CoreGraphics::TextureId id)
-{
-    textureAllocator.Acquire(id.id);
-    VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.id);
-    textureSwapExtensionAllocator.Acquire(loadInfo.swapExtension);
-
-    VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.id);
-    const VkTextureWindowInfo& wnd = textureAllocator.ConstGet<Texture_WindowInfo>(id.id);
-    const VkTextureSwapInfo& swap = textureSwapExtensionAllocator.ConstGet<TextureExtension_SwapInfo>(loadInfo.swapExtension);
-    n_assert(wnd.window != CoreGraphics::InvalidWindowId);
-    VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(wnd.window.id);
-
-    // get present fence and be sure it is finished before getting the next image
-    VkDevice dev = Vulkan::GetCurrentDevice();
-    VkFence fence = Vulkan::GetPresentFence();
-    VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
-    n_assert(res == VK_SUCCESS);
-    res = vkResetFences(dev, 1, &fence);
-    n_assert(res == VK_SUCCESS);
-
-    // get the next image
-    res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
-    switch (res)
-    {
-        case VK_SUCCESS:
-        case VK_ERROR_OUT_OF_DATE_KHR:
-        case VK_SUBOPTIMAL_KHR:
-            break;
-        default:
-            n_error("Present failed");
-    }
-
-    // set image and update texture
-    auto swapBufferIndex = swapInfo.currentBackbuffer;
-    loadInfo.img = swap.swapimages[swapBufferIndex];
-    runtimeInfo.view = swap.swapviews[swapBufferIndex];
-
-    textureSwapExtensionAllocator.Release(loadInfo.swapExtension);
-    textureAllocator.Release(id.id);
-    return swapBufferIndex;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 TextureWindowResized(const TextureId id)
 {
     __Lock(textureAllocator, id.id);
     VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.id);
     VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.id);
-    const VkTextureWindowInfo& windowInfo = textureAllocator.ConstGet<Texture_WindowInfo>(id.id);
 
-    if (loadInfo.windowTexture || loadInfo.windowRelative)
+    if (loadInfo.windowRelative)
     {
         uint tmp = runtimeInfo.bind;
         runtimeInfo.bind = 0xFFFFFFFF;
         DeleteTexture(id);
 
         // if the window has been resized, we need to update our dimensions based on relative size
-        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(windowInfo.window);
+        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(loadInfo.window);
         loadInfo.width = mode.GetWidth() * loadInfo.relativeDims.width;
         loadInfo.height = mode.GetHeight() * loadInfo.relativeDims.height;
         loadInfo.depth = 1;

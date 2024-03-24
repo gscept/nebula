@@ -178,7 +178,7 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                 , CoreGraphics::PipelineStage::ComputeShaderWrite
                                 , CoreGraphics::BufferSubresourceInfo()
                             });
-    fogCull->bufferDeps.Add(Clustering::ClusterContext::GetClusterBuffer(),
+    fogCull->bufferDepRefs.Add(Clustering::ClusterContext::GetClusterBuffer(),
                             {
                                 "Cluster AABB"
                                 , CoreGraphics::PipelineStage::ComputeShaderRead

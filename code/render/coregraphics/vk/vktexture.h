@@ -32,6 +32,7 @@ struct VkTextureLoadInfo : CoreGraphics::TextureCreateInfoAdjusted
     Ids::Id32 swapExtension;
     Ids::Id32 stencilExtension;
     Ids::Id32 sparseExtension;
+    CoreGraphics::WindowId window; // Only valid if texture is window relative in size
 };
 
 struct VkTextureRuntimeInfo
@@ -49,11 +50,6 @@ struct VkTextureMappingInfo
     uint32_t mapCount;
 };
 
-struct VkTextureWindowInfo
-{
-    CoreGraphics::WindowId window;
-};
-
 struct VkTextureSwapInfo
 {
     Util::FixedArray<VkImage> swapimages;
@@ -65,7 +61,6 @@ enum
     Texture_RuntimeInfo,
     Texture_LoadInfo,
     Texture_MappingInfo,
-    Texture_WindowInfo
 };
 
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
@@ -74,7 +69,6 @@ typedef Ids::IdAllocatorSafe<
     , VkTextureRuntimeInfo                   // runtime info (for binding)
     , VkTextureLoadInfo                      // loading info (mostly used during the load/unload phase)
     , VkTextureMappingInfo                   // used when image is mapped to memory
-    , VkTextureWindowInfo
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 

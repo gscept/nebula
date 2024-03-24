@@ -10,6 +10,7 @@
 #include "coregraphics/displayevent.h"
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
+#include "coregraphics/swapchain.h"
 
 #if __VULKAN__
 #include "coregraphics/vk/vkgraphicsdevice.h"
@@ -18,7 +19,7 @@
 
 namespace CoreGraphics
 {
-
+WindowId CurrentWindow;
 GLFWWindowAllocatorType glfwWindowAllocator(0x00FFFFFF);
 
 }
@@ -334,7 +335,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     Ids::Id32 windowId = glfwWindowAllocator.Alloc();
     WindowId id = windowId;
     glfwWindowAllocator.Set<GLFW_SetupInfo>(windowId, info);
-    glfwWindowAllocator.Set<GLFW_ResizeInfo>(windowId, { 0, 0, true, info.vsync });
+    glfwWindowAllocator.Set<GLFW_ResizeInfo>(windowId, { .newWidth = 0, .newHeight = 0, .done = true, .vsync = info.vsync });
 
     GLFWmonitor* monitor = GLFWDisplayDevice::Instance()->GetMonitor(Adapter::Code::Primary);
     n_assert(monitor);
@@ -402,19 +403,14 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 
     glfwSwapInterval(info.vsync ? 1 : 0);
 
-#if __VULKAN__
-    Vulkan::VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id);
-    VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), wnd, nullptr, &swapInfo.surface);
-    n_assert(res == VK_SUCCESS);
+    CoreGraphics::SwapchainCreateInfo swapCreate;
+    swapCreate.displayMode = info.mode;
+    swapCreate.vsync = info.vsync;
+    swapCreate.window = wnd;
+    SwapchainId swapchain = CoreGraphics::CreateSwapchain(swapCreate);
 
-    // guh, we have to make the window current twice...
-    DisplayDevice::Instance()->MakeWindowCurrent(id);
-
-    // setup swapchain
-    Vulkan::SetupVulkanSwapchain(id, info.mode, info.vsync, info.title);
-#endif
-
-    glfwWindowAllocator.Get<GLFW_Window>(windowId) = wnd;
+    glfwWindowAllocator.Set<GLFW_Window>(windowId, wnd);
+    glfwWindowAllocator.Set<GLFW_Swapchain>(windowId, swapchain);
 
     // notify window is opened
     GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowOpen, id));
@@ -483,14 +479,8 @@ DestroyWindow(const WindowId id)
     delete (WindowId*)glfwGetWindowUserPointer(wnd);
     glfwDestroyWindow(wnd);
 
-#if __VULKAN__
-    // discard swapchain
-    Vulkan::DiscardVulkanSwapchain(id);
-    // wait for queues to empty
-    VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id);
-    CoreGraphics::WaitAndClearPendingCommands();
-    vkDeviceWaitIdle(wndInfo.dev);
-#endif
+    CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
+    CoreGraphics::DestroySwapchain(swapchain);
 
     // close event
     GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowClose, id));
@@ -577,7 +567,7 @@ WindowSetCursorLocked(const WindowId id, bool b)
 void
 WindowMakeCurrent(const WindowId id)
 {
-    // FIXME
+    CurrentWindow = id;
 }
 
 //------------------------------------------------------------------------------
@@ -589,12 +579,8 @@ WindowPresent(const WindowId id, const IndexT frameIndex)
     IndexT& frame = glfwWindowAllocator.Get<GLFW_SwapFrame>(id.id);
     if (frame != frameIndex)
     {
-#if __VULKAN__
-        Vulkan::Present(id);
-#elif
-        GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
-        glfwSwapBuffers(wnd);
-#endif
+        CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
+        CoreGraphics::SwapchainPresent(swapchain);
         frame = frameIndex;
     }
 }
@@ -624,12 +610,16 @@ WindowNewFrame(const WindowId id)
         mode.SetHeight(info.newHeight);
         mode.SetAspectRatio(info.newWidth / float(info.newHeight));
 
-        // resize default render target
-        // WindowResize(id, width, height);
-#if __VULKAN__
-        // recreate swapchain
-        Vulkan::RecreateVulkanSwapchain(id, mode, info.vsync, "RESIZED"_atm);
-#endif
+        // Destroy old swap chain and make a new one
+        CoreGraphics::SwapchainId swapchain = glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
+        CoreGraphics::DestroySwapchain(swapchain);
+
+        GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+        CoreGraphics::SwapchainCreateInfo newSwapInfo;
+        newSwapInfo.displayMode = mode;
+        newSwapInfo.vsync = info.vsync;
+        newSwapInfo.window = wnd;
+        glfwWindowAllocator.Set<GLFW_Swapchain>(id.id, CoreGraphics::CreateSwapchain(newSwapInfo));
 
         // notify event listeners we resized
         GLFW::GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::WindowResized, id));
@@ -702,306 +692,11 @@ WindowGetIcon(const WindowId id)
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::TextureId&
-WindowGetTexture(const WindowId id)
+const CoreGraphics::SwapchainId
+WindowGetSwapchain(const WindowId id)
 {
-    return glfwWindowAllocator.Get<GLFW_Texture>(id.id);
+    return glfwWindowAllocator.Get<GLFW_Swapchain>(id.id);
 }
 
 } // namespace CoreGraphics
 
-#ifdef __VULKAN__
-namespace Vulkan
-{
-
-//------------------------------------------------------------------------------
-/**
-*/
-const VkSurfaceKHR&
-GetSurface(const CoreGraphics::WindowId& id)
-{
-    const VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id);
-    return swapInfo.surface;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title)
-{
-    VkWindowSwapInfo& windowInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id);
-    VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id);
-    VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFW_Backbuffer>(id.id);
-
-    VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
-    VkDevice dev = Vulkan::GetCurrentDevice();
-
-    // find available surface formats
-    uint32_t numFormats;
-    VkResult res;
-    res = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDev, swapInfo.surface, &numFormats, nullptr);
-    n_assert(res == VK_SUCCESS);
-
-    Util::FixedArray<VkSurfaceFormatKHR> formats(numFormats);
-    res = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDev, swapInfo.surface, &numFormats, formats.Begin());
-    n_assert(res == VK_SUCCESS);
-    swapInfo.format = formats[0].format;
-    swapInfo.colorSpace = formats[0].colorSpace;
-    VkComponentMapping mapping = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
-    uint32_t i;
-    for (i = 0; i < numFormats; i++)
-    {
-        if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB)
-        {
-            swapInfo.format = formats[i].format;
-            swapInfo.colorSpace = formats[i].colorSpace;
-            mapping.r = VK_COMPONENT_SWIZZLE_R;
-            mapping.b = VK_COMPONENT_SWIZZLE_B;
-            break;
-        }
-    }
-
-    // get surface capabilities
-    VkSurfaceCapabilitiesKHR surfCaps;
-
-    res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDev, swapInfo.surface, &surfCaps);
-    n_assert(res == VK_SUCCESS);
-
-    uint32_t numPresentModes;
-    res = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDev, swapInfo.surface, &numPresentModes, nullptr);
-    n_assert(res == VK_SUCCESS);
-
-    // get present modes
-    Util::FixedArray<VkPresentModeKHR> presentModes(numPresentModes);
-    res = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDev, swapInfo.surface, &numPresentModes, presentModes.Begin());
-    n_assert(res == VK_SUCCESS);
-
-    VkExtent2D swapchainExtent;
-    if (surfCaps.currentExtent.width == -1)
-    {
-        swapchainExtent.width = mode.GetWidth();
-        swapchainExtent.height = mode.GetHeight();
-    }
-    else
-    {
-        swapchainExtent = surfCaps.currentExtent;
-    }
-
-    // figure out the best present mode, mailo
-    VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-    for (i = 0; i < numPresentModes; i++)
-    {
-        switch (presentModes[i])
-        {
-        case VK_PRESENT_MODE_MAILBOX_KHR:
-            swapchainPresentMode = presentModes[i];
-            numPresentModes = 0;
-            break;
-        case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-            if (!vsync)
-            {
-                swapchainPresentMode = presentModes[i];
-                numPresentModes = 0;
-            }               
-            break;
-        case VK_PRESENT_MODE_IMMEDIATE_KHR:
-            if (!vsync)
-            {
-                swapchainPresentMode = presentModes[i];
-                numPresentModes = 0;
-            }
-            break;
-        case VK_PRESENT_MODE_FIFO_KHR:
-            continue;
-        default:
-            n_error("unhandled enum"); break;
-        }
-    }
-
-    // use at least as many swap images as we have buffered frames, if we don't have enough, the swap chain creation will fail
-    uint32_t numSwapchainImages = Math::max(surfCaps.minImageCount, Math::min((uint32_t)CoreGraphics::GetNumBufferedFrames(), surfCaps.maxImageCount));
-
-    // create a transform
-    VkSurfaceTransformFlagBitsKHR transform;
-    if (surfCaps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    else                                                                      transform = surfCaps.currentTransform;
-
-    VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    n_assert((usageFlags & surfCaps.supportedUsageFlags) != 0);
-    VkSwapchainCreateInfoKHR swapchainInfo =
-    {
-        VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        nullptr,
-        0,
-        swapInfo.surface,
-        numSwapchainImages,
-        swapInfo.format,
-        swapInfo.colorSpace,
-        swapchainExtent,
-        1,
-        usageFlags,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0,
-        nullptr,
-        transform,
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        swapchainPresentMode,
-        VK_TRUE,
-        VK_NULL_HANDLE
-    };
-
-    // get present queue
-    for (IndexT i = 0; i < NumQueueTypes; i++)
-    {
-        VkBool32 canPresent;
-        res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, i, swapInfo.surface, &canPresent);
-        n_assert(res == VK_SUCCESS);
-        if (canPresent)
-        {
-            windowInfo.presentQueue = Vulkan::GetQueue((CoreGraphics::QueueType)i, 0);
-            break;
-        }
-    }
-
-    // create swapchain
-    res = vkCreateSwapchainKHR(dev, &swapchainInfo, nullptr, &windowInfo.swapchain);
-    n_assert(res == VK_SUCCESS);
-
-    res = vkGetSwapchainImagesKHR(dev, windowInfo.swapchain, &backbufferInfo.numBackbuffers, nullptr);
-    n_assert(res == VK_SUCCESS);
-
-    // get number of buffered frames from the graphics device, and limit the amount of backbuffers
-    backbufferInfo.backbuffers.Resize(backbufferInfo.numBackbuffers);
-
-    res = vkGetSwapchainImagesKHR(dev, windowInfo.swapchain, &backbufferInfo.numBackbuffers, backbufferInfo.backbuffers.Begin());
-    n_assert(res == VK_SUCCESS);
-
-    backbufferInfo.backbufferViews.Resize(backbufferInfo.numBackbuffers);
-    for (i = 0; i < backbufferInfo.numBackbuffers; i++)
-    {
-        // setup view
-        VkImageViewCreateInfo backbufferViewInfo =
-        {
-            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            nullptr,
-            0,
-            backbufferInfo.backbuffers[i],
-            VK_IMAGE_VIEW_TYPE_2D,
-            swapInfo.format,
-            mapping,
-            { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
-        };
-        res = vkCreateImageView(dev, &backbufferViewInfo, nullptr, &backbufferInfo.backbufferViews[i]);
-        n_assert(res == VK_SUCCESS);
-    }
-    windowInfo.currentBackbuffer = 0;
-
-    TextureCreateInfo rtinfo;
-    rtinfo.name = Util::String::Sprintf("__WINDOW__%s", title.Value());
-    rtinfo.usage = TextureUsage::TransferTextureDestination;
-    rtinfo.tag = "system"_atm;
-    rtinfo.type = Texture2D;
-    rtinfo.format = VkTypes::AsNebulaPixelFormat(swapInfo.format);
-    rtinfo.width = (float)swapchainExtent.width;
-    rtinfo.height = (float)swapchainExtent.height;
-    rtinfo.windowTexture = true;
-    rtinfo.defaultLayout = CoreGraphics::ImageLayout::TransferSource;
-    rtinfo.bindless = false;
-    glfwWindowAllocator.Get<GLFW_Texture>(id.id) = CreateTexture(rtinfo);
-
-    // add to graphics device for swapbuffers
-    CoreGraphics::AddBackBufferTexture(glfwWindowAllocator.Get<GLFW_Texture>(id.id));
-
-    windowInfo.dev = dev;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
-{
-    VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id);
-    VkBackbufferInfo& backbufferInfo = glfwWindowAllocator.Get<GLFW_Backbuffer>(id.id);
-
-    uint32_t i;
-    for (i = 0; i < backbufferInfo.numBackbuffers; i++)
-    {
-        vkDestroyImageView(wndInfo.dev, backbufferInfo.backbufferViews[i], nullptr);
-    }
-
-    // destroy swapchain last
-    vkDestroySwapchainKHR(wndInfo.dev, wndInfo.swapchain, nullptr);
-    
-    CoreGraphics::RemoveBackBufferTexture(glfwWindowAllocator.Get<GLFW_Texture>(id.id));
-
-    // destroy __WINDOW__ render texture
-    DestroyTexture(glfwWindowAllocator.Get<GLFW_Texture>(id.id));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title)
-{
-    // Wait until GPU is idle
-    CoreGraphics::WaitAndClearPendingCommands();
-
-    DiscardVulkanSwapchain(id);
-
-    // TODO: We could pass the old swapchain when creating the new one, allowing any pending drawing to be finished before changing
-    SetupVulkanSwapchain(id, mode, vsync, title);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Present(const CoreGraphics::WindowId& id)
-{
-    const VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id);
-
-    VkSemaphore semaphores[] =
-    {
-        Vulkan::GetRenderingSemaphore() // this will be the final semaphore of the graphics command buffer that finishes the frame
-    };
-
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLACK, "Presentation");
-#endif
-
-    const VkPresentInfoKHR info =
-    {
-        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        nullptr,
-        1,
-        semaphores,
-        1,
-        &wndInfo.swapchain,
-        &wndInfo.currentBackbuffer,
-        nullptr
-    };
-
-    // present
-    VkResult res = vkQueuePresentKHR(wndInfo.presentQueue, &info);
-    switch (res)
-    {
-        case VK_SUCCESS:
-        case VK_ERROR_OUT_OF_DATE_KHR:
-        case VK_SUBOPTIMAL_KHR:
-            break;
-        default:
-            n_error("Present failed");
-    }
-
-
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::QueueEndMarker(GraphicsQueueType);
-#endif
-}
-
-} // namespace Vulkan
-
-#endif // __VULKAN__

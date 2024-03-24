@@ -122,7 +122,6 @@ struct TextureCreateInfo
         , clear(false)
         , clearColorF4{0,0,0,0}
         , windowRelative(false)
-        , windowTexture(false)
         , bindless(true)
         , sparse(false)
         , alias(CoreGraphics::InvalidTextureId)
@@ -149,7 +148,6 @@ struct TextureCreateInfo
         DepthStencilClear clearDepthStencil;
     };
     bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
-    bool windowTexture : 1;                     // texture is supposed to be a backbuffer target
     bool bindless : 1;
     bool sparse : 1;                            // use sparse memory
     CoreGraphics::TextureId alias;
@@ -211,9 +209,7 @@ uint TextureGetBindlessHandle(const TextureId id);
 /// get bindless texture handle
 uint TextureGetStencilBindlessHandle(const TextureId id);
 
-/// swap backbuffers for texture if texture is a backbuffer
-IndexT TextureSwapBuffers(const TextureId id);
-/// handle window resizing
+/// If texture is bound to the window resolution, reset the internal texture without mucking with the texture id
 void TextureWindowResized(const TextureId id);
 
 /// generate mipmaps for texture

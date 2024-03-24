@@ -43,11 +43,6 @@ public:
     /// unload frame script
     void UnloadFrameScript(const Resources::ResourceName& name);
 
-    /// set texture to be used for future loads of frame scripts
-    void SetWindowTexture(const CoreGraphics::TextureId& tex);
-    /// get window texture
-    const CoreGraphics::TextureId& GetWindowTexture() const;
-
     /// update frame server when window resized
     void OnWindowResized(const CoreGraphics::WindowId window);
 private:
@@ -55,24 +50,6 @@ private:
     CoreGraphics::TextureId windowTexture;
     bool isOpen;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameServer::SetWindowTexture(const CoreGraphics::TextureId& tex)
-{
-    this->windowTexture = tex;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::TextureId&
-FrameServer::GetWindowTexture() const
-{
-    return this->windowTexture;
-}
 
 //------------------------------------------------------------------------------
 /**

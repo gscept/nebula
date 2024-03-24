@@ -193,9 +193,6 @@ FrameScript::Build()
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<FrameOp::BufferDependency>> buffers;
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<FrameOp::TextureDependency>> textures;
 
-    // get window texture
-    CoreGraphics::TextureId window = FrameServer::Instance()->GetWindowTexture();
-
     // give every resource an initial dependency
     for (i = 0; i < this->textures.Size(); i++)
     {
@@ -213,21 +210,17 @@ FrameScript::Build()
         subres.layerCount = layers;
         subres.mip = 0;
         subres.mipCount = mips;
-        if (tex == window)
-            arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::Present, DependencyIntent::Read, subres });
+
+        if (AllBits(usage, CoreGraphics::RenderTexture))
+        {
+            if (isDepth)
+                arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::DepthStencilRead, DependencyIntent::Read, subres });
+            else
+                arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::ColorRead, DependencyIntent::Read, subres });
+        }
         else
         {
-            if (AllBits(usage, CoreGraphics::RenderTexture))
-            {
-                if (isDepth)
-                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::DepthStencilRead, DependencyIntent::Read, subres });
-                else
-                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::ColorRead, DependencyIntent::Read, subres });
-            }
-            else
-            {
-                arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::AllShadersRead, DependencyIntent::Read, subres });
-            }
+            arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::AllShadersRead, DependencyIntent::Read, subres });
         }
     }
 
@@ -252,21 +245,16 @@ FrameScript::Build()
         // The last thing we do with present is to transition to present
         CoreGraphics::PipelineStage fromStage, toStage;
         fromStage = dep.stage;
-        if (tex == window)
-            toStage = CoreGraphics::PipelineStage::Present;
+        if (AllBits(usage, CoreGraphics::RenderTexture))
+        {
+            if (isDepth)
+                toStage = CoreGraphics::PipelineStage::DepthStencilRead;
+            else
+                toStage = CoreGraphics::PipelineStage::ColorRead;
+        }
         else
         {
-            if (AllBits(usage, CoreGraphics::RenderTexture))
-            {
-                if (isDepth)
-                    toStage = CoreGraphics::PipelineStage::DepthStencilRead;
-                else
-                    toStage = CoreGraphics::PipelineStage::ColorRead;
-            }
-            else
-            {
-                toStage = CoreGraphics::PipelineStage::AllShadersRead;
-            }
+            toStage = CoreGraphics::PipelineStage::AllShadersRead;
         }
 
         // render textures are created as shader read

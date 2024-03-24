@@ -140,91 +140,59 @@ TextureCreateInfoAdjusted
 TextureGetAdjustedInfo(const TextureCreateInfo& info)
 {
     TextureCreateInfoAdjusted rt;
-    if (info.windowTexture)
+
+    n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
+    if (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube)
+        n_assert(info.layers == 6);
+    rt.name = info.name;
+    rt.usage = info.usage;
+    rt.data = info.data;
+	rt.dataSize = info.dataSize;
+    rt.type = info.type;
+    rt.format = info.format;
+    rt.width = (SizeT)info.width;
+    rt.height = (SizeT)info.height;
+    rt.depth = (SizeT)info.depth;
+    rt.widthScale = 0;
+    rt.heightScale = 0;
+    rt.depthScale = 0;
+    rt.mips = info.mips;
+    rt.minMip = info.minMip;
+    rt.layers = info.layers;
+    rt.clear = info.clear;
+    rt.clearColorF4 = info.clearColorF4;
+    rt.samples = info.samples;
+    rt.windowRelative = info.windowRelative;
+    rt.bindless = info.bindless;
+    rt.sparse = info.sparse;
+    rt.window = CoreGraphics::InvalidWindowId;
+    rt.alias = info.alias;
+    rt.defaultLayout = info.defaultLayout;
+
+    // correct depth-stencil formats if layout is shader read
+    if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphics::ImageLayout::ShaderRead)
+        rt.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
+
+    if (rt.windowRelative)
     {
-        n_assert2(info.samples == 1, "Texture created as window may not have any multisampling enabled");
-        n_assert2(info.alias == CoreGraphics::InvalidTextureId, "Texture created as window may not be alias");
-        n_assert2(info.data == nullptr, "Texture created as window may not have any buffer data");
-        
-        rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
-        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
-        rt.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination;
-        rt.name = "__WINDOW__";
-        rt.data = nullptr;
-        rt.type = CoreGraphics::Texture2D;
-        rt.format = mode.GetPixelFormat();
-        rt.width = mode.GetWidth();
-        rt.height = mode.GetHeight();
+        CoreGraphics::WindowId wnd = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+        const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
+        rt.width = SizeT(Math::ceil(mode.GetWidth() * info.width));
+        rt.height = SizeT(Math::ceil(mode.GetHeight() * info.height));
         rt.depth = 1;
-        rt.widthScale = rt.heightScale = rt.depthScale = 1.0f;
-        rt.layers = 1;
-        rt.mips = 1;
-        rt.minMip = 1;
-        rt.clear = false;
-        rt.samples = 1;
-        rt.windowTexture = true;
-        rt.windowRelative = true;
-        rt.bindless = false;
-        rt.sparse = false;
-        rt.alias = CoreGraphics::InvalidTextureId;
-        rt.defaultLayout = CoreGraphics::ImageLayout::Present;
+        rt.window = wnd;
+
+        rt.widthScale = info.width;
+        rt.heightScale = info.height;
+        rt.depthScale = info.depth;
     }
-    else
+
+    // if the mip value is set to auto generate mips, generate mip chain
+    if (info.mips == TextureAutoMips)
     {
-        n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
-        if (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube)
-            n_assert(info.layers == 6);
-        rt.name = info.name;
-        rt.usage = info.usage;
-        rt.data = info.data;
-		rt.dataSize = info.dataSize;
-        rt.type = info.type;
-        rt.format = info.format;
-        rt.width = (SizeT)info.width;
-        rt.height = (SizeT)info.height;
-        rt.depth = (SizeT)info.depth;
-        rt.widthScale = 0;
-        rt.heightScale = 0;
-        rt.depthScale = 0;
-        rt.mips = info.mips;
-        rt.minMip = info.minMip;
-        rt.layers = info.layers;
-        rt.clear = info.clear;
-        rt.clearColorF4 = info.clearColorF4;
-        rt.samples = info.samples;
-        rt.windowTexture = false;
-        rt.windowRelative = info.windowRelative;
-        rt.bindless = info.bindless;
-        rt.sparse = info.sparse;
-        rt.window = CoreGraphics::InvalidWindowId;
-        rt.alias = info.alias;
-        rt.defaultLayout = info.defaultLayout;
-
-        // correct depth-stencil formats if layout is shader read
-        if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphics::ImageLayout::ShaderRead)
-            rt.defaultLayout = CoreGraphics::ImageLayout::DepthStencilRead;
-
-        if (rt.windowRelative)
-        {
-            CoreGraphics::WindowId wnd = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
-            const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
-            rt.width = SizeT(Math::ceil(mode.GetWidth() * info.width));
-            rt.height = SizeT(Math::ceil(mode.GetHeight() * info.height));
-            rt.depth = 1;
-            rt.window = wnd;
-
-            rt.widthScale = info.width;
-            rt.heightScale = info.height;
-            rt.depthScale = info.depth;
-        }
-
-        // if the mip value is set to auto generate mips, generate mip chain
-        if (info.mips == TextureAutoMips)
-        {
-            // calculate the second logarithm of height and width and pick the smallest value to guarantee no 0xN or Nx0 sizes
-            // add 1 because we always have one mip
-            rt.mips = Math::min(Math::log2(rt.width), Math::log2(rt.height)) + 1;
-        }
+        // calculate the second logarithm of height and width and pick the smallest value to guarantee no 0xN or Nx0 sizes
+        // add 1 because we always have one mip
+        rt.mips = Math::min(Math::log2(rt.width), Math::log2(rt.height)) + 1;
     }
     return rt;
 }

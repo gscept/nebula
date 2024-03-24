@@ -24,7 +24,9 @@ namespace CoreGraphics
 
 ID_24_8_TYPE(WindowId);
 struct TextureId;
+struct SwapchainId;
 
+extern WindowId CurrentWindow;
 struct WindowCreateInfo
 {
     CoreGraphics::DisplayMode mode;
@@ -77,9 +79,9 @@ const bool WindowIsResizable(const WindowId id);
 const Util::StringAtom& WindowGetTitle(const WindowId id);
 /// get window icon
 const Util::StringAtom& WindowGetIcon(const WindowId id);
-/// get render texture associated with window
-const CoreGraphics::TextureId& WindowGetTexture(const WindowId id);
 /// retrieve window content scaling (ratio between current DPI and platform default DPI)
 Math::vec2 WindowGetContentScale(const WindowId id);
+/// Get swapchain associated with this window
+const CoreGraphics::SwapchainId WindowGetSwapchain(const WindowId id);
 
 } // CoreGraphics

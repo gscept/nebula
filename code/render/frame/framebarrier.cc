@@ -49,14 +49,5 @@ FrameBarrier::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const In
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAY, this->name.Value());
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameBarrier::CompiledImpl::Discard()
-{
-    // empty 
-}
-
 
 } // namespace Frame2

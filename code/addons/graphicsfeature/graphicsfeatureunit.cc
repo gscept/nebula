@@ -355,6 +355,7 @@ GraphicsFeatureUnit::OnBeginFrame()
     this->inputServer->BeginFrame();
 
     CoreGraphics::WindowPollEvents();
+    CoreGraphics::WindowMakeCurrent(this->wnd);
     this->inputServer->OnFrame();
 
     this->gfxServer->RunPreLogic();

@@ -2183,18 +2183,6 @@ FlushUpload()
 /**
 */
 void
-Swap(IndexT i)
-{
-    N_MARKER_BEGIN(WaitForPresent, Wait);
-    n_assert(state.backBuffers.Size() == 1);
-    CoreGraphics::TextureSwapBuffers(state.backBuffers[i]);
-    N_MARKER_END();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64* data, const uint64& offset)
 {
     const SizeT timestampPeriod = state.deviceProps[state.currentDevice].properties.limits.timestampPeriod;

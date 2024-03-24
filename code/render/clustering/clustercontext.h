@@ -44,7 +44,7 @@ public:
     static void WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height);
 
     /// Get cluster AABB buffer
-    static const CoreGraphics::BufferId GetClusterBuffer();
+    static const CoreGraphics::BufferId* GetClusterBuffer();
 private:
 
     /// run light classification compute

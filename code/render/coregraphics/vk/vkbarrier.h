@@ -33,6 +33,7 @@ enum
 {
     Barrier_Info
     , Barrier_Textures  // This is for reloading textures
+    , Barrier_Buffers
 };
 
 typedef Ids::IdAllocator<

@@ -228,10 +228,10 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::BufferId
+const CoreGraphics::BufferId*
 ClusterContext::GetClusterBuffer()
 {
-    return state.clusterBuffer;
+    return &state.clusterBuffer;
 }
 
 } // namespace Clustering

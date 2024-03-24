@@ -387,21 +387,8 @@ void
 SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height)
 {
     using namespace CoreGraphics;
-    DestroyTexture(ssaoState.internalTargets[0]);
-    DestroyTexture(ssaoState.internalTargets[1]);
-
-    TextureCreateInfo tinfo;
-    tinfo.name = "HBAO-Internal0"_atm;
-    tinfo.tag = "system"_atm;
-    tinfo.type = CoreGraphics::Texture2D;
-    tinfo.format = CoreGraphics::PixelFormat::R16G16F;
-    tinfo.windowRelative = true;
-    tinfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
-    tinfo.bindless = false;
-
-    ssaoState.internalTargets[0] = CreateTexture(tinfo);
-    tinfo.name = "HBAO-Internal1";
-    ssaoState.internalTargets[1] = CreateTexture(tinfo);
+    TextureWindowResized(ssaoState.internalTargets[0]);
+    TextureWindowResized(ssaoState.internalTargets[1]);
 
     IndexT i;
     for (i = 0; i < ssaoState.hbaoTable.Size(); i++)

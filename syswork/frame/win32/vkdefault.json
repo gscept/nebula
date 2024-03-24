@@ -5,9 +5,6 @@
         "engine": "Nebula",
         "textures": [
             {
-                "name": "__WINDOW__"
-            },
-            {
 
                 "name": "ScreenBuffer",
                 "format": "R11G11B10F",
@@ -764,19 +761,9 @@
 
                     {
                         "swap": {
-                            "name": "Swap"
-                        }
-                    },
-
-                    {
-                        "blit": {
-                            "name": "Copy To Backbuffer",
-                            "from": {
-                                "tex": "ColorBuffer"
-                            },
-                            "to": {
-                                "tex": "__WINDOW__"
-                            }
+                            "name": "Swap",
+                            "from": "ColorBuffer"
+                               
                         }
                     }
                 ]

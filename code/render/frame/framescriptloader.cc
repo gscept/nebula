@@ -131,81 +131,69 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
     {
         JzonValue* cur = node->array_values[i];
         JzonValue* name = jzon_get(cur, "name");
-        n_assert(name != nullptr);
-        if (Util::String(name->string_value) == "__WINDOW__")
+
+        JzonValue* format = jzon_get(cur, "format");
+        n_assert(format != nullptr);
+        JzonValue* width = jzon_get(cur, "width");
+        n_assert(width != nullptr);
+        JzonValue* height = jzon_get(cur, "height");
+        n_assert(height != nullptr);
+
+        JzonValue* usage = jzon_get(cur, "usage");
+        n_assert(usage != nullptr);
+        JzonValue* type = jzon_get(cur, "type");
+        n_assert(type != nullptr);
+
+        // get format
+        CoreGraphics::PixelFormat::Code fmt = CoreGraphics::PixelFormat::FromString(format->string_value);
+
+        // create texture
+        TextureCreateInfo info;
+        info.name = name->string_value;
+        info.usage = TextureUsageFromString(usage->string_value) | DeviceExclusive;
+        info.tag = "frame_script"_atm;
+        info.type = TextureTypeFromString(type->string_value);
+        info.format = fmt;
+
+        if (JzonValue* alias = jzon_get(cur, "alias"))
         {
-            // code to fetch window render texture goes here
-            CoreGraphics::TextureId tex = FrameServer::Instance()->GetWindowTexture();
-            script->AddTexture("__WINDOW__", tex);
-
-            // save the window used for the relative dimensions used for this framescript
-            script->window = DisplayDevice::Instance()->GetCurrentWindow();
+            info.alias = script->GetTexture(alias->string_value);
         }
-        else
+
+        if (JzonValue* layers = jzon_get(cur, "layers"))
         {
-            JzonValue* format = jzon_get(cur, "format");
-            n_assert(format != nullptr);
-            JzonValue* width = jzon_get(cur, "width");
-            n_assert(width != nullptr);
-            JzonValue* height = jzon_get(cur, "height");
-            n_assert(height != nullptr);
-
-            JzonValue* usage = jzon_get(cur, "usage");
-            n_assert(usage != nullptr);
-            JzonValue* type = jzon_get(cur, "type");
-            n_assert(type != nullptr);
-
-            // get format
-            CoreGraphics::PixelFormat::Code fmt = CoreGraphics::PixelFormat::FromString(format->string_value);
-
-            // create texture
-            TextureCreateInfo info;
-            info.name = name->string_value;
-            info.usage = TextureUsageFromString(usage->string_value) | DeviceExclusive;
-            info.tag = "frame_script"_atm;
-            info.type = TextureTypeFromString(type->string_value);
-            info.format = fmt;
-
-            if (JzonValue* alias = jzon_get(cur, "alias"))
-            {
-                info.alias = script->GetTexture(alias->string_value);
-            }
-
-            if (JzonValue* layers = jzon_get(cur, "layers"))
-            {
-                n_assert2(info.type >= Texture1DArray, "Texture format must be array type if the layers value is set");
-                info.layers = layers->int_value;
-            }
-
-            if (JzonValue* mips = jzon_get(cur, "mips"))
-            {
-                if (Util::String(mips->string_value) == "auto")
-                {
-                    info.mips = TextureAutoMips;
-                }
-                else
-                {
-                    info.mips = mips->int_value;
-                }
-            }
-            if (JzonValue* depth = jzon_get(cur, "depth"))
-            {
-                info.depth = (float)depth->float_value;
-            }
-
-            // set relative, dynamic or msaa if defined
-            if (jzon_get(cur, "relative"))  info.windowRelative = jzon_get(cur, "relative")->bool_value;
-            if (jzon_get(cur, "samples"))   info.samples = jzon_get(cur, "samples")->int_value;
-            if (jzon_get(cur, "sparse"))    info.sparse = jzon_get(cur, "sparse")->int_value;
-
-            // set dimension after figuring out if the texture is a cube
-            info.width = (float)width->float_value;
-            info.height = (float)height->float_value;
-
-            // add to script
-            TextureId tex = CreateTexture(info);
-            script->AddTexture(name->string_value, tex);
+            n_assert2(info.type >= Texture1DArray, "Texture format must be array type if the layers value is set");
+            info.layers = layers->int_value;
         }
+
+        if (JzonValue* mips = jzon_get(cur, "mips"))
+        {
+            if (Util::String(mips->string_value) == "auto")
+            {
+                info.mips = TextureAutoMips;
+            }
+            else
+            {
+                info.mips = mips->int_value;
+            }
+        }
+        if (JzonValue* depth = jzon_get(cur, "depth"))
+        {
+            info.depth = (float)depth->float_value;
+        }
+
+        // set relative, dynamic or msaa if defined
+        if (jzon_get(cur, "relative"))  info.windowRelative = jzon_get(cur, "relative")->bool_value;
+        if (jzon_get(cur, "samples"))   info.samples = jzon_get(cur, "samples")->int_value;
+        if (jzon_get(cur, "sparse"))    info.sparse = jzon_get(cur, "sparse")->int_value;
+
+        // set dimension after figuring out if the texture is a cube
+        info.width = (float)width->float_value;
+        info.height = (float)height->float_value;
+
+        // add to script
+        TextureId tex = CreateTexture(info);
+        script->AddTexture(name->string_value, tex);
     }
 }
 
@@ -591,6 +579,30 @@ FrameScriptLoader::ParseSwap(const Ptr<Frame::FrameScript>& script, JzonValue* n
     n_assert(name != nullptr);
     op->SetName(name->string_value);
 
+    JzonValue* from = jzon_get(node, "from");
+    n_assert(from != nullptr);
+    op->from = script->GetTexture(from->string_value);
+
+    op->textureDeps.Add(op->from,
+                        {
+                            Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, TextureSubresourceInfo::ColorNoMipNoLayer())
+                        });
+
+    return op;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp*
+FrameScriptLoader::ParsePresent(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+{
+    FrameSwap* op = script->GetAllocator().Alloc<FrameSwap>();
+
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+    op->SetName(name->string_value);
+
     return op;
 }
 
@@ -656,6 +668,7 @@ FrameScriptLoader::ParseSubmissionList(const Ptr<Frame::FrameScript>& script, Jz
                 else if (type == "compute")                     submission->AddChild(ParseCompute(script, op));
                 else if (type == "pass")                        submission->AddChild(ParsePass(script, op));
                 else if (type == "barrier")                     submission->AddChild(ParseBarrier(script, op));
+                else if (type == "present")                     submission->AddChild(ParsePresent(script, op));
                 else if (type == "swap")                        submission->AddChild(ParseSwap(script, op));
                 else if (type == "plugin" || type == "call")    submission->AddChild(ParsePlugin(script, op));
                 else if (type == "subgraph")                    submission->AddChild(ParseSubgraph(script, op));
