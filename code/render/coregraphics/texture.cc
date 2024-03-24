@@ -175,7 +175,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 
     if (rt.windowRelative)
     {
-        CoreGraphics::WindowId wnd = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+        CoreGraphics::WindowId wnd = CoreGraphics::CurrentWindow;
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(wnd);
         rt.width = SizeT(Math::ceil(mode.GetWidth() * info.width));
         rt.height = SizeT(Math::ceil(mode.GetHeight() * info.height));

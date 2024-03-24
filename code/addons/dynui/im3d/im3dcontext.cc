@@ -387,7 +387,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
 
     ad.m_deltaTime = ctx.frameTime;
     SetGizmoSize(128, 4);
-    auto const & mode = CoreGraphics::WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
+    auto const & mode = CoreGraphics::WindowGetDisplayMode(CurrentWindow);
     ad.m_viewportSize = Vec2((float)mode.GetWidth(), (float)mode.GetHeight());
     
     Graphics::GraphicsEntityId cam = view->GetCamera();

@@ -68,7 +68,7 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript);
+    Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript, const CoreGraphics::WindowId window = CoreGraphics::InvalidWindowId);
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
     /// discard view

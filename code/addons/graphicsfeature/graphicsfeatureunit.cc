@@ -117,17 +117,18 @@ GraphicsFeatureUnit::OnActivate()
 
     //FIXME
     CoreGraphics::WindowCreateInfo wndInfo =
-        {
-            CoreGraphics::DisplayMode {100, 100, width, height},
-            this->title,
-            "",
-            CoreGraphics::AntiAliasQuality::None,
-            true,
-            true,
-            false};
+    {
+        CoreGraphics::DisplayMode {100, 100, width, height},
+        this->title,
+        "",
+        CoreGraphics::AntiAliasQuality::None,
+        true,
+        true,
+        false
+    };
     this->wnd = CreateWindow(wndInfo);
 
-    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
+    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript, this->wnd);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();

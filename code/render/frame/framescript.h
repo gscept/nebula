@@ -82,6 +82,7 @@ private:
     friend class FrameScriptLoader;
     friend class FrameServer;
     friend class Graphics::View;
+    friend class Graphics::GraphicsServer;
 
     /// cleanup script internally
     void Cleanup();

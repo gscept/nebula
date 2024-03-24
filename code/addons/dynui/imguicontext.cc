@@ -403,8 +403,7 @@ ImguiContext::Create()
     }    
 
     // get display mode, this will be our default size
-    Ptr<DisplayDevice> display = DisplayDevice::Instance();
-    DisplayMode mode = CoreGraphics::WindowGetDisplayMode(display->GetCurrentWindow());
+    DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CurrentWindow);
 
     float scaleFactor = mode.GetContentScale();
     // setup Imgui

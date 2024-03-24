@@ -67,7 +67,7 @@ FrameServer::OnWindowResize()
 /**
 */
 Ptr<Frame::FrameScript>
-FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path)
+FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path, const CoreGraphics::WindowId window)
 {
     n_assert(!this->frameScripts.Contains(name));
     Ptr<Frame::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);

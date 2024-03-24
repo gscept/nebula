@@ -309,7 +309,7 @@ FrameScript::OnWindowResized()
     // only do this if we actually use the window
     if (this->window != Ids::InvalidId32)
     {
-        CoreGraphics::WindowId prev = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+        CoreGraphics::WindowId prev = CoreGraphics::CurrentWindow;
 
         // make this window current
         WindowMakeCurrent(this->window);

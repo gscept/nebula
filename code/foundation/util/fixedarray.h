@@ -368,6 +368,9 @@ template<class TYPE> void
 FixedArray<TYPE>::Resize(SizeT newSize)
 {
     // allocate new array and copy over old elements
+    if (newSize == this->count)
+        return;
+
     TYPE* newElements = 0;
     if (newSize > 0)
     {

@@ -180,8 +180,24 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     res = vkGetSwapchainImagesKHR(dev, swapchain, &numBuffers, images.Begin());
     n_assert(res == VK_SUCCESS);
 
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     for (i = 0; i < numBuffers; i++)
     {
+        // Transition image to present source
+        VkCommandBuffer vkBuf = CmdBufferGetVk(cmdBuf);
+        VkImageMemoryBarrier imageBarrier;
+        imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageBarrier.pNext = nullptr;
+        imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageBarrier.image = images[i];
+        imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        imageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        imageBarrier.subresourceRange = VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+        vkCmdPipelineBarrier(vkBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0x0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+
         // setup view
         VkImageViewCreateInfo backbufferViewInfo =
         {
@@ -198,6 +214,8 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         n_assert(res == VK_SUCCESS);
     }
     currentBackbuffer = 0;
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
 
     SwapchainId ret = id;
     return ret;
