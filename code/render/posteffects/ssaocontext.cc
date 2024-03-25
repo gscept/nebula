@@ -194,13 +194,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     auto aoX = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
     aoX->SetName("HBAO X");
     aoX->domain = CoreGraphics::BarrierDomain::Global;
-    aoX->textureDepRefs.Add(&ssaoState.zBuffer,
+    aoX->textureDeps.Add(ssaoState.zBuffer,
                          {
                             "ZBuffer"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
                             , CoreGraphics::TextureSubresourceInfo::DepthStencil(ssaoState.zBuffer)
                          });
-    aoX->textureDepRefs.Add(&ssaoState.internalTargets[0],
+    aoX->textureDeps.Add(ssaoState.internalTargets[0],
                          {
                             "SSAOBuffer0"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
@@ -220,13 +220,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     auto aoY = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
     aoY->SetName("HBAO Y");
     aoY->domain = CoreGraphics::BarrierDomain::Global;
-    aoY->textureDepRefs.Add(&ssaoState.internalTargets[0],
+    aoY->textureDeps.Add(ssaoState.internalTargets[0],
                          {
                             "SSAOBuffer0"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
                             , CoreGraphics::TextureSubresourceInfo::Color(ssaoState.internalTargets[0])
                          });
-    aoY->textureDepRefs.Add(&ssaoState.internalTargets[1],
+    aoY->textureDeps.Add(ssaoState.internalTargets[1],
                          {
                             "SSAOBuffer1"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
@@ -246,13 +246,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     auto blurX = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
     blurX->SetName("HBAO Blur X");
     blurX->domain = CoreGraphics::BarrierDomain::Global;
-    blurX->textureDepRefs.Add(&ssaoState.internalTargets[1],
+    blurX->textureDeps.Add(ssaoState.internalTargets[1],
                          {
                             "SSAOBuffer1"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
                             , CoreGraphics::TextureSubresourceInfo::Color(ssaoState.internalTargets[1])
                          });
-    blurX->textureDepRefs.Add(&ssaoState.internalTargets[0],
+    blurX->textureDeps.Add(ssaoState.internalTargets[0],
                          {
                             "SSAOBuffer0"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
@@ -272,13 +272,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     auto blurY = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
     blurY->SetName("HBAO Blur X");
     blurY->domain = CoreGraphics::BarrierDomain::Global;
-    blurY->textureDepRefs.Add(&ssaoState.internalTargets[0],
+    blurY->textureDeps.Add(ssaoState.internalTargets[0],
                          {
                             "SSAOBuffer1"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
                             , CoreGraphics::TextureSubresourceInfo::Color(ssaoState.internalTargets[0])
                          });
-    blurY->textureDepRefs.Add(&ssaoState.ssaoOutput,
+    blurY->textureDeps.Add(ssaoState.ssaoOutput,
                          {
                             "SSAOOutput"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
@@ -392,9 +392,6 @@ SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT h
     using namespace CoreGraphics;
     TextureWindowResized(ssaoState.internalTargets[0]);
     TextureWindowResized(ssaoState.internalTargets[1]);
-
-    ssaoState.ssaoOutput = ssaoState.frameScript->GetTexture("SSAOBuffer");
-    ssaoState.zBuffer = ssaoState.frameScript->GetTexture("ZBuffer");
 
     IndexT i;
     for (i = 0; i < ssaoState.hbaoTable.Size(); i++)

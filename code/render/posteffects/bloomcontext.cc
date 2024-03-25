@@ -103,15 +103,15 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     Frame::FrameCode* upscale = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
     upscale->SetName("Bloom");
     upscale->domain = BarrierDomain::Global;
-    upscale->textureDepRefs.Add(
-        &bloomState.lightBuffer,
+    upscale->textureDeps.Add(
+        bloomState.lightBuffer,
         {
             "LightBuffer"
             , PipelineStage::ComputeShaderRead
             , TextureSubresourceInfo::Color(bloomState.lightBuffer)
         });
-    upscale->textureDepRefs.Add(
-        &bloomState.bloomBuffer,
+    upscale->textureDeps.Add(
+        bloomState.bloomBuffer,
         {
             "BloomBuffer"
             , PipelineStage::ComputeShaderWrite
@@ -138,8 +138,6 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
 {
     using namespace CoreGraphics;
     TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
-    bloomState.bloomBuffer = bloomState.frameScript->GetTexture("BloomBuffer");
-    bloomState.lightBuffer = bloomState.frameScript->GetTexture("LightBuffer");
 
     for (auto& view : bloomState.lightBufferViews)
     {

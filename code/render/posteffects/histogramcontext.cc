@@ -314,7 +314,6 @@ HistogramContext::UpdateConstants()
 void
 HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
-    histogramState.sourceTexture = histogramState.frameScript->GetTexture("LightBuffer");
     histogramState.sourceTextureDimensions = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
 
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
