@@ -35,11 +35,15 @@ GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
             // Invalidate pipelines
             pipelineDatabase->RecreatePipelines();
 
+            // Trigger a framescript resize
+            frameServer->OnWindowResize();
+
             // Run all contexts resize calls
             graphicsServer->OnWindowResized(displayEvent.GetWindowId());
 
-            // Finally, 
-            frameServer->OnWindowResize();
+            // Finally, tell all framescripts to rebuild
+            frameServer->RebuildScripts();
+
             return true;
         }
         default:

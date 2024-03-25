@@ -29,6 +29,7 @@ struct
     CoreGraphics::ResourceTableId histogramResourceTable;
     CoreGraphics::BufferSet histogramReadbackBuffers;
 
+    Ptr<Frame::FrameScript> frameScript;
     CoreGraphics::TextureDimensions sourceTextureDimensions;
     CoreGraphics::TextureId sourceTexture;
     IndexT sourceTextureBinding;
@@ -153,7 +154,8 @@ HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mi
 void
 HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
-    histogramState.sourceTexture = script->GetTexture("LightBuffer");
+    histogramState.frameScript = script;
+    histogramState.sourceTexture = histogramState.frameScript->GetTexture("LightBuffer");
     auto dims = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
     histogramState.sourceTextureBinding = HistogramCs::Table_Batch::ColorSource_SLOT;
     histogramState.sourceTextureDimensions = dims;
@@ -312,6 +314,7 @@ HistogramContext::UpdateConstants()
 void
 HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
+    histogramState.sourceTexture = histogramState.frameScript->GetTexture("LightBuffer");
     histogramState.sourceTextureDimensions = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
 
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,

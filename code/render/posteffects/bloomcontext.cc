@@ -25,6 +25,8 @@ struct
     CoreGraphics::TextureId bloomBuffer;
     CoreGraphics::TextureId lightBuffer;
 
+    Ptr<Frame::FrameScript> frameScript;
+
     Util::FixedArray<CoreGraphics::TextureViewId> lightBufferViews;
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 1> frameOpAllocator;
@@ -54,12 +56,13 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     using namespace CoreGraphics;
 
     // setup shaders
+    bloomState.frameScript = script;
     bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
     bloomState.program = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Bloom"));
     bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
 
-    bloomState.bloomBuffer = script->GetTexture("BloomBuffer");
-    bloomState.lightBuffer = script->GetTexture("LightBuffer");
+    bloomState.bloomBuffer = bloomState.frameScript->GetTexture("BloomBuffer");
+    bloomState.lightBuffer = bloomState.frameScript->GetTexture("LightBuffer");
     TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
 
     BufferCreateInfo bufInfo;
@@ -100,15 +103,15 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     Frame::FrameCode* upscale = bloomState.frameOpAllocator.Alloc<Frame::FrameCode>();
     upscale->SetName("Bloom");
     upscale->domain = BarrierDomain::Global;
-    upscale->textureDeps.Add(
-        bloomState.lightBuffer,
+    upscale->textureDepRefs.Add(
+        &bloomState.lightBuffer,
         {
             "LightBuffer"
             , PipelineStage::ComputeShaderRead
             , TextureSubresourceInfo::Color(bloomState.lightBuffer)
         });
-    upscale->textureDeps.Add(
-        bloomState.bloomBuffer,
+    upscale->textureDepRefs.Add(
+        &bloomState.bloomBuffer,
         {
             "BloomBuffer"
             , PipelineStage::ComputeShaderWrite
@@ -135,6 +138,8 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
 {
     using namespace CoreGraphics;
     TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
+    bloomState.bloomBuffer = bloomState.frameScript->GetTexture("BloomBuffer");
+    bloomState.lightBuffer = bloomState.frameScript->GetTexture("LightBuffer");
 
     for (auto& view : bloomState.lightBufferViews)
     {

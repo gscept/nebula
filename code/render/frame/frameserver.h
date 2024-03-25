@@ -35,6 +35,8 @@ public:
     void Close();
     /// propagate resize to all in all scripts
     void OnWindowResize();
+    /// Rebuild all frame scripts
+    void RebuildScripts();
 
     /// load frame script and save with name
     Ptr<FrameScript> LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path, const CoreGraphics::WindowId window);

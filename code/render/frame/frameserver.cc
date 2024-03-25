@@ -66,6 +66,18 @@ FrameServer::OnWindowResize()
 //------------------------------------------------------------------------------
 /**
 */
+void
+FrameServer::RebuildScripts()
+{
+    for (IndexT i = 0; i < this->frameScripts.Size(); ++i)
+    {
+        this->frameScripts.ValueAtIndex(i)->Build();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Ptr<Frame::FrameScript>
 FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path, const CoreGraphics::WindowId window)
 {

@@ -320,8 +320,6 @@ FrameScript::OnWindowResized()
         for (i = 0; i < this->ops.Size(); i++)
             this->ops[i]->OnWindowResized();
 
-        Build();
-
         // reset old window
         WindowMakeCurrent(prev);
     }
