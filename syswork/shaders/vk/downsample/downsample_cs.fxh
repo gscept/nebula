@@ -17,11 +17,11 @@
 #endif
 
 #if ARRAY_TEXTURE
-readwrite FORMAT image2DArray Output[13];
-atomic FORMAT image2DArray Output6;
+read FORMAT image2DArray Input;
+atomic FORMAT image2DArray Output[13];
 #else
-readwrite FORMAT image2D Output[13];
-atomic FORMAT image2D Output6;
+read FORMAT image2D Input;
+atomic FORMAT image2D Output[13];
 #endif
 
 group_shared IMAGE_DATA_TYPE SharedMemory[SHARED_MEMORY_SIZE][SHARED_MEMORY_SIZE];
@@ -29,6 +29,7 @@ group_shared uint Counter;
 
 constant DownsampleUniforms
 {
+    ivec2 Dimensions;
     uint Mips;
     uint NumGroups;
 };
@@ -66,15 +67,15 @@ Sample2x2(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Output[0], ivec3(texel, slice)).IMAGE_DATA_SWIZZLE;
-    samples[1] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 0, 0)).IMAGE_DATA_SWIZZLE;
-    samples[2] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(0, 1, 0)).IMAGE_DATA_SWIZZLE;
-    samples[3] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 1, 0)).IMAGE_DATA_SWIZZLE;
+    samples[0] = imageLoad(Input, ivec3(min(Dimensions, texel), slice)).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Input, ivec3(min(Dimensions, texel + ivec2(1, 0)), slice)).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Input, ivec3(min(Dimensions, texel + ivec2(0, 1)), slice)).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Input, ivec3(min(Dimensions, texel + ivec2(1, 1)), slice)).IMAGE_DATA_SWIZZLE;
 #else
-    samples[0] = imageLoad(Output[0], texel).IMAGE_DATA_SWIZZLE;
-    samples[1] = imageLoad(Output[0], texel + ivec2(1, 0)).IMAGE_DATA_SWIZZLE;
-    samples[2] = imageLoad(Output[0], texel + ivec2(0, 1)).IMAGE_DATA_SWIZZLE;
-    samples[3] = imageLoad(Output[0], texel + ivec2(1, 1)).IMAGE_DATA_SWIZZLE;
+    samples[0] = imageLoad(Input, min(Dimensions, texel)).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Input, min(Dimensions, texel + ivec2(1, 0))).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Input, min(Dimensions, texel + ivec2(0, 1))).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Input, min(Dimensions, texel + ivec2(1, 1))).IMAGE_DATA_SWIZZLE;
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);   
 }
@@ -88,15 +89,15 @@ Sample2x2Output(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Output6, ivec3(texel, slice)).IMAGE_DATA_SWIZZLE;
-    samples[1] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 0, 0)).IMAGE_DATA_SWIZZLE;
-    samples[2] = imageLoad(Output6, ivec3(texel, slice) + ivec3(0, 1, 0)).IMAGE_DATA_SWIZZLE;
-    samples[3] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 1, 0)).IMAGE_DATA_SWIZZLE;
+    samples[0] = imageLoad(Output[5], ivec3(min(Dimensions, texel), slice)).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Output[5], ivec3(min(Dimensions, texel + ivec2(1, 0)), slice)).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Output[5], ivec3(min(Dimensions, texel + ivec2(0, 1)), slice)).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Output[5], ivec3(min(Dimensions, texel + ivec2(1, 1)), slice)).IMAGE_DATA_SWIZZLE;
 #else
-    samples[0] = imageLoad(Output6, texel).IMAGE_DATA_SWIZZLE;
-    samples[1] = imageLoad(Output6, texel + ivec2(1, 0)).IMAGE_DATA_SWIZZLE;
-    samples[2] = imageLoad(Output6, texel + ivec2(0, 1)).IMAGE_DATA_SWIZZLE;
-    samples[3] = imageLoad(Output6, texel + ivec2(1, 1)).IMAGE_DATA_SWIZZLE;
+    samples[0] = imageLoad(Output[5], min(Dimensions, texel)).IMAGE_DATA_SWIZZLE;
+    samples[1] = imageLoad(Output[5], min(Dimensions, texel + ivec2(1, 0))).IMAGE_DATA_SWIZZLE;
+    samples[2] = imageLoad(Output[5], min(Dimensions, texel + ivec2(0, 1))).IMAGE_DATA_SWIZZLE;
+    samples[3] = imageLoad(Output[5], min(Dimensions, texel + ivec2(1, 1))).IMAGE_DATA_SWIZZLE;
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);
 }
@@ -108,15 +109,9 @@ void
 Save(ivec2 texel, IMAGE_DATA_TYPE value, uint mip, uint slice)
 {
 #if ARRAY_TEXTURE
-    if (mip == 5)
-        imageStore(Output6, ivec3(texel, slice), value.IMAGE_DATA_EXPAND);
-    else
-        imageStore(Output[mip + 1], ivec3(texel, slice), value.IMAGE_DATA_EXPAND);
+    imageStore(Output[mip], ivec3(min(Dimensions, texel), slice), value.IMAGE_DATA_EXPAND);
 #else
-    if (mip == 5)
-        imageStore(Output6, texel, value.IMAGE_DATA_EXPAND);
-    else
-        imageStore(Output[mip + 1], texel, value.IMAGE_DATA_EXPAND);
+    imageStore(Output[mip], min(Dimensions, texel), value.IMAGE_DATA_EXPAND);
 #endif
 }
 
@@ -338,34 +333,31 @@ Mips2_5_and_8_11(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, u
 void
 Mips6_7(uint x, uint y, uint mips, uint slice)
 {
-    // we are taking 4 samples per thread
-    IMAGE_DATA_TYPE pixels[4];
-
     ivec2 sourceTexelIndex = ivec2(x * 4 + 0, y * 4 + 0);
     ivec2 targetTexelIndex = ivec2(x * 2 + 0, y * 2 + 0);
-    pixels[0] = Sample2x2Output(sourceTexelIndex, slice);
-    Save(targetTexelIndex, pixels[0], 6, slice);
+    IMAGE_DATA_TYPE p0 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p0, 6, slice);
 
     sourceTexelIndex = ivec2(x * 4 + 2, y * 4 + 0);
     targetTexelIndex = ivec2(x * 2 + 1, y * 2 + 0);
-    pixels[1] = Sample2x2Output(sourceTexelIndex, slice);
-    Save(targetTexelIndex, pixels[1], 6, slice);
+    IMAGE_DATA_TYPE p1 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p1, 6, slice);
 
     sourceTexelIndex = ivec2(x * 4 + 0, y * 4 + 2);
     targetTexelIndex = ivec2(x * 2 + 0, y * 2 + 1);
-    pixels[2] = Sample2x2Output(sourceTexelIndex, slice);
-    Save(targetTexelIndex, pixels[2], 6, slice);
+    IMAGE_DATA_TYPE p2 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p2, 6, slice);
 
     sourceTexelIndex = ivec2(x * 4 + 2, y * 4 + 2);
     targetTexelIndex = ivec2(x * 2 + 1, y * 2 + 1);
-    pixels[3] = Sample2x2Output(sourceTexelIndex, slice);
-    Save(targetTexelIndex, pixels[3], 6, slice);
+    IMAGE_DATA_TYPE p3 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p3, 6, slice);
 
     // skip mip 7 if we don't have one
     if (mips <= 7)
         return;
 
-    IMAGE_DATA_TYPE pixel = Reduce(pixels[0], pixels[1], pixels[2], pixels[3]);
+    IMAGE_DATA_TYPE pixel = Reduce(p0, p1, p2, p3);
     Save(ivec2(x, y), pixel, 7, slice);
     LDSStore(x, y, pixel);
 }
