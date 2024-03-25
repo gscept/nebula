@@ -843,6 +843,10 @@ TextureWindowResized(const TextureId id)
 
         runtimeInfo.bind = tmp;
         SetupTexture(id);
+
+#if NEBULA_GRAPHICS_DEBUG
+        ObjectSetName(id, loadInfo.name.Value());
+#endif
     }
 }
 
