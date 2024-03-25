@@ -245,14 +245,17 @@ Mip2_8(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, uint slice)
 void
 Mip3_9(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, uint slice)
 {
-    IMAGE_DATA_TYPE pixel = LDSLoad(x * 2 + y % 2, y * 2);
-    pixel = ReduceQuad(pixel);
-
-    if ((localIndex % 4) == 0)
+    if (localIndex < 64)
     {
-        ivec2 targetTexelIndex = workGroupId * 4 + ivec2(x/2, y/2);
-        Save(targetTexelIndex, pixel, mip, slice);
-        LDSStore(x * 2 + y/2, y * 2, pixel);
+        IMAGE_DATA_TYPE pixel = LDSLoad(x * 2 + y % 2, y * 2);
+        pixel = ReduceQuad(pixel);
+
+        if ((localIndex % 4) == 0)
+        {
+            ivec2 targetTexelIndex = workGroupId * 4 + ivec2(x / 2, y / 2);
+            Save(targetTexelIndex, pixel, mip, slice);
+            LDSStore(x * 2 + y / 2, y * 2, pixel);
+        }
     }
 }
 
@@ -262,14 +265,17 @@ Mip3_9(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, uint slice)
 void
 Mip4_10(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, uint slice)
 {
-    IMAGE_DATA_TYPE pixel = LDSLoad(x * 4 + y, y * 4);
-    pixel = ReduceQuad(pixel);
-
-    if ((localIndex % 4) == 0)
+    if (localIndex < 16)
     {
-        ivec2 targetTexelIndex = workGroupId * 2 + ivec2(x/2, y/2);
-        Save(targetTexelIndex, pixel, mip, slice);
-        LDSStore(x / 2 + y, 0, pixel);
+        IMAGE_DATA_TYPE pixel = LDSLoad(x * 4 + y, y * 4);
+        pixel = ReduceQuad(pixel);
+
+        if ((localIndex % 4) == 0)
+        {
+            ivec2 targetTexelIndex = workGroupId * 2 + ivec2(x / 2, y / 2);
+            Save(targetTexelIndex, pixel, mip, slice);
+            LDSStore(x / 2 + y, 0, pixel);
+        }
     }
 }
 
@@ -279,15 +285,18 @@ Mip4_10(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, uint slice
 void
 Mip5_11(ivec2 workGroupId, uint localIndex, uint mip, uint slice)
 {
-    IMAGE_DATA_TYPE pixel = LDSLoad(localIndex, 0);
-    pixel = ReduceQuad(pixel);
-
-    if ((localIndex % 4) == 0)
+    if (localIndex < 4)
     {
-        ivec2 targetTexelIndex = workGroupId;
-        Save(targetTexelIndex, pixel, mip, slice);
+        IMAGE_DATA_TYPE pixel = LDSLoad(localIndex, 0);
+        pixel = ReduceQuad(pixel);
 
-        // for mip 5 and 11, don't save to LDS
+        if ((localIndex % 4) == 0)
+        {
+            ivec2 targetTexelIndex = workGroupId;
+            Save(targetTexelIndex, pixel, mip, slice);
+
+            // for mip 5 and 11, don't save to LDS
+        }
     }
 }
 
@@ -302,29 +311,20 @@ Mips2_5_and_8_11(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, u
     barrier();
     Mip2_8(x, y, workGroupId, localIndex, mip, slice);
 
-    if (localIndex < 64)
-    {
-        if (mips <= mip + 1)
-            return;
-        barrier();
-        Mip3_9(x, y, workGroupId, localIndex, mip + 1, slice);
+    if (mips <= mip + 1)
+        return;
+    barrier();
+    Mip3_9(x, y, workGroupId, localIndex, mip + 1, slice);
 
-        if (localIndex < 16)
-        {
-            if (mips <= mip + 2)
-                return;
-            barrier();
-            Mip4_10(x, y, workGroupId, localIndex, mip + 2, slice);
+    if (mips <= mip + 2)
+        return;
+    barrier();
+    Mip4_10(x, y, workGroupId, localIndex, mip + 2, slice);
 
-            if (localIndex < 4)
-            {
-                if (mips <= mip + 3)
-                    return;
-                barrier();
-                Mip5_11(workGroupId, localIndex, mip + 3, slice);
-            }
-        }
-    }
+    if (mips <= mip + 3)
+        return;
+    barrier();
+    Mip5_11(workGroupId, localIndex, mip + 3, slice);
 }
 
 //------------------------------------------------------------------------------
@@ -383,7 +383,7 @@ csMain()
     // when that is done, we have the pixels in LDS and can sample from there efficiently
     Mips2_5_and_8_11(x, y, groupId, localIndex, 2, Mips, sliceIndex);
 
-    if (Mips < 7)
+    if (Mips <= 6)
         return;
 
     // filter out the last work group by incrementing an atomic counter 
@@ -392,7 +392,7 @@ csMain()
     if (localIndex == 0)
         Counter = atomicAdd(Counters[sliceIndex], 1);
 
-    groupMemoryBarrier();
+    barrier();
     if (Counter != (NumGroups - 1))
         return;
     Counters[sliceIndex] = 0;
