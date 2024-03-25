@@ -20,7 +20,7 @@ push constant ImGUI [ string Visibility = "PS|VS"; ]
 
 group(BATCH_GROUP) sampler_state TextureSampler
 {
-    Filter = Point;
+    Filter = Linear;
 };
 
 render_state TextState
