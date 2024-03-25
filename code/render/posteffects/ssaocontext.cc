@@ -37,6 +37,7 @@ struct
     CoreGraphics::TextureId internalTargets[2];
     CoreGraphics::TextureId ssaoOutput;
     CoreGraphics::TextureId zBuffer;
+    Ptr<Frame::FrameScript> frameScript;
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 4> frameOpAllocator;
 
@@ -111,6 +112,8 @@ SSAOContext::Discard()
 void 
 SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
+    ssaoState.frameScript = script;
+
     using namespace CoreGraphics;
     CoreGraphics::TextureCreateInfo tinfo;
     tinfo.name = "HBAO-Internal0"_atm;
@@ -133,8 +136,8 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.xDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureMask("Alt0"));
     ssaoState.yDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureMask("Alt1"));
 
-    ssaoState.ssaoOutput = script->GetTexture("SSAOBuffer");
-    ssaoState.zBuffer = script->GetTexture("ZBuffer");
+    ssaoState.ssaoOutput = ssaoState.frameScript->GetTexture("SSAOBuffer");
+    ssaoState.zBuffer = ssaoState.frameScript->GetTexture("ZBuffer");
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
     ssaoState.hbaoTable.Resize(numBuffers);
     ssaoState.blurTableX.Resize(numBuffers);
@@ -235,7 +238,7 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
         uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAOTileWidth);
 
         // Compute AO in X
-        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionHBAO);
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionHBAO);
         CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
     };
@@ -387,20 +390,8 @@ void
 SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height)
 {
     using namespace CoreGraphics;
-    DestroyTexture(ssaoState.internalTargets[0]);
-    DestroyTexture(ssaoState.internalTargets[1]);
-
-    TextureCreateInfo tinfo;
-    tinfo.name = "HBAO-Internal0"_atm;
-    tinfo.tag = "system"_atm;
-    tinfo.type = CoreGraphics::Texture2D;
-    tinfo.format = CoreGraphics::PixelFormat::R16G16F;
-    tinfo.windowRelative = true;
-    tinfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
-
-    ssaoState.internalTargets[0] = CreateTexture(tinfo);
-    tinfo.name = "HBAO-Internal1";
-    ssaoState.internalTargets[1] = CreateTexture(tinfo);
+    TextureWindowResized(ssaoState.internalTargets[0]);
+    TextureWindowResized(ssaoState.internalTargets[1]);
 
     IndexT i;
     for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
@@ -423,9 +414,6 @@ SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT h
     TextureDimensions dims = TextureGetDimensions(ssaoState.ssaoOutput);
     ssaoState.vars.fullWidth = (float)dims.width;
     ssaoState.vars.fullHeight = (float)dims.height;
-    ssaoState.vars.radius = 12.0f;
-    ssaoState.vars.downsample = 1.0f;
-    ssaoState.vars.sceneScale = 1.0f;
 
     ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
 }

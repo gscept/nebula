@@ -65,18 +65,6 @@ FrameOp::Build(const BuildContext& ctx)
 
 //------------------------------------------------------------------------------
 /**
-*/
-void
-ImageSubresourceHelper(
-    const CoreGraphics::TextureSubresourceInfo& fromSubres,
-    const CoreGraphics::TextureSubresourceInfo& toSubres,
-    Util::Array<CoreGraphics::TextureSubresourceInfo>& subresources)
-{
-
-}
-
-//------------------------------------------------------------------------------
-/**
     Analyze and setup barriers if needed
 */
 void
@@ -325,16 +313,25 @@ FrameOp::SetupSynchronization(
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo> barriers;
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, FrameOp::Compiled*> signalEvents;
 
+        Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::TextureSubresourceInfo>> texDeps = this->textureDeps;
+        Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::BufferSubresourceInfo>> bufDeps = this->bufferDeps;
+
+        // Walk through all texture and buffer refs to setup dependency
+        for (i = 0; i < this->textureDepRefs.Size(); i++)
+            texDeps.Add(*this->textureDepRefs.KeyAtIndex(i), this->textureDepRefs.ValueAtIndex(i));
+        for (i = 0; i < this->bufferDepRefs.Size(); i++)
+            bufDeps.Add(*this->bufferDepRefs.KeyAtIndex(i), this->bufferDepRefs.ValueAtIndex(i));
+
         // go through texture dependencies
-        for (i = 0; i < this->textureDeps.Size(); i++)
+        for (i = 0; i < texDeps.Size(); i++)
         {
-            const CoreGraphics::TextureId& tex = this->textureDeps.KeyAtIndex(i);
+            const CoreGraphics::TextureId& tex = texDeps.KeyAtIndex(i);
             const CoreGraphics::TextureId& alias = TextureGetAlias(tex);
 
             // right dependency set
-            const Util::StringAtom& name = Util::Get<0>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::PipelineStage& stage = Util::Get<1>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::TextureSubresourceInfo& subres = Util::Get<2>(this->textureDeps.ValueAtIndex(i));
+            const Util::StringAtom& name = Util::Get<0>(texDeps.ValueAtIndex(i));
+            const CoreGraphics::PipelineStage& stage = Util::Get<1>(texDeps.ValueAtIndex(i));
+            const CoreGraphics::TextureSubresourceInfo& subres = Util::Get<2>(texDeps.ValueAtIndex(i));
 
             DependencyIntent readOrWrite = DependencyIntent::Read;
             switch (stage)
@@ -383,14 +380,14 @@ FrameOp::SetupSynchronization(
         }
 
         // go through buffer dependencies
-        for (i = 0; i < this->bufferDeps.Size(); i++)
+        for (i = 0; i < bufDeps.Size(); i++)
         {
-            const CoreGraphics::BufferId& buf = this->bufferDeps.KeyAtIndex(i);
+            const CoreGraphics::BufferId& buf = bufDeps.KeyAtIndex(i);
 
             // right dependency set
-            const Util::StringAtom& name = Util::Get<0>(this->bufferDeps.ValueAtIndex(i));
-            const CoreGraphics::PipelineStage& stage = Util::Get<1>(this->bufferDeps.ValueAtIndex(i));
-            const CoreGraphics::BufferSubresourceInfo& subres = Util::Get<2>(this->bufferDeps.ValueAtIndex(i));
+            const Util::StringAtom& name = Util::Get<0>(bufDeps.ValueAtIndex(i));
+            const CoreGraphics::PipelineStage& stage = Util::Get<1>(bufDeps.ValueAtIndex(i));
+            const CoreGraphics::BufferSubresourceInfo& subres = Util::Get<2>(bufDeps.ValueAtIndex(i));
 
             DependencyIntent readOrWrite = DependencyIntent::Read;
             switch (stage)
@@ -456,7 +453,9 @@ FrameOp::Compiled::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT fram
 void
 FrameOp::Compiled::Discard()
 {
-    // do nothing, the script is responsible for keeping track of the resources
+    for (IndexT i = 0; i < this->barriers.Size(); i++)
+        CoreGraphics::DestroyBarrier(this->barriers[i]);
+    this->barriers.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -476,6 +475,7 @@ FrameOp::Compiled::QueuePreSync(const CoreGraphics::CmdBufferId cmdBuf)
 {
     for (const CoreGraphics::BarrierId barrier : this->barriers)
     {
+        // This is a really ugly hack to deal with swap buffers changing the Vk image internally every frame
         CoreGraphics::BarrierReset(barrier);
         CoreGraphics::CmdBarrier(cmdBuf, barrier);
     }

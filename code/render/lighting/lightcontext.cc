@@ -305,7 +305,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                      , CoreGraphics::PipelineStage::ComputeShaderRead
                                      , CoreGraphics::BufferSubresourceInfo()
                                  });
-    lightsClassifyAndCull->bufferDeps.Add(Clustering::ClusterContext::GetClusterBuffer(),
+    lightsClassifyAndCull->bufferDepRefs.Add(Clustering::ClusterContext::GetClusterBuffer(),
                                  {
                                      "Cluster AABB"
                                      , CoreGraphics::PipelineStage::ComputeShaderRead

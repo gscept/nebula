@@ -78,6 +78,8 @@ public:
 
     Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::TextureSubresourceInfo>> textureDeps;
     Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::BufferSubresourceInfo>> bufferDeps;
+    Util::Dictionary<const CoreGraphics::TextureId*, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::TextureSubresourceInfo>> textureDepRefs;
+    Util::Dictionary<const CoreGraphics::BufferId*, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::BufferSubresourceInfo>> bufferDepRefs;
 
 protected:
     friend class FrameScriptLoader;

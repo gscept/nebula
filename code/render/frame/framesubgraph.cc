@@ -51,6 +51,19 @@ FrameSubgraph::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const I
 //------------------------------------------------------------------------------
 /**
 */
+void
+FrameSubgraph::CompiledImpl::Discard()
+{
+    FrameOp::Compiled::Discard();
+    for (Frame::FrameOp::Compiled* op : this->subgraphOps)
+    {
+        op->Discard();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FrameOp::Compiled*
 FrameSubgraph::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {

@@ -11,51 +11,8 @@
 #include "util/fixedarray.h"
 #include "coregraphics/window.h"
 #include "coregraphics/displaymode.h"
+#include "coregraphics/swapchain.h"
 #include "ids/idallocator.h"
-
-#if __VULKAN__
-
-namespace Vulkan
-{
-
-struct VkWindowSwapInfo
-{
-    VkDevice dev;
-    VkSwapchainKHR swapchain;
-    VkQueue presentQueue;
-
-    uint32_t currentBackbuffer;
-};
-
-struct VkSwapchainInfo
-{
-    VkFormat format;
-    VkColorSpaceKHR colorSpace;
-    VkSurfaceKHR surface;
-};
-
-struct VkBackbufferInfo
-{
-    Util::FixedArray<VkImage> backbuffers;
-    Util::FixedArray<VkImageView> backbufferViews;
-    uint32_t numBackbuffers;
-};
-
-
-
-/// get surface
-const VkSurfaceKHR& GetSurface(const CoreGraphics::WindowId& id);
-/// setup Vulkan swapchain
-void SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title);
-/// destroy Vulkan swapchain
-void DiscardVulkanSwapchain(const CoreGraphics::WindowId& id);
-/// recreate Vulkan swapchain (used when swapchain is no longer valid due to resize of window or similar)
-void RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title);
-/// perform a present
-void Present(const CoreGraphics::WindowId& id);
-
-} // namespace Vulkan
-#endif
 
 namespace CoreGraphics
 {
@@ -73,28 +30,17 @@ enum
     GLFW_DisplayMode,
     GLFW_SwapFrame,
     GLFW_SetupInfo,
-    GLFW_Texture,
     GLFW_ResizeInfo,
-#if __VULKAN__
-    GLFW_WindowSwapInfo,
-    GLFW_SwapChain,
-    GLFW_Backbuffer
-#endif
+    GLFW_Swapchain
 };
-
 
 typedef Ids::IdAllocator<
       GLFWwindow*                   
     , CoreGraphics::DisplayMode     
     , IndexT                        
     , WindowCreateInfo
-    , TextureId
     , ResizeInfo
-#if __VULKAN__
-    , Vulkan::VkWindowSwapInfo      
-    , Vulkan::VkSwapchainInfo       
-    , Vulkan::VkBackbufferInfo      
-#endif
+    , SwapchainId
 > GLFWWindowAllocatorType;
 extern GLFWWindowAllocatorType glfwWindowAllocator;
 } // namespace CoreGraphics

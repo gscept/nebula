@@ -25,9 +25,12 @@ public:
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
 #endif
+
+        CoreGraphics::TextureId from;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    CoreGraphics::TextureId from;
 };
 
 } // namespace Frame2

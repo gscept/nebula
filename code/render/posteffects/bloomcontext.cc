@@ -25,6 +25,8 @@ struct
     CoreGraphics::TextureId bloomBuffer;
     CoreGraphics::TextureId lightBuffer;
 
+    Ptr<Frame::FrameScript> frameScript;
+
     Util::FixedArray<CoreGraphics::TextureViewId> lightBufferViews;
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 1> frameOpAllocator;
@@ -54,12 +56,13 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     using namespace CoreGraphics;
 
     // setup shaders
+    bloomState.frameScript = script;
     bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
     bloomState.program = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Bloom"));
     bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
 
-    bloomState.bloomBuffer = script->GetTexture("BloomBuffer");
-    bloomState.lightBuffer = script->GetTexture("LightBuffer");
+    bloomState.bloomBuffer = bloomState.frameScript->GetTexture("BloomBuffer");
+    bloomState.lightBuffer = bloomState.frameScript->GetTexture("LightBuffer");
     TextureDimensions dims = TextureGetDimensions(bloomState.bloomBuffer);
 
     BufferCreateInfo bufInfo;

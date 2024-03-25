@@ -35,58 +35,21 @@ public:
     void Close();
     /// propagate resize to all in all scripts
     void OnWindowResize();
+    /// Rebuild all frame scripts
+    void RebuildScripts();
 
     /// load frame script and save with name
-    Ptr<FrameScript> LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path);
+    Ptr<FrameScript> LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path, const CoreGraphics::WindowId window);
     /// get script by name
     const Ptr<FrameScript>& GetFrameScript(const Resources::ResourceName& name);
     /// unload frame script
     void UnloadFrameScript(const Resources::ResourceName& name);
 
-    /// set texture to be used for future loads of frame scripts
-    void SetWindowTexture(const CoreGraphics::TextureId& tex);
-    /// get window texture
-    const CoreGraphics::TextureId& GetWindowTexture() const;
-
-    /// update frame server when window resized
-    void OnWindowResized(const CoreGraphics::WindowId window);
 private:
     Util::Dictionary<Resources::ResourceName, Ptr<FrameScript>> frameScripts;
     CoreGraphics::TextureId windowTexture;
     bool isOpen;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-FrameServer::SetWindowTexture(const CoreGraphics::TextureId& tex)
-{
-    this->windowTexture = tex;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::TextureId&
-FrameServer::GetWindowTexture() const
-{
-    return this->windowTexture;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-FrameServer::OnWindowResized(const CoreGraphics::WindowId window)
-{
-    IndexT i;
-    for (i = 0; i < this->frameScripts.Size(); i++)
-    {
-        if (this->frameScripts.ValueAtIndex(i)->window == window)
-            this->frameScripts.ValueAtIndex(i)->OnWindowResized();
-    }
-}
 
 //------------------------------------------------------------------------------
 /**

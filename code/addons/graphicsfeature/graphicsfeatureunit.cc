@@ -117,17 +117,18 @@ GraphicsFeatureUnit::OnActivate()
 
     //FIXME
     CoreGraphics::WindowCreateInfo wndInfo =
-        {
-            CoreGraphics::DisplayMode {100, 100, width, height},
-            this->title,
-            "",
-            CoreGraphics::AntiAliasQuality::None,
-            true,
-            true,
-            false};
+    {
+        CoreGraphics::DisplayMode {100, 100, width, height},
+        this->title,
+        "",
+        CoreGraphics::AntiAliasQuality::None,
+        true,
+        true,
+        false
+    };
     this->wnd = CreateWindow(wndInfo);
 
-    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
+    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript, this->wnd);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();
@@ -355,6 +356,7 @@ GraphicsFeatureUnit::OnBeginFrame()
     this->inputServer->BeginFrame();
 
     CoreGraphics::WindowPollEvents();
+    CoreGraphics::WindowMakeCurrent(this->wnd);
     this->inputServer->OnFrame();
 
     this->gfxServer->RunPreLogic();
@@ -406,12 +408,19 @@ void
 GraphicsFeatureUnit::OnEndFrame()
 {
     FeatureUnit::OnEndFrame();
+
+    // Finish up the frame and present the current framebuffer
     this->gfxServer->EndFrame();
     N_MARKER_BEGIN(Present, App);
     CoreGraphics::WindowPresent(this->wnd, App::GameApplication::FrameIndex);
     N_MARKER_END();
+
+    // Trigger a new frame
     this->gfxServer->NewFrame();
     this->inputServer->EndFrame();
+
+    // Do potential new-frame stuff for window, such as resize
+    CoreGraphics::WindowNewFrame(this->wnd);
 }
 
 //------------------------------------------------------------------------------

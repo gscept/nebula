@@ -189,6 +189,7 @@ ENDIF()
                 shaderloader.cc
                 shaderloader.h
                 streamtexturesaver.h
+                swapchain.h
                 textelement.cc
                 textelement.h
                 textrenderer.cc
@@ -328,6 +329,8 @@ ENDIF()
                 vkshaperenderer.h
                 vksubcontexthandler.cc
                 vksubcontexthandler.h
+                vkswapchain.cc
+                vkswapchain.h
                 vktextrenderer.cc
                 vktextrenderer.h
                 vktexture.cc

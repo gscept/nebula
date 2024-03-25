@@ -53,6 +53,11 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     multisampleInfo.sampleShadingEnable = programInfo.multisampleInfo.sampleShadingEnable;
     multisampleInfo.pSampleMask = programInfo.multisampleInfo.pSampleMask;
 
+    shaderInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    shaderInfo.pNext = nullptr;
+    shaderInfo.flags = 0x0;
+    shaderInfo.basePipelineHandle = VK_NULL_HANDLE;
+    shaderInfo.basePipelineIndex = -1;
     shaderInfo.pColorBlendState = &blendInfo;
     shaderInfo.pDepthStencilState = &programInfo.depthStencilInfo;
     shaderInfo.pRasterizationState = &programInfo.rasterizerInfo;
@@ -82,7 +87,9 @@ void
 DestroyGraphicsPipeline(const PipelineId pipeline)
 {
     Pipeline& obj = pipelineAllocator.Get<0>(pipeline.id);
-    vkDestroyPipeline(Vulkan::GetCurrentDevice(), obj.pipeline, nullptr);
+    obj.pipeline = VK_NULL_HANDLE;
+    obj.layout = VK_NULL_HANDLE;
+    obj.pass = CoreGraphics::InvalidPassId;
     pipelineAllocator.Dealloc(pipeline.id);
 }
 

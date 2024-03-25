@@ -893,6 +893,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     });
     terrainPrepass->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
     {
+        if (terrainVirtualTileState.terrainPrepassPipeline != InvalidPipelineId)
+            DestroyGraphicsPipeline(terrainVirtualTileState.terrainPrepassPipeline);
         terrainVirtualTileState.terrainPrepassPipeline = CreateGraphicsPipeline(
             {
                 .shader = terrainVirtualTileState.terrainPrepassProgram,
@@ -1173,6 +1175,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                             });
     resolve->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
     {
+        if (terrainVirtualTileState.terrainResolvePipeline != InvalidPipelineId)
+            DestroyGraphicsPipeline(terrainVirtualTileState.terrainResolvePipeline);
         terrainVirtualTileState.terrainResolvePipeline = CoreGraphics::CreateGraphicsPipeline(
             {
                 .shader = terrainVirtualTileState.terrainResolveProgram,

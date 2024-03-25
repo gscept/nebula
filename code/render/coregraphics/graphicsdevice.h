@@ -284,8 +284,6 @@ IndexT GetQueueIndex(const QueueType queue);
 /// Get queue indices
 const Util::Set<uint32_t>& GetQueueIndices();
 
-/// Swap
-void Swap(IndexT i);
 /// Finish current frame
 void FinishFrame(IndexT frameIndex);
 /// Progress to next frame

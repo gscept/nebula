@@ -619,7 +619,7 @@ CreateShader(const ShaderCreateInfo& info)
             // make an ID which is the shader id and program id
             ShaderProgramId shaderProgramId;
             shaderProgramId.shader = ret.id;
-            shaderProgramId.programId = programId;
+            shaderProgramId.program = programId;
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
 

@@ -347,10 +347,16 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript)
+GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript, const CoreGraphics::WindowId window)
 {
     Ptr<View> view = View::Create();
-    Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
+
+    // Make sure the window we pass is made current for the frame script loading to get the correct window
+    CoreGraphics::WindowId prevWindow = CoreGraphics::CurrentWindow;
+    CoreGraphics::WindowMakeCurrent(window);
+    Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript, window);
+    frameScript->window = window;
+    CoreGraphics::WindowMakeCurrent(prevWindow);
 
     view->script = frameScript;
     this->views.Append(view);

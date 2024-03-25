@@ -181,8 +181,7 @@ VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
     n_assert(this->IsOpen());
 
     // get display mode
-    CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
-    const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
+    const DisplayMode& displayMode = WindowGetDisplayMode(CoreGraphics::CurrentWindow);
 
     // calculate projection matrix
 #if __VULKAN__

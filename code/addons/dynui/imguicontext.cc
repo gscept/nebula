@@ -355,6 +355,8 @@ ImguiContext::Create()
     op->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
     {
         CoreGraphics::InputAssemblyKey inputAssembly { CoreGraphics::PrimitiveTopology::TriangleList, false  };
+        if (state.pipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
         state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
     };
     Frame::AddSubgraph("ImGUI", { op });
@@ -401,8 +403,7 @@ ImguiContext::Create()
     }    
 
     // get display mode, this will be our default size
-    Ptr<DisplayDevice> display = DisplayDevice::Instance();
-    DisplayMode mode = CoreGraphics::WindowGetDisplayMode(display->GetCurrentWindow());
+    DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CurrentWindow);
 
     float scaleFactor = mode.GetContentScale();
     // setup Imgui

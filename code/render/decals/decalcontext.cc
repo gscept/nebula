@@ -142,7 +142,7 @@ DecalContext::Create()
                                 , CoreGraphics::PipelineStage::ComputeShaderWrite
                                 , CoreGraphics::BufferSubresourceInfo()
                             });
-    decalCull->bufferDeps.Add(Clustering::ClusterContext::GetClusterBuffer(),
+    decalCull->bufferDepRefs.Add(Clustering::ClusterContext::GetClusterBuffer(),
                             {
                                 "Cluster AABB"
                                 , CoreGraphics::PipelineStage::ComputeShaderRead
