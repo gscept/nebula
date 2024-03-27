@@ -42,24 +42,21 @@ private:
     /// setup game features
     void SetupGameFeatures()
     {
-        // This should normally happen in a game feature constructor
-        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-        
-        world->RegisterType<TestResource>({
+        Game::RegisterType<TestResource>({
             .decay = true,
             .OnInit = &InitializeTestResource
         });
 
-        world->RegisterType<TestVec4>({
+        Game::RegisterType<TestVec4>({
             .decay = true,
             .OnInit = &InitializeTestVec4
         });
         
-        world->RegisterType<TestStruct>();
-        world->RegisterType<TestHealth>();
-        world->RegisterType<MyFlag>();
-        world->RegisterType<TestEmptyStruct>();
-        world->RegisterType<TestAsyncComponent>();
+        Game::RegisterType<TestStruct>();
+        Game::RegisterType<TestHealth>();
+        Game::RegisterType<MyFlag>();
+        Game::RegisterType<TestEmptyStruct>();
+        Game::RegisterType<TestAsyncComponent>();
     }
 
     /// cleanup game features

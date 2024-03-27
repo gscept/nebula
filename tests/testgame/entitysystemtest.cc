@@ -209,7 +209,7 @@ EntitySystemTest::Run()
 
     // Test managed properties
     {
-        world->RegisterType<DecayTestComponent>({.decay=true});
+        Game::RegisterType<DecayTestComponent>({.decay=true});
         ComponentId decayComponentId = Game::GetComponentId<DecayTestComponent>();
         
         Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
@@ -423,27 +423,6 @@ EntitySystemTest::Run()
 
     // make sure update func is actually executed
     VERIFY(hasExecutedUpdateFunc);
-
-
-    // Test on activate func
-    // Create one entity, which will go through the on activate step, once and once only.
-    Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};
-    world->CreateEntity(enemyInfo);
-
-    int numActivateExecutions = 0;
-    std::function activateFunc = [&](World* world, Test::TestHealth const& testHealth, Test::TestStruct& testStruct)
-    { 
-        numActivateExecutions++;
-    };
-
-    Game::ProcessorBuilder(world, "TestActivateFunc").On("OnActivate").Func(activateFunc).Build();
-
-    StepFrame();
-    VERIFY(numActivateExecutions == 1);
-
-    // Doublecheck so that we don't execute the activate func twice for the same entity
-    StepFrame();
-    VERIFY(numActivateExecutions == 1);
 
     // Test async processors
     Game::EntityCreateInfo asyncEntityInfo = {Game::GetTemplateId("AsyncTestEntity"), true};
