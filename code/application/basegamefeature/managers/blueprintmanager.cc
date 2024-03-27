@@ -329,7 +329,7 @@ BlueprintManager::SetupBlueprints()
             n_warning("Duplicate blueprint named '%s' found in blueprints.json\n", blueprint.name.Value());
             continue;
         }
-        CategoryCreateInfo info;
+        EntityTableCreateInfo info;
         info.name = blueprint.name.AsString();
 
         const SizeT numBlueprintComponents = blueprint.components.Size();
@@ -424,11 +424,11 @@ BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
 {
     GameServer::State& gsState = GameServer::Instance()->state;
     Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(blueprint);
+    IndexT const categoryIndex = world->blueprintToTableMap.FindIndex(blueprint);
 
     if (categoryIndex != InvalidIndex)
     {
-        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
+        MemDb::TableId const cid = world->blueprintToTableMap.ValueAtIndex(blueprint, categoryIndex);
         MemDb::RowId const instance = world->db->GetTable(cid).AddRow();
         return {cid, instance};
     }
@@ -445,11 +445,11 @@ BlueprintManager::Instantiate(World* const world, TemplateId templateId)
     GameServer::State& gsState = GameServer::Instance()->state;
     Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
     Template& tmpl = Singleton->templates[Ids::Index(templateId.id)];
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(tmpl.bid);
+    IndexT const categoryIndex = world->blueprintToTableMap.FindIndex(tmpl.bid);
 
     if (categoryIndex != InvalidIndex)
     {
-        MemDb::TableId const tid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
+        MemDb::TableId const tid = world->blueprintToTableMap.ValueAtIndex(tmpl.bid, categoryIndex);
         MemDb::RowId const instance = MemDb::Table::DuplicateInstance(
             tdb->GetTable(Singleton->blueprints[tmpl.bid.id].tableId), tmpl.row, world->db->GetTable(tid)
         );
@@ -473,7 +473,7 @@ BlueprintManager::Instantiate(World* const world, TemplateId templateId)
 MemDb::TableId
 BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
 {
-    CategoryCreateInfo info;
+    EntityTableCreateInfo info;
     info.name = blueprints[bid.id].name.Value();
 
     auto const& components = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).GetAttributes();
@@ -484,7 +484,7 @@ BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
     }
 
     MemDb::TableId tid = world->CreateEntityTable(info);
-    world->blueprintCatMap.Add(bid, tid);
+    world->blueprintToTableMap.Add(bid, tid);
     return tid;
 }
 

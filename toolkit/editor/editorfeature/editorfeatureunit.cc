@@ -45,10 +45,8 @@ EditorFeatureUnit::~EditorFeatureUnit()
 void
 EditorFeatureUnit::OnAttach()
 {
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    world->RegisterType<Editor::EditorEntity>();
+    Game::RegisterType<Editor::EditorEntity>();
 }
-
 
 //------------------------------------------------------------------------------
 /**

@@ -49,15 +49,14 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnAttach()
 {
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    world->RegisterType<Game::Entity>();
-    world->RegisterType<Game::Position>();
-    world->RegisterType<Game::Orientation>();
-    world->RegisterType<Game::Scale>();
-    world->RegisterType<Game::IsActive>();
-    world->RegisterType<Game::Static>();
-    world->RegisterType<Game::Velocity>();
-    world->RegisterType<Game::AngularVelocity>();
+    Game::RegisterType<Game::Entity>();
+    Game::RegisterType<Game::Position>();
+    Game::RegisterType<Game::Orientation>();
+    Game::RegisterType<Game::Scale>();
+    Game::RegisterType<Game::IsActive>();
+    Game::RegisterType<Game::Static>();
+    Game::RegisterType<Game::Velocity>();
+    Game::RegisterType<Game::AngularVelocity>();
 }
 
 //------------------------------------------------------------------------------

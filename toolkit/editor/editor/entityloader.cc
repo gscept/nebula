@@ -12,115 +12,12 @@
 #include "commandmanager.h"
 #include "game/componentserialization.h"
 #include "basegamefeature/managers/blueprintmanager.h"
+#include "editor/components/editorcomponents.h"
 
 namespace Editor
 {
 
-//------------------------------------------------------------------------------
-/**
-    Entity format is defined as:
-    \code{.json}
-    {
-        "entities": {
-            "[GUID]": {
-                "name": String,
-                "template": "TemplateName", // this should be changed to a GUID probably
-                "components": { // only lists the overridden and additional components
-                    "ComponentName1": VALUE,
-                    "ComponentName2": {
-                        "FieldName1": VALUE,
-                        "FieldName2": VALUE
-                    }
-                },
-                "inactive_properties": {
-                    ...
-                },
-                "removed_components": { // lists components that have been removed from the entity, that are part of the blueprint.
-                    "ComponentName3",
-                    "ComponentName4"
-                }
-            },
-            "[GUID]": {
-                ...
-            }
-        }
-    }
-    \endcode
-*/
-bool
-LoadEntities(const char* filePath)
-{
-    IO::URI const file = filePath;
-    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-    reader->SetStream(IO::IoServer::Instance()->CreateStream(file));
-    if (reader->Open())
-    {
-        reader->SetToFirstChild("entities");
-        Util::Blob scratchBuffer = Util::Blob(128);
-        Edit::CommandManager::BeginMacro("Load entities", false);
-        reader->SetToFirstChild();
-        do
-        {
-            Editor::Entity editorEntity;
-            Util::String entityName = reader->GetOptString("name", "unnamed_entity");
-            bool const fromTemplate = reader->HasNode("template");
-            if (fromTemplate)
-            {
-                Util::String templateName = reader->GetString("template");
-                editorEntity = Edit::CreateEntity(templateName);
-            }
-            else
-            {
-                editorEntity = Edit::CreateEntity("Empty/empty");
-            }
-
-            Edit::SetEntityName(editorEntity, entityName);
-
-            Util::String const guid = reader->GetCurrentNodeName();
-            Editor::state.editables[editorEntity.index].guid = Util::Guid::FromString(guid);
-
-            if (reader->SetToFirstChild("components"))
-            {
-                uint numChildren = reader->CurrentSize();
-                for (uint childIndex = 0; childIndex < numChildren; childIndex++)
-                {
-                    Util::String const componentName = reader->GetChildNodeName(childIndex);
-                    MemDb::AttributeId attributeId = MemDb::AttributeRegistry::GetAttributeId(componentName);
-                    if (attributeId == MemDb::AttributeId::Invalid())
-                    {
-                        n_warning(
-                            "Warning: Entity '%s' contains invalid component named '%s'.\n",
-                            entityName.AsCharPtr(),
-                            componentName.AsCharPtr()
-                        );
-                        continue;
-                    }
-
-                    if (!Editor::state.editorWorld->HasComponent(editorEntity, attributeId))
-                    {
-                        Edit::AddComponent(editorEntity, attributeId);
-                    }
-                    
-                    SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(attributeId);
-                    if (typeSize > 0)
-                    {
-                        if (scratchBuffer.Size() < typeSize)
-                            scratchBuffer.Reserve(typeSize);
-
-                        Game::ComponentSerialization::Deserialize(reader, attributeId, scratchBuffer.GetPtr());
-                        Edit::SetComponent(editorEntity, attributeId, scratchBuffer.GetPtr());
-                    }
-                }
-
-                reader->SetToParent();
-            }
-        } while (reader->SetToNextChild());
-        Edit::CommandManager::EndMacro();
-        reader->Close();
-        return true;
-    }
-    return false;
-}
+__ImplementClass(Editor::EntityLoader, 'EELo', BaseGameFeature::LevelParser);
 
 //------------------------------------------------------------------------------
 /**
@@ -133,6 +30,10 @@ SaveEntities(const char* filePath)
     writer->SetStream(IO::IoServer::Instance()->CreateStream(file));
     if (writer->Open())
     {
+        writer->BeginObject("level");
+        
+        writer->Add(100, "version");
+
         writer->BeginObject("entities");
 
         Game::Filter filter = Game::FilterBuilder().Including<Game::Entity>().Build();
@@ -163,7 +64,7 @@ SaveEntities(const char* filePath)
                     for (auto component : table.GetAttributes())
                     {
                         uint32_t const flags = MemDb::AttributeRegistry::Flags(component);
-                        if (component != entityPID && (flags & Game::ComponentFlags::COMPONENTFLAG_DECAY) == 0)
+                        if (component != entityPID)
                         {
                             SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                             if (typeSize > 0)
@@ -186,18 +87,121 @@ SaveEntities(const char* filePath)
 
                         col++;
                     }
-                    writer->End();
+                    writer->End(); // end components
                 }
-                writer->End();
+                writer->End(); // end entity (GUID)
             }
         }
 
         Game::DestroyFilter(filter);
 
-        writer->End();
+        writer->End(); // end entities
+        writer->End(); // end level
         return true;
     }
 
     return false;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+EntityLoader::EntityLoader()
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+EntityLoader::~EntityLoader()
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityLoader::BeginLoad()
+{
+    Edit::CommandManager::BeginMacro("Load entities", false);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityLoader::AddEntity(Game::Entity entity, Util::Guid const& guid)
+{
+    if (Editor::state.editables.Size() >= entity.index)
+        Editor::state.editables.Append({});
+
+
+    Editable& editable = Editor::state.editables[entity.index];
+    
+    n_assert(editable.gameEntity == Game::Entity::Invalid());
+    
+    editable.guid = guid;
+
+    editable.version++;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityLoader::SetName(Game::Entity entity, const Util::String& name)
+{
+    Editable& editable = Editor::state.editables[entity.index];
+    editable.name = name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityLoader::CommitEntity(Editor::Entity editorEntity)
+{
+    Editable& editable = Editor::state.editables[editorEntity.index];
+    Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
+    
+    Game::Entity gameEntity = gameWorld->CreateEntity();
+    
+    editable.gameEntity = gameEntity;
+    editable.version++;
+
+    // Find the correct table for this editor entity
+    Game::World* editorWorld = Editor::state.editorWorld;
+    auto const mapping = editorWorld->GetEntityMapping(editorEntity);
+    MemDb::Table const& editorTable = editorWorld->GetDatabase()->GetTable(mapping.table);
+    MemDb::TableSignature const& signature = editorTable.GetSignature();
+
+    MemDb::TableId gameTableId = gameWorld->GetDatabase()->FindTable(signature);
+    if (gameTableId == MemDb::TableId::Invalid())
+    {
+        // Create table if not exists
+        Game::EntityTableCreateInfo info;
+        info.components = editorTable.GetAttributes();
+        info.name = editorTable.name.Value();
+        gameTableId = gameWorld->CreateEntityTable(info);
+    }
+
+    Util::Blob entityData = editorTable.SerializeInstance(mapping.instance);
+    gameWorld->AllocateInstance(gameEntity, gameTableId, &entityData);
+
+    Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(gameEntity);
+    editorEntityComponent->id = (uint)editorEntity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityLoader::CommitLevel()
+{
+    // TODO: add a command for loading level, so that we can revert it as well.
+    Edit::CommandManager::EndMacro();
+}
+
 } // namespace Editor

@@ -5,7 +5,7 @@ fips_begin_lib(toolkitutil)
     target_include_directories(toolkitutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/render ${CODE_ROOT}/)
     target_precompile_headers(toolkitutil PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["model/import/base/scenenode.h"]])
     
-    fips_deps(foundation render physics)
+    fips_deps(foundation render physics application)
 
     if(FIPS_WINDOWS)
         fips_libs(CMP_Core_MT CMP_Framework_MT)
@@ -158,15 +158,13 @@ fips_begin_lib(toolkitutil)
                     meshprimitive.h
                 )
 IF(NOT N_MINIMAL_TOOLKIT)
-        #fips_dir(game)
-        #   fips_files(
-        #       gameexporter.cc
-        #       gameexporter.h
-        #       leveldbwriter.cc
-        #       leveldbwriter.h
-        #       levelparser.cc
-        #       levelparser.h
-        #   )
+        fips_dir(game)
+           fips_files(
+               gameexporter.cc
+               gameexporter.h
+               levelexporter.cc
+               levelexporter.h
+           )
 
         #fips_dir(gui)
         #   fips_files(

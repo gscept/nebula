@@ -3,20 +3,20 @@
 /**
     @class ToolkitUtil::LevelExporter
     
-    Exports XML-based level to database
+    Exports Json-based level to binary .nlvl files
     
     (C) 2012-2015 Individual contributors, see AUTHORS file
 */
-#include "base/exporterbase.h"
-#include "platform.h"
-#include "db/dbfactory.h"
-#include "db/table.h"
-#include "db/database.h"
-#include "db/column.h"
-#include "attr/attrid.h"
-#include "io/xmlreader.h"
-#include "toolkitutil/logger.h"
+#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/platform.h"
+#include "io/jsonreader.h"
+#include "toolkit-common/toolkitconsolehandler.h"
+#include "memdb/database.h"
 
+namespace Game
+{
+class World;
+}
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
@@ -36,33 +36,19 @@ public:
     void Close();
 
     /// exports a single level
-    void ExportFile(const IO::URI& file);
+    void ExportFile(const IO::URI& file) override;
     /// exports a directory (does the same as ExportAll)
-    void ExportDir(const Util::String& category);
+    void ExportDir(const Util::String& category) override;
     /// exports all levels
-    void ExportAll();
+    void ExportAll() override;
 
-    /// sets the database factory
-    void SetDbFactory(const Ptr<Db::DbFactory>& factory);
     /// set pointer to a valid logger object
     void SetLogger(ToolkitUtil::Logger* logger);
 private:
 
     /// exports level data
-    bool ExportLevel(const Ptr<IO::XmlReader>& reader, const Ptr<Db::Database>& db);
+    bool ExportLevel(const Ptr<IO::JsonReader>& reader, Game::World* world, const IO::URI& outputFile);
 
-    /// creates a table in provided database
-    Ptr<Db::Table> CreateTable(const Ptr<Db::Database>& db, const Util::String& tableName);
-    /// creates a column in given database
-    void CreateColumn(const Ptr<Db::Table>& table, Db::Column::Type type, Attr::AttrId attributeId);
-
-    /// loads all attributes from a level object
-    Util::Dictionary<Util::String, Util::String> LoadObjectAttributes(const Ptr<IO::XmlReader> & reader);
-
-    bool dbHasStartLevel;
-    Ptr<Db::DbFactory> dbFactory;
-    Ptr<Db::Database> staticDb;
-    Ptr<Db::Database> gameDb;
     ToolkitUtil::Logger* logger;
 }; 
 
@@ -73,16 +59,6 @@ inline void
 LevelExporter::SetLogger(ToolkitUtil::Logger* l)
 {
     this->logger = l;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-LevelExporter::SetDbFactory( const Ptr<Db::DbFactory>& factory )
-{
-    n_assert(!this->isOpen);
-    this->dbFactory = factory;
 }
 
 } // namespace ToolkitUtil

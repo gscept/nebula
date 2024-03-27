@@ -11,6 +11,8 @@
 #include "editor/entityloader.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "io/filedialog.h"
+#include "io/ioserver.h"
+#include "basegamefeature/level.h"
 
 #include "editor/tools/selectiontool.h"
 
@@ -61,9 +63,20 @@ Toolbar::Run()
     {
         static Util::String localpath = IO::URI("bin:").LocalPath();
         Util::String path;
-        if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, { "*.json" }, path))
-            Editor::LoadEntities(path.AsCharPtr());
+        if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, {"*.json"}, path))
+        {
+            Ptr<Editor::EntityLoader> loader = Editor::EntityLoader::Create();
+            loader->SetWorld(Editor::state.editorWorld);
+            Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+            reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
+            if (reader->Open())
+            {
+                loader->LoadJsonLevel(reader);
+            }
+            reader->Close();
+        }
     }
+
     IMGUI_VERTICAL_SEPARATOR;
 
     if (ImGui::Button("Undo")) { Edit::CommandManager::Undo(); }

@@ -28,9 +28,6 @@ GameServer::GameServer()
     _setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
-
-    this->state.templateDatabase = MemDb::Database::Create();
-    this->CreateWorld(WORLD_DEFAULT);
 }
 
 //------------------------------------------------------------------------------
@@ -68,6 +65,9 @@ GameServer::Open()
     n_assert(!this->isOpen);
     n_assert(!this->isStarted);
     this->isOpen = true;
+
+    this->state.templateDatabase = MemDb::Database::Create();
+    this->CreateWorld(WORLD_DEFAULT);
 
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {

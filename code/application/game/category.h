@@ -17,7 +17,7 @@ namespace Game
 ID_16_TYPE(BlueprintId);
 ID_32_TYPE(TemplateId);
 
-struct CategoryCreateInfo
+struct EntityTableCreateInfo
 {
     /// name to be given to the table
     Util::String name;

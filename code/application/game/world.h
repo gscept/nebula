@@ -27,6 +27,10 @@ namespace Game
 
 class PackedLevel;
 
+/// Register a component type
+template <typename COMPONENT_TYPE>
+ComponentId RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -44,36 +48,34 @@ struct EntityCreateInfo
 class World
 {
 public:
+    // Generally, only the game server should create worlds
+    World(uint32_t hash);
     ~World();
 
-    /// Register a component type
-    template <typename COMPONENT_TYPE>
-    ComponentId RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
-
     /// Create a new empty entity
-    Entity CreateEntity();
+    Entity CreateEntity(bool immediate = true);
     /// Create a new entity from create info
     Entity CreateEntity(EntityCreateInfo const& info);
     /// Delete entity
     void DeleteEntity(Entity entity);
     /// Check if an entity ID is still valid.
-    bool IsValid(Entity e);
+    bool IsValid(Entity entity);
     /// Check if an entity has an instance. It might be valid, but not have received an instance just after it has been created.
-    bool HasInstance(Entity e);
+    bool HasInstance(Entity entity);
     /// Returns the entity mapping of an entity
     EntityMapping GetEntityMapping(Entity entity);
     /// Check if entity has a specific component. (SLOW!)
-    bool HasComponent(Entity const entity, ComponentId const component);
+    bool HasComponent(Entity entity, ComponentId component);
     /// Check if entity has a specific component.
     template <typename TYPE>
-    bool HasComponent(Entity const entity);
+    bool HasComponent(Entity entity);
     /// Get instance of entity
     MemDb::RowId GetInstance(Entity entity);
     /// Remove a component from an entity
     template <typename TYPE>
-    void RemoveComponent(Entity);
+    void RemoveComponent(Entity entity);
     /// Remove a component from an entity
-    void RemoveComponent(Entity, ComponentId);
+    void RemoveComponent(Entity entity, ComponentId component);
     /// Set the value of an entitys component
     template <typename TYPE>
     void SetComponent(Entity entity, TYPE const& value);
@@ -103,7 +105,7 @@ public:
     /// Get the entity database. Be careful when directly modifying the database, as some information is only kept track of via the World.
     Ptr<MemDb::Database> GetDatabase();
     /// Create a table in the entity database that has a specific set of components
-    MemDb::TableId CreateEntityTable(CategoryCreateInfo const& info);
+    MemDb::TableId CreateEntityTable(EntityTableCreateInfo const& info);
 
     /// Get the frame pipeline
     FramePipeline& GetFramePipeline();
@@ -138,12 +140,13 @@ public:
     /// Deallocate an entity instance. Use this with caution!
     void DeallocateInstance(Entity entity);
     /// Defragment an entity table
-    void Defragment(MemDb::TableId cat);
+    void Defragment(MemDb::TableId tableId);
     /// Get a pointer to the first instance of a component in a partition of an entity table. Use with caution!
-    void* GetInstanceBuffer(MemDb::TableId const tid, uint16_t partitionId, ComponentId const component);
+    void* GetInstanceBuffer(MemDb::TableId const tableId, uint16_t partitionId, ComponentId const component);
     /// Get a pointer to the first instance of a column in a partition of an entity table. Use with caution!
-    void* GetColumnData(MemDb::TableId const tid, uint16_t partitionId, MemDb::ColumnIndex const column);
-    
+    void* GetColumnData(MemDb::TableId const tableId, uint16_t partitionId, MemDb::ColumnIndex const column);
+    /// dispatches all staged components to be added to entities
+    void ExecuteAddComponentCommands();
     /// Disable if initialization of components is not required (ex. when running as editor db)
     bool componentInitializationEnabled = true;
 
@@ -176,9 +179,6 @@ private:
         ComponentId componentId;
     };
 
-    // Only the game server should create worlds
-    World(uint32_t hash);
-
     // These functions are called from game server
     void Start();
     void BeginFrame();
@@ -194,8 +194,6 @@ private:
     /// Clears all decay buffers. This is called by the game server automatically.
     void ClearDecayBuffers();
 
-    /// dispatches all staged components to be added to entities
-    void ExecuteAddComponentCommands();
     void ExecuteRemoveComponentCommands();
 
     void AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds);
@@ -204,11 +202,11 @@ private:
     /// Get total number of instances in an entity table
     SizeT GetNumInstances(MemDb::TableId tid);
     
-    MemDb::RowId Migrate(Entity entity, MemDb::TableId newCategory);
+    MemDb::RowId Migrate(Entity entity, MemDb::TableId newTable);
     void Migrate(
         Util::Array<Entity> const& entities,
-        MemDb::TableId fromCategory,
-        MemDb::TableId newCategory,
+        MemDb::TableId fromTable,
+        MemDb::TableId newTable,
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
@@ -223,14 +221,14 @@ private:
     EntityPool pool;
     /// Number of entities alive
     SizeT numEntities;
-    /// maps entity index to table+instanceid pair
+    /// maps entity index to table+row pair
     Util::Array<EntityMapping> entityMap;
     /// contains all entity instances
     Ptr<MemDb::Database> db;
     /// world hash
     uint32_t hash;
     /// maps from blueprint to a table that has the same signature
-    Util::HashTable<BlueprintId, MemDb::TableId> blueprintCatMap;
+    Util::HashTable<BlueprintId, MemDb::TableId> blueprintToTableMap;
     ///
     Util::Queue<AllocateInstanceCommand> allocQueue;
     ///
@@ -248,6 +246,8 @@ private:
 
     /// the frame pipeline for this world
     FramePipeline pipeline;
+
+    MemDb::TableId defaultTableId;
 };
 
 //------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ private:
 */
 template <typename COMPONENT_TYPE>
 ComponentId 
-World::RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
+RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
 {
     uint32_t componentFlags = 0;
     componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
@@ -346,7 +346,7 @@ World::RemoveComponent(Entity entity)
 */
 template <typename TYPE>
 inline bool
-World::HasComponent(Game::Entity const entity)
+World::HasComponent(Game::Entity entity)
 {
     return this->HasComponent(entity, Game::GetComponentId<TYPE>());
 }

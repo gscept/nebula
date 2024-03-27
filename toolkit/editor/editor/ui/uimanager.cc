@@ -19,6 +19,7 @@
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
 #include "dynui/imguicontext.h"
+#include "io/filedialog.h"
 
 namespace Editor
 {
@@ -70,6 +71,13 @@ OnActivate()
     
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Y", "Edit");
+    windowServer->RegisterCommand([](){ 
+        static Util::String localpath = IO::URI("export:levels").LocalPath();
+        Util::String path;
+        IO::IoServer::Instance()->CreateDirectory(localpath);
+        if (IO::FileDialog::SaveFile("Select location of exported level file", localpath, {"*.nlvl"}, path))
+            Editor::state.editorWorld->ExportLevel(path.AsCharPtr());
+    }, "Export", "Ctrl+Shift+E", "File");
 
     Dynui::ImguiContext::state.dockOverViewport = true;
 

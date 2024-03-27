@@ -313,11 +313,11 @@ JsonReader::GetChildNodeName(SizeT childIndex)
 {
     n_assert(this->IsOpen());
     n_assert(0 != this->curNode);
-    n_assert(0 <= this->childIdx);
+    n_assert(0 <= childIndex);
 
-    if (this->childIdx < (IndexT)this->parents.Peek()->size())
+    if (childIndex < (IndexT)this->curNode->size())
     {
-        return this->curNode->get_key_name_at_index(this->childIdx);
+        return this->curNode->get_key_name_at_index(childIndex);
     }
 
     return "";

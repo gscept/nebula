@@ -3,14 +3,10 @@
 /**
     @class ToolkitUtil::GameExporter
     
-    Exports both levels and templates, and ensures the database is always clean
-    
     (C) 2012-2016 Individual contributors, see AUTHORS file
 */
-#include "base/exporterbase.h"
-#include "levelexporter.h"
-#include "templateexporter.h"
-#include "toolkitconsolehandler.h"
+#include "toolkit-common/base/exporterbase.h"
+#include "toolkit-common/toolkitconsolehandler.h"
 
 //------------------------------------------------------------------------------
 namespace ToolkitUtil
@@ -29,8 +25,6 @@ public:
     /// closes the exporter
     void Close();
 
-    /// export only template and instance tables
-    void ExportTables();
     /// exports both game and levels
     void ExportAll();
     /// set pointer to a valid logger object

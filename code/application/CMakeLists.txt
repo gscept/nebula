@@ -59,6 +59,8 @@ nebula_begin_module(application)
             basegamefeatureunit.cc
             level.h
             level.cc
+            levelparser.h
+            levelparser.cc
         )
         fips_dir(basegamefeature/managers)
             fips_files(
