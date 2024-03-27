@@ -235,7 +235,20 @@ inline void
 TableSignature::SetBit(AttributeId component)
 {
     int offset = component.id / 128;
-    n_assert(offset < this->size); // currently, we can't set a bit that is outside the signatures size.
+    if (offset >= this->size)
+    {
+        uint8_t newSize = offset + 1;
+        __m128i* newMask = (__m128i*)Memory::Alloc(Memory::HeapType::ObjectHeap, newSize * 16);
+        if (this->mask != nullptr)
+        {
+            for (int i = 0; i < this->size; i++)
+                newMask[i] = _mm_load_si128(this->mask + i);
+
+            Memory::Free(Memory::HeapType::ObjectHeap, this->mask);
+        }
+        this->mask = newMask;
+        this->size = newSize;
+    }
     alignas(16) uint64_t partialMask[2] = {0, 0};
     uint64_t bit = component.id % 128;
     partialMask[bit / 64] |= 1ull << bit;

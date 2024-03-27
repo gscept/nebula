@@ -75,10 +75,9 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
-    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-    world->RegisterType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
-    world->RegisterType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
-    world->RegisterType<Camera>();
+    Game::RegisterType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
+    Game::RegisterType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
+    Game::RegisterType<Camera>();
 }
 
 //------------------------------------------------------------------------------

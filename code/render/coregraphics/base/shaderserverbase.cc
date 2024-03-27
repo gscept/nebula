@@ -165,10 +165,10 @@ ShaderServerBase::Close()
     n_assert(this->isOpen);
     #ifndef __linux__
     // unwatch 
-    if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
-    {
-        IO::FileWatcher::Instance()->Unwatch("home:work/shaders/vk");
-    }
+    //if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
+    //{
+    //    IO::FileWatcher::Instance()->Unwatch("home:work/shaders/vk");
+    //}
     #endif
 
     // unload all currently loaded shaders
