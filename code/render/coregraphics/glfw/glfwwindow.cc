@@ -404,7 +404,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     glfwSwapInterval(info.vsync ? 1 : 0);
 
     CoreGraphics::SwapchainCreateInfo swapCreate;
-    swapCreate.displayMode = info.mode;
+    swapCreate.displayMode = mode;
     swapCreate.vsync = info.vsync;
     swapCreate.window = wnd;
     SwapchainId swapchain = CoreGraphics::CreateSwapchain(swapCreate);
