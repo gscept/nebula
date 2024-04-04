@@ -176,7 +176,7 @@ DirectXTexConversionJob::Convert()
             return false;
         }
 
-        ToolkitUtil::Text print = Util::String::Sprintf("%s -> %s... ", Text(URI(this->srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(Format("%s.dds", URI(this->dstPath).LocalPath().AsCharPtr())).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
+        ToolkitUtil::Text print = Util::String::Sprintf("%s -> %s... ", Text(URI(this->srcPath).LocalPath()).Color(TextColor::Blue).AsCharPtr(), Text(Format("%s", URI(this->dstPath).LocalPath().AsCharPtr())).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
         this->logger->Print(Util::String::Sprintf("%s%s", print.AsCharPtr(), "done\n"_text.Color(TextColor::Green).AsCharPtr()).AsCharPtr());
     }
 
