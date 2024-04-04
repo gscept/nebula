@@ -189,6 +189,7 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     // TODO: This is not finished, and needs revisiting
     Game::Position pos = world->GetComponent<Game::Position>(entity);
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    Lighting::LightContext::SetupPointLight(light->graphicsEntityId, light->color, light->intensity, light->range, light->castShadows);
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
 }
 

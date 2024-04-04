@@ -110,7 +110,7 @@ Win32FSWrapper::Write(Handle handle, const void* buf, Stream::Size numBytes)
     n_assert(0 != handle);
     n_assert(buf != 0);
     n_assert(numBytes > 0);
-    n_assert(numBytes < INT_MAX);
+    n_assert(numBytes < LLONG_MAX);
     DWORD bytesWritten;
     BOOL result = WriteFile(handle, buf, (DWORD)numBytes, &bytesWritten, NULL);
     if ((0 == result) || ((DWORD)numBytes != bytesWritten))
@@ -129,7 +129,7 @@ Win32FSWrapper::Read(Handle handle, void* buf, Stream::Size numBytes)
     n_assert(0 != handle);
     n_assert(buf != 0);
     n_assert(numBytes > 0);
-    n_assert(numBytes < INT_MAX);
+    n_assert(numBytes < LLONG_MAX);
     DWORD bytesRead;
     BOOL result = ReadFile(handle, buf, (DWORD)numBytes, &bytesRead, NULL);
     if (0 == result)
