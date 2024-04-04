@@ -64,10 +64,8 @@ AttributeToComponentIndex(Gltf::Primitive::Attribute attribute, bool normalized)
             return MeshBuilderVertex::Components::SkinWeights;
         }
     }
-   
 
-    n_error("Primitive attribute not yet supported!");
-    return MeshBuilderVertex::Components::Position;
+    return (MeshBuilderVertex::Components)0xFFFFFFFF;
 }
 
 //------------------------------------------------------------------------------
@@ -171,6 +169,10 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
             n_assert(vertexBufferAccessor.sparse.count == 0);
 
             MeshBuilderVertex::Components component = AttributeToComponentIndex(attribute.Key(), vertexBufferAccessor.normalized);
+
+            // If component is invalid, skip it
+            if (component == 0xFFFFFFFF)
+                continue;
 
             components |= component;
             void* vb = (byte*)buffer.data.GetPtr() + bufferOffset;
