@@ -78,8 +78,8 @@ NglTFExporter::ParseScene()
         this->outputFiles.AppendArray(outputs);
     }
 
-    static const Util::String tmpDir = "temp:textureconverter";
-    Util::String intermediateDir = Util::String::Sprintf("%s/%s/%s", tmpDir.AsCharPtr(), this->category.AsCharPtr(), this->file.AsCharPtr());
+    const Util::String tmpDir = Util::String::Sprintf("temp:textureconverter/%s", this->category.AsCharPtr());
+    Util::String intermediateDir = Util::String::Sprintf("%s/%s/%s/temp", tmpDir.AsCharPtr(), this->category.AsCharPtr(), this->file.AsCharPtr());
 
     bool hasEmbedded = false;
     for (IndexT i = 0; i < gltfScene.materials.Size(); i++)
@@ -179,17 +179,6 @@ NglTFExporter::ParseScene()
             // Create intermediate directory
             IO::IoServer::Instance()->CreateDirectory(intermediateDir);
 
-            struct ImageJob
-            {
-                Gltf::Image* const* image;
-                const Gltf::Document* scene;
-                const Util::String* category;
-                const Util::String* baseDir;
-                const Util::String* intermediateDir;
-                ToolkitUtil::Logger* logger;
-                TextureConverter* converter;
-            } imageJob;
-
             Util::Array<Gltf::Image*> images;
             for (IndexT i = 0; i < gltfScene.images.Size(); i++)
             {
@@ -199,25 +188,23 @@ NglTFExporter::ParseScene()
                 }
             }
 
-            imageJob.image = images.ConstBegin();
-            imageJob.scene = &gltfScene;
-            imageJob.category = &this->category;
-            imageJob.converter = this->texConverter;
-            imageJob.baseDir = &this->file;
-            imageJob.logger = this->logger;
-            imageJob.intermediateDir = &intermediateDir;
-
-            auto job = [](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+            auto job = [
+                image = images.ConstBegin()
+                , scene = &gltfScene
+                , category = &this->category
+                , converter = this->texConverter
+                , baseDir = &this->file
+                , logger = this->logger
+                , intermediateDir = &intermediateDir
+                ](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
             {
-                ImageJob* jobCtx = static_cast<ImageJob*>(ctx);
-
                 for (int i = 0; i < groupSize; i++)
                 {
                     int index = invocationOffset + i;
                     if (index >= totalJobs)
                         continue;
 
-                    Gltf::Image const& image = jobCtx->scene->images[index];
+                    Gltf::Image const& image = scene->images[index];
 
                     void const* data;
                     size_t dataSize = 0;
@@ -229,8 +216,8 @@ NglTFExporter::ParseScene()
                     }
                     else
                     {
-                        auto const& bufferView = jobCtx->scene->bufferViews[image.bufferView];
-                        data = (const char*)jobCtx->scene->buffers[bufferView.buffer].data.GetPtr() + bufferView.byteOffset;
+                        auto const& bufferView = scene->bufferViews[image.bufferView];
+                        data = (const char*)scene->buffers[bufferView.buffer].data.GetPtr() + bufferView.byteOffset;
                         dataSize = bufferView.byteLength;
                     }
 
@@ -238,27 +225,27 @@ NglTFExporter::ParseScene()
 
                     // export the content of blob to a temporary file
                     Ptr<IO::BinaryWriter> writer = IO::BinaryWriter::Create();
-                    Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", jobCtx->intermediateDir->AsCharPtr(), index, format.AsCharPtr());
+                    Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir->AsCharPtr(), index, format.AsCharPtr());
                     writer->SetStream(IO::IoServer::Instance()->CreateStream(intermediateFile));
                     if (!writer->Open())
                     {
-                        jobCtx->logger->Warning("    [glTF - Could not open filestream to write intermediate image format]\n");
+                        logger->Warning("    [glTF - Could not open filestream to write intermediate image format]\n");
                         return;
                     }
                     writer->GetStream()->Write(data, dataSize);
                     writer->Close();
 
-                    auto dstFile = Util::String::Sprintf("tex:%s/%s/%d", jobCtx->category->AsCharPtr(), jobCtx->baseDir->AsCharPtr(), index);
+                    auto dstFile = Util::String::Sprintf("tex:%s/%s/%d", category->AsCharPtr(), baseDir->AsCharPtr(), index);
 
                     // content is base 64 encoded in uri
-                    if (!jobCtx->converter->ConvertTexture(intermediateFile, dstFile, tmpDir))
+                    if (!converter->ConvertTexture(intermediateFile, dstFile, *intermediateDir))
                     {
-                        jobCtx->logger->Error("    [glTF - Failed to convert texture]\n");
+                        logger->Error("    [glTF - Failed to convert texture]\n");
                     }
                 }
             };
             Threading::Event event;
-            Jobs2::JobDispatch(job, gltfScene.images.Size(), 1, imageJob, nullptr, nullptr, &event);
+            Jobs2::JobDispatch(job, gltfScene.images.Size(), 1, nullptr, nullptr, &event);
 
             for (IndexT i = 0; i < gltfScene.images.Size(); i++)
             {
