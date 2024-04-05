@@ -8,6 +8,7 @@
 #include "editor/commandmanager.h"
 #include "editor/ui/uimanager.h"
 #include "graphics/graphicsserver.h"
+#include "resources/resourceserver.h"
 
 using namespace Editor;
 
@@ -47,7 +48,17 @@ Previewer::~Previewer()
 void
 Previewer::Update()
 {
-    //this->viewport.Update();
+    switch (this->assetType)
+    {
+    case PreviewAssetType::Material:
+        break;
+    case PreviewAssetType::Mesh:
+        break;
+    case PreviewAssetType::Skeleton:
+        break;
+    case PreviewAssetType::Model:
+        break;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -57,6 +68,22 @@ void
 Previewer::Run()
 {
     //this->viewport.Render();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Previewer::Preview(const Resources::ResourceName& asset)
+{
+    Resources::CreateResource(
+        asset,
+        "editor",
+        [this](Resources::ResourceId id)
+        {
+            this->asset.id = id.resourceId;
+        }
+    );
 }
 
 } // namespace Presentation
