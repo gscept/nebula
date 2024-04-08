@@ -90,6 +90,8 @@ public:
 
         ImFont* normalFont;
         ImFont* smallFont;
+        ImFont* boldFont;
+        ImFont* itFont;
 
         Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
 
