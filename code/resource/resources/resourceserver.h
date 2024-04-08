@@ -76,7 +76,7 @@ public:
     /// register a stream pool, which takes an extension and the RTTI of the resource type to create
     void RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
     /// get stream pool for later use
-    template <class POOL_TYPE> POOL_TYPE* GetStreamPool() const;
+    template <class POOL_TYPE> POOL_TYPE* GetStreamLoader() const;
 
     /// Wait for all loader threads
     void WaitForLoaderThread();
@@ -260,7 +260,7 @@ ResourceServer::GetName(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetName(id);
+    return loader->GetName(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -272,7 +272,7 @@ ResourceServer::GetTag(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetTag(id);
+    return loader->GetTag(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -284,7 +284,7 @@ ResourceServer::GetState(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetState(id);
+    return loader->GetState(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -296,7 +296,7 @@ ResourceServer::GetUsage(const Resources::ResourceId id) const
     // get resource loader by extension
     n_assert(this->loaders.Size() > id.loaderIndex);
     const Ptr<ResourceLoader>& loader = this->loaders[id.loaderIndex];
-    return loader->GetUsage(id);
+    return loader->GetUsage(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -333,13 +333,13 @@ ResourceServer::GetId(const Resources::ResourceName& name) const
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-ResourceServer::GetStreamPool() const
+ResourceServer::GetStreamLoader() const
 {
     static_assert(std::is_base_of<ResourceLoader, POOL_TYPE>::value, "Type requested is not a stream pool");
-    IndexT i;
-    for (i = 0; i < this->loaders.Size(); i++)
+    IndexT i = this->typeMap.FindIndex(&POOL_TYPE::RTTI);
+    if (i != InvalidIndex)
     {
-        if (this->loaders[i]->GetRtti()->IsDerivedFrom(POOL_TYPE::RTTI)) return static_cast<POOL_TYPE*>(this->loaders[i].get());
+        return static_cast<POOL_TYPE*>(this->loaders[i].get());
     }
 
     n_error("No loader registered for this type");
@@ -434,10 +434,10 @@ WaitForLoaderThread()
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-GetStreamPool()
+GetStreamLoader()
 {
     static_assert(std::is_base_of<ResourceLoader, POOL_TYPE>::value, "Template argument is not a ResourceCache type!");
-    return ResourceServer::Instance()->GetStreamPool<POOL_TYPE>();
+    return ResourceServer::Instance()->GetStreamLoader<POOL_TYPE>();
 }
 
 } // namespace Resources

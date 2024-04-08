@@ -68,7 +68,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-        const TextureLoader* textureLoader = ResourceServer::Instance()->GetStreamPool<TextureLoader>();
+        const TextureLoader* textureLoader = ResourceServer::Instance()->GetStreamLoader<TextureLoader>();
         const Util::Dictionary<Resources::ResourceName, Ids::Id32>& streamResources = textureLoader->GetResources();
 
         // create a table of all existing textures
@@ -94,7 +94,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         {
             Resources::ResourceId res = textureLoader->GetId(streamResources.KeyAtIndex(i));
             const ResourceName& resName = streamResources.KeyAtIndex(i);
-            Resource::State state = textureLoader->GetState(res);
+            Resource::State state = textureLoader->GetState(res.resourceId);
             htmlWriter->Begin(HtmlElement::TableRow);
             if (state == Resource::Loaded)
             {
@@ -122,7 +122,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             htmlWriter->Element(HtmlElement::TableData, resState);
             if (state == Resource::Loaded)
             {
-                const uint usage = textureLoader->GetUsage(res);
+                const uint usage = textureLoader->GetUsage(res.resourceId);
                 htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
                 TextureType type = TextureGetType(res);
                 switch (type)

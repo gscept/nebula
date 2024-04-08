@@ -73,7 +73,7 @@ ShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
     if (!effect)
     {
         n_error("VkStreamShaderLoader::ReloadFromStream(): failed to load shader '%s'!",
-            this->GetName(id).Value());
+            this->GetName(id.resourceId).Value());
         return Resources::Resource::Failed;
     }
 

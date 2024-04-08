@@ -65,7 +65,7 @@ Setup()
     Resources::ResourceServer::Instance()->RegisterStreamLoader("actor", Physics::StreamActorPool::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
-    Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
+    Physics::actorPool = Resources::GetStreamLoader<Physics::StreamActorPool>();
 
     // fallback material
     state.FallbackMaterial.material = state.physics->createMaterial(0.7f, 0.7f, 0.3f);
