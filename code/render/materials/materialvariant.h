@@ -24,32 +24,41 @@ struct MaterialVariant
 
     /// Copy constructor
     MaterialVariant(const MaterialVariant& rhs)
-        : needsDeref(false)
-        , size(0)
+        : mem(rhs.mem)
+        , needsDeref(rhs.needsDeref)
+        , size(rhs.size)
     {
-        this->mem = rhs.mem;
     }
 
     /// Assign operator
     void operator=(const MaterialVariant& rhs)
     {
         this->mem = rhs.mem;
+        this->needsDeref = rhs.needsDeref;
+        this->size = rhs.size;
     }
 
     /// Move constructor
     MaterialVariant(MaterialVariant&& rhs)
-        : needsDeref(false)
-        , size(0)
+        : mem(rhs.mem)
+        , needsDeref(rhs.needsDeref)
+        , size(rhs.size)
     {
-        this->mem = rhs.mem;
         rhs.mem = nullptr;
+        rhs.needsDeref = false;
+        rhs.size = 0;
     }
 
     /// Move operator
     void operator=(MaterialVariant&& rhs)
     {
         this->mem = rhs.mem;
+        this->needsDeref = rhs.needsDeref;
+        this->size = rhs.size;
+
         rhs.mem = nullptr;
+        rhs.needsDeref = false;
+        rhs.size = 0;
     }
 
     /// Nullptr constructor
@@ -70,10 +79,16 @@ struct MaterialVariant
         return this->needsDeref ? this->mem : reinterpret_cast<const void*>(&this->mem);
     }
 
-    /// Get
-    template <typename T> const T& Get() const
+    /// Const get
+    template <typename T> const T& ConstGet() const
     {
         return this->needsDeref ? *reinterpret_cast<T*>(this->mem) : reinterpret_cast<const T&>(this->mem);
+    }
+
+    /// Mutable get
+    template <typename T> T& Get()
+    {
+        return this->needsDeref ? *reinterpret_cast<T*>(this->mem) : reinterpret_cast<T&>(this->mem);
     }
 
     /// Set
@@ -83,6 +98,14 @@ struct MaterialVariant
         this->mem = mem;
         this->needsDeref = this->size > sizeof(void*);
         memcpy(this->needsDeref ? this->mem : reinterpret_cast<void*>(&this->mem), &data, this->size);
+    }
+
+    /// Set from raw memory
+    template <typename T> void Set(void* mem)
+    {
+        this->size = sizeof(T);
+        this->mem = mem;
+        this->needsDeref = true;
     }
 };
 
