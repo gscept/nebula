@@ -82,13 +82,13 @@ public:
     void CreateListener(const Resources::ResourceId res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
     /// get resource name
-    const Resources::ResourceName& GetName(const Resources::ResourceUnknownId id) const;
+    const Resources::ResourceName& GetName(const Resources::ResourceId id) const;
     /// get resource usage from resource id
-    const uint32_t GetUsage(const Resources::ResourceUnknownId id) const;
+    const uint32_t GetUsage(const Resources::ResourceId id) const;
     /// get resource tag was first registered with
-    const Util::StringAtom GetTag(const Resources::ResourceUnknownId id) const;
+    const Util::StringAtom GetTag(const Resources::ResourceId id) const;
     /// get resource state
-    const Resource::State GetState(const Resources::ResourceUnknownId id) const;
+    const Resource::State GetState(const Resources::ResourceId id) const;
     /// get resource id by name, use with care
     const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
     /// get the dictionary of all resource-id pairs
@@ -262,36 +262,36 @@ protected:
 /**
 */
 inline const Resources::ResourceName&
-ResourceLoader::GetName(const Resources::ResourceUnknownId id) const
+ResourceLoader::GetName(const Resources::ResourceId id) const
 {
-    return this->names[id.id];
+    return this->names[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline const uint32_t
-ResourceLoader::GetUsage(const Resources::ResourceUnknownId id) const
+ResourceLoader::GetUsage(const Resources::ResourceId id) const
 {
-    return this->usage[id.id];
+    return this->usage[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline const Util::StringAtom
-ResourceLoader::GetTag(const Resources::ResourceUnknownId id) const
+ResourceLoader::GetTag(const Resources::ResourceId id) const
 {
-    return this->tags[id.id];
+    return this->tags[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline const Resources::Resource::State
-ResourceLoader::GetState(const Resources::ResourceUnknownId id) const
+ResourceLoader::GetState(const Resources::ResourceId id) const
 {
-    return this->states[id.id];
+    return this->states[id.loaderInstanceId];
 }
 
 //------------------------------------------------------------------------------
