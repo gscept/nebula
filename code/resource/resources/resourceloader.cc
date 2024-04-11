@@ -412,7 +412,9 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
     // this assert should maybe be removed in favor of putting things on a queue if called from another thread
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 
-    IndexT i = this->ids.FindIndex(res);
+    // Store the file path as ID for the file
+    IO::URI path(res.Value());
+    IndexT i = this->ids.FindIndex(path.AsString());
 
     // Setup return value as placeholder by default
     ResourceId ret = this->placeholderResourceId;
@@ -439,7 +441,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         }
 
         // add the resource name to the resource id
-        this->names[instanceId] = res;
+        this->names[instanceId] = path.AsString();
         this->usage[instanceId] = 1;
         this->tags[instanceId] = tag;
         this->states[instanceId] = Resource::Pending;
@@ -476,7 +478,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         this->loads[instanceId] = pending;
 
         // add mapping between resource name and resource being loaded
-        this->ids.Add(res, instanceId);
+        this->ids.Add(path.AsString(), instanceId);
 
         if (immediate)
         {
