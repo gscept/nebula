@@ -9,6 +9,7 @@
 #include "nanobind/ndarray.h"
 #include <nanobind/operators.h>
 #include "util/random.h"
+#include "scripting/scriptserver.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -512,10 +513,13 @@ nanobind::handle VariantToPyType(Util::Variant src, py::rv_policy policy, nanobi
     return PyBool_FromLong(0);
 }
 
+
 void RegisterNebulaModules()
 {
-    PyImport_AppendInittab("nmath", PyInit_nmath);
-    PyImport_AppendInittab("util", PyInit_util);
+    Scripting::ScriptServer::RegisterModuleInit([]() {
+        PyImport_AppendInittab("nmath", PyInit_nmath);
+        PyImport_AppendInittab("util", PyInit_util);
+        });
 }
 } // namespace Python
 #if defined(__clang__)

@@ -7,6 +7,7 @@
 #include "editor/editor.h"
 #include "editor/ui/uimanager.h"
 #include "editor/components/editorcomponents.h"
+#include "editor/bindings/editorbindings.h"
 #include "graphicsfeature/components/graphicsfeature.h"
 
 // TEMP: Move this to editor game manager
@@ -46,6 +47,7 @@ void
 EditorFeatureUnit::OnAttach()
 {
     Game::RegisterType<Editor::EditorEntity>();
+    Scripting::RegisterEditorBinds();
 }
 
 //------------------------------------------------------------------------------

@@ -39,6 +39,8 @@
 #include "nflatbuffer/flatbufferinterface.h"
 #include "components/graphicsfeature.h"
 
+#include "scripting/deargui.h"
+
 #include "terrain/terraincontext.h"
 
 using namespace Graphics;
@@ -78,6 +80,7 @@ GraphicsFeatureUnit::OnAttach()
     Game::RegisterType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
     Game::RegisterType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     Game::RegisterType<Camera>();
+    Scripting::RegisterDearguiModule();
 }
 
 //------------------------------------------------------------------------------
