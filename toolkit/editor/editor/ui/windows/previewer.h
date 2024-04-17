@@ -20,6 +20,7 @@ namespace Presentation
 class Previewer : public BaseWindow
 {
     __DeclareClass(Previewer)
+public:
 
     enum class PreviewAssetType
     {
@@ -29,15 +30,13 @@ class Previewer : public BaseWindow
         Skeleton,
         Model
     };
-public:
     Previewer();
     ~Previewer();
 
-    void Update();
     void Run();
 
     // Select material for previewing
-    void Preview(const Resources::ResourceName& asset);
+    void Preview(const Resources::ResourceName& asset, const PreviewAssetType type);
 
     PreviewAssetType assetType;
     union
@@ -47,12 +46,8 @@ public:
         Characters::SkeletonResourceId skeleton;
         Models::ModelId model;
 
-        Resources::ResourceUnknownId id;
+        Resources::ResourceUnknownId id = Resources::InvalidResourceUnknownId;
     } asset;
-
-    Modules::Viewport viewport;
-    Ptr<Graphics::View> graphicsView;
-    Ptr<Graphics::Stage> graphicsStage;
 };
 __RegisterClass(Previewer)
 

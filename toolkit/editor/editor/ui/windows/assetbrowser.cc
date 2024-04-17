@@ -7,9 +7,11 @@
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
 #include "editor/ui/uimanager.h"
+#include "editor/ui/windowserver.h"
 #include "io/ioserver.h"
 #include "io/fswrapper.h"
 #include "imgui_internal.h"
+#include "previewer.h"
 
 using namespace Editor;
 
@@ -182,6 +184,29 @@ AssetBrowser::DisplayFileTree()
                     {
                         IO::URI uri = outpath;
                         uri.AppendLocalPath(fileList[i]);
+                        this->previewer = WindowServer::Instance()->GetWindow("Previewer").downcast<Previewer>();
+                        Util::String extension = uri.LocalPath().GetFileExtension();
+                        uint hash = extension.HashCode();
+
+                        static const uint MaterialHash = "sur"_hash;
+                        static const uint ModelHash = "n3"_hash;
+                        static const uint MeshHash = "nvx"_hash;
+                        static const uint SkeletonHash = "nsk"_hash;
+                        switch (hash)
+                        {
+                            case MaterialHash:
+                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Material);
+                                break;
+                            case ModelHash:
+                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Model);
+                                break;
+                            case MeshHash:
+                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Mesh);
+                                break;
+                            case SkeletonHash:
+                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Skeleton);
+                                break;
+                        }
                         //outpath = uri.LocalPath();
                         // TODO: Open file event
                     }

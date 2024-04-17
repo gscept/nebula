@@ -147,7 +147,7 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 void
 SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
 {
-    for (size_t i = 0; i < state.selection.Size(); i++)
+    for (SizeT i = 0; i < state.selection.Size(); i++)
     {
         if (!Editor::state.editorWorld->IsValid(state.selection[i]) ||
             !Editor::state.editorWorld->HasInstance(state.selection[i]))

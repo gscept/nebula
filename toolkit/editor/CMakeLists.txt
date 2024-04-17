@@ -1,4 +1,5 @@
-fips_begin_lib(editor)
+
+nebula_begin_module(editor)
 target_include_directories(editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_precompile_headers(editor PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["application/stdneb.h"]])
@@ -110,4 +111,4 @@ fips_dir(editor)
             selectiontool.h
         )
 fips_deps(foundation application graphicsfeature physicsfeature audio)
-fips_end_lib()
+nebula_end_module()

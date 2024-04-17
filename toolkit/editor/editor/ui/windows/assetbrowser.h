@@ -12,6 +12,7 @@
 namespace Presentation
 {
 
+class Previewer;
 class AssetBrowser : public BaseWindow
 {
     __DeclareClass(AssetBrowser)
@@ -23,6 +24,8 @@ public:
     void Run();
 private:
     void DisplayFileTree();
+
+    Ptr<Previewer> previewer;
 };
 __RegisterClass(AssetBrowser)
 
