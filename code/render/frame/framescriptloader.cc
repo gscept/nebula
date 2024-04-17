@@ -1147,6 +1147,7 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
     }
 
     FrameSubpassBatch* op = script->GetAllocator().Alloc<FrameSubpassBatch>();
+    op->SetName(name->string_value);
     op->domain = BarrierDomain::Pass;
     op->queue = CoreGraphics::QueueType::GraphicsQueueType;
     op->batch = batch;
@@ -1177,6 +1178,7 @@ FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script
     }
 
     FrameSubpassBatch* op = script->GetAllocator().Alloc<FrameSubpassBatch>();
+    op->SetName(name->string_value);
     op->domain = BarrierDomain::Pass;
     op->queue = CoreGraphics::QueueType::GraphicsQueueType;
     op->batch = batch;
@@ -1406,7 +1408,21 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
             if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
             else                                                subres.layerCount = CoreGraphics::TextureGetNumLayers(tex) - subres.layer;
 
-            op->textureDeps.Add(tex, Util::MakeTuple(valstr, stage, subres));
+            IndexT prevDep = op->textureDeps.FindIndex(tex);
+            if (prevDep == InvalidIndex)
+                op->textureDeps.Add(tex, Util::MakeTuple(valstr, stage, subres));
+            else
+            {
+                // Expand dependency to be the union of both
+                auto [name, oldStage, oldSubres] = op->textureDeps.ValueAtIndex(prevDep);
+                stage = Math::min(oldStage, stage);
+                subres.bits |= oldSubres.bits;
+                subres.mip = Math::min(oldSubres.mip, subres.mip);
+                subres.mipCount = Math::max(oldSubres.mipCount, subres.mipCount);
+                subres.layer = Math::min(oldSubres.layer, subres.layer);
+                subres.layerCount = Math::max(oldSubres.layerCount, subres.layerCount);
+                op->textureDeps.ValueAtIndex(prevDep) = Util::MakeTuple(valstr, stage, subres);
+            }
         }
         else if (script->buffersByName.Contains(valstr))
         {
@@ -1415,7 +1431,17 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
             JzonValue* nd = nullptr;
             if ((nd = jzon_get(dep, "offset")) != nullptr) subres.offset = nd->int_value;
             if ((nd = jzon_get(dep, "size")) != nullptr) subres.size = nd->int_value;
-            op->bufferDeps.Add(buf, Util::MakeTuple(valstr, stage, subres));
+            IndexT prevDep = op->bufferDeps.FindIndex(buf);
+            if (prevDep == InvalidIndex)
+                op->bufferDeps.Add(buf, Util::MakeTuple(valstr, stage, subres));
+            else
+            {
+                auto [name, oldStage, oldSubres] = op->bufferDeps.ValueAtIndex(prevDep);
+                stage = Math::min(oldStage, stage);
+                subres.offset = Math::min(oldSubres.offset, subres.offset);
+                subres.size = Math::max(oldSubres.size, subres.size);
+                op->bufferDeps.ValueAtIndex(prevDep) = Util::MakeTuple(valstr, stage, subres);
+            }
         }
         else
         {
