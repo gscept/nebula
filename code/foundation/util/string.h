@@ -265,6 +265,12 @@ public:
     Math::vec3 AsVec3() const;
     /// return contents as vec4
     Math::vec4 AsVec4() const;
+    /// return contents as vec2
+    Math::float2 AsFloat2() const;
+    /// return contents as vec3
+    Math::float3 AsFloat3() const;
+    /// return contents as vec4
+    Math::float4 AsFloat4() const;
     /// return contents as mat4
     Math::mat4 AsMat4() const;
     /// return contents as transform44

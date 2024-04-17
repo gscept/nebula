@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include <lib/std.fxh>
 #include <lib/shared.fxh>
-#include <lib/materials.fxh>
+#include <material_interfaces.fx>
 #include <lib/pbr.fxh>
 #include <lib/lighting_functions.fxh>
 

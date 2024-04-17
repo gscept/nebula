@@ -12,22 +12,8 @@
 #include "lib/defaultsamplers.fxh"
 #include "lib/clustering.fxh"
 #include "lib/lighting_functions.fxh"
-#include "lib/materialparams.fxh"
 
-group(BATCH_GROUP) shared constant Particle[string Visibility = "PS"; ]
-{
-    textureHandle Layer1;
-    textureHandle Layer2;
-    textureHandle Layer3;
-    textureHandle Layer4;
-
-    vec2 UVAnim1;
-    vec2 UVAnim2;
-    vec2 UVAnim3;
-    vec2 UVAnim4;
-    float LightMapIntensity;
-    float Transmission;
-};
+#include <material_interfaces.fx>
 
 // samplers
 sampler_state ParticleSampler
@@ -180,7 +166,7 @@ psUnlit(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 diffColor = sample2D(AlbedoMap, ParticleSampler, UV);
+    vec4 diffColor = sample2D(_Unlit.AlbedoMap, ParticleSampler, UV);
     
     vec4 color = diffColor * vec4(Color.rgb, 0);
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
@@ -201,8 +187,8 @@ psUnlit2Layers(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * Time_Random_Luminance_X.x);
-    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * Time_Random_Luminance_X.x);
+    vec4 layer1 = sample2D(_BlendAdd.AlbedoMap, LayerSampler, UV + _BlendAdd.UVAnim1 * Time_Random_Luminance_X.x);
+    vec4 layer2 = sample2D(_BlendAdd.Layer2, LayerSampler, UV + _BlendAdd.UVAnim2 * Time_Random_Luminance_X.x);
     
     vec4 color = layer1 * layer2 * 2;
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
@@ -225,9 +211,9 @@ psUnlit3Layers(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * Time_Random_Luminance_X.x);
-    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * Time_Random_Luminance_X.x);
-    vec4 layer3 = sample2D(Layer3, LayerSampler, UV + UVAnim3 * Time_Random_Luminance_X.x);
+    vec4 layer1 = sample2D(_BlendAdd.AlbedoMap, LayerSampler, UV + _BlendAdd.UVAnim1 * Time_Random_Luminance_X.x);
+    vec4 layer2 = sample2D(_BlendAdd.Layer2, LayerSampler, UV + _BlendAdd.UVAnim2 * Time_Random_Luminance_X.x);
+    vec4 layer3 = sample2D(_BlendAdd.Layer3, LayerSampler, UV + _BlendAdd.UVAnim3 * Time_Random_Luminance_X.x);
     
     vec4 color = ((layer1 * layer2 * 2) * layer3 * 2);
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
@@ -250,10 +236,10 @@ psUnlit4Layers(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * Time_Random_Luminance_X.x);
-    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * Time_Random_Luminance_X.x);
-    vec4 layer3 = sample2D(Layer3, LayerSampler, UV + UVAnim3 * Time_Random_Luminance_X.x);
-    vec4 layer4 = sample2D(Layer4, LayerSampler, UV + UVAnim4 * Time_Random_Luminance_X.x);
+    vec4 layer1 = sample2D(_BlendAdd.AlbedoMap, LayerSampler, UV + _BlendAdd.UVAnim1 * Time_Random_Luminance_X.x);
+    vec4 layer2 = sample2D(_BlendAdd.Layer2, LayerSampler, UV + _BlendAdd.UVAnim2 * Time_Random_Luminance_X.x);
+    vec4 layer3 = sample2D(_BlendAdd.Layer3, LayerSampler, UV + _BlendAdd.UVAnim3 * Time_Random_Luminance_X.x);
+    vec4 layer4 = sample2D(_BlendAdd.Layer4, LayerSampler, UV + _BlendAdd.UVAnim4 * Time_Random_Luminance_X.x);
     
     vec4 color = ((layer1 * layer2 * 2) * layer3 * 2) * layer4;
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
@@ -277,8 +263,8 @@ psLit(in vec4 ViewSpacePosition,
     in vec2 UV,
     [color0] out vec4 Light) 
 {   
-    vec4 albedo =       sample2D(AlbedoMap, ParticleSampler, UV);
-    vec4 material =     sample2D(ParameterMap, ParticleSampler, UV);
+    vec4 albedo =       sample2D(_BSDF.AlbedoMap, ParticleSampler, UV);
+    vec4 material =     sample2D(_BSDF.ParameterMap, ParticleSampler, UV);
     
     const float depth = fetch2D(DepthBufferCopy, ParticleSampler, ivec2(gl_FragCoord.xy), 0).r;
     const float particleDepth = gl_FragCoord.z;
@@ -289,7 +275,7 @@ psLit(in vec4 ViewSpacePosition,
 
     vec3 tNormal = vec3(0,0,0);
 
-    tNormal.xy = (sample2D(NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;
+    tNormal.xy = (sample2D(_BSDF.NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;
     tNormal.z = saturate(sqrt(1.0 - dot(tNormal.xy, tNormal.xy)));
     vec3 binormal = cross(Normal.xyz, Tangent.xyz);
 
@@ -311,10 +297,10 @@ psLit(in vec4 ViewSpacePosition,
     vec3 light = vec3(0, 0, 0);
 
     // add light
-    light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition.xyz, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, Transmission);
+    light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition.xyz, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, _BSDF.Transmission);
     vec3 viewVec = -normalize(ViewSpacePosition.xyz);
     vec3 viewNormal = (View * vec4(tNormal.xyz, 0)).xyz;
-    light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, Transmission);
+    light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, _BSDF.Transmission);
     
     Light = vec4(light, finalAlpha);
 }

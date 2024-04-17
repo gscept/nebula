@@ -11,6 +11,7 @@
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
 #include "system_shaders/cluster_generate.h"
+#include "materials/materialtemplates.h"
 #include "materials/shaderconfig.h"
 
 namespace Raytracing
@@ -63,7 +64,7 @@ public:
         , const SizeT patchVertexStride
         , const Util::Array<Math::mat4> transforms
         , const uint materialTableOffset
-        , const Materials::MaterialProperties shader
+        , const MaterialTemplates::MaterialProperties shader
         , const CoreGraphics::VertexLayoutType vertexLayout
     );
     /// Invalidate a BLAS (for example, when the mesh has morphed) associated with a graphics entity

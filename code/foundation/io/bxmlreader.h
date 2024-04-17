@@ -85,6 +85,10 @@ public:
     Math::vec2 GetOptVec2(const char* attr, const Math::vec2& defaultValue) const;
     /// get optional vec4 attribute value from current node
     Math::vec4 GetOptVec4(const char* attr, const Math::vec4& defaultValue) const;
+    /// get vec2 attribute value from current node
+    Math::float2 GetOptVec2(const char* attr, const Math::float2& defaultValue) const;
+    /// get optional vec4 attribute value from current node
+    Math::float4 GetOptVec4(const char* attr, const Math::float4& defaultValue) const;
     /// get optional mat4 attribute value from current node
     Math::mat4 GetOptMat4(const char* attr, const Math::mat4& defaultValue) const;
     #endif
@@ -95,4 +99,3 @@ private:
 
 } // namespace IO
 //------------------------------------------------------------------------------
-    

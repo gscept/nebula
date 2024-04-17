@@ -106,10 +106,14 @@
     </Expand>
   </Type>
   <Type Name="Resources::ResourceId">
-      <DisplayString>Instance={poolId}, Pool={poolIndex}, Resource={resourceId}, Type={resourceType}</DisplayString>
+      <DisplayString>Instance: {loaderInstanceId}, Loader: {loaderIndex}, Resource: {resourceId}, Gen: {generation}</DisplayString>
+  </Type>
+  <Type Name="Resources::ResourceUnknownId">
+      <DisplayString>Id: {resourceId} Gen: {generation}</DisplayString>
+      <Expand></Expand>
   </Type>
   <Type Name="CoreGraphics::BufferId">
-      <DisplayString>Id={id24}, Type={id8}</DisplayString>
+      <DisplayString>Id: {id24}, Gen: {id8}</DisplayString>
   </Type>
   <Type Name="Util::HashTable&lt;*,*&gt;">
     <DisplayString>Size={size}</DisplayString>
@@ -154,6 +158,7 @@
     <DisplayString>{m128_i32[0]}, {m128_i32[1]}, {m128_i32[2]}, {m128_i32[3]}</DisplayString>
     <Expand></Expand>
   </Type>
+
 
   
 </AutoVisualizer>

@@ -13,6 +13,58 @@ import genutil as util
 import IDLC
 import IDLC.filewriter
 
+def Error(object, msg):
+    print('[Material Template Compiler] error({}): {}'.format(object, msg))
+    sys.exit(-1)
+
+def Warning(object, msg):
+    print('[Material Template Compiler] warning({}): {}'.format(object, msg))
+
+def Assert(cond, object, msg):
+    if not cond:
+        Error(object, msg)
+
+def TypeToString(type, edit, val):
+    typeStr = ''
+    accessorStr = ''
+    valueStr = ''
+    if type == "vec4" or type == "vec3" or type == "vec2":
+
+        vecStr = ''
+        for v in val:
+            if v is not val[-1]:
+                vecStr += '{}, '.format(v)
+            else:
+                vecStr += '{}'.format(v)
+
+        if type == 'vec4':
+            if edit == 'color':
+                typeStr = 'Color'
+            else:
+                typeStr = 'Vec4'
+            accessorStr = 'f4'
+            valueStr = 'Math::float4{{{}}}'.format(vecStr)
+        elif type == 'vec3':
+            if edit == 'color':
+                typeStr = 'Color'
+            else:
+                typeStr = 'Vec3'
+            valueStr = 'Math::float3{{{}}}'.format(vecStr)
+            accessorStr = 'f3'
+        elif type == 'vec2':
+            typeStr = 'Vec2'
+            accessorStr = 'f2'
+            valueStr = 'Math::float2{{{}}}'.format(vecStr)
+    elif type == "float":
+        typeStr = 'Scalar'
+        accessorStr = 'f'
+        valueStr = '{}'.format(val)
+    elif type == "bool":
+        typeStr = 'Bool'
+        accessorStr = 'b'
+        valueStr = '{}'.format(val).lower()
+    return typeStr, accessorStr, valueStr
+
 class StructDeclaration:
     def __init__(self, name):
         self.name = name
@@ -34,10 +86,12 @@ class StructDeclaration:
         return '{}struct {}\n{}{{\n{}{}}};\n'.format(indent, self.name, indent, str, indent)
     
 class VariableDefinition:
-    def __init__(self, name, ty, default):
+    def __init__(self, name, ty, default, desc, edit):
         self.name = name
         self.type = ty
         self.default = default
+        self.desc = desc
+        self.edit = edit
 
     def __hash__(self):
         return hash(self.name)
@@ -58,35 +112,69 @@ class PassDefinition:
         return self.batch == other.batch
 
 class MaterialTemplateDefinition:
-    def __init__(self, node):
+    def __init__(self, node, parser):
         self.name = node['name']
         self.name = self.name.replace(" ", "_").replace("+", "")
         self.inherits = ""
-        self.uniqueId = 0
         self.virtual = False
         self.passes = set()
         self.variables = set()
-        self.properties = "Unknown"
+        self.interface = None
         self.vertex = "Unknown"
         self.group = "Unknown"
 
         if "inherits" in node:
             self.inherits = node["inherits"]
+        else:
+            if "interface" not in node:
+                Error(self.name, "Does not define an interface and doesn't inherit one which does")
+            if "interface" in node and node["interface"] not in parser.interfaceDict:
+                Error(self.name, "References undefined interface '{}'".format(node['interface']))
+            self.interface = parser.interfaceDict[node["interface"]]
         if "virtual" in node:
             self.virtual = node["virtual"]
-
         if not self.virtual:
-            self.properties = node["materialProperties"]
             self.vertex = node["vertexType"]
         if "group" in node:
             self.group = node["group"]
         self.desc = node["desc"]
         if "variables" in node:
             for var in node["variables"]:
-                    varName = var["name"]
-                    varType = var["type"]
-                    varDef = var["defaultValue"]
-                    self.variables.add(VariableDefinition(varName, varType, varDef))
+                varName = var["name"]
+                if not varName in self.interface.valuesDict:
+                    Error(self.name, "Defines default value for '{}' but no such value is defined in interface '{}'".format(varName, self.interface.name))
+                varType = self.interface.valuesDict[varName].type
+
+                varDef = var["defaultValue"]
+
+                # Validate default value
+                if varType == "float":
+                    Assert(type(varDef) is float, self.name, "Variable '{}' is of type 'float' but initialized as '{}'".format(varName, type(varDef)))
+                elif varType == "vec2":
+                    Assert(len(varDef) == 2, self.name, "Type 'vec2' requires 2 values")
+                    for v in varDef:
+                        Assert(type(v) is float, self.name, "Variable '{}' is of type 'vec2' but initialized as '{}'".format(varName, type(v)))
+                elif varType == "vec3":
+                    Assert(len(varDef) == 3, self.name, "Type 'vec3' requires 3 values")
+                    for v in varDef:
+                        Assert(type(v) is float, self.name, "Variable '{}' is of type 'vec3' but initialized as '{}'".format(varName, type(v)))
+                elif varType == "vec4":
+                    Assert(len(varDef) == 4, self.name, "Type 'vec4' requires 4 values")
+                    for v in varDef:
+                        Assert(type(v) is float, self.name, "Variable '{}' is of type 'vec4' but initialized as '{}'".format(varName, type(v)))
+                elif varType == "texture2d":
+                    Assert(type(varDef) is str, self.name, "Variable '{}' is of type 'texture2d' but initialized as '{}'".format(varName, type(varDef)))
+                elif varType == "textureHandle":
+                    Assert(type(varDef) is str, self.name, "Variable '{}' is of type 'textureHandle' but initialized as '{}'".format(varName, type(varDef)))
+
+                varDesc = ''
+                varEdit = ''
+                if "desc" in var:
+                    varDesc = var["desc"]
+                if "edit" in var:
+                    varEdit = var["edit"]
+                
+                self.variables.add(VariableDefinition(varName, varType, varDef, varEdit, varDesc))
         if "passes" in node:
             for p in node["passes"]:
                     batch = p["batch"]
@@ -103,18 +191,41 @@ class MaterialTemplateDefinition:
             ret += "\t/* Virtual Material */\n"
         ret += '\tconst char* Description = "{}";\n'.format(self.desc)
         if not self.virtual:
+            texCounter = 0
             for v in self.variables:
-                ret += '\tMaterials::MaterialTemplateValue __{};\n'.format(v.name)
-
+                if v.type == 'texture2d' or v.type == 'textureHandle':
+                    ret += '''\tstatic constexpr MaterialTemplateTexture __{} = 
+                        MaterialTemplateTexture{{
+                            .bindlessOffset = {},
+                            .resource = "{}"
+                #ifdef WITH_NEBULA_EDITOR
+                            , .desc = {},
+                            .hashedName = "{}"_hash,
+                            .textureIndex = {}
+                #endif
+                        }};\n'''.format(v.name, 'MaterialInterfaces::{}Material_{}_Offset'.format(self.interface.name, v.name) if v.type == 'textureHandle' else '0xFFFFFFFF', v.default, 'nullptr' if len(v.desc) == 0 else '"{}"'.format(v.desc), v.name, texCounter)
+                    texCounter += 1
+                else:
+                    typeStr, accessorStr, varStr = TypeToString(v.type, v.edit, v.default)
+                    ret += '''\tstatic constexpr MaterialTemplateValue __{} = 
+                        MaterialTemplateValue{{
+                            .type = MaterialTemplateValue::Type::{}, 
+                            .data = {{.{} = {}}},
+                            .offset = MaterialInterfaces::{}Material_{}_Offset
+                #ifdef WITH_NEBULA_EDITOR
+                            , .desc = {}
+                #endif
+                            }};\n'''.format(v.name, typeStr, accessorStr, varStr, self.interface.name, v.name, "nullptr" if len(v.desc) == 0 else '"{}"'.format(v.desc))
+                    
             for p in self.passes:
-                ret += '\n\tMaterialTemplates::Entry::Pass __{};\n'.format(p.batch)
+                ret += '\n\tEntry::Pass __{};\n'.format(p.batch)
                 for v in self.variables:
                     if v.type == 'texture2d':
                         ret += '\tMaterials::ShaderConfigBatchTexture __{}_{};\n'.format(p.batch, v.name)
                     else:
                         ret += '\tMaterials::ShaderConfigBatchConstant __{}_{};\n'.format(p.batch, v.name)
                         
-            ret += '\n\tEntry entry = {{.name = "{}", .uniqueId = {}, .properties = Materials::MaterialProperties::{}, .vertexLayout =  CoreGraphics::{}}};\n'.format(self.name, self.uniqueId, self.properties, self.vertex)
+            ret += '\n\tEntry entry = {{.name = "{}", .uniqueId = "{}"_hash, .properties = {}, .bufferName="_{}", .bufferSize=sizeof(MaterialInterfaces::{}Material), .vertexLayout = CoreGraphics::{}, .numTextures = {}}};\n'.format(self.name, self.name, self.interface.uniqueId, self.interface.name, self.interface.name, self.vertex, texCounter)
             ret += '\n\tvoid Setup();\n'
 
         ret = 'struct {}\n{{\n{}}};\n'.format(self.name, ret)
@@ -126,94 +237,101 @@ class MaterialTemplateDefinition:
             func = ''
             numTextures = 0
             numConstants = 0
-            func += '\tthis->entry.constantsPerBatch.Resize({});\n'.format(len(self.passes))
+            constLookup = 0
+            texLookup = 0
             func += '\tthis->entry.texturesPerBatch.Resize({});\n'.format(len(self.passes))
-            func += '\tthis->entry.constantBatchLookup.Resize({});\n'.format(len(self.passes))
             func += '\tthis->entry.textureBatchLookup.Resize({});\n'.format(len(self.passes))
             defList = list()
             for var in self.variables:
-                varStr = ''
-                typeStr = ''
-                accessorStr = ''
-                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2":
-                    vecStr = ''
+                typeStr, accessorStr, varStr = TypeToString(var.type, var.edit, var.default)
+                table = ''
+                
+                lookup = 0
+                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2" or var.type == "float" or var.type == "bool":
+                    lookup = constLookup
+                    constLookup += 1
                     numConstants += 1
-                    for val in var.default:
-                        vecStr += '{}, '.format(val)
-                    vecStr = vecStr[:-2]
-                    if var.type == 'vec4':
-                        typeStr = 'Vec4'
-                        varStr += 'Math::vec4({})'.format(vecStr)
-                        accessorStr = 'f4'
-                    elif var.type == 'vec3':
-                        typeStr = 'Vec3'
-                        varStr += 'Math::vec3({})'.format(vecStr)
-                        accessorStr = 'f3'
-                    elif var.type == 'vec2':
-                        typeStr = 'Vec2'
-                        varStr += 'Math::vec2({})'.format(vecStr)
-                        accessorStr = 'f2'
-                elif var.type == "float":
-                    typeStr = 'Scalar'
-                    varStr += '{}'.format(var.default)
-                    accessorStr = 'f'
+                    table = 'values'
+                elif var.type == "textureHandle" or var.type == "texture2d":
+                    lookup = texLookup
+                    texLookup += 1
                     numConstants += 1
-                elif var.type == "bool":
-                    typeStr = 'Bool'
-                    varStr += '{}'.format(var.default).lower()
-                    accessorStr = 'b'
-                    numConstants += 1
-                elif var.type == "textureHandle":
-                    typeStr = 'BindlessResource'
-                    varStr += '"{}"'.format(var.default)
-                    accessorStr = 'resource'
-                    numConstants += 1
-                elif var.type == "texture2d":
-                    typeStr = 'Resource'
-                    varStr += '"{}"'.format(var.default)
-                    accessorStr = 'resource'
-                    numTextures += 1
+                    table = 'textures'
 
-                func += '\tthis->__{} = Materials::MaterialTemplateValue{{.type = Materials::MaterialTemplateValue::Type::{}, .data = {{.{} = {}}} }};\n'.format(var.name, typeStr, accessorStr, varStr)
-                func += '\tthis->entry.values.Add("{}", &this->__{});\n'.format(var.name, var.name)
-                defList.append('&this->__{}'.format(var.name))
+                func += '#ifdef WITH_NEBULA_EDITOR\n'
+                func += '\tthis->entry.{}ByHash.Add("{}"_hash, &this->__{});\n'.format(table, var.name, var.name)
+                func += '#endif\n'
+                func += '\tthis->entry.{}.Add("{}", &this->__{});\n'.format(table, var.name, var.name)
+                if var.type == "texture2d":
+                    defList.append('&this->__{}'.format(var.name))
+            
             passCounter = 0
             for p in self.passes:
                 func += '\t{\n'
                 func += '\t\t/* Pass {} */\n'.format(p.batch)
                 func += '\t\tCoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:{}.fxb");\n'.format(p.shader)
                 func += '\t\tCoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram({}, CoreGraphics::ShaderFeatureMask("{}"));\n'.format('shader', p.variation)
-                func += '\t\tthis->__{} = Entry::Pass{{.shader = shader, .program = program, .index = {} }};\n'.format(p.batch, passCounter)
+                func += '\t\tIndexT bufferSlot = InvalidIndex;\n'
+                func += '\t\tif (this->entry.bufferName != nullptr) bufferSlot = CoreGraphics::ShaderGetResourceSlot({}, this->entry.bufferName);\n'.format('shader')
+                func += '\t\tthis->__{} = Entry::Pass{{.shader = shader, .program = program, .index = {}, .name = "{}", .bufferIndex=bufferSlot }};\n'.format(p.batch, passCounter, p.batch)
                 func += '\t\tthis->entry.passes.Add(CoreGraphics::BatchGroup::FromName("{}"), &this->__{});\n'.format(p.batch, p.batch)
                 func += '\t\tthis->entry.texturesPerBatch[{}].Resize({});\n'.format(passCounter, numTextures)
-                func += '\t\tthis->entry.constantsPerBatch[{}].Resize({});\n'.format(passCounter, numConstants)
                 texCounter = 0
-                constCounter = 0
-                varCounter = 0
                 for var in self.variables:
                     memStr = 'this->__{}_{}'.format(p.batch, var.name)
                     if var.type == 'texture2d':
                         func += '\t\tthis->entry.textureBatchLookup[{}].Add("{}"_hash, {});\n'.format(passCounter, var.name, texCounter)
-                        func += '\t\t{} = Materials::ShaderConfigBatchTexture{{.slot = CoreGraphics::ShaderGetResourceSlot(shader, "{}"), .def = {}}};\n'.format(memStr, var.name, defList[varCounter]);
+                        func += '\t\t{} = Materials::ShaderConfigBatchTexture{{.slot = CoreGraphics::ShaderGetResourceSlot(shader, "{}"), .def = {}}};\n'.format(memStr, var.name, defList[texCounter]);
                         func += '\t\tthis->entry.texturesPerBatch[{}][{}] = &{};\n'.format(passCounter, texCounter, memStr)
                         texCounter += 1
-                    else:
-                        constStr = '\t\t\t{}.slot = {}Slot;\n'.format(memStr, var.name)
-                        constStr += '\t\t\t{}.offset = CoreGraphics::ShaderGetConstantBinding(shader, "{}");\n'.format(memStr, var.name)
-                        constStr += '\t\t\t{}.group = CoreGraphics::ShaderGetConstantGroup(shader, "{}");\n'.format(memStr, var.name)
-                        constStr += '\t\t\t{}.def = {};\n'.format(memStr, defList[varCounter])
-                        func += '\t\tIndexT {}Slot = CoreGraphics::ShaderGetConstantSlot(shader, "{}");\n'.format(var.name, var.name)
-                        func += '\t\tif ({}Slot != InvalidIndex)\n\t\t{{\n{}\t\t}}\n\t\telse\n\t\t{{\n\t\t\t{} = {{InvalidIndex, InvalidIndex, InvalidIndex}};  \n\t\t}}\n'.format(var.name, constStr, memStr)
-                        func += '\t\tthis->entry.constantBatchLookup[{}].Add("{}"_hash, {});\n'.format(passCounter, var.name, constCounter)
-                        func += '\t\tthis->entry.constantsPerBatch[{}][{}] = &{};\n'.format(passCounter, constCounter, memStr)
-                        constCounter += 1
-                    varCounter += 1
                 func += '\t}\n'
                 passCounter += 1
             return '\n//------------------------------------------------------------------------------\n/**\n*/\nvoid\n{}::Setup() \n{{\n{}}}'.format(self.name, func)
+        
+class InterfaceValueDefinition:
+    def __init__(self, node):
+        self.name = node['name']
+        self.type = node['type']
+
+class MaterialInterfaceDefinition:
+    def __init__(self, node, parser):
+        self.name = node['name']
+        self.values = list()
+        self.valuesDict = {};
+        if 'inherits' in node:
+            inherited = parser.interfaceDict[node['inherits']]
+            for v in inherited.values:
+                self.values.append(v)
+                self.valuesDict[v.name] = v
+
+        for v in node['values']:
+            valueDef = InterfaceValueDefinition(v)
+            if valueDef.name in self.valuesDict:
+                Error(self.name, "Interface shadows inherited member '{}'".format(valueDef.name))
+            self.values.append(valueDef)
+            self.valuesDict[valueDef.name] = valueDef
 
 
-materialCounter = 0
+    def FormatShader(self):
+        contents = ""
+        textures = ""
+        texCounter = 64 - 16;
+        for v in self.values:
+            if v.type != 'texture2d':
+                contents += "\t{} {};\n".format(v.type, v.name)
+            else:
+                textures += "group(BATCH_GROUP) binding({}) texture2D {}_{};\n".format(texCounter, self.name, v.name)
+                texCounter += 1
+        
+        ret = ""
+        ret += "ptr struct {}Material \n{{\n{}}};\n".format(self.name, contents)
+        ret += textures
+        ret += "\n"
+        ret += "MATERIAL_CB_BINDING constant {}Constants \n{{\n{}}} _{};\n".format(self.name, contents, self.name)
+        return ret
+
+
+interfaceCounter = 0
 class MaterialTemplateGenerator:
     def __init__(self):
         self.document = None
@@ -221,6 +339,8 @@ class MaterialTemplateGenerator:
         self.version = 0
         self.materials = list()
         self.materialDict = {}
+        self.interfaces = list()
+        self.interfaceDict = {}
         self.name = ""
 
     #------------------------------------------------------------------------------
@@ -254,31 +374,63 @@ class MaterialTemplateGenerator:
     ##
     #
     def Parse(self):
-        global materialCounter;
+        global interfaceCounter;
+        self.materialDict.clear()
+        self.materials.clear()
+        self.interfaceDict.clear()
+        self.interfaces.clear()
 
         if "Nebula" in self.document:
             main = self.document["Nebula"]
             for name, node in main.items():
-                    if name == "Templates":
-                        for mat in node:
-                            matDef = MaterialTemplateDefinition(mat)
-                            matDef.uniqueId = materialCounter;
-                            materialCounter += 1;
-                            if matDef.inherits:
-                                inheritances = matDef.inherits.split("|")
-                                for inherits in inheritances:
-                                    adjustedInherits = inherits.replace(" ", "_").replace("+", "")
-                                    matDef.variables = self.materialDict[adjustedInherits].variables.union(matDef.variables)
-                                    matDef.passes = self.materialDict[adjustedInherits].passes.union(matDef.passes)
-                            self.materialDict[matDef.name] = matDef
-                            self.materials.append(matDef)
+                if name == "Templates":
+                    for mat in node:
+                        matDef = MaterialTemplateDefinition(mat, self)
+                        if matDef.inherits:
+                            matDef.variables = self.materialDict[matDef.inherits].variables.union(matDef.variables)
+                            matDef.passes = self.materialDict[matDef.inherits].passes.union(matDef.passes)
+                            if matDef.interface == None:
+                                matDef.interface = self.materialDict[matDef.inherits].interface;                        
+
+                        self.materialDict[matDef.name] = matDef
+                        self.materials.append(matDef)
+
+                        if matDef.interface == None:
+                            Error(matDef.name, "Template must either reference a valid interface or inherit from a template that does")
+                            
+                if name == "Interfaces":
+                    for int in node:
+                        intDef = MaterialInterfaceDefinition(int, self)
+                        intDef.uniqueId = interfaceCounter
+                        interfaceCounter += 1
+                        self.interfaceDict[intDef.name] = intDef
+                        self.interfaces.append(intDef)
+                    
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def FormatHeader(self, f):
+        f.WriteLine('namespace {}\n{{\n'.format(self.name))
+
+        f.WriteLine('#define ENUM_{}\\'.format(self.name))
+        for int in self.interfaces:
+            if int == self.interfaces[-1]:
+                f.WriteLine('\t{},'.format(int.name))
+            else:
+                f.WriteLine('\t{},\\'.format(int.name))
+
+        f.WriteLine("")
+        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
+
+        for mat in self.materials:
+            f.WriteLine(mat.FormatHeader())
+
+        f.WriteLine('}} // namespace {}\n'.format(self.name))
 
     #------------------------------------------------------------------------------
     ##
     #
-    def GenerateHeader(self, outPath):
-        f = IDLC.filewriter.FileWriter()
-        f.Open(outPath)
+    def BeginHeader(self, f):
         f.WriteLine("// Material Template #version:{}#".format(self.version))
         f.WriteLine("#pragma once")
         f.WriteLine("//------------------------------------------------------------------------------")
@@ -292,63 +444,40 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "util/dictionary.h"')
         f.WriteLine('#include "util/tupleutility.h"')
         f.WriteLine('#include "coregraphics/vertexlayout.h"')
+        f.WriteLine('#include "materials/materialtemplatetypes.h"')
+        f.WriteLine('#include "materials/material_interfaces.h"')
         f.WriteLine('#include "materials/shaderconfig.h"')
         f.WriteLine('#include "coregraphics/shader.h"')
-
+        f.WriteLine('#include "math/scalar.h"')
         f.WriteLine('#include "math/vec2.h"')
         f.WriteLine('#include "math/vec3.h"')
         f.WriteLine('#include "math/vec4.h"')
         f.WriteLine('using namespace Util;')
         f.WriteLine('namespace MaterialTemplates\n{\n')
-
-        f.WriteLine('namespace {}\n{{\n'.format(self.name))
-
-        enumStr = ''
-        for mat in self.materials:
-            if not mat.virtual:
-                enumStr += '\t{},\n'.format(mat.name)
-
-        f.WriteLine('enum MaterialTemplateEnums \n{{\n{}}};\n'.format(enumStr))
-        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
-
-        for mat in self.materials:
-            f.WriteLine(mat.FormatHeader())
-
-        f.WriteLine('}} // namespace {}\n'.format(self.name))
-
-        f.WriteLine('} // namespace MaterialTemplates\n')
-        f.Close()
-        return self.materials
+        
 
     #------------------------------------------------------------------------------
     ##
     #
-    def GenerateSource(self, headerPath, outPath):
+    def EndHeader(self, f):
+        f.WriteLine('} // namespace MaterialTemplates\n')
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateHeader(self, outPath):
         f = IDLC.filewriter.FileWriter()
         f.Open(outPath)
-        f.WriteLine("// Material Template #version:{}#".format(self.version))
-        f.WriteLine("#pragma once")
-        f.WriteLine("//------------------------------------------------------------------------------")
-        f.WriteLine("/**")
-        f.IncreaseIndent()
-        f.WriteLine("This file was generated with Nebula's Material Template compiler tool.")
-        f.WriteLine("DO NOT EDIT")
-        f.DecreaseIndent()
-        f.WriteLine("*/")
-        f.WriteLine('#include "{}"'.format(headerPath))
-        f.WriteLine('#include "util/string.h"')
-        f.WriteLine('#include "util/dictionary.h"')
-        f.WriteLine('#include "coregraphics/vertexlayout.h"')
-        f.WriteLine('#include "materials/shaderconfig.h"')
-        f.WriteLine('#include "math/vec2.h"')
-        f.WriteLine('#include "math/vec3.h"')
-        f.WriteLine('#include "math/vec4.h"')
-        f.WriteLine('using namespace Util;')
-        f.WriteLine('namespace MaterialTemplates\n{\n')
+        self.BeginHeader(f)
+        self.FormatHeader(f)
+        self.EndHeader(f)
+        f.Close()
 
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def FormatSource(self, f):
         f.WriteLine('namespace {}\n{{\n'.format(self.name))
-
-        f.WriteLine('// Entry points')
         setupStr = ''
         for mat in self.materials:
             if not mat.virtual:
@@ -358,17 +487,102 @@ class MaterialTemplateGenerator:
                 for p in mat.passes:
                     setupStr += '\tConfigs.Emplace(CoreGraphics::BatchGroup::FromName("{}")).Append(&__{}.entry);\n'.format(p.batch, mat.name)
                 setupStr += '\n'
-                f.WriteLine('struct MaterialTemplates::{}::{} MaterialTemplates::{}::__{};'.format(self.name, mat.name, self.name, mat.name))
+                f.WriteLine('struct {}::{} {}::__{};'.format(self.name, mat.name, self.name, mat.name))
         f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs)\n{{\n{}}}\n'.format(setupStr))
 
         f.WriteLine('}} // namespace {}\n'.format(self.name))
 
+    #------------------------------------------------------------------------------
+    ##
+    #  
+    def BeginSource(self, f):
+        f.WriteLine("// Material Template #version:{}#".format(self.version))
+        f.WriteLine("#pragma once")
+        f.WriteLine("//------------------------------------------------------------------------------")
+        f.WriteLine("/**")
+        f.IncreaseIndent()
+        f.WriteLine("This file was generated with Nebula's Material Template compiler tool.")
+        f.WriteLine("DO NOT EDIT")
+        f.DecreaseIndent()
+        f.WriteLine("*/")
+        f.WriteLine('#include "{}.h"'.format(self.name))
+        f.WriteLine('#include "util/string.h"')
+        f.WriteLine('#include "util/dictionary.h"')
+        f.WriteLine('#include "coregraphics/vertexlayout.h"')
+        f.WriteLine('#include "materials/materialtemplatetypes.h"')
+        f.WriteLine('#include "math/vec2.h"')
+        f.WriteLine('#include "math/vec3.h"')
+        f.WriteLine('#include "math/vec4.h"')
+        f.WriteLine('using namespace Util;')
+        f.WriteLine('namespace MaterialTemplates\n{\n')
+        
+
+    #------------------------------------------------------------------------------
+    ##
+    #  
+    def EndSource(self, f):
         f.WriteLine('} // namespace MaterialTemplates\n')
 
     #------------------------------------------------------------------------------
     ##
     #
-    def GenerateGlueHeader(self, outPath):
+    def GenerateSource(self, outPath):
+        f = IDLC.filewriter.FileWriter()
+        f.Open(outPath)
+        self.BeginSource(f)
+        self.FormatSource(f)
+        self.EndSource(f)
+        f.Close()
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def FormatShader(self, f):
+        materialNames = "\\\n"
+        for i in self.interfaces:
+            f.WriteLine(i.FormatShader())
+            materialNames += "\t\t{}Material {}Materials;\\\n".format(i.name, i.name);
+
+        f.WriteLine("#define MATERIAL_LIST_{} {}".format(Path(self.name).stem, materialNames))
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def BeginShader(self, f):
+        f.WriteLine("// Material Interface #version:{}#".format(self.version))
+        f.WriteLine("#pragma once")
+        f.WriteLine("//------------------------------------------------------------------------------")
+        f.WriteLine("/**")
+        f.IncreaseIndent()
+        f.WriteLine("This file was generated with Nebula's Material Template compiler tool.")
+        f.WriteLine("DO NOT EDIT")
+        f.DecreaseIndent()
+        f.WriteLine("*/")
+        f.WriteLine("#include <lib/std.fxh>")
+        f.WriteLine("#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)")
+        f.WriteLine("")
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def EndShader(self, f):
+        f.WriteLine("")
+        
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateShader(self, outPath):
+        f = IDLC.filewriter.FileWriter()
+        f.Open(outPath)
+        self.BeginShader(f)
+        self.FormatShader(f)
+        self.EndShader(f)
+        f.Close()
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateGlueHeader(self, files, outPath):
         f = IDLC.filewriter.FileWriter()
         f.Open(outPath)
         f.WriteLine("// Material Template #version:{}#".format(self.version))
@@ -380,9 +594,17 @@ class MaterialTemplateGenerator:
         f.WriteLine("DO NOT EDIT")
         f.DecreaseIndent()
         f.WriteLine("*/")
-        f.WriteLine('#include "materials/shaderconfig.h"')
+        f.WriteLine('#include "materials/materialtemplatetypes.h"')
+
+        enumStr = ''
+        for file in files:
+            name = Path(file).stem
+            enumStr += '\tENUM_{}\n'.format(name)
+            f.WriteLine('#include "{}"'.format(file))
+        enumStr += '\tNum\n'
 
         f.WriteLine('namespace MaterialTemplates\n{\n')
+        f.WriteLine('enum class MaterialProperties\n{{\n{}}};'.format(enumStr))
 
         f.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
         f.WriteLine('extern Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
@@ -421,25 +643,105 @@ class MaterialTemplateGenerator:
 
         f.WriteLine('} // namespace MaterialTemplates\n')
 
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateGlueShader(self, files, outPath):
+        f = IDLC.filewriter.FileWriter()
+        f.Open(outPath)
+        f.WriteLine("// Material Template #version:{}#".format(self.version))
+        f.WriteLine("#pragma once")
+        f.WriteLine("//------------------------------------------------------------------------------")
+        f.WriteLine("/**")
+        f.IncreaseIndent()
+        f.WriteLine("This file was generated with Nebula's Material Template compiler tool.")
+        f.WriteLine("DO NOT EDIT")
+        f.DecreaseIndent()
+        f.WriteLine("*/")
+        f.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
+        f.WriteLine("const uint MaterialBindingSlot = 51;")
+        f.WriteLine("const uint MaterialBufferSlot = 52;")
+
+        bindingsContent = ''
+        for file in files:
+            fileName = Path(file).stem
+            f.WriteLine('#include <{}.fxh>'.format(fileName))
+            bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
+
+        f.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
+
 
 # Entry point for generator
 if __name__ == '__main__':
     globals()
+
     generator = MaterialTemplateGenerator()
     generator.SetVersion(Version)
+    files = sys.argv[1:-1]
+    outDir = sys.argv[-1]
 
-    if sys.argv[1] == '--glue':
-        print("Compiling glue '{}' -> '{}' & '{}'".format(sys.argv[2:-2], sys.argv[-2], sys.argv[-1]))
-        generator.GenerateGlueHeader(sys.argv[-2])
-        generator.GenerateGlueSource(sys.argv[2:-2], sys.argv[-2], sys.argv[-1])
+    generator.SetName("materialtemplates")
+    headerF = IDLC.filewriter.FileWriter()
+    headerF.Open('{}/materialtemplates.h'.format(outDir))
+    generator.BeginHeader(headerF)
 
-    else:
+    sourceF = IDLC.filewriter.FileWriter()
+    sourceF.Open('{}/materialtemplates.cc'.format(outDir))
+    generator.BeginSource(sourceF)
 
-        # The number of input files is defined between 1 - len-2
-        path = Path(sys.argv[1]).stem
-        print("Compiling material template '{}' -> '{}' & '{}'".format(sys.argv[1], sys.argv[-2], sys.argv[-1]))
-        generator.SetDocument(sys.argv[1])
+    shaderF = IDLC.filewriter.FileWriter()
+    shaderF.Open('{}/material_interfaces.fx'.format(outDir))
+    generator.BeginShader(shaderF)
+
+    for file in files:
+        path = Path(file).stem
+        print("Compiling material template '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc'".format(file, outDir, outDir))
+        generator.SetDocument(file)
         generator.Parse()
         generator.SetName(path)
-        generator.GenerateHeader(sys.argv[-2])
-        generator.GenerateSource(sys.argv[-2], sys.argv[-1])
+        generator.FormatHeader(headerF)
+        generator.FormatSource(sourceF)
+        generator.FormatShader(shaderF)
+
+    # Finish header
+    enumStr = ''
+    for file in files:
+        name = Path(file).stem
+        enumStr += '\tENUM_{}\n'.format(name)
+    enumStr += '\tNum\n'
+
+    headerF.WriteLine('enum class MaterialProperties\n{{\n{}}};'.format(enumStr))
+
+    headerF.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
+    headerF.WriteLine('extern Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
+    headerF.WriteLine('void SetupMaterialTemplates();\n')
+    
+    generator.EndHeader(headerF)
+    headerF.Close()
+
+    # Finish source
+    setupStr = ''
+    for file in files:
+        name = Path(file).stem
+        setupStr += '\t{}::SetupMaterialTemplates(Lookup, Configs);\n'.format(name)
+
+    sourceF.WriteLine('Util::Dictionary<uint, Entry*> Lookup;')
+    sourceF.WriteLine('Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
+    sourceF.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates() \n{{\n{}}}'.format(setupStr))
+
+    generator.EndSource(sourceF)
+    sourceF.Close()
+
+    # Finish shader
+    shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
+    shaderF.WriteLine("const uint MaterialBindingSlot = 51;")
+    shaderF.WriteLine("const uint MaterialBufferSlot = 52;")
+
+    bindingsContent = ''
+    for file in files:
+        fileName = Path(file).stem
+        bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
+
+    shaderF.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
+    generator.EndShader(shaderF)
+    shaderF.Close()

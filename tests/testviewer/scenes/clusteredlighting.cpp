@@ -1,5 +1,4 @@
 #include "scenes.h"
-#include "system_shaders/unit.h"
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
 #include "lighting/lightcontext.h"
@@ -309,6 +308,7 @@ void StepFrame()
     {
         if (entity.materialInstanceContext != nullptr)
         {
+            /*
             CoreGraphics::ConstantBufferOffset offset = ModelContext::AllocateInstanceConstants(entity.entity, entity.materialInstanceContext->batch);
             Unit::UnitInstanceBlock perInstanceBlock;
             if (j % 2 == 0)
@@ -316,7 +316,7 @@ void StepFrame()
             else
                 Math::vec4{ 0.0f, 0.0f, 1.0f, 1.0f }.store(perInstanceBlock.TeamColor);
             CoreGraphics::SetConstants(offset, perInstanceBlock);
-
+            */
         }
         j++;
     }

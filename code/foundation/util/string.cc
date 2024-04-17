@@ -1629,6 +1629,45 @@ String::AsVec4() const
     Math::vec4 v(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), tokens[3].AsFloat());
     return v;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float2
+String::AsFloat2() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 4);
+    Math::float2 v{ tokens[0].AsFloat(), tokens[1].AsFloat() };
+    return v;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float3
+String::AsFloat3() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 4);
+    Math::float3 v{ tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat() };
+    return v;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4
+String::AsFloat4() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 4);
+    Math::float4 v{ tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), tokens[3].AsFloat() };
+    return v;
+}
 #endif
 
 } // namespace Util

@@ -10,6 +10,7 @@
 #include "resources/resourceloader.h"
 #include "materials/shaderconfig.h"
 #include "coregraphics/config.h"
+#include "materials/materialtemplates.h"
 
 namespace IO
 {
@@ -37,14 +38,13 @@ public:
     /// Get material binding buffer
     static CoreGraphics::BufferId GetMaterialBindingBuffer();
     /// Get material buffer
-    static CoreGraphics::BufferId GetMaterialBuffer(const MaterialProperties type);
+    static CoreGraphics::BufferId GetMaterialBuffer(const MaterialTemplates::MaterialProperties type);
     /// Bit of a special way to register a terrain material
-    static IndexT RegisterTerrainMaterial(const MaterialInterface::TerrainMaterial& terrain);
+    static IndexT RegisterTerrainMaterial(const MaterialInterfaces::TerrainMaterial& terrain);
 private:
 
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
-    Util::Dictionary<MaterialProperties, void(*)(Ptr<IO::BXmlReader>, Materials::MaterialId, Util::StringAtom)> loaderMap;
 };
 
 } // namespace Materials

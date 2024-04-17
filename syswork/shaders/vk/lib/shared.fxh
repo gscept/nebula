@@ -25,9 +25,9 @@ group(TICK_GROUP) binding(0) textureCube		TexturesCube[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) textureCubeArray	TexturesCubeArray[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture3D			Textures3D[MAX_TEXTURES];
 group(TICK_GROUP) binding(0) texture2DArray	    Textures2DArray[MAX_TEXTURES];
-group(TICK_GROUP) sampler_state		Basic2DSampler {};
-group(TICK_GROUP) sampler_state		PointSampler { Filter = Point; AddressU = Clamp; AddressV = Clamp; };
-group(TICK_GROUP) sampler_state		LinearSampler { Filter = Linear; AddressU = Clamp; AddressV = Clamp; };
+group(TICK_GROUP) sampler_state		            Basic2DSampler {};
+group(TICK_GROUP) sampler_state		            PointSampler { Filter = Point; AddressU = Clamp; AddressV = Clamp; };
+group(TICK_GROUP) sampler_state		            LinearSampler { Filter = Linear; AddressU = Clamp; AddressV = Clamp; };
 
 #define sample2D(handle, sampler, uv)						    texture(sampler2D(Textures2D[handle], sampler), uv)
 #define sample2DLod(handle, sampler, uv, lod)				    textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
@@ -156,7 +156,7 @@ group(TICK_GROUP) shared constant PerTickParams
 };
 
 // contains the render_state of the camera (and time)
-group(FRAME_GROUP) shared constant ViewConstants
+group(FRAME_GROUP) constant ViewConstants
 {
     mat4 View;
     mat4 InvView;
@@ -169,7 +169,7 @@ group(FRAME_GROUP) shared constant ViewConstants
     vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance, w is unused
 };
 
-group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS|CS|PS|RGS";]
+group(FRAME_GROUP) constant ShadowViewConstants[string Visibility = "VS|CS|PS|RGS";]
 {
     vec4 CascadeOffset[NUM_CASCADES];
     vec4 CascadeScale[NUM_CASCADES];
@@ -228,7 +228,7 @@ group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RGS"; 
 };
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS|RGS"; ]
+group(FRAME_GROUP) constant ClusterUniforms [ string Visibility = "CS|VS|PS|RGS"; ]
 {
     vec2 FramebufferDimensions;
     vec2 InvFramebufferDimensions;
@@ -320,7 +320,7 @@ struct AreaLightShadowExtension
     textureHandle shadowMap;			// shadow map
 };
 
-group(FRAME_GROUP) shared constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
+group(FRAME_GROUP) constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
 {
     textureHandle SSAOBuffer;
     uint NumPointLights;
@@ -382,7 +382,7 @@ struct EmissiveDecal
 
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) shared constant DecalUniforms [ string Visibility = "CS|PS"; ]
+group(FRAME_GROUP) constant DecalUniforms [ string Visibility = "CS|PS"; ]
 {
     uint NumPBRDecals;
     uint NumEmissiveDecals;
@@ -437,7 +437,7 @@ struct FogBox
 
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) shared constant VolumeFogUniforms [ string Visibility = "CS|VS|PS"; ]
+group(FRAME_GROUP) constant VolumeFogUniforms [ string Visibility = "CS|VS|PS"; ]
 {
     int DownscaleFog;
     uint NumFogSpheres;
@@ -480,7 +480,7 @@ group(PASS_GROUP) inputAttachment InputAttachment14;
 group(PASS_GROUP) inputAttachment InputAttachment15;
 group(PASS_GROUP) inputAttachment DepthAttachment;
 
-group(PASS_GROUP) shared constant PassBlock
+group(PASS_GROUP) constant PassBlock
 {
     vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };

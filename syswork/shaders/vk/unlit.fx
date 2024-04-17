@@ -7,8 +7,9 @@
 #include <lib/objects_shared.fxh>
 #include <lib/util.fxh>
 #include <lib/techniques.fxh>
-#include <lib/materialparams.fxh>
 #include <lib/defaultsamplers.fxh>
+
+#include <material_interfaces.fx>
 
 float Brightness = 0.0f;
 
@@ -51,9 +52,9 @@ void
 psMain(in vec2 UV,
     [color0] out vec4 Albedo) 
 {
-    vec4 diffColor = sample2D(AlbedoMap, GeometryTextureSampler, UV.xy);
+    vec4 diffColor = sample2D(_Unlit.AlbedoMap, GeometryTextureSampler, UV.xy);
     float alpha = diffColor.a;
-    if (alpha < AlphaSensitivity) discard;
+    if (alpha < _Unlit.AlphaSensitivity) discard;
     Albedo = diffColor * Brightness;
 }
 
@@ -65,10 +66,10 @@ void
 psMainAlpha(in vec2 UV,
     [color0] out vec4 Albedo) 
 {
-    vec4 diffColor = sample2D(AlbedoMap, GeometryTextureSampler, UV.xy);
+    vec4 diffColor = sample2D(_Unlit.AlbedoMap, GeometryTextureSampler, UV.xy);
     float alpha = diffColor.a;
-    if (alpha < AlphaSensitivity) discard;
-    Albedo = diffColor * AlphaBlendFactor * Brightness;
+    if (alpha < _Unlit.AlphaSensitivity) discard;
+    Albedo = diffColor * _Unlit.AlphaBlendFactor * Brightness;
 }
 
 

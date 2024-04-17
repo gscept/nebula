@@ -21,7 +21,6 @@
 #endif
 
 #include "materials/materialtemplates.h"
-#include "materials/base.h"
 #include "materials/materialloader.h"
 
 #include "graphics/globalconstants.h"
@@ -579,13 +578,13 @@ LightContext::SetupAreaLight(
     MaterialTemplates::Entry* matTemplate = &MaterialTemplates::base::__AreaLight.entry;
     Materials::MaterialId material = Materials::CreateMaterial(matTemplate);
 
-    const Materials::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
+    const MaterialTemplates::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
     void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
     const Materials::ShaderConfigBatchConstant* batchConstant = &MaterialTemplates::base::__AreaLight.__LightMeshes_EmissiveColor;
 
-    Materials::MaterialVariant var;
-    var.Set(color * intensity, mem);
-    Materials::MaterialSetConstant(material, batchConstant, var);
+    MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)Memory::StackAlloc(matTemplate->bufferSize);
+    (color * intensity).store(data->EmissiveColor);
+    Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
 
     CoreGraphics::MeshId mesh;
     switch (shape)

@@ -2,13 +2,15 @@
 //  skybox.fx
 //  (C) 2012-2021 Individual contributors, See LICENSE file
 //------------------------------------------------------------------------------
-#include "lib/std.fxh"
-#include "lib/shared.fxh"
-#include "lib/objects_shared.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
-#include "lib/preetham.fxh"
-#include "lib/mie-rayleigh.fxh"
+#include <lib/std.fxh>
+#include <lib/shared.fxh>
+#include <lib/objects_shared.fxh>
+#include <lib/util.fxh>
+#include <lib/techniques.fxh>
+#include <lib/preetham.fxh>
+#include <lib/mie-rayleigh.fxh>
+
+#include <material_interfaces.fx>
 
 group(BATCH_GROUP) shared constant SkyBlock
 {

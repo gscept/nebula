@@ -1534,7 +1534,7 @@ TerrainContext::SetupTerrain(
         group.SetNumIndices(indices.Size());
         group.SetNumVertices(0);
 
-        MaterialInterface::TerrainMaterial mat;
+        MaterialInterfaces::TerrainMaterial mat;
         mat.LowresAlbedoFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresAlbedo);
         mat.LowresMaterialFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresMaterial);
         mat.LowresNormalFallback = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresNormal);
@@ -1570,7 +1570,7 @@ TerrainContext::SetupTerrain(
             , verts.ByteSize()
             , patchTransforms
             , materialOffset
-            , Materials::MaterialProperties::Terrain
+            , MaterialTemplates::MaterialProperties::Terrain
             , CoreGraphics::VertexLayoutType::Normal);
 
         // Invalidate the BLAS when the compute shader has displaced all terrain patches
