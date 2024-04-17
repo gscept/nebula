@@ -86,10 +86,12 @@ class StructDeclaration:
         return '{}struct {}\n{}{{\n{}{}}};\n'.format(indent, self.name, indent, str, indent)
     
 class VariableDefinition:
-    def __init__(self, name, ty, default):
+    def __init__(self, name, ty, default, desc, edit):
         self.name = name
         self.type = ty
         self.default = default
+        self.desc = desc
+        self.edit = edit
 
     def __hash__(self):
         return hash(self.name)
@@ -290,8 +292,6 @@ class InterfaceValueDefinition:
     def __init__(self, node):
         self.name = node['name']
         self.type = node['type']
-        if 'desc' in node:
-            self.desc = node['desc']
 
 class MaterialInterfaceDefinition:
     def __init__(self, node, parser):
@@ -375,6 +375,10 @@ class MaterialTemplateGenerator:
     #
     def Parse(self):
         global interfaceCounter;
+        self.materialDict.clear()
+        self.materials.clear()
+        self.interfaceDict.clear()
+        self.interfaces.clear()
 
         if "Nebula" in self.document:
             main = self.document["Nebula"]
@@ -401,14 +405,32 @@ class MaterialTemplateGenerator:
                         interfaceCounter += 1
                         self.interfaceDict[intDef.name] = intDef
                         self.interfaces.append(intDef)
+                    
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def FormatHeader(self, f):
+        f.WriteLine('namespace {}\n{{\n'.format(self.name))
 
+        f.WriteLine('#define ENUM_{}\\'.format(self.name))
+        for int in self.interfaces:
+            if int == self.interfaces[-1]:
+                f.WriteLine('\t{},'.format(int.name))
+            else:
+                f.WriteLine('\t{},\\'.format(int.name))
+
+        f.WriteLine("")
+        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
+
+        for mat in self.materials:
+            f.WriteLine(mat.FormatHeader())
+
+        f.WriteLine('}} // namespace {}\n'.format(self.name))
 
     #------------------------------------------------------------------------------
     ##
     #
-    def GenerateHeader(self, outPath):
-        f = IDLC.filewriter.FileWriter()
-        f.Open(outPath)
+    def BeginHeader(self, f):
         f.WriteLine("// Material Template #version:{}#".format(self.version))
         f.WriteLine("#pragma once")
         f.WriteLine("//------------------------------------------------------------------------------")
@@ -432,54 +454,29 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "math/vec4.h"')
         f.WriteLine('using namespace Util;')
         f.WriteLine('namespace MaterialTemplates\n{\n')
-
-        f.WriteLine('namespace {}\n{{\n'.format(self.name))
-
-        f.WriteLine('#define ENUM_{}\\'.format(self.name))
-        for int in self.interfaces:
-            if int == self.interfaces[-1]:
-                f.WriteLine('\t{},'.format(int.name))
-            else:
-                f.WriteLine('\t{},\\'.format(int.name))
-
-        f.WriteLine("")
-        f.WriteLine('void SetupMaterialTemplates(Util::Dictionary<uint, Entry*>& Lookup, Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>>& Configs);\n')
-
-        for mat in self.materials:
-            f.WriteLine(mat.FormatHeader())
-
-        f.WriteLine('}} // namespace {}\n'.format(self.name))
-
-        f.WriteLine('} // namespace MaterialTemplates\n')
-        f.Close()
-        return self.materials
+        
 
     #------------------------------------------------------------------------------
     ##
     #
-    def GenerateSource(self, headerPath, outPath):
+    def EndHeader(self, f):
+        f.WriteLine('} // namespace MaterialTemplates\n')
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateHeader(self, outPath):
         f = IDLC.filewriter.FileWriter()
         f.Open(outPath)
-        f.WriteLine("// Material Template #version:{}#".format(self.version))
-        f.WriteLine("#pragma once")
-        f.WriteLine("//------------------------------------------------------------------------------")
-        f.WriteLine("/**")
-        f.IncreaseIndent()
-        f.WriteLine("This file was generated with Nebula's Material Template compiler tool.")
-        f.WriteLine("DO NOT EDIT")
-        f.DecreaseIndent()
-        f.WriteLine("*/")
-        f.WriteLine('#include "{}"'.format(headerPath))
-        f.WriteLine('#include "util/string.h"')
-        f.WriteLine('#include "util/dictionary.h"')
-        f.WriteLine('#include "coregraphics/vertexlayout.h"')
-        f.WriteLine('#include "materials/materialtemplatetypes.h"')
-        f.WriteLine('#include "math/vec2.h"')
-        f.WriteLine('#include "math/vec3.h"')
-        f.WriteLine('#include "math/vec4.h"')
-        f.WriteLine('using namespace Util;')
-        f.WriteLine('namespace MaterialTemplates\n{\n')
+        self.BeginHeader(f)
+        self.FormatHeader(f)
+        self.EndHeader(f)
+        f.Close()
 
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def FormatSource(self, f):
         f.WriteLine('namespace {}\n{{\n'.format(self.name))
         setupStr = ''
         for mat in self.materials:
@@ -495,14 +492,63 @@ class MaterialTemplateGenerator:
 
         f.WriteLine('}} // namespace {}\n'.format(self.name))
 
+    #------------------------------------------------------------------------------
+    ##
+    #  
+    def BeginSource(self, f):
+        f.WriteLine("// Material Template #version:{}#".format(self.version))
+        f.WriteLine("#pragma once")
+        f.WriteLine("//------------------------------------------------------------------------------")
+        f.WriteLine("/**")
+        f.IncreaseIndent()
+        f.WriteLine("This file was generated with Nebula's Material Template compiler tool.")
+        f.WriteLine("DO NOT EDIT")
+        f.DecreaseIndent()
+        f.WriteLine("*/")
+        f.WriteLine('#include "{}.h"'.format(self.name))
+        f.WriteLine('#include "util/string.h"')
+        f.WriteLine('#include "util/dictionary.h"')
+        f.WriteLine('#include "coregraphics/vertexlayout.h"')
+        f.WriteLine('#include "materials/materialtemplatetypes.h"')
+        f.WriteLine('#include "math/vec2.h"')
+        f.WriteLine('#include "math/vec3.h"')
+        f.WriteLine('#include "math/vec4.h"')
+        f.WriteLine('using namespace Util;')
+        f.WriteLine('namespace MaterialTemplates\n{\n')
+        
+
+    #------------------------------------------------------------------------------
+    ##
+    #  
+    def EndSource(self, f):
         f.WriteLine('} // namespace MaterialTemplates\n')
 
     #------------------------------------------------------------------------------
     ##
     #
-    def GenerateShader(self, outPath):
+    def GenerateSource(self, outPath):
         f = IDLC.filewriter.FileWriter()
         f.Open(outPath)
+        self.BeginSource(f)
+        self.FormatSource(f)
+        self.EndSource(f)
+        f.Close()
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def FormatShader(self, f):
+        materialNames = "\\\n"
+        for i in self.interfaces:
+            f.WriteLine(i.FormatShader())
+            materialNames += "\t\t{}Material {}Materials;\\\n".format(i.name, i.name);
+
+        f.WriteLine("#define MATERIAL_LIST_{} {}".format(Path(self.name).stem, materialNames))
+
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def BeginShader(self, f):
         f.WriteLine("// Material Interface #version:{}#".format(self.version))
         f.WriteLine("#pragma once")
         f.WriteLine("//------------------------------------------------------------------------------")
@@ -515,13 +561,23 @@ class MaterialTemplateGenerator:
         f.WriteLine("#include <lib/std.fxh>")
         f.WriteLine("#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)")
         f.WriteLine("")
-        materialNames = "\\\n"
-        for i in self.interfaces:
-            f.WriteLine(i.FormatShader())
-            materialNames += "\t\t{}Material {}Materials;\\\n".format(i.name, i.name);
 
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def EndShader(self, f):
+        f.WriteLine("")
         
-        f.WriteLine("#define MATERIAL_LIST_{} {}".format(Path(outPath).stem, materialNames))
+    #------------------------------------------------------------------------------
+    ##
+    #
+    def GenerateShader(self, outPath):
+        f = IDLC.filewriter.FileWriter()
+        f.Open(outPath)
+        self.BeginShader(f)
+        self.FormatShader(f)
+        self.EndShader(f)
+        f.Close()
 
     #------------------------------------------------------------------------------
     ##
@@ -603,8 +659,8 @@ class MaterialTemplateGenerator:
         f.DecreaseIndent()
         f.WriteLine("*/")
         f.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
-        f.WriteLine("static const uint MaterialBindingSlot = 51;")
-        f.WriteLine("static const uint MaterialBufferSlot = 52;")
+        f.WriteLine("const uint MaterialBindingSlot = 51;")
+        f.WriteLine("const uint MaterialBufferSlot = 52;")
 
         bindingsContent = ''
         for file in files:
@@ -618,23 +674,74 @@ class MaterialTemplateGenerator:
 # Entry point for generator
 if __name__ == '__main__':
     globals()
-    if sys.argv[1] == '--glue':
-        print("Compiling glue '{}' -> '{}' & '{}'".format(sys.argv[2:-3], sys.argv[-3], sys.argv[-2]))
-        generator = MaterialTemplateGenerator()
-        generator.SetVersion(Version)
-        generator.GenerateGlueHeader(sys.argv[2:-3], sys.argv[-3])
-        generator.GenerateGlueSource(sys.argv[2:-3], sys.argv[-3], sys.argv[-2])
-        generator.GenerateGlueShader(sys.argv[2:-3], sys.argv[-1])
 
-    else:        
-        # The number of input files is defined between 1 - len-2
-        path = Path(sys.argv[1]).stem
-        print("Compiling material template '{}' -> '{}' & '{}'".format(sys.argv[1], sys.argv[-3], sys.argv[-2]))
-        generator = MaterialTemplateGenerator()
-        generator.SetVersion(Version)
-        generator.SetDocument(sys.argv[1])
+    generator = MaterialTemplateGenerator()
+    generator.SetVersion(Version)
+    files = sys.argv[1:-1]
+    outDir = sys.argv[-1]
+
+    generator.SetName("materialtemplates")
+    headerF = IDLC.filewriter.FileWriter()
+    headerF.Open('{}/materialtemplates.h'.format(outDir))
+    generator.BeginHeader(headerF)
+
+    sourceF = IDLC.filewriter.FileWriter()
+    sourceF.Open('{}/materialtemplates.cc'.format(outDir))
+    generator.BeginSource(sourceF)
+
+    shaderF = IDLC.filewriter.FileWriter()
+    shaderF.Open('{}/material_interfaces.fx'.format(outDir))
+    generator.BeginShader(shaderF)
+
+    for file in files:
+        path = Path(file).stem
+        print("Compiling material template '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc'".format(file, outDir, outDir))
+        generator.SetDocument(file)
         generator.Parse()
         generator.SetName(path)
-        generator.GenerateHeader(sys.argv[-3])
-        generator.GenerateSource(sys.argv[-3], sys.argv[-2])
-        generator.GenerateShader(sys.argv[-1])
+        generator.FormatHeader(headerF)
+        generator.FormatSource(sourceF)
+        generator.FormatShader(shaderF)
+
+    # Finish header
+    enumStr = ''
+    for file in files:
+        name = Path(file).stem
+        enumStr += '\tENUM_{}\n'.format(name)
+    enumStr += '\tNum\n'
+
+    headerF.WriteLine('enum class MaterialProperties\n{{\n{}}};'.format(enumStr))
+
+    headerF.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
+    headerF.WriteLine('extern Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
+    headerF.WriteLine('void SetupMaterialTemplates();\n')
+    
+    generator.EndHeader(headerF)
+    headerF.Close()
+
+    # Finish source
+    setupStr = ''
+    for file in files:
+        name = Path(file).stem
+        setupStr += '\t{}::SetupMaterialTemplates(Lookup, Configs);\n'.format(name)
+
+    sourceF.WriteLine('Util::Dictionary<uint, Entry*> Lookup;')
+    sourceF.WriteLine('Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<Entry*>> Configs;\n')
+    sourceF.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates() \n{{\n{}}}'.format(setupStr))
+
+    generator.EndSource(sourceF)
+    sourceF.Close()
+
+    # Finish shader
+    shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
+    shaderF.WriteLine("const uint MaterialBindingSlot = 51;")
+    shaderF.WriteLine("const uint MaterialBufferSlot = 52;")
+
+    bindingsContent = ''
+    for file in files:
+        fileName = Path(file).stem
+        bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
+
+    shaderF.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
+    generator.EndShader(shaderF)
+    shaderF.Close()

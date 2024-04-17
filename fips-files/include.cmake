@@ -287,25 +287,10 @@ macro(nebula_material_template_compile)
     source_group("Material Template Files" FILES ${ARGN})
     set(target_has_materials 1)
     foreach(temp ${ARGN})
-        string(REPLACE ".json" ".cc" out_source ${temp})
-        string(REPLACE ".json" ".h" out_header ${temp})
-        string(REPLACE ".json" ".fxh" out_shader ${temp})
-
         get_filename_component(f_abs ${CurDir}${temp} ABSOLUTE)
-        set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials")
-        add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
-            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${f_abs} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
-            WORKING_DIRECTORY "${NROOT}"
-            MAIN_DEPENDENCY ${f_abs}
-            DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py 
-            VERBATIM PRE_BUILD)
-        source_group("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
+        list(APPEND material_definition_files ${f_abs})
         source_group("${CurGroup}\\Templates" FILES ${f_abs})
-        target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
         target_sources(${CurTargetName} PRIVATE "${f_abs}")
-        target_include_directories(${CurTargetName} PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
-        list(APPEND material_template_headers ${out_header})
-		list(APPEND material_glue_dependencies "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
     endforeach()
 endmacro()
 
@@ -315,24 +300,9 @@ macro(nebula_project_material_template_compile)
     set(target_has_materials 1)
     foreach(temp ${project_materials})
         get_filename_component(f_abs ${temp} NAME)
-        string(REPLACE ".json" ".cc" out_source ${f_abs})
-        string(REPLACE ".json" ".h" out_header ${f_abs})
-        string(REPLACE ".json" ".fxh" out_shader ${f_abs})
-
-        set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials")
-        add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
-            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${temp} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
-            WORKING_DIRECTORY "${NROOT}"
-            MAIN_DEPENDENCY ${temp}
-            DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py 
-            VERBATIM PRE_BUILD)
-        source_group("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
+        list(APPEND material_definition_files ${temp})
         source_group("${CurGroup}\\Templates" FILES ${temp})
-        target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
         target_sources(${CurTargetName} PRIVATE "${temp}")
-        target_include_directories(${CurTargetName} PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
-        list(APPEND material_template_headers ${out_header})
-		list(APPEND material_glue_dependencies "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
     endforeach()
 endmacro()
 
@@ -342,15 +312,19 @@ macro(nebula_material_template_glue)
     set(out_shader "material_interfaces.fx")
     
     set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials")
-    add_custom_command(OUTPUT "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
-        PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py "--glue" ${material_template_headers} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
+    add_custom_target(materialtemplates
+        COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files} "${abs_output_folder}"
+        BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
         WORKING_DIRECTORY "${NROOT}"
-        DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_glue_dependencies}
-        VERBATIM PRE_BUILD)
+        DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files}
+        VERBATIM)
+    add_dependencies(render materialtemplates)
+    set_target_properties(materialtemplates PROPERTIES FOLDER MaterialDefinitions)
     source_group("materials\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
     source_group("materials\\Templates" FILES "${out_header}" "${out_source}" "${out_shader}")
     target_sources(render PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
-    include_directories("${CMAKE_BINARY_DIR}/material_templates/render")
+
+    target_include_directories(render PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
 
     set(depoutput ${abs_output_folder}/material_interfaces.dep)
     set(headerOutput ${abs_output_folder}/material_interfaces.h)
@@ -362,14 +336,17 @@ macro(nebula_material_template_glue)
         set(shader_debug "-debug")
     endif()
 
-    add_custom_command(OUTPUT ${headerOutput}.h
+    add_custom_target(materialinterface
         COMMAND ${SHADERC} -i ${shaderInput} -I ${NROOT}/syswork/shaders/vk -I ${abs_output_folder} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
-        MAIN_DEPENDENCY ${shaderInput}
-        DEPENDS ${SHADERC} ${deps}
+        BYPRODUCTS  ${headerOutput}.h
         WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-        COMMENT ""
+        DEPENDS ${SHADERC} ${depoutput}
         VERBATIM
     )
+    set_target_properties(materialinterface PROPERTIES FOLDER MaterialDefinitions)
+    add_dependencies(materialinterface materialtemplates)
+    add_dependencies(render materialinterface)
+
 endmacro()
 
 # Call inside fips_sharedlib, after calling nebula_idl_generate_cs_target

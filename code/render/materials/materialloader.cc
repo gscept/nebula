@@ -9,8 +9,6 @@
 #include "materials/materialtemplates.h"
 
 #include "materials/material_interfaces.h"
-
-#include "materials/base.h"
 namespace Materials
 {
 

@@ -21,7 +21,6 @@
 #endif
 
 #include "materials/materialtemplates.h"
-#include "materials/base.h"
 #include "materials/materialloader.h"
 
 #include "graphics/globalconstants.h"
