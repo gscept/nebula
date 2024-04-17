@@ -396,6 +396,42 @@ BXmlReader::GetOptVec4(const char* attr, const Math::vec4& defaultValue) const
 //------------------------------------------------------------------------------
 /**
 */
+Math::float2
+BXmlReader::GetOptVec2(const char* attr, const Math::float2& defaultValue) const
+{
+    if (this->HasAttr(attr))
+    {
+        String str = this->GetString(attr);
+        if (str.IsValidVec2()) return str.AsFloat2();
+        else                   return defaultValue;
+    }
+    else
+    {
+        return defaultValue;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::float4
+BXmlReader::GetOptVec4(const char* attr, const Math::float4& defaultValue) const
+{
+    if (this->HasAttr(attr))
+    {
+        String str = this->GetString(attr);
+        if (str.IsValidVec4()) return str.AsFloat4();
+        else                   return defaultValue;
+    }
+    else
+    {
+        return defaultValue;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Math::mat4
 BXmlReader::GetOptMat4(const char* attr, const Math::mat4& defaultValue) const
 {
