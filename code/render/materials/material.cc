@@ -28,14 +28,65 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
     materialAllocator.Set<Material_MinLOD>(id, 1.0f);
 
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
-    auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
+    auto& buffer = materialAllocator.Get<Material_Buffer>(id);
     materialAllocator.Set<Material_Template>(id, entry);
 
     // Resize all arrays to fit the number of batches
     tablesPerPass.Resize(entry->passes.Size()); // surface tables
-    buffersPerPass.Resize(entry->passes.Size()); // surface buffers
     instanceTablesPerPass.Resize(entry->passes.Size()); // instance tables
+
+    // Create material buffer
+    CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    bufInfo.byteSize = entry->bufferSize;
+    bufInfo.mode = CoreGraphics::BufferAccessMode::HostCached;
+    bufInfo.name = entry->bufferName;
+    buffer = CoreGraphics::CreateBuffer(bufInfo);
+
+    for (IndexT i = 0; i < entry->textures.Size(); i++)
+    {
+        auto& value = entry->textures.ValueAtIndex(i);
+        if (value->bindlessOffset != -1)
+        {
+            Resources::ResourceId id = Resources::CreateResource(value->resource, "materials",
+                [buffer, value](Resources::ResourceId id)
+            {
+                CoreGraphics::TextureIdLock _0(id);
+                uint handle = CoreGraphics::TextureGetBindlessHandle(id);
+                CoreGraphics::BufferUpdate(buffer, &handle, sizeof(handle), value->bindlessOffset);
+                CoreGraphics::BufferFlush(buffer);
+            });
+
+            CoreGraphics::TextureIdLock _0(id);
+            uint handle = CoreGraphics::TextureGetBindlessHandle(id);
+            CoreGraphics::BufferUpdate(buffer, &handle, sizeof(handle), value->bindlessOffset);
+            break;
+        }
+    }
+    for (IndexT i = 0; i < entry->values.Size(); i++)
+    {
+        auto& value = entry->values.ValueAtIndex(i);
+        CoreGraphics::BufferUpdate(buffer, &value->data, value->GetSize(), value->offset);
+    }
+    CoreGraphics::BufferFlush(buffer);
+
+#ifdef WITH_NEBULA_EDITOR
+    Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(id);
+
+    textures.Resize(entry->numTextures);
+    int numTextures = 0;
+    for (IndexT i = 0; i < entry->textures.Size(); i++)
+    {
+        auto& kvp = entry->textures.KeyValuePairAtIndex(i);
+        Resources::ResourceId res = Resources::CreateResource(kvp.Value()->resource, "materials", [i, textures](Resources::ResourceId id)
+        {
+            textures[i] = id;
+        });
+        textures[i] = res;
+        break;
+    }
+#endif
 
     // Go through passes
     for (auto pass : entry->passes)
@@ -47,8 +98,10 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
         // create resource tables
         CoreGraphics::ResourceTableId surfaceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_BATCH_GROUP, 256);
         if (surfaceTable != CoreGraphics::InvalidResourceTableId)
-            CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' pass table", entry->name).AsCharPtr());
+            CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' pass '%s' table", entry->name, pass.Value()->name).AsCharPtr());
         tablesPerPass[passIndex] = surfaceTable;
+
+        CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { materialAllocator.Get<Material_Buffer>(id), MaterialInterfaces::MaterialBufferSlot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 
         auto& instanceTables = instanceTablesPerPass[passIndex];
         if (ShaderHasResourceTable(shader, NEBULA_INSTANCE_GROUP))
@@ -62,43 +115,14 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             }
         }
 
-        uint it = 0;
-        uint64 batchGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_BATCH_GROUP);
-        uint64 currentMask = batchGroupMask;
-        uint numBuffers = Util::PopCnt(batchGroupMask);
-        buffersPerPass[passIndex].Resize(numBuffers);
-
-        while (currentMask != 0)
-        {
-            if (AllBits(currentMask, 1 << it))
-            {
-                IndexT slot = it;
-				uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, it);
-                if (bufferIndex != 0xFFFFFFFF)
-                {
-                    CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shader, NEBULA_BATCH_GROUP, bufferIndex);
-
-                    // Calculate the index by counting the active bits at the point of the iterator
-                    buffersPerPass[passIndex][bufferIndex] = Util::MakePair(slot, buf);
-
-                    if (buf != CoreGraphics::InvalidBufferId)
-                    {
-                        CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-                    }
-                }
-            }
-            currentMask &= ~(1 << it);
-            it++;
-        }
-
         uint64 instanceGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(shader, NEBULA_INSTANCE_GROUP);
-        it = 0;
+        uint it = 0;
         while (instanceGroupMask != 0)
         {
             if (AllBits(instanceGroupMask, 1 << it))
             {
                 IndexT slot = it;
-                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, it));
+                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
                     CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
@@ -113,31 +137,9 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
         {
             if (texture->slot != InvalidIndex)
             {
-                CoreGraphics::TextureId tex = Resources::CreateResource(texture->def->data.resource, "materials", nullptr, nullptr, true, false);
+                CoreGraphics::TextureId tex = Resources::CreateResource(texture->def->resource, "materials", nullptr, nullptr, true, false);
                 CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex, texture->slot });
             }            
-        }
-
-        // Update constant buffers with default values
-        const Util::Array<ShaderConfigBatchConstant*>& constants = entry->constantsPerBatch[passIndex];
-        for (auto& constant : constants)
-        {
-            if (constant->group == NEBULA_BATCH_GROUP)
-            {
-                // Get the buffer index by using the constant slot
-                uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, constant->slot);
-
-                CoreGraphics::BufferId buffer = buffersPerPass[passIndex][bufferIndex].second;
-                if (constant->def->type != MaterialTemplateValue::Type::BindlessResource)
-                    CoreGraphics::BufferUpdate(buffer, &constant->def->data, constant->def->GetSize(), constant->offset);
-                else
-                {
-                    CoreGraphics::TextureId tex = Resources::CreateResource(constant->def->data.resource, "materials", nullptr, nullptr, true, false);
-                    CoreGraphics::TextureIdLock _0(tex);
-                    uint handle = CoreGraphics::TextureGetBindlessHandle(tex);
-                    CoreGraphics::BufferUpdate(buffer, &handle, constant->def->GetSize(), constant->offset);
-                }
-            }
         }
 
         // Finish off by comitting all table changes
@@ -165,20 +167,19 @@ DestroyMaterial(const MaterialId id)
 /**
 */
 void
-MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind, const MaterialVariant& value)
+MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const Resources::ResourceId tex)
 {
     const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
-    const auto& buffersPerPass = materialAllocator.Get<Material_Buffers>(mat.id);
+
+#ifdef WITH_NEBULA_EDITOR
+    Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
+    textures[bind->def->textureIndex] = tex;
+#endif
 
     for (const auto& pass : temp->passes)
     {
-        uint64 batchGroupMask = CoreGraphics::ShaderGetConstantBufferBindingMask(pass.Value()->shader, NEBULA_BATCH_GROUP);
-        uint bufferIndex = CoreGraphics::ShaderCalculateConstantBufferIndex(batchGroupMask, bind->slot);
-        if (bufferIndex != 0xFFFFFFFF)
-        {
-            CoreGraphics::BufferId buf = buffersPerPass[pass.Value()->index][bufferIndex].second;
-            CoreGraphics::BufferUpdate(buf, value.Get(), value.size, bind->offset);
-        }        
+        CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_Table>(mat.id)[pass.Value()->index];
+        CoreGraphics::ResourceTableSetTexture(table, { tex, bind->slot, 0, CoreGraphics::InvalidSamplerId, false });
     }
 }
 
@@ -186,14 +187,68 @@ MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind,
 /**
 */
 void
-MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const CoreGraphics::TextureId tex)
+MaterialSetTexture(const MaterialId mat, uint name, const Resources::ResourceId tex)
 {
     const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
-    for (const auto& pass : temp->passes)
+
+#ifdef WITH_NEBULA_EDITOR
+    Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
+    textures[temp->texturesByHash[name]->textureIndex] = tex;
+#endif
+
+    for (IndexT i = 0; i < temp->passes.Size(); i++)
     {
-        CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_Table>(mat.id)[pass.Value()->index];
-        CoreGraphics::ResourceTableSetTexture(table, { tex, bind->slot, 0, CoreGraphics::InvalidSamplerId, false });
+        const auto& pass = temp->passes.KeyValuePairAtIndex(i);
+        uint textureIndex = temp->textureBatchLookup[pass.Value()->index].FindIndex(name);
+        const auto texture = temp->texturesPerBatch[pass.Value()->index][temp->textureBatchLookup[pass.Value()->index].ValueAtIndex(textureIndex)];
+        if (texture->slot != InvalidIndex)
+        {
+            CoreGraphics::ResourceTableId table = materialAllocator.Get<Material_Table>(mat.id)[pass.Value()->index];
+            CoreGraphics::ResourceTableSetTexture(table, { tex, texture->slot, 0, CoreGraphics::InvalidSamplerId, false });
+        }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetTextureBindless(const MaterialId mat, uint name, const uint handle, const uint offset, const Resources::ResourceId tex)
+{
+
+#ifdef WITH_NEBULA_EDITOR
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
+    textures[temp->texturesByHash[name]->textureIndex] = tex;
+#endif
+
+    const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
+    CoreGraphics::BufferUpdate(buf, &handle, sizeof(handle), offset);
+    CoreGraphics::BufferFlush(buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetConstants(const MaterialId mat, const void* data, const uint size)
+{
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
+    CoreGraphics::BufferUpdate(buf, data, size);
+    CoreGraphics::BufferFlush(buf);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialSetConstant(const MaterialId mat, const void* data, const uint size, const uint offset)
+{
+    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
+    CoreGraphics::BufferUpdate(buf, data, size, offset);
+    CoreGraphics::BufferFlush(buf);
 }
 
 //------------------------------------------------------------------------------
@@ -272,6 +327,33 @@ MaterialGetSortCode(const MaterialId mat)
 {
     return materialAllocator.Get<Material_Template>(mat.id)->uniqueId;
 }
+
+#ifdef WITH_NEBULA_EDITOR
+ubyte*
+MaterialGetConstants(const MaterialId mat)
+{
+    return (ubyte*)CoreGraphics::BufferMap(materialAllocator.Get<Material_Buffer>(mat.id));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Resources::ResourceId
+MaterialGetTexture(const MaterialId mat, const IndexT i)
+{
+    return materialAllocator.Get<Material_TextureValues>(mat.id)[i];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialInvalidate(const MaterialId mat)
+{
+    auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
+    CoreGraphics::BufferFlush(buf);
+}
+#endif
 
 //------------------------------------------------------------------------------
 /**

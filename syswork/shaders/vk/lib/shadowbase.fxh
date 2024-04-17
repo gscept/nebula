@@ -8,6 +8,7 @@
 #define SHADOWBASE_FXH
 
 #include "lib/defaultsamplers.fxh"
+#include <material_interfaces.fx>
 
 const float DepthScaling = 5.0f;
 const float DarkeningFactor = 1.0f;
@@ -209,8 +210,8 @@ psShadowAlpha(
 	in vec4 ProjPos
 )
 {
-	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < AlphaSensitivity) 
+	float alpha = sample2D(_Basic.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < _Basic.AlphaSensitivity)
         discard;
 }
 
@@ -236,8 +237,8 @@ psESMAlpha(in vec2 UV,
 	  in vec4 ProjPos,
 	  [color0] out float ShadowColor)
 {
-	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < AlphaSensitivity) discard;
+	float alpha = sample2D(_Basic.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < _Basic.AlphaSensitivity) discard;
 	ShadowColor = (ProjPos.z/ProjPos.w) * DepthScaling;
 }
 
@@ -272,8 +273,8 @@ psVSMAlpha(in vec2 UV,
 	in vec4 ProjPos,
 	[color0] out vec2 ShadowColor)
 {
-	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < AlphaSensitivity) discard;
+	float alpha = sample2D(_Basic.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < _Basic.AlphaSensitivity) discard;
 
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;
@@ -318,8 +319,8 @@ psVSMAlphaPoint(in vec2 UV,
 	in vec4 ProjPos,
 	[color0] out vec2 ShadowColor)
 {
-	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < AlphaSensitivity) discard;
+	float alpha = sample2D(_Basic.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < _Basic.AlphaSensitivity) discard;
 
 	float depth = ProjPos.z / ProjPos.w;
 	float moment1 = depth;

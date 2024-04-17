@@ -521,6 +521,7 @@ ENDIF()
                 material.h
                 materialloader.cc
                 materialloader.h
+                materialtemplatetypes.h
                 materialvariant.h
                 shaderconfig.cc
                 shaderconfig.h

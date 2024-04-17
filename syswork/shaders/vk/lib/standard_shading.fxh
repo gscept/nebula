@@ -12,9 +12,9 @@
 #include <lib/defaultsamplers.fxh>
 #include <lib/pbr.fxh>
 #include <lib/geometrybase.fxh>
-#include <lib/materialparams.fxh>
 #include <lib/clustering.fxh>
 #include <lib/lighting_functions.fxh>
+#include <material_interfaces.fx>
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											FINALIZE COLOR
@@ -52,9 +52,9 @@ psStandard(
     in vec3 WorldSpacePos,
     [color0] out vec4 OutColor)
 {
-    vec4 albedo   = calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
-    vec4 material = calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
-    vec3 N        = normalize(calcBump(Tangent, Normal, Sign, sample2D(NormalMap, NormalSampler, UV)));
+    vec4 albedo   = calcColor(sample2D(_BRDF.AlbedoMap, MaterialSampler, UV)) * _BRDF.MatAlbedoIntensity;
+    vec4 material = calcMaterial(sample2D(_BRDF.ParameterMap, MaterialSampler, UV));
+    vec3 N        = normalize(calcBump(Tangent, Normal, Sign, sample2D(_BRDF.NormalMap, NormalSampler, UV)));
     
     //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, albedo, N, material);
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);

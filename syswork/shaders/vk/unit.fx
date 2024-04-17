@@ -2,15 +2,10 @@
 //  unit.fx
 //  (C) 2012 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#define USE_CUSTOM_MATERIAL
 #include "lib/techniques.fxh"
 #include "lib/colorblending.fxh"
 #include "lib/standard_shading.fxh"
-
-group(BATCH_GROUP) shared constant UnitBlock
-{
-    textureHandle TeamColorMask;
-    textureHandle SpecularMap;
-};
 
 group(INSTANCE_GROUP) shared constant UnitInstanceBlock
 {
@@ -44,11 +39,11 @@ psNotaUnit(
     uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewDepth, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
-    float teamMask = sample2D(TeamColorMask, TeamSampler, UV).r;
+    float teamMask = sample2D(_Nota.TeamColorMask, TeamSampler, UV).r;
     vec4 maskColor = TeamColor * teamMask;
-    vec4 albedo = vec4(sample2D(AlbedoMap, MaterialSampler, UV).rgb, 1.0f) * MatAlbedoIntensity;
-    vec4 material = calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
-    vec3 N = normalize(calcBump(Tangent, Normal, Sign, sample2D(NormalMap, NormalSampler, UV)));
+    vec4 albedo = vec4(sample2D(_Nota.AlbedoMap, MaterialSampler, UV).rgb, 1.0f) * _Nota.MatAlbedoIntensity;
+    vec4 material = calcMaterial(sample2D(_Nota.ParameterMap, MaterialSampler, UV));
+    vec3 N = normalize(calcBump(Tangent, Normal, Sign, sample2D(_Nota.NormalMap, NormalSampler, UV)));
 
     albedo.rgb += Overlay(albedo.rgb, maskColor.rgb);
 

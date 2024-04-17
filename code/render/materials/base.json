@@ -1,29 +1,229 @@
 {
     "Nebula": {
-        "Templates": [
+        "Interfaces": [
             {
-                "name": "Classic rendering",
-                "virtual": true,
-                "desc": "Virtual material used for the default variables available to an object",
-                "variables": [
+                "name": "Basic",
+                "desc": "Simplest interface for shadows, billboards and unlit particles",
+                "values": [
                     {
                         "name": "AlbedoMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
+                        "type": "textureHandle"
                     },
+                    {
+                        "name": "AlphaSensitivity",
+                        "type": "float"
+                    },
+                    {
+                        "name": "AlphaBlendFactor",
+                        "type": "float"
+                    }
+                ]
+            },
+            {
+                "name": "BRDF",
+                "inherits": "Basic",
+                "values": [
                     {
                         "name": "ParameterMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:default_material.dds"
-                    },
-                    {
-                        "name": "NormalMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:nobump.dds"
+                        "type": "textureHandle"
                     },
                     {
                         "name": "MatAlbedoIntensity",
-                        "type": "vec4",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "MatSpecularIntensity",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "MatRoughnessIntensity",
+                        "type": "float"
+                    },
+                    {
+                        "name": "MatMetallicIntensity",
+                        "type": "float"
+                    },
+                    {
+                        "name": "NormalMap",
+                        "type": "textureHandle"
+                    }
+                ]
+            },
+            {
+                "name": "BSDF",
+                "inherits": "Basic",
+                "values": [
+                    {
+                        "name": "ParameterMap",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "MatAlbedoIntensity",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "MatSpecularIntensity",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "MatRoughnessIntensity",
+                        "type": "float"
+                    },
+                    {
+                        "name": "MatMetallicIntensity",
+                        "type": "float"
+                    },
+                    {
+                        "name": "NormalMap",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "Transmission",
+                        "type": "float"
+                    }
+                ]
+            },
+            {
+                "name": "Unlit",
+                "inherits": "Basic",
+                "values": [
+                    {
+                        "name": "Brightness",
+                        "type": "float",
+                        "desc": "Multiplies with the diffuse color in order to adjust its intensity"
+                    }
+                ]
+            },
+            {
+                "name": "BlendAdd",
+                "inherits": "Basic",
+                "values": [
+                    {
+                        "name": "Brightness",
+                        "type": "float",
+                        "desc": "Multiplies with the diffuse color in order to adjust its intensity"
+                    },
+                    {
+                        "name": "Layer2",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "Layer3",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "Layer4",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "UVAnim1",
+                        "type": "vec2"
+                    },
+                    {
+                        "name": "UVAnim2",
+                        "type": "vec2"
+                    },
+                    {
+                        "name": "UVAnim3",
+                        "type": "vec2"
+                    },
+                    {
+                        "name": "UVAnim4",
+                        "type": "vec2"
+                    }
+                ]
+            },
+            {
+                "name": "Billboard",
+                "values": [
+                    {
+                        "name": "AlbedoMap",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "Color",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "ViewAligned",
+                        "type": "bool"
+                    }
+                ]
+            },
+            {
+                "name": "Skybox",
+                "values": [
+                    {
+                        "name": "SkyLayer1",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "SkyLayer2",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "SkyBlendFactor",
+                        "type": "float"
+                    },
+                    {
+                        "name": "SkyRotationFactor",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Contrast",
+                        "type": "float"
+                    },
+                    {
+                        "name": "Brightness",
+                        "type": "float"
+                    }
+                ]
+            },
+            {
+                "name": "Terrain",
+                "values": [
+                    {
+                        "name": "LowresAlbedoFallback",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "LowresNormalFallback",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "LowresMaterialFallback",
+                        "type": "textureHandle"
+                    }
+                ]
+            },
+            {
+                "name": "Arealight",
+                "values": [
+                    {
+                        "name": "EmissiveColor",
+                        "type": "vec4"
+                    }
+                ]
+            },
+            {
+                "name": "Placeholder",
+                "values": [
+                    {
+                        "name": "AlbedoMap",
+                        "type": "textureHandle"
+                    }
+                ]
+            }
+        ],
+        "Templates": [
+            {
+                "name": "DefaultBRDF",
+                "virtual": true,
+                "interface": "BRDF",
+                "desc": "Virtual material used for the default values for the BRDF material",
+                "variables": [
+                    {
+                        "name": "MatAlbedoIntensity",
                         "defaultValue": [
                             1.0,
                             1.0,
@@ -47,12 +247,11 @@
                     },
                     {
                         "name": "MatSpecularIntensity",
-                        "type": "vec4",
                         "defaultValue": [
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.0
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
                         ],
                         "min": [
                             0.0,
@@ -68,59 +267,40 @@
                         ],
                         "edit": "color",
                         "desc": "Material specular reflectivity index"
-                    }
-                ]
-            },
-            {
-                "name": "PBR + IBL",
-                "inherits": "Classic rendering",
-                "desc": "Virtual material used for all PBR + IBL based materials",
-                "virtual": true,
-                "variables": [
-                    {
-                        "name": "MatRoughnessIntensity",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 1.0,
-                        "desc": "Material roughness multiplier"
-                    }
-                ]
-            },
-            {
-                "name": "Alpha test",
-                "virtual": true,
-                "desc": "Base material for all materials which require alpha testing",
-                "variables": [
+                    },
                     {
                         "name": "AlphaSensitivity",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 1.0,
-                        "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-                    }
-                ]
-            },
-            {
-                "name": "Alpha blend",
-                "virtual": true,
-                "desc": "Base material for all materials which require alpha testing",
-                "variables": [
+                        "defaultValue": 1.0
+                    },
                     {
                         "name": "AlphaBlendFactor",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 1.0,
-                        "desc": "Alpha blending value"
+                        "defaultValue": 0.0
+                    },
+                    {
+                        "name": "MatRoughnessIntensity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "MatMetallicIntensity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "AlbedoMap",
+                        "defaultValue": "systex:placeholder.dds"
+                    },
+                    {
+                        "name": "ParameterMap",
+                        "defaultValue": "systex:default_material.dds"
+                    },
+                    {
+                        "name": "NormalMap",
+                        "defaultValue": "systex:nobump.dds"
                     }
                 ]
             },
             {
                 "name": "Static",
-                "inherits": "PBR + IBL",
-                "materialProperties": "BRDF",
+                "inherits": "DefaultBRDF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Default BRDF material.",
                 "group": "Standard",
@@ -159,8 +339,7 @@
             },
             {
                 "name": "StaticAlphaTest",
-                "inherits": "PBR + IBL|Alpha test",
-                "materialProperties": "BRDF",
+                "inherits": "DefaultBRDF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "PBR + IBL based dielectric/metal material, but with added alpha testing.",
                 "group": "Standard",
@@ -199,8 +378,7 @@
             },
             {
                 "name": "StaticAlphaBlend",
-                "inherits": "PBR + IBL|Alpha blend",
-                "materialProperties": "BRDF",
+                "inherits": "DefaultBRDF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "PBR + IBL based dielectric/metal material. With alpha blending.",
                 "group": "Standard",
@@ -220,8 +398,7 @@
             {
                 "name": "Skinned",
                 "vertexType": "VertexLayoutType::Skin",
-                "materialProperties": "BRDF",
-                "inherits": "PBR + IBL",
+                "inherits": "DefaultBRDF",
                 "desc": "Skinned version PBR + IBL based dielectric/metal material, but with added alpha testing.",
                 "group": "Standard",
                 "passes": [
@@ -260,8 +437,7 @@
             {
                 "name": "SkinnedAlphaTest",
                 "vertexType": "VertexLayoutType::Skin",
-                "materialProperties": "BRDF",
-                "inherits": "PBR + IBL|Alpha test",
+                "inherits": "DefaultBRDF",
                 "desc": "Skinned version of the static PBR + IBL based dielectric/metal material, but with added alpha testing.",
                 "group": "Standard",
                 "passes": [
@@ -300,8 +476,7 @@
             {
                 "name": "SkinnedAlphaBlend",
                 "vertexType": "VertexLayoutType::Skin",
-                "materialProperties": "BRDF",
-                "inherits": "PBR + IBL|Alpha blend",
+                "inherits": "DefaultBRDF",
                 "desc": "Skinned material which uses a mesh with joint indices and joint weights, and is also alpha-blended. Useful for characters. Affected by lights.",
                 "group": "Standard",
                 "passes": [
@@ -318,9 +493,33 @@
                 ]
             },
             {
+                "name": "DefaultUnlit",
+                "virtual": true,
+                "desc": "Base material for unlit",
+                "interface": "Unlit",
+                "variables": [
+                    {
+                        "name": "AlbedoMap",
+                        "defaultValue": "systex:placeholder.dds"
+                    },
+                    {
+                        "name": "AlphaSensitivity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "AlphaBlendFactor",
+                        "defaultValue": 0.0
+                    },
+                    {
+                        "name": "Brightness",
+                        "defaultValue": 1.0
+                    }
+                ]
+            },
+            {
                 "name": "Unlit",
                 "vertexType": "VertexLayoutType::Normal",
-                "materialProperties": "Unlit",
+                "inherits": "DefaultUnlit",
                 "desc": "Static material for standard meshes. Is not affected by lights.",
                 "group": "No lighting",
                 "passes": [
@@ -334,35 +533,12 @@
                         "shader": "system_shaders/unlit",
                         "variation": "Static"
                     }
-                ],
-                "variables": [
-                    {
-                        "name": "AlbedoMap",
-                        "type": "texture2d",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "AlphaSensitivity",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 1.0,
-                        "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-                    },
-                    {
-                        "name": "Brightness",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 2.0,
-                        "desc": "Multiplies with the diffuse color in order to adjust its intensity"
-                    }
                 ]
             },
             {
                 "name": "UnlitAlpha",
                 "vertexType": "VertexLayoutType::Normal",
-                "materialProperties": "Unlit",
+                "inherits": "DefaultUnlit",
                 "desc": "Static material for standard meshes but with support for alpha-blending. Is not affected by lights.",
                 "group": "No lighting",
                 "passes": [
@@ -376,50 +552,12 @@
                         "shader": "system_shaders/unlit",
                         "variation": "Alpha"
                     }
-                ],
-                "variables": [
-                    {
-                        "name": "AlbedoMap",
-                        "type": "texture2d",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "AlphaSensitivity",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 1.0,
-                        "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-                    },
-                    {
-                        "name": "Brightness",
-                        "type": "float",
-                        "defaultValue": 0.0,
-                        "min": 0.0,
-                        "max": 2.0,
-                        "desc": "Multiplies with the diffuse color in order to adjust its intensity"
-                    },
-                    {
-                        "name": "AlphaBlendFactor",
-                        "type": "float",
-                        "defaultValue": 1.0,
-                        "min": 0.0,
-                        "max": 1.0,
-                        "desc": "Level of transparency"
-                    }
                 ]
-            },
-            {
-                "name": "Particle",
-                "virtual": true,
-                "desc": "Base material for particles",
-                "group": "Particles"
             },
             {
                 "name": "ParticleUnlit",
                 "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "Unlit",
-                "inherits": "Particle",
+                "inherits": "DefaultUnlit",
                 "desc": "Standard unlit particle material.",
                 "group": "Particles",
                 "passes": [
@@ -428,20 +566,12 @@
                         "shader": "system_shaders/particle",
                         "variation": "Unlit"
                     }
-                ],
-                "variables": [
-                    {
-                        "name": "AlbedoMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
-                    }
                 ]
             },
             {
                 "name": "ParticleUnlitAdditive",
                 "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "Unlit",
-                "inherits": "Particle",
+                "inherits": "DefaultUnlit",
                 "desc": "Unlit particle using an additive blending method.",
                 "group": "Particles",
                 "passes": [
@@ -450,20 +580,12 @@
                         "shader": "system_shaders/particle",
                         "variation": "Unlit|Alt0"
                     }
-                ],
-                "variables": [
-                    {
-                        "name": "AlbedoMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
-                    }
                 ]
             },
             {
                 "name": "ParticleUnlitBlendAdd",
                 "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "Unlit",
-                "inherits": "Particle",
+                "inherits": "DefaultUnlit",
                 "desc": "Unlit particle using the blend-add method. These particles are easier to see in bright and dark environments.",
                 "group": "Particles",
                 "passes": [
@@ -472,166 +594,32 @@
                         "shader": "system_shaders/particle",
                         "variation": "Unlit|Alt1"
                     }
-                ],
+                ]
+            },
+            {
+                "name": "DefaultBlendAdd",
+                "virtual": true,
+                "interface": "BlendAdd",
+                "desc": "Base material for blendadd particles/billboards",
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
-                    }
-                ]
-            },
-            {
-                "name": "ParticleUnlitBlendAdd2Layers",
-                "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "Unlit2",
-                "inherits": "Particle",
-                "desc": "Unlit particle using the blend-add method with two layers. Each layer is blended with the A * B * 2 method.",
-                "group": "Particles",
-                "passes": [
-                    {
-                        "batch": "ParticleUnlit",
-                        "shader": "system_shaders/particle",
-                        "variation": "Unlit|Alt2"
-                    }
-                ],
-                "variables": [
-                    {
-                        "name": "Layer1",
-                        "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer2",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "UVAnim1",
-                        "type": "vec2",
-                        "defaultValue": [
-                            0.0,
-                            0.0
-                        ],
-                        "max": [
-                            10.0,
-                            10.0
-                        ]
-                    },
-                    {
-                        "name": "UVAnim2",
-                        "type": "vec2",
-                        "defaultValue": [
-                            0.0,
-                            0.0
-                        ],
-                        "max": [
-                            10.0,
-                            10.0
-                        ]
-                    }
-                ]
-            },
-            {
-                "name": "ParticleUnlitBlendAdd3Layers",
-                "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "Unlit3",
-                "inherits": "Particle",
-                "desc": "Unlit particle using the blend-add method with three layers. Each layer is blended with the A * B * 2 method.",
-                "group": "Particles",
-                "passes": [
-                    {
-                        "batch": "ParticleUnlit",
-                        "shader": "system_shaders/particle",
-                        "variation": "Unlit|Alt3"
-                    }
-                ],
-                "variables": [
-                    {
-                        "name": "Layer1",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "Layer2",
-                        "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer3",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "UVAnim1",
-                        "type": "vec2",
-                        "defaultValue": [
-                            0.0,
-                            0.0
-                        ],
-                        "max": [
-                            10.0,
-                            10.0
-                        ]
-                    },
-                    {
-                        "name": "UVAnim2",
-                        "type": "vec2",
-                        "defaultValue": [
-                            0.0,
-                            0.0
-                        ],
-                        "max": [
-                            10.0,
-                            10.0
-                        ]
-                    },
-                    {
-                        "name": "UVAnim3",
-                        "type": "vec2",
-                        "defaultValue": [
-                            0.0,
-                            0.0
-                        ],
-                        "max": [
-                            10.0,
-                            10.0
-                        ]
-                    }
-                ]
-            },
-            {
-                "passes": [
-                    {
-                        "batch": "ParticleUnlit",
-                        "shader": "system_shaders/particle",
-                        "variation": "Unlit|Alt4"
-                    }
-                ],
-                "variables": [
-                    {
-                        "name": "Layer1",
-                        "type": "texture2d",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "Layer2",
-                        "type": "texture2d",
-                        "defaultValue": "systex:placeholder.dds"
-                    },
-                    {
-                        "name": "Layer3",
-                        "type": "texture2d",
                         "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "Layer4",
-                        "type": "texture2d",
                         "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "UVAnim1",
-                        "type": "vec2",
                         "defaultValue": [
                             0.0,
                             0.0
@@ -643,7 +631,6 @@
                     },
                     {
                         "name": "UVAnim2",
-                        "type": "vec2",
                         "defaultValue": [
                             0.0,
                             0.0
@@ -655,7 +642,6 @@
                     },
                     {
                         "name": "UVAnim3",
-                        "type": "vec2",
                         "defaultValue": [
                             0.0,
                             0.0
@@ -667,7 +653,6 @@
                     },
                     {
                         "name": "UVAnim4",
-                        "type": "vec2",
                         "defaultValue": [
                             0.0,
                             0.0
@@ -676,20 +661,153 @@
                             10.0,
                             10.0
                         ]
+                    },
+                    {
+                        "name": "AlphaSensitivity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "AlphaBlendFactor",
+                        "defaultValue": 0.0
+                    },
+                    {
+                        "name": "Brightness",
+                        "defaultValue": 1.0
+                    }
+                ]
+            },
+            {
+                "name": "ParticleUnlitBlendAdd2Layers",
+                "vertexType": "VertexLayoutType::Particle",
+                "inherits": "DefaultBlendAdd",
+                "desc": "Unlit particle using the blend-add method with two layers. Each layer is blended with the A * B * 2 method.",
+                "group": "Particles",
+                "passes": [
+                    {
+                        "batch": "ParticleUnlit",
+                        "shader": "system_shaders/particle",
+                        "variation": "Unlit|Alt2"
                     }
                 ],
+            },
+            {
+                "name": "ParticleUnlitBlendAdd3Layers",
+                "vertexType": "VertexLayoutType::Particle",
+                "inherits": "DefaultBlendAdd",
+                "desc": "Unlit particle using the blend-add method with three layers. Each layer is blended with the A * B * 2 method.",
+                "group": "Particles",
+                "passes": [
+                    {
+                        "batch": "ParticleUnlit",
+                        "shader": "system_shaders/particle",
+                        "variation": "Unlit|Alt3"
+                    }
+                ]
+            },
+            {
                 "name": "ParticleUnlitBlendAdd4Layers",
                 "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "Unlit4",
-                "inherits": "Particle",
+                "inherits": "DefaultBlendAdd",
                 "desc": "Unlit particle using the blend-add method with four layers, the fourth layer is used as a flat multiplier.",
-                "group": "Particles"
+                "group": "Particles",
+                "passes": [
+                    {
+                        "batch": "ParticleUnlit",
+                        "shader": "system_shaders/particle",
+                        "variation": "Unlit|Alt4"
+                    }
+                ]
+            },
+            {
+                "name": "DefaultBSDF",
+                "virtual": true,
+                "desc": "Default BSDF (subsurface scattering) material",
+                "interface": "BSDF",
+                "variables": [
+                    {
+                        "name": "MatAlbedoIntensity",
+                        "defaultValue": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "min": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "max": [
+                            10.0,
+                            10.0,
+                            10.0,
+                            1.0
+                        ],
+                        "edit": "color",
+                        "desc": "Material albedo multiplier"
+                    },
+                    {
+                        "name": "MatSpecularIntensity",
+                        "defaultValue": [
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
+                        ],
+                        "min": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "max": [
+                            10.0,
+                            10.0,
+                            10.0,
+                            1.0
+                        ],
+                        "edit": "color",
+                        "desc": "Material specular reflectivity index"
+                    },
+                    {
+                        "name": "AlphaSensitivity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "AlphaBlendFactor",
+                        "defaultValue": 0.0
+                    },
+                    {
+                        "name": "MatRoughnessIntensity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "MatMetallicIntensity",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "AlbedoMap",
+                        "defaultValue": "systex:placeholder.dds"
+                    },
+                    {
+                        "name": "ParameterMap",
+                        "defaultValue": "systex:default_material.dds"
+                    },
+                    {
+                        "name": "NormalMap",
+                        "defaultValue": "systex:nobump.dds"
+                    },
+                    {
+                        "name": "Transmission",
+                        "defaultValue": 1.0
+                    }
+                ]
             },
             {
                 "name": "ParticleLit",
                 "vertexType": "VertexLayoutType::Particle",
-                "materialProperties": "BRDF",
-                "inherits": "PBR + IBL|Particle",
+                "inherits": "DefaultBSDF",
                 "desc": "Standard lit particle material.",
                 "group": "Particles",
                 "passes": [
@@ -703,34 +821,12 @@
                         "shader": "system_shaders/particle",
                         "variation": "Global"
                     }
-                ],
-                "variables": [
-                    {
-                        "name": "AlbedoMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:white.dds"
-                    },
-                    {
-                        "name": "NormalMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:nobump.dds"
-                    },
-                    {
-                        "name": "ParameterMap",
-                        "type": "textureHandle",
-                        "defaultValue": "systex:default_material.dds"
-                    },
-                    {
-                        "name": "Transmission",
-                        "type": "float",
-                        "defaultValue": 0.0
-                    }
                 ]
             },
             {
                 "name": "Billboard",
                 "vertexType": "VertexLayoutType::Normal",
-                "materialProperties": "Unlit",
+                "interface": "Billboard"
                 "desc": "Special material which is used internally for billboard rendering.",
                 "group": "System",
                 "passes": [
@@ -748,24 +844,21 @@
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "type": "texture2d",
                         "defaultValue": "systex:placeholder.dds",
                         "system": true
                     },
                     {
                         "name": "Color",
-                        "type": "vec4",
                         "defaultValue": [
-                            1,
-                            1,
-                            1,
-                            1
+                            1.0,
+                            1.0,
+                            1.0,
+                            1.0
                         ],
                         "system": true
                     },
                     {
                         "name": "ViewAligned",
-                        "type": "bool",
                         "defaultValue": false
                     }
                 ]
@@ -773,7 +866,7 @@
             {
                 "name": "Skybox",
                 "vertexType": "VertexLayoutType::Normal",
-                "materialProperties": "Skybox",
+                "interface": "Skybox",
                 "desc": "Special material which is used internally for skybox rendering.",
                 "group": "System",
                 "passes": [
@@ -786,30 +879,34 @@
                 "variables": [
                     {
                         "name": "SkyLayer1",
-                        "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "SkyLayer2",
-                        "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
                     },
                     {
                         "name": "SkyBlendFactor",
-                        "type": "float",
                         "defaultValue": 0.0
                     },
                     {
                         "name": "SkyRotationFactor",
-                        "type": "float",
                         "defaultValue": 0.03
+                    },
+                    {
+                        "name": "Contrast",
+                        "defaultValue": 1.0
+                    },
+                    {
+                        "name": "Brightness",
+                        "defaultValue": 1.0
                     }
                 ]
             },
             {
                 "name": "AreaLight",
                 "vertexType": "VertexLayoutType::Normal",
-                "materialProperties": "Unlit",
+                "interface": "Arealight",
                 "desc": "Emissive material used by area lights",
                 "group": "System",
                 "passes": [
@@ -822,7 +919,6 @@
                 "variables": [
                     {
                         "name": "EmissiveColor",
-                        "type": "vec4",
                         "defaultValue": [ 1.0, 1.0, 1.0, 1.0 ]
                     }
                 ]
@@ -830,7 +926,7 @@
             {
                 "name": "Placeholder",
                 "vertexType": "VertexLayoutType::Normal",
-                "materialProperties": "BRDF",
+                "interface": "Placeholder",
                 "desc": "Placeholder material which gets applied to a mesh if it doesn't yet have a shader",
                 "group": "System",
                 "passes": [
@@ -848,7 +944,7 @@
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "type": "texture2d",
+                        "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
                     }
                 ]
@@ -856,7 +952,7 @@
             {
                 "name": "PlaceholderSkinned",
                 "vertexType": "VertexLayoutType::Skin",
-                "materialProperties": "BRDF",
+                "interface": "Placeholder",
                 "desc": "Placeholder material which gets applied to a mesh if it doesn't yet have a shader, but is skinned.",
                 "passes": [
                     {
@@ -873,7 +969,7 @@
                 "variables": [
                     {
                         "name": "AlbedoMap",
-                        "type": "texture2d",
+                        "type": "textureHandle",
                         "defaultValue": "systex:placeholder.dds"
                     }
                 ]

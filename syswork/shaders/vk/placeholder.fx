@@ -3,14 +3,14 @@
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
-#include "lib/shared.fxh"
-#include "lib/objects_shared.fxh"
-#include "lib/skinning.fxh"
+#include <lib/std.fxh>
+#include <lib/util.fxh>
+#include <lib/techniques.fxh>
+#include <lib/shared.fxh>
+#include <lib/objects_shared.fxh>
+#include <lib/skinning.fxh>
 
-textureHandle AlbedoMap;
+#include <material_interfaces.fx>
 
 //------------------------------------------------------------------------------
 /**
@@ -54,7 +54,7 @@ void
 psMain(in vec2 uv,
     [color0] out vec4 Color)
 {
-    Color = sample2D(AlbedoMap, Basic2DSampler, uv);
+    Color = sample2D(_Placeholder.AlbedoMap, Basic2DSampler, uv);
 }
 
 //------------------------------------------------------------------------------

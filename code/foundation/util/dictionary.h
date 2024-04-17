@@ -284,7 +284,9 @@ template<class KEYTYPE, class VALUETYPE>
 inline IndexT
 Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 {
+#if NEBULA_BOUNDSCHECKS
     //n_assert(!this->Contains(key));
+#endif
     KeyValuePair<KEYTYPE, VALUETYPE> kvp(key, value);
     if (this->inBulkInsert)
     {

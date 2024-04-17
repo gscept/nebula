@@ -3,10 +3,12 @@
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/shared.fxh"
-#include "lib/skinning.fxh"
-#include "lib/techniques.fxh"
+#include <lib/std.fxh>
+#include <lib/shared.fxh>
+#include <lib/skinning.fxh>
+#include <lib/techniques.fxh>
+
+#include <material_interfaces.fx>
 
 render_state PickingState
 {

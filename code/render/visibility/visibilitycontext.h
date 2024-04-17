@@ -13,7 +13,7 @@
 #include "visibility/systems/visibilitysystem.h"
 #include "models/model.h"
 #include "models/nodes/shaderstatenode.h"
-#include "materials/shaderconfig.h"
+#include "materials/materialtemplates.h"
 #include "memory/arenaallocator.h"
 #include "math/clipstatus.h"
 #include "coregraphics/mesh.h"

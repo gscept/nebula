@@ -41,10 +41,16 @@ MaterialId CreateMaterial(const MaterialTemplates::Entry* entry);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 
-/// Set constant
-void MaterialSetConstant(const MaterialId mat, const ShaderConfigBatchConstant* bind, const MaterialVariant& value);
 /// Set texture
-void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const CoreGraphics::TextureId tex);
+void MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const Resources::ResourceId tex);
+/// Set texture
+void MaterialSetTexture(const MaterialId mat, uint name, const Resources::ResourceId tex);
+/// Set bindless texture
+void MaterialSetTextureBindless(const MaterialId mat, uint name, const uint handle, const uint offset, const Resources::ResourceId tex);
+/// Set all material constants
+void MaterialSetConstants(const MaterialId mat, const void* data, const uint size);
+/// Set a material constant
+void MaterialSetConstant(const MaterialId mat, const void* data, const uint size, const uint offset);
 
 /// Set material GPU buffer binding
 void MaterialSetBufferBinding(const MaterialId id, IndexT index);
@@ -65,6 +71,15 @@ const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
 const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code);
 /// Get sort code
 uint64_t MaterialGetSortCode(const MaterialId mat);
+
+#ifdef WITH_NEBULA_EDITOR
+/// Get the pointer to the constants
+ubyte* MaterialGetConstants(const MaterialId mat);
+/// Get texture value
+const Resources::ResourceId MaterialGetTexture(const MaterialId mat, const IndexT i);
+/// Invalidate material
+void MaterialInvalidate(const MaterialId mat);
+#endif
 
 struct MaterialConstant
 {
@@ -91,13 +106,16 @@ enum
     Material_MinLOD,
     Material_LODTextures,
     Material_Table,
+    Material_Buffer,
     Material_InstanceTables,
-    Material_Buffers,
     Material_InstanceBuffers,
     Material_Textures,
     Material_Constants,
     Material_BufferOffset,
     Material_Template
+#ifdef WITH_NEBULA_EDITOR
+    , Material_TextureValues
+#endif
 };
 
 
@@ -105,13 +123,16 @@ typedef Ids::IdAllocator<
     float,
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
+    CoreGraphics::BufferId,                                                         // Material buffer
     Util::FixedArray<Util::FixedArray<CoreGraphics::ResourceTableId>>,              // instance level resource table, mapped batch -> table
-    Util::FixedArray<Util::Array<Util::Pair<IndexT, CoreGraphics::BufferId>>>,      // surface level constant buffers, mapped batch -> buffers
     Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
     Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
     IndexT,                                                                         // global material buffer binding (based on ShaderConfig::PrototypeHash)
     const MaterialTemplates::Entry*                                                 // template
+#ifdef WITH_NEBULA_EDITOR
+    , Util::Array<Resources::ResourceId>
+#endif
 > MaterialAllocator;
 extern MaterialAllocator materialAllocator;
 

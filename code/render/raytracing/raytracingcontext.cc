@@ -65,7 +65,7 @@ struct
     SizeT numInstancesToFlush;
 } state;
 
-static uint MaterialPropertyMappings[(uint)Materials::MaterialProperties::Num];
+static uint MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::Num];
 //------------------------------------------------------------------------------
 /**
 */
@@ -113,30 +113,20 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     state.lightGridCullProgram = CoreGraphics::ShaderGetProgram(state.lightGridShader, CoreGraphics::ShaderFeatureMask("Cull"));
     state.lightGridGenProgram = CoreGraphics::ShaderGetProgram(state.lightGridShader, CoreGraphics::ShaderFeatureMask("AABBGenerate"));
 
-    Util::Array<CoreGraphics::ShaderProgramId> shaderMappings((SizeT)Materials::MaterialProperties::Num + 1, 0);
+    Util::Array<CoreGraphics::ShaderProgramId> shaderMappings((SizeT)MaterialTemplates::MaterialProperties::Num + 1, 0);
     shaderMappings.Append(raygenProgram);
     shaderMappings.Append(brdfHitProgram);
     shaderMappings.Append(bsdfHitProgram);
     shaderMappings.Append(gltfHitProgram);
-    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
-    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
-    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
-    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
-    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
-    shaderMappings.Append(CoreGraphics::InvalidShaderProgramId);
     shaderMappings.Append(terrainHitProgram);
 
     uint bindingCounter = 0;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::BRDF] = bindingCounter++;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::BSDF] = bindingCounter++;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::GLTF] = bindingCounter++;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit2] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit3] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Unlit4] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Skybox] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Legacy] = 0xFFFFFFFF;
-    MaterialPropertyMappings[(uint)Materials::MaterialProperties::Terrain] = bindingCounter++;
+    MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::BRDF] = bindingCounter++;
+    MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::BSDF] = bindingCounter++;
+    MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::GLTF] = bindingCounter++;
+    MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::BlendAdd] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::Skybox] = 0xFFFFFFFF;
+    MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::Terrain] = bindingCounter++;
 
     state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(raygenShader, NEBULA_BATCH_GROUP, 3);
     state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline(shaderMappings);
@@ -523,7 +513,7 @@ void RaytracingContext::SetupMesh(
     , const SizeT patchVertexStride
     , const Util::Array<Math::mat4> transforms
     , const uint materialTableOffset
-    , const Materials::MaterialProperties shader
+    , const MaterialTemplates::MaterialProperties shader
     , const CoreGraphics::VertexLayoutType vertexLayout
 )
 {

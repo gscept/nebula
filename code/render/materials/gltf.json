@@ -1,69 +1,115 @@
 {
     "Nebula": {
+        "Interfaces": [
+            {
+                "name": "GLTF",
+                "values": [
+                    {
+                        "name": "baseColorTexture",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "alphaCutoff",
+                        "type": "float"
+                    },
+                    {
+                        "name": "normalTexture",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "metallicRoughnessTexture",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "emissiveTexture",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "occlusionTexture",
+                        "type": "textureHandle"
+                    },
+                    {
+                        "name": "metallicFactor",
+                        "type": "float"
+                    },
+                    {
+                        "name": "roughnessFactor",
+                        "type": "float"
+                    },
+                    {
+                        "name": "baseColorFactor",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "emissiveFactor",
+                        "type": "vec4"
+                    },
+                    {
+                        "name": "normalScale",
+                        "type": "float"
+                    }
+                ]
+            }
+        ],
         "Templates": [
             {
-                "name": "GLTF Base",
+                "name": "DefaultGLTF",
                 "virtual": true,
+                "interface": "GLTF",
                 "desc": "Base material for all GLTF materials",
                 "group": "Standard",
                 "variables": [
                     {
                         "name": "baseColorTexture",
-                        "type": "textureHandle",
                         "defaultValue": "tex:system/placeholder.dds"
                     },
                     {
                         "name": "normalTexture",
-                        "type": "textureHandle",
                         "defaultValue": "tex:system/nobump.dds"
                     },
                     {
                         "name": "metallicRoughnessTexture",
-                        "type": "textureHandle",
                         "defaultValue": "tex:system/default_material.dds"
                     },
                     {
                         "name": "emissiveTexture",
-                        "type": "textureHandle",
                         "defaultValue": "tex:system/white.dds"
                     },
                     {
                         "name": "occlusionTexture",
-                        "type": "textureHandle",
                         "defaultValue": "tex:system/white.dds"
                     },
                     {
                         "name": "baseColorFactor",
-                        "type": "vec4",
                         "defaultValue": [ 1.0, 1.0, 1.0, 1.0 ],
                         "max": [ 1.0, 1.0, 1.0, 1.0 ]
                     },
                     {
                         "name": "emissiveFactor",
-                        "type": "vec4",
-                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ]
+                        "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ],
+                        "edit": "color"
                     },
                     {
                         "name": "metallicFactor",
-                        "type": "float",
                         "defaultValue": 1.0
                     },
                     {
                         "name": "roughnessFactor",
-                        "type": "float",
                         "defaultValue": 1.0
                     },
                     {
                         "name": "normalScale",
-                        "type": "float",
                         "defaultValue": 1.0
+                    },
+                    {
+                        "name": "alphaCutoff",
+                        "defaultValue": 0.0
                     }
                 ]
             },
             {
                 "name": "GLTF",
-                "inherits": "GLTF Base",
-                "materialProperties": "GLTF",
+                "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Standard material for static GLTF models",
                 "group": "Standard",
@@ -102,8 +148,7 @@
             },
             {
                 "name": "GLTFDoubleSided",
-                "inherits": "GLTF Base",
-                "materialProperties": "GLTF",
+                "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Standard material for double sided static GLTF models",
                 "group": "Standard",
@@ -142,18 +187,10 @@
             },
             {
                 "name": "GLTFAlphaMask",
-                "inherits": "GLTF Base",
-                "materialProperties": "GLTF",
+                "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Standard material for alpha masked static GLTF models",
                 "group": "Standard",
-                "variables": [
-                    {
-                        "name": "alphaCutoff",
-                        "type": "float",
-                        "defaultValue": 0.0
-                    }
-                ],
                 "passes": [
                     {
                         "batch": "Picking",
@@ -189,18 +226,10 @@
             },
             {
                 "name": "GLTFAlphaMaskDoubleSided",
-                "inherits": "GLTF Base",
-                "materialProperties": "GLTF",
+                "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Standard material for doublesided, alpha masked static GLTF models",
                 "group": "Standard",
-                "variables": [
-                    {
-                        "name": "alphaCutoff",
-                        "type": "float",
-                        "defaultValue": 0.0
-                    }
-                ],
                 "passes": [
                     {
                         "batch": "Picking",
@@ -236,8 +265,7 @@
             },
             {
                 "name": "GLTFAlphaBlend",
-                "inherits": "GLTF Base",
-                "materialProperties": "GLTF",
+                "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Standard material for alpha blended static GLTF models",
                 "group": "Standard",
@@ -271,8 +299,7 @@
             },
             {
                 "name": "GLTFAlphaBlendDoubleSided",
-                "inherits": "GLTF Base",
-                "materialProperties": "GLTF",
+                "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
                 "desc": "Standard material for alpha blended, double sided static GLTF models",
                 "group": "Standard",

@@ -15,6 +15,8 @@
 #include "lib/pbr.fxh"
 #include "lib/stencil.fxh"
 
+#include <material_interfaces.fx>
+
 //#define PN_TRIANGLES
 render_state StandardState
 {
@@ -82,8 +84,6 @@ render_state DepthStateDoubleSided
 
 float FresnelPower = 0.0f;
 float FresnelStrength = 0.0f;
-
-#include "lib/materialparams.fxh"
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											DIFFUSE
@@ -306,8 +306,8 @@ psDepthOnlyAlphaMask(in vec2 UV)
     if (dither < DitherFactor)
         discard;
 
-    vec4 baseColor = sample2D(AlbedoMap, MaterialSampler, UV);
-    if (baseColor.a <= AlphaSensitivity)
+    vec4 baseColor = sample2D(_BRDF.AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= _BRDF.AlphaSensitivity)
         discard;
 }
 

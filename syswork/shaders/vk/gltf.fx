@@ -8,22 +8,6 @@
 #include "lib/standard_shading.fxh"
 #include "lib/decals.fxh"
 
-group(BATCH_GROUP) shared constant GLTFBlock
-{
-    // lower camel case names by design, just to keep it consistent with the GLTF standard.
-    vec4 baseColorFactor;
-    vec4 emissiveFactor;
-    float metallicFactor;
-    float roughnessFactor;
-    float normalScale;
-    float alphaCutoff;
-    textureHandle baseColorTexture;
-    textureHandle normalTexture;
-    textureHandle metallicRoughnessTexture;
-    textureHandle emissiveTexture;
-    textureHandle occlusionTexture;
-};
-
 subroutine(CalculateBump) vec3 GLTFNormalMapFunctor(in vec3 tangent, in vec3 normal, in float sign, in vec4 bumpData)
 {
     vec3 tan = normalize(tangent);
@@ -33,7 +17,7 @@ subroutine(CalculateBump) vec3 GLTFNormalMapFunctor(in vec3 tangent, in vec3 nor
     vec3 tNormal = vec3(0, 0, 0);
     tNormal.xy = (bumpData.xy * 2.0f) - 1.0f;
     tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
-    return tangentViewMatrix * normalize((tNormal * vec3(normalScale, normalScale, 1.0f)));
+    return tangentViewMatrix * normalize((tNormal * vec3(_GLTF.normalScale, _GLTF.normalScale, 1.0f)));
 }
 
 //------------------------------------------------------------------------------
@@ -43,8 +27,8 @@ shader
 void
 psGLTFDepthOnlyAlphaMask(in vec2 UV)
 {
-    const vec4 baseColor = sample2D(baseColorTexture, MaterialSampler, UV);
-    if (baseColor.a <= alphaCutoff)
+    const vec4 baseColor = sample2D(_GLTF.baseColorTexture, MaterialSampler, UV);
+    if (baseColor.a <= _GLTF.alphaCutoff)
         discard;
 }
 
@@ -91,11 +75,11 @@ psGLTF(
     [color1] out vec4 OutNormal,
     [color2] out vec4 OutSpecular)
 {
-    vec4 baseColor = calcColor(sample2D(baseColorTexture, MaterialSampler, UV) * baseColorFactor);
-    vec4 metallicRoughness = sample2D(metallicRoughnessTexture, MaterialSampler, UV) * vec4(1.0f, roughnessFactor, metallicFactor, 1.0f);
-    vec4 emissive = sample2D(emissiveTexture, MaterialSampler, UV) * emissiveFactor;
-    vec4 occlusion = sample2D(occlusionTexture, MaterialSampler, UV);
-    vec4 normals = sample2D(normalTexture, NormalSampler, UV);
+    vec4 baseColor = calcColor(sample2D(_GLTF.baseColorTexture, MaterialSampler, UV) * _GLTF.baseColorFactor);
+    vec4 metallicRoughness = sample2D(_GLTF.metallicRoughnessTexture, MaterialSampler, UV) * vec4(1.0f, _GLTF.roughnessFactor, _GLTF.metallicFactor, 1.0f);
+    vec4 emissive = sample2D(_GLTF.emissiveTexture, MaterialSampler, UV) * _GLTF.emissiveFactor;
+    vec4 occlusion = sample2D(_GLTF.occlusionTexture, MaterialSampler, UV);
+    vec4 normals = sample2D(_GLTF.normalTexture, NormalSampler, UV);
     vec4 material;
     material[MAT_METALLIC] = metallicRoughness.b;
     material[MAT_ROUGHNESS] = metallicRoughness.g;

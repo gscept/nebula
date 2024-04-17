@@ -57,17 +57,6 @@ SunIntensity(float zenithAngle)
 	return SunIntensityFactor * max(0.0f, 1.0f - exp(-((cutoff - acos(zenithAngle)) / SunIntensityFalloff)));
 }
 
-const float Av = 0.15; // Shoulder strength
-const float Bv = 0.50; // Linear strength
-const float Cv = 0.10; // Linear angle
-const float Dv = 0.20; // Toe strength
-const float Ev = 0.02; // Toe numerator
-const float Fv = 0.30; // Toe denominator
-vec3 Uncharted2Tonemap(vec3 W)
-{
-	return ((W * (Av * W + Cv * Bv) + Dv * Ev) / (W * (Av * W + Bv) + Dv * Fv)) - Ev / Fv;
-}
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -101,13 +90,6 @@ CalculateAtmosphericScattering(vec3 p, vec3 lp)
 	vec3 texColor = lin + l0;
 	texColor *= 0.04f;
 	texColor += vec3(0.0f, 0.001f, 0.0025f) * 0.3f;
-
-	/*
-	vec3 whiteScale = 1.0 / Uncharted2Tonemap(vec3(TonemapWeight));
-	vec3 curr = Uncharted2Tonemap((log2(2.0 / pow(Lum, 4.0))) * texColor);
-	vec3 color = curr * whiteScale;
-	vec3 retColor = pow(color, vec3(1.0 / (1.2 + (1.2 * sunfade))));
-	*/
 
 	return texColor;
 }
