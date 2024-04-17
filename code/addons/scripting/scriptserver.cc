@@ -14,6 +14,8 @@ __ImplementSingleton(Scripting::ScriptServer);
 using namespace Util;
 using namespace IO;
 
+Util::Array<ScriptModuleInit> ScriptServer::initFuncs;
+
 //------------------------------------------------------------------------------
 /**
 */

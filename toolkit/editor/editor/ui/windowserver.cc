@@ -231,15 +231,12 @@ WindowServer::RegisterWindow(const Ptr<BaseWindow>& base)
 void
 WindowServer::RegisterWindowScript(const char* script, const char* label)
 {
-    if (IO::IoServer::Instance()->FileExists(script))
-    {
-        Ptr<ScriptedWindow> wnd = ScriptedWindow::Create();
-        wnd->SetName(label);
-        if (wnd->LoadModule(script))
-        {
-            this->RegisterWindow(wnd.upcast<BaseWindow>());
-        }
-    }
+	Ptr<ScriptedWindow> wnd = ScriptedWindow::Create();
+	wnd->SetName(label);
+	if (wnd->LoadModule(script))
+	{
+		this->RegisterWindow(wnd.upcast<BaseWindow>());
+	}
 }
 
 //------------------------------------------------------------------------------

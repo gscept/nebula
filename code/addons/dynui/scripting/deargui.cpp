@@ -5,6 +5,7 @@
 #include <array>
 #include <limits>
 #include "imgui.h"
+#include "scripting/scriptserver.h"
 
 struct ImGuiContext;
 namespace py = nanobind;
@@ -156,7 +157,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("begin", [](const char * name, bool * p_open, ImGuiWindowFlags flags)
     {
         auto ret = ImGui::Begin(name, p_open, flags);
-        return std::make_tuple(ret, p_open);
+        return py::make_tuple(ret, p_open);
     }
     , py::arg("name")
     , py::arg("p_open") = nullptr
@@ -510,7 +511,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("checkbox", [](const char * label, bool * v)
     {
         auto ret = ImGui::Checkbox(label, v);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -518,7 +519,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("checkbox_flags", [](const char * label, unsigned int * flags, unsigned int flags_value)
     {
         auto ret = ImGui::CheckboxFlags(label, flags, flags_value);
-        return std::make_tuple(ret, flags);
+        return py::make_tuple(ret, flags);
     }
     , py::arg("label")
     , py::arg("flags")
@@ -531,7 +532,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("radio_button", [](const char * label, int * v, int v_button)
     {
         auto ret = ImGui::RadioButton(label, v, v_button);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -554,7 +555,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_float", [](const char * label, float * v, float v_speed, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::DragFloat(label, v, v_speed, v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -567,7 +568,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_float2", [](const char * label, std::array<float, 2>& v, float v_speed, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::DragFloat2(label, v.data(), v_speed, v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -580,7 +581,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_float3", [](const char * label, std::array<float, 3>& v, float v_speed, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::DragFloat3(label, &v[0], v_speed, v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -593,7 +594,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_float4", [](const char * label, std::array<float, 4>& v, float v_speed, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::DragFloat4(label, &v[0], v_speed, v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -606,7 +607,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_float_range2", [](const char * label, float * v_current_min, float * v_current_max, float v_speed, float v_min, float v_max, const char * format, const char * format_max, float power)
     {
         auto ret = ImGui::DragFloatRange2(label, v_current_min, v_current_max, v_speed, v_min, v_max, format, format_max, power);
-        return std::make_tuple(ret, v_current_min, v_current_max);
+        return py::make_tuple(ret, v_current_min, v_current_max);
     }
     , py::arg("label")
     , py::arg("v_current_min")
@@ -621,7 +622,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_int", [](const char * label, int * v, float v_speed, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::DragInt(label, v, v_speed, v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -633,7 +634,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_int2", [](const char * label, std::array<int, 2>& v, float v_speed, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::DragInt2(label, &v[0], v_speed, v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -645,7 +646,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_int3", [](const char * label, std::array<int, 3>& v, float v_speed, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::DragInt3(label, &v[0], v_speed, v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -657,7 +658,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_int4", [](const char * label, std::array<int, 4>& v, float v_speed, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::DragInt4(label, &v[0], v_speed, v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -669,7 +670,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("drag_int_range2", [](const char * label, int * v_current_min, int * v_current_max, float v_speed, int v_min, int v_max, const char * format, const char * format_max)
     {
         auto ret = ImGui::DragIntRange2(label, v_current_min, v_current_max, v_speed, v_min, v_max, format, format_max);
-        return std::make_tuple(ret, v_current_min, v_current_max);
+        return py::make_tuple(ret, v_current_min, v_current_max);
     }
     , py::arg("label")
     , py::arg("v_current_min")
@@ -704,7 +705,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_float", [](const char * label, float * v, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::SliderFloat(label, v, v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -716,7 +717,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_float2", [](const char * label, std::array<float, 2>& v, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::SliderFloat2(label, &v[0], v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -728,7 +729,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_float3", [](const char * label, std::array<float, 3>& v, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::SliderFloat3(label, &v[0], v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -740,7 +741,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_float4", [](const char * label, std::array<float, 4>& v, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::SliderFloat4(label, &v[0], v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -752,7 +753,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_angle", [](const char * label, float * v_rad, float v_degrees_min, float v_degrees_max)
     {
         auto ret = ImGui::SliderAngle(label, v_rad, v_degrees_min, v_degrees_max);
-        return std::make_tuple(ret, v_rad);
+        return py::make_tuple(ret, v_rad);
     }
     , py::arg("label")
     , py::arg("v_rad")
@@ -762,7 +763,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_int", [](const char * label, int * v, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::SliderInt(label, v, v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -773,7 +774,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_int2", [](const char * label, std::array<int, 2>& v, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::SliderInt2(label, &v[0], v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -784,7 +785,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_int3", [](const char * label, std::array<int, 3>& v, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::SliderInt3(label, &v[0], v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -795,7 +796,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("slider_int4", [](const char * label, std::array<int, 4>& v, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::SliderInt4(label, &v[0], v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -825,7 +826,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("v_slider_float", [](const char * label, const ImVec2 & size, float * v, float v_min, float v_max, const char * format, float power)
     {
         auto ret = ImGui::VSliderFloat(label, size, v, v_min, v_max, format, power);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("size")
@@ -838,7 +839,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("v_slider_int", [](const char * label, const ImVec2 & size, int * v, int v_min, int v_max, const char * format)
     {
         auto ret = ImGui::VSliderInt(label, size, v, v_min, v_max, format);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("size")
@@ -860,7 +861,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_float", [](const char * label, float * v, float step, float step_fast, const char * format, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputFloat(label, v, step, step_fast, format, extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -872,7 +873,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_float2", [](const char * label, std::array<float, 2>& v, const char * format, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputFloat2(label, &v[0], format, extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -882,7 +883,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_float3", [](const char * label, std::array<float, 3>& v, const char * format, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputFloat3(label, &v[0], format, extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -892,7 +893,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_float4", [](const char * label, std::array<float, 4>& v, const char * format, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputFloat4(label, &v[0], format, extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -902,7 +903,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_int", [](const char * label, int * v, int step, int step_fast, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputInt(label, v, step, step_fast, extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -913,7 +914,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_int2", [](const char * label, std::array<int, 2>& v, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputInt2(label, &v[0], extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -922,7 +923,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_int3", [](const char * label, std::array<int, 3>& v, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputInt3(label, &v[0], extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -931,7 +932,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_int4", [](const char * label, std::array<int, 4>& v, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputInt4(label, &v[0], extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -940,7 +941,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("input_double", [](const char * label, double * v, double step, double step_fast, const char * format, ImGuiInputTextFlags extra_flags)
     {
         auto ret = ImGui::InputDouble(label, v, step, step_fast, format, extra_flags);
-        return std::make_tuple(ret, v);
+        return py::make_tuple(ret, v);
     }
     , py::arg("label")
     , py::arg("v")
@@ -971,7 +972,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("color_edit3", [](const char * label, std::array<float, 3>& col, ImGuiColorEditFlags flags)
     {
         auto ret = ImGui::ColorEdit3(label, &col[0], flags);
-        return std::make_tuple(ret, col);
+        return py::make_tuple(ret, col);
     }
     , py::arg("label")
     , py::arg("col")
@@ -980,7 +981,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("color_edit4", [](const char * label, std::array<float, 4>& col, ImGuiColorEditFlags flags)
     {
         auto ret = ImGui::ColorEdit4(label, &col[0], flags);
-        return std::make_tuple(ret, col);
+        return py::make_tuple(ret, col);
     }
     , py::arg("label")
     , py::arg("col")
@@ -989,7 +990,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("color_picker3", [](const char * label, std::array<float, 3>& col, ImGuiColorEditFlags flags)
     {
         auto ret = ImGui::ColorPicker3(label, &col[0], flags);
-        return std::make_tuple(ret, col);
+        return py::make_tuple(ret, col);
     }
     , py::arg("label")
     , py::arg("col")
@@ -998,7 +999,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("color_picker4", [](const char * label, std::array<float, 4>& col, ImGuiColorEditFlags flags, const float * ref_col)
     {
         auto ret = ImGui::ColorPicker4(label, &col[0], flags, ref_col);
-        return std::make_tuple(ret, col);
+        return py::make_tuple(ret, col);
     }
     , py::arg("label")
     , py::arg("col")
@@ -1076,7 +1077,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("collapsing_header", [](const char * label, bool * p_open, ImGuiTreeNodeFlags flags)
     {
         auto ret = ImGui::CollapsingHeader(label, p_open, flags);
-        return std::make_tuple(ret, p_open);
+        return py::make_tuple(ret, p_open);
     }
     , py::arg("label")
     , py::arg("p_open")
@@ -1091,7 +1092,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("selectable", [](const char * label, bool * p_selected, ImGuiSelectableFlags flags, const ImVec2 & size)
     {
         auto ret = ImGui::Selectable(label, p_selected, flags, size);
-        return std::make_tuple(ret, p_selected);
+        return py::make_tuple(ret, p_selected);
     }
     , py::arg("label")
     , py::arg("p_selected")
@@ -1138,7 +1139,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("menu_item", [](const char * label, const char * shortcut, bool * p_selected, bool enabled)
     {
         auto ret = ImGui::MenuItem(label, shortcut, p_selected, enabled);
-        return std::make_tuple(ret, p_selected);
+        return py::make_tuple(ret, p_selected);
     }
     , py::arg("label")
     , py::arg("shortcut")
@@ -1180,7 +1181,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("begin_popup_modal", [](const char * name, bool * p_open, ImGuiWindowFlags flags)
     {
         auto ret = ImGui::BeginPopupModal(name, p_open, flags);
-        return std::make_tuple(ret, p_open);
+        return py::make_tuple(ret, p_open);
     }
     , py::arg("name")
     , py::arg("p_open") = nullptr
@@ -1353,7 +1354,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("color_convert_rg_bto_hsv", [](float r, float g, float b, float & out_h, float & out_s, float & out_v)
     {
         ImGui::ColorConvertRGBtoHSV(r, g, b, out_h, out_s, out_v);
-        return std::make_tuple(out_h, out_s, out_v);
+        return py::make_tuple(out_h, out_s, out_v);
     }
     , py::arg("r")
     , py::arg("g")
@@ -1365,7 +1366,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("color_convert_hs_vto_rgb", [](float h, float s, float v, float & out_r, float & out_g, float & out_b)
     {
         ImGui::ColorConvertHSVtoRGB(h, s, v, out_r, out_g, out_b);
-        return std::make_tuple(out_r, out_g, out_b);
+        return py::make_tuple(out_r, out_g, out_b);
     }
     , py::arg("h")
     , py::arg("s")
@@ -1459,7 +1460,7 @@ NB_MODULE(deargui, deargui)
     deargui.def("save_ini_settings_to_memory", [](size_t * out_ini_size)
     {
         auto ret = ImGui::SaveIniSettingsToMemory(out_ini_size);
-        return std::make_tuple(ret, out_ini_size);
+        return py::make_tuple(ret, out_ini_size);
     }
     , py::arg("out_ini_size") = 0
     , py::rv_policy::automatic_reference);
@@ -2108,7 +2109,7 @@ NB_MODULE(deargui, deargui)
     , py::arg("b")
     , py::arg("col")
     , py::arg("rounding") = 0.0f
-    , py::arg("flags") = ImDrawFlags_::ImDrawFlags_RoundCornersAll
+    , py::arg("flags") = (int)ImDrawFlags_::ImDrawFlags_RoundCornersAll
     , py::arg("thickness") = 1.0f
     , py::rv_policy::automatic_reference);
     DrawList.def("add_rect_filled", &ImDrawList::AddRectFilled
@@ -2116,7 +2117,7 @@ NB_MODULE(deargui, deargui)
     , py::arg("b")
     , py::arg("col")
     , py::arg("rounding") = 0.0f
-    , py::arg("flags") = ImDrawFlags_::ImDrawFlags_RoundCornersAll
+    , py::arg("flags") = (int)ImDrawFlags_::ImDrawFlags_RoundCornersAll
     , py::rv_policy::automatic_reference);
     DrawList.def("add_rect_filled_multi_color", &ImDrawList::AddRectFilledMultiColor
     , py::arg("a")
@@ -2211,7 +2212,7 @@ NB_MODULE(deargui, deargui)
     , py::arg("uv_b")
     , py::arg("col")
     , py::arg("rounding")
-    , py::arg("flags") = ImDrawFlags_::ImDrawFlags_RoundCornersAll
+    , py::arg("flags") = (int)ImDrawFlags_::ImDrawFlags_RoundCornersAll
     , py::rv_policy::automatic_reference);
     DrawList.def("add_polyline", &ImDrawList::AddPolyline
     , py::arg("points")
@@ -2286,7 +2287,7 @@ NB_MODULE(deargui, deargui)
     , py::arg("rect_min")
     , py::arg("rect_max")
     , py::arg("rounding") = 0.0f
-    , py::arg("flags") = ImDrawFlags_::ImDrawFlags_RoundCornersAll
+    , py::arg("flags") = (int)ImDrawFlags_::ImDrawFlags_RoundCornersAll
     , py::rv_policy::automatic_reference);
     DrawList.def("channels_split", &ImDrawList::ChannelsSplit
     , py::arg("channels_count")
@@ -2590,7 +2591,7 @@ NB_MODULE(deargui, deargui)
         int width, height, bytes_per_pixel;
         atlas.GetTexDataAsAlpha8(&pixels, &width, &height, &bytes_per_pixel);
         std::string data((char*)pixels, width * height * bytes_per_pixel);
-        return std::make_tuple(width, height, py::bytes(data.data()));
+        return py::make_tuple(width, height, py::bytes(data.data()));
     });
     FontAtlas.def("get_tex_data_as_rgba32", [](ImFontAtlas& atlas)
     {
@@ -2598,7 +2599,7 @@ NB_MODULE(deargui, deargui)
         int width, height, bytes_per_pixel;
         atlas.GetTexDataAsRGBA32(&pixels, &width, &height, &bytes_per_pixel);
         std::string data((char*)pixels, width * height * bytes_per_pixel);
-        return std::make_tuple(width, height, py::bytes(data.data()));
+        return py::make_tuple(width, height, py::bytes(data.data()));
     });
     deargui.def("init", []()
     {
@@ -2617,7 +2618,7 @@ NB_MODULE(deargui, deargui)
         auto ret = ImGui::InputText(label, text, max_size, flags, nullptr, NULL);
         std::string output(text);
         free(text);
-        return std::make_tuple(ret, output);
+        return py::make_tuple(ret, output);
     }
     , py::arg("label")
     , py::arg("data")
@@ -2632,7 +2633,7 @@ NB_MODULE(deargui, deargui)
         auto ret = ImGui::InputTextMultiline(label, text, max_size, size, flags, nullptr, NULL);
         std::string output(text);
         free(text);
-        return std::make_tuple(ret, output);
+        return py::make_tuple(ret, output);
     }
     , py::arg("label")
     , py::arg("data")
@@ -2648,7 +2649,7 @@ NB_MODULE(deargui, deargui)
             ptrs.push_back(s.c_str());
         }
         auto ret = ImGui::Combo(label, current_item, ptrs.data(), ptrs.size(), popup_max_height_in_items);
-        return std::make_tuple(ret, current_item);
+        return py::make_tuple(ret, current_item);
     }
     , py::arg("label")
     , py::arg("current_item")
@@ -2663,7 +2664,7 @@ NB_MODULE(deargui, deargui)
             ptrs.push_back(s.c_str());
         }
         auto ret = ImGui::ListBox(label, current_item, ptrs.data(), ptrs.size(), height_in_items);
-        return std::make_tuple(ret, current_item);
+        return py::make_tuple(ret, current_item);
     }
     , py::arg("label")
     , py::arg("current_item")
@@ -2695,3 +2696,13 @@ NB_MODULE(deargui, deargui)
     , py::arg("graph_size") = ImVec2(0,0)
     );
 }
+
+namespace Scripting
+{
+void RegisterDearguiModule()
+{
+    Scripting::ScriptServer::RegisterModuleInit([]() {
+        PyImport_AppendInittab("deargui", PyInit_deargui);
+        });
+}
+};

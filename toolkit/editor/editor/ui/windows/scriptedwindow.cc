@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "scriptedwindow.h"
 #include "nanobind/nanobind.h"
+#include "io/ioserver.h"
 
 namespace Presentation
 {
@@ -25,7 +26,9 @@ ScriptedWindow::ScriptedWindow() :
 ScriptedWindow::~ScriptedWindow()
 {
     if (this->script != nullptr)
+    {
         delete this->script;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -35,18 +38,19 @@ void
 ScriptedWindow::Run()
 {
     if (this->script->is_none())
+    {
         return;
-
+    }
+    ImGui::Begin(this->name.AsCharPtr());
     try
     {
-        ImGui::Begin(this->name.AsCharPtr());
-        this->script->attr("draw")();
-        ImGui::End();
+        this->script->attr("draw")();        
     }
     catch (const nanobind::python_error& error)
     {
         n_warning(error.what());
     }
+    ImGui::End();
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +74,18 @@ ScriptedWindow::LoadModule(Util::String const& module)
         return false;
     }
 
+    if (!nanobind::hasattr(*this->script, "draw"))
+    {
+        n_warning("ScriptedWindow: %s has no draw function", module.AsCharPtr());
+        return false;
+    }
     this->modulePath = module;
+    if (nanobind::hasattr(*this->script, "category"))
+    {
+        nanobind::object catObj = nanobind::getattr(*this->script, "category");
+        auto strob = nanobind::str(catObj);
+        this->category = strob.c_str();
+    }
     return true;
 }
 

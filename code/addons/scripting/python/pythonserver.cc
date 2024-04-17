@@ -54,6 +54,11 @@ PythonServer::Open()
     if (ScriptServer::Open())
     {
         Python::RegisterNebulaModules();
+
+        for (const Scripting::ScriptModuleInit& init : initFuncs)
+        {
+            init();
+        }
         Py_Initialize();
         
         nanobind::detail::init(nullptr);
