@@ -333,6 +333,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     batchCmd.nodeName = renderables->nodeNames[index];
 #endif
                     mesh = otherMesh;
+                    mat = otherMat;
                 }
 
                 // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command
