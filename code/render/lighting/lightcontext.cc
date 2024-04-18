@@ -582,7 +582,7 @@ LightContext::SetupAreaLight(
     void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
     const Materials::ShaderConfigBatchConstant* batchConstant = &MaterialTemplates::base::__AreaLight.__LightMeshes_EmissiveColor;
 
-    MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)Memory::StackAlloc(matTemplate->bufferSize);
+    MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)StackAlloc(matTemplate->bufferSize);
     (color * intensity).store(data->EmissiveColor);
     Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
 

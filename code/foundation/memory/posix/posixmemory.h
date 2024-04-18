@@ -27,6 +27,8 @@ extern int volatile HeapTypeAllocCount[NumHeapTypes];
 extern int volatile HeapTypeAllocSize[NumHeapTypes];
 #endif
 
+#define StackAlloc(size) alloca(size);
+
 //------------------------------------------------------------------------------
 /**
     Allocate a block of memory from the process heap.
@@ -146,15 +148,6 @@ FreeVirtual(void* ptr, size_t size)
     n_assert(ret == 0);
     ret = munmap(ptr, size);
     n_assert(ret == 0);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void*
-StackAlloc(size_t size)
-{
-    return alloca(size);
 }
 
 //------------------------------------------------------------------------------
