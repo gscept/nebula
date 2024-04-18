@@ -744,10 +744,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.currentDevice = 0;
     SetupAdapter(info.features);
 
-#if NEBULA_GRAPHICS_DEBUG
-#else
     if (info.enableValidation)
-#endif
     {
         VkCreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkCreateDebugUtilsMessengerEXT");
         VkDestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(state.instance, "vkDestroyDebugUtilsMessengerEXT");
