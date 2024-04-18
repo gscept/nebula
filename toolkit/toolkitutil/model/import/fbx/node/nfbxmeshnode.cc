@@ -178,7 +178,7 @@ NFbxMeshNode::ExtractMesh(
     {
         const ufbx_face& face = fbxMesh->faces[polygonIndex];
         size_t requiredIndices = (face.num_indices - 2) * 3;
-        uint32_t* indices = (uint32_t*)Memory::StackAlloc(requiredIndices * sizeof(uint32));
+        uint32_t* indices = (uint32_t*)StackAlloc(requiredIndices * sizeof(uint32));
         uint status = ufbx_triangulate_face(indices, requiredIndices, fbxMesh, face);
         n_assert_fmt(status != 0, "Triangulation failed on polygon %d", polygonIndex);
         for (int tri = 0; tri < requiredIndices / 3; tri++)
