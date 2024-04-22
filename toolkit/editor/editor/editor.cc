@@ -46,6 +46,9 @@ Create()
     state.editorWorld->componentInitializationEnabled = false;
 
     Game::GameServer::Instance()->SetupEmptyWorld(state.editorWorld);
+
+    // Create a command manager with a 20MB buffer
+    Edit::CommandManager::Create(20_MB);
 }
 
 //------------------------------------------------------------------------------
@@ -54,6 +57,7 @@ Create()
 void
 Destroy()
 {
+    Edit::CommandManager::Discard();
     // empty
 }
 

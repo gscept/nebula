@@ -31,7 +31,7 @@ struct CommandManager
     typedef Util::List<CommandStack> CommandList;
 
     /// Init singleton
-    static void Create();
+    static void Create(uint scratchBufferSize);
     /// Destroy singleton
     static void Discard();
     /// Returns true if the undo stack has entries
@@ -70,6 +70,8 @@ struct CommandManager
     static void ClearUndoList();
     /// Clear the redo list
     static void ClearRedoList();
+    /// Alloc scratch memory
+    static ubyte* AllocScratch(uint size);
 private:
     /// Adds a command to the undo stack. Does not execute it.
     static void AddUndo(Command* command);

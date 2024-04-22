@@ -10,25 +10,31 @@
 namespace Edit
 {
 
-static CommandManager::CommandList undoList;
-static CommandManager::CommandList redoList;
-static SizeT undoLevel = 8096;
-static SizeT cleanCount;
-static SizeT undoListSize;
-static SizeT redoListSize;
-static bool macroMode = false;
+CommandManager::CommandList undoList;
+CommandManager::CommandList redoList;
+SizeT undoLevel = 8096;
+SizeT cleanCount;
+SizeT undoListSize;
+SizeT redoListSize;
+bool macroMode = false;
+ubyte* scratchBuffer;
+uint scratchSize;
+uint scratchIterator;
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-CommandManager::Create()
+CommandManager::Create(uint scratchBufferSize)
 {
     undoList.Clear();
     redoList.Clear();
     undoListSize = 0;
     redoListSize = 0;
     cleanCount = 0;
+    scratchBuffer = (ubyte*)Memory::Alloc(Memory::HeapType::ScratchHeap, scratchBufferSize);
+    scratchSize = scratchBufferSize;
+    scratchIterator = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -42,6 +48,8 @@ CommandManager::Discard()
     undoListSize = 0;
     redoListSize = 0;
     cleanCount = 0;
+    Memory::Free(Memory::HeapType::ScratchHeap, scratchBuffer);
+    scratchIterator = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -253,6 +261,7 @@ void CommandManager::Redo()
 */
 void CommandManager::Clear()
 {
+    scratchIterator = 0;
     ClearUndoList();
     ClearRedoList();
 }
@@ -342,6 +351,21 @@ void CommandManager::ClearRedoList()
     }
     redoList.Clear();
     redoListSize = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ubyte* 
+CommandManager::AllocScratch(uint size)
+{
+    // If scratch is exceeded, need some type of ring buffer behavior
+    if (scratchIterator + size > scratchSize)
+        scratchIterator = 0;
+
+    ubyte* ret = scratchBuffer + scratchIterator;
+    scratchIterator += size;
+    return ret;
 }
 
 } // namespace Edit

@@ -15,6 +15,7 @@
 #include "tinyfiledialogs.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/textureloader.h"
+#include "materials/material_interfaces.h"
 
 using namespace Editor;
 
@@ -50,13 +51,106 @@ Previewer::~Previewer()
     // empty
 }
 
+struct CMDMaterialSetTexture : public Edit::Command
+{
+    ~CMDMaterialSetTexture() {};
+    const char* Name() override
+    {
+        return "Material Set Texture";
+    };
+
+    bool Execute() override
+    {
+        n_assert(this->previewer->assetType == Previewer::PreviewAssetType::Material);
+        this->res = Resources::CreateResource(this->asset, "editor", nullptr, nullptr, true, false);
+        ImageHolder* textureInfo = (ImageHolder*)previewerState.images[this->index];
+        textureInfo->res = res;
+        textureInfo->texture.nebulaHandle = res.resourceId;
+        if (this->bindlessOffset != 0xFFFFFFFF)
+        {
+            uint handle = CoreGraphics::TextureGetBindlessHandle(res);
+            memcpy(previewerState.constants + this->bindlessOffset, &handle, sizeof(handle));
+            Materials::MaterialSetConstant(this->previewer->asset.material, &handle, sizeof(handle), this->bindlessOffset);
+            Materials::MaterialInvalidate(this->previewer->asset.material);
+        }
+        else
+        {
+            Materials::MaterialSetTexture(this->previewer->asset.material, this->hash, this->res);
+        }
+        return true;
+    };
+
+    bool Unexecute() override
+    {
+        Resources::DiscardResource(this->res);
+        this->res = Resources::CreateResource(this->oldAsset, "editor", nullptr, nullptr, true, false);
+        ImageHolder* textureInfo = (ImageHolder*)previewerState.images[this->index];
+        textureInfo->res = res;
+        textureInfo->texture.nebulaHandle = res.resourceId;
+        if (this->bindlessOffset != 0xFFFFFFFF)
+        {
+            uint handle = CoreGraphics::TextureGetBindlessHandle(res);
+            memcpy(previewerState.constants + this->bindlessOffset, &handle, sizeof(handle));
+            Materials::MaterialSetConstant(this->previewer->asset.material, &handle, sizeof(handle), this->bindlessOffset);
+            Materials::MaterialInvalidate(this->previewer->asset.material);
+        }
+        else
+        {
+            Materials::MaterialSetTexture(this->previewer->asset.material, this->hash, this->res);
+        }
+        return true;
+    };
+    Previewer* previewer;
+    uint hash;
+    uint index;
+    uint bindlessOffset;
+    Resources::ResourceName asset;
+
+    Resources::ResourceName oldAsset;
+
+private:
+    Resources::ResourceId res;
+};
+
+struct CMDMaterialSetConstant : public Edit::Command
+{
+    ~CMDMaterialSetConstant() {};
+
+    const char* Name() override
+    {
+        return "Material Set Constant";
+    };
+
+    bool Execute() override
+    {
+        n_assert(this->previewer->assetType == Previewer::PreviewAssetType::Material);
+        memcpy(previewerState.constants, this->data, this->dataSize);
+        Materials::MaterialSetConstants(this->previewer->asset.material, this->data, this->dataSize);
+        Materials::MaterialInvalidate(this->previewer->asset.material);
+        return true;
+    };
+
+    bool Unexecute() override
+    {
+        memcpy(previewerState.constants, this->oldData, this->dataSize);
+        Materials::MaterialSetConstants(this->previewer->asset.material, this->oldData, this->dataSize);
+        Materials::MaterialInvalidate(this->previewer->asset.material);
+        return true;
+    };
+
+    ubyte* data;
+    ubyte* oldData;
+    uint dataSize;
+    Previewer* previewer;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
 void
-MaterialEditor(const Materials::MaterialId mat)
+MaterialEditor(Previewer* previewer)
 {
-    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(mat);
+    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(previewer->asset.material);
     ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
     ImGui::Text(materialTemplate->name);
     ImGui::PopFont();
@@ -93,22 +187,14 @@ MaterialEditor(const Materials::MaterialId mat)
                 // TODO: Replace file dialog with asset browser view/instance
                 const char* patterns[] = { "*.dds" };
                 const char* path = tinyfd_openFileDialog(kvp.Key(), IO::URI(name).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
-                Resources::ResourceId newTex = Resources::CreateResource(path, "editor", [mat, textureInfo, value, bufferSize = materialTemplate->bufferSize](Resources::ResourceId res)
-                {
-                    textureInfo->res = res;
-                    textureInfo->texture.nebulaHandle = res.resourceId;
-                    if (value->bindlessOffset != 0xFFFFFFFF)
-                    {
-                        uint handle = CoreGraphics::TextureGetBindlessHandle(res);
-                        memcpy(previewerState.constants + value->bindlessOffset, &handle, sizeof(handle));
-                        Materials::MaterialSetConstants(mat, previewerState.constants, bufferSize);
-                        Materials::MaterialInvalidate(mat);
-                    }
-                    else
-                    {
-                        Materials::MaterialSetTexture(mat, value->hashedName, res);
-                    }
-                });
+                auto cmd = new CMDMaterialSetTexture;
+                cmd->bindlessOffset = value->bindlessOffset;
+                cmd->index = i;
+                cmd->hash = value->hashedName;
+                cmd->previewer = previewer;
+                cmd->asset = path;
+                cmd->oldAsset = name;
+                Edit::CommandManager::Execute(cmd);
             }
         }
     }
@@ -118,72 +204,73 @@ MaterialEditor(const Materials::MaterialId mat)
     {
         auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
         const MaterialTemplates::MaterialTemplateValue* value = kvp.Value();
+        ubyte* imguiState = (ubyte*)StackAlloc(materialTemplate->bufferSize);
+        ubyte* currentState = Materials::MaterialGetConstants(previewer->asset.material);
+        memcpy(imguiState, currentState, materialTemplate->bufferSize);
 
         switch (value->type)
         {
             case MaterialTemplates::MaterialTemplateValue::Type::Bool:
             {
-                if (ImGui::Checkbox(kvp.Key(), (bool*)(previewerState.constants + value->offset)))
-                {
-                    applyChange = true;
-                }
+                ImGui::Checkbox(kvp.Key(), (bool*)(imguiState + value->offset));
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
             {
-                if (ImGui::SliderFloat(kvp.Key(), (float*)(previewerState.constants + value->offset), 0.0f, 1.0f))
-                {
-                    applyChange = true;
-                }
+                ImGui::SliderFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
             {
-                if (ImGui::SliderFloat2(kvp.Key(), (float*)(previewerState.constants + value->offset), 0.0f, 1.0f))
-                {
-                    applyChange = true;
-                }
+                ImGui::SliderFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
             {
-                if (ImGui::SliderFloat3(kvp.Key(), (float*)(previewerState.constants + value->offset), 0.0f, 1.0f))
-                {
-                    applyChange = true;
-                }
+                ImGui::SliderFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
             {
-                if (ImGui::SliderFloat4(kvp.Key(), (float*)(previewerState.constants + value->offset), 0.0f, 1.0f))
-                {
-                    applyChange = true;
-                }
+                ImGui::SliderFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Color:
             {
-                if (ImGui::ColorEdit4(kvp.Key(), (float*)(previewerState.constants + value->offset), ImGuiColorEditFlags_Float))
-                {
-                    applyChange = true;
-                }
+                ImGui::ColorEdit4(kvp.Key(), (float*)(imguiState + value->offset), ImGuiColorEditFlags_Float);
                 break;
             }
             default:
                 // TODO: Implement all types
                 break;
         }
+
+        // Issue command
+        if (ImGui::IsItemDeactivatedAfterEdit())
+        {
+            CMDMaterialSetConstant* cmd = new CMDMaterialSetConstant;
+            cmd->data = (ubyte*)Edit::CommandManager::AllocScratch(materialTemplate->bufferSize);
+            cmd->oldData = (ubyte*)Edit::CommandManager::AllocScratch(materialTemplate->bufferSize);
+            cmd->dataSize = materialTemplate->bufferSize;
+            cmd->previewer = previewer;
+            memcpy(cmd->data, imguiState, cmd->dataSize);
+            memcpy(cmd->oldData, previewerState.constants, cmd->dataSize);
+            Edit::CommandManager::Execute(cmd);
+        }
+
+        // Update live state
+        if (ImGui::IsItemEdited())
+        {
+            Materials::MaterialSetConstants(previewer->asset.material, imguiState, materialTemplate->bufferSize);
+        }
+
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && kvp.Value()->desc != nullptr)
         {
             ImGui::SetTooltip(kvp.Value()->desc);
         }
     }
 
-    if (applyChange)
-    {
-        Materials::MaterialSetConstants(mat, previewerState.constants, materialTemplate->bufferSize);
-        Materials::MaterialInvalidate(mat);
-    }
+
 }
 
 //------------------------------------------------------------------------------
@@ -219,7 +306,7 @@ Previewer::Run()
     switch (this->assetType)
     {
         case PreviewAssetType::Material:
-            MaterialEditor(this->asset.material);
+            MaterialEditor(this);
             break;
         case PreviewAssetType::Mesh:
             break;
@@ -251,7 +338,7 @@ MaterialSetup(const Materials::MaterialId mat)
     {
         auto kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
         Resources::ResourceId res = Materials::MaterialGetTexture(mat, kvp.Value()->textureIndex);
-        if (res == Resources::InvalidResourceId)
+        if (res.resourceId == Resources::InvalidResourceId.resourceId)
             res = Resources::CreateResource(kvp.Value()->resource, "editor");
         ImageHolder* data = previewerState.assetAllocator.Alloc<ImageHolder>();
         Resources::CreateResourceListener(res, [data](Resources::ResourceId res)
@@ -307,6 +394,7 @@ struct CMDPreviewAsset : public Edit::Command
             {
                 this->previewer->asset.id = id.resourceId;
                 this->previewer->assetType = type;
+                this->res = id;
                 Setup(id.resourceId, type);
             }
         );
@@ -315,10 +403,12 @@ struct CMDPreviewAsset : public Edit::Command
 
     bool Unexecute() override
     {
+        Resources::DiscardResource(this->res);
         this->previewer->assetType = Previewer::PreviewAssetType::None;
         return true;
     };
     Previewer* previewer;
+    Resources::ResourceId res;
     Resources::ResourceName asset;
     Previewer::PreviewAssetType type;
 };
