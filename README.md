@@ -19,28 +19,33 @@ Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 
 ## Setup
 
+There are a few simple projects in the test folder, but a more interesting project is available as well [Nebula-demo](https://github.com/gscept/nebula-demo).
+Fips will take care of getting the relevant dependencies (including the actual engine in case you are setting up a external project)
+
 #### Setup config
 
-1. `./fips set config vulkan-win64-vs2022-debug` in your project directory, alternatively vs2019 or vs2017, depending on your version
+1. `fips set config win64-vstudio-debug` in your project directory, e.g. the cloned nebula-demo. There are other configs available, see in fips-files/configs
+2. `fips fetch` Downloads/checks out all the other required repositories
 
-#### Set environment variables
+#### Select the project and source directory
 
 Run `fips nebula` verb to set work and toolkit directory registry variables:
 
-  * `fips nebula set work {PATH}`
-  * `fips nebula set toolkit {PATH}`
-  
+  * `fips nebula set work {PATH}` (If you are building an external project, this would be the current path)
+  * `fips nebula set toolkit {PATH}` (this is the path to where the nebula checkout resides, if an external project that would be ../nebula)
+
 #### Build project
 
 In your project directory:
   
-  1. `fips fetch`
-  2. `fips physx build vc17 debug` (if you are running VS 2022, use `vc16` or `vc15` for vs 2019/2017 instead)
+  1. `fips physx build vc17 debug` (if you are running VS 2022, use `vc16` or `vc15` for vs 2019/2017 instead)
   2. `fips anyfx setup`
   3. `fips ultralight`
-  4. `fips build`
-  5. `fips physx deploy vc17 debug`
-
+  4. `fips gen` to generate the required build system files, e.g. a visual studio solution
+  5. `fips build` to directly compile the project
+     or
+     `fips open` to open the generated solution in your selected environment
+     
 ## Features
 Nebula is being developed continuously, which means that features keep getting added all the time. Currently, we support this:
 
