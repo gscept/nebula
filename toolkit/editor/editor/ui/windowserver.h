@@ -32,6 +32,9 @@ public:
     /// update all windows
     void Update();
 
+    /// Broadcast save 
+    void BroadcastSave(BaseWindow::SaveMode mode);
+
     /// register an interface by class name (RTTI)
     void RegisterWindow(const Util::String& className, const char* label, const char* category = NULL);
     /// register an interface by fourcc
@@ -54,6 +57,7 @@ private:
     Util::HashTable<Util::String, Ptr<BaseWindow>> windowByName;
     Util::Array<Util::String> categories;
     Util::Array<Ptr<BaseWindow>> windows;
+    BaseWindow::SaveMode save;
 
     struct CommandInfo
     {

@@ -21,7 +21,7 @@ public:
     Outline();
     ~Outline();
 
-    void Run();
+    void Run(SaveMode save) override;
 
 private:
 };

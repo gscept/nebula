@@ -22,7 +22,7 @@ public:
     ~Scene();
 
     void Update();
-    void Run();
+    void Run(SaveMode save) override;
 
     Modules::Viewport viewPort;
 };

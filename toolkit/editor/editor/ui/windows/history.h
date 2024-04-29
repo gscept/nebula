@@ -22,7 +22,7 @@ public:
     ~History();
 
     void Update();
-    void Run();
+    void Run(SaveMode save) override;
 };
 __RegisterClass(History)
 

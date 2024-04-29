@@ -79,9 +79,9 @@ SurfaceBuilder::ExportBinary(Util::String const& dstFile)
 
     stream->SetAccessMode(Stream::AccessMode::ReadAccess);
 
-    this->logger->Print("Generated surface: %s\n", Text(dstFile).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
     BinaryXmlConverter converter;
     converter.ConvertStream(stream, dstFile, *this->logger);
+    this->logger->Print("Generated surface: %s\n", Text(dstFile).Color(TextColor::Green).Style(FontMode::Underline).AsCharPtr());
 }
 
 } // namespace ToolkitUtil

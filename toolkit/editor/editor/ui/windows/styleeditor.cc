@@ -141,7 +141,7 @@ NodeFont(ImFont* font)
 /**
 */
 void
-StyleEditor::Run()
+StyleEditor::Run(SaveMode save)
 {
     ImGuiStyle* ref = nullptr;
     // You can pass in a reference ImGuiStyle structure to compare to, revert to and save to

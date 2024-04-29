@@ -17,6 +17,8 @@
 #include "commandmanager.h"
 
 #include "editor/components/editorcomponents.h"
+#include "tools/pathconverter.h"
+#include "io/assignregistry.h"
 
 namespace Editor
 {
@@ -33,6 +35,8 @@ void
 Create()
 {
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("edscr", "bin:editorscripts"));
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("work", "proj:work"));
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("assets", "work:assets"));
 
     Scripting::ScriptServer::Instance()->AddModulePath("edscr:");
     Scripting::ScriptServer::Instance()->EvalFile("edscr:bootstrap.py");
@@ -49,6 +53,7 @@ Create()
 
     // Create a command manager with a 20MB buffer
     Edit::CommandManager::Create(20_MB);
+    CreatePathConverter({});
 }
 
 //------------------------------------------------------------------------------

@@ -25,7 +25,7 @@ public:
     ScriptedWindow();
     ~ScriptedWindow();
 
-    void Run();
+    void Run(SaveMode save) override;
 
     /// Set the python module name.
     bool LoadModule(Util::String const& modulePath);

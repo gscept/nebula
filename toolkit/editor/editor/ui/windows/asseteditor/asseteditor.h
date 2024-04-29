@@ -3,7 +3,7 @@
 /**
     @class  Presentation::Previewer
 
-    (C) 2021 Individual contributors, see AUTHORS file
+    (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -13,16 +13,17 @@
 #include "graphics/stage.h"
 #include "coregraphics/meshresource.h"
 #include "characters/skeletonresource.h"
+#include "dynui/imguicontext.h"
 
 namespace Presentation
 {
 
-class Previewer : public BaseWindow
+class AssetEditor : public BaseWindow
 {
-    __DeclareClass(Previewer)
+    __DeclareClass(AssetEditor)
 public:
 
-    enum class PreviewAssetType
+    enum class AssetType
     {
         None,
         Material,
@@ -30,15 +31,25 @@ public:
         Skeleton,
         Model
     };
-    Previewer();
-    ~Previewer();
+    AssetEditor();
+    ~AssetEditor();
 
-    void Run();
+    void Run(SaveMode save) override;
 
     // Select material for previewing
-    void Preview(const Resources::ResourceName& asset, const PreviewAssetType type);
+    void Open(const Resources::ResourceName& asset, const AssetType type);
+};
+__RegisterClass(AssetEditor)
 
-    PreviewAssetType assetType;
+struct ImageHolder
+{
+    Resources::ResourceId res;
+    Dynui::ImguiTextureId texture;
+};
+
+struct AssetEditorItem
+{
+    AssetEditor::AssetType assetType;
     union
     {
         Materials::MaterialId material;
@@ -48,8 +59,16 @@ public:
 
         Resources::ResourceUnknownId id = Resources::InvalidResourceUnknownId;
     } asset;
+    Resources::ResourceId res;
+    Resources::ResourceName name;
+
+    Memory::ArenaAllocator<2048> allocator;
+    Util::Array<ImageHolder*> images;
+    ubyte* constants;
+
+    uint editCounter;
+    bool grabFocus;
 };
-__RegisterClass(Previewer)
 
 } // namespace Presentation
 

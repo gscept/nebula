@@ -53,7 +53,7 @@ Inspector::Update()
 /**
 */
 void
-Inspector::Run()
+Inspector::Run(SaveMode save)
 {
     auto const& selection = Tools::SelectionTool::Selection();
 

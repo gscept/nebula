@@ -35,7 +35,7 @@ ScriptedWindow::~ScriptedWindow()
 /**
 */
 void
-ScriptedWindow::Run()
+ScriptedWindow::Run(SaveMode save)
 {
     if (this->script->is_none())
     {

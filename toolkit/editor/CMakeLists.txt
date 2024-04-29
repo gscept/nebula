@@ -89,14 +89,19 @@ fips_dir(editor)
                 history.h
                 outline.cc
                 outline.h
-                previewer.cc
-                previewer.h
                 styleeditor.cc
                 styleeditor.h
                 toolbar.cc
                 toolbar.h
                 inspector.cc
                 inspector.h
+            )
+        fips_dir(editor/ui/windows/asseteditor)
+            fips_files(
+                asseteditor.cc
+                asseteditor.h
+                materialasseteditor.cc
+                materialasseteditor.h
             )
         fips_dir(editor/ui/modules)
             fips_files(
@@ -109,6 +114,8 @@ fips_dir(editor)
             camera.h
             selectiontool.cc
             selectiontool.h
+            pathconverter.cc
+            pathconverter.h
         )
 fips_deps(foundation application graphicsfeature physicsfeature audio)
 nebula_end_module()

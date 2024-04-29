@@ -11,22 +11,24 @@ namespace Presentation
 
 __ImplementClass(Presentation::BaseWindow, 'bWnd', Core::RefCounted)
 
-    //------------------------------------------------------------------------------
-    /**
+//------------------------------------------------------------------------------
+/**
 */
-    BaseWindow::BaseWindow()
-    : additionalFlags((ImGuiWindowFlags_)0),
-      name("UNNAMED WINDOW"),
-      open(true)
+BaseWindow::BaseWindow() : 
+    additionalFlags((ImGuiWindowFlags_)0),
+    name("UNNAMED WINDOW"),
+    open(true),
+    editCounter(0)
 {
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-BaseWindow::BaseWindow(Util::String name)
-    : name(name),
-      open(false)
+BaseWindow::BaseWindow(Util::String name) : 
+    name(name),
+    open(false),
+    editCounter(0)
 {
 }
 
@@ -40,10 +42,10 @@ BaseWindow::~BaseWindow()
 //------------------------------------------------------------------------------
 /**
 */
-const Util::String&
+const Util::String
 BaseWindow::GetName() const
 {
-    return this->name;
+    return FormatName(this->name, this->editCounter);
 }
 
 //------------------------------------------------------------------------------
@@ -86,7 +88,7 @@ BaseWindow::Open()
 /**
 */
 void
-BaseWindow::Run()
+BaseWindow::Run(SaveMode save)
 {
     return;
 }
@@ -250,6 +252,49 @@ BaseWindow::SetSize(const Math::vec2& size)
     // No window or settings found, create new settings for the next time the window is opened.
     imWindowSettings = ImGui::CreateNewWindowSettings(this->name.AsCharPtr());
     imWindowSettings->Size = ImVec2ih(size.x, size.y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BaseWindow::Edit()
+{
+    this->editCounter++;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BaseWindow::Unedit(int count)
+{
+    this->editCounter -= count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BaseWindow::Save()
+{
+    this->editCounter = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String 
+BaseWindow::FormatName(const Util::String& name, int editCounter)
+{
+    if (editCounter != 0)
+    {
+        return Util::Format("%s*###%s", name.AsCharPtr(), name.AsCharPtr());
+    }
+    else
+    {
+        return Util::Format("%s###%s", name.AsCharPtr(), name.AsCharPtr());
+    }
 }
 
 } // namespace Presentation

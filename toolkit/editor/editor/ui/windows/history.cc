@@ -43,7 +43,7 @@ History::Update()
 /**
 */
 void
-History::Run()
+History::Run(SaveMode save)
 {
 	Edit::CommandManager::CommandList const& undoList = Edit::CommandManager::GetUndoList();
 	uint uniqueId = 0x2f3dd2dau;

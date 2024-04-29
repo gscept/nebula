@@ -371,6 +371,98 @@ MaterialLoader::Setup()
 //------------------------------------------------------------------------------
 /**
 */
+void
+LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const MaterialTemplates::Entry* entry, const Materials::MaterialId id, bool immediate)
+{
+    IndexT valueIndex = entry->valuesByHash.FindIndex(name.StringHashCode());
+    IndexT textureIndex = entry->texturesByHash.FindIndex(name.StringHashCode());
+    if (valueIndex != InvalidIndex)
+    {
+        const MaterialTemplates::MaterialTemplateValue* value = entry->valuesByHash.ValueAtIndex(valueIndex);
+
+        // Get value from material, if the type doesn't match the template, we'll pick the template value
+        switch (value->type)
+        {
+            case MaterialTemplates::MaterialTemplateValue::Scalar:
+            {
+                float f = reader->GetOptFloat("value", value->data.f);
+                MaterialSetConstant(id, &f, sizeof(f), value->offset);
+                break;
+            }
+            case MaterialTemplates::MaterialTemplateValue::Bool:
+            {
+                bool b = reader->GetOptBool("value", value->data.b);
+                MaterialSetConstant(id, &b, sizeof(b), value->offset);
+                break;
+            }
+            case MaterialTemplates::MaterialTemplateValue::Vec2:
+            {
+                Math::float2 f2 = reader->GetOptVec2("value", value->data.f2);
+                MaterialSetConstant(id, &f2, sizeof(f2), value->offset);
+                break;
+            }
+            case MaterialTemplates::MaterialTemplateValue::Vec3:
+            case MaterialTemplates::MaterialTemplateValue::Vec4:
+            case MaterialTemplates::MaterialTemplateValue::Color:
+            {
+                Math::float4 f4 = reader->GetOptVec4("value", value->data.f4);
+                MaterialSetConstant(id, &f4, sizeof(f4), value->offset);
+                break;
+            }
+        }
+    }
+    if (textureIndex != InvalidIndex)
+    {
+        const MaterialTemplates::MaterialTemplateTexture* value = entry->texturesByHash.ValueAtIndex(textureIndex);
+
+        Util::String path = reader->GetOptString("value", value->resource);
+        Resources::ResourceId tex;
+
+        tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, "materials",
+            [id, value](Resources::ResourceId rid) mutable
+        {
+            CoreGraphics::TextureIdLock _0(rid);
+            if (value->bindlessOffset != 0xFFFFFFFF)
+            {
+                uint handle = CoreGraphics::TextureGetBindlessHandle(rid);
+                MaterialSetTextureBindless(id, value->hashedName, handle, value->bindlessOffset, rid);
+            }
+            else
+            {
+                MaterialSetTexture(id, value->hashedName, rid);
+            }
+            MaterialAddLODTexture(id, rid);
+        },
+            [id, value](Resources::ResourceId rid) mutable
+        {
+            CoreGraphics::TextureIdLock _0(rid);
+            if (value->bindlessOffset != 0xFFFFFFFF)
+            {
+                uint handle = CoreGraphics::TextureGetBindlessHandle(rid);
+                MaterialSetTextureBindless(id, value->hashedName, handle, value->bindlessOffset, rid);
+            }
+            else
+            {
+                MaterialSetTexture(id, value->hashedName, rid);
+            }
+        }, immediate);
+
+        CoreGraphics::TextureIdLock _0(tex);
+        if (value->bindlessOffset != 0xFFFFFFFF)
+        {
+            uint handle = CoreGraphics::TextureGetBindlessHandle(tex);
+            MaterialSetTextureBindless(id, value->hashedName, handle, value->bindlessOffset, tex);
+        }
+        else
+        {
+            MaterialSetTexture(id, value->hashedName, tex);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Resources::ResourceUnknownId
 MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
@@ -396,107 +488,39 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         const MaterialTemplates::Entry* materialTemplate = MaterialTemplates::Lookup.ValueAtIndex(templateIndex);
         MaterialId id = CreateMaterial(materialTemplate);
 
-        if (reader->SetToFirstChild("Param")) do
-        {
-            Util::StringAtom paramName = reader->GetString("name");
-            IndexT valueIndex = materialTemplate->valuesByHash.FindIndex(paramName.StringHashCode());
-            IndexT textureIndex = materialTemplate->texturesByHash.FindIndex(paramName.StringHashCode());
-            if (valueIndex != InvalidIndex)
-            {
-                const MaterialTemplates::MaterialTemplateValue* value = materialTemplate->valuesByHash.ValueAtIndex(valueIndex);
-
-                // Get value from material, if the type doesn't match the template, we'll pick the template value
-                switch (value->type)
-                {
-                    case MaterialTemplates::MaterialTemplateValue::Scalar:
-                    {
-                        float f = reader->GetOptFloat("value", value->data.f);
-                        MaterialSetConstant(id, &f, sizeof(f), value->offset);
-                        break;
-                    }
-                    case MaterialTemplates::MaterialTemplateValue::Bool:
-                    {
-                        bool b = reader->GetOptBool("value", value->data.b);
-                        MaterialSetConstant(id, &b, sizeof(b), value->offset);
-                        break;
-                    }
-                    case MaterialTemplates::MaterialTemplateValue::Vec2:
-                    {
-                        Math::float2 f2 = reader->GetOptVec2("value", value->data.f2);
-                        MaterialSetConstant(id, &f2, sizeof(f2), value->offset);
-                        break;
-                    }
-                    case MaterialTemplates::MaterialTemplateValue::Vec3:
-                    case MaterialTemplates::MaterialTemplateValue::Vec4:
-                    case MaterialTemplates::MaterialTemplateValue::Color:
-                    {
-                        Math::float4 f4 = reader->GetOptVec4("value", value->data.f4);
-                        MaterialSetConstant(id, &f4, sizeof(f4), value->offset);
-                        break;
-                    }
-                }
-            }
-            if (textureIndex != InvalidIndex)
-            {
-                const MaterialTemplates::MaterialTemplateTexture* value = materialTemplate->texturesByHash.ValueAtIndex(textureIndex);
-
-                Util::String path = reader->GetOptString("value", value->resource);
-                Resources::ResourceId tex;
-
-                tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
-                    [id, value](Resources::ResourceId rid) mutable
-                {
-                    CoreGraphics::TextureIdLock _0(rid);
-                    if (value->bindlessOffset != 0xFFFFFFFF)
-                    {
-                        uint handle = CoreGraphics::TextureGetBindlessHandle(rid);
-                        MaterialSetTextureBindless(id, value->hashedName, handle, value->bindlessOffset, rid);
-                    }
-                    else
-                    {
-                        MaterialSetTexture(id, value->hashedName, rid);
-                    }
-                    MaterialAddLODTexture(id, rid);
-                },
-                    [id, value](Resources::ResourceId rid) mutable
-                {
-                    CoreGraphics::TextureIdLock _0(rid);
-                    if (value->bindlessOffset != 0xFFFFFFFF)
-                    {
-                        uint handle = CoreGraphics::TextureGetBindlessHandle(rid);
-                        MaterialSetTextureBindless(id, value->hashedName, handle, value->bindlessOffset, rid);
-                    }
-                    else
-                    {
-                        MaterialSetTexture(id, value->hashedName, rid);
-                    }
-                }, immediate);
-
-                CoreGraphics::TextureIdLock _0(tex);
-                if (value->bindlessOffset != 0xFFFFFFFF)
-                {
-                    uint handle = CoreGraphics::TextureGetBindlessHandle(tex);
-                    MaterialSetTextureBindless(id, value->hashedName, handle, value->bindlessOffset, tex);
-                }
-                else
-                {
-                    MaterialSetTexture(id, value->hashedName, tex);
-                }
-            }
-        }
-        while (reader->SetToNextChild("Param"));
-
         // New material upload system, the defaults and types can be discarded
-        IndexT loaderIndex = LoaderMap.FindIndex((MaterialTemplates::MaterialProperties)materialTemplate->properties);
-        if (loaderIndex != InvalidIndex)
+        if (reader->SetToFirstChild("Params"))
         {
-            auto loader = LoaderMap.ValueAtIndex(loaderIndex);
-            reader->SetToFirstChild("Params");
-            loader(reader, id, tag);
-            state.dirtySet.bits = 0x3;
-            reader->SetToParent();
-        }
+            // This is the new-new system, using material buffers and is fully raytracing compatible
+            IndexT loaderIndex = LoaderMap.FindIndex((MaterialTemplates::MaterialProperties)materialTemplate->properties);
+            if (loaderIndex != InvalidIndex)
+            {
+                auto loader = LoaderMap.ValueAtIndex(loaderIndex);
+                loader(reader, id, tag);
+                state.dirtySet.bits = 0x3;
+            }
 
+            // Reset to Params
+            reader->SetToNode("Params");
+
+            // This is the legacy material system loaded with the new surface format
+            if (reader->SetToFirstChild()) do
+            {
+                Util::StringAtom paramName = reader->GetCurrentNodeName();
+                LoadMaterialParameter(reader, paramName, materialTemplate, id, immediate);
+            }
+            while (reader->SetToNextChild());
+        }
+        else
+        {
+            // Legacy loading with legacy format where each param is a node called Param
+            if (reader->SetToFirstChild("Param")) do
+            {
+                Util::StringAtom paramName = reader->GetString("name");
+                LoadMaterialParameter(reader, paramName, materialTemplate, id, immediate);
+            }
+            while (reader->SetToNextChild("Param"));
+        }
         return id;
     }
     return InvalidMaterialId;

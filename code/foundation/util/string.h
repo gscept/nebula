@@ -210,10 +210,16 @@ public:
     #if !__OSX__
     /// set as vec2 value
     void SetVec2(const Math::vec2& v);
+    /// set as vec3 value
+    void SetVec3(const Math::vec3& v);
     /// set as vec4 value
     void SetVec4(const Math::vec4& v);
+    /// set as vec2 value
+    void SetFloat2(const Math::float2& v);
     /// set as vec3 value
-    void SetVec3(const Math::vec3& vec);
+    void SetFloat3(const Math::float3& v);
+    /// set as vec4 value
+    void SetFloat4(const Math::float4& v);
     /// set as quaternion
     void SetQuaternion(const Math::quat& v);
     /// set as mat4 value
@@ -329,6 +335,12 @@ public:
     static String FromVec3(const Math::vec3& v);
     /// construct a string from vec4
     static String FromVec4(const Math::vec4& v);
+    /// construct a string from float2
+    static String FromFloat2(const Math::float2& v);
+    /// construct a string from float2
+    static String FromFloat3(const Math::float3& v);
+    /// construct a string from float2
+    static String FromFloat4(const Math::float4& v);
     /// construct a string from quat
     static String FromQuat(const Math::quat& q);
     /// construct a string from mat4
@@ -980,6 +992,17 @@ String::FromVec2(const Math::vec2& v)
 //------------------------------------------------------------------------------
 /**
 */
+inline String 
+String::FromVec3(const Math::vec3& v)
+{
+    String str;
+    str.SetVec3(v);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline String
 String::FromVec4(const Math::vec4& v)
 {
@@ -992,10 +1015,32 @@ String::FromVec4(const Math::vec4& v)
 /**
 */
 inline String 
-String::FromVec3(const Math::vec3& v)
+String::FromFloat2(const Math::float2& v)
 {
     String str;
-    str.SetVec3(v);
+    str.SetFloat2(v);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromFloat3(const Math::float3& v)
+{
+    String str;
+    str.SetFloat3(v);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::FromFloat4(const Math::float4& v)
+{
+    String str;
+    str.SetFloat4(v);
     return str;
 }
 

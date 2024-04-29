@@ -11,7 +11,7 @@
 #include "io/ioserver.h"
 #include "io/fswrapper.h"
 #include "imgui_internal.h"
-#include "previewer.h"
+#include "asseteditor/asseteditor.h"
 
 using namespace Editor;
 
@@ -48,7 +48,7 @@ AssetBrowser::Update()
 /**
 */
 void
-AssetBrowser::Run()
+AssetBrowser::Run(SaveMode save)
 {
     DisplayFileTree();
 }
@@ -184,7 +184,7 @@ AssetBrowser::DisplayFileTree()
                     {
                         IO::URI uri = outpath;
                         uri.AppendLocalPath(fileList[i]);
-                        this->previewer = WindowServer::Instance()->GetWindow("Previewer").downcast<Previewer>();
+                        this->assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
                         Util::String extension = uri.LocalPath().GetFileExtension();
                         uint hash = extension.HashCode();
 
@@ -195,16 +195,16 @@ AssetBrowser::DisplayFileTree()
                         switch (hash)
                         {
                             case MaterialHash:
-                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Material);
+                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Material);
                                 break;
                             case ModelHash:
-                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Model);
+                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Model);
                                 break;
                             case MeshHash:
-                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Mesh);
+                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Mesh);
                                 break;
                             case SkeletonHash:
-                                this->previewer->Preview(uri.AsString(), Previewer::PreviewAssetType::Skeleton);
+                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Skeleton);
                                 break;
                         }
                         //outpath = uri.LocalPath();
