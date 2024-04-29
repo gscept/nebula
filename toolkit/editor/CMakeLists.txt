@@ -117,5 +117,5 @@ fips_dir(editor)
             pathconverter.cc
             pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature audio)
+fips_deps(foundation application graphicsfeature physicsfeature audio toolkit-common)
 nebula_end_module()

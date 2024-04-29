@@ -498,10 +498,10 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
                 auto loader = LoaderMap.ValueAtIndex(loaderIndex);
                 loader(reader, id, tag);
                 state.dirtySet.bits = 0x3;
-            }
 
-            // Reset to Params
-            reader->SetToNode("Params");
+                // jump up one level
+                reader->SetToNode("Params");
+            }
 
             // This is the legacy material system loaded with the new surface format
             if (reader->SetToFirstChild()) do

@@ -14,6 +14,7 @@
 
 #include "io/filestream.h"
 #include "io/xmlwriter.h"
+#include "toolkit/toolkit-common/converters/binaryxmlconverter.h"
 
 #include "toolkitutil/surface/surfacebuilder.h"
 
@@ -312,9 +313,10 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 
     Util::String output = Editor::PathConverter::StripAssetName(item->name.AsString());
 
+    Util::String outFile = Util::Format("assets:%s.sur", output.AsCharPtr());
     Ptr<IO::FileStream> stream = IO::FileStream::Create();
     stream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
-    stream->SetURI(Util::Format("assets:%s.sur", output.AsCharPtr()));
+    stream->SetURI(outFile);
 
     Ptr<IO::XmlWriter> writer = IO::XmlWriter::Create();
     writer->SetStream(stream);
@@ -333,6 +335,7 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 
                     ImageHolder* textureInfo = (ImageHolder*)item->images[i];
                     Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
+                    name.StripFileExtension();
                     writer->BeginNode(kvp.Key());
                         writer->SetString("value", name);
                     writer->EndNode();
@@ -382,6 +385,13 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
     }
     writer->EndNode();
     writer->Close();
+
+    // Also perform export
+    ToolkitUtil::BinaryXmlConverter converter;
+    Util::String expFile = Util::Format("sur:%s.sur", output.AsCharPtr());
+    ToolkitUtil::Logger logger;
+    converter.ConvertFile(outFile, expFile, logger);
+
     assetEditor->Unedit(item->editCounter);
     item->editCounter = 0;
 }

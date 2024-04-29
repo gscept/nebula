@@ -55,15 +55,6 @@ SurfaceBuilder::ExportBinary(Util::String const& dstFile)
     {
         writer->BeginNode("Surface");
             writer->SetString("template", this->material);
-            {
-                for (IndexT i = 0; i < this->params.Size(); i++)
-                {
-                    writer->BeginNode("Param");
-                    writer->SetString("name", this->params[i].Key());
-                    writer->SetString("value", this->params[i].Value());
-                    writer->EndNode();
-                }
-            }
             writer->BeginNode("Params");
             for (IndexT i = 0; i < this->params.Size(); i++)
             {
