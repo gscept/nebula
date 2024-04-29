@@ -49,9 +49,15 @@ struct ImageHolder
 
 struct AssetEditorItem
 {
+    AssetEditorItem()
+        : assetType(AssetEditor::AssetType::None)
+        , res(Resources::InvalidResourceId)
+    {}
+
     AssetEditor::AssetType assetType;
-    union
+    union U
     {
+        U() { id = Resources::InvalidResourceUnknownId; }
         Materials::MaterialId material;
         CoreGraphics::MeshResourceId mesh;
         Characters::SkeletonResourceId skeleton;
