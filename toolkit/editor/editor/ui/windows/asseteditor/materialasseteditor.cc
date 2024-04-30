@@ -14,7 +14,7 @@
 
 #include "io/filestream.h"
 #include "io/xmlwriter.h"
-#include "toolkit/toolkit-common/converters/binaryxmlconverter.h"
+#include "toolkit-common/converters/binaryxmlconverter.h"
 
 #include "toolkitutil/surface/surfacebuilder.h"
 
@@ -135,7 +135,7 @@ struct CMDMaterialSetConstant : public Edit::Command
 /**
 */
 void
-MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item, BaseWindow::SaveMode save)
+MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
