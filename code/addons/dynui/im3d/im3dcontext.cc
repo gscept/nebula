@@ -152,7 +152,7 @@ Im3dContext::Create()
     Util::Array<CoreGraphics::VertexComponent> components;
     components.Append(VertexComponent(0, VertexComponent::Float4, 0));
     components.Append(VertexComponent(1, VertexComponent::UByte4N, 0));
-    imState.vlo = CreateVertexLayout({ components });
+    imState.vlo = CreateVertexLayout({ .name = "Im3D"_atm, .comps = components });
 
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.name = "Im3D VBO"_atm;

@@ -16,56 +16,6 @@ static Threading::CriticalSection vertexSignatureMutex;
 //------------------------------------------------------------------------------
 /**
 */
-VkPipelineVertexInputStateCreateInfo*
-VertexLayoutGetDerivative(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader)
-{
-    Threading::CriticalScope scope(&vertexSignatureMutex);
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = vertexLayoutAllocator.Get<VertexSignature_ProgramLayoutMapping>(layout.id);
-    const Ids::Id64 shaderHash = shader.HashCode64();
-
-    IndexT i = hashTable.FindIndex(shaderHash);
-    if (i != InvalidIndex)
-    {
-        return &hashTable.ValueAtIndex(shaderHash, i).info;
-    }
-    else
-    {
-        const VkProgramReflectionInfo& program = ShaderGetProgramReflection(shader);
-        const BindInfo& bindInfo = vertexLayoutAllocator.Get<VertexSignature_BindInfo>(layout.id);
-        const VkPipelineVertexInputStateCreateInfo& baseInfo = vertexLayoutAllocator.Get<VertexSignature_VkPipelineInfo>(layout.id);
-
-        IndexT index = hashTable.Add(shaderHash, {});
-        DerivativeLayout& layout = hashTable.ValueAtIndex(shaderHash, index);
-        layout.info = baseInfo;
-
-        uint32_t i;
-        IndexT j;
-        for (i = 0; i < program.vsInputSlots.Size(); i++)
-        {
-            uint32_t slot = program.vsInputSlots[i];
-            for (j = 0; j < bindInfo.attrs.Size(); j++)
-            {
-                VkVertexInputAttributeDescription attr = bindInfo.attrs[j];
-                if (attr.location == slot)
-                {
-                    layout.attrs.Append(attr);
-                    break;
-                }
-            }
-        }
-
-        if (program.vsInputSlots.Size() != (uint32_t)layout.attrs.Size())
-            n_warning("Warning: Vertex shader (%s) and vertex layout mismatch!\n", program.name.Value());
-
-        layout.info.vertexAttributeDescriptionCount = layout.attrs.Size();
-        layout.info.pVertexAttributeDescriptions = layout.attrs.Begin();
-        return &layout.info;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const VertexLayoutVkBindInfo&
 VertexLayoutGetVkBindInfo(const CoreGraphics::VertexLayoutId layout)
 {
@@ -101,7 +51,7 @@ CreateVertexLayout(const VertexLayoutCreateInfo& info)
     sig = Util::String::Sprintf("%s", sig.AsCharPtr());
     Util::StringAtom atom(sig);
 
-    loadInfo.signature = Util::StringAtom(sig);
+    loadInfo.name = info.name;
     loadInfo.vertexByteSize = size;
     loadInfo.comps = info.comps;
     vertexLayoutAllocator.Set<VertexSignature_LayoutInfo>(id, loadInfo);
@@ -231,6 +181,15 @@ const Util::Array<VertexComponent>&
 VertexLayoutGetComponents(const VertexLayoutId id)
 {
     return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.id).comps;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom&
+VertexLayoutGetName(const VertexLayoutId id)
+{
+    return vertexLayoutAllocator.Get<VertexSignature_LayoutInfo>(id.id).name;
 }
 
 } // namespace Vulkan

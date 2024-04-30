@@ -64,7 +64,7 @@ VkTextRenderer::Open()
     comps.Append(VertexComponent(1, VertexComponent::Float2, 0));
     comps.Append(VertexComponent(2, VertexComponent::Float4, 0));
 
-    this->layout = CreateVertexLayout({ comps });
+    this->layout = CreateVertexLayout({ .name = "Vulakn Text Renderer"_atm, .comps = comps });
 
     BufferCreateInfo vboInfo;
     vboInfo.name = "TextRenderer VBO"_atm;

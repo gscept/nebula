@@ -51,6 +51,7 @@ UltralightRenderer::UltralightRenderer()
     CoreGraphics::ResourceTableCommitChanges(ultralightState.resourceTable);
 
     CoreGraphics::VertexLayoutCreateInfo vloInfo;
+    vloInfo.name = "Ultralight Small"_atm;
     vloInfo.comps =
     {
         CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Format::Float2 },
@@ -58,6 +59,7 @@ UltralightRenderer::UltralightRenderer()
         CoreGraphics::VertexComponent{ 2, CoreGraphics::VertexComponent::Format::Float2 },
     };
     ultralightState.vloSmall = CoreGraphics::CreateVertexLayout(vloInfo);
+    vloInfo.name = "Ultralight Big"_atm;
     vloInfo.comps =
     {
         CoreGraphics::VertexComponent{ 0, CoreGraphics::VertexComponent::Format::Float2 },
@@ -74,6 +76,7 @@ UltralightRenderer::UltralightRenderer()
     };
     ultralightState.vloBig = CoreGraphics::CreateVertexLayout(vloInfo);
     vloInfo.comps = {};
+    vloInfo.name = "Ultralight Empty"_atm;
     ultralightState.vloEmpty = CoreGraphics::CreateVertexLayout(vloInfo);
 }
 

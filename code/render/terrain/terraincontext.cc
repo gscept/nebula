@@ -291,7 +291,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         VertexComponent{ 0, VertexComponent::Format::Float3 },
         VertexComponent{ 1, VertexComponent::Format::Short2 },
     };
-    terrainState.vlo = CreateVertexLayout({ vertexComponents });
+    terrainState.vlo = CreateVertexLayout({ .name = "Terrain"_atm, .comps = vertexComponents });
 
     terrainState.terrainShader = ShaderGet("shd:terrain/shaders/terrain.fxb");
     terrainState.resourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);

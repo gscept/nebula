@@ -18,9 +18,6 @@ struct VertexLayoutVkBindInfo
     Util::FixedArray<VkVertexInputAttributeDescription2EXT> attrs;
 };
 
-/// Get derivative of vertex layout based on shader
-VkPipelineVertexInputStateCreateInfo* VertexLayoutGetDerivative(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader);
-
 /// Get dynamic bind info
 const VertexLayoutVkBindInfo& VertexLayoutGetVkBindInfo(const CoreGraphics::VertexLayoutId layout);
 

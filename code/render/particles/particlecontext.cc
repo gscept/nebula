@@ -110,7 +110,7 @@ ParticleContext::Create()
     emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, CoreGraphics::VertexComponent::Float3, 0));
     emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, CoreGraphics::VertexComponent::Byte4N, 0));
     emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, CoreGraphics::VertexComponent::Byte4N, 0));
-    CoreGraphics::VertexLayoutId emitterLayout = CoreGraphics::CreateVertexLayout({ emitterComponents });
+    CoreGraphics::VertexLayoutId emitterLayout = CoreGraphics::CreateVertexLayout({ .name = "Emitter"_atm, .comps = emitterComponents });
 
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.name = "Single Point Particle Emitter VBO";
@@ -156,7 +156,7 @@ ParticleContext::Create()
     Util::Array<CoreGraphics::VertexComponent> cornerComponents;
     cornerComponents.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0));
     float cornerVertexData[] = { 0, 0,  1, 0,  1, 1,  0, 1 };
-    CoreGraphics::VertexLayoutId cornerLayout = CoreGraphics::CreateVertexLayout({ cornerComponents });
+    CoreGraphics::VertexLayoutId cornerLayout = CoreGraphics::CreateVertexLayout({ .name = "Corner"_atm, .comps = cornerComponents });
 
     vboInfo.name = "Particle Geometry Vertex Buffer";
     vboInfo.size = 4;
@@ -199,9 +199,9 @@ ParticleContext::Create()
     Util::Array<CoreGraphics::VertexComponent> layoutComponents;
     layoutComponents.AppendArray(cornerComponents);
     layoutComponents.AppendArray(state.particleComponents);
-    CoreGraphics::VertexLayoutCreateInfo vloInfo{ layoutComponents };
-    state.layout = CoreGraphics::CreateVertexLayout(vloInfo);
-    state.vertexSize = sizeof(Math::vec4) * 5; // 5 vertex attributes using vec4
+    CoreGraphics::VertexLayoutCreateInfo vloInfo;
+    state.layout = CoreGraphics::CreateVertexLayout({ .name = "Particle"_atm, .comps = layoutComponents });
+    state.vertexSize = sizeof(Math::vec4) * 5; // 5 vertex attibutes using vec4
 
     state.primGroup.SetBaseIndex(0);
     state.primGroup.SetNumIndices(6);

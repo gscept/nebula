@@ -20,12 +20,13 @@ static const IndexT MaxNumVertexStreams = 16;
 
 struct VertexLayoutCreateInfo
 {
+    Util::StringAtom name;
     Util::Array<VertexComponent> comps;
 };
 
 struct VertexLayoutInfo
 {
-    Util::StringAtom signature;
+    Util::StringAtom name;
     SizeT vertexByteSize;
     Util::Array<VertexComponent> comps;
 };
@@ -41,7 +42,8 @@ const SizeT VertexLayoutGetSize(const VertexLayoutId id);
 const SizeT VertexLayoutGetStreamSize(const VertexLayoutId id, IndexT stream);
 /// get components
 const Util::Array<VertexComponent>& VertexLayoutGetComponents(const VertexLayoutId id);
-
+/// Get name
+const Util::StringAtom& VertexLayoutGetName(const VertexLayoutId id);
 
 enum class VertexLayoutType
 {

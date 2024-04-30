@@ -111,7 +111,7 @@ VkShapeRenderer::Open()
     this->comps.Append(VertexComponent(VertexComponent::Color, VertexComponent::UByte4N));
 
     // also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
-    this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ comps });
+    this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ .name = "Vulkan Shape Renderer"_atm, .comps = comps });
 
     Frame::FrameCode* op = this->frameOpAllocator.Alloc<Frame::FrameCode>();
     op->domain = CoreGraphics::BarrierDomain::Pass;

@@ -341,7 +341,7 @@ ImguiContext::Create()
     components.Append(VertexComponent(0, VertexComponent::Float2, 0));
     components.Append(VertexComponent(1, VertexComponent::Float2, 0));
     components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
-    state.vlo = CoreGraphics::CreateVertexLayout({ components });
+    state.vlo = CoreGraphics::CreateVertexLayout({ .name = "ImGui"_atm, .comps = components });
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
     op->domain = CoreGraphics::BarrierDomain::Pass;

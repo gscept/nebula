@@ -231,7 +231,7 @@ Nvx2StreamReader::SetupVertexComponents()
         }
     }
 
-    this->layout = CoreGraphics::CreateVertexLayout({ this->vertexComponents });
+    this->layout = CoreGraphics::CreateVertexLayout({ .name = "Legacy NVX2 Dynamic Layout"_atm, .comps = this->vertexComponents });
 }
 
 //------------------------------------------------------------------------------

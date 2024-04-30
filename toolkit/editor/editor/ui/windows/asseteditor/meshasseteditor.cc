@@ -16,17 +16,15 @@ MeshEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     SizeT numMeshes = CoreGraphics::MeshResourceGetNumMeshes(item->asset.mesh);
     for (IndexT i = 0; i < numMeshes; i++)
     {
-        if (ImGui::CollapsingHeader(Util::Format("Mesh %d", i).AsCharPtr()))
+        if (ImGui::CollapsingHeader(Util::Format("Mesh %d", i).AsCharPtr(), ImGuiTreeNodeFlags_DefaultOpen))
         {
             CoreGraphics::MeshId mesh = CoreGraphics::MeshResourceGetMesh(item->asset.mesh, i);
             CoreGraphics::MeshIdLock _0(mesh);
 
             CoreGraphics::VertexLayoutId vlo = CoreGraphics::MeshGetVertexLayout(mesh);
-
+            ImGui::Text(Util::Format("Vertex Format: %s", CoreGraphics::VertexLayoutGetName(vlo).Value()).AsCharPtr());
 
             const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
-
-            
             for (IndexT j = 0; j < groups.Size(); j++)
             {
                 ImGui::PushFont(Dynui::ImguiContext::state.boldFont);

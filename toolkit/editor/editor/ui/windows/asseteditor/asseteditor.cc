@@ -140,12 +140,12 @@ AssetEditor::Run(SaveMode save)
                             default:
                                 n_warning("Missing Asset Editor implementation?");
                         }
-                        ImGui::EndTabItem();
                     }
                     else
                     {
                         previewerState.items.Erase(&item);
                     }
+                    ImGui::EndTabItem();
                 }
             }
             ImGui::EndTabBar();
