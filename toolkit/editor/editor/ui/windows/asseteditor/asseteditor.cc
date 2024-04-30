@@ -14,7 +14,11 @@
 #include "resources/resourceserver.h"
 #include "editor/tools/pathconverter.h"
 
+#include "animationasseteditor.h"
 #include "materialasseteditor.h"
+#include "meshasseteditor.h"
+#include "modelasseteditor.h"
+#include "skeletonasseteditor.h"
 
 #include "materials/material_interfaces.h"
 
@@ -74,70 +78,84 @@ EmptyEditor()
 void
 AssetEditor::Run(SaveMode save)
 {
-    if (ImGui::BeginTabBar("AssetEditor###tabs", ImGuiTabBarFlags_None))
+    if (!previewerState.items.IsEmpty())
     {
-        for (AssetEditorItem& item : previewerState.items)
+        if (ImGui::BeginTabBar("AssetEditor###tabs", ImGuiTabBarFlags_None))
         {
-            if (save == SaveMode::SaveAll)
+            for (AssetEditorItem& item : previewerState.items)
             {
-                switch (item.assetType)
+                if (save == SaveMode::SaveAll)
                 {
-                    case AssetType::Material:
-                        MaterialSave(this, &item);
-                        break;
-                    case AssetType::Mesh:
-                        break;
-                    case AssetType::Skeleton:
-                        break;
-                    case AssetType::Model:
-                        break;
-                }
-            }
-
-            bool open;
-            Util::String assetName = Editor::PathConverter::StripAssetName(item.name.AsString());
-            assetName = BaseWindow::FormatName(assetName, item.editCounter);
-            if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
-            {
-                // If item was closed, remove item from 
-                if (open)
-                {
-                    item.grabFocus = false;
                     switch (item.assetType)
                     {
                         case AssetType::Material:
-                        {
-                            if (save == SaveMode::SaveActive)
-                                MaterialSave(this, &item);
-                            MaterialEditor(this, &item, save);
+                            MaterialSave(this, &item);
                             break;
-                        }
                         case AssetType::Mesh:
-                        {
                             break;
-                        }
                         case AssetType::Skeleton:
-                        {
                             break;
-                        }
                         case AssetType::Model:
-                        {
                             break;
-                        }
-                        case AssetEditor::AssetType::None:
-                            EmptyEditor();
+                        case AssetType::Animation:
                             break;
                     }
-                    ImGui::EndTabItem();
                 }
-                else
+
+                bool open;
+                Util::String assetName = Editor::PathConverter::StripAssetName(item.name.AsString());
+                assetName = BaseWindow::FormatName(assetName, item.editCounter);
+                if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
-                    previewerState.items.Erase(&item);
+                    // If item was closed, remove item from 
+                    if (open)
+                    {
+                        item.grabFocus = false;
+                        switch (item.assetType)
+                        {
+                            case AssetType::Material:
+                            {
+                                if (save == SaveMode::SaveActive)
+                                    MaterialSave(this, &item);
+                                MaterialEditor(this, &item);
+                                break;
+                            }
+                            case AssetType::Mesh:
+                            {
+                                MeshEditor(this, &item);
+                                break;
+                            }
+                            case AssetType::Skeleton:
+                            {
+                                break;
+                            }
+                            case AssetType::Model:
+                            {
+                                break;
+                            }
+                            case AssetType::Animation:
+                            {
+                                break;
+                            }
+                            default:
+                                n_warning("Missing Asset Editor implementation?");
+                        }
+                        ImGui::EndTabItem();
+                    }
+                    else
+                    {
+                        previewerState.items.Erase(&item);
+                    }
                 }
             }
+            ImGui::EndTabBar();
         }
-        ImGui::EndTabBar();
     }
+    else
+    {
+        EmptyEditor();
+    }
+   
 }
 
 //------------------------------------------------------------------------------

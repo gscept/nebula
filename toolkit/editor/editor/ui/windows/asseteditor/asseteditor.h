@@ -29,7 +29,8 @@ public:
         Material,
         Mesh,
         Skeleton,
-        Model
+        Model,
+        Animation
     };
     AssetEditor();
     ~AssetEditor();

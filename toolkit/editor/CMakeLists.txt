@@ -98,10 +98,18 @@ fips_dir(editor)
             )
         fips_dir(editor/ui/windows/asseteditor)
             fips_files(
+                animationasseteditor.cc
+                animationasseteditor.h
                 asseteditor.cc
                 asseteditor.h
                 materialasseteditor.cc
                 materialasseteditor.h
+                meshasseteditor.cc
+                meshasseteditor.h
+                modelasseteditor.cc
+                modelasseteditor.h
+                skeletonasseteditor.cc
+                skeletonasseteditor.h
             )
         fips_dir(editor/ui/modules)
             fips_files(
