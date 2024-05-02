@@ -571,6 +571,10 @@ CreateTexture(const TextureCreateInfo& info)
 
     TextureId ret = id;
 
+#ifdef WITH_NEBULA_EDITOR
+    TrackedTextures.Append(ret);
+#endif
+
     Vulkan::VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Vulkan::Texture_RuntimeInfo>(id);
     Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id);
 
@@ -706,6 +710,20 @@ DestroyTexture(const TextureId id)
 {
     DeleteTexture(id);
     textureAllocator.Dealloc(id.id);
+
+#ifdef WITH_NEBULA_EDITOR
+    TrackedTextures.EraseIndex(TrackedTextures.FindIndex(id));
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::StringAtom
+TextureGetName(const TextureId id)
+{
+    const Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id.resourceId);
+    return loadInfo.name;
 }
 
 //------------------------------------------------------------------------------

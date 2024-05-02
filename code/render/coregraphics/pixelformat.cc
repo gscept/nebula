@@ -91,9 +91,12 @@ PixelFormat::ToString(PixelFormat::Code code)
         case DXT5:          return "DXT5";
         case DXT5sRGB:      return "DXT5 sRGB";
         case BC4:           return "BC4";
+        case BC5:           return "BC5";
         case BC7:           return "BC7";
         case BC7sRGB:       return "BC7 sRGB";
         case R8:            return "R8";
+        case R16F:          return "R16F";
+        case R16:           return "R16";
         case R16G16F:       return "R16G16F";
         case R16G16:        return "R16G16";
         case R16G16B16A16F: return "R16G16B16A16F";
@@ -147,6 +150,7 @@ PixelFormat::ToSize(Code code)
     case R32:
     case R10G10B10X2:
     case R10G10B10A2:
+    case R11G11B10F:
     case D24X8:
     case D24S8:
         return 4;

@@ -375,8 +375,8 @@ Resource::State
 ResourceLoader::LoadImmediate(_PendingResourceLoad& res)
 {
     // If already loaded, just return
-    if (this->states[res.entry] == Resource::Loaded)
-        return Resource::Loaded;
+    //if (this->states[res.entry] == Resource::Loaded)
+    //    return Resource::Loaded;
 
     return _LoadInternal(this, res);
 }
@@ -414,7 +414,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
 
     // Store the file path as ID for the file
     IO::URI path(res.Value());
-    IndexT i = this->ids.FindIndex(path.AsString());
+    IndexT i = this->ids.FindIndex(path.GetHostAndLocalPath());
 
     // Setup return value as placeholder by default
     ResourceId ret = this->placeholderResourceId;
@@ -441,7 +441,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         }
 
         // add the resource name to the resource id
-        this->names[instanceId] = path.AsString();
+        this->names[instanceId] = path.GetHostAndLocalPath();
         this->usage[instanceId] = 1;
         this->tags[instanceId] = tag;
         this->states[instanceId] = Resource::Pending;
@@ -478,7 +478,7 @@ Resources::ResourceLoader::CreateResource(const ResourceName& res, const void* l
         this->loads[instanceId] = pending;
 
         // add mapping between resource name and resource being loaded
-        this->ids.Add(path.AsString(), instanceId);
+        this->ids.Add(path.GetHostAndLocalPath(), instanceId);
 
         if (immediate)
         {
@@ -746,7 +746,11 @@ ResourceLoader::SetMinLod(const Resources::ResourceId& id, const float lod, bool
 {
     if (immediate)
     {
-        this->StreamMaxLOD(id, lod, immediate);
+        _PendingResourceLoad& load = this->loads[id.loaderInstanceId];
+        load.lod = lod;
+        load.mode |= _PendingResourceLoad::Update;
+        load.immediate = immediate;
+        this->LoadImmediate(load);
     }
     else
     {

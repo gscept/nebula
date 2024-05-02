@@ -135,7 +135,7 @@ AssetEditor::Run(SaveMode save)
                     {
                         item.grabFocus = false;
                         auto& saveFunc = SavingFunctions[(uint)item.assetType];
-                        if (saveFunc)
+                        if (saveFunc && save == SaveMode::SaveActive)
                             saveFunc(this, &item);
 
                         auto& renderFunc = RenderFunctions[(uint)item.assetType];
