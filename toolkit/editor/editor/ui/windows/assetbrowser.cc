@@ -13,6 +13,8 @@
 #include "imgui_internal.h"
 #include "asseteditor/asseteditor.h"
 
+#include "editor/tools/pathconverter.h"
+
 using namespace Editor;
 
 namespace Presentation
@@ -63,13 +65,31 @@ AssetBrowser::DisplayFileTree()
     static int selected = 0;
     static bool isInputtingPath = false;
     static char inputPath[NEBULA_MAXPATH];
-    static Util::String outpath = IO::URI("export:").LocalPath();
+    static Util::String outpath = IO::URI("export:").GetHostAndLocalPath();
     static Util::String pattern = "*.*";
     static bool once = true;
 
     ImGui::PushItemWidth(ImGui::GetWindowWidth());
     if (!isInputtingPath)
     {
+        Util::String shortPath = PathConverter::StripAssetName(outpath);
+        Util::Array<Util::String> parts = { "export" };
+        parts.AppendArray(shortPath.Tokenize("/"));
+        Util::String concatenatedPath = "";
+        for (const auto& part : parts)
+        {
+            concatenatedPath += part;
+            if (part.AsCharPtr() != parts[0].AsCharPtr())
+                concatenatedPath += "/";
+            else
+                concatenatedPath += ":";
+            if (ImGui::Button(part.AsCharPtr()))
+            {
+                outpath = IO::URI(concatenatedPath).GetHostAndLocalPath();
+            }
+            ImGui::SameLine();
+        }
+        ImGui::NewLine();
         ImGui::Text(outpath.AsCharPtr());
         if (ImGui::IsItemClicked())
         {
@@ -184,7 +204,7 @@ AssetBrowser::DisplayFileTree()
                     {
                         IO::URI uri = outpath;
                         uri.AppendLocalPath(fileList[i]);
-                        this->assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
+                        Ptr<AssetEditor> assetEditor = WindowServer::Instance()->GetWindow("Asset Editor").downcast<AssetEditor>();
                         Util::String extension = uri.LocalPath().GetFileExtension();
                         uint hash = extension.HashCode();
 
@@ -192,19 +212,23 @@ AssetBrowser::DisplayFileTree()
                         static const uint ModelHash = "n3"_hash;
                         static const uint MeshHash = "nvx"_hash;
                         static const uint SkeletonHash = "nsk"_hash;
+                        static const uint TextureHash = "dds"_hash;
                         switch (hash)
                         {
                             case MaterialHash:
-                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Material);
+                                assetEditor->Open(uri.GetHostAndLocalPath(), AssetEditor::AssetType::Material);
                                 break;
                             case ModelHash:
-                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Model);
+                                assetEditor->Open(uri.GetHostAndLocalPath(), AssetEditor::AssetType::Model);
                                 break;
                             case MeshHash:
-                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Mesh);
+                                assetEditor->Open(uri.GetHostAndLocalPath(), AssetEditor::AssetType::Mesh);
                                 break;
                             case SkeletonHash:
-                                this->assetEditor->Open(uri.AsString(), AssetEditor::AssetType::Skeleton);
+                                assetEditor->Open(uri.GetHostAndLocalPath(), AssetEditor::AssetType::Skeleton);
+                                break;
+                            case TextureHash:
+                                assetEditor->Open(uri.GetHostAndLocalPath(), AssetEditor::AssetType::Texture);
                                 break;
                         }
                         //outpath = uri.LocalPath();

@@ -35,10 +35,15 @@ GetRelativeFolder(const Util::String& path, const char** assign)
         *assign = "ani";
     else if (extension == "sur")
         *assign = "sur";
+    else
+        *assign = "export";
 
     IO::URI assignPath = IO::AssignRegistry::Instance()->GetAssign(*assign);
-    Util::String assignRoot = assignPath.AsString();
-    return path.ExtractToEnd(assignRoot.Length() + 1);
+    Util::String assignRoot = assignPath.GetHostAndLocalPath();
+    if (path.Length() == assignRoot.Length())
+        return "";
+    else
+        return path.ExtractToEnd(assignRoot.Length() + 1);
 }
 
 //------------------------------------------------------------------------------

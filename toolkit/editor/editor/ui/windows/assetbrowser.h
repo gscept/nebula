@@ -24,8 +24,6 @@ public:
     void Run(SaveMode save) override;
 private:
     void DisplayFileTree();
-
-    Ptr<AssetEditor> assetEditor;
 };
 __RegisterClass(AssetBrowser)
 

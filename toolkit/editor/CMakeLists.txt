@@ -110,6 +110,8 @@ fips_dir(editor)
                 modelasseteditor.h
                 skeletonasseteditor.cc
                 skeletonasseteditor.h
+                textureasseteditor.cc
+                textureasseteditor.h
             )
         fips_dir(editor/ui/modules)
             fips_files(

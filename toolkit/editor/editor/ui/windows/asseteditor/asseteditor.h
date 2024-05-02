@@ -30,7 +30,10 @@ public:
         Mesh,
         Skeleton,
         Model,
-        Animation
+        Animation,
+        Texture,
+
+        NumAssetTypes
     };
     AssetEditor();
     ~AssetEditor();
@@ -63,6 +66,7 @@ struct AssetEditorItem
         CoreGraphics::MeshResourceId mesh;
         Characters::SkeletonResourceId skeleton;
         Models::ModelId model;
+        CoreGraphics::TextureId texture;
 
         Resources::ResourceUnknownId id = Resources::InvalidResourceUnknownId;
     } asset;

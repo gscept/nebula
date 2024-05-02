@@ -19,6 +19,7 @@
 #include "meshasseteditor.h"
 #include "modelasseteditor.h"
 #include "skeletonasseteditor.h"
+#include "textureasseteditor.h"
 
 #include "materials/material_interfaces.h"
 
@@ -78,6 +79,39 @@ EmptyEditor()
 void
 AssetEditor::Run(SaveMode save)
 {
+    using EditorFunc = void(*)(AssetEditor*, AssetEditorItem*);
+    static const EditorFunc SavingFunctions[(uint)AssetType::NumAssetTypes] =
+    {
+        nullptr, // LEAVE THIS ONE AS IT IS
+        MaterialSave,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
+    static const EditorFunc RenderFunctions[(uint)AssetType::NumAssetTypes] =
+    {
+        nullptr, // LEAVE THIS ONE AS IT IS
+        MaterialEditor,
+        MeshEditor,
+        nullptr,
+        nullptr,
+        nullptr,
+        TextureEditor
+    };
+
+    static const char* Labels[(uint)AssetType::NumAssetTypes] =
+    {
+        "None %s",
+        "[Material] %s",
+        "[Mesh] %s",
+        "[Skeleton] %s",
+        "[Model] %s",
+        "[Animation] %s",
+        "[Texture] %s"
+    };
+
     if (!previewerState.items.IsEmpty())
     {
         if (ImGui::BeginTabBar("AssetEditor###tabs", ImGuiTabBarFlags_None))
@@ -86,60 +120,27 @@ AssetEditor::Run(SaveMode save)
             {
                 if (save == SaveMode::SaveAll)
                 {
-                    switch (item.assetType)
-                    {
-                        case AssetType::Material:
-                            MaterialSave(this, &item);
-                            break;
-                        case AssetType::Mesh:
-                            break;
-                        case AssetType::Skeleton:
-                            break;
-                        case AssetType::Model:
-                            break;
-                        case AssetType::Animation:
-                            break;
-                    }
+                    auto& func = SavingFunctions[(uint)item.assetType];
+                    if (func)
+                        func(this, &item);
                 }
 
                 bool open;
                 Util::String assetName = Editor::PathConverter::StripAssetName(item.name.AsString());
-                assetName = BaseWindow::FormatName(assetName, item.editCounter);
+                assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
                     // If item was closed, remove item from 
                     if (open)
                     {
                         item.grabFocus = false;
-                        switch (item.assetType)
-                        {
-                            case AssetType::Material:
-                            {
-                                if (save == SaveMode::SaveActive)
-                                    MaterialSave(this, &item);
-                                MaterialEditor(this, &item);
-                                break;
-                            }
-                            case AssetType::Mesh:
-                            {
-                                MeshEditor(this, &item);
-                                break;
-                            }
-                            case AssetType::Skeleton:
-                            {
-                                break;
-                            }
-                            case AssetType::Model:
-                            {
-                                break;
-                            }
-                            case AssetType::Animation:
-                            {
-                                break;
-                            }
-                            default:
-                                n_warning("Missing Asset Editor implementation?");
-                        }
+                        auto& saveFunc = SavingFunctions[(uint)item.assetType];
+                        if (saveFunc)
+                            saveFunc(this, &item);
+
+                        auto& renderFunc = RenderFunctions[(uint)item.assetType];
+                        if (renderFunc)
+                            renderFunc(this, &item);
                     }
                     else
                     {
@@ -167,15 +168,22 @@ Setup(AssetEditorItem* item)
     item->allocator.Release();
     item->constants = nullptr;
     item->images.Clear();
-    switch (item->assetType)
+    using SetupFunc = void(*)(AssetEditorItem*);
+
+    static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
     {
-        case AssetEditor::AssetType::Material:
-            MaterialSetup(item);
-            break;
-        default:
-            // TODO: implement other editors
-            break;
-    }
+        nullptr, // LEAVE THIS ONE AS IT IS
+        MaterialSetup,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        TextureSetup
+    };
+
+    const SetupFunc& func = SetupFuncs[(uint)item->assetType];
+    if (func)
+        func(item);
 }
 
 //------------------------------------------------------------------------------
