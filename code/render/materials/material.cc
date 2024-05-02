@@ -231,7 +231,6 @@ MaterialSetTextureBindless(const MaterialId mat, uint name, const uint handle, c
 void
 MaterialSetConstants(const MaterialId mat, const void* data, const uint size)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
     const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
     CoreGraphics::BufferUpdate(buf, data, size);
     CoreGraphics::BufferFlush(buf);
@@ -243,7 +242,6 @@ MaterialSetConstants(const MaterialId mat, const void* data, const uint size)
 void
 MaterialSetConstant(const MaterialId mat, const void* data, const uint size, const uint offset)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
     const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
     CoreGraphics::BufferUpdate(buf, data, size, offset);
     CoreGraphics::BufferFlush(buf);
@@ -327,6 +325,9 @@ MaterialGetSortCode(const MaterialId mat)
 }
 
 #ifdef WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
 ubyte*
 MaterialGetConstants(const MaterialId mat)
 {

@@ -23,7 +23,7 @@ public:
     ~Inspector();
 
     void Update();
-    void Run();
+    void Run(SaveMode save) override;
 
     void ShowAddComponentMenu();
 

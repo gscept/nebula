@@ -18,11 +18,19 @@ class BaseWindow : public Core::RefCounted
 {
     __DeclareClass(BaseWindow)
 public:
+
+    enum class SaveMode
+    {
+        None,
+        SaveActive,
+        SaveAll
+    };
+
     BaseWindow();
     BaseWindow(Util::String name);
     virtual ~BaseWindow();
         
-    const Util::String& GetName() const;
+    const Util::String GetName() const;
     void SetName(const char* name);
 
     const Util::String& GetCategory() const;
@@ -32,7 +40,7 @@ public:
     bool& Open();
 
     //Runs and renders the interface once.
-    virtual void Run();
+    virtual void Run(SaveMode save);
 
     // Runs every frame, no matter if the window is open or not.
     virtual void Update();
@@ -57,6 +65,15 @@ public:
     /// Set window size
     void SetSize(const Math::vec2& size);
 
+    /// Increment the edit counter to mark the window title with *
+    void Edit();
+    /// Decrement edit counter
+    void Unedit(int count = 1);
+    /// Saves to reset the edit counter
+    void Save();
+
+    /// Format title based on edit counter, adds an asterisk if the edit counter is non-zero to indicate an edited state
+    static Util::String FormatName(const Util::String& name, int editCounter);
 
 protected:
     friend class WindowServer;
@@ -66,6 +83,7 @@ protected:
     /// category that window is a part of.
     Util::String category;
     bool open;
+    int editCounter;
 
 private:
     Math::vec2 windowPadding;

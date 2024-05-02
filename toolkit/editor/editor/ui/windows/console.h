@@ -25,7 +25,7 @@ public:
     Console();
     ~Console();
 
-    void Run();
+    void Run(SaveMode save) override;
     void Update();
 
 private:

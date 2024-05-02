@@ -72,61 +72,6 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
     {
         this->materialName = reader->ReadString();
     }
-    else if (FourCC('STXT') == fourcc)
-    {
-        // ShaderTexture
-        StringAtom paramName = reader->ReadString();
-        StringAtom paramValue = reader->ReadString();
-        String fullTexResId = String(paramValue.AsString() + NEBULA_TEXTURE_EXTENSION);
-    }
-    else if (FourCC('SINT') == fourcc)
-    {
-        // ShaderInt
-        StringAtom paramName = reader->ReadString();
-        int paramValue = reader->ReadInt();
-    }
-    else if (FourCC('SFLT') == fourcc)
-    {
-        // ShaderFloat
-        StringAtom paramName = reader->ReadString();
-        float paramValue = reader->ReadFloat();
-    }
-    else if (FourCC('SBOO') == fourcc)
-    {
-        // ShaderBool
-        StringAtom paramName = reader->ReadString();
-        bool paramValue = reader->ReadBool();
-    }
-    else if (FourCC('SFV2') == fourcc)
-    {
-        // ShaderVector
-        StringAtom paramName = reader->ReadString();
-        vec2 paramValue = reader->ReadFloat2();
-    }
-    else if (FourCC('SFV4') == fourcc)
-    {
-        // ShaderVector
-        StringAtom paramName = reader->ReadString();
-        vec4 paramValue = reader->ReadVec4();
-    }
-    else if (FourCC('STUS') == fourcc)
-    {
-        // @todo: implement universal indexed shader parameters!
-        // shaderparameter used by multilayered nodes
-        int index = reader->ReadInt();
-        vec4 paramValue = reader->ReadVec4();
-        String paramName("MLPUVStretch");
-        paramName.AppendInt(index);
-    }
-    else if (FourCC('SSPI') == fourcc)
-    {
-        // @todo: implement universal indexed shader parameters!
-        // shaderparameter used by multilayered nodes
-        int index = reader->ReadInt();
-        vec4 paramValue = reader->ReadVec4();
-        String paramName("MLPSpecIntensity");
-        paramName.AppendInt(index);
-    }
     else
     {
         retval = TransformNode::Load(fourcc, tag, reader, immediate);

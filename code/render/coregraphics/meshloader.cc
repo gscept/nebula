@@ -16,7 +16,7 @@ using namespace CoreGraphics;
 using namespace Util;
 __ImplementClass(CoreGraphics::MeshLoader, 'VKML', Resources::ResourceLoader);
 
-CoreGraphics::VertexLayoutId layouts[(uint)CoreGraphics::VertexLayoutType::NumTypes];
+CoreGraphics::VertexLayoutId Layouts[(uint)CoreGraphics::VertexLayoutType::NumTypes];
 //------------------------------------------------------------------------------
 /**
 */
@@ -30,14 +30,16 @@ MeshLoader::MeshLoader()
 
     // Setup vertex layouts
     CoreGraphics::VertexLayoutCreateInfo vlCreateInfo;
+    vlCreateInfo.name = "Normal"_atm;
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }  
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
         , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }  
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 } 
     };
-    layouts[(uint)CoreGraphics::VertexLayoutType::Normal] = CreateVertexLayout(vlCreateInfo);
+    Layouts[(uint)CoreGraphics::VertexLayoutType::Normal] = CreateVertexLayout(vlCreateInfo);
 
+    vlCreateInfo.name = "SecondaryUVs"_atm;
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }  
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
@@ -45,8 +47,9 @@ MeshLoader::MeshLoader()
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord2, VertexComponent::UShort2N, 1 }
     };
-    layouts[(uint)CoreGraphics::VertexLayoutType::SecondUV] = CreateVertexLayout(vlCreateInfo);
+    Layouts[(uint)CoreGraphics::VertexLayoutType::SecondUV] = CreateVertexLayout(vlCreateInfo);
 
+    vlCreateInfo.name = "VertexColors"_atm;
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
@@ -54,8 +57,9 @@ MeshLoader::MeshLoader()
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::Color, VertexComponent::Byte4N, 1 }
     };
-    layouts[(uint)CoreGraphics::VertexLayoutType::Colors] = CreateVertexLayout(vlCreateInfo);
+    Layouts[(uint)CoreGraphics::VertexLayoutType::Colors] = CreateVertexLayout(vlCreateInfo);
 
+    vlCreateInfo.name = "Skin"_atm;
     vlCreateInfo.comps = {
         VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
@@ -64,8 +68,9 @@ MeshLoader::MeshLoader()
         , VertexComponent{ VertexComponent::IndexName::SkinWeights, VertexComponent::Float4, 1 }
         , VertexComponent{ VertexComponent::IndexName::SkinJIndices, VertexComponent::UByte4, 1 }
     };
-    layouts[(uint)CoreGraphics::VertexLayoutType::Skin] = CreateVertexLayout(vlCreateInfo);
+    Layouts[(uint)CoreGraphics::VertexLayoutType::Skin] = CreateVertexLayout(vlCreateInfo);
 
+    vlCreateInfo.name = "Particle"_atm;
     vlCreateInfo.comps = {
         VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0)
         , VertexComponent(0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::position
@@ -74,7 +79,7 @@ MeshLoader::MeshLoader()
         , VertexComponent(3, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // Particle::uvMinMax
         , VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // x: Particle::rotation, y: Particle::size
     };
-    layouts[(uint)CoreGraphics::VertexLayoutType::Particle] = CreateVertexLayout(vlCreateInfo);
+    Layouts[(uint)CoreGraphics::VertexLayoutType::Particle] = CreateVertexLayout(vlCreateInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -199,6 +204,15 @@ MeshLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+const CoreGraphics::VertexLayoutId
+MeshLoader::GetLayout(const CoreGraphics::VertexLayoutType type)
+{
+    return Layouts[(uint)type];
+}
+
+//------------------------------------------------------------------------------
+/**
     Setup the mesh resource from a nvx3 file (Nebula's
     native binary mesh file format).
 */
@@ -292,7 +306,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             mshInfo.topology = PrimitiveTopology::TriangleList;
             mshInfo.indexType = vertexRanges[i].indexType;
             mshInfo.primitiveGroups = primGroups;
-            mshInfo.vertexLayout = layouts[(uint)vertexRanges[i].layout];
+            mshInfo.vertexLayout = Layouts[(uint)vertexRanges[i].layout];
             mshInfo.vertexBufferAllocation = vertexAllocation;
             mshInfo.indexBufferAllocation = indexAllocation;
             mshInfo.name = this->names[entry];

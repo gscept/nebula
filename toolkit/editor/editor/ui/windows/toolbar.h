@@ -19,7 +19,7 @@ public:
     Toolbar();
     ~Toolbar();
 
-    void Run();
+    void Run(SaveMode save) override;
 
 private:
 };

@@ -19,7 +19,7 @@ public:
     StyleEditor();
     ~StyleEditor();
 
-    void Run();
+    void Run(SaveMode save) override;
 
 private:
 };

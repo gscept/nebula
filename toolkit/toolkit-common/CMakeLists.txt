@@ -17,7 +17,9 @@ fips_begin_lib(toolkit-common)
             projectinfo.cc
             projectinfo.h
             rcswrapper.cc
-            rcswrapper.h            
+            rcswrapper.h     
+            text.cc
+            text.h
             toolkitapp.cc
             toolkitapp.h
             toolkitconsolehandler.cc

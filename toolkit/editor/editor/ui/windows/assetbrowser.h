@@ -12,6 +12,7 @@
 namespace Presentation
 {
 
+class AssetEditor;
 class AssetBrowser : public BaseWindow
 {
     __DeclareClass(AssetBrowser)
@@ -20,7 +21,7 @@ public:
     ~AssetBrowser();
 
     void Update();
-    void Run();
+    void Run(SaveMode save) override;
 private:
     void DisplayFileTree();
 };

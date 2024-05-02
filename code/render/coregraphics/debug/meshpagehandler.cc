@@ -70,7 +70,7 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
 
         // get all stream-loaded mesh resources
-        const MeshLoader* meshLoader = ResourceServer::Instance()->GetStreamPool<MeshLoader>();
+        const MeshLoader* meshLoader = ResourceServer::Instance()->GetStreamLoader<MeshLoader>();
         const Util::Dictionary<Resources::ResourceName, Ids::Id32>& meshes = meshLoader->GetResources();
     
         // create a table of all existing meshes
@@ -90,7 +90,7 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             {
                 const Resources::ResourceName& name = meshes.KeyAtIndex(i);
                 const Resources::ResourceId& id = meshLoader->GetId(name);
-                const SizeT usage = meshLoader->GetUsage(id);
+                const SizeT usage = meshLoader->GetUsage(id.resourceId);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);
                         htmlWriter->AddAttr("href", "/mesh?meshinfo=" + Util::String::FromLongLong(id.HashCode64()));

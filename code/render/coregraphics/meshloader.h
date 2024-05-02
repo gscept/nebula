@@ -45,6 +45,8 @@ private:
     /// Create load mask based on LOD
     uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
 
+    /// Get vertex layout
+    static const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexLayoutType type);
     /// setup mesh from nvx3 file in memory
     void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource, bool immediate);
 };

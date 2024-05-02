@@ -84,10 +84,7 @@ template <int ChunkSize>
 inline
 ArenaAllocator<ChunkSize>::~ArenaAllocator()
 {
-    this->currentChunk = nullptr;
-    this->iterator = nullptr;
-    this->retiredChunks.Clear();
-    //this->Release(); // perhaps call release when we actually want to dealloc
+    this->Release(); // perhaps call release when we actually want to dealloc
 }
 
 //------------------------------------------------------------------------------

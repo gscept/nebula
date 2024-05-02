@@ -59,7 +59,7 @@ DrawFullScreenQuad::Setup()
         v[2][0] = right;    v[2][1] = top;      v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #endif
 
-        DrawFullScreenQuad::vertexLayout = CoreGraphics::CreateVertexLayout({ vertexComponents });
+        DrawFullScreenQuad::vertexLayout = CoreGraphics::CreateVertexLayout({ .name = "Full screen quad"_atm, .comps = vertexComponents });
 
         // load vertex buffer
         BufferCreateInfo info;

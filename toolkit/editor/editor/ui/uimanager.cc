@@ -14,12 +14,13 @@
 #include "windows/history.h"
 #include "windows/inspector.h"
 #include "windows/assetbrowser.h"
-#include "windows/previewer.h"
+#include "windows/asseteditor/asseteditor.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
 #include "dynui/imguicontext.h"
 #include "io/filedialog.h"
+#include "window.h"
 
 namespace Editor
 {
@@ -60,7 +61,7 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::Scene", "Scene View");
     windowServer->RegisterWindow("Presentation::Inspector", "Inspector");
     windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");
-    windowServer->RegisterWindow("Presentation::Previewer", "Previewer");
+    windowServer->RegisterWindow("Presentation::AssetEditor", "Asset Editor", "Editor");
     
     Icons::play          = NLoadIcon("systex:icon_play.dds");
     Icons::pause         = NLoadIcon("systex:icon_pause.dds");
@@ -69,8 +70,10 @@ OnActivate()
     Icons::game          = NLoadIcon("systex:icon_game.dds");
     Icons::light         = NLoadIcon("systex:icon_light.dds");
     
+    windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive); }, "Save", "Ctrl+S", "Edit");
+    windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
-    windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Y", "Edit");
+    windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Shift+Z", "Edit");
     windowServer->RegisterCommand([](){ 
         static Util::String localpath = IO::URI("export:levels").LocalPath();
         Util::String path;

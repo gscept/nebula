@@ -36,7 +36,7 @@ Outline::~Outline()
 /**
 */
 void
-Outline::Run()
+Outline::Run(SaveMode save)
 {
     static bool renaming = false;
     const char* filterPopup = "outline_filter_popup";

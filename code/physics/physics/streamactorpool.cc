@@ -529,7 +529,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
     __LockName(&this->allocator, lock, id.resource);
     ActorInfo& info = this->allocator.Get<0>(id.resource);
     n_assert2(info.instanceCount == 0, "Actor has active Instances");
-    const Util::StringAtom tag = this->GetTag(id);
+    const Util::StringAtom tag = this->GetTag(id.resourceId);
     
     for (auto i : info.shapes)
     {

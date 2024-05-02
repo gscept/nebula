@@ -117,8 +117,8 @@ class MaterialTemplateDefinition:
         self.name = self.name.replace(" ", "_").replace("+", "")
         self.inherits = ""
         self.virtual = False
-        self.passes = set()
-        self.variables = set()
+        self.passes = list()
+        self.variables = list()
         self.interface = None
         self.vertex = "Unknown"
         self.group = "Unknown"
@@ -174,13 +174,13 @@ class MaterialTemplateDefinition:
                 if "edit" in var:
                     varEdit = var["edit"]
                 
-                self.variables.add(VariableDefinition(varName, varType, varDef, varEdit, varDesc))
+                self.variables.append(VariableDefinition(varName, varType, varDef, varEdit, varDesc))
         if "passes" in node:
             for p in node["passes"]:
                     batch = p["batch"]
                     shader = p["shader"]
                     variation = p["variation"]
-                    self.passes.add(PassDefinition(batch, shader, variation))
+                    self.passes.append(PassDefinition(batch, shader, variation))
     pass
 
     def FormatHeader(self):
@@ -387,8 +387,8 @@ class MaterialTemplateGenerator:
                     for mat in node:
                         matDef = MaterialTemplateDefinition(mat, self)
                         if matDef.inherits:
-                            matDef.variables = self.materialDict[matDef.inherits].variables.union(matDef.variables)
-                            matDef.passes = self.materialDict[matDef.inherits].passes.union(matDef.passes)
+                            matDef.variables = self.materialDict[matDef.inherits].variables + matDef.variables
+                            matDef.passes = self.materialDict[matDef.inherits].passes + matDef.passes
                             if matDef.interface == None:
                                 matDef.interface = self.materialDict[matDef.inherits].interface;                        
 

@@ -1,4 +1,5 @@
-fips_begin_lib(editor)
+
+nebula_begin_module(editor)
 target_include_directories(editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_precompile_headers(editor PRIVATE [["foundation/stdneb.h"]] [["render/stdneb.h"]] [["application/stdneb.h"]])
@@ -88,14 +89,29 @@ fips_dir(editor)
                 history.h
                 outline.cc
                 outline.h
-                previewer.cc
-                previewer.h
                 styleeditor.cc
                 styleeditor.h
                 toolbar.cc
                 toolbar.h
                 inspector.cc
                 inspector.h
+            )
+        fips_dir(editor/ui/windows/asseteditor)
+            fips_files(
+                animationasseteditor.cc
+                animationasseteditor.h
+                asseteditor.cc
+                asseteditor.h
+                materialasseteditor.cc
+                materialasseteditor.h
+                meshasseteditor.cc
+                meshasseteditor.h
+                modelasseteditor.cc
+                modelasseteditor.h
+                skeletonasseteditor.cc
+                skeletonasseteditor.h
+                textureasseteditor.cc
+                textureasseteditor.h
             )
         fips_dir(editor/ui/modules)
             fips_files(
@@ -108,6 +124,8 @@ fips_dir(editor)
             camera.h
             selectiontool.cc
             selectiontool.h
+            pathconverter.cc
+            pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature audio)
-fips_end_lib()
+fips_deps(foundation application graphicsfeature physicsfeature audio toolkit-common)
+nebula_end_module()

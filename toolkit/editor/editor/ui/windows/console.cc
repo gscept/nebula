@@ -50,7 +50,7 @@ Console::~Console()
 /**
 */
 void
-Console::Run()
+Console::Run(SaveMode save)
 {
     this->console->RenderContent();
 }

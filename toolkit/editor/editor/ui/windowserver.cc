@@ -111,7 +111,7 @@ WindowServer::RunAll()
 
             if (ImGui::Begin(it->GetName().AsCharPtr(), &it->Open(), it->GetAdditionalFlags()))
             {
-                it->Run();
+                it->Run(this->save);
             }
             ImGui::End();
 
@@ -119,6 +119,7 @@ WindowServer::RunAll()
                 ImGui::PopStyleVar();
         }
     }
+    this->save = BaseWindow::SaveMode::None;
 }
 
 //------------------------------------------------------------------------------
@@ -136,6 +137,8 @@ WindowServer::Update()
     auto const& keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
 
     // check for shortcuts
+    IndexT cmdIndex = -1;
+    int longestShortcut = 0;
     for (IndexT i = 0; i < this->commands.Size(); ++i)
     {
         CommandInfo const& cmd = this->commands.ValueAtIndex(i);
@@ -167,6 +170,24 @@ WindowServer::Update()
                             break;
                         }
                     }
+                    else if (key == Input::Key::Code::Shift)
+                    {
+                        // special case, check both left and right key
+                        if (!(keyboard->KeyPressed(Input::Key::Code::LeftShift) || keyboard->KeyPressed(Input::Key::Code::RightShift)))
+                        {
+                            exec = false;
+                            break;
+                        }
+                    }
+                    else if (key == Input::Key::Code::Menu)
+                    {
+                        // special case, check both left and right key
+                        if (!(keyboard->KeyPressed(Input::Key::Code::LeftMenu) || keyboard->KeyPressed(Input::Key::Code::RightMenu)))
+                        {
+                            exec = false;
+                            break;
+                        }
+                    }
                     else
                     {
                         exec = false;
@@ -177,9 +198,27 @@ WindowServer::Update()
         }
 
         // run command
-        if (exec)
-            cmd.func();
+        if (exec && cmd.keys.Size() > longestShortcut)
+        {
+            longestShortcut = cmd.keys.Size();
+            cmdIndex = i;
+        }
     }
+
+    if (cmdIndex != -1)
+    {
+        this->commands.ValueAtIndex(cmdIndex).func();
+    }
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+WindowServer::BroadcastSave(BaseWindow::SaveMode mode)
+{
+    this->save = mode;
 }
 
 //------------------------------------------------------------------------------

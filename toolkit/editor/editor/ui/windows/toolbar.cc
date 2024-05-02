@@ -47,7 +47,7 @@ Toolbar::~Toolbar()
 /**
 */
 void
-Toolbar::Run()
+Toolbar::Run(SaveMode save)
 {
     const ImVec2 buttonSize = {32,32};
 

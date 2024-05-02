@@ -51,7 +51,7 @@ Scene::Update()
 /**
 */
 void
-Scene::Run()
+Scene::Run(SaveMode save)
 {
     viewPort.Render();
     Tools::SelectionTool::RenderGizmo(
