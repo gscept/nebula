@@ -74,8 +74,7 @@ struct AssetEditorItem
     Resources::ResourceName name;
 
     Memory::ArenaAllocator<2048> allocator;
-    Util::Array<ImageHolder*> images;
-    ubyte* constants;
+    void* data; // use for editor specific data
 
     uint editCounter;
     bool grabFocus;

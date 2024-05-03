@@ -101,6 +101,17 @@ AssetEditor::Run(SaveMode save)
         TextureEditor
     };
 
+    static const EditorFunc DiscardFunctions[(uint)AssetType::NumAssetTypes] =
+    {
+        nullptr, // LEAVE THIS ONE AS IT IS
+        MaterialDiscard,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
+
     static const char* Labels[(uint)AssetType::NumAssetTypes] =
     {
         "None %s",
@@ -112,6 +123,7 @@ AssetEditor::Run(SaveMode save)
         "[Texture] %s"
     };
 
+    static const char* PopupText = "Unsaved changes";
     if (!previewerState.items.IsEmpty())
     {
         if (ImGui::BeginTabBar("AssetEditor###tabs", ImGuiTabBarFlags_None))
@@ -130,6 +142,58 @@ AssetEditor::Run(SaveMode save)
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
                 {
+                    ImGui::SetNextWindowSize(ImVec2{ 300, 200 });
+                    if (ImGui::BeginPopupModal(PopupText, nullptr, ImGuiWindowFlags_NoResize))
+                    {
+                        ImGuiStyle& style = ImGui::GetStyle();
+                        static const char* UnsavedMessage = "You have unsaved changes. Chose what you want to do.";
+                        ImGui::TextWrapped(UnsavedMessage);
+                        float availY = ImGui::GetContentRegionAvail().y;
+                        float sizeY = ImGui::CalcTextSize(UnsavedMessage).y + style.FramePadding.y * 4.0f;
+                        float off = (availY - sizeY);
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + off);
+                        if (ImGui::BeginTable("Columns", 3, ImGuiTableFlags_SizingStretchSame))
+                        {
+                            ImGui::TableNextColumn();
+
+                            float availX = ImGui::GetContentRegionAvail().x;
+                            float sizeX = ImGui::CalcTextSize("Save").x + style.FramePadding.x * 2.0f;
+                            float off = (availX - sizeX) * 0.5f;
+                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+                            if (ImGui::Button("Save"))
+                            {
+                                auto& saveFunc = SavingFunctions[(uint)item.assetType];
+                                if (saveFunc)
+                                    saveFunc(this, &item);
+                                ImGui::CloseCurrentPopup();
+                            }
+                            ImGui::TableNextColumn();
+                            sizeX = ImGui::CalcTextSize("Discard").x + style.FramePadding.x * 2.0f;
+                            off = (availX - sizeX) * 0.5f;
+                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+                            if (ImGui::Button("Discard"))
+                            {
+                                // TODO: Restore to initial state...
+                                auto& discardFunc = DiscardFunctions[(uint)item.assetType];
+                                if (discardFunc)
+                                    discardFunc(this, &item);
+                                this->editCounter -= item.editCounter;
+                                item.editCounter = 0;
+                                ImGui::CloseCurrentPopup();
+                            }
+                            ImGui::TableNextColumn();
+                            sizeX = ImGui::CalcTextSize("Cancel").x + style.FramePadding.x * 2.0f;
+                            off = (availX - sizeX) * 0.5f;
+                            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
+                            if (ImGui::Button("Cancel"))
+                            {
+                                ImGui::CloseCurrentPopup();
+                            }
+                            ImGui::EndTable();
+                        }
+                        ImGui::EndPopup();
+                    }
+
                     // If item was closed, remove item from 
                     if (open)
                     {
@@ -144,7 +208,14 @@ AssetEditor::Run(SaveMode save)
                     }
                     else
                     {
-                        previewerState.items.Erase(&item);
+                        if (item.editCounter != 0)
+                        {
+                            ImGui::OpenPopup(PopupText);
+                        }
+                        else
+                        {
+                            previewerState.items.Erase(&item);
+                        }
                     }
                     ImGui::EndTabItem();
                 }
@@ -156,7 +227,11 @@ AssetEditor::Run(SaveMode save)
     {
         EmptyEditor();
     }
-   
+
+
+    if (ImGui::Button("Open Popup"))
+        ImGui::OpenPopup(PopupText, ImGuiPopupFlags_AnyPopupLevel);
+
 }
 
 //------------------------------------------------------------------------------
@@ -166,8 +241,7 @@ void
 Setup(AssetEditorItem* item)
 {
     item->allocator.Release();
-    item->constants = nullptr;
-    item->images.Clear();
+    item->data = nullptr;
     using SetupFunc = void(*)(AssetEditorItem*);
 
     static const SetupFunc SetupFuncs[(uint)AssetEditor::AssetType::NumAssetTypes] =
