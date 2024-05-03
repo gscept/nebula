@@ -21,6 +21,15 @@
 namespace Presentation
 {
 
+struct MaterialEditorItemData
+{
+    ImageHolder* images;
+    ubyte* constants;
+
+    ImageHolder* originalImages;
+    ubyte* originalConstants;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -39,13 +48,15 @@ struct CMDMaterialSetTexture : public Edit::Command
         item->grabFocus = true;
         item->editCounter++;
         this->res = Resources::CreateResource(this->asset, "editor", nullptr, nullptr, true, false);
-        ImageHolder* textureInfo = (ImageHolder*)item->images[this->index];
+        auto itemData = (const MaterialEditorItemData*)item->data;
+
+        ImageHolder* textureInfo = &itemData->images[this->index];
         textureInfo->res = res;
         textureInfo->texture.nebulaHandle = res.resourceId;
         if (this->bindlessOffset != 0xFFFFFFFF)
         {
             uint handle = CoreGraphics::TextureGetBindlessHandle(res);
-            memcpy(item->constants + this->bindlessOffset, &handle, sizeof(handle));
+            memcpy(itemData->constants + this->bindlessOffset, &handle, sizeof(handle));
             Materials::MaterialSetConstant(this->item->asset.material, &handle, sizeof(handle), this->bindlessOffset);
             Materials::MaterialInvalidate(this->item->asset.material);
         }
@@ -63,13 +74,15 @@ struct CMDMaterialSetTexture : public Edit::Command
         item->grabFocus = true;
         item->editCounter--;
         this->res = Resources::CreateResource(this->oldAsset, "editor", nullptr, nullptr, true, false);
-        ImageHolder* textureInfo = (ImageHolder*)item->images[this->index];
+        auto itemData = (const MaterialEditorItemData*)item->data;
+
+        ImageHolder* textureInfo = &itemData->images[this->index];
         textureInfo->res = res;
         textureInfo->texture.nebulaHandle = res.resourceId;
         if (this->bindlessOffset != 0xFFFFFFFF)
         {
             uint handle = CoreGraphics::TextureGetBindlessHandle(res);
-            memcpy(item->constants + this->bindlessOffset, &handle, sizeof(handle));
+            memcpy(itemData->constants + this->bindlessOffset, &handle, sizeof(handle));
             Materials::MaterialSetConstant(this->item->asset.material, &handle, sizeof(handle), this->bindlessOffset);
             Materials::MaterialInvalidate(this->item->asset.material);
         }
@@ -107,7 +120,9 @@ struct CMDMaterialSetConstant : public Edit::Command
         assetEditor->Edit();
         item->editCounter++;
         item->grabFocus = true;
-        memcpy(item->constants, this->data, this->dataSize);
+        auto itemData = (const MaterialEditorItemData*)item->data;
+
+        memcpy(itemData->constants, this->data, this->dataSize);
         Materials::MaterialSetConstants(this->item->asset.material, this->data, this->dataSize);
         Materials::MaterialInvalidate(this->item->asset.material);
         return true;
@@ -118,7 +133,9 @@ struct CMDMaterialSetConstant : public Edit::Command
         assetEditor->Unedit();
         item->editCounter--;
         item->grabFocus = true;
-        memcpy(item->constants, this->oldData, this->dataSize);
+        auto itemData = (const MaterialEditorItemData*)item->data;
+
+        memcpy(itemData->constants, this->oldData, this->dataSize);
         Materials::MaterialSetConstants(this->item->asset.material, this->oldData, this->dataSize);
         Materials::MaterialInvalidate(this->item->asset.material);
         return true;
@@ -138,6 +155,7 @@ void
 MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+    auto itemData = (const MaterialEditorItemData*)item->data;
     ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
     ImGui::Text(materialTemplate->name);
     ImGui::PopFont();
@@ -152,7 +170,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
         const MaterialTemplates::MaterialTemplateTexture* value = kvp.Value();
 
-        ImageHolder* textureInfo = (ImageHolder*)item->images[i];
+        ImageHolder* textureInfo = &itemData->images[i];
         Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
         if (!name.IsEmpty())
         {
@@ -247,7 +265,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             cmd->assetEditor = assetEditor;
             cmd->item = item;
             memcpy(cmd->data, imguiState, cmd->dataSize);
-            memcpy(cmd->oldData, item->constants, cmd->dataSize);
+            memcpy(cmd->oldData, itemData->constants, cmd->dataSize);
             Edit::CommandManager::Execute(cmd);
         }
 
@@ -273,11 +291,18 @@ MaterialSetup(AssetEditorItem* item)
 {
     const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
 
+    // Allocate editor specific data
+    MaterialEditorItemData* itemData = item->allocator.Alloc<MaterialEditorItemData>();
+    itemData->constants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
+    itemData->images = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
+    itemData->originalConstants = item->allocator.Alloc<ubyte>(materialTemplate->bufferSize);
+    itemData->originalImages = item->allocator.Alloc<ImageHolder>(materialTemplate->numTextures);
+    item->data = itemData;
+
     // Copy over material constants
-    ubyte* mem = (ubyte*)item->allocator.Alloc(materialTemplate->bufferSize);
-    ubyte* data = Materials::MaterialGetConstants(item->asset.material);
-    memcpy(mem, data, materialTemplate->bufferSize);
-    item->constants = mem;
+    ubyte* currentData = Materials::MaterialGetConstants(item->asset.material);
+    memcpy(itemData->constants, currentData, materialTemplate->bufferSize);
+    memcpy(itemData->originalConstants, currentData, materialTemplate->bufferSize);
 
     for (IndexT i = 0; i < materialTemplate->textures.Size(); i++)
     {
@@ -285,20 +310,20 @@ MaterialSetup(AssetEditorItem* item)
         Resources::ResourceId res = Materials::MaterialGetTexture(item->asset.material, kvp.Value()->textureIndex);
         if (res.resourceId == Resources::InvalidResourceId.resourceId)
             res = Resources::CreateResource(kvp.Value()->resource, "editor");
-        ImageHolder* data = item->allocator.Alloc<ImageHolder>();
-        Resources::CreateResourceListener(res, [data](Resources::ResourceId res)
+        Resources::CreateResourceListener(res, [itemData, i](Resources::ResourceId res)
         {
-            data->res = res;
-            data->texture.layer = 0;
-            data->texture.mip = 0;
-            data->texture.nebulaHandle.resourceId = res.resourceId;
+            itemData->images[i].res = res;
+            itemData->images[i].texture.layer = 0;
+            itemData->images[i].texture.mip = 0;
+            itemData->images[i].texture.nebulaHandle.resourceId = res.resourceId;
+            memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
         });
 
-        data->res = res;
-        data->texture.layer = 0;
-        data->texture.mip = 0;
-        data->texture.nebulaHandle.resourceId = res.resourceId;
-        item->images.Append(data);
+        itemData->images[i].res = res;
+        itemData->images[i].texture.layer = 0;
+        itemData->images[i].texture.mip = 0;
+        itemData->images[i].texture.nebulaHandle.resourceId = res.resourceId;
+        memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
     }
 }
 
@@ -310,6 +335,9 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 {
     const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
     CoreGraphics::TextureLoader* texLoader = Resources::GetStreamLoader<CoreGraphics::TextureLoader>();
+    auto itemData = (const MaterialEditorItemData*)item->data;
+    memcpy(itemData->originalConstants, itemData->constants, materialTemplate->bufferSize);
+    memcpy(itemData->originalImages, itemData->images, sizeof(ImageHolder) * materialTemplate->numTextures);
 
     Util::String output = Editor::PathConverter::StripAssetName(item->name.AsString());
 
@@ -333,7 +361,7 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
                     auto& kvp = materialTemplate->textures.KeyValuePairAtIndex(i);
                     const MaterialTemplates::MaterialTemplateTexture* value = kvp.Value();
 
-                    ImageHolder* textureInfo = (ImageHolder*)item->images[i];
+                    ImageHolder* textureInfo = &itemData->images[i];
                     Util::String name = Editor::PathConverter::MapToCompactPath(texLoader->GetName(textureInfo->res).Value());
                     name.StripFileExtension();
                     writer->BeginNode(kvp.Key());
@@ -394,6 +422,34 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 
     assetEditor->Unedit(item->editCounter);
     item->editCounter = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+MaterialDiscard(AssetEditor* assetEditor, AssetEditorItem* item)
+{
+    auto itemData = (const MaterialEditorItemData*)item->data;
+    const MaterialTemplates::Entry* materialTemplate = Materials::MaterialGetTemplate(item->asset.material);
+    memcpy(itemData->constants, itemData->originalConstants, materialTemplate->bufferSize);
+    Materials::MaterialSetConstants(item->asset.material, itemData->originalConstants, materialTemplate->bufferSize);
+    Materials::MaterialInvalidate(item->asset.material);
+
+    for (IndexT i = 0; i < materialTemplate->numTextures; i++)
+    {
+        const MaterialTemplates::MaterialTemplateTexture* texBind = materialTemplate->textures.ValueAtIndex(i);
+        ImageHolder* currentImage = &itemData->images[i];
+        ImageHolder* originalImage = &itemData->originalImages[i];
+        if (currentImage->res != originalImage->res)
+        {
+            Resources::DiscardResource(currentImage->res);
+            if (texBind->bindlessOffset == 0xFFFFFFFF)
+            {
+                Materials::MaterialSetTexture(item->asset.material, texBind->hashedName, originalImage->res);
+            }
+        }
+    }
 }
 
 } // namespace Presentation

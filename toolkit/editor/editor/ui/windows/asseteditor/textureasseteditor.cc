@@ -9,6 +9,12 @@ namespace Presentation
 
 Dynui::ImguiTextureId Texture;
 
+struct TextureEditorItemData
+{
+    ImageHolder* image;
+};
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -18,8 +24,10 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
     ImGui::Text(item->name.Value());
     ImGui::PopFont();
-    Resources::SetMinLod(item->images[0]->res, 0.0f, true);
-    CoreGraphics::TextureId tex = item->images[0]->res.resourceId;
+    auto itemData = (TextureEditorItemData*)item->data;
+
+    Resources::SetMinLod(itemData->image->res, 0.0f, true);
+    CoreGraphics::TextureId tex = itemData->image->res.resourceId;
     CoreGraphics::TextureIdLock _0(tex);
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(tex);
     CoreGraphics::TextureType type = CoreGraphics::TextureGetType(tex);
@@ -43,7 +51,7 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 
     ImVec2 remainder = ImGui::GetContentRegionAvail();
     float ratio = dims.height / float(dims.width);
-    ImGui::Image(&item->images[0]->texture, ImVec2{ remainder.x, remainder.x * ratio }, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1,1,1,1 }, ImVec4{ 0,0,0,1 });
+    ImGui::Image(&itemData->image->texture, ImVec2{ remainder.x, remainder.x * ratio }, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1,1,1,1 }, ImVec4{ 0,0,0,1 });
 
     ImGui::Text("Width: %d", dims.width);
     ImGui::SameLine();
@@ -62,12 +70,13 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
 void 
 TextureSetup(AssetEditorItem* item)
 {
-    ImageHolder* data = item->allocator.Alloc<ImageHolder>();
-    data->res = item->res;
-    data->texture.layer = 0;
-    data->texture.mip = 0;
-    data->texture.nebulaHandle.resourceId = item->res.resourceId;
-    item->images.Append(data);
+    auto itemData = item->allocator.Alloc<TextureEditorItemData>();
+    itemData->image = item->allocator.Alloc<ImageHolder>();
+    itemData->image->res = item->res;
+    itemData->image->texture.layer = 0;
+    itemData->image->texture.mip = 0;
+    itemData->image->texture.nebulaHandle.resourceId = item->res.resourceId;
+    item->data = itemData;
 }
 
 } // namespace Presentation

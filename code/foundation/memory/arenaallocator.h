@@ -52,6 +52,8 @@ public:
     
     /// allocate new object, and calls constructor, but beware because this allocator does not run the destructors
     template <typename T> T* Alloc();
+    /// Allocate several new objects of a specific type
+    template <typename T> T* Alloc(SizeT num);
     /// allocate new chunk of size
     void* Alloc(SizeT size);
     /// retires a chunk and creates a new one (might waste memory)
@@ -114,27 +116,6 @@ ArenaAllocator<ChunkSize>::ArenaAllocator(const ArenaAllocator& rhs)
     this->retiredChunks = rhs.retiredChunks;
     this->currentChunk = rhs.currentChunk;
     this->iterator = rhs.iterator;
-    /*
-    IndexT i;
-    for (i = 0; i < rhs.retiredChunks.Size(); i++)
-    {
-        byte* chunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
-        memcpy(chunk, rhs.retiredChunks[i], ChunkSize);
-        this->retiredChunks.Append(chunk);
-    }
-    if (rhs.currentChunk)
-    {
-        this->currentChunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
-        ptrdiff_t size = rhs.iterator - rhs.currentChunk;
-        memcpy(this->currentChunk, rhs.currentChunk, size);
-        this->iterator = this->currentChunk + size;
-    }
-    else
-    {
-        this->currentChunk = nullptr;
-        this->iterator = nullptr;
-    }
-    */
 }
 
 //------------------------------------------------------------------------------
@@ -163,27 +144,6 @@ ArenaAllocator<ChunkSize>::operator=(const ArenaAllocator& rhs)
     this->retiredChunks = rhs.retiredChunks;
     this->currentChunk = rhs.currentChunk;
     this->iterator = rhs.iterator;
-    /*
-    IndexT i;
-    for (i = 0; i < rhs.retiredChunks.Size(); i++)
-    {
-        byte* chunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
-        memcpy(chunk, rhs.retiredChunks[i], ChunkSize);
-        this->retiredChunks.Append(chunk);
-    }
-    if (rhs.currentChunk)
-    {
-        this->currentChunk = (byte*)Memory::Alloc(ObjectArrayHeap, ChunkSize);
-        ptrdiff_t size = rhs.iterator - rhs.currentChunk;
-        memcpy(this->currentChunk, rhs.currentChunk, size);
-        this->iterator = this->currentChunk + size;
-    }
-    else
-    {
-        this->currentChunk = nullptr;
-        this->iterator = nullptr;
-    }
-    */
 }
 
 //------------------------------------------------------------------------------
@@ -250,6 +210,44 @@ ArenaAllocator<ChunkSize>::Alloc()
         }
 
         ret = new (this->iterator) T;
+        this->iterator += alignedSize;
+    }
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <int ChunkSize>
+template<typename T>
+inline T*
+ArenaAllocator<ChunkSize>::Alloc(SizeT num)
+{
+    T* ret = nullptr;
+    if constexpr (sizeof(T) > ChunkSize)
+    {
+        // allocate block and retire it directly
+        byte* block = (byte*)Memory::Alloc(ObjectArrayHeap, sizeof(T) * num);
+        this->retiredChunks.Append(block);
+        ret = new (block) T[num];
+    }
+    else
+    {
+        // pad up to next multiple of 16 to avoid alignment issues
+        SizeT alignedSize = Math::align(sizeof(T) * num, 16);
+        if (this->iterator == nullptr)
+        {
+            this->NewChunk();
+        }
+        else
+        {
+            // we cast the pointer diff but it should be safe since it should never be above ChunkSize
+            SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);
+            if (remainder < alignedSize)
+                this->NewChunk();
+        }
+
+        ret = new (this->iterator) T[num];
         this->iterator += alignedSize;
     }
     return ret;
