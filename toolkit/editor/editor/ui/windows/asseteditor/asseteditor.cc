@@ -30,7 +30,7 @@ struct
 {
     Util::Array<AssetEditorItem> items;
 
-} previewerState;
+} assetEditorState;
 
 __ImplementClass(Presentation::AssetEditor, 'PrvW', Presentation::BaseWindow);
 
@@ -124,12 +124,13 @@ AssetEditor::Run(SaveMode save)
     };
 
     static const char* PopupText = "Unsaved changes";
-    if (!previewerState.items.IsEmpty())
+    if (!assetEditorState.items.IsEmpty())
     {
         if (ImGui::BeginTabBar("AssetEditor###tabs", ImGuiTabBarFlags_None))
         {
-            for (AssetEditorItem& item : previewerState.items)
+            for (IndexT itemIndex = 0; itemIndex < assetEditorState.items.Size(); itemIndex++)
             {
+                AssetEditorItem& item = assetEditorState.items[itemIndex];
                 if (save == SaveMode::SaveAll)
                 {
                     auto& func = SavingFunctions[(uint)item.assetType];
@@ -165,6 +166,8 @@ AssetEditor::Run(SaveMode save)
                                 auto& saveFunc = SavingFunctions[(uint)item.assetType];
                                 if (saveFunc)
                                     saveFunc(this, &item);
+                                assetEditorState.items.Erase(&item);
+                                itemIndex--;
                                 ImGui::CloseCurrentPopup();
                             }
                             ImGui::TableNextColumn();
@@ -179,6 +182,8 @@ AssetEditor::Run(SaveMode save)
                                     discardFunc(this, &item);
                                 this->editCounter -= item.editCounter;
                                 item.editCounter = 0;
+                                assetEditorState.items.Erase(&item);
+                                itemIndex--;
                                 ImGui::CloseCurrentPopup();
                             }
                             ImGui::TableNextColumn();
@@ -214,7 +219,8 @@ AssetEditor::Run(SaveMode save)
                         }
                         else
                         {
-                            previewerState.items.Erase(&item);
+                            assetEditorState.items.Erase(&item);
+                            itemIndex--;
                         }
                     }
                     ImGui::EndTabItem();
@@ -227,11 +233,6 @@ AssetEditor::Run(SaveMode save)
     {
         EmptyEditor();
     }
-
-
-    if (ImGui::Button("Open Popup"))
-        ImGui::OpenPopup(PopupText, ImGuiPopupFlags_AnyPopupLevel);
-
 }
 
 //------------------------------------------------------------------------------
@@ -267,7 +268,7 @@ void
 AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
 {
     // If we try to load the same item, just focus that one
-    for (AssetEditorItem& item : previewerState.items)
+    for (AssetEditorItem& item : assetEditorState.items)
     {
         if (item.name == asset)
         {
@@ -280,7 +281,7 @@ AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
     Resources::CreateResource(asset, "editor",
         [this, asset, type](Resources::ResourceId id)
         {
-            AssetEditorItem& item = previewerState.items.Emplace();
+            AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;
             item.assetType = type;
             item.res = id;
