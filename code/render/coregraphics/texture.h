@@ -183,6 +183,8 @@ const TextureId CreateTexture(const TextureCreateInfo& info);
 /// destroy vertex buffer
 void DestroyTexture(const TextureId id);
 
+/// Get name of texture
+Util::StringAtom TextureGetName(const TextureId id);
 /// get texture dimensions
 TextureDimensions TextureGetDimensions(const TextureId id);
 /// get texture relative dimensions
@@ -251,6 +253,11 @@ TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);
 /// Set highest LOD on texture
 void TextureSetHighestLod(const CoreGraphics::TextureId id, uint lod);
 
+#ifdef WITH_NEBULA_EDITOR
+/// Get all created textures
+const Util::Array<CoreGraphics::TextureId>& TextureGetCreated();
+extern Util::Array<CoreGraphics::TextureId> TrackedTextures;
+#endif
 
 //------------------------------------------------------------------------------
 /**

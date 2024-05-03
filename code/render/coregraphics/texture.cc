@@ -23,6 +23,9 @@ TextureId Red2D;
 TextureId Green2D;
 TextureId Blue2D;
 
+#ifdef WITH_NEBULA_EDITOR
+Util::Array<CoreGraphics::TextureId> TrackedTextures;
+#endif
 //------------------------------------------------------------------------------
 /**
 */
@@ -196,5 +199,16 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     }
     return rt;
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<CoreGraphics::TextureId>&
+TextureGetCreated()
+{
+    return TrackedTextures;
+}
+
 
 } // namespace CoreGraphics
