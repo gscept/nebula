@@ -681,7 +681,7 @@
                                             }
                                         },
                                         {
-                                            "batch": {
+                                            "subgraph": {
                                                 "name": "Im3D"
                                             }
                                         }
@@ -741,11 +741,6 @@
                                         {
                                             "subgraph": {
                                                 "name": "ImGUI"
-                                            }
-                                        },
-                                        {
-                                            "subgraph": {
-                                                "name": "Im3D"
                                             }
                                         },
                                         {
