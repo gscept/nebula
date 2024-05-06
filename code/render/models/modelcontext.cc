@@ -448,7 +448,7 @@ ModelContext::GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::Stri
 /**
 */
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const CoreGraphics::BatchGroup::Code batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplates::BatchGroup batch)
 {
     // This is a bit hacky, but we really need to only do this once per node and batch.
     // What we do is that we get the batch index from the batch lookup map, and the variable indexes
@@ -478,7 +478,7 @@ ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, 
 /**
 */
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplates::BatchGroup batch)
 {
     return SetupMaterialInstanceContext(id, 0, batch);
 }
