@@ -12,22 +12,21 @@
 #include "ids/id.h"
 #include "ids/idallocator.h"
 #include "resources/resourceid.h"
-#include "coregraphics/batchgroup.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/buffer.h"
 #include "materialvariant.h"
 
+
 namespace MaterialTemplates
 {
 struct Entry;
+enum class BatchGroup;
 };
 
 namespace Materials
 {
 
-struct ShaderConfigBatchConstant;
 struct ShaderConfigBatchTexture;
-
 RESOURCE_ID_TYPE(MaterialId);
 ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialGeneration, material); // 32 bits instance, 24 bits material, 8 bits type
 
@@ -66,7 +65,7 @@ void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, Ind
 /// Get material shader config
 const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
 /// Get batch index from code
-const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code);
+const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplates::BatchGroup batch);
 /// Get sort code
 uint64_t MaterialGetSortCode(const MaterialId mat);
 

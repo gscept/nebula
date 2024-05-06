@@ -310,9 +310,9 @@ MaterialGetTemplate(const MaterialId mat)
 /**
 */
 const Materials::BatchIndex
-MaterialGetBatchIndex(const MaterialId mat, const CoreGraphics::BatchGroup::Code code)
+MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplates::BatchGroup batch)
 {
-    return materialAllocator.Get<Material_Template>(mat.id)->passes[code]->index;
+    return materialAllocator.Get<Material_Template>(mat.id)->passes[batch]->index;
 }
 
 //------------------------------------------------------------------------------

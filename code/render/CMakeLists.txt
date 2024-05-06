@@ -124,8 +124,6 @@ ENDIF()
                 antialiasquality.cc
                 antialiasquality.h
                 barrier.h
-                batchgroup.cc
-                batchgroup.h
                 buffer.cc
                 buffer.h
                 gpubuffertypes.h
