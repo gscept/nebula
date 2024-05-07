@@ -28,6 +28,7 @@
 namespace Graphics
 {
     class View;
+    class GraphicsServer;
 }
 
 namespace CoreGraphics
