@@ -124,7 +124,7 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
-        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri, this->wnd);
         gfxServer->SetCurrentView(this->view);
         this->stage = gfxServer->CreateStage("stage1", true);
 

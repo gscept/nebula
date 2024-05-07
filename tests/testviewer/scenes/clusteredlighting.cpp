@@ -10,6 +10,8 @@
 #include "particles/particlecontext.h"
 #include "characters/charactercontext.h"
 
+#include "materials/materialtemplates.h"
+
 using namespace Timing;
 using namespace Graphics;
 using namespace Visibility;
@@ -226,7 +228,6 @@ void OpenScene()
     static const int NumModels = 20;
     int modelIndex = 0;
     materialContexts.Resize((NumModels * 2) * (NumModels * 2));
-    CoreGraphics::BatchGroup::Code code = CoreGraphics::BatchGroup::FromName("FlatGeometryLit");
 
     for (IndexT i = -NumModels; i < NumModels; i++)
     {
@@ -243,12 +244,12 @@ void OpenScene()
             const float timeOffset = Math::rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, entityIndex, modelIndex, i, j, skeletonRes, animationRes, code]()
+            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, entityIndex, modelIndex, i, j, skeletonRes, animationRes]()
                 {
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
 
                     uint materialIndex = i + (j + NumModels) * (NumModels * 2);
-                    entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, code);
+                    entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, MaterialTemplates::BatchGroup::FlatGeometryLit);
 
                     Graphics::RegisterEntity<Characters::CharacterContext, ObservableContext>(ent);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
