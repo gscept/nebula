@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "coregraphics/batchgroup.h"
+#include "materials/materialtemplates.h"
 #include "graphics/graphicsentity.h"
 namespace Frame
 {
@@ -24,16 +24,16 @@ public:
     {
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
-        CoreGraphics::BatchGroup::Code batch;
+        MaterialTemplates::BatchGroup batch;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
-    CoreGraphics::BatchGroup::Code batch;
+    MaterialTemplates::BatchGroup batch;
 
     /// Do the actual drawing
-    static void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex);
+    static void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex);
     /// Do the actual drawing, but with duplicate instances
-    static void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex);
+    static void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex);
 };
 
 } // namespace Frame2

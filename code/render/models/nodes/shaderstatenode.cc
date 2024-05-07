@@ -124,11 +124,7 @@ ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, Index
 
     // Set per-draw resource tables
     IndexT prevOffset = 0;
-    for (IndexT i = 0; i < this->numTables; i++)
-    {
-        CoreGraphics::CmdSetResourceTable(cmdBuf, this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], this->offsets[prevOffset]);
-        prevOffset = this->numOffsets[i];
-    }
+    CoreGraphics::CmdSetResourceTable(cmdBuf, this->table, this->slot, CoreGraphics::GraphicsPipeline, this->numOffsets, this->offsets);
 }
 
 } // namespace Models

@@ -15,7 +15,6 @@
 #include "framesync/framesynctimer.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
-#include "coregraphics/batchgroup.h"
 #include "stage.h"
 #include "graphicsentity.h"
 #include "coregraphics/graphicsdevice.h"
@@ -123,7 +122,6 @@ public:
     void OnWindowResized(CoreGraphics::WindowId wndId);
 
 private:
-    friend class CoreGraphics::BatchGroup;
 
     Ids::IdGenerationPool entityPool;
 
@@ -136,7 +134,6 @@ private:
 
     Util::Array<Ptr<Stage>> stages;
     Util::Array<Ptr<View>> views;
-    CoreGraphics::BatchGroup batchGroupRegistry;
     Ptr<View> currentView;
 
     Ptr<CoreGraphics::DisplayDevice> displayDevice;

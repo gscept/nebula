@@ -57,8 +57,8 @@ struct
     CoreGraphics::TextureId terrainShadowMap = CoreGraphics::InvalidTextureId;
     uint terrainShadowMapSize;
     uint terrainSize;
-    CoreGraphics::BatchGroup::Code spotlightsBatchCode;
-    CoreGraphics::BatchGroup::Code globalLightsBatchCode;
+    MaterialTemplates::BatchGroup spotlightsBatchCode;
+    MaterialTemplates::BatchGroup globalLightsBatchCode;
 
     CSMUtil csmUtil{ Shared::NUM_CASCADES };
 
@@ -153,8 +153,8 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 #endif
 
     // create shadow mapping frame script
-    lightServerState.spotlightsBatchCode = CoreGraphics::BatchGroup::FromName("SpotLightShadow");
-    lightServerState.globalLightsBatchCode = CoreGraphics::BatchGroup::FromName("GlobalShadow");
+    lightServerState.spotlightsBatchCode = MaterialTemplates::BatchGroupFromName("SpotLightShadow");
+    lightServerState.globalLightsBatchCode = MaterialTemplates::BatchGroupFromName("GlobalShadow");
     lightServerState.globalLightShadowMap = frameScript->GetTexture("SunShadowDepth");
     lightServerState.localLightShadows = frameScript->GetTexture("LocalLightShadow");
     if (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId)
@@ -580,7 +580,6 @@ LightContext::SetupAreaLight(
 
     const MaterialTemplates::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
     void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
-    const Materials::ShaderConfigBatchConstant* batchConstant = &MaterialTemplates::base::__AreaLight.__LightMeshes_EmissiveColor;
 
     MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)StackAlloc(matTemplate->bufferSize);
     (color * intensity).store(data->EmissiveColor);
