@@ -27,7 +27,7 @@ namespace Net
 {
 typedef Win32::Win32IpAddress IpAddress;
 }
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "net/posix/posixipaddress.h"
 namespace Net
 {

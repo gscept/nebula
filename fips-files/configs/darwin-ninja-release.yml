@@ -1,7 +1,7 @@
 ---
 platform: osx
-generator: Xcode 
-build_tool: cmake
+generator: Ninja 
+build_tool: ninja
 build_type: Release
 defines:
     N_USE_MOLTEN_VK: ON

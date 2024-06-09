@@ -18,7 +18,7 @@ namespace Timing
 class Timer : public Win32::Win32Timer
 { };
 }
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "timing/posix/posixtimer.h"
 namespace Timing
 {

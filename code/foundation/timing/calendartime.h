@@ -19,7 +19,7 @@ namespace Timing
 class CalendarTime : public Win32::Win32CalendarTime
 { };
 }
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "timing/posix/posixcalendartime.h"
 namespace Timing
 {

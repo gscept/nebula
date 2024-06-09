@@ -16,6 +16,7 @@
 #include "core/debug.h"
 #include "threading/interlocked.h"
 #include "memory/posix/posixmemoryconfig.h"
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 
@@ -26,6 +27,16 @@ extern int volatile TotalAllocCount;
 extern size_t volatile TotalAllocSize;
 extern int volatile HeapTypeAllocCount[NumHeapTypes];
 extern size_t volatile HeapTypeAllocSize[NumHeapTypes];
+#endif
+
+#if __APPLE__
+inline void
+explicit_bzero(void *buf, size_t len)
+{
+    volatile char *p = (volatile char*)buf;
+
+    while (len--) *p++ = 0;
+}
 #endif
 
 #define StackAlloc(size) alloca(size);
