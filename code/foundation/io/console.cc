@@ -8,9 +8,7 @@
 #include "threading/thread.h"
 #if __WIN32__
 #include "io/win32/win32consolehandler.h"
-#elif __OSX__
-#include "io/osx/osxconsolehandler.h"
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "io/posix/posixconsolehandler.h"
 #endif
 
@@ -59,9 +57,7 @@ Console::Open()
     // create default console handlers
     #if __WIN32__
     Ptr<ConsoleHandler> consoleHandler = Win32::Win32ConsoleHandler::Create();
-    #elif __OSX__
-    Ptr<ConsoleHandler> consoleHandler = OSX::OSXConsoleHandler::Create();
-    #elif __linux__
+    #elif __linux__ || __APPLE__
     Ptr<ConsoleHandler> consoleHandler = Posix::PosixConsoleHandler::Create();
     #endif
     this->AttachHandler(consoleHandler);    

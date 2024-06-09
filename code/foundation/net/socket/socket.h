@@ -18,7 +18,7 @@ class Socket : public Win32::Win32Socket
     __DeclareClass(Socket);
 };
 }
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "net/posix/posixsocket.h"
 namespace Net
 {

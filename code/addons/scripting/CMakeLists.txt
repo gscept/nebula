@@ -19,7 +19,7 @@ fips_dir(python)
     )
 nebula_end_module()
 
-if(NOT FIPS_LINUX)
+if(NOT FIPS_LINUX AND NOT FIPS_MACOS)
     get_filename_component(PY_DBG_PATH ${Python_LIBRARY_DEBUG} DIRECTORY)
     get_filename_component(PY_OPT_PATH ${Python_LIBRARY_RELEASE} DIRECTORY)
     target_link_options(scripting PUBLIC "/WHOLEARCHIVE:scripting")
