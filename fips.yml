@@ -12,7 +12,7 @@ imports:
         group: misc
     fips-cjson:
         git: https://github.com/floooh/fips-cjson.git
-        cond: "FIPS_LINUX"
+        cond: "FIPS_LINUX OR FIPS_OSX"
         group: misc
     fips-imgui:
         git: https://github.com/gscept/fips-imgui.git
@@ -44,6 +44,9 @@ imports:
         git: https://github.com/gscept/fips-compressonator.git
     fips-ultralight:
         git: https://github.com/gscept/fips-ultralight.git
+    sse2neon:
+        git: https://github.com/DLTcollab/sse2neon.git
+        cond: "FIPS_MACOS"
 exports:
     header-dirs :
         - .

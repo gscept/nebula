@@ -32,6 +32,7 @@ typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
 typedef unsigned char  ubyte;
+typedef signed char byte;
 
 typedef uint64_t uint64;
 typedef int64_t int64;
@@ -142,7 +143,7 @@ OnlyBits(const FLAGS flags, const BITS bits)
 #define BITS_TO_BYTES(x) (((x)+7)>>3)
 #define BYTES_TO_BITS(x) ((x)<<3)
 
-#if (__OSX__ || __linux__)
+#if (__APPLE__ || __linux__)
 inline ushort                _byteswap_ushort(ushort x)              { return ((x>>8) | (x<<8)); }
 inline ulong                 _byteswap_ulong(ulong x)                { return ((x&0xff000000)>>24) | ((x&0x00ff0000)>>8) | ((x&0x00000ff00)<<8) | ((x&0x000000ff)<<24); }
 inline unsigned long long    _byteswap_uint64(unsigned long long x)  { return ((((unsigned long long)_byteswap_ulong((ulong)(x & 0xffffffff))) << 32) | ((unsigned long long)_byteswap_ulong((ulong)(x >> 32)))); }
@@ -154,24 +155,19 @@ typedef unsigned char byte;
 #if __WIN32__
 #define n_stricmp stricmp
 #define n_snprintf StringCchPrintf
-#elif (__OSX__ || __APPLE__ || __linux__ )
+#elif __APPLE__ || __linux__
 #define n_stricmp strcasecmp
 #define n_snprintf sprintf
 #else
 #error "Unsupported platform!"
 #endif
 
-#if __MAYA__
-#define ThreadLocal
-#elif __WIN32__
+#if __WIN32__
 #define ThreadLocal __declspec(thread)
 #elif __linux__
 #define ThreadLocal __thread
-#if (__OSX__ || __APPLE__)
-// thread locals are not allowed on osx, so we define thread local as nothing to prevent problems
-#undef ThreadLocal
-#define ThreadLocal
-#endif
+#elif __APPLE__
+#define ThreadLocal thread_local
 #else
 #error "Unsupported platform!"
 #endif

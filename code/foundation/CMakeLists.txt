@@ -2,8 +2,12 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
-if(FIPS_LINUX)
+if(FIPS_LINUX OR FIPS_OSX)
     FIND_PACKAGE(CURL)
+endif()
+
+if(FIPS_OSX)
+find_library(COCOA_LIBRARY Cocoa)
 endif()
 
 if (EXISTS "${NROOT}/syswork/export.zip")
@@ -15,8 +19,14 @@ endif()
 nebula_begin_module(foundation)
     
     target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h)
-    if(FIPS_LINUX)
-        fips_libs(uuid cjson stdc++fs)
+    if(FIPS_LINUX OR FIPS_OSX)
+        fips_libs(cjson)
+        if (FIPS_LINUX)
+            fips_libs(uuid stdc++fs)
+        endif()
+        if (FIPS_OSX)
+            fips_libs(${COCOA_LIBRARY})
+        endif()
     endif()
     target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml)
@@ -512,12 +522,12 @@ nebula_begin_module(foundation)
             jobs2.cc
             jobs2.h
         )
-        fips_dir(fibers)
-        fips_files(
-            fiber.h
-            fibers.cc
-            fibers.h
-        )
+        #fips_dir(fibers)
+        #fips_files(
+        #    fiber.h
+        #    fibers.cc
+        #    fibers.h
+        #)
         fips_dir(framesync)
         fips_files(
             framesynctimer.cc
@@ -598,10 +608,10 @@ nebula_begin_module(foundation)
                 win32/win32systeminfo.cc
                 win32/win32systeminfo.h
             )
-        fips_dir(fibers GROUP "fibers/win32")
-            fips_files(
-                win32/win32fiber.cc
-            )
+        #fips_dir(fibers GROUP "fibers/win32")
+        #    fips_files(
+        #        win32/win32fiber.cc
+        #    )
         fips_dir(.)
     endif()
     if (FIPS_POSIX)
@@ -610,7 +620,7 @@ nebula_begin_module(foundation)
             core/posix/posixsingleton.h
             core/posix/posixsysfunc.cc
             core/posix/posixsysfunc.h
-            fibers/posix/posixfiber.cc
+            #fibers/posix/posixfiber.cc
             memory/posix/posixmemory.h
             memory/posix/posixheap.cc
             memory/posix/posixheap.h
@@ -668,10 +678,22 @@ nebula_begin_module(foundation)
     elseif(FIPS_LINUX)
         fips_dir(threading/linux GROUP "threading/linux")
         fips_files(
-            linuxevent.h
+            posixevent.h
             linuxthread.cc
             linuxthread.h
         )
+        fips_dir(threading/gcc GROUP "threading/gcc")
+        fips_files(gccinterlocked.cc)
+    elseif(FIPS_MACOS)
+        fips_dir(threading/posix GROUP "threading/posix")
+            fips_files(
+                posixbarrier.h
+                posixcriticalsection.h
+                posixevent.h
+
+                posixthread.cc
+                posixthread.h
+            )
         fips_dir(threading/gcc GROUP "threading/gcc")
         fips_files(gccinterlocked.cc)
     else()

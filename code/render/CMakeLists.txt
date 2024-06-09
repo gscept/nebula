@@ -4,7 +4,7 @@
 
 FIND_PROGRAM(SHADERC
        NAMES anyfxcompiler.exe anyfxcompiler
-       PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
+       PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-macos
        NO_DEFAULT_PATH
        )
 

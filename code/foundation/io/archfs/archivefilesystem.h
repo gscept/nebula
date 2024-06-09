@@ -9,7 +9,7 @@
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#if __WIN32__ || __linux__
+#if __WIN32__ || __linux__ || __APPLE__
 #include "io/zipfs/zipfilesystem.h"
 namespace IO
 {
