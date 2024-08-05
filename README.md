@@ -6,7 +6,7 @@ Get in contact on Discord! https://discord.gg/wuYPxUF
 Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 
 ## Requirements
-1. OS: Windows and Linux(WIP)
+1. OS: Windows and Linux (WIP)
 2. Compiler with support for C++20.
 3. GPU and drivers supporting Vulkan 1.2+
 4. [CMake 3.21+](https://cmake.org/download/)
