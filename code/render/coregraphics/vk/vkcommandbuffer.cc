@@ -733,7 +733,7 @@ CmdBarrier(
             VkTypes::AsVkAccessFlags(toStage)
         };
     }
-   
+
     // Insert barrier
     vkCmdPipelineBarrier(CmdBufferGetVk(id),
         fromFlags,
@@ -1316,35 +1316,29 @@ CmdCopy(
 void
 CmdBlit(
     const CmdBufferId id
-    , const CoreGraphics::TextureId from
-    , const Math::rectangle<SizeT>& fromRegion
-    , const CoreGraphics::ImageBits fromBits
-    , IndexT fromMip
-    , IndexT fromLayer
-    , const CoreGraphics::TextureId to
-    , const Math::rectangle<SizeT>& toRegion
-    , const CoreGraphics::ImageBits toBits
-    , IndexT toMip
-    , IndexT toLayer
+    , const CoreGraphics::TextureId fromTexture
+    , const CoreGraphics::TextureCopy& from
+    , const CoreGraphics::TextureId toTexture
+    , const CoreGraphics::TextureCopy& to
 )
 {
-    n_assert(from != CoreGraphics::InvalidTextureId && to != CoreGraphics::InvalidTextureId);
-    n_assert(fromBits != CoreGraphics::ImageBits::Auto && toBits != CoreGraphics::ImageBits::Auto);
+    n_assert(fromTexture != CoreGraphics::InvalidTextureId && toTexture != CoreGraphics::InvalidTextureId);
+    n_assert(from.bits != CoreGraphics::ImageBits::Auto && to.bits != CoreGraphics::ImageBits::Auto);
 
     VkImageBlit blit;
-    blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
-    blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
-    blit.srcSubresource = { VkTypes::AsVkImageAspectFlags(fromBits), (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
-    blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
-    blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
-    blit.dstSubresource = { VkTypes::AsVkImageAspectFlags(toBits), (uint32_t)toMip, (uint32_t)toLayer, 1 };
+    blit.srcOffsets[0] = { from.region.left, from.region.top, 0 };
+    blit.srcOffsets[1] = { from.region.right, from.region.bottom, 1 };
+    blit.srcSubresource = { VkTypes::AsVkImageAspectFlags(from.bits), (uint32_t)from.mip, (uint32_t)from.layer, 1 };
+    blit.dstOffsets[0] = { to.region.left, to.region.top, 0 };
+    blit.dstOffsets[1] = { to.region.right, to.region.bottom, 1 };
+    blit.dstSubresource = { VkTypes::AsVkImageAspectFlags(to.bits), (uint32_t)to.mip, (uint32_t)to.layer, 1 };
 
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     vkCmdBlitImage(
         cmdBuf
-        , TextureGetVkImage(from)
+        , TextureGetVkImage(fromTexture)
         , VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-        , TextureGetVkImage(to)
+        , TextureGetVkImage(toTexture)
         , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
         , 1
         , &blit

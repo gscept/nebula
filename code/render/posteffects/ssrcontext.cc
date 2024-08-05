@@ -14,6 +14,8 @@
 #include "system_shaders/ssr_cs.h"
 #include "system_shaders/ssr_resolve_cs.h"
 
+#include "frame/default.h"
+
 namespace PostEffects
 {
 __ImplementPluginContext(PostEffects::SSRContext);
@@ -30,7 +32,6 @@ struct
     CoreGraphics::ShaderProgramId resolveProgram;
 
     CoreGraphics::TextureId traceBuffer;
-    CoreGraphics::TextureId reflectionBuffer;
 } ssrState;
 
 //------------------------------------------------------------------------------
@@ -78,7 +79,7 @@ SSRContext::Create()
     Frame::AddCallback("SSR-Resolve", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
         {
             N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
-            TextureDimensions dims = TextureGetDimensions(ssrState.reflectionBuffer);
+            TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_ReflectionBuffer());
 
             CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.resolveProgram);
             CoreGraphics::CmdSetResourceTable(cmdBuf, ssrState.ssrResolveTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
@@ -114,8 +115,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     using namespace CoreGraphics;
-    ssrState.traceBuffer = script->GetTexture("SSRTraceBuffer");
-    ssrState.reflectionBuffer = script->GetTexture("ReflectionBuffer");
+    ssrState.traceBuffer = CoreGraphics::White2D; // script->GetTexture("SSRTraceBuffer");
 
     // create trace shader
     ssrState.traceShader = ShaderGet("shd:ssr_cs.fxb");
@@ -135,7 +135,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     for (IndexT i = 0; i < numFrames; ++i)
     {
         ssrState.ssrResolveTables[i] = ShaderCreateResourceTable(ssrState.resolveShader, NEBULA_BATCH_GROUP, numFrames);
-        ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { ssrState.reflectionBuffer, SsrResolveCs::Table_Batch::ReflectionBuffer_SLOT, 0, InvalidSamplerId });
+        ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { FrameScript_default::Texture_ReflectionBuffer(), SsrResolveCs::Table_Batch::ReflectionBuffer_SLOT, 0, InvalidSamplerId });
         ResourceTableSetTexture(ssrState.ssrResolveTables[i], { ssrState.traceBuffer, SsrResolveCs::Table_Batch::TraceBuffer_SLOT, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrResolveTables[i]);
     }

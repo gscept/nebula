@@ -56,22 +56,10 @@ FrameCopy::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     // get dimensions
     CoreGraphics::TextureDimensions fromDims = TextureGetDimensions(this->from);
     CoreGraphics::TextureDimensions toDims = TextureGetDimensions(this->to);
-
-    // setup regions
-    Math::rectangle<SizeT> fromRegion(0, 0, fromDims.width, fromDims.height);
-    Math::rectangle<SizeT> toRegion(0, 0, toDims.width, toDims.height);
-
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 
-    CoreGraphics::TextureCopy from, to;
-    from.region = fromRegion;
-    from.mip = 0;
-    from.layer = 0;
-    from.bits = this->fromBits;
-    to.region = toRegion;
-    to.mip = 0;
-    to.layer = 0;
-    to.bits = this->toBits;
+    CoreGraphics::TextureCopy from{ .region = { 0, 0, fromDims.width, fromDims.height }, .mip = 0, .layer = 0, .bits = this->fromBits };
+    CoreGraphics::TextureCopy to{ .region = { 0, 0, toDims.width, toDims.height }, .mip = 0, .layer = 0, .bits = this->toBits };
     CoreGraphics::CmdCopy(cmdBuf, this->from, { from }, this->to, { to });
 }
 

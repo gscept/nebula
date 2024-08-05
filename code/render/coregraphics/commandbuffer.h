@@ -103,8 +103,8 @@ ID_24_8_TYPE(CmdBufferPoolId);
 struct CmdBufferPoolCreateInfo
 {
     CoreGraphics::QueueType queue;
-    bool resetable : 1;     // allow the buffer to be reset
-    bool shortlived : 1;    // the buffer won't last long until it's destroyed or reset
+    bool resetable : 1;     // Allow buffers created from this pool to be resetable
+    bool shortlived : 1;    // Hint if the buffers allocated from this pool will be short lived
 };
 
 /// create new command buffer pool
@@ -349,16 +349,10 @@ void CmdCopy(
 /// Blit textures
 void CmdBlit(
     const CmdBufferId id
-    , const CoreGraphics::TextureId from
-    , const Math::rectangle<SizeT>& fromRegion
-    , const CoreGraphics::ImageBits fromBits
-    , IndexT fromMip
-    , IndexT fromLayer
-    , const CoreGraphics::TextureId to
-    , const Math::rectangle<SizeT>& toRegion
-    , const CoreGraphics::ImageBits toBits
-    , IndexT toMip
-    , IndexT toLayer
+    , const CoreGraphics::TextureId fromTexture
+    , const CoreGraphics::TextureCopy& from
+    , const CoreGraphics::TextureId toTexture
+    , const CoreGraphics::TextureCopy& to
 );
 
 /// Set viewport array

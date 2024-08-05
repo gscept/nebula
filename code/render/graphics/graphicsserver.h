@@ -22,7 +22,6 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/textrenderer.h"
-#include "frame/frameserver.h"
 #include "debug/debughandler.h"
 
 namespace Graphics
@@ -67,7 +66,7 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript, const CoreGraphics::WindowId window = CoreGraphics::InvalidWindowId);
+    Ptr<View> CreateView(const Util::StringAtom& name, void(*)(const Math::rectangle<int>&, IndexT, IndexT), const CoreGraphics::WindowId window = CoreGraphics::InvalidWindowId);
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
     /// discard view
@@ -141,7 +140,6 @@ private:
     Ptr<CoreGraphics::ShaderServer> shaderServer;
     Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
     Ptr<CoreGraphics::TextRenderer> textRenderer;
-    Ptr<Frame::FrameServer> frameServer;
 
     Util::Array<ViewIndependentCall> preLogicCalls, postLogicCalls;
     Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;

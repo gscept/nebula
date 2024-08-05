@@ -249,7 +249,10 @@ SetupTexture(const TextureId id)
     extents.height = loadInfo.height;
     extents.depth = loadInfo.depth;
 
-    bool isDepthFormat = VkTypes::IsDepthFormat(loadInfo.format);
+    CoreGraphics::ImageBits bits = CoreGraphics::ImageBits::None;
+
+    bits |= PixelFormat::IsDepthFormat(loadInfo.format) ? CoreGraphics::ImageBits::DepthBits : CoreGraphics::ImageBits::None;
+    bits |= PixelFormat::IsStencilFormat(loadInfo.format) ? CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::None;
 
     // setup usage flags, by default, all textures can be sampled from
     // we automatically assign VK_IMAGE_USAGE_SAMPLED_BIT to sampled images, render textures and readwrite textures, but not for transfer textures
@@ -265,7 +268,7 @@ SetupTexture(const TextureId id)
     VkImageUsageFlags usage = Util::BitmaskConvert(loadInfo.usage, Lookup);
 
     if (loadInfo.usage & TextureUsage::RenderTexture)
-        usage |= (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+        usage |= (AnyBits(bits, ImageBits::DepthBits | ImageBits::StencilBits) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
     VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
     VkImageViewType viewType = VkTypes::AsVkImageViewType(runtimeInfo.type);
@@ -311,7 +314,7 @@ SetupTexture(const TextureId id)
 
     // Setup subresource range
     VkImageSubresourceRange viewRange;
-    viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
+    viewRange.aspectMask = AllBits(bits, ImageBits::DepthBits) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
     viewRange.baseMipLevel = loadInfo.minMip;
     viewRange.levelCount = loadInfo.mips - loadInfo.minMip;
     viewRange.baseArrayLayer = 0;
@@ -403,7 +406,7 @@ SetupTexture(const TextureId id)
     // if used for render, find appropriate renderable format
     if (loadInfo.usage & TextureUsage::RenderTexture)
     {
-        if (!isDepthFormat)
+        if (bits == ImageBits::None)
         {
             VkFormatProperties formatProps;
             vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), vkformat, &formatProps);
@@ -434,7 +437,7 @@ SetupTexture(const TextureId id)
     n_assert(stat == VK_SUCCESS);
 
     // setup stencil image
-    if (isDepthFormat)
+    if (AllBits(bits, ImageBits::StencilBits))
     {
         // setup stencil extension
         TextureViewCreateInfo viewCreate;
@@ -456,7 +459,7 @@ SetupTexture(const TextureId id)
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
     CoreGraphics::TextureSubresourceInfo subres(
-        isDepthFormat ? CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::ColorBits
+        bits != ImageBits::None ? bits : CoreGraphics::ImageBits::ColorBits
         , viewRange.baseMipLevel
         , viewRange.levelCount
         , viewRange.baseArrayLayer
@@ -478,7 +481,7 @@ SetupTexture(const TextureId id)
                 }
             });
 
-        if (!isDepthFormat)
+        if (bits == ImageBits::None)
         {
             // Clear color
             TextureClearColor(cmdBuf
@@ -541,12 +544,12 @@ SetupTexture(const TextureId id)
     if (loadInfo.bindless)
     {
         if (runtimeInfo.bind == 0xFFFFFFFF)
-            runtimeInfo.bind = Graphics::RegisterTexture(id, runtimeInfo.type, isDepthFormat);
+            runtimeInfo.bind = Graphics::RegisterTexture(id, runtimeInfo.type, AllBits(bits, ImageBits::DepthBits));
         else
-            Graphics::ReregisterTexture(id, runtimeInfo.type, runtimeInfo.bind, isDepthFormat);
+            Graphics::ReregisterTexture(id, runtimeInfo.type, runtimeInfo.bind, AllBits(bits, ImageBits::DepthBits));
 
         // if this is a depth-stencil texture, also register the stencil
-        if (isDepthFormat)
+        if (AllBits(bits, ImageBits::StencilBits))
         {
             __Lock(textureStencilExtensionAllocator, loadInfo.stencilExtension);
             IndexT& bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);

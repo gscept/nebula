@@ -24,7 +24,6 @@ bool
 GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 {
     Ptr<Graphics::GraphicsServer> graphicsServer = Graphics::GraphicsServer::Instance();
-    Ptr<Frame::FrameServer> frameServer = Frame::FrameServer::Instance();
 #if __VULKAN__
     Vulkan::VkPipelineDatabase* pipelineDatabase = Vulkan::VkPipelineDatabase::Instance();
 #endif
@@ -35,14 +34,8 @@ GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
             // Invalidate pipelines
             pipelineDatabase->RecreatePipelines();
 
-            // Trigger a framescript resize
-            frameServer->OnWindowResize();
-
             // Run all contexts resize calls
             graphicsServer->OnWindowResized(displayEvent.GetWindowId());
-
-            // Finally, tell all framescripts to rebuild
-            frameServer->RebuildScripts();
 
             return true;
         }

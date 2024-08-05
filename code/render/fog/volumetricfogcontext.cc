@@ -15,6 +15,8 @@
 
 #include "system_shaders/volumefog.h"
 #include "system_shaders/blur/blur_2d_rgba16f_cs.h"
+
+#include "frame/default.h"
 namespace Fog
 {
 
@@ -34,10 +36,6 @@ struct
     CoreGraphics::BufferSet stagingClusterFogLists;
     CoreGraphics::BufferId clusterFogLists;
 
-    CoreGraphics::TextureId fogVolumeTexture0;
-    CoreGraphics::TextureId fogVolumeTexture1;
-    CoreGraphics::TextureId zBuffer;
-
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
     float turbidity;
     Math::vec3 color;
@@ -45,8 +43,6 @@ struct
     // these are used to update the light clustering
     Volumefog::FogBox fogBoxes[128];
     Volumefog::FogSphere fogSpheres[128];
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 5> frameOpAllocator;
 
     bool showUI = false;
 } fogState;
@@ -79,7 +75,7 @@ VolumetricFogContext::~VolumetricFogContext()
 /**
 */
 void 
-VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
+VolumetricFogContext::Create()
 {
     __CreateContext();
 
@@ -140,51 +136,17 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     fogState.turbidity = 0.1f;
     fogState.color = Math::vec3(1);
 
-    fogState.fogVolumeTexture0 = frameScript->GetTexture("VolumetricFogBuffer0");
-    fogState.fogVolumeTexture1 = frameScript->GetTexture("VolumetricFogBuffer1");
-    fogState.zBuffer = frameScript->GetTexture("ZBuffer");
-
-     // The first pass is to copy decals over
-    Frame::FrameCode* fogCopy = fogState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    fogCopy->domain = CoreGraphics::BarrierDomain::Global;
-    fogCopy->queue = CoreGraphics::QueueType::ComputeQueueType;
-    fogCopy->bufferDeps.Add(fogState.clusterFogLists,
-                                {
-                                    "Decals List"
-                                    , CoreGraphics::PipelineStage::TransferWrite
-                                    , CoreGraphics::BufferSubresourceInfo()
-                                });
-    fogCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
         CmdCopy(cmdBuf, fogState.stagingClusterFogLists.buffers[bufferIndex], { from }, fogState.clusterFogLists, { to }, sizeof(Volumefog::FogLists));
-    };
+    }, {
+        { FrameScript_default::BufferIndex::ClusterFogList, CoreGraphics::PipelineStage::TransferWrite }
+    });
 
-    // The second pass is to cull the decals based on screen space AABBs
-    Frame::FrameCode* fogCull = fogState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    fogCull->domain = CoreGraphics::BarrierDomain::Global;
-    fogCull->queue = CoreGraphics::QueueType::ComputeQueueType;
-    fogCull->bufferDeps.Add(fogState.clusterFogLists,
-                            {
-                                "Fog List"
-                                , CoreGraphics::PipelineStage::ComputeShaderRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    fogCull->bufferDeps.Add(fogState.clusterFogIndexLists,
-                            {
-                                "Fog Index Lists"
-                                , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    fogCull->bufferDepRefs.Add(Clustering::ClusterContext::GetClusterBuffer(),
-                            {
-                                "Cluster AABB"
-                                , CoreGraphics::PipelineStage::ComputeShaderRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    fogCull->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, fogState.cullProgram);
 
@@ -192,30 +154,13 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
 
         CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
-    };
-    Frame::AddSubgraph("Fog Cull", { fogCopy, fogCull });
+    }, {
+        { FrameScript_default::BufferIndex::ClusterFogList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
+    });
 
-    Frame::FrameCode* fogCompute = fogState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    fogCompute->domain = CoreGraphics::BarrierDomain::Global;
-    fogCompute->bufferDeps.Add(fogState.clusterFogIndexLists,
-                                {
-                                    "Fog Index Lists"
-                                    , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::BufferSubresourceInfo()
-                                });
-    fogCompute->textureDeps.Add(fogState.fogVolumeTexture0,
-                                {
-                                    "Fog Volume Texture 0"
-                                    , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::TextureSubresourceInfo::Color(fogState.fogVolumeTexture0)
-                                });
-    fogCompute->textureDeps.Add(fogState.zBuffer,
-                                {
-                                    "ZBuffer"
-                                    , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::TextureSubresourceInfo::DepthStencil(fogState.zBuffer)
-                                });
-    fogCompute->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogCompute_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, fogState.renderProgram);
 
@@ -223,58 +168,40 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         CmdSetResourceTable(cmdBuf, fogState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         // run volumetric fog compute
-        TextureDimensions dims = TextureGetDimensions(fogState.fogVolumeTexture0);
+        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_VolumetricFogBuffer0());
         CmdDispatch(cmdBuf, Math::divandroundup(dims.width, 64), dims.height, 1);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::ClusterFogIndexLists, CoreGraphics::PipelineStage::ComputeShaderRead }
+    }, {
+        { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::TextureIndex::ZBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
+    });
 
-    Frame::FrameCode* blurX = fogState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    blurX->domain = CoreGraphics::BarrierDomain::Global;
-    blurX->textureDeps.Add(fogState.fogVolumeTexture0,
-                                {
-                                    "Fog Volume Texture 0"
-                                    , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::TextureSubresourceInfo::Color(fogState.fogVolumeTexture0)
-                                });
-    blurX->textureDeps.Add(fogState.fogVolumeTexture1,
-                                {
-                                    "Fog Volume Texture 1"
-                                    , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::TextureSubresourceInfo::Color(fogState.fogVolumeTexture1)
-                                });
-    blurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogBlurX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, blurState.blurXProgram);
         CmdSetResourceTable(cmdBuf, blurState.blurXTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         // fog0 -> read, fog1 -> write
-        TextureDimensions dims = TextureGetDimensions(fogState.fogVolumeTexture0);
+        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_VolumetricFogBuffer0());
         CmdDispatch(cmdBuf, Math::divandroundup(dims.width, Blur2dRgba16fCs::BlurTileWidth), dims.height, 1);
-    };
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::TextureIndex::VolumetricFogBuffer1, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* blurY = fogState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    blurY->domain = CoreGraphics::BarrierDomain::Global;
-    blurY->textureDeps.Add(fogState.fogVolumeTexture1,
-                                {
-                                    "Fog Volume Texture 1"
-                                    , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::TextureSubresourceInfo::Color(fogState.fogVolumeTexture1)
-                                });
-    blurY->textureDeps.Add(fogState.fogVolumeTexture0,
-                                {
-                                    "Fog Volume Texture 0"
-                                    , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::TextureSubresourceInfo::Color(fogState.fogVolumeTexture0)
-                                });
-    blurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_FogBlurY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, blurState.blurYProgram);
         CmdSetResourceTable(cmdBuf, blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         // fog0 -> read, fog1 -> write
-        TextureDimensions dims = TextureGetDimensions(fogState.fogVolumeTexture0);
+        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_VolumetricFogBuffer0());
         CmdDispatch(cmdBuf, Math::divandroundup(dims.height, Blur2dRgba16fCs::BlurTileWidth), dims.width, 1);
-    };
-    Frame::AddSubgraph("Fog Compute", { fogCompute, blurX, blurY });
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::TextureIndex::VolumetricFogBuffer1, CoreGraphics::PipelineStage::ComputeShaderRead }
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -454,7 +381,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     fogState.color.store(fogUniforms.GlobalAbsorption);
     fogUniforms.DownscaleFog = 4;
 
-    ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { fogState.fogVolumeTexture0, Volumefog::Table_Batch::Lighting_SLOT, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Volumefog::Table_Batch::Lighting_SLOT, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
 
     // get per-view resource tables
@@ -465,10 +392,10 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables
-    ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { fogState.fogVolumeTexture0, Blur2dRgba16fCs::Table_Batch::InputImageX_SLOT, 0, CoreGraphics::InvalidSamplerId, false }); // ping
-    ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { fogState.fogVolumeTexture1, Blur2dRgba16fCs::Table_Batch::BlurImageX_SLOT, 0, CoreGraphics::InvalidSamplerId }); // pong
-    ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { fogState.fogVolumeTexture1, Blur2dRgba16fCs::Table_Batch::InputImageY_SLOT, 0, CoreGraphics::InvalidSamplerId }); // ping
-    ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { fogState.fogVolumeTexture0, Blur2dRgba16fCs::Table_Batch::BlurImageY_SLOT, 0, CoreGraphics::InvalidSamplerId }); // pong
+    ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::Table_Batch::InputImageX_SLOT, 0, CoreGraphics::InvalidSamplerId, false }); // ping
+    ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::Table_Batch::BlurImageX_SLOT, 0, CoreGraphics::InvalidSamplerId }); // pong
+    ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::Table_Batch::InputImageY_SLOT, 0, CoreGraphics::InvalidSamplerId }); // ping
+    ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::Table_Batch::BlurImageY_SLOT, 0, CoreGraphics::InvalidSamplerId }); // pong
     ResourceTableCommitChanges(blurState.blurXTable[bufferIndex]);
     ResourceTableCommitChanges(blurState.blurYTable[bufferIndex]);
 }

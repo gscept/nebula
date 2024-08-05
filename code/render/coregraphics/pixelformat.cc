@@ -359,10 +359,14 @@ PixelFormat::IsDepthFormat(Code code)
 {
     switch (code)
     {
-    case PixelFormat::D24X8:
-    case PixelFormat::D24S8:
-    case PixelFormat::D32S8:            return true;
-    default: return false;
+        case PixelFormat::D32:
+        case PixelFormat::D16S8:
+        case PixelFormat::D24X8:
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
     }
     return false;
 }
@@ -376,9 +380,34 @@ PixelFormat::IsStencilFormat(Code code)
 {
     switch (code)
     {
+        case PixelFormat::S8:
+        case PixelFormat::D16S8:
         case PixelFormat::D24S8:
-        case PixelFormat::D32S8:            return true;
-        default: return false;
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PixelFormat::IsDepthStencilFormat(Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::S8:
+        case PixelFormat::D32:
+        case PixelFormat::D16S8:
+        case PixelFormat::D24X8:
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
     }
     return false;
 }

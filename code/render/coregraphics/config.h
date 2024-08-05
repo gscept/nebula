@@ -14,6 +14,8 @@
 #include "core/rttimacros.h"
 
 #define NEBULA_WHOLE_BUFFER_SIZE (-1)
+#define NEBULA_ALL_MIPS (-1)
+#define NEBULA_ALL_LAYERS (-1)
 namespace CoreGraphics
 {
 typedef uint ConstantBufferOffset;
@@ -78,14 +80,15 @@ __ImplementEnumBitOperators(CoreGraphics::ShaderVisibility);
 
 enum class ImageBits
 {
-    Auto = 0, // Special value to be used only by framescript
-    ColorBits = (1 << 0),
-    DepthBits = (1 << 1),
-    StencilBits = (1 << 2),
-    MetaBits = (1 << 3),
-    Plane0Bits = (1 << 4),
-    Plane1Bits = (1 << 5),
-    Plane2Bits = (1 << 6)
+    None = 0,
+    Auto = 1, // Special value to be used only by framescript
+    ColorBits = (1 << 1),
+    DepthBits = (1 << 2),
+    StencilBits = (1 << 3),
+    MetaBits = (1 << 4),
+    Plane0Bits = (1 << 5),
+    Plane1Bits = (1 << 6),
+    Plane2Bits = (1 << 7)
 };
 __ImplementEnumBitOperators(CoreGraphics::ImageBits);
 __ImplementEnumComparisonOperators(CoreGraphics::ImageBits);
@@ -279,6 +282,36 @@ PipelineStageFromString(const Util::String& str)
         return PipelineStage::InvalidStage;
     }
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+PipelineStageWrites(const PipelineStage stage)
+{
+    switch (stage)
+    {
+        case PipelineStage::VertexShaderWrite:
+        case PipelineStage::HullShaderWrite:
+        case PipelineStage::DomainShaderWrite:
+        case PipelineStage::GeometryShaderWrite:
+        case PipelineStage::PixelShaderWrite:
+        case PipelineStage::ComputeShaderWrite:
+        case PipelineStage::AllShadersWrite:
+        case PipelineStage::ColorWrite:
+        case PipelineStage::DepthStencilWrite:
+        case PipelineStage::HostWrite:
+        case PipelineStage::MemoryWrite:
+        case PipelineStage::TransferWrite:
+            return true;
+    }
+    return false;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
 
 } // namespace CoreGraphics
 

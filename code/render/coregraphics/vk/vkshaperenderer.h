@@ -83,8 +83,6 @@ private:
     SizeT vertexBufferOffset;
     SizeT indexBufferOffset;
 
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
-
     struct IndexedDraws
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;

@@ -17,6 +17,8 @@
 #include "frame/framesubgraph.h"
 #include "core/cvar.h"
 
+#include "frame/default.h"
+
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Base;
@@ -343,23 +345,20 @@ ImguiContext::Create()
     components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ .name = "ImGui"_atm, .comps = components });
 
-    Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    op->domain = CoreGraphics::BarrierDomain::Pass;
-    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    {
+        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+        if (state.pipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
+        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+    });
+    FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
         ImguiContext::RecoverImGuiContextErrors();
 #endif
         ImguiContext::ImguiDrawFunction(cmdBuf);
-    };
-    op->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
-    {
-        CoreGraphics::InputAssemblyKey inputAssembly { CoreGraphics::PrimitiveTopology::TriangleList, false  };
-        if (state.pipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
-    };
-    Frame::AddSubgraph("ImGUI", { op });
+    });
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
@@ -598,8 +597,6 @@ ImguiContext::Discard()
 
     Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
     state.inputHandler = nullptr;
-
-    state.frameOpAllocator.Release();
 
     CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
     ImGui::DestroyContext();

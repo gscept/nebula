@@ -46,7 +46,7 @@ public:
     virtual ~LightContext();
 
     /// setup light context
-    static void Create(const Ptr<Frame::FrameScript>& frameScript);
+    static void Create();
     /// discard light context
     static void Discard();
 
@@ -136,8 +136,6 @@ public:
     /// Setup terrain shadows
     static void SetupTerrainShadows(const CoreGraphics::TextureId terrainShadowMap, const uint worldSize);
 
-    /// get lighting texture
-    static const CoreGraphics::TextureId GetLightingTexture();
     /// get light index lists buffer
     static const CoreGraphics::BufferId GetLightIndexBuffer();
     /// get light lists buffer

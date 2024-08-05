@@ -22,6 +22,11 @@
 #include "bindlessregistry.h"
 #include "globalconstants.h"
 
+#include "frame/default.h"
+#include "frame/shadows.h"
+
+#include "coregraphics/swapchain.h"
+
 namespace Graphics
 {
 
@@ -195,9 +200,6 @@ GraphicsServer::Open()
         CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
         CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
 
-        this->frameServer = Frame::FrameServer::Create();
-        this->frameServer->Open();
-
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
         
@@ -207,8 +209,6 @@ GraphicsServer::Open()
         // start timer
         if (!this->timer->IsTimeRunning())
             this->timer->StartTime();
-
-
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();
@@ -237,9 +237,6 @@ GraphicsServer::Close()
 
     this->shapeRenderer->Close();
     this->shapeRenderer = nullptr;
-
-    this->frameServer->Close();
-    this->frameServer = nullptr;
 
     this->shaderServer->Close();
     this->shaderServer = nullptr;
@@ -347,18 +344,15 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript, const CoreGraphics::WindowId window)
+GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Math::rectangle<int>&, IndexT, IndexT), const CoreGraphics::WindowId window)
 {
+    n_assert(window != CoreGraphics::InvalidWindowId);
+
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
+    
     Ptr<View> view = View::Create();
-
-    // Make sure the window we pass is made current for the frame script loading to get the correct window
-    CoreGraphics::WindowId prevWindow = CoreGraphics::CurrentWindow;
-    CoreGraphics::WindowMakeCurrent(window);
-    Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript, window);
-    frameScript->window = window;
-    CoreGraphics::WindowMakeCurrent(prevWindow);
-
-    view->script = frameScript;
+    view->SetFrameScript(render);
+    view->SetViewport(Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
     this->views.Append(view);
 
     // invoke all interested contexts
@@ -378,7 +372,7 @@ Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& name)
 {
     Ptr<View> view = View::Create();
-    view->script = nullptr;
+    view->func = nullptr;
     this->views.Append(view);
 
     // invoke all interested contexts
@@ -406,9 +400,7 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
         if (this->contexts[i]->OnDiscardView != nullptr)
             this->contexts[i]->OnDiscardView(view);
     }
-    view->script->Discard();
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -418,7 +410,6 @@ GraphicsServer::SetCurrentView(const Ptr<View>& view)
 {
     this->currentView = view;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -543,6 +534,11 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
+    // Run shadows detached from the views
+    FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+    FrameScript_default::Bind_SunShadowDepth(FrameScript_shadows::Export_SunShadowDepth.tex, FrameScript_shadows::Export_SunShadowDepth.stage);
+
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
@@ -552,6 +548,7 @@ GraphicsServer::Render()
             continue;
 
         this->currentView = view;
+        //FrameScript_default::Run(
         view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
         this->currentView = nullptr;
     }
@@ -564,6 +561,7 @@ void
 GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
+
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);
 }
 

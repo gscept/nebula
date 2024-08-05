@@ -81,7 +81,9 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
                     CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageBits::ColorBits, (uint)mip + 1, 1, 0, 1 },
                 }
             });
-        CoreGraphics::CmdBlit(cmdBuf, id, fromRegion, CoreGraphics::ImageBits::ColorBits, mip, 0, id, toRegion, CoreGraphics::ImageBits::ColorBits, mip + 1, 0);
+        CoreGraphics::TextureCopy from{ .region = fromRegion, .mip = (uint)mip, .layer = 0, .bits = CoreGraphics::ImageBits::ColorBits };
+        CoreGraphics::TextureCopy to{ .region = toRegion, .mip = (uint)mip + 1, .layer = 0, .bits = CoreGraphics::ImageBits::ColorBits };
+        CoreGraphics::CmdBlit(cmdBuf, id, from, id, to);
 
         CoreGraphics::CmdBarrier(
             cmdBuf,

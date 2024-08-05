@@ -605,24 +605,16 @@ SetupPass(const PassId pid)
         for (i = 0; i < loadInfo.attachments.Size(); i++)
         {
             n_assert(j < 16); // only allow 8 input attachments in the shader, so we must limit it
-            CoreGraphics::ResourceTableInputAttachment write;
             if (!loadInfo.attachmentIsDepthStencil[i])
             {
+                CoreGraphics::ResourceTableInputAttachment write;
                 write.tex = loadInfo.attachments[i];
                 write.isDepth = false;
                 write.sampler = InvalidSamplerId;
                 write.slot = Shared::Table_Pass::InputAttachment0_SLOT + j;
                 write.index = 0;
+                ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
             }
-            else
-            {
-                write.tex = loadInfo.attachments[i];
-                write.isDepth = true;
-                write.sampler = InvalidSamplerId;
-                write.slot = Shared::Table_Pass::DepthAttachment_SLOT;
-                write.index = 0;
-            }
-            ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
         }
         ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
     }

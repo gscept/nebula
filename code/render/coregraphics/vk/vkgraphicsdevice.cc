@@ -1018,24 +1018,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .rayTraversalPrimitiveCulling = false
     };
 
-    VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT groupHandlesFeature =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_LIBRARY_GROUP_HANDLES_FEATURES_EXT,
-        .pNext = &raytracingFeatures,
-        .pipelineLibraryGroupHandles = true
-    };
-
-    VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT libraryFeature =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT,
-        .pNext = &groupHandlesFeature,
-        .graphicsPipelineLibrary = true
-    };
-
     VkPhysicalDevice16BitStorageFeatures buffer16BitFeature =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
-        .pNext = &libraryFeature,
+        .pNext = &raytracingFeatures,
         .storageBuffer16BitAccess = true,
         .uniformAndStorageBuffer16BitAccess = true,
         .storagePushConstant16 = false,
@@ -1686,9 +1672,9 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
 /**
 */
 void
-WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type, CoreGraphics::QueueType waitType)
+WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type)
 {
-    state.queueHandler.AppendWaitTimeline(index.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, waitType);
+    state.queueHandler.AppendWaitTimeline(index.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, index.queue);
 }
 
 //------------------------------------------------------------------------------

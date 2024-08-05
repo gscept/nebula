@@ -100,8 +100,6 @@ DrawFullScreenQuad::ApplyMesh(const CoreGraphics::CmdBufferId id)
 {
     CoreGraphics::CmdSetVertexLayout(id, DrawFullScreenQuad::vertexLayout);
     CoreGraphics::CmdSetPrimitiveTopology(id, PrimitiveTopology::TriangleList);
-    CoreGraphics::CmdSetGraphicsPipeline(id);
-
     CoreGraphics::CmdSetVertexBuffer(id, 0, DrawFullScreenQuad::vertexBuffer, 0);
 }
 

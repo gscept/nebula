@@ -333,7 +333,6 @@ interfaceCounter = 0
 class MaterialTemplateGenerator:
     def __init__(self):
         self.document = None
-        self.documentPath = ""
         self.version = 0
         self.materials = list()
         self.materialDict = {}
@@ -359,14 +358,7 @@ class MaterialTemplateGenerator:
     ##
     #    
     def SetDocument(self, input):
-        self.documentPath = input
-        self.documentBaseName = os.path.splitext(input)[0]
-        self.documentDirName = os.path.dirname(self.documentBaseName)
-
-        head, tail = ntpath.split(self.documentBaseName)
-        self.documentFileName = tail or ntpath.basename(head)
-
-        fstream = open(self.documentPath, 'r')
+        fstream = open(input, 'r')
         self.document = sjson.loads(fstream.read())
         fstream.close()
 
@@ -602,13 +594,12 @@ if __name__ == '__main__':
         path = Path(file).stem
         print("Compiling material template '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc'".format(file, outDir, outDir))
         generator.SetDocument(file)
-        generator.Parse()
         generator.SetName(path)
+        generator.Parse()
         generator.FormatHeader(headerF)
         generator.FormatSource(sourceF)
         generator.FormatShader(shaderF)
 
-    print(generator.batchGroupDict)
     enumStr = '\tInvalid = -1,\n'
     for batch in generator.batchGroupDict:
         enumStr += '\t{} = {},\n'.format(batch, generator.batchGroupDict[batch])

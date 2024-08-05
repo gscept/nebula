@@ -58,20 +58,12 @@ FrameBlit::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     CoreGraphics::TextureDimensions toDims = TextureGetDimensions(this->to);
 
     // setup regions
-    Math::rectangle<SizeT> fromRegion;
-    fromRegion.left = 0;
-    fromRegion.top = 0;
-    fromRegion.right = fromDims.width;
-    fromRegion.bottom = fromDims.height;
-    Math::rectangle<SizeT> toRegion;
-    toRegion.left = 0;
-    toRegion.top = 0;
-    toRegion.right = toDims.width;
-    toRegion.bottom = toDims.height;
+    CoreGraphics::TextureCopy from{ .region = { 0, 0, fromDims.width, fromDims.height }, .mip = 0, .layer = 0, .bits = this->fromBits };
+    CoreGraphics::TextureCopy to{ .region = { 0, 0, toDims.width, toDims.height }, .mip = 0, .layer = 0, .bits = this->toBits };
 
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 
-    CoreGraphics::CmdBlit(cmdBuf, this->from, fromRegion, this->fromBits, 0, 0, this->to, toRegion, this->toBits, 0, 0);
+    CoreGraphics::CmdBlit(cmdBuf, this->from, from, this->to, to);
 }
 
 //------------------------------------------------------------------------------

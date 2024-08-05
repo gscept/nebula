@@ -43,6 +43,9 @@
 
 #include "terrain/terraincontext.h"
 
+#include "frame/default.h"
+#include "frame/shadows.h"
+
 using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
@@ -130,12 +133,12 @@ GraphicsFeatureUnit::OnActivate()
     };
     this->wnd = CreateWindow(wndInfo);
 
-    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript, this->wnd);
+    FrameScript_shadows::Initialize(1024, 1024);
+    FrameScript_default::Initialize(width, height);
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, this->wnd);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();
-
-    Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
 
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
@@ -150,7 +153,6 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingSetupSettings raytracingSettings =
     {
         .maxNumAllowedInstances = 0xFFFF,
-        .script = frameScript
     };
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
@@ -170,6 +172,7 @@ GraphicsFeatureUnit::OnActivate()
         Terrain::TerrainContext::Create(settings);
         Terrain::TerrainContext::SetSun(this->globalLight);
 
+        /*
         this->terrain.entity = Graphics::CreateEntity();
         Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
         Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision, terrainSettings.config->raytracing);
@@ -225,27 +228,28 @@ GraphicsFeatureUnit::OnActivate()
                 Math::vec2 {terrainSettings.config->world_size_width, terrainSettings.config->world_size_height}};
             Vegetation::VegetationContext::Create(vegSettings);
         }
-    }    
+        */
+    }
   
-    Lighting::LightContext::Create(frameScript);
+    Lighting::LightContext::Create();
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
-    Fog::VolumetricFogContext::Create(frameScript);
+    Fog::VolumetricFogContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
     PostEffects::DownsamplingContext::Create();
 
-    PostEffects::BloomContext::Setup(frameScript);
-    PostEffects::SSAOContext::Setup(frameScript);
-    PostEffects::HistogramContext::Setup(frameScript);
+    PostEffects::BloomContext::Setup();
+    PostEffects::SSAOContext::Setup();
+    PostEffects::HistogramContext::Setup();
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
-    PostEffects::DownsamplingContext::Setup(frameScript);
+    PostEffects::DownsamplingContext::Setup();
 
-    Graphics::SetupBufferConstants(frameScript);
+    Graphics::SetupBufferConstants();
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 60_rad, 0_rad, true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 70_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -320,9 +324,9 @@ GraphicsFeatureUnit::OnActivate()
     this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
     this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
 
+    FrameScript_default::SetupPipelines();
+    FrameScript_shadows::SetupPipelines();
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
-
-    this->defaultView->BuildFrameScript();
 }
 
 //------------------------------------------------------------------------------
@@ -377,10 +381,6 @@ GraphicsFeatureUnit::OnBeginFrame()
     default:
         break;
     }
-
-    if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
-        Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
-
 }
 
 //------------------------------------------------------------------------------

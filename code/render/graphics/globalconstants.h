@@ -48,7 +48,7 @@ const Shared::ShadowViewConstants& GetShadowViewConstants();
 /// Set global irradiance and cubemaps
 void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips);
 /// Setup gbuffer bindings
-void SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript);
+void SetupBufferConstants();
 
 /// Get per-tick resource table for graphics
 const CoreGraphics::ResourceTableId GetFrameResourceTable(uint32_t bufferIndex);
