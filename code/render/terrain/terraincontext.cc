@@ -821,7 +821,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         , { FrameScript_default::BufferIndex::TerrainSubTextures, CoreGraphics::PipelineStage::TransferWrite }
     }, {
         { FrameScript_default::TextureIndex::TerrainIndirection, CoreGraphics::PipelineStage::TransferWrite }
-        , { FrameScript_default::TextureIndex::TerrainIndirectionCopy, CoreGraphics::PipelineStage::TransferWrite }
+        , { FrameScript_default::TextureIndex::TerrainIndirectionCopy, CoreGraphics::PipelineStage::TransferRead }
     });
 
     FrameScript_default::RegisterSubgraph_TerrainIndirectionCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)

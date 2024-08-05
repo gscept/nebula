@@ -419,6 +419,23 @@ PCFShadow(textureHandle shadowMap, vec2 uv, vec2 texelSize)
 //------------------------------------------------------------------------------
 /**
 */
+vec2 
+TerrainShadows(textureHandle shadowMap, vec2 uv, vec2 texelSize)
+{
+    vec2 shadow = vec2(0.0f);
+    vec3 offsets = vec3(-2, 2, 0) * texelSize.xyx;
+
+    vec2 samp0 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.xz, 0).rg;
+    vec2 samp1 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.yz, 0).rg;
+    vec2 samp2 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zx, 0).rg;
+    vec2 samp3 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zy, 0).rg;
+    vec2 samp4 = sample2DLod(shadowMap, ShadowSampler, uv, 0).rg;
+    return (samp0 + samp1 + samp2 + samp3 + samp4) * 0.2f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 float
 PCFShadowArray(textureHandle shadowMap, float depth, vec2 uv, float idx, vec2 texelSize)
 {

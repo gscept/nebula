@@ -400,7 +400,11 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
 
         vec2 terrainUv = mad(worldSpacePosition.xz, InvTerrainSize, vec2(0.5f));
         //shadowFactor *= sample2DLod(TerrainShadowBuffer, CSMTextureSampler, terrainUv, 0).r;
-        shadowFactor *= PCFShadow(TerrainShadowBuffer, terrainUv, TerrainShadowMapPixelSize);
+        vec2 terrainShadow = TerrainShadows(TerrainShadowBuffer, terrainUv, TerrainShadowMapPixelSize); 
+        float blend = abs(worldSpacePosition.y - terrainShadow.y * 0.8f) / (terrainShadow.y - terrainShadow.y * 0.8f);
+        shadowFactor *= terrainShadow.x * blend;
+        //shadowFactor *= terrainShadow.x < 1.0f ?  * terrainShadow.x : 1.0f;
+        //shadowFactor *= lerp(1.0f, terrainShadow.x, smoothstep(terrainShadow.y * 0.8f, terrainShadow.y, worldSpacePosition.y));
 
         shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
     }

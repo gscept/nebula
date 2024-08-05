@@ -222,7 +222,7 @@ LightContext::Create()
     {
     });
 
-    FrameScript_default::RegisterSubgraph_SunTerrainShadows_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_shadows::RegisterSubgraph_SunShadows_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
         {
