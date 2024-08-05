@@ -20,7 +20,6 @@ namespace Raytracing
 struct RaytracingSetupSettings
 {
     SizeT maxNumAllowedInstances;
-    const Ptr<Frame::FrameScript>& script;
 };
 
 enum ObjectType

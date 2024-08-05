@@ -5,6 +5,8 @@
 #include "globalconstants.h"
 #include "coregraphics/shader.h"
 
+#include "frame/default.h"
+
 namespace Graphics
 {
 
@@ -247,12 +249,12 @@ SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraph
 /**
 */
 void
-SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript)
+SetupBufferConstants()
 {
-    state.tickParams.NormalBuffer = TextureGetBindlessHandle(frameScript->GetTexture("NormalBuffer"));
-    state.tickParams.SpecularBuffer = TextureGetBindlessHandle(frameScript->GetTexture("SpecularBuffer"));
-    state.tickParams.DepthBuffer = TextureGetBindlessHandle(frameScript->GetTexture("ZBuffer"));
-    state.tickParams.DepthBufferCopy = TextureGetBindlessHandle(frameScript->GetTexture("Depth"));
+    state.tickParams.NormalBuffer = TextureGetBindlessHandle(FrameScript_default::Texture_NormalBuffer());
+    state.tickParams.SpecularBuffer = TextureGetBindlessHandle(FrameScript_default::Texture_SpecularBuffer());
+    state.tickParams.DepthBuffer = TextureGetBindlessHandle(FrameScript_default::Texture_ZBuffer());
+    state.tickParams.DepthBufferCopy = TextureGetBindlessHandle(FrameScript_default::Texture_Depth());
 }
 
 //------------------------------------------------------------------------------

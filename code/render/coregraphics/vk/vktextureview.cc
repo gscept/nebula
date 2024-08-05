@@ -125,7 +125,7 @@ TextureViewReload(const TextureViewId id)
     // First destroy the old view
     CoreGraphics::DelayedDeleteTextureView(id);
 
-    bool isDepthFormat = VkTypes::IsDepthFormat(loadInfo.format);
+    bool isDepthFormat = PixelFormat::IsDepthFormat(loadInfo.format);
     VkImageSubresourceRange viewRange;
     viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
     viewRange.baseMipLevel = loadInfo.mip;

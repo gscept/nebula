@@ -18,6 +18,8 @@
 #include "models/nodes/primitivenode.h"
 
 #include "system_shaders/vegetation.h"
+
+#include "frame/default.h"
 namespace Vegetation
 {
 
@@ -87,8 +89,6 @@ struct
 
     Vegetation::VegetationMaterialUniforms materialUniforms;
     CoreGraphics::BufferId materialUniformsBuffer;
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 3> frameOpAllocator;
 
 } vegetationState;
 
@@ -410,82 +410,39 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         ResourceTableCommitChanges(vegetationState.indirectArgumentsTable[i]);
     }
 
-    Frame::FrameCode* clear = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    clear->domain = CoreGraphics::BarrierDomain::Global;
-    clear->queue = CoreGraphics::ComputeQueueType;
-    clear->bufferDeps.Add(vegetationState.drawCountBuffer,
-                        {
-                            "Draw Count Buffer",
-                            CoreGraphics::PipelineStage::ComputeShaderWrite,
-                            CoreGraphics::BufferSubresourceInfo()
-                        });
-    clear->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
-                        {
-                            "Grass Draw Buffer",
-                            CoreGraphics::PipelineStage::ComputeShaderWrite,
-                            CoreGraphics::BufferSubresourceInfo()
-                        });
-    clear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::Bind_VegetationDrawCountBuffer(vegetationState.drawCountBuffer);
+    FrameScript_default::Bind_VegetationGrassArgumentsBuffer(vegetationState.grassArgumentsBuffer);
+    FrameScript_default::Bind_VegetationGrassDrawsBuffer(vegetationState.grassDrawCallsBuffer);
+    FrameScript_default::Bind_VegetationMeshArgumentsBuffer(vegetationState.meshArgumentsBuffer);
+    FrameScript_default::Bind_VegetationMeshDrawsBuffer(vegetationState.meshDrawCallsBuffer);
+
+    FrameScript_default::RegisterSubgraph_VegetationClearDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, vegetationState.vegetationClearShader);
         CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
 
         CmdDispatch(cmdBuf, 1, 1, 1);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* drawGeneration = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    drawGeneration->domain = CoreGraphics::BarrierDomain::Global;
-    drawGeneration->queue = CoreGraphics::ComputeQueueType;
-    drawGeneration->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
-                            {
-                                "Grass Draw Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.meshDrawCallsBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.grassArgumentsBuffer,
-                            {
-                                "Grass Uniform Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.meshArgumentsBuffer,
-                            {
-                                "Mesh Uniform Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.drawCountBuffer,
-                            {
-                                "Draw Count Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-
-    drawGeneration->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationGenerateDraws_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGenerateDrawsShader);
         CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
         CmdSetResourceTable(cmdBuf, vegetationState.argumentsTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         CmdDispatch(cmdBuf, VegetationDistributionRadius / 64, VegetationDistributionRadius, 1);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::VegetationGrassArgumentsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* readBack = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    readBack->domain = CoreGraphics::BarrierDomain::Global;
-    readBack->queue = CoreGraphics::ComputeQueueType;
-    readBack->bufferDeps.Add(vegetationState.drawCountBuffer,
-                        {
-                            "Mesh Draw Buffer",
-                            CoreGraphics::PipelineStage::TransferRead,
-                            CoreGraphics::BufferSubresourceInfo()
-                        });
-    readBack->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationDrawCPUReadback_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
          CmdBarrier(cmdBuf,
             PipelineStage::HostRead,
@@ -515,36 +472,11 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                     CoreGraphics::BufferSubresourceInfo()
                 },
             });
-    };
-    Frame::AddSubgraph("Vegetation Generate Draws", { clear, drawGeneration, readBack });
+    }, {
+        { FrameScript_default::BufferIndex::VegetationDrawCountBuffer, CoreGraphics::PipelineStage::TransferRead }
+    });
 
-    Frame::FrameCode* prepass = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    prepass->domain = CoreGraphics::BarrierDomain::Pass;
-    prepass->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
-                            {
-                                "Grass Draw Buffer",
-                                CoreGraphics::PipelineStage::Indirect,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    prepass->bufferDeps.Add(vegetationState.meshDrawCallsBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::Indirect,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    prepass->bufferDeps.Add(vegetationState.grassArgumentsBuffer,
-                            {
-                                "Grass Uniform Buffer",
-                                CoreGraphics::PipelineStage::UniformGraphics,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    prepass->bufferDeps.Add(vegetationState.meshArgumentsBuffer,
-                            {
-                                "Mesh Uniform Buffer",
-                                CoreGraphics::PipelineStage::UniformGraphics,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    prepass->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         if (vegetationState.grassDrawsThisFrame > 0)
         {
@@ -590,36 +522,14 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectMeshDrawCallsBuffer[bufferIndex], i * MAX_MESH_INFOS, vegetationState.meshDrawsThisFrame[i], sizeof(Vegetation::DrawIndexedCommand));
             }
         }
-    };
-    Frame::AddSubgraph("Vegetation Prepass", { prepass });
+    }, {
+        { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
+        , { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
+        , { FrameScript_default::BufferIndex::VegetationGrassArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
+        , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
+    });
 
-    Frame::FrameCode* render = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    render->domain = CoreGraphics::BarrierDomain::Pass;
-    render->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
-                            {
-                                "Grass Draw Buffer",
-                                CoreGraphics::PipelineStage::Indirect,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->bufferDeps.Add(vegetationState.meshDrawCallsBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::Indirect,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->bufferDeps.Add(vegetationState.grassArgumentsBuffer,
-                            {
-                                "Grass Uniform Buffer",
-                                CoreGraphics::PipelineStage::UniformGraphics,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->bufferDeps.Add(vegetationState.meshArgumentsBuffer,
-                            {
-                                "Mesh Uniform Buffer",
-                                CoreGraphics::PipelineStage::UniformGraphics,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationRender_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         if (vegetationState.grassDrawsThisFrame > 0)
         {
@@ -665,13 +575,14 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectMeshDrawCallsBuffer[bufferIndex], i * MAX_MESH_INFOS, vegetationState.meshDrawsThisFrame[i], sizeof(Vegetation::DrawIndexedCommand));
             }
         }
-    };
-    Frame::AddSubgraph("Vegetation Render", { render });
+    }, {
+        { FrameScript_default::BufferIndex::VegetationGrassDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
+        , { FrameScript_default::BufferIndex::VegetationMeshDrawsBuffer, CoreGraphics::PipelineStage::Indirect }
+        , { FrameScript_default::BufferIndex::VegetationGrassArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
+        , { FrameScript_default::BufferIndex::VegetationMeshArgumentsBuffer, CoreGraphics::PipelineStage::Indirect }
+    });
 
-    // Gah, we need to copy from the GPU to the indirect buffers after we render
-    Frame::FrameCode* copy = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    copy->domain = CoreGraphics::BarrierDomain::Global;
-    copy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_VegetationCopyIndirect_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -681,8 +592,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         CmdCopy(cmdBuf, vegetationState.meshArgumentsBuffer, { from }, vegetationState.indirectMeshArgumentsBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.meshArgumentsBuffer));
         CmdCopy(cmdBuf, vegetationState.meshDrawCallsBuffer, { from }, vegetationState.indirectMeshDrawCallsBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.meshDrawCallsBuffer));
 
-    };
-    Frame::AddSubgraph("Vegetation Copy Indirect", { copy });
+    });
 }
 
 //------------------------------------------------------------------------------

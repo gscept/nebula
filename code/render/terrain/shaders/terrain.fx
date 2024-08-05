@@ -1030,7 +1030,7 @@ psGenerateLowresFallback(
     Material = totalMaterial;
 }
 
-group(SYSTEM_GROUP) readwrite r32f image2D TerrainShadowMap;
+group(SYSTEM_GROUP) readwrite rg16f image2D TerrainShadowMap;
 //------------------------------------------------------------------------------
 /**
     Copy between indirection textures
@@ -1060,6 +1060,7 @@ csTerrainShadows()
     vec3 coord = startCoord + GlobalLightDirWorldspace.xyz * stepSize;
 
     float smallestDistance = 10000000.0f;
+    float highestPoint = 100000.0f;
     vec4 plane = vec4(GlobalLightDirWorldspace.xyz, 0);
     for (uint i = 0; i < NumSamples; i++)
     {
@@ -1081,6 +1082,7 @@ csTerrainShadows()
             // Calculate distance for contact hardening shadows
             float dist = distance(startCoord, sampleCoord);
             smallestDistance = min(smallestDistance, dist);
+            highestPoint = intersection.y;
 
             // Half step size in preparation of the next sample
             stepSize *= 0.5f;
@@ -1094,14 +1096,9 @@ csTerrainShadows()
             coord += GlobalLightDirWorldspace.xyz * stepSize;
         }
     }
-    float shadow;
-    if (smallestDistance == 10000000.0f)
-        shadow = 1.0f;
-    else
-        // Do a bit of dirty inverse square falloff
-        shadow = (smallestDistance * smallestDistance) / (MaxDistance * MaxDistance);
+    float shadow = smallestDistance == 10000000.0f ? 1.0f : (smallestDistance * smallestDistance) / (MaxDistance * MaxDistance);
 
-    imageStore(TerrainShadowMap, ivec2(gl_GlobalInvocationID.xy), vec4(shadow));
+    imageStore(TerrainShadowMap, ivec2(gl_GlobalInvocationID.xy), vec4(shadow, highestPoint, 0, 0));
 }
 
 //------------------------------------------------------------------------------

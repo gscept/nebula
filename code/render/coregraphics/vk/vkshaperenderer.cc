@@ -12,6 +12,8 @@
 #include "resources/resourceserver.h"
 #include "frame/framesubgraph.h"
 
+#include "frame/default.h"
+
 using namespace Base;
 using namespace Threading;
 using namespace Math;
@@ -113,16 +115,13 @@ VkShapeRenderer::Open()
     // also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
     this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ .name = "Vulkan Shape Renderer"_atm, .comps = comps });
 
-    Frame::FrameCode* op = this->frameOpAllocator.Alloc<Frame::FrameCode>();
-    op->domain = CoreGraphics::BarrierDomain::Pass;
-    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DebugShapes_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         auto thisPtr = static_cast<Vulkan::VkShapeRenderer*>(VkShapeRenderer::Instance());
         thisPtr->DrawShapes(cmdBuf);
         thisPtr->numIndicesThisFrame = 0;
         thisPtr->numVerticesThisFrame = 0;
-    };
-    Frame::AddSubgraph("Debug Shapes", { op });
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +163,6 @@ VkShapeRenderer::Close()
     }
     
     this->vertexBufferPtr = this->indexBufferPtr = nullptr;
-    this->frameOpAllocator.Release();
 
     // call parent class
     ShapeRendererBase::Close();

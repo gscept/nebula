@@ -26,7 +26,7 @@ public:
     static void Discard();
 
     /// setup bloom context
-    static void Setup(const Ptr<Frame::FrameScript>& script);
+    static void Setup();
 
     /// update view resources
     static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);

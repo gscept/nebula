@@ -29,7 +29,7 @@ public:
     static void SetWindow(const Math::float2 offset, Math::float2 size, int mip);
     
     /// setup bloom context
-    static void Setup(const Ptr<Frame::FrameScript>& script);
+    static void Setup();
 
     /// update view resources
     static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);

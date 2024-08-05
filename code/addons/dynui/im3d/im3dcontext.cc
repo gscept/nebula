@@ -22,6 +22,8 @@
 #include "frame/framecode.h"
 #include "imgui.h"
 
+#include "frame/default.h"
+
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Graphics;
@@ -106,8 +108,6 @@ struct Im3dState
     Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
 };
 static Im3dState imState;
 
@@ -167,35 +167,32 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-    Frame::FrameCode* op = imState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    op->domain = CoreGraphics::BarrierDomain::Pass;
-    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_Im3D_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         Render(cmdBuf, frame);
-    };
-    op->buildFunc = [](const CoreGraphics::PassId pass, const uint subpass)
+    });
+    FrameScript_default::RegisterSubgraphPipelines_Im3D_Pass([](const CoreGraphics::PassId pass, const uint subpass)
     {
         if (imState.linesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.linesPipeline);
-        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.linesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.lines, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
 
         if (imState.depthLinesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.depthLinesPipeline);
-        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::LineList, false} });
+        imState.depthLinesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthLines, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::LineList, false } });
 
         if (imState.trianglesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.trianglesPipeline);
-        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.trianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.triangles, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
 
         if (imState.depthTrianglesPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.depthTrianglesPipeline);
-        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::TriangleList, false} });
+        imState.depthTrianglesPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.depthTriangles, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::TriangleList, false } });
 
         if (imState.pointsPipeline != CoreGraphics::InvalidPipelineId)
             CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
-        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{CoreGraphics::PrimitiveTopology::PointList, false} });
-    };
-    Frame::AddSubgraph("Im3D", { op });
+        imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -204,7 +201,6 @@ Im3dContext::Create()
 void
 Im3dContext::Discard()
 {
-    imState.frameOpAllocator.Release();
     Input::InputServer::Instance()->RemoveInputHandler(imState.inputHandler.upcast<InputHandler>());
     imState.inputHandler = nullptr;
     CoreGraphics::BufferUnmap(imState.vbo);

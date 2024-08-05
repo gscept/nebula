@@ -42,8 +42,6 @@ public:
 #pragma region Pixel stuff
     /// convert Nebula pixel format to Vulkan pixel format
     static VkFormat AsVkFormat(CoreGraphics::PixelFormat::Code p);
-    /// check if format is depth or color
-    static bool IsDepthFormat(CoreGraphics::PixelFormat::Code p);
     /// returns true if format is compressed
     static bool IsCompressedFormat(VkFormat p);
     /// convert pixel format to block size

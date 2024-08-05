@@ -26,7 +26,7 @@ public:
     static void Discard();
 
     /// setup bloom context
-    static void Setup(const Ptr<Frame::FrameScript>& script);
+    static void Setup();
 
     /// Handle window resize
     static void WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);

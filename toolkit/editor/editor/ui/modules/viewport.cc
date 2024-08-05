@@ -11,6 +11,8 @@
 #include "dynui/imguicontext.h"
 #include "editor/editor/tools/selectiontool.h"
 
+#include "frame/default.h"
+
 namespace Presentation
 {
 
@@ -42,7 +44,7 @@ Viewport::Init(Util::String const & viewName)
     static int unique = 0;
     Util::String name = viewName;
     name.AppendInt(unique++);
-    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, "frame:vkdefault.json");
+    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_default::Run);
     
     this->camera.Setup(1280, 900);
 	this->camera.AttachToView(this->view);
@@ -89,9 +91,6 @@ Viewport::Update()
 void
 Viewport::Render()
 {
-    Ptr<Frame::FrameServer> frameServer = Frame::FrameServer::Instance();
-    Ptr<Frame::FrameScript> frame = this->view->GetFrameScript();
-
     if (ImGui::BeginMenuBar())
     {
         if (ImGui::BeginMenu("Camera"))
@@ -184,7 +183,7 @@ Viewport::Render()
         ImGui::EndMenuBar();
     }
 
-    CoreGraphics::TextureId textureId = frame->GetTexture(this->frameBuffer);
+    CoreGraphics::TextureId textureId = FrameScript_default::Texture_SceneBuffer();
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(textureId);
 
     using namespace CoreGraphics;

@@ -50,7 +50,7 @@ AttachmentFlagsFromString(const Util::String& string)
         else if (bits[i] == "Store")            ret |= AttachmentFlagBits::Store;
         else if (bits[i] == "StoreStencil")     ret |= AttachmentFlagBits::StoreStencil;
         else if (bits[i] == "Discard")          ret |= AttachmentFlagBits::Discard;
-        else if (bits[i] == "DiscardStenci;")   ret |= AttachmentFlagBits::DiscardStencil;
+        else if (bits[i] == "DiscardStencil")   ret |= AttachmentFlagBits::DiscardStencil;
     }
     return ret;
 };

@@ -93,8 +93,6 @@ public:
         ImFont* boldFont;
         ImFont* itFont;
 
-        Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
-
         Ptr<ImguiInputHandler> inputHandler;
         bool dockOverViewport;
     };
