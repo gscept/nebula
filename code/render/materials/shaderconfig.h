@@ -8,7 +8,6 @@
 */
 //------------------------------------------------------------------------------
 #include "util/hashtable.h"
-#include "coregraphics/batchgroup.h"
 #include "coregraphics/shader.h"
 #include "memory/arenaallocator.h"
 #include "util/variant.h"
@@ -22,43 +21,15 @@
 
 namespace MaterialTemplates
 {
-    struct MaterialTemplateValue;
     struct MaterialTemplateTexture;
 }
 namespace Materials
 {
 
-struct ShaderConfigTexture
-{
-    Util::String name;
-    CoreGraphics::TextureId defaultValue;
-    CoreGraphics::TextureType type;
-    bool system : 1;
-};
-
 struct ShaderConfigBatchTexture
 {
     IndexT slot;
     const MaterialTemplates::MaterialTemplateTexture* def;
-};
-
-struct ShaderConfigConstant
-{
-    Util::String name;
-    MaterialVariant def, min, max;
-    bool system : 1;
-};
-
-struct ShaderConfigBatchConstant
-{
-    IndexT offset, slot, group;
-    const MaterialTemplates::MaterialTemplateValue* def;
-
-    // Returns true if valid
-    const bool Valid() const
-    {
-        return offset != InvalidIndex && slot != InvalidIndex && group != InvalidIndex;
-    }
 };
 
 } // namespace Materials

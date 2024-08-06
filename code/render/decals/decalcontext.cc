@@ -16,6 +16,9 @@
 #include "graphics/globalconstants.h"
 
 #include "system_shaders/decals_cluster.h"
+
+#include "frame/default.h"
+
 namespace Decals
 {
 DecalContext::GenericDecalAllocator DecalContext::genericDecalAllocator;
@@ -39,8 +42,6 @@ struct
     // these are used to update the light clustering
     DecalsCluster::PBRDecal pbrDecals[256];
     DecalsCluster::EmissiveDecal emissiveDecals[256];
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 4> frameOpAllocator;
 } decalState;
 
 //------------------------------------------------------------------------------
@@ -108,47 +109,19 @@ DecalContext::Create()
         ResourceTableCommitChanges(frameResourceTable);
     }
 
-    // The first pass is to copy decals over
-    Frame::FrameCode* decalCopy = decalState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    decalCopy->domain = CoreGraphics::BarrierDomain::Global;
-    decalCopy->queue = CoreGraphics::QueueType::ComputeQueueType;
-    decalCopy->bufferDeps.Add(decalState.clusterDecalsList,
-                                {
-                                    "Decals List"
-                                    , CoreGraphics::PipelineStage::TransferWrite
-                                    , CoreGraphics::BufferSubresourceInfo()
-                                });
-    decalCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::Bind_ClusterDecalList(decalState.clusterDecalsList);
+    FrameScript_default::Bind_ClusterDecalIndexLists(decalState.clusterDecalIndexLists);
+    FrameScript_default::RegisterSubgraph_DecalCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
         CmdCopy(cmdBuf, decalState.stagingClusterDecalsList.buffers[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists));
-    };
+    }, {
+        { FrameScript_default::BufferIndex::ClusterDecalList, CoreGraphics::PipelineStage::TransferWrite }
+    });
 
-    // The second pass is to cull the decals based on screen space AABBs
-    Frame::FrameCode* decalCull = decalState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    decalCull->domain = CoreGraphics::BarrierDomain::Global;
-    decalCull->queue = CoreGraphics::QueueType::ComputeQueueType;
-    decalCull->bufferDeps.Add(decalState.clusterDecalsList,
-                            {
-                                "Decals List"
-                                , CoreGraphics::PipelineStage::ComputeShaderRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    decalCull->bufferDeps.Add(decalState.clusterDecalIndexLists,
-                            {
-                                "Decal Index Lists"
-                                , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    decalCull->bufferDepRefs.Add(Clustering::ClusterContext::GetClusterBuffer(),
-                            {
-                                "Cluster AABB"
-                                , CoreGraphics::PipelineStage::ComputeShaderRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    decalCull->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DecalCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, decalState.cullProgram);
 
@@ -156,44 +129,11 @@ DecalContext::Create()
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
 
         CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
-    };
-    Frame::AddSubgraph("Decal Cull", { decalCopy, decalCull });
-
-    Frame::FrameCode* pbrRender = decalState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    pbrRender->domain = CoreGraphics::BarrierDomain::Pass;
-    pbrRender->bufferDeps.Add(decalState.clusterDecalIndexLists,
-                        {
-                            "Decal Index Lists"
-                            , CoreGraphics::PipelineStage::PixelShaderRead
-                            , CoreGraphics::BufferSubresourceInfo()
-                        });
-    pbrRender->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        // Set resources and draw
-        CmdSetShaderProgram(cmdBuf, decalState.renderPBRProgram);
-        RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
-        CmdSetGraphicsPipeline(cmdBuf);
-        CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
-    };
-    Frame::AddSubgraph("PBR Decals", { pbrRender });
-
-    Frame::FrameCode* emissiveRender = decalState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    emissiveRender->domain = CoreGraphics::BarrierDomain::Pass;
-    emissiveRender->bufferDeps.Add(decalState.clusterDecalIndexLists,
-                        {
-                            "Decal Index Lists"
-                            , CoreGraphics::PipelineStage::PixelShaderRead
-                            , CoreGraphics::BufferSubresourceInfo()
-                        });
-    emissiveRender->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        // Set resources and draw
-        CmdSetShaderProgram(cmdBuf, decalState.renderEmissiveProgram);
-        RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
-        CmdSetGraphicsPipeline(cmdBuf);
-        CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
-    };
-    Frame::AddSubgraph("Emissive Decals", { emissiveRender });
+    }, {
+        { FrameScript_default::BufferIndex::ClusterDecalList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterDecalIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -202,7 +142,6 @@ DecalContext::Create()
 void
 DecalContext::Discard()
 {
-    decalState.frameOpAllocator.Release();
 }
 
 //------------------------------------------------------------------------------
@@ -369,8 +308,6 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         }
         }
     }
-    //const CoreGraphics::TextureId normalCopyTex = view->GetFrameScript()->GetTexture("NormalBufferCopy");
-    const CoreGraphics::TextureId depthTex = view->GetFrameScript()->GetTexture("ZBuffer");
 
     // setup uniforms
     DecalsCluster::DecalUniforms decalUniforms;
@@ -378,7 +315,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     decalUniforms.NumPBRDecals = numPbrDecals;
     decalUniforms.NumEmissiveDecals = numEmissiveDecals;
     //decalUniforms.NormalBufferCopy = TextureGetBindlessHandle(normalCopyTex);
-    decalUniforms.StencilBuffer = TextureGetStencilBindlessHandle(depthTex);
+    decalUniforms.StencilBuffer = TextureGetStencilBindlessHandle(FrameScript_default::Texture_ZBuffer());
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 

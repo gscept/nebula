@@ -1,204 +1,189 @@
 {
-    "$schema": "../../../code/schemas/framescript-schema.json",
-    "framescript": {
+    "Nebula": {
         "version": 3,
-        "engine": "Nebula",
-        "textures": [
+        "Dependencies": [
+            "Shadows"
+        ],
+        "ImportBuffers": [
+            "ClusterBuffer",
+            "ClusterLightList",
+            "ClusterLightIndexLists",
+            "ClusterDecalList",
+            "ClusterDecalIndexLists",
+            "ClusterFogList",
+            "ClusterFogIndexLists",
+            "GridLightList",
+            "GridLightIndexLists",
+            "GridDecalList",
+            "GridDecalIndexLists",
+            "GridFogList",
+            "GridFogIndexLists",
+            "RayTracingObjectBindings",
+            "HistogramCounters",
+            "TerrainVirtualPageStatuses",
+            "TerrainSubTextures",
+            "TerrainUpdateList",
+            "VegetationDrawCountBuffer",
+            "VegetationGrassDrawsBuffer",
+            "VegetationGrassArgumentsBuffer",
+            "VegetationMeshDrawsBuffer",
+            "VegetationMeshArgumentsBuffer"
+        ],
+        "ImportTextures": [
+            "HBAOInternal0",
+            "HBAOInternal1",
+            "TerrainIndirection",
+            "TerrainIndirectionCopy",
+            "TerrainAlbedoCache",
+            "TerrainMaterialCache",
+            "TerrainNormalCache",
+            "SunShadowDepth"
+        ],
+        "LocalTextures": [
             {
-
                 "name": "ScreenBuffer",
                 "format": "R11G11B10F",
                 "relative": true,
                 "usage": "Render|TransferDestination",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "ColorBuffer",
                 "format": "R8G8B8A8",
                 "usage": "Render|TransferSource",
-                "relative": true,
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
-                "name": "ColorBufferNoGUI",
+                "name": "SceneBuffer",
                 "format": "R8G8B8A8",
                 "usage": "Render|TransferSource",
-                "relative": true,
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "ShapeBuffer",
                 "format": "R8G8B8A8",
-                "relative": true,
                 "usage": "Render",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "AverageLumBuffer",
                 "format": "R16F",
-                "relative": false,
                 "usage": "Render|TransferSource",
-                "width": 1.0,
-                "height": 1.0,
+                "fixedSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "SSAOBuffer",
                 "format": "R16F",
-                "relative": true,
                 "usage": "ReadWrite",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "BloomBuffer",
                 "format": "R16G16B16A16F",
-                "relative": true,
                 "usage": "Render|TransferSource|ReadWrite",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "LightBuffer",
                 "format": "R11G11B10F",
-                "relative": true,
                 "usage": "Render|ReadWrite|TransferSource",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "mips": "auto",
                 "type": "Texture2D"
             },
             {
                 "name": "LightDebugBuffer",
                 "format": "R16G16B16A16F",
-                "relative": true,
                 "usage": "ReadWrite",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "VolumetricFogBuffer0",
                 "format": "R16G16B16A16F",
-                "relative": true,
                 "usage": "ReadWrite",
-                "width": 0.25,
-                "height": 0.25,
+                "relativeSize": [ 0.25, 0.25 ],
                 "type": "Texture2D"
             },
             {
                 "name": "VolumetricFogBuffer1",
                 "format": "R16G16B16A16F",
-                "relative": true,
                 "usage": "ReadWrite",
-                "width": 0.25,
-                "height": 0.25,
+                "relativeSize": [ 0.25, 0.25 ],
                 "type": "Texture2D"
             },
             {
                 "name": "ZBuffer",
                 "format": "D32S8",
-                "relative": true,
                 "usage": "Render|Sample",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "Depth",
                 "format": "R32F",
                 "mips": "auto",
-                "relative": true,
                 "usage": "Sample|ReadWrite",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "Stencil",
                 "format": "R8",
-                "relative": true,
                 "usage": "TransferDestination|Sample",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "ReflectionBuffer",
                 "format": "R16G16B16A16F",
-                "relative": true,
                 "usage": "ReadWrite",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "NormalBuffer",
                 "format": "R16G16B16A16F",
-                "relative": true,
                 "usage": "Render",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "_comment": "RGB = Specular reflectivity, A = Roughness",
                 "name": "SpecularBuffer",
                 "format": "R8G8B8A8",
-                "relative": true,
                 "usage": "Render",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "TerrainPosBuffer",
                 "format": "R16G16F",
-                "relative": true,
                 "usage": "Render",
-                "width": 1.0,
-                "height": 1.0,
+                "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
-            },
-            {
-                "name": "LocalLightShadow",
-                "format": "D32S8",
-                "width": 512,
-                "height": 512,
-                "layers": 16,
-                "usage": "Render",
-                "type": "Texture2DArray"
-            },
-            {
-                "name": "SunShadowDepth",
-                "format": "D32S8",
-                "width": 1024,
-                "height": 1024,
-                "layers": 4,
-                "usage": "Render",
-                "type": "Texture2DArray"
             },
             {
                 "name": "RayTracingTestOutput",
                 "format": "R16G16B16A16F",
-                "width": 640,
-                "height": 480,
+                "fixedSize": [ 640, 480 ],
                 "usage": "ReadWrite",
                 "type": "Texture2D"
             }
         ],
+        "ExportTextures": [
+            "ColorBuffer",
+            "SceneBuffer"
+        ],
 
-        "submissions": [
+        "Submissions": [
             {
                 "name": "Compute Prepass",
                 "queue": "Compute",
@@ -207,7 +192,17 @@
                 "ops": [
                     {
                         "subgraph": {
+                            "name": "Raytracing Structures Update"
+                        }
+                    },
+                    {
+                        "subgraph": {
                             "name": "Cluster AABB Generation"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Lights Copy"
                         }
                     },
                     {
@@ -217,7 +212,17 @@
                     },
                     {
                         "subgraph": {
+                            "name": "Decal Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
                             "name": "Decal Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Fog Copy"
                         }
                     },
                     {
@@ -232,93 +237,17 @@
                     },
                     {
                         "subgraph": {
-                            "name": "Raytracing Light Update"
+                            "name": "Raytracing Light Grid Gen"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Light Grid Cull"
                         }
                     },
                     {
                         "subgraph": {
                             "name": "Terrain Raytracing Mesh Generate"
-                        }
-                    }
-                ]
-            },
-
-            {
-                "name": "Shadows",
-                "queue": "Graphics",
-                "_comment": "Render and blur shadow maps",
-                "ops": [
-                    {
-                        "subgraph": {
-                            "name": "Raytracing Structures Update"
-                        }
-                    },
-                    {
-                        "pass": {
-                            "name": "Sun Shadows Pass",
-                            "attachments": [
-                                {
-                                    "name": "SunShadowDepth",
-                                    "clear_depth": 1,
-                                    "flags": "Store"
-                                }
-                            ],
-
-                            "subpasses": [
-                                {
-                                    "name": "Sun Shadows",
-                                    "subpass_dependencies": [],
-                                    "depth": "SunShadowDepth",
-                                    "ops": [
-                                        {
-                                            "subgraph": {
-                                                "name": "Sun Shadows"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-
-                    },
-
-                    {
-                        "pass": {
-                            "name": "Local Shadows Pass",
-                            "attachments": [
-                                {
-                                    "name": "LocalLightShadow",
-                                    "clear_depth": 1,
-                                    "flags": "Store"
-                                }
-                            ],
-
-                            "subpasses": [
-                                {
-                                    "name": "Spotlight Shadows",
-                                    "subpass_dependencies": [],
-                                    "depth": "LocalLightShadow",
-                                    "ops": [
-                                        {
-                                            "subgraph": {
-                                                "name": "Spotlight Shadows"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-
-                    {
-                        "subgraph": {
-                            "name": "Spotlight Blur"
-
-                        }
-                    },
-                    {
-                        "subgraph": {
-                            "name": "Sun Blur"
                         }
                     }
                 ]
@@ -343,13 +272,28 @@
 
                     {
                         "subgraph": {
+                            "name": "Vegetation Clear Draws"
+                        }
+                    },
+                    {
+                        "subgraph": {
                             "name": "Vegetation Generate Draws"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Vegetation Draw CPU Readback"
                         }
                     },
 
                     {
                         "subgraph": {
                             "name": "Terrain Prepare"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Terrain Indirection Copy"
                         }
                     },
 
@@ -396,7 +340,7 @@
                                             }
                                         },
                                         {
-                                            "batch": {
+                                            "subgraph": {
                                                 "name": "Vegetation Prepass"
                                             }
                                         }
@@ -408,7 +352,19 @@
                     },
                     {
                         "subgraph": {
+                            "name": "Terrain Page Extract"
+
+                        }
+                    },
+                    {
+                        "subgraph": {
                             "name": "Terrain Update Caches"
+
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Terrain Pages Clear"
 
                         }
                     },
@@ -427,9 +383,10 @@
             },
 
             {
-                "name": "Forward shading and post effects",
-                "wait_for_submissions": [ "Compute Prepass", "Prepass" ],
+                "name": "Forward Shading and Post Effects",
+                "wait_for_submissions": [ "Compute Prepass", "Prepass", "Shadows" ],
                 "queue": "Graphics",
+                "last_submit": true,
                 "_comment": "Main graphics submission",
                 "ops": [
                     {
@@ -438,7 +395,7 @@
                             "attachments": [
                                 {
                                     "name": "ZBuffer",
-                                    "flags":  "Store|Load|LoadStencil"
+                                    "flags": "Store|Load|LoadStencil"
                                 },
                                 {
                                     "name": "LightBuffer",
@@ -536,13 +493,40 @@
 
                     {
                         "subgraph": {
-                            "name": "HBAO"
+                            "name": "HBAO X"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "HBAO Y"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "HBAO Blur X"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "HBAO Blur Y"
                         }
                     },
 
                     {
                         "subgraph": {
                             "name": "Fog Compute"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Fog Blur X"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Fog Blur Y"
                         }
                     },
 
@@ -560,7 +544,17 @@
 
                     {
                         "subgraph": {
-                            "name": "Histogram"
+                            "name": "Histogram Bin"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Histogram Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Histogram Clear"
                         }
                     },
 
@@ -615,27 +609,32 @@
                                         {
                                             "fullscreen_effect": {
                                                 "name": "Finalize",
-                                                "shader_state": {
-                                                    "shader": "shd:system_shaders/finalize.fxb",
-                                                    "variables": [
-                                                        {
-                                                            "semantic": "LuminanceTexture",
-                                                            "value": "AverageLumBuffer"
-                                                        },
-                                                        {
-                                                            "semantic": "DepthTexture",
-                                                            "value": "Depth"
-                                                        },
-                                                        {
-                                                            "semantic": "ColorTexture",
-                                                            "value": "LightBuffer"
-                                                        },
-                                                        {
-                                                            "semantic": "BloomTexture",
-                                                            "value": "BloomBuffer"
-                                                        }
-                                                    ]
-                                                },
+                                                "shader": "system_shaders/finalize",
+                                                "mask": "Alt0",
+                                                "namespace": "Finalize",
+                                                "constantBlockName": "FinalizeBlock",
+                                                "variables": [
+                                                    {
+                                                        "semantic": "LuminanceTexture",
+                                                        "value": "AverageLumBuffer",
+                                                        "type": "textureHandle"
+                                                    },
+                                                    {
+                                                        "semantic": "DepthTexture",
+                                                        "value": "Depth",
+                                                        "type": "textureHandle"
+                                                    },
+                                                    {
+                                                        "semantic": "ColorTexture",
+                                                        "value": "LightBuffer",
+                                                        "type": "textureHandle"
+                                                    },
+                                                    {
+                                                        "semantic": "BloomTexture",
+                                                        "value": "BloomBuffer",
+                                                        "type": "textureHandle"
+                                                    }
+                                                ],
                                                 "size_from_texture": "ColorBuffer"
                                             }
                                         }
@@ -676,11 +675,6 @@
                                             }
                                         },
                                         {
-                                            "batch": {
-                                                "name": "Debug Shapes"
-                                            }
-                                        },
-                                        {
                                             "subgraph": {
                                                 "name": "Im3D"
                                             }
@@ -698,7 +692,7 @@
                                 "tex": "ColorBuffer"
                             },
                             "to": {
-                                "tex": "ColorBufferNoGUI"
+                                "tex": "SceneBuffer"
                             }
                         }
                     },
@@ -713,7 +707,7 @@
                                 },
                                 {
                                     "name": "ZBuffer",
-                                    "flags":  "Load|Discard"
+                                    "flags": "Load|Discard"
                                 }
                             ],
 
@@ -758,7 +752,6 @@
                         "swap": {
                             "name": "Swap",
                             "from": "ColorBuffer"
-                               
                         }
                     }
                 ]

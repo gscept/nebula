@@ -46,7 +46,6 @@ namespace Math
 namespace Util
 {
 class Blob;
-
 class String
 {
 public:
@@ -353,6 +352,8 @@ public:
     static String FromBase64(const String&);
     /// convert from "anything"
     template<typename T> static String From(const T& t);
+    /// Hash a string
+    static constexpr uint Hash(const char* c, std::size_t s);
 
     /// construct a hex string from an int
     template<typename INTEGER>
@@ -691,20 +692,8 @@ String::IsValid() const
 inline uint32_t
 String::HashCode() const
 {
-    uint32_t hash = 0;
     const char* ptr = this->AsCharPtr();
-    SizeT len = this->strLen;
-    SizeT i;
-    for (i = 0; i < len; i++)
-    {
-        hash += ptr[i];
-        hash += hash << 10;
-        hash ^= hash >>  6;
-    }
-    hash += hash << 3;
-    hash ^= hash >> 11;
-    hash += hash << 15;
-    return hash;
+    return Hash(ptr, this->strLen);
 }
 
 //------------------------------------------------------------------------------
@@ -1190,6 +1179,27 @@ String::AppendMat4(const Math::mat4& val)
     this->Append(FromMat4(val));
 }
 #endif
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint
+String::Hash(const char* c, std::size_t s)
+{
+    uint hash = 0;
+    std::size_t i;
+    for (i = 0; i < s; i++)
+    {
+        hash += c[i];
+        hash += hash << 10;
+        hash ^= hash >> 6;
+    }
+    hash += hash << 3;
+    hash ^= hash >> 11;
+    hash += hash << 15;
+    return hash;
+}
     
 inline auto Format = &String::Sprintf;
 
@@ -1209,22 +1219,8 @@ Util::String operator ""_str(const char* c, std::size_t s);
 constexpr uint
 operator ""_hash(const char* c, std::size_t s)
 {
-    uint hash = 0;
-    const char* ptr = c;
-    std::size_t len = s;
-    std::size_t i;
-    for (i = 0; i < len; i++)
-    {
-        hash += ptr[i];
-        hash += hash << 10;
-        hash ^= hash >> 6;
-    }
-    hash += hash << 3;
-    hash ^= hash >> 11;
-    hash += hash << 15;
-    return hash;
+    return Util::String::Hash(c, s);
 }
-
 
 //------------------------------------------------------------------------------
 

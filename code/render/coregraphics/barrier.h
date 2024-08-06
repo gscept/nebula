@@ -44,17 +44,17 @@ struct TextureSubresourceInfo
 
     static TextureSubresourceInfo Texture(CoreGraphics::ImageBits bits, TextureId tex)
     {
-        return TextureSubresourceInfo(bits, 0, TextureGetNumMips(tex), 0, TextureGetNumLayers(tex));
+        return TextureSubresourceInfo(bits, 0, NEBULA_ALL_MIPS, 0, NEBULA_ALL_LAYERS);
     }
 
     static TextureSubresourceInfo Color(TextureId tex)
     {
-        return TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(tex), 0, TextureGetNumLayers(tex));
+        return TextureSubresourceInfo(ImageBits::ColorBits, 0, NEBULA_ALL_MIPS, 0, NEBULA_ALL_LAYERS);
     }
 
     static TextureSubresourceInfo DepthStencil(TextureId tex)
     {
-        return TextureSubresourceInfo(ImageBits::DepthBits | ImageBits::StencilBits, 0, TextureGetNumMips(tex), 0, TextureGetNumLayers(tex));
+        return TextureSubresourceInfo(ImageBits::DepthBits | ImageBits::StencilBits, 0, NEBULA_ALL_MIPS, 0, NEBULA_ALL_LAYERS);
     }
 
     static TextureSubresourceInfo ColorNoMipNoLayer()
@@ -154,6 +154,70 @@ struct AccelerationStructureBarrierInfo
     } type;
 
     ~AccelerationStructureBarrierInfo() {};
+};
+
+struct BarrierScope
+{
+    /// Make sure we have cleared the barrier scope before destroying the object
+    ~BarrierScope()
+    {
+        n_assert(this->textures.IsEmpty());
+        n_assert(this->buffers.IsEmpty());
+    }
+
+    /// Start barrier
+    static BarrierScope Begin(const char* name, CmdBufferId cmdBuf)
+    {
+         return BarrierScope{ .name = name, .cmdBuf = cmdBuf, .fromStage = CoreGraphics::PipelineStage::InvalidStage, .toStage = CoreGraphics::PipelineStage::InvalidStage };
+    }
+
+    /// Add texture barrier
+    void AddTexture(ImageBits bits, TextureId tex, CoreGraphics::PipelineStage fromStage, CoreGraphics::PipelineStage toStage)
+    {
+        // If the barrier boundaries don't match, flush the barriers
+        if (this->fromStage != fromStage || this->toStage != toStage)
+        {
+            this->Flush();
+            this->fromStage = fromStage;
+            this->toStage = toStage;
+        }
+        TextureBarrierInfo info = { .tex = tex, .subres = TextureSubresourceInfo::Texture(bits, tex) };
+        textures.Append(info);
+    }
+
+    /// Add buffer barrier
+    void AddBuffer(BufferId buf, CoreGraphics::PipelineStage fromStage, CoreGraphics::PipelineStage toStage)
+    {
+        // If the barrier boundaries don't match, flush the barriers
+        if (this->fromStage != fromStage || this->toStage != toStage)
+        {
+            this->Flush();
+            this->fromStage = fromStage;
+            this->toStage = toStage;
+        }
+        BufferBarrierInfo info = { .buf = buf, .subres = CoreGraphics::BufferSubresourceInfo() };
+        buffers.Append(info);
+    }
+
+    /// Flush all pending changes
+    void Flush()
+    {
+        if (!this->textures.IsEmpty())
+            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, this->textures, InvalidIndex, InvalidIndex, this->name);
+        if (!this->buffers.IsEmpty())
+            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, this->buffers, InvalidIndex, InvalidIndex, this->name);
+        this->buffers.Clear();
+        this->textures.Clear();
+    }
+
+    const char* name;
+    CmdBufferId cmdBuf;
+    CoreGraphics::PipelineStage fromStage, toStage;
+    Util::Array<TextureBarrierInfo> textures;
+    Util::Array<BufferBarrierInfo> buffers;
+
+private:
+
 };
 
 struct BarrierCreateInfo

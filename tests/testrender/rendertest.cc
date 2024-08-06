@@ -17,6 +17,8 @@
 #include "graphics/view.h"
 #include "graphics/cameracontext.h"
 
+#include "frame/default.h"
+
 using namespace Timing;
 using namespace Graphics;
 namespace Test
@@ -53,7 +55,7 @@ RenderTest::Run()
     };
     CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json");
+    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, wnd);
     Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
     
     GraphicsEntityId cam = Graphics::CreateEntity();

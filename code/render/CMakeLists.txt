@@ -124,8 +124,6 @@ ENDIF()
                 antialiasquality.cc
                 antialiasquality.h
                 barrier.h
-                batchgroup.cc
-                batchgroup.h
                 buffer.cc
                 buffer.h
                 gpubuffertypes.h
@@ -359,54 +357,60 @@ ENDIF()
                 volumetricfogcontext.h
             )
         fips_dir(frame)
+            nebula_framescript_add(default.json shadows.json) 
+            #fips_files(
+            #    framebarrier.cc
+            #    framebarrier.h
+            #    framebatchtype.h
+            #    frameblit.cc
+            #    frameblit.h
+            #    framecode.cc
+            #    framecode.h
+            #    framecompute.cc
+            #    framecompute.h
+            #    frameplugin.cc
+            #    frameplugin.h
+            #    frameresolve.cc
+            #    frameresolve.h
+            #    framecopy.cc
+            #    framecopy.h
+            #    #frameevent.cc
+            #    #frameevent.h
+            #    framemipmap.cc
+            #    framemipmap.h
+            #    frameop.cc
+            #    frameop.h
+            #    framepass.cc
+            #    framepass.h
+            #    framescript.cc
+            #    framescript.h
+            #    framescriptloader.cc
+            #    framescriptloader.h
+            #    framesubgraph.cc
+            #    framesubgraph.h
+            #    frameserver.cc
+            #    frameserver.h
+            #    framesubmission.cc
+            #    framesubmission.h
+            #    framesubpass.cc
+            #    framesubpass.h
+            #    framesubpassplugin.cc
+            #    framesubpassplugin.h
+            #    framesubpassbatch.cc
+            #    framesubpassbatch.h
+            #    framesubpassfullscreeneffect.cc
+            #    framesubpassfullscreeneffect.h
+            #    framesubpassorderedbatch.cc
+            #    framesubpassorderedbatch.h
+            #    framesubpassplugin.cc
+            #    framesubpassplugin.h
+            #    frameswap.cc
+            #    frameswap.h
+            #)
+        fips_dir(framescripts)
             fips_files(
-                framebarrier.cc
-                framebarrier.h
-                framebatchtype.h
-                frameblit.cc
-                frameblit.h
-                framecode.cc
-                framecode.h
-                framecompute.cc
-                framecompute.h
-                frameplugin.cc
-                frameplugin.h
-                frameresolve.cc
-                frameresolve.h
-                framecopy.cc
-                framecopy.h
-                #frameevent.cc
-                #frameevent.h
-                framemipmap.cc
-                framemipmap.h
-                frameop.cc
-                frameop.h
-                framepass.cc
-                framepass.h
-                framescript.cc
-                framescript.h
-                framescriptloader.cc
-                framescriptloader.h
-                framesubgraph.cc
-                framesubgraph.h
-                frameserver.cc
-                frameserver.h
-                framesubmission.cc
-                framesubmission.h
-                framesubpass.cc
-                framesubpass.h
-                framesubpassplugin.cc
-                framesubpassplugin.h
-                framesubpassbatch.cc
-                framesubpassbatch.h
-                framesubpassfullscreeneffect.cc
-                framesubpassfullscreeneffect.h
-                framesubpassorderedbatch.cc
-                framesubpassorderedbatch.h
-                framesubpassplugin.cc
-                framesubpassplugin.h
-                frameswap.cc
-                frameswap.h
+                framescripts.cc
+                framescripts.h
             )
         fips_dir(gi)
             fips_files(
@@ -513,8 +517,8 @@ IF(FALSE)
 ENDIF()
         fips_dir(materials)
 			# Add engine templates and generate glue file which is needed by the material system
-			nebula_material_template_compile(base.json gltf.json)
-            nebula_project_material_template_compile()
+			nebula_material_template_add(base.json gltf.json)
+            nebula_project_material_template_add()
 
             fips_files(
                 material.cc

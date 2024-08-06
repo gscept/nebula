@@ -109,6 +109,7 @@ FrameSubpassFullscreenEffect::CompiledImpl::Run(const CoreGraphics::CmdBufferId 
 
     // draw
     RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
     CoreGraphics::CmdSetResourceTable(cmdBuf, this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
     CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
 }

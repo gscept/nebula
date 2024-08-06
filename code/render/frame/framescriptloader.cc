@@ -1138,9 +1138,9 @@ void
 FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
     JzonValue* name = jzon_get(node, "name");
-    CoreGraphics::BatchGroup::Code batch = CoreGraphics::BatchGroup::FromName(name->string_value);
+    MaterialTemplates::BatchGroup batch = MaterialTemplates::BatchGroupFromName(name->string_value);
     n_assert(name != nullptr);
-    if (MaterialTemplates::Configs.FindIndex(batch) == InvalidIndex)
+    if (batch == MaterialTemplates::BatchGroup::Invalid)
     {
         n_warning("[FrameScript] - Skipping, batch with name '%s' because it's not rendered by any material\n", name->string_value);
         return;
@@ -1158,7 +1158,7 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
         ParseResourceDependencies(script, op, inputs);
     }
 
-    op->batch = CoreGraphics::BatchGroup::FromName(name->string_value);
+    op->batch = batch;
     subpass->AddChild(op);
 }
 
@@ -1169,9 +1169,9 @@ void
 FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node)
 {
     JzonValue* name = jzon_get(node, "name");
-    CoreGraphics::BatchGroup::Code batch = CoreGraphics::BatchGroup::FromName(name->string_value);
+    MaterialTemplates::BatchGroup batch = MaterialTemplates::BatchGroupFromName(name->string_value);
     n_assert(name != nullptr);
-    if (MaterialTemplates::Configs.FindIndex(batch) == InvalidIndex)
+    if (batch == MaterialTemplates::BatchGroup::Invalid)
     {
         n_warning("Skipping, batch with name '%s' because it's not rendered by any material\n", name->string_value);
         return;

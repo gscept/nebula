@@ -32,7 +32,7 @@ public:
     virtual ~VolumetricFogContext();
 
     /// setup volumetric fog context
-    static void Create(const Ptr<Frame::FrameScript>& frameScript);
+    static void Create();
     /// discard volumetric fog context
     static void Discard();
 

@@ -1,28 +1,11 @@
 //------------------------------------------------------------------------------
-// framesubpassbatch.cc
-// (C) 2016-2020 Individual contributors, see AUTHORS file
+//  @file framescripts.cc
+//  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#include "framesubpassbatch.h"
-#include "coregraphics/shaderserver.h"
-#include "models/nodes/shaderstatenode.h"
-#include "graphics/graphicsserver.h"
-#include "graphics/view.h"
+#include "foundation/stdneb.h"
+#include "framescripts.h"
 #include "visibility/visibilitycontext.h"
 #include "materials/materialtemplates.h"
-
-using namespace Graphics;
-using namespace CoreGraphics;
-using namespace Materials;
-using namespace Models;
-using namespace Util;
-
-#define NEBULA_FRAME_LOG_ENABLED   (0)
-#if NEBULA_FRAME_LOG_ENABLED
-#define FRAME_LOG(...) n_printf(__VA_ARGS__); n_printf("\n")
-#else
-#define FRAME_LOG(...)
-#endif
 
 namespace Frame
 {
@@ -30,37 +13,9 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FrameSubpassBatch::FrameSubpassBatch()
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-FrameSubpassBatch::~FrameSubpassBatch()
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-FrameOp::Compiled* 
-FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
-{
-    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-    ret->batch = this->batch;
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
+DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
-    // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
     const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[(uint)batch];
     if (types.Size() != 0 && (drawList != nullptr))
@@ -88,7 +43,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTem
                     uint32 numInstances = 0;
                     uint32 baseInstance = 0;
                     CoreGraphics::PrimitiveGroup primGroup;
-                    CoreGraphics::MeshId mesh = InvalidMeshId;
+                    CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
 
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
@@ -153,11 +108,11 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTem
 /**
 */
 void
-FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
+DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
-    // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
     const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[(uint)batch];
+
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
@@ -240,14 +195,4 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTem
     }
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameSubpassBatch::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
-{
-    const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
-    FrameSubpassBatch::DrawBatch(cmdBuf, this->batch, view->GetCamera(), bufferIndex);
-}
-
-} // namespace Frame2
+} // namespace Frame

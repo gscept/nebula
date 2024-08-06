@@ -21,7 +21,7 @@ __ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
 /**
 */
 View::View() :
-    script(nullptr),
+    func(nullptr),
     camera(GraphicsEntityId::Invalid()),
     stage(nullptr),
     enabled(true)
@@ -85,20 +85,12 @@ void
 View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
     // run the actual script
-    if (this->script != nullptr)
+    if (this->func != nullptr)
     {
         N_SCOPE(ViewExecute, Graphics);
-        this->script->Run(frameIndex, bufferIndex);
+        this->func(this->viewport, frameIndex, bufferIndex);
     }
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-View::BuildFrameScript()
-{
-    this->script->Build();
-}
 
 } // namespace Graphics

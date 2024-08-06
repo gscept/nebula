@@ -114,6 +114,7 @@ PixelFormat::ToString(PixelFormat::Code code)
         case D16S8:         return "D16S8";
         case D24X8:         return "D24X8";
         case D24S8:         return "D24S8";
+        case D32:           return "D32";
         case D32S8:         return "D32S8";
 
         default:
@@ -153,6 +154,7 @@ PixelFormat::ToSize(Code code)
     case R11G11B10F:
     case D24X8:
     case D24S8:
+    case D32:
         return 4;
     case D32S8:
         return 5;
@@ -359,10 +361,14 @@ PixelFormat::IsDepthFormat(Code code)
 {
     switch (code)
     {
-    case PixelFormat::D24X8:
-    case PixelFormat::D24S8:
-    case PixelFormat::D32S8:            return true;
-    default: return false;
+        case PixelFormat::D32:
+        case PixelFormat::D16S8:
+        case PixelFormat::D24X8:
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
     }
     return false;
 }
@@ -376,9 +382,34 @@ PixelFormat::IsStencilFormat(Code code)
 {
     switch (code)
     {
+        case PixelFormat::S8:
+        case PixelFormat::D16S8:
         case PixelFormat::D24S8:
-        case PixelFormat::D32S8:            return true;
-        default: return false;
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PixelFormat::IsDepthStencilFormat(Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::S8:
+        case PixelFormat::D32:
+        case PixelFormat::D16S8:
+        case PixelFormat::D24X8:
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
     }
     return false;
 }

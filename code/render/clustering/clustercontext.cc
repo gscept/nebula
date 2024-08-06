@@ -11,6 +11,7 @@
 #include "graphics/graphicsserver.h"
 
 #include "graphics/globalconstants.h"
+#include "frame/default.h"
 
 namespace Clustering
 {
@@ -36,8 +37,6 @@ struct
     float zInvScale, zInvBias;
     float xResolution, yResolution;
     float invXResolution, invYResolution;
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
 
     SizeT numThreads;
 
@@ -111,23 +110,16 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
         ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
     }
 
-    Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    op->domain = CoreGraphics::BarrierDomain::Global;
-    op->queue = CoreGraphics::QueueType::ComputeQueueType;
-    op->bufferDeps.Add(state.clusterBuffer,
-                         {
-                             "ClusterBuffer"
-                             , CoreGraphics::PipelineStage::ComputeShaderWrite
-                             , CoreGraphics::BufferSubresourceInfo()
-                         });
-    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
+    FrameScript_default::RegisterSubgraph_ClusterAABBGeneration_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram);
 
         // Run the job as series of 1024 clusters at a time
         CmdDispatch(cmdBuf, Math::ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1);
-    };
-    Frame::AddSubgraph("Cluster AABB Generation", { op });
+    }, {
+        { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 }
 
 //------------------------------------------------------------------------------

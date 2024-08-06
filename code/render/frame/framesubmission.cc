@@ -117,7 +117,7 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
 
     // If a wait submission is present, append a wait for the subission we just did
     for (IndexT i = 0; i < this->waitSubmissions.Size(); i++)
-        CoreGraphics::WaitForSubmission(this->waitSubmissions[i]->submissionId, this->queue, this->waitSubmissions[i]->queue);
+        CoreGraphics::WaitForSubmission(this->waitSubmissions[i]->submissionId, this->queue);
 
     for (IndexT i = 0; i < this->waitQueues.Size(); i++)
         CoreGraphics::WaitForLastSubmission(this->queue, this->waitQueues[i]);

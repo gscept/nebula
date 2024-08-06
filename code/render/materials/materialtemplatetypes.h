@@ -11,6 +11,7 @@
 namespace MaterialTemplates
 {
 
+enum class BatchGroup;
 struct MaterialTemplateValue
 {
     enum Type
@@ -83,8 +84,8 @@ struct Entry
 #ifdef WITH_NEBULA_EDITOR
     Util::Dictionary<uint, const MaterialTemplateValue*> valuesByHash;
     Util::Dictionary<uint, const MaterialTemplateTexture*> texturesByHash;
-#endif WITH_NEBULA_EDITOR
-    Util::Dictionary<CoreGraphics::BatchGroup::Code, Pass*> passes;
+#endif
+    Util::Dictionary<MaterialTemplates::BatchGroup, Pass*> passes;
     Util::Array<Util::Array<Materials::ShaderConfigBatchTexture*>> texturesPerBatch;
     Util::Array<Util::Dictionary<uint, uint>> textureBatchLookup;
 };

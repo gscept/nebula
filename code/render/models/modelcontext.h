@@ -101,9 +101,9 @@ public:
     /// Get node index based on name
     static IndexT GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
     /// Setup material instance context
-    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const CoreGraphics::BatchGroup::Code batch);
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplates::BatchGroup batch);
     /// Setup material instance context
-    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch);
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplates::BatchGroup batch);
     /// Allocate constant memory for instance constants in this frame
     static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const Materials::BatchIndex batch);
     /// Allocate constant memory for instance constants in this frame
