@@ -95,7 +95,7 @@ NB_MODULE(nmath, m)
         })
         .def_static("ret_numpy", [](Math::vec4& m) {
                 const size_t shape[1] = { 4 };
-            return py::ndarray<py::numpy, float, py::shape<4,1>>(&m[0], 1, shape);
+            return py::ndarray<py::numpy, float, nanobind::shape<4,1>>(&m[0], 1, shape, nanobind::handle());
         });
 
     py::class_<Math::point>(m, "Point")
@@ -241,7 +241,7 @@ NB_MODULE(nmath, m)
         .def_static("is_point_inside", &Math::ispointinside)
         .def_static("ret_numpy", [](Math::mat4& m) {
             const size_t shape[2] = { 4, 4 };
-            return py::ndarray<py::numpy, float, py::shape<4, 4>>(&m.m[0][0], 2, shape);
+            return py::ndarray<py::numpy, float, nanobind::shape<4, 4>>(&m.m[0][0], 2, shape, nanobind::handle());
         });
 
     py::class_<Math::quat>(m, "Quaternion")
@@ -285,7 +285,7 @@ NB_MODULE(nmath, m)
         .def_static("to_axis_angle", &Math::to_axisangle)       
         .def_static("ret_numpy", [](Math::vec4& m) {
                 const size_t shape[1] = { 4 };
-            return py::ndarray<py::numpy, float, py::shape<4,1>>(&m[0], 1, shape);
+            return py::ndarray<py::numpy, float, py::shape<4,1>>(&m[0], 1, shape, nanobind::handle());
         });
         
     py::class_<Math::vec2>(m, "Float2")
@@ -330,7 +330,7 @@ NB_MODULE(nmath, m)
         .def_static("ge", &Math::vec2::ge)
         .def_static("ret_numpy", [](Math::vec2& m) {
                 const size_t shape[1] = { 2 };
-            return py::ndarray<py::numpy, float, py::shape<2>>(&m.x, 1, shape);
+            return py::ndarray<py::numpy, float, py::shape<2>>(&m.x, 1, shape, nanobind::handle());
         });
 }
 
