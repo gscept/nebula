@@ -1174,9 +1174,9 @@ class FrameScriptGenerator:
             submission.FormatHeader(file)
 
         for idx, texture in enumerate(self.localTextures + self.importTextures):
-            file.WriteLine("extern inline CoreGraphics::TextureId Texture_{}();".format(texture.name, texture.name))
+            file.WriteLine("extern CoreGraphics::TextureId Texture_{}();".format(texture.name, texture.name))
         for idx, buffer in enumerate(self.importBuffers):
-            file.WriteLine("extern inline CoreGraphics::BufferId Buffer_{}();".format(buffer.name, buffer.name))
+            file.WriteLine("extern CoreGraphics::BufferId Buffer_{}();".format(buffer.name, buffer.name))
         for export in self.exportTextures:
             export.FormatHeader(file)
         for submission in self.submissions:
