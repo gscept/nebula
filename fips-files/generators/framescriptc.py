@@ -1173,10 +1173,17 @@ class FrameScriptGenerator:
         for submission in self.submissions:
             submission.FormatHeader(file)
 
-        for idx, texture in enumerate(self.localTextures + self.importTextures):
-            file.WriteLine("extern CoreGraphics::TextureId Texture_{}();".format(texture.name, texture.name))
-        for idx, buffer in enumerate(self.importBuffers):
-            file.WriteLine("extern CoreGraphics::BufferId Buffer_{}();".format(buffer.name, buffer.name))
+            
+        file.WriteLine("")
+        if len(self.localTextures + self.importTextures) > 0:
+            file.WriteLine("extern CoreGraphics::TextureId Textures[(uint)TextureIndex::Num];")
+        if len(self.importBuffers) > 0:
+            file.WriteLine("extern CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num];")
+
+        for texture in (self.localTextures + self.importTextures):
+            file.WriteLine("inline CoreGraphics::TextureId Texture_{}() {{ return Textures[(uint)TextureIndex::{}]; }}".format(texture.name, texture.name))
+        for buffer in (self.importBuffers):
+            file.WriteLine("inline CoreGraphics::BufferId Buffer_{}() {{ return Buffers[(uint)BufferIndex::{}]; }}".format(buffer.name, buffer.name))
         for export in self.exportTextures:
             export.FormatHeader(file)
         for submission in self.submissions:
@@ -1228,11 +1235,6 @@ class FrameScriptGenerator:
         if len(self.importBuffers) > 0:
             file.WriteLine("CoreGraphics::PipelineStage BufferSyncTracking[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
-
-        for idx, texture in enumerate(self.localTextures + self.importTextures):
-            file.WriteLine("inline CoreGraphics::TextureId Texture_{}() {{ return Textures[(uint)TextureIndex::{}]; }}".format(texture.name, texture.name))
-        for idx, buffer in enumerate(self.importBuffers):
-            file.WriteLine("inline CoreGraphics::BufferId Buffer_{}() {{ return Buffers[(uint)BufferIndex::{}]; }}".format(buffer.name, buffer.name))
 
         file.WriteLine("")
         for extern in self.externs:
