@@ -195,7 +195,7 @@ struct BarrierScope
             this->fromStage = fromStage;
             this->toStage = toStage;
         }
-        BufferBarrierInfo info = { .buf = buf, .subres = BufferSubresourceInfo::BufferSubresourceInfo() };
+        BufferBarrierInfo info = { .buf = buf, .subres = CoreGraphics::BufferSubresourceInfo() };
         buffers.Append(info);
     }
 
