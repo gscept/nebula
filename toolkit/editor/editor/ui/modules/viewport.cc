@@ -44,7 +44,7 @@ Viewport::Init(Util::String const & viewName)
     static int unique = 0;
     Util::String name = viewName;
     name.AppendInt(unique++);
-    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_default::Run);
+    this->view = Graphics::GraphicsServer::Instance()->CreateView(name, FrameScript_default::Run, Math::rectangle<int>(0, 0, 1280, 900));
     
     this->camera.Setup(1280, 900);
 	this->camera.AttachToView(this->view);

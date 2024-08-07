@@ -135,7 +135,7 @@ GraphicsFeatureUnit::OnActivate()
 
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(width, height);
-    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, this->wnd);
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();
@@ -247,6 +247,15 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::DownsamplingContext::Setup();
 
     Graphics::SetupBufferConstants();
+    this->gfxServer->SetPreviewCall([](IndexT frameIndex, IndexT bufferIndex) {
+        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+        FrameScript_default::Bind_SunShadowDepth(FrameScript_shadows::Export_SunShadowDepth.tex, FrameScript_shadows::Export_SunShadowDepth.stage);
+    });
+    this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
+        FrameScript_default::Initialize(windowWidth, windowHeight);
+        FrameScript_default::SetupPipelines();
+    });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
     Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 70_rad, 0_rad, true);

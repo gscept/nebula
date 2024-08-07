@@ -240,37 +240,34 @@ DownsamplingContext::Setup()
     });
     CoreGraphics::ResourceTableCommitChanges(state.extractResourceTable);
 
-    FrameScript_default::RegisterSubgraph_DepthExtract_Compute([](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DepthExtract_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_Depth());
         CmdSetShaderProgram(cmdBuf, state.extractProgram, false);
         CmdSetResourceTable(cmdBuf, state.extractResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(dims.width, 64);
-        CmdDispatch(cmdBuf, dispatchX, dims.height, 1);
+        uint dispatchX = Math::divandroundup(viewport.width(), 64);
+        CmdDispatch(cmdBuf, dispatchX, viewport.height(), 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::Depth, PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::TextureIndex::ZBuffer, PipelineStage::ComputeShaderRead }
     });
 
-    FrameScript_default::RegisterSubgraph_ColorDownsample_Compute([](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_ColorDownsample_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
         CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, false);
         CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(dims.width, 64);
-        uint dispatchY = Math::divandroundup(dims.height, 64);
+        uint dispatchX = Math::divandroundup(viewport.width(), 64);
+        uint dispatchY = Math::divandroundup(viewport.height(), 64);
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::LightBuffer, PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_DepthDownsample_Compute([](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DepthDownsample_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_Depth());
         CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, false);
         CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = DispatchSize(dims.width);
-        uint dispatchY = DispatchSize(dims.height);
+        uint dispatchX = DispatchSize(viewport.width());
+        uint dispatchY = DispatchSize(viewport.height());
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::Depth, PipelineStage::ComputeShaderWrite }

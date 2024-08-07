@@ -1832,7 +1832,17 @@ WaitAndClearPendingCommands()
     state.queueHandler.WaitIdle(SparseQueueType);
     vkDeviceWaitIdle(state.devices[state.currentDevice]);
 
-    Vulkan::ClearPending();
+    for (int buffer = 0; buffer < state.maxNumBufferedFrames; buffer++)
+    {
+        state.currentBufferedFrameIndex = buffer;
+        Vulkan::ClearPending();
+
+        // Reset queries
+        for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
+        {
+            state.queries[buffer].queryFreeCount[i] = 0;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

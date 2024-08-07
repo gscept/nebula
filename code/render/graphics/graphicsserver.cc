@@ -38,6 +38,8 @@ __ImplementSingleton(Graphics::GraphicsServer);
 */
 GraphicsServer::GraphicsServer() :
     isOpen(false)
+    , preViewCall(nullptr)
+    , resizeCall(nullptr)
 {
     __ConstructSingleton;
 }
@@ -280,6 +282,13 @@ void
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
     CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
+
+    CoreGraphics::WaitAndClearPendingCommands();
+
+    // First, call the resize callback to trigger an update of the frame scripts
+    if (this->resizeCall != nullptr)
+        this->resizeCall(mode.GetWidth(), mode.GetHeight());
+
     for (IndexT i = 0; i < this->contexts.Size(); ++i)
     {
         if (this->contexts[i]->OnWindowResized != nullptr)
@@ -344,15 +353,12 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Math::rectangle<int>&, IndexT, IndexT), const CoreGraphics::WindowId window)
+GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport)
 {
-    n_assert(window != CoreGraphics::InvalidWindowId);
-
-    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(window);
-    
+    n_assert(viewport.width() > 0 && viewport.height() > 0);
     Ptr<View> view = View::Create();
     view->SetFrameScript(render);
-    view->SetViewport(Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
+    view->SetViewport(viewport);
     this->views.Append(view);
 
     // invoke all interested contexts
@@ -534,10 +540,10 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
-    // Run shadows detached from the views
-    FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), this->frameContext.frameIndex, this->frameContext.bufferIndex);
-    FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-    FrameScript_default::Bind_SunShadowDepth(FrameScript_shadows::Export_SunShadowDepth.tex, FrameScript_shadows::Export_SunShadowDepth.stage);
+    if (this->preViewCall != nullptr)
+    {
+        this->preViewCall(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    }
 
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)

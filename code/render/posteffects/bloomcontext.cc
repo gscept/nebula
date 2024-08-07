@@ -93,13 +93,12 @@ BloomContext::Setup()
     ResourceTableCommitChanges(bloomState.resourceTable);
 
 
-    FrameScript_default::RegisterSubgraph_Bloom_Compute([](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_Bloom_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
         CmdSetShaderProgram(cmdBuf, bloomState.program);
         CmdSetResourceTable(cmdBuf, bloomState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(dims.width, 6);
-        uint dispatchY = Math::divandroundup(dims.height, 6);
+        uint dispatchX = Math::divandroundup(viewport.width(), 6);
+        uint dispatchY = Math::divandroundup(viewport.height(), 6);
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
         { FrameScript_default::TextureIndex::LightBuffer, PipelineStage::ComputeShaderRead }

@@ -173,7 +173,7 @@ HistogramContext::Setup()
     histogramState.size.y = 1.0f;
 
     FrameScript_default::Bind_HistogramCounters(histogramState.histogramCounters);
-    FrameScript_default::RegisterSubgraph_HistogramBin_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HistogramBin_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, histogramState.histogramCategorizeProgram, false);
         CoreGraphics::CmdSetResourceTable(cmdBuf, histogramState.histogramResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
@@ -184,7 +184,7 @@ HistogramContext::Setup()
         { FrameScript_default::BufferIndex::HistogramCounters, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_HistogramCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HistogramCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BarrierPush(
             cmdBuf,
@@ -212,7 +212,7 @@ HistogramContext::Setup()
         { FrameScript_default::BufferIndex::HistogramCounters, CoreGraphics::PipelineStage::TransferRead }
     });
 
-    FrameScript_default::RegisterSubgraph_HistogramClear_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HistogramClear_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         // Clear histogram counters
         uint initDatas[255] = { 0 };

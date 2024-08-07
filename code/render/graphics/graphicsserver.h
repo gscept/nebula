@@ -66,7 +66,7 @@ public:
     bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
     /// create a new view with a new framescript
-    Ptr<View> CreateView(const Util::StringAtom& name, void(*)(const Math::rectangle<int>&, IndexT, IndexT), const CoreGraphics::WindowId window = CoreGraphics::InvalidWindowId);
+    Ptr<View> CreateView(const Util::StringAtom& name, void(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport);
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
     /// discard view
@@ -75,6 +75,11 @@ public:
     const Ptr<View>& GetCurrentView() const;
     /// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
     void SetCurrentView(const Ptr<View>& view);
+
+    /// Set a function to be run before the views render
+    void SetPreviewCall(void(*)(IndexT, IndexT));
+    /// Set a function to be run when resize
+    void SetResizeCall(void(*)(const SizeT, const SizeT));
 
     /// create a new stage
     Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
@@ -134,6 +139,8 @@ private:
     Util::Array<Ptr<Stage>> stages;
     Util::Array<Ptr<View>> views;
     Ptr<View> currentView;
+    void (*preViewCall) (IndexT, IndexT);
+    void (*resizeCall) (const SizeT, const SizeT);
 
     Ptr<CoreGraphics::DisplayDevice> displayDevice;
     bool graphicsDevice;
@@ -192,6 +199,24 @@ inline const Ptr<View>&
 GraphicsServer::GetCurrentView() const
 {
     return this->currentView;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+GraphicsServer::SetPreviewCall(void(*func)(IndexT, IndexT))
+{
+    this->preViewCall = func;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+GraphicsServer::SetResizeCall(void(*func)(const SizeT windowWidth, const SizeT windowHeight))
+{
+    this->resizeCall = func;
 }
 
 //------------------------------------------------------------------------------

@@ -25,12 +25,6 @@ struct ImFont;
 namespace Dynui
 {
 
-struct ImguiRendererParams
-{
-    IndexT projVar;
-    IndexT fontVar;
-};
-
 struct ImguiTextureId
 {
     CoreGraphics::TextureId nebulaHandle;
@@ -67,7 +61,6 @@ public:
 
     struct ImguiState
     {
-        ImguiRendererParams params;
         CoreGraphics::ShaderId uiShader;
         CoreGraphics::ShaderProgramId prog;
         CoreGraphics::PipelineId pipeline;
@@ -79,7 +72,6 @@ public:
         Util::FixedArray<CoreGraphics::BufferId> ibos;
         CoreGraphics::VertexLayoutId vlo;
 
-        IndexT textureConstant;
         IndexT textProjectionConstant;
         IndexT packedTextureInfo;
         CoreGraphics::ResourceTableId resourceTable;
@@ -99,7 +91,6 @@ public:
     static ImguiState state;
 
 private:
-    static void ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf);
     static void RecoverImGuiContextErrors();
 };
 

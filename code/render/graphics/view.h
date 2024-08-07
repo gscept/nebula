@@ -37,6 +37,8 @@ public:
     void SetFrameScript(void(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex));
     /// Set viewport
     void SetViewport(const Math::rectangle<int>& rect);
+    /// Get viewport
+    const Math::rectangle<int>& GetViewport();
 
     /// set camera
     void SetCamera(const GraphicsEntityId& camera);
@@ -145,6 +147,15 @@ inline void
 View::SetViewport(const Math::rectangle<int>& rect)
 {
     this->viewport = rect;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const 
+Math::rectangle<int>& View::GetViewport()
+{
+    return this->viewport;
 }
 
 } // namespace Graphics

@@ -111,7 +111,7 @@ DecalContext::Create()
 
     FrameScript_default::Bind_ClusterDecalList(decalState.clusterDecalsList);
     FrameScript_default::Bind_ClusterDecalIndexLists(decalState.clusterDecalIndexLists);
-    FrameScript_default::RegisterSubgraph_DecalCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DecalCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -121,7 +121,7 @@ DecalContext::Create()
         { FrameScript_default::BufferIndex::ClusterDecalList, CoreGraphics::PipelineStage::TransferWrite }
     });
 
-    FrameScript_default::RegisterSubgraph_DecalCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DecalCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, decalState.cullProgram);
 

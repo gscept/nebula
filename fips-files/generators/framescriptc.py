@@ -200,6 +200,7 @@ class LocalTextureDefinition:
             file.WriteLine("info.layers = {};".format(self.layers))
             file.WriteLine("Textures[(uint)TextureIndex::{}] = CoreGraphics::CreateTexture(info);".format(self.name))
             file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(info.format);".format(self.name, self.name))
+            file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = CoreGraphics::PipelineStage::InvalidStage;".format(self.name))
             file.DecreaseIndent()
             file.WriteLine("}")
         else:
@@ -260,14 +261,14 @@ class SubgraphDefinition:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
         file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> SubgraphTextureDependencies_{};'.format(self.name))
         file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> SubgraphBufferDependencies_{};'.format(self.name))
-        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const IndexT, const IndexT);\n".format(self.name))
+        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);\n".format(self.name))
         file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
 
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine('void')
-        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> textureDeps)'.format(self.name))
+        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> textureDeps)'.format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("Subgraph_{} = func;".format(self.name))
@@ -302,7 +303,7 @@ class SubgraphDefinition:
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
-        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> textureDeps = nullptr);'.format(self.name))
+        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> textureDeps = nullptr);'.format(self.name))
     
     def FormatSource(self, file):
         file.WriteLine("")
@@ -314,7 +315,7 @@ class SubgraphDefinition:
         file.IncreaseIndent()
         if self.subp == None:
             file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(self.name, self.name, self.name))
-        file.WriteLine('Subgraph_{}(cmdBuf, frameIndex, bufferIndex);'.format(self.name))
+        file.WriteLine('Subgraph_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
 
@@ -985,6 +986,12 @@ class SubmissionDefinition:
             op.FormatHeader(file)
 
     def FormatSetup(self, file):
+        file.WriteLine("if (CmdPool_{} != CoreGraphics::InvalidCmdBufferPoolId)".format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("CoreGraphics::DestroyCmdBufferPool(CmdPool_{});".format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine("}")
         file.WriteLine("CmdPool_{} = CoreGraphics::CreateCmdBufferPool({{ .queue = CoreGraphics::QueueType::{}QueueType, .resetable = false, .shortlived = true }});".format(self.name, self.queue))
         for op in self.ops:
             op.FormatSetup(file)

@@ -92,12 +92,12 @@ StaticUIContext::Create()
     JSObjectSetProperty(js.get().ctx(), global, nativeBoxFuncName, nativeBoxFunc, 0, nullptr);
     JSStringRelease(nativeBoxFuncName);
 
-    FrameScript_default::RegisterSubgraph_StaticUI_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_StaticUI_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         state.Backend->Render(cmdBuf, bufferIndex);
     });
 
-    FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         state.Backend->DrawToBackbuffer(cmdBuf, bufferIndex);
     });

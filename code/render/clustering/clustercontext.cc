@@ -111,7 +111,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     }
 
     FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
-    FrameScript_default::RegisterSubgraph_ClusterAABBGeneration_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_ClusterAABBGeneration_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram);
 
@@ -206,6 +206,8 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
         rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         state.clusterBuffer = CreateBuffer(rwb3Info);
+        FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
+
 
         for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
