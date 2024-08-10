@@ -84,10 +84,9 @@ OnActivate()
             Editor::state.editorWorld->ExportLevel(path.AsCharPtr());
     }, "Export", "Ctrl+Shift+E", "File");
 
-    Dynui::ImguiContext::state.dockOverViewport = true;
-
     GraphicsFeature::GraphicsFeatureUnit::Instance()->AddRenderUICallback([]()
     {
+        ImGui::DockSpaceOverViewport();
         windowServer->RunAll();
     });
 }

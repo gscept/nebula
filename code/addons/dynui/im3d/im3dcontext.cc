@@ -193,6 +193,8 @@ Im3dContext::Create()
             CoreGraphics::DestroyGraphicsPipeline(imState.pointsPipeline);
         imState.pointsPipeline = CoreGraphics::CreateGraphicsPipeline({ imState.points, pass, subpass, CoreGraphics::InputAssemblyKey{ CoreGraphics::PrimitiveTopology::PointList, false } });
     });
+    Im3d::NewFrame();
+
 }
 
 //------------------------------------------------------------------------------
@@ -364,14 +366,6 @@ Im3dContext::DrawSphere(const Math::point& pos, float radius, const Math::vec4& 
     Im3d::PopDrawState();
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-Im3dContext::NewFrame(const Graphics::FrameContext& ctx)
-{
-    Im3d::NewFrame();
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -531,6 +525,7 @@ Im3dContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIn
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
     CoreGraphics::BufferFlush(imState.vbo);
+    Im3d::NewFrame();
 }
 
 //------------------------------------------------------------------------------

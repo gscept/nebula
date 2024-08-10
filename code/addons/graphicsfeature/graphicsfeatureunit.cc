@@ -267,7 +267,6 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewIndependentCall> preLogicCalls =
     {
-        Im3d::Im3dContext::NewFrame,
         Dynui::ImguiContext::NewFrame,
         CameraContext::UpdateCameras,
         ModelContext::UpdateTransforms,
@@ -300,7 +299,6 @@ GraphicsFeatureUnit::OnActivate()
         Raytracing::RaytracingContext::UpdateTransforms,
 
         // At the very latest point, wait for work to finish
-        Dynui::ImguiContext::Render,
         ModelContext::WaitForWork,
         Raytracing::RaytracingContext::WaitForJobs,
         Characters::CharacterContext::WaitForCharacterJobs,
@@ -376,11 +374,6 @@ GraphicsFeatureUnit::OnBeginFrame()
 
     this->gfxServer->RunPreLogic();
 
-    for (auto const& uiFunc : this->uiCallbacks)
-    {
-        uiFunc();
-    }
-
     switch (Core::CVarReadInt(this->r_debug))
     {
     case 2:
@@ -410,6 +403,11 @@ GraphicsFeatureUnit::OnFrame()
 {
     FeatureUnit::OnFrame();
     this->gfxServer->Render();
+
+    for (auto const& uiFunc : this->uiCallbacks)
+    {
+        uiFunc();
+    }
 }
 
 //------------------------------------------------------------------------------

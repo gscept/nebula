@@ -40,8 +40,8 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
     ImGuiIO& io = ImGui::GetIO();
-    int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
+    int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
+    int fb_height = (int)(viewport.height() * io.DisplayFramebufferScale.y);
     data->ScaleClipRects(io.DisplayFramebufferScale);
 
     // get renderer 
@@ -350,7 +350,9 @@ ImguiContext::Create()
 #ifdef NEBULA_NO_DYNUI_ASSERTS
         ImguiContext::RecoverImGuiContextErrors();
 #endif
+        ImGui::Render();
         ImguiDrawFunction(cmdBuf, viewport);
+        ImGui::NewFrame();
     });
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
@@ -567,6 +569,9 @@ ImguiContext::Create()
         ImGui::SaveIniSettingsToDisk("imgui.ini");
     }
     ImGui::LoadIniSettingsFromDisk("imgui.ini");
+
+    ImGui::NewFrame();
+
 }
 
 //------------------------------------------------------------------------------
@@ -665,22 +670,7 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
-    ImGui::NewFrame();
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
-#ifdef IMGUI_HAS_DOCK
-    if (state.dockOverViewport)
-        ImGui::DockSpaceOverViewport();
-#endif
-
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImguiContext::Render(const Graphics::FrameContext& ctx)
-{
-    ImGui::Render();
 }
 
 } // namespace Dynui
