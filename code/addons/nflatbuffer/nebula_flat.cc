@@ -101,4 +101,32 @@ UnPack(const Flat::Quat& v)
     Math::quat m(v.x(), v.y(), v.z(), v.w());
     return m;
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::Transform 
+Pack(const Math::transform& v)
+{
+    Flat::Transform t;
+    v.position.storeu(t.mutable_position()->data());
+    v.rotation.storeu(t.mutable_orientation()->data());
+    v.scale.storeu(t.mutable_scale()->data());
+    return t;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::transform
+UnPack(const Flat::Transform& v)
+{
+    Math::transform t;
+    t.position.loadu(v.position()->data());
+    t.rotation.loadu(v.orientation()->data());
+    t.scale.loadu(v.scale()->data());
+    return t;
+}
+
 }

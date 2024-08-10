@@ -6,6 +6,7 @@
 
 include "foundation/math.fbs";
 include "physics/material.fbs";
+include "physics/constraints.fbs";
 
 namespace PhysicsResource;
 
@@ -55,22 +56,44 @@ table Collider
 {
     name : string;
     type : Physics.ColliderType;
-    data : PhysicsResource.ColliderData;
+    data : ColliderData;
 }
-
 
 table Shape
 {
     collider : Collider;
     material : string;
-    transform : Flat.Mat4 (native_inline);
+    transform : Flat.Transform (native_inline);
 }
 
-table Actor
+table Body
 {
     feedback : Physics.CollisionFeedback;
     collision : string;
     shapes : [Shape];
+}
+
+table BodySetup
+{
+    body : Body;
+    transform : Flat.Transform (native_inline);
+    name : string;
+}
+
+table Aggregate
+{
+    bodies : [BodySetup];
+    constraints : [Physics.Joint];
+}
+
+union PhysicsResourceUnion
+{
+    BodySetup, Aggregate
+}
+
+table Actor
+{
+    data : PhysicsResourceUnion;
 }
 
 root_type Actor;

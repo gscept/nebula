@@ -89,6 +89,8 @@ fips_dir(editor)
                 history.h
                 outline.cc
                 outline.h
+                physics.cc
+                physics.h
                 resourcebrowser.cc
                 resourcebrowser.h
                 styleeditor.cc

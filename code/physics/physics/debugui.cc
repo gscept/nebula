@@ -146,7 +146,8 @@ namespace Physics
 
 void RenderUI(Graphics::GraphicsEntityId camera)
 {
-    ImGui::Begin("Physics");
+    RenderMaterialsUI();
+    ImGui::Separator();
     if (ImGui::Checkbox("Debug Rendering", &dstate.enabled))
     {
         if (!dstate.enabled)
@@ -184,17 +185,16 @@ void RenderUI(Graphics::GraphicsEntityId camera)
         }
         ImGui::EndChild();
     }
-    ImGui::End();
     if (dstate.enabled)
     {
         RenderPhysicsDebug();
     }
-    RenderMaterialsUI();
+ 
 }
 
 void RenderMaterialsUI()
 {
-    ImGui::Begin("Physics Materials");
+    ImGui::Text("Physics Materials");
     static bool hasSelection = false;
     static int selected = 0;
     static MaterialDefinitionT original;
@@ -295,7 +295,6 @@ void RenderMaterialsUI()
         writer->Close();
         CompileFlatbuffer(Materials, tablePath, "phys:");
     }
-    ImGui::End();
 }
 
 }

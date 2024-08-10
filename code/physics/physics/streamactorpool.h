@@ -12,7 +12,11 @@
 #include "util/stack.h"
 #include "physics/actorcontext.h"
 #include "physicsinterface.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
 #include "flat/physics/material.h"
+#include "flat/physics/constraints.h"
+#include "flat/physics/actor.h"
 #include "ids/idallocator.h"
 
 namespace Physics
@@ -24,20 +28,38 @@ enum PhysicsIdType
     MeshIdType,
 };
 
-struct ActorInfo
+struct BodyInfo
 {
     Util::Array<physx::PxShape*> shapes;
-    Util::Array<float> densities;
     Util::Array<Util::String> colliders;
-    SizeT instanceCount;
-    uint16_t collisionGroup;
-    CollisionFeedback feedbackFlag;
-    
+    Util::Array<float> densities;
 #ifdef NEBULA_DEBUG
     Util::Array<Util::String> shapeDebugNames;
 #endif
+    uint16_t collisionGroup;
+    CollisionFeedback feedbackFlag;
 };
 
+struct ActorInfo
+{
+    BodyInfo body; 
+    Math::transform transform;
+    Util::StringAtom name;
+    SizeT instanceCount;
+};
+
+struct ConstraintInfo
+{
+    Physics::ConstraintType type;
+    SizeT InstanceCount;
+};
+
+struct AggregateInfo
+{
+    Util::Array<ActorResourceId> bodies;
+    Util::Array<ConstraintResourceId> constraints;
+    SizeT instanceCount;
+};
     
 class StreamActorPool : public Resources::ResourceLoader
 {
@@ -52,10 +74,16 @@ public:
     void Setup() override;
 
     ///
-    ActorId CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene = 0);
+    ActorId CreateActorInstance(ActorResourceId id, Math::transform const & trans, Physics::ActorType type, uint64_t userData, IndexT scene = 0);
+    ActorId CreateActorInstance(PhysicsResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene = 0);
     /// destroys an actor, if the actor was created from a resource it also
     /// reduces use count of resource
     void DiscardActorInstance(ActorId id);
+
+    AggregateId CreateAggregate(PhysicsResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene = 0);
+    void DiscardAggregateInstance(AggregateId id);
+
+    PhysicsResource::PhysicsResourceUnion GetResourceType(PhysicsResourceId id);
       
 
 private:
@@ -68,9 +96,12 @@ private:
 
     enum
     {
-        Actor_Info
+        Info
     };
-    Ids::IdAllocatorSafe<0xFFF, ActorInfo> allocator;
+    Ids::IdAllocatorSafe<0xFFFF, ActorInfo> actorAllocator;
+    Ids::IdAllocatorSafe<0xFFFF, ConstraintInfo> constraintAllocator;
+    Ids::IdAllocatorSafe<0xFFFF, AggregateInfo> aggregateAllocator;
+    Ids::IdAllocatorSafe<0xFFFF, PhysicsResource::PhysicsResourceUnion, Ids::Id32> resourceAllocator;
 };
 
 extern StreamActorPool *actorPool;
