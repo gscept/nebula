@@ -960,12 +960,6 @@ CmdBeginPass(const CmdBufferId id, const PassId pass)
     bits |= CoreGraphics::CmdPipelineBuildBits::FramebufferLayoutInfoSet;
     bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
 
-    // Set viewports and scissors
-    auto viewports = PassGetViewports(pass);
-    CmdSetViewports(id, viewports);
-    auto scissors = PassGetRects(pass);
-    CmdSetScissors(id, scissors);
-
     pipelineBundle.pass = pass;
     pipelineBundle.multisampleInfo.rasterizationSamples = framebufferInfo.pMultisampleState->rasterizationSamples;
     pipelineBundle.pipelineInfo.subpass = 0;
@@ -994,21 +988,6 @@ CmdEndPass(const CmdBufferId id)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     vkCmdEndRenderPass(cmdBuf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-CmdResetClipToPass(const CmdBufferId id)
-{
-    VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(id.id);
-
-    // Set viewports and scissors
-    auto viewports = PassGetViewports(pipelineBundle.pass);
-    CmdSetViewports(id, viewports);
-    auto scissors = PassGetRects(pipelineBundle.pass);
-    CmdSetScissors(id, scissors);
 }
 
 //------------------------------------------------------------------------------

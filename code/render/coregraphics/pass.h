@@ -106,12 +106,6 @@ const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const
 /// Get pass resource table
 const CoreGraphics::ResourceTableId PassGetResourceTable(const CoreGraphics::PassId id);
 
-/// get scissor rects for current subpass
-const Util::FixedArray<Math::rectangle<int>>& PassGetRects(const CoreGraphics::PassId& id);
-/// get viewports for current subpass
-const Util::FixedArray<Math::rectangle<int>>& PassGetViewports(const CoreGraphics::PassId& id);
-
-
 /// get name
 const Util::StringAtom PassGetName(const CoreGraphics::PassId id);
 

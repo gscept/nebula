@@ -276,8 +276,6 @@ void CmdBeginPass(const CmdBufferId id, const CoreGraphics::PassId pass);
 void CmdNextSubpass(const CmdBufferId id);
 /// End pass
 void CmdEndPass(const CmdBufferId id);
-/// Reset clip settings to pass
-void CmdResetClipToPass(const CmdBufferId id);
 /// Draw primitives
 void CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw primitives instanced

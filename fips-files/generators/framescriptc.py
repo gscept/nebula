@@ -86,7 +86,7 @@ class TextureExportDefinition:
         file.WriteLine("extern Frame::TextureExport Export_{};".format(self.name))
 
     def FormatSource(self, file):
-        file.WriteLine("Frame::TextureExport Export_{} = {{ Textures[(uint)TextureIndex::{}], TextureCurrentStage[(uint)TextureIndex::{}] }};".format(self.name, self.name, self.name))
+        file.WriteLine("Frame::TextureExport Export_{} = {{ .index = (uint)TextureIndex::{}, .tex = Textures[(uint)TextureIndex::{}], .stage = TextureCurrentStage[(uint)TextureIndex::{}] }};".format(self.name, self.name, self.name, self.name))
 
 class DependencyDefinition:
     def __init__(self, parser, name):
@@ -648,6 +648,21 @@ class SwapDefinition:
 
     def FormatSetup(self, file):
         file.WriteLine("Initialize_Swap_{}();".format(self.name))
+    
+class TransitionDefinition:
+    def __init__(self, parser, node):
+        self.name = node['name']
+        self.stage = node['stage']
+
+    def FormatHeader(self, file):
+        pass
+
+    def FormatSetup(self, file):
+        pass
+
+    def FormatSource(self, file):
+        file.WriteLine('Synchronize("Transition_{}", cmdBuf, {{ {{ TextureIndex::{}, CoreGraphics::PipelineStage::{} }} }}, nullptr);'.format(self.name, self.name, self.stage))
+
 
 class AttachmentDefinition:
     def __init__(self, parser, node):
@@ -977,6 +992,8 @@ class SubmissionDefinition:
                 self.ops.append(ResolveDefinition(parser, op['resolve']))
             elif 'swap' in op:
                 self.ops.append(SwapDefinition(parser, op['swap']))
+            elif 'transition' in op:
+                self.ops.append(TransitionDefinition(parser, op['transition']))
 
     def FormatExtern(self, file):
         file.WriteLine("CoreGraphics::CmdBufferPoolId CmdPool_{} = CoreGraphics::InvalidCmdBufferPoolId;\n".format(self.name))
@@ -1008,7 +1025,10 @@ class SubmissionDefinition:
         file.WriteLine("CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdBufInfo);")
         file.WriteLine("CoreGraphics::CmdBufferBeginInfo beginInfo = { true, false, false };")
         file.WriteLine("CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);")
-        file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, "{}");'.format(self.name))
+        if self.queue == "Graphics":
+            file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, "{}");'.format(self.name))
+        else:
+            file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "{}");'.format(self.name))
         file.IncreaseIndent()
         file.WriteLine("Graphics::FlushUpdates(cmdBuf, CoreGraphics::QueueType::{}QueueType);".format(self.queue))
         file.WriteLine("Materials::MaterialLoader::FlushMaterialBuffers(cmdBuf, CoreGraphics::QueueType::{}QueueType);".format(self.queue))
@@ -1156,6 +1176,7 @@ class FrameScriptGenerator:
         file.WriteLine("Num")
         file.DecreaseIndent()
         file.WriteLine("};")        
+        file.WriteLine("void Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>>& bufferDeps);")
 
     
         for importBuffer in self.importBuffers:
@@ -1239,8 +1260,9 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::PipelineStage TextureCurrentStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::PipelineStage TextureOriginalStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::TextureId Textures[(uint)TextureIndex::Num] = {};")
+            file.WriteLine("Util::Pair<float, float> TextureScaleFactors[(uint)TextureIndex::Num] = {};")
         if len(self.importBuffers) > 0:
-            file.WriteLine("CoreGraphics::PipelineStage BufferSyncTracking[(uint)BufferIndex::Num] = {};")
+            file.WriteLine("CoreGraphics::PipelineStage BufferCurrentStage[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
 
         file.WriteLine("")
@@ -1277,14 +1299,14 @@ class FrameScriptGenerator:
             file.WriteLine("for (const auto [index, stage] : bufferDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
-            file.WriteLine("CoreGraphics::PipelineStage lastStage = BufferSyncTracking[(uint)index];")
+            file.WriteLine("CoreGraphics::PipelineStage lastStage = BufferCurrentStage[(uint)index];")
             file.WriteLine("if ((stage != lastStage) && Buffers[(uint)index] != CoreGraphics::InvalidBufferId)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("scope.AddBuffer(Buffers[(uint)index], lastStage, stage);")
             file.DecreaseIndent()
             file.WriteLine("}")
-            file.WriteLine("BufferSyncTracking[(uint)index] = stage;")
+            file.WriteLine("BufferCurrentStage[(uint)index] = stage;")
 
             file.DecreaseIndent()
             file.WriteLine("}")
@@ -1389,7 +1411,7 @@ class FrameScriptGenerator:
                 submission.FormatSource(file, [])
 
         for exportTexture in self.exportTextures:
-            file.WriteLine("Export_{} = {{ Textures[(uint)TextureIndex::{}], TextureCurrentStage[(uint)TextureIndex::{}] }};".format(exportTexture.name, exportTexture.name, exportTexture.name))
+            file.WriteLine("Export_{} = {{ .index = (uint)TextureIndex::{}, .tex = Textures[(uint)TextureIndex::{}], .stage = TextureCurrentStage[(uint)TextureIndex::{}] }};".format(exportTexture.name, exportTexture.name, exportTexture.name, exportTexture.name))
         file.DecreaseIndent()
         file.WriteLine("}")
 

@@ -91,7 +91,7 @@ GraphicsServer::Open()
             8_MB,                   // Device <-> host mirrored memory block size
         },
         .maxOcclusionQueries = 0x1000,
-        .maxTimestampQueries = 0x100,
+        .maxTimestampQueries = 0x400,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
         .enableValidation = true,
@@ -214,6 +214,12 @@ GraphicsServer::Open()
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();
+
+        CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
+        poolInfo.shortlived = true;
+        poolInfo.queue = CoreGraphics::ComputeQueueType;
+        poolInfo.resetable = false;
+        this->swapBufferPool = CoreGraphics::CreateCmdBufferPool(poolInfo);
     }
     else
     {
@@ -567,6 +573,32 @@ void
 GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
+
+    // Allocate command buffer to run swap
+    CoreGraphics::CmdBufferCreateInfo bufInfo;
+    bufInfo.pool = this->swapBufferPool;
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(bufInfo);
+    CoreGraphics::CmdBufferBeginInfo beginInfo;
+    beginInfo.submitDuringPass = false;
+    beginInfo.resubmittable = false;
+    beginInfo.submitOnce = true;
+    CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+    
+    CoreGraphics::QueueBeginMarker(CoreGraphics::ComputeQueueType, NEBULA_MARKER_COMPUTE, "Swap");
+    CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
+    CoreGraphics::SwapchainSwap(swapchain);
+    FrameScript_default::Synchronize("Present_Sync", cmdBuf, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_default::Texture_ColorBuffer());
+    CoreGraphics::QueueEndMarker(CoreGraphics::ComputeQueueType);
+
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::CmdFinishQueries(cmdBuf);
+    CoreGraphics::CmdEndRecord(cmdBuf);
+
+    auto submission = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::ComputeQueueType);
+    CoreGraphics::WaitForSubmission(FrameScript_default::Submission_ForwardShadingandPostEffects, CoreGraphics::QueueType::ComputeQueueType);
+    CoreGraphics::DestroyCmdBuffer(cmdBuf);
 
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);
 }

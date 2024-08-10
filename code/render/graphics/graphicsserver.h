@@ -133,6 +133,8 @@ private:
     bool ownsTimer;
     FrameContext frameContext;
 
+    CoreGraphics::CmdBufferPoolId swapBufferPool;
+
     Util::Array<GraphicsContextFunctionBundle*> contexts;
     Util::Array<GraphicsContextState*> states;
 

@@ -130,8 +130,6 @@ GetSubpassInfo(
     , Util::Array<VkSubpassDependency>& outDeps
     , Util::FixedArray<VkAttachmentDescription>& outAttachments
     , Util::Array<uint32>& usedAttachmentCounts
-    , Util::FixedArray<Util::FixedArray<Math::rectangle<int>>>& outViewports
-    , Util::FixedArray<Util::FixedArray<Math::rectangle<int>>>& outScissorRects
     , Util::FixedArray<VkPipelineViewportStateCreateInfo>& outPipelineInfos
     , uint32& numUsedAttachmentsTotal)
 {
@@ -161,8 +159,6 @@ GetSubpassInfo(
         // resize rects
         n_assert(subpass.numViewports >= subpass.attachments.Size());
         n_assert(subpass.numScissors >= subpass.attachments.Size());
-        outViewports[i].Resize(subpass.numViewports);
-        outScissorRects[i].Resize(subpass.numScissors);
         outPipelineInfos[i] =
         {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -196,13 +192,6 @@ GetSubpassInfo(
             ds.attachment = subpass.depth;
 
             consumedAttachments[subpass.depth] = true;
-
-            if (subpass.attachments.IsEmpty())
-            {
-                outViewports[i][j] = VkViewportToRect(loadInfo.viewports[subpass.depth]);
-                outScissorRects[i][j] = VkScissorToRect(loadInfo.rects[subpass.depth]);
-                j++;
-            }
         }
         else
         {
@@ -225,10 +214,6 @@ GetSubpassInfo(
 
             consumedAttachments[attachment] = true;
             usedAttachments++;
-
-            outViewports[i][j] = VkViewportToRect(loadInfo.viewports[ref.attachment]);
-            outScissorRects[i][j] = VkScissorToRect(loadInfo.rects[ref.attachment]);
-            j++;
         }
 
         for (IndexT k = 0; k < subpass.resolves.Size(); k++)
@@ -522,8 +507,6 @@ SetupPass(const PassId pid)
     // resize subpass contents
     subpassDescs.Resize(loadInfo.subpasses.Size());
     attachments.Resize(loadInfo.attachments.Size() + 1);
-    runtimeInfo.subpassViewports.Resize(loadInfo.subpasses.Size());
-    runtimeInfo.subpassRects.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
     uint32 numUsedAttachmentsTotal = 0;
 
@@ -534,8 +517,6 @@ SetupPass(const PassId pid)
         , subpassDeps
         , attachments
         , subpassAttachmentCounts
-        , runtimeInfo.subpassViewports
-        , runtimeInfo.subpassRects
         , runtimeInfo.subpassPipelineInfo
         , numUsedAttachmentsTotal);
 
@@ -779,26 +760,6 @@ const Util::StringAtom
 PassGetName(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).name;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<Math::rectangle<int>>&
-PassGetRects(const CoreGraphics::PassId& id)
-{
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
-    return info.subpassRects[info.currentSubpassIndex];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<Math::rectangle<int>>&
-PassGetViewports(const CoreGraphics::PassId& id)
-{
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
-    return info.subpassViewports[info.currentSubpassIndex];
 }
 
 } // namespace Vulkan

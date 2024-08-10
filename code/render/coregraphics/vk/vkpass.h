@@ -50,8 +50,6 @@ struct VkPassRuntimeInfo
     CoreGraphics::ResourceTableId passDescriptorSet;
     CoreGraphics::ResourcePipelineId passPipelineLayout;
 
-    Util::FixedArray<Util::FixedArray<Math::rectangle<int>>> subpassRects;
-    Util::FixedArray<Util::FixedArray<Math::rectangle<int>>> subpassViewports;
     Util::FixedArray<VkPipelineViewportStateCreateInfo> subpassPipelineInfo;
     CoreGraphics::PassRecordMode recordMode;
 };

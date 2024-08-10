@@ -16,6 +16,7 @@ namespace Frame
 
 struct TextureExport
 {
+    uint index;
     CoreGraphics::TextureId tex;
     CoreGraphics::PipelineStage stage;
 };

@@ -42,7 +42,7 @@
         "LocalTextures": [
             {
                 "name": "ScreenBuffer",
-                "format": "R11G11B10F",
+                "format": "R9G9B9E5F",
                 "relative": true,
                 "usage": "Render|TransferDestination",
                 "relativeSize": [ 1.0, 1.0 ],
@@ -50,21 +50,21 @@
             },
             {
                 "name": "ColorBuffer",
-                "format": "R8G8B8A8",
+                "format": "SRGBA8",
                 "usage": "Render|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "SceneBuffer",
-                "format": "R8G8B8A8",
+                "format": "SRGBA8",
                 "usage": "Render|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
             },
             {
                 "name": "ShapeBuffer",
-                "format": "R8G8B8A8",
+                "format": "SRGBA8",
                 "usage": "Render",
                 "relativeSize": [ 1.0, 1.0 ],
                 "type": "Texture2D"
@@ -92,7 +92,7 @@
             },
             {
                 "name": "LightBuffer",
-                "format": "R11G11B10F",
+                "format": "R9G9B9E5F",
                 "usage": "Render|ReadWrite|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
                 "mips": "auto",
@@ -747,11 +747,10 @@
                             ]
                         }
                     },
-
                     {
-                        "swap": {
-                            "name": "Swap",
-                            "from": "ColorBuffer"
+                        "transition": {
+                            "name": "ColorBuffer",
+                            "stage": "ComputeShaderRead"
                         }
                     }
                 ]
