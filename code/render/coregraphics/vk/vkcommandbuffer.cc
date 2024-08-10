@@ -742,6 +742,9 @@ CmdBarrier(
         numMemoryBarriers, &memBarrier,
         numBuffers, bufferBarriers,
         numImages, imageBarriers);
+
+    StackFree(bufferBarriers);
+    StackFree(imageBarriers);
 }
 
 //------------------------------------------------------------------------------
@@ -875,6 +878,9 @@ CmdHandover(
         , numBuffers, bufferBarriers
         , numImages, imageBarriers
     );
+
+    StackFree(imageBarriers);
+    StackFree(bufferBarriers);
 }
 
 //------------------------------------------------------------------------------

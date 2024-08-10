@@ -28,6 +28,7 @@ extern int volatile HeapTypeAllocSize[NumHeapTypes];
 #endif
 
 #define StackAlloc(size) alloca(size);
+#define StackFree(ptr) 
 
 //------------------------------------------------------------------------------
 /**
