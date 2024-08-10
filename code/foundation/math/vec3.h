@@ -32,6 +32,7 @@ static const __m128 _id_z = _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f);
 static const __m128 _id_w = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f);
 static const __m128 _minus1 = _mm_setr_ps(-1.0f, -1.0f, -1.0f, -1.0f);
 static const __m128 _plus1 = _mm_setr_ps(1.0f, 1.0f, 1.0f, 1.0f);
+static const __m128 _zero = _mm_setr_ps(0.0f, 0.0f, 0.0f, 0.0f);
 static const __m128i _sign = _mm_setr_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
 static const __m128 _mask_xyz = _mm_castsi128_ps(_mm_setr_epi32( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 ));
 

@@ -29,7 +29,7 @@ vec3 rotate(quat const& q, vec3 const& v);
 struct NEBULA_ALIGN16 quat
 {
 public:
-    /// default constructor, NOTE: does NOT setup components!
+    /// default constructor
     quat();
     /// default copy constructor
     quat(quat const&) = default;

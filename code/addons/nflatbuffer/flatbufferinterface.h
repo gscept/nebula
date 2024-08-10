@@ -30,6 +30,8 @@ public:
     /// 
     static bool LoadSchema(IO::URI const& file);
     ///
+    static bool CompileSchema(IO::URI const& file);
+    ///
     static bool HasSchema(Util::StringAtom identifier);
 
     /// Helper function, use SerializeFlatbuffer macro instead

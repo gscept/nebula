@@ -14,7 +14,9 @@
 #include "util/arraystack.h"
 #include "util/stringatom.h"
 #include "math/mat4.h"
+#include "math/transform.h"
 #include "resources/resourceid.h"
+#include "flat/physics/material.h"
 
 #include <functional>
 #include "PxPhysicsAPI.h"
@@ -25,7 +27,9 @@ namespace Physics
 {
 
 RESOURCE_ID_TYPE(ActorResourceId);
-RESOURCE_ID_TYPE(ColliderId);
+RESOURCE_ID_TYPE(AggregateResourceId);
+RESOURCE_ID_TYPE(PhysicsResourceId);
+RESOURCE_ID_TYPE(ConstraintResourceId);
 
 enum ActorType
 {
@@ -45,8 +49,22 @@ struct Material
 struct ActorId
 {
     Ids::Id32 id;
-    ActorId() :id(Ids::InvalidId32) {}
+    ActorId() : id(Ids::InvalidId32) {}
     ActorId(uint32_t i) : id(i) {}
+};
+
+struct ConstraintId
+{
+    Ids::Id32 id;
+    ConstraintId() : id(Ids::InvalidId32) {}
+    ConstraintId(uint32_t i) : id(i) {}
+};
+
+struct AggregateId
+{
+    Ids::Id32 id;
+    AggregateId() : id(Ids::InvalidId32) {}
+    AggregateId(uint32_t i) : id(i) {}
 };
 
 struct Actor
@@ -58,6 +76,22 @@ struct Actor
 #ifdef NEBULA_DEBUG
     Util::String debugName;
 #endif
+};
+
+struct Constraint
+{
+    ConstraintId id;
+    Ids::Id32 res;
+    physx::PxJoint* joint;
+    uint64_t userData;
+};
+
+struct Aggregate
+{
+    AggregateId id;
+    AggregateResourceId res;
+    Util::Array<ActorId> actors;
+    Util::Array<ConstraintId> constraints;
 };
 
 using UpdateFunctionType = void (*) (const Actor&);
@@ -123,7 +157,7 @@ IndexT LookupMaterial(Util::StringAtom name);
 SizeT GetNrMaterials();
 
 ///
-ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene = 0);
+ActorId CreateActorInstance(Physics::ActorResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene = 0);
 ///
 void DestroyActorInstance(Physics::ActorId id);
 }

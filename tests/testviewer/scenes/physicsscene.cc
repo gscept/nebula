@@ -65,7 +65,7 @@ bool PvdFrame = false;
 /**
 */
 void
-Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
+Spawn(const Math::transform& trans, Math::vector linvel, Math::vector angvel)
 {
 
     Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
@@ -76,8 +76,9 @@ Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
         ObservableContext::Setup(ent, VisibilityEntityType::Model);
     });
 
-    ModelContext::SetTransform(ent, trans);
-    Physics::ActorId actor = Physics::CreateActorInstance(towerResource, trans, Physics::ActorType::Dynamic, (uint64_t)ent.id);
+    Math::mat4 mat = Math::affine(trans.scale, trans.scale, trans.position);
+    ModelContext::SetTransform(ent, mat);
+    Physics::ActorId actor = Physics::CreateActorInstance(towerResource, trans, Physics::Dynamic, (uint64_t)ent.id);
 
     Physics::ActorContext::SetLinearVelocity(actor, linvel);
     Physics::ActorContext::SetAngularVelocity(actor, angvel);
@@ -97,13 +98,14 @@ Shoot(int count)
     {
         last = now;
 
-        Math::mat4 trans = Math::inverse(CameraContext::GetView(camera));
+        Math::mat4 mat = Math::inverse(CameraContext::GetView(camera));
+        Math::transform trans = Math::transform::FromMat4(mat);
         Math::point cameraPos = trans.position;
         while (count--)
         {
             Math::vector offset;// = Math::Randomvec4(5.0f);
-            trans.position = cameraPos + offset;
-            Spawn(trans, xyz(trans.z_axis) * -50.0f, Math::vector(Math::rand(-10.0f, 10.0f)));
+            trans.position = (cameraPos + offset).vec;
+            Spawn(trans, xyz(mat.z_axis) * -50.0f, Math::vector(Math::rand(-10.0f, 10.0f)));
         }
     }
 }
@@ -125,7 +127,7 @@ SpawnRandom(int amount)
 {
     for (int i = 0; i < amount; i++)
     {
-        Math::mat4 trans = Math::translation(Math::vector(Math::rand(-200.0f, 200.0f), 150.0f, Math::rand(-200.00f, 200.0f)));
+        Math::transform trans(Math::vector(Math::rand(-200.0f, 200.0f), 150.0f, Math::rand(-200.00f, 200.0f)));
         Spawn(trans, Math::vector(0.0), Math::vector(Math::rand(-3.0f, 3.0f)));
     }
 }
@@ -176,11 +178,11 @@ void OpenScene()
 
     });
     knightResource = Resources::CreateResource("phys:test/Unit_Knight.actor", "Viewer", nullptr, nullptr, true);
-    knightActor = Physics::CreateActorInstance(knightResource, Math::mat4(), Physics::ActorType::Static, knight.id);
+    knightActor = Physics::CreateActorInstance(knightResource, Math::transform(), Physics::Kinematic, knight.id);
 
 
     groundResource = Resources::CreateResource("phys:test/groundplane.actor", "Viewer", nullptr, nullptr, true);
-    groundActor = Physics::CreateActorInstance(groundResource, Math::mat4(), Physics::ActorType::Static, ground.id);
+    groundActor = Physics::CreateActorInstance(groundResource, Math::transform(), Physics::Static, ground.id);
 
 
     Models::ModelContext::SetTransform(ground, Math::translation(Math::vec3(0, 0, 0)));
@@ -194,7 +196,7 @@ void OpenScene()
 
     towerResource = Resources::CreateResource("phys:test/castle_tower.actor", "Viewer", nullptr, nullptr, true);
 
-    towerActor = Physics::CreateActorInstance(towerResource, Math::translation(Math::vec3(4, 15, 4)), Physics::ActorType::Dynamic, tower.id);
+    towerActor = Physics::CreateActorInstance(towerResource, Math::transform(Math::vec3(4, 15, 4)), Physics::ActorType::Dynamic, tower.id);
 
 
 
