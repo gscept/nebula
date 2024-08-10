@@ -261,6 +261,7 @@ NFbxMeshNode::ExtractMesh(
             }
             mesh.AddTriangle(meshTriangle);
         }
+        StackFree(indices);
     }
 
     if (AllBits(node->mesh.meshFlags, HasNormals))

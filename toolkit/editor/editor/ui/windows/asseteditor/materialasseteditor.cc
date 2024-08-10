@@ -279,6 +279,8 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         {
             ImGui::SetTooltip(kvp.Value()->desc);
         }
+
+        StackFree(imguiState);
     }
 }
 
