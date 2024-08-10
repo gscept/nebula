@@ -341,7 +341,7 @@ FlushSimulation(IndexT scene)
 /**
 */
 ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::transform const & trans, Physics::ActorType type, uint64_t userData, IndexT scene)
 {
     return Physics::actorPool->CreateActorInstance(id, trans, type, userData, scene);
 }

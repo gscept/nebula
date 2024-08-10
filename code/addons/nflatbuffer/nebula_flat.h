@@ -12,6 +12,7 @@
 #include "math/vec4.h"
 #include "math/mat4.h"
 #include "math/quat.h"
+#include "math/transform.h"
 #include "flat/foundation/math.h"
 
 namespace Flat
@@ -45,4 +46,8 @@ Math::vec2 UnPack(const Flat::Vec2& v);
 Flat::Mat4 Pack(const Math::mat4& v);
 ///
 Math::mat4 UnPack(const Flat::Mat4& v);
+///
+Flat::Transform Pack(const Math::transform& v);
+///
+Math::transform UnPack(const Flat::Transform& v);
 }

@@ -16,6 +16,7 @@
 #include "windows/assetbrowser.h"
 #include "windows/asseteditor/asseteditor.h"
 #include "windows/resourcebrowser.h"
+#include "windows/physics.h"
 #include "windows/profiler.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
@@ -69,6 +70,7 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::AssetEditor", "Asset Editor", "Editor");
     windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser");
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
+    windowServer->RegisterWindow("Presentation::Physics", "Physics");
     
     Icons::play          = NLoadIcon("systex:icon_play.dds");
     Icons::pause         = NLoadIcon("systex:icon_pause.dds");
@@ -101,7 +103,7 @@ OnActivate()
 
         Graphics::GraphicsServer::SwapInfo swapInfo;
         swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
-        {
+    {
             FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
         };
         swapInfo.submission = FrameScript_editorframe::Submission_EditorUI;

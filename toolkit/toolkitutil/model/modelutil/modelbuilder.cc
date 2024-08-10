@@ -9,6 +9,7 @@
 #include "io/filestream.h"
 #include "modelconstants.h"
 #include "math/transform44.h"
+#include "math/transform.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/physics/actor.h"
@@ -144,6 +145,7 @@ ModelBuilder::WritePhysics()
         case UseBoundingSphere:
         case UseBoundingCapsule:
             {
+                auto body = std::make_unique< PhysicsResource::BodyT>();
                 const Array<ModelConstants::ShapeNode> & nodes = this->constants->GetShapeNodes();
                 for(Array<ModelConstants::ShapeNode>::Iterator iter = nodes.Begin();iter != nodes.End();iter++)
                 {
@@ -157,7 +159,7 @@ ModelBuilder::WritePhysics()
                     colBox.transform(nodetrans);
 
                     newShape->material = this->physics->GetMaterial();
-                    newShape->transform = Math::translation(colBox.center().vec);
+                    newShape->transform = Math::transform(colBox.center().vec);
 
                     switch (this->physics->GetExportMode())
                     {
@@ -193,8 +195,8 @@ ModelBuilder::WritePhysics()
                     break;
                     default:
                         break;
-                    }
-                    actor.shapes.push_back(std::move(newShape));
+                    }                    
+                    body->shapes.push_back(std::move(newShape));
                 }
                 const Array<ModelConstants::ParticleNode> & particleNodes = this->constants->GetParticleNodes();
                 for(Array<ModelConstants::ParticleNode>::Iterator iter = particleNodes.Begin();iter != particleNodes.End();iter++)
@@ -214,7 +216,7 @@ ModelBuilder::WritePhysics()
                     Math::mat4 newtrans;
 
                     colBox.transform(nodetrans);
-                    newShape->transform = nodetrans;
+                    newShape->transform = Math::transform(iter->transform.position.vec, iter->transform.rotation, iter->transform.scale.vec);
 
                     PhysicsResource::BoxColliderT col;
 
@@ -222,7 +224,7 @@ ModelBuilder::WritePhysics()
                     newShape->collider->data.Set(col);
                     newShape->collider->name = iter->name;
                     newShape->collider->type = Physics::ColliderType_Cube;
-                    actor.shapes.push_back(std::move(newShape));
+                    body->shapes.push_back(std::move(newShape));
                 }
 
                 const Array<ModelConstants::SkinSetNode>& skinSets = this->constants->GetSkinSetNodes();
@@ -240,7 +242,7 @@ ModelBuilder::WritePhysics()
                         Math::bbox colBox = skinIter.boundingBox;
 
                         colBox.transform(nodetrans);
-                        newShape->transform = nodetrans;
+                        newShape->transform = Math::transform(iter->transform.position.vec, iter->transform.rotation, iter->transform.scale.vec);
 
                         PhysicsResource::BoxColliderT col;
 
@@ -248,13 +250,18 @@ ModelBuilder::WritePhysics()
                         newShape->collider->data.Set(col);
                         newShape->collider->name = skinIter.name;
                         newShape->collider->type = Physics::ColliderType_Cube;
-                        actor.shapes.push_back(std::move(newShape));
+                        body->shapes.push_back(std::move(newShape));
                     }
                 }
+                PhysicsResource::BodySetupT* bodySetup = new PhysicsResource::BodySetupT;
+                bodySetup->body = std::move(body);
+                actor.data.type = PhysicsResource::PhysicsResourceUnion_BodySetup;
+                actor.data.value = (void*)bodySetup;
             }
             break;
         case UseGraphicsMesh:
             {
+                auto body = std::make_unique< PhysicsResource::BodyT>();
                 // get list of shapes
                 const Array<ModelConstants::ShapeNode>& shapes = this->constants->GetShapeNodes();
                 
@@ -272,9 +279,9 @@ ModelBuilder::WritePhysics()
                     newShape->collider->name = shapes[i].name;
 
 
-                    newShape->transform = shapes[i].transform.GetTransform44().getmatrix();
+                    newShape->transform = Math::transform(shapes[i].transform.position.vec, shapes[i].transform.rotation, shapes[i].transform.scale.vec);
                     newShape->collider->data.Set(newColl);
-                    actor.shapes.push_back(std::move(newShape));
+                    body->shapes.push_back(std::move(newShape));
                 }
                 const Array<ModelConstants::SkinSetNode>& skinSets = this->constants->GetSkinSetNodes();
                 for (Array<ModelConstants::SkinSetNode>::Iterator iter = skinSets.Begin(); iter != skinSets.End(); iter++)
@@ -291,20 +298,22 @@ ModelBuilder::WritePhysics()
                         newColl.prim_group = skinIter.primitiveGroupIndex;
                         newColl.type = this->physics->GetMeshMode();
                         newShape->collider->type = Physics::ColliderType_Mesh;
-                        newShape->collider->name = skinIter.name;
-
-                        Math::transform44 nodetrans = skinIter.transform.GetTransform44();
-                        Math::mat4 t = setTransform * nodetrans.getmatrix();
+                        newShape->collider->name = skinIter.name;                  
                         
-                        newShape->transform = t;
+                        newShape->transform = Math::transform(skinIter.transform.position.vec, skinIter.transform.rotation, skinIter.transform.scale.vec);
                         newShape->collider->data.Set(newColl);
-                        actor.shapes.push_back(std::move(newShape));
+                        body->shapes.push_back(std::move(newShape));
                     }
                 }
+                PhysicsResource::BodySetupT* bodySetup = new PhysicsResource::BodySetupT;
+                bodySetup->body = std::move(body);
+                actor.data.type = PhysicsResource::PhysicsResourceUnion_BodySetup;
+                actor.data.value = (void*)bodySetup;
             }
             break;
         case UsePhysics:
             {
+                auto body = std::make_unique< PhysicsResource::BodyT>();
                 if(this->constants->GetPhysicsNodes().Size()>0)
                 {
                     // get list of shapes
@@ -321,9 +330,9 @@ ModelBuilder::WritePhysics()
                         newColl.type = this->physics->GetMeshMode();
                         newShape->collider->type = Physics::ColliderType_Mesh;
                         newShape->collider->name = shapes[i].name;
-                        newShape->transform = shapes[i].transform.GetTransform44().getmatrix();
+                        newShape->transform = Math::transform(shapes[i].transform.position.vec, shapes[i].transform.rotation, shapes[i].transform.scale.vec);
                         newShape->collider->data.Set(newColl);
-                        actor.shapes.push_back(std::move(newShape));
+                        body->shapes.push_back(std::move(newShape));
                     }                                                                           
                 }
                 else
@@ -337,8 +346,12 @@ ModelBuilder::WritePhysics()
                     newColl.file = this->physics->GetPhysicsMesh();
                     newColl.prim_group = 0;
                     newShape->collider->data.Set(newColl);
-                    actor.shapes.push_back(std::move(newShape));
-                }               
+                    body->shapes.push_back(std::move(newShape));
+                }         
+                PhysicsResource::BodySetupT* bodySetup = new PhysicsResource::BodySetupT;
+                bodySetup->body = std::move(body);
+                actor.data.type = PhysicsResource::PhysicsResourceUnion_BodySetup;
+                actor.data.value = (void*)bodySetup;
             }
             break;
         

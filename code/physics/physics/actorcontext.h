@@ -14,9 +14,19 @@
 #include "math/plane.h"
 #include "math/mat4.h"
 #include "util/tupleutility.h"
+#include "math/transform.h"
 
 namespace Physics
 {
+
+struct ShapeHandle
+{
+    ShapeHandle() : shape(nullptr) {}
+    explicit ShapeHandle(physx::PxShape* inShape) : shape(inShape) {}
+    bool IsValid() const { return shape != nullptr; }
+    bool operator==(const ShapeHandle& other) { return shape == other.shape; }
+    physx::PxShape* shape;
+};
 
 class PhysxState;
 class StreamActorPool;
@@ -58,6 +68,15 @@ public:
     /// apply a global impulse vector at the next time step at a global position
     void ApplyImpulseAtPos(ActorId id, const Math::vector& impulse, const Math::point& pos);
 
+    // shape stuff
+    enum { DefaultShapeAlloc = 16 };
+    using ShapeArrayType = Util::StackArray<ShapeHandle, DefaultShapeAlloc>;
+    static SizeT GetShapeCount(ActorId id);
+    static void GetShapes(ActorId id, ShapeArrayType& shapes);
+    
+    static Math::transform GetShapeTransform(const ShapeHandle& shape);
+    static void SetShapeTransform(const ShapeHandle& shape, const Math::transform& transform);
+
 
     /// shortcut for getting the pxactor object
     static physx::PxRigidActor* GetPxActor(ActorId id);
@@ -79,7 +98,21 @@ private:
     static void DiscardActor(ActorId id);
 };
 
-
+class AggregateContext
+{
+public:
+    static Aggregate& GetAggregate(AggregateId id);
+    
+    friend class PhysxState;
+    friend class StreamActorPool;
+private:
+    static Util::Array<Aggregate> aggregates;
+    static Ids::IdGenerationPool aggPool;
+    ///
+    static AggregateId AllocateAggregateId(AggregateResourceId res);
+    ///
+    static void DiscardAggregate(AggregateId id);
+};
 
 //------------------------------------------------------------------------------
 /**

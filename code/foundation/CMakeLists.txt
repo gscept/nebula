@@ -276,6 +276,9 @@ nebula_begin_module(foundation)
             bbox.cc
             bbox.h
             clipstatus.h
+            curves.cc
+            curves.h
+            euler.h
             extrapolator.h
             frustum.h
             half.h
@@ -296,6 +299,7 @@ nebula_begin_module(foundation)
             sphere.cc
             sphere.h
             sse.h
+            transform.h
             transform44.h
             vec2.h
             vec3.h
@@ -525,7 +529,7 @@ nebula_begin_module(foundation)
         )
     fips_dir(.)
     if (FIPS_WINDOWS)
-        fips_files(foundation.natvis)
+        fips_files(foundation.natvis foundation.natstepfilter)
         fips_dir(core GROUP "core/win32")
             fips_files(
                 win32/precompiled.h

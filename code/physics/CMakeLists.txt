@@ -25,6 +25,6 @@ fips_files(
             physxstate.cc
             physxstate.h
             )
-nebula_flatc(SYSTEM physics/actor.fbs physics/collisions.fbs physics/material.fbs)
+nebula_flatc(SYSTEM physics/actor.fbs physics/collisions.fbs physics/material.fbs physics/constraints.fbs)
 nebula_end_lib()
 

@@ -8,34 +8,41 @@ namespace Flat;
 
 struct Vec4 (native_type:"Math::vec4", force_align:16)
 {
-  x:float;
-  y:float;
-  z:float;
-  w:float;
+  x:float = 0;
+  y:float = 0;
+  z:float = 0;
+  w:float = 0;
 }
 
 struct Quat (native_type:"Math::quat", force_align:16)
 {
-  x:float;
-  y:float;
-  z:float;
-  w:float;
+  x:float = 0;
+  y:float = 0;
+  z:float = 0;
+  w:float = 0;
 }
 
 struct Vec3 (native_type:"Math::vec3", force_align:16) 
 {
-  x:float;
-  y:float;
-  z:float;
+  x:float = 0;
+  y:float = 0;
+  z:float = 0;
 }
 
 struct Vec2 (native_type:"Math::vec2", force_align:16) 
 {
-  x:float;
-  y:float;
+  x:float = 0;
+  y:float = 0;
 }
 
 struct Mat4 (native_type:"Math::mat4", force_align:16) 
 {
   mat4:[float:16];
+}
+
+struct Transform (native_type:"Math::transform", force_align:16) 
+{
+	position : [float:3];
+	orientation : [float:4];
+	scale : [float:3];
 }

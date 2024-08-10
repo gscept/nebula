@@ -61,34 +61,49 @@ StreamActorPool::Setup()
 /**
 */
 ActorId
-StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, ActorType type, uint64_t userData, IndexT scene)
+StreamActorPool::CreateActorInstance(PhysicsResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene)
 {
-    __LockName(&this->allocator, lock, id.id);
-    ActorInfo& info = this->allocator.Get<0>(id.id);
+    n_assert2(this->resourceAllocator.Get<0>(id.id) == PhysicsResource::PhysicsResourceUnion_BodySetup, "Trying to create actor instance from non-actor resource");
+    ActorResourceId actId = this->resourceAllocator.Get<1>(id.id);
+    return this->CreateActorInstance(actId, trans, type, userData, scene);
+}
+//------------------------------------------------------------------------------
+/**
+*/
+ActorId
+StreamActorPool::CreateActorInstance(ActorResourceId id, Math::transform const& worldTrans, Physics::ActorType type, uint64_t userData, IndexT scene)
+{
+    n_assert(id.resourceId != Physics::InvalidPhysicsResourceId.resourceId);
+    __LockName(&this->actorAllocator, lock, id.id);
+    ActorInfo& info = this->actorAllocator.Get<Info>(id.id);
 
-    Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
-    Math::decompose(trans, outScale, outRotation, outTranslation);
-
-    bool isScaled = !Math::nearequal(outScale, Math::_plus1, 0.001f);
+    Math::transform trans = worldTrans * info.transform;
+    bool isScaled = !Math::nearequal(trans.scale, Math::_plus1, 0.001f);
     
-    physx::PxRigidActor * newActor = state.CreateActor(type, outTranslation, outRotation);
+
     info.instanceCount++;
-    for (IndexT i = 0; i < info.shapes.Size(); i++)
+    
+    const auto& bi = info.body;
+    physx::PxRigidActor* newActor = state.CreateActor(type, trans.position, trans.rotation);
+        
+    for (IndexT i = 0; i < info.body.shapes.Size(); i++)
     {
-        PxShape* newShape = info.shapes[i];
+        PxShape* newShape = info.body.shapes[i];
         if (isScaled)
         {
-            newShape = GetScaledShape(newShape, outScale);
+            newShape = GetScaledShape(newShape, trans.scale);
         }
         newActor->attachShape(*newShape);
+            
     }
-    if(type == ActorType::Dynamic)
+    if (type == ActorType::Dynamic)
     {
-        physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.densities.Begin(), info.densities.Size());
-    }    
-        
+        physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.body.densities.Begin(), info.body.densities.Size());
+    }
+
+
     GetScene(scene).scene->addActor(*newActor);
-    
+
     ActorId newId = ActorContext::AllocateActorId(newActor, id);
     Actor& actor = ActorContext::GetActor(newId);
     actor.userData = userData;
@@ -114,12 +129,48 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
-        __LockName(&this->allocator, lock, actor.res.id);
-        ActorInfo& info = this->allocator.Get<0>(actor.res.id);
+        __LockName(&this->actorAllocator, lock, actor.res.id);
+        ActorInfo& info = this->actorAllocator.Get<Info>(actor.res.id);
         info.instanceCount--;
     }
     ActorContext::DiscardActor(id);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+AggregateId 
+StreamActorPool::CreateAggregate(PhysicsResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene)
+{
+    n_assert2(this->resourceAllocator.Get<0>(id.id) == PhysicsResource::PhysicsResourceUnion_Aggregate, "Trying to create aggregate actor instance from invalid resource");
+    __LockName(&this->aggregateAllocator, lock, id.id);
+    AggregateResourceId aggId = this->resourceAllocator.Get<1>(id.id);
+    AggregateInfo& info = this->aggregateAllocator.Get<Info>(aggId.id);
+    info.instanceCount++;
+
+    AggregateId aggInstanceId = AggregateContext::AllocateAggregateId(aggId);
+    Aggregate aggregate = AggregateContext::GetAggregate(aggInstanceId);
+    Util::Dictionary<Util::StringAtom, physx::PxActor*> actorDict;
+    for (ActorResourceId body : info.bodies)
+    {
+        ActorId actorId = this->CreateActorInstance(body, trans, type, userData, scene);
+        Actor& actor = ActorContext::GetActor(actorId);
+        const ActorInfo & actorInfo = this->actorAllocator.Get<0>(actor.res.id);
+        actorDict.Add(actorInfo.name, actor.actor);
+        aggregate.actors.Append(actorId);
+    }
+    return aggInstanceId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PhysicsResource::PhysicsResourceUnion 
+StreamActorPool::GetResourceType(PhysicsResourceId id)
+{
+    return this->resourceAllocator.Get<0>(id.id);
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -240,25 +291,25 @@ static PxShape* CreateColliderShape(physx::PxGeometryHolder geometry, physx::PxM
 //------------------------------------------------------------------------------
 /**
 */
-static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const Math::mat4& trans, const char* name, const Util::String& colliderName, ActorInfo& actorInfo, const Util::StringAtom& tag, Ids::Id32 entry)
+static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const Math::transform& trans, const char* name, const Util::String& colliderName, BodyInfo& bodyInfo, const Util::StringAtom& tag, Ids::Id32 entry)
 {
     const Physics::Material& mat = GetMaterial(material);
-    actorInfo.colliders.Append(colliderName);
+    bodyInfo.colliders.Append(colliderName);
     Util::String shapeDebugName;
 #ifdef NEBULA_DEBUG
     shapeDebugName = Util::String::Sprintf("%s %s %s %d", name, colliderName.AsCharPtr(), tag.Value(), entry);
-    actorInfo.shapeDebugNames.Append(shapeDebugName);
+    bodyInfo.shapeDebugNames.Append(shapeDebugName);
 #endif
     PxShape* newShape = CreateColliderShape(geometry, mat.material, Neb2PxTrans(trans), shapeDebugName, false);
-    actorInfo.shapes.Append(newShape);
-    actorInfo.densities.Append(GetMaterial(material).density);
+    bodyInfo.shapes.Append(newShape);
+    bodyInfo.densities.Append(GetMaterial(material).density);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 static void
-AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, ActorInfo& targetActor)
+AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, BodyInfo& targetBody)
 {
     MeshTopology type = colliderNode->type;
     int primGroup = colliderNode->prim_group;
@@ -267,7 +318,7 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const&
     if (type != MeshTopology_ApproxSkin)
     {
         physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primGroup);
-        AddCollider(geometry, materialIdx, nodeTransform, resource.Value(), nodeName, targetActor, tag, entry);
+        AddCollider(geometry, materialIdx, nodeTransform, resource.Value(), nodeName, targetBody, tag, entry);
         return;
     }
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(resource.AsString()));
@@ -357,7 +408,7 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const&
                 PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
                 physx::PxGeometryHolder holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
                 Util::String BoneName = Util::String::Sprintf("%s_%d", nodeName.AsCharPtr(), currBone);
-                AddCollider(holder, materialIdx, nodeTransform, resource.Value(), BoneName, targetActor, tag, entry);
+                AddCollider(holder, materialIdx, nodeTransform, resource.Value(), BoneName, targetBody, tag, entry);
             }
             else
             {
@@ -373,7 +424,7 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::mat4 const&
 /**
 */
 static void
-AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::mat4 const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, ActorInfo& targetActor)
+AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::transform const& nodeTransform, Util::String nodeName, IndexT materialIdx, const Util::StringAtom& tag, Ids::Id32 entry, BodyInfo& targetBody)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(colliderNode->file));
     stream->SetAccessMode(IO::Stream::ReadAccess);
@@ -421,10 +472,10 @@ AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::mat4 c
             float sx = colliderNode->target_size_x / (float)width;
             float sy = colliderNode->target_size_y / (float)height;
             PxHeightFieldGeometry hfGeom(physxHeightField, PxMeshGeometryFlags(), sh, sx, sy);
-            Math::mat4 offsetTransform = Math::mat4::identity;
-            offsetTransform.position = Math::vec4(-0.5f * colliderNode->target_size_x, 0.0f, -0.5f * colliderNode->target_size_y, 1.0f);
+            Math::transform offsetTransform;
+            offsetTransform.position = Math::vec3(-0.5f * colliderNode->target_size_x, 0.0f, -0.5f * colliderNode->target_size_y);
             physx::PxGeometryHolder holder = hfGeom;
-            AddCollider(holder, materialIdx, offsetTransform, colliderNode->file.AsCharPtr(), nodeName, targetActor, tag, entry);
+            AddCollider(holder, materialIdx, offsetTransform, colliderNode->file.AsCharPtr(), nodeName, targetBody, tag, entry);
             Memory::Free(Memory::HeapType::PhysicsHeap, heightSamples);
         }
         stream->MemoryUnmap();
@@ -438,86 +489,133 @@ AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::mat4 c
 Resources::ResourceLoader::ResourceInitOutput
 StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
-    n_assert(stream.isvalid());
+    n_assert(stream.isvalid());    
     Resources::ResourceLoader::ResourceInitOutput ret;
     
-    /// during the load-phase, we can safetly get the structs
-    ActorInfo actorInfo;
-    actorInfo.instanceCount = 0;
     PhysicsResource::ActorT actor;
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
-    
-    actorInfo.feedbackFlag = actor.feedback;
-   
-    for (auto const& shape : actor.shapes)
-    {
-        auto const & collider = shape->collider;
-        Util::StringAtom matAtom = shape->material;
-        IndexT material = LookupMaterial(matAtom);
-        
-        Math::mat4 trans = shape->transform;
 
-        switch (collider->type)
+       
+    static auto parseBody = [&](const PhysicsResource::BodyT& body) 
         {
-            case ColliderType_Sphere:
+            BodyInfo bodyInfo;
+            bodyInfo.feedbackFlag = body.feedback;
+            for (auto const& shape : body.shapes)
             {
-                
-                float radius = collider->data.AsSphereCollider()->radius;
-                physx::PxGeometryHolder geometry = PxSphereGeometry(radius);
-                AddCollider(geometry, material, shape->transform, "Sphere", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
-            }
-            break;
-            case ColliderType_Cube:
-            {
-                Math::vector extents = collider->data.AsBoxCollider()->extents;
-                physx::PxGeometryHolder geometry = PxBoxGeometry(Neb2PxVec(extents));
-                AddCollider(geometry, material, shape->transform, "Cube", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
-            }
-            break;
-            case ColliderType_Plane:
-            {
-                // plane is defined via transform of the actor
-                physx::PxGeometryHolder geometry = PxPlaneGeometry();
-                AddCollider(geometry, material, shape->transform, "Plane", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
-            }
-            break;
-            case ColliderType_Capsule:
-            {
-                auto capsule = collider->data.AsCapsuleCollider();
-                float radius = capsule->radius;
-                float halfHeight = capsule->halfheight;
-                physx::PxGeometryHolder geometry = PxCapsuleGeometry(radius, halfHeight);
-                AddCollider(geometry, material, shape->transform, "Capsule", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
-            }
-            break;
-            case ColliderType_Mesh:
-            {
-                AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, actorInfo);
-/*
-                auto mesh = collider->data.AsMeshCollider();
-                MeshTopology type = mesh->type;
-                int primgroup = mesh->prim_group;
+                auto const& collider = shape->collider;
+                Util::StringAtom matAtom = shape->material;
+                IndexT material = LookupMaterial(matAtom);
 
-                Util::StringAtom resource = mesh->file;
-                physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primgroup);
-                AddCollider(geometry, material, shape->transform, resource.Value(), collider->name);
-                */
+                switch (collider->type)
+                {
+                case ColliderType_Sphere:
+                {
+
+                    float radius = collider->data.AsSphereCollider()->radius;
+                    physx::PxGeometryHolder geometry = PxSphereGeometry(radius);
+                AddCollider(geometry, material, shape->transform, "Sphere", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                }
+                break;
+                case ColliderType_Cube:
+                {
+                    Math::vector extents = collider->data.AsBoxCollider()->extents;
+                    physx::PxGeometryHolder geometry = PxBoxGeometry(Neb2PxVec(extents));
+                AddCollider(geometry, material, shape->transform, "Cube", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                }
+                break;
+                case ColliderType_Plane:
+                {
+                    // plane is defined via transform of the actor
+                    physx::PxGeometryHolder geometry = PxPlaneGeometry();
+                AddCollider(geometry, material, shape->transform, "Plane", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                }
+                break;
+                case ColliderType_Capsule:
+                {
+                    auto capsule = collider->data.AsCapsuleCollider();
+                    float radius = capsule->radius;
+                    float halfHeight = capsule->halfheight;
+                    physx::PxGeometryHolder geometry = PxCapsuleGeometry(radius, halfHeight);
+                AddCollider(geometry, material, shape->transform, "Capsule", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                }
+                break;
+                case ColliderType_Mesh:
+                {
+                AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
+                    /*
+                                    auto mesh = collider->data.AsMeshCollider();
+                                    MeshTopology type = mesh->type;
+                                    int primgroup = mesh->prim_group;
+
+                                    Util::StringAtom resource = mesh->file;
+                                    physx::PxGeometryHolder geometry = CreateMeshFromResource(type, resource, primgroup);
+                                    AddCollider(geometry, material, shape->transform, resource.Value(), collider->name);
+                                    */
+                }
+                break;
+                case ColliderType_HeightField:
+                {
+                AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
+                }
+                break;
+                default:
+                    n_error("unknown collider type");
+                }
             }
-            break;
-            case ColliderType_HeightField:
+            return bodyInfo;
+        };
+
+    Ids::Id32 resId = this->resourceAllocator.Alloc();
+    this->resourceAllocator.Set<0>(resId, actor.data.type);
+    switch (actor.data.type)
+    {
+        case PhysicsResource::PhysicsResourceUnion_BodySetup:
+        {
+            /// during the load-phase, we can safetly get the structs
+            ActorInfo actorInfo;
+            actorInfo.instanceCount = 0;
+
+            const PhysicsResource::BodySetupT* bodySetup = actor.data.AsBodySetup();
+            auto& body = actorInfo.body;
+            body = parseBody(*bodySetup->body);
+            actorInfo.name = bodySetup->name;
+            actorInfo.transform = bodySetup->transform;
+
+            Ids::Id32 id = this->actorAllocator.Alloc();
+            this->actorAllocator.Set<Info>(id, actorInfo);
+            this->resourceAllocator.Set<1>(resId, id);
+        }
+        break;
+        case PhysicsResource::PhysicsResourceUnion_Aggregate:
+        {
+            AggregateInfo aggInfo;
+            aggInfo.instanceCount = 0;
+            const PhysicsResource::AggregateT* aggSetup = actor.data.AsAggregate();
+            aggInfo.bodies.Reserve(aggSetup->bodies.size());
+            for (auto const& bodySetup : aggSetup->bodies)
             {
-                AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, actorInfo);
+                Ids::Id32 actorId = this->actorAllocator.Alloc();
+                aggInfo.bodies.Append(actorId);
+
+                ActorInfo actorInfo;
+                actorInfo.instanceCount = 0;                
+                actorInfo.body = parseBody(*bodySetup->body);
+                actorInfo.name = bodySetup->name;
+                actorInfo.transform = bodySetup->transform;
+                actorAllocator.Set<Info>(actorId, actorInfo);
             }
-            break;
-            default:
-                n_error("unknown collider type");
-        }        
+            Ids::Id32 aggId = this->aggregateAllocator.Alloc();
+            this->aggregateAllocator.Set<Info>(aggId, aggInfo);
+            this->resourceAllocator.Set<1>(resId, aggId);
+        }
+        break;
+        default:
+            PhysicsResourceId ret;
+            ret = Physics::InvalidPhysicsResourceId;
+            return ret;
     }
-
-    Ids::Id32 id = allocator.Alloc();
-    allocator.Set<Actor_Info>(id, actorInfo);
-    ret.id = id;
-    return ret;
+    ret.id = resId;
+    return ret;    
 }
 
 //------------------------------------------------------------------------------
@@ -526,17 +624,42 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
 void
 StreamActorPool::Unload(const Resources::ResourceId id)
 {
-    __LockName(&this->allocator, lock, id.resource);
-    ActorInfo& info = this->allocator.Get<0>(id.resource);
-    n_assert2(info.instanceCount == 0, "Actor has active Instances");
-    const Util::StringAtom tag = this->GetTag(id.resourceId);
+    __LockName(&this->resourceAllocator, lock, id.resource);
     
-    for (auto i : info.shapes)
+    static const auto freeShapes = [&](Physics::ActorInfo& actor)
+        {
+            n_assert2(actor.instanceCount == 0, "Actor has active Instances");
+
+            for (auto i : actor.body.shapes)
+            {
+                i->release();
+            }
+            actor.body.shapes.Clear();
+        };
+    Ids::Id32 resId = this->resourceAllocator.Get<1>(id.resource);
+    switch (this->resourceAllocator.Get<0>(id.resource))
     {
-        i->release();
-    }
-    info.shapes.Clear();
-    allocator.Dealloc(id.resource);
+        case PhysicsResource::PhysicsResourceUnion_BodySetup:
+        {
+            ActorInfo& info = this->actorAllocator.Get<0>(resId);
+            freeShapes(info);
+            actorAllocator.Dealloc(resId);
+	    }
+        break;
+        case PhysicsResource::PhysicsResourceUnion_Aggregate:
+        {
+            AggregateInfo& info = this->aggregateAllocator.Get<0>(resId);
+            for (ActorResourceId actorId : info.bodies)
+            {
+                ActorInfo& actor = this->actorAllocator.Get<0>(actorId.id);
+                freeShapes(actor);
+                this->actorAllocator.Dealloc(actorId.id);
+            }
+            this->aggregateAllocator.Dealloc(resId);
+        }
+        break;
+    }    
+    this->resourceAllocator.Dealloc(id.resource);
 }
 
 

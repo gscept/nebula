@@ -12,6 +12,7 @@
 #include "math/vector.h"
 #include "foundation/PxVec4.h"
 #include "foundation/PxMat44.h"
+#include "math/transform.h"
 
 //------------------------------------------------------------------------------
 /**
@@ -110,6 +111,22 @@ inline physx::PxTransform
 Neb2PxTrans(const Math::vec3& position, const Math::quat& orientation)
 {
     return physx::PxTransform(Neb2PxVec(position), Neb2PxQuat(orientation));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline physx::PxTransform
+Neb2PxTrans(const Math::transform& trans)
+{
+    n_assert(trans.scale == Math::_plus1);
+    return physx::PxTransform(Neb2PxVec(trans.position), Neb2PxQuat(trans.rotation));
+}
+
+inline Math::transform
+Px2NebTrans(const physx::PxTransform& trans)
+{
+    return Math::transform(Px2NebVec(trans.p), Px2NebQuat(trans.q));
 }
 
 //------------------------------------------------------------------------------

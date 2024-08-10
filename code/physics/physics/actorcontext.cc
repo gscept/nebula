@@ -7,6 +7,7 @@
 #include "physics/actorcontext.h"
 #include "physics/physxstate.h"
 #include "physics/utils.h"
+#include "math/transform.h"
 
 #define GET_ACTOR(i) ActorContext::actors[Ids::Index(i.id)]
 #define GET_DYNAMIC(i) static_cast<PxRigidDynamic*>(ActorContext::actors[Ids::Index(i.id)].actor)
@@ -18,6 +19,9 @@ namespace Physics
 
 Util::Array<Actor> ActorContext::actors;
 Ids::IdGenerationPool ActorContext::actorPool;
+
+Util::Array<Aggregate> AggregateContext::aggregates;
+Ids::IdGenerationPool AggregateContext::aggPool;
 
 //------------------------------------------------------------------------------
 /**
@@ -293,6 +297,121 @@ ActorContext::GetPxDynamic(ActorId id)
     n_assert(ActorContext::actorPool.IsValid(id.id));
     return GET_DYNAMIC(id);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT
+ActorContext::GetShapeCount(ActorId id)
+{
+    if (id.id != Ids::InvalidId32)
+    {
+        physx::PxRigidActor* actor = GetPxActor(id);
+        if (actor != nullptr)
+        {
+            return actor->getNbShapes();
+        }
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void ActorContext::GetShapes(ActorId id, ShapeArrayType& shapes)
+{
+    if (id.id != Ids::InvalidId32)
+    {
+        physx::PxRigidActor* actor = GetPxActor(id);
+        if (actor != nullptr)
+        {
+            auto count = actor->getNbShapes();
+
+            Util::StackArray<physx::PxShape*, DefaultShapeAlloc> buffer;
+            PxShape** shapeBuffer = buffer.EmplaceArray(count);
+            ShapeHandle* handles = shapes.EmplaceArray(count);
+            actor->getShapes(shapeBuffer, count);
+            for (int i = 0; i < count; ++i)
+            {
+                handles[i].shape = shapeBuffer[i];
+            }
+        }
+    }
+}
+Math::transform ActorContext::GetShapeTransform(const ShapeHandle& shape)
+{
+    if (shape.IsValid())
+    {
+        return Px2NebTrans(shape.shape->getLocalPose());
+    }
+    return Math::transform();
+}
+
+void ActorContext::SetShapeTransform(const ShapeHandle& shape, const Math::transform& transform)
+{
+    if (shape.IsValid())
+    {
+        shape.shape->setLocalPose(Neb2PxTrans(transform));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+AggregateId
+AggregateContext::AllocateAggregateId(AggregateResourceId res)
+{
+    AggregateId id;
+    bool const allocated = AggregateContext::aggPool.Allocate(id.id);
+    Ids::Id24 idx = Ids::Index(id.id);
+    if (allocated)
+    {
+        AggregateContext::aggregates.Append(Physics::Aggregate());
+        n_assert(idx == AggregateContext::aggregates.Size() - 1);
+    }
+
+    Aggregate& aggregate = AggregateContext::aggregates[idx];
+    aggregate.id = id;
+    aggregate.res = res;
+    return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Aggregate&
+AggregateContext::GetAggregate(AggregateId id)
+{
+    n_assert(AggregateContext::aggPool.IsValid(id.id));
+    return AggregateContext::aggregates[Ids::Index(id.id)];
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AggregateContext::DiscardAggregate(AggregateId id)
+{
+    n_assert(AggregateContext::aggPool.IsValid(id.id));
+    Aggregate& aggregate = AggregateContext::GetAggregate(id);
+    for (ActorId actorId : aggregate.actors)
+    {
+        Actor& actor = ActorContext::GetActor(actorId);
+        auto scene = actor.actor->getScene();
+        if (scene)
+        {
+            scene->removeActor(*actor.actor);
+        }
+        state.DiscardActor(actorId);
+        actor.actor->release();
+    }
+        
+    AggregateContext::aggPool.Deallocate(id.id);
+}
+
+
+
 
 
 }

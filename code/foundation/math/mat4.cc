@@ -7,6 +7,7 @@
 #include "math/sse.h"
 #include "math/mat4.h"
 #include "math/quat.h"
+#include "math/euler.h"
 
 namespace Math
 {
@@ -228,4 +229,95 @@ ispointinside(const vec4& p, const mat4& m)
             less_any(vec4(p1.x, p1.w, p1.y, p1.w), vec4(-p1.w, p1.x, -p1.w, p1.y))
         ||  less_any(vec4(p1.z, p1.w, 0, 0), vec4(-p1.w, p1.z, 0, 0)));
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+fromeuler(const vec3& v)
+{
+    mat4 mat;
+    float x = v.x;
+    float y = v.y;
+    float z = v.z;
+
+    double ti, tj, th, ci, cj, ch, si, sj, sh, cc, cs, sc, ss;
+    int i, j, k, h, n, s, f;
+    EulGetOrd(EulOrdXYZs, i, j, k, h, n, s, f);
+    if (f == EulFrmR) { float t = x; x = z; z = t; }
+    if (n == EulParOdd) { x = -x; y = -y; z = -z; }
+    ti = x;   tj = y;   th = z;
+    ci = cos(ti); cj = cos(tj); ch = cos(th);
+    si = sin(ti); sj = sin(tj); sh = sin(th);
+    cc = ci * ch; cs = ci * sh; sc = si * ch; ss = si * sh;
+    if (s == EulRepYes) {
+        mat._11 = (float)(cj);          mat._12 = (float)(sj * si);         mat._13 = (float)(sj * ci);
+        mat._21 = (float)(sj * sh);     mat._22 = (float)(-cj * ss + cc);   mat._23 = (float)(-cj * cs - sc);
+        mat._31 = (float)(-sj * ch);    mat._23 = (float)(cj * sc + cs);    mat._33 = (float)(cj * cc - ss);
+    }
+    else {
+        mat._11 = (float)(cj * ch);     mat._12 = (float)(sj * sc - cs);    mat._13 = (float)(sj * cc + ss);
+        mat._21 = (float)(cj * sh);     mat._22 = (float)(sj * ss + cc);    mat._23 = (float)(sj * cs - sc);
+        mat._31 = (float)(-sj);         mat._32 = (float)(cj * si);         mat._33 = (float)(cj * ci);
+    }
+
+    return mat;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 aseuler(const mat4& m)
+{
+    float x, y, z;
+    int i, j, k, h, n, s, f;
+    EulGetOrd(EulOrdXYZs, i, j, k, h, n, s, f);
+    if (s == EulRepYes)
+    {
+        double sy = (float)sqrt(m.m[0][1] * m.m[0][1] + m.m[0][2] * m.m[0][2]);
+        if (sy > 16 * FLT_EPSILON)
+        {
+            x = (float)atan2((float)m.m[0][1], (float)m.m[0][2]);
+            y = (float)atan2((float)sy, (float)m.m[0][0]);
+            z = (float)atan2((float)m.m[1][0], (float)-m.m[2][0]);
+        }
+        else
+        {
+            x = (float)atan2((float)-m.m[1][2], (float)m.m[1][1]);
+            y = (float)atan2((float)sy, (float)m.m[0][0]);
+            z = 0;
+        }
+    }
+    else
+    {
+        double cy = sqrt(m.m[0][0] * m.m[0][0] + m.m[1][0] * m.m[1][0]);
+        if (cy > 16 * FLT_EPSILON)
+        {
+            x = (float)atan2((float)m.m[2][1], (float)m.m[2][2]);
+            y = (float)atan2((float)-m.m[2][0], (float)cy);
+            z = (float)atan2((float)m.m[1][0], (float)m.m[0][0]);
+        }
+        else
+        {
+            x = (float)atan2((float)-m.m[1][2], (float)m.m[1][1]);
+            y = (float)atan2((float)-m.m[2][0], (float)cy);
+            z = 0;
+        }
+    }
+    if (n == EulParOdd)
+    {
+        x = -x;
+        y = -y;
+        z = -z;
+    }
+    if (f == EulFrmR)
+    {
+        float t = x;
+        x = z;
+        z = t;
+    }
+    return vec3(x, y, z);
+}
+
+
 } // namespace Math
