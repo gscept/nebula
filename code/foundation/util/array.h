@@ -842,7 +842,7 @@ Array<TYPE, SMALL_VECTOR_SIZE>::EmplaceArray(const SizeT count)
     {
         this->elements[this->count + i] = TYPE();
     }
-    TYPE* first = this->elements[this->count];
+    TYPE* first = &this->elements[this->count];
     this->count += count;
     return first;
 }
