@@ -503,6 +503,7 @@ LightContext::SetupAreaLight(
     MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)StackAlloc(matTemplate->bufferSize);
     (color * intensity).store(data->EmissiveColor);
     Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
+    StackFree(data);
 
     CoreGraphics::MeshId mesh;
     switch (shape)
