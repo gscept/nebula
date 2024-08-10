@@ -847,7 +847,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
         Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 #endif
         Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
-        const Util::FixedArray<Math::mat4> transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
+        const Util::FixedArray<Math::mat4>& transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
         Math::vec4 cascadeScales[Shared::NUM_CASCADES];
         Math::vec4 cascadeOffsets[Shared::NUM_CASCADES];
 
