@@ -63,13 +63,6 @@
                 "type": "Texture2D"
             },
             {
-                "name": "ShapeBuffer",
-                "format": "SRGBA8",
-                "usage": "Render",
-                "relativeSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
                 "name": "AverageLumBuffer",
                 "format": "R16F",
                 "usage": "Render|TransferSource",
