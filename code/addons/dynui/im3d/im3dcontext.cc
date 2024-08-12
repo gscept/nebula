@@ -375,10 +375,11 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
 {
     AppData& ad = GetAppData();
 
+    const Math::rectangle<int>& viewport = view->GetViewport();
+
     ad.m_deltaTime = ctx.frameTime;
     SetGizmoSize(128, 4);
-    auto const & mode = CoreGraphics::WindowGetDisplayMode(CurrentWindow);
-    ad.m_viewportSize = Vec2((float)mode.GetWidth(), (float)mode.GetHeight());
+    ad.m_viewportSize = Vec2((float)viewport.width(), (float)viewport.height());
     
     Graphics::GraphicsEntityId cam = view->GetCamera();
     Math::mat4 transform = inverse(CameraContext::GetView(cam));

@@ -18,7 +18,9 @@
 #include "core/cvar.h"
 
 #include "frame/default.h"
+#if WITH_NEBULA_EDITOR
 #include "frame/editorframe.h"
+#endif
 
 using namespace Math;
 using namespace CoreGraphics;
