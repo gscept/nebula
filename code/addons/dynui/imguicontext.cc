@@ -18,6 +18,7 @@
 #include "core/cvar.h"
 
 #include "frame/default.h"
+#include "frame/editorframe.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -35,7 +36,11 @@ static Core::CVar* ui_opacity;
     Imgui rendering function
 */
 void
-ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport)
+ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport
+#if WITH_NEBULA_EDITOR
+                  , bool editor = false
+#endif
+)
 {
     ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
@@ -99,13 +104,27 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     }
 
     // setup device
+#if WITH_NEBULA_EDITOR
+    if (editor)
+    {
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.editorPipeline);
+    }
+    else
+    {
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.pipeline);
+    }
+#else
     CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.pipeline);
+#endif
 
     // setup input buffers
     CoreGraphics::CmdSetVertexLayout(cmdBuf, ImguiContext::state.vlo);
     CoreGraphics::CmdSetResourceTable(cmdBuf, ImguiContext::state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
     CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, ImguiContext::state.vbos[currentBuffer], 0);
     CoreGraphics::CmdSetIndexBuffer(cmdBuf, IndexType::Index16, ImguiContext::state.ibos[currentBuffer], 0);
+    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+    CoreGraphics::CmdSetViewport(cmdBuf, viewport, 0);
+    CoreGraphics::CmdSetScissorRect(cmdBuf, viewport, 0);
 
     // set projection
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.textProjectionConstant, sizeof(proj), (byte*)&proj);
@@ -338,6 +357,7 @@ ImguiContext::Create()
     components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ .name = "ImGui"_atm, .comps = components });
 
+    /*
     FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
     {
         CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
@@ -352,8 +372,27 @@ ImguiContext::Create()
 #endif
         ImGui::Render();
         ImguiDrawFunction(cmdBuf, viewport);
-        ImGui::NewFrame();
     });
+    */
+
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    {
+        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+        if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
+        state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+    });
+
+    FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+#ifdef NEBULA_NO_DYNUI_ASSERTS
+        ImguiContext::RecoverImGuiContextErrors();
+#endif
+        ImGui::Render();
+        ImguiDrawFunction(cmdBuf, viewport, true);
+    });
+#endif
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
@@ -569,9 +608,6 @@ ImguiContext::Create()
         ImGui::SaveIniSettingsToDisk("imgui.ini");
     }
     ImGui::LoadIniSettingsFromDisk("imgui.ini");
-
-    ImGui::NewFrame();
-
 }
 
 //------------------------------------------------------------------------------
@@ -671,6 +707,7 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
+    ImGui::NewFrame();
 }
 
 } // namespace Dynui

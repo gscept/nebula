@@ -24,6 +24,9 @@
 
 #include "frame/default.h"
 #include "frame/shadows.h"
+#if WITH_NEBULA_EDITOR
+#include "frame/editorframe.h"
+#endif
 
 #include "coregraphics/swapchain.h"
 
@@ -38,7 +41,6 @@ __ImplementSingleton(Graphics::GraphicsServer);
 */
 GraphicsServer::GraphicsServer() :
     isOpen(false)
-    , preViewCall(nullptr)
     , resizeCall(nullptr)
 {
     __ConstructSingleton;
@@ -366,6 +368,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Mat
     view->SetFrameScript(render);
     view->SetViewport(viewport);
     this->views.Append(view);
+    this->viewsByName.Add(name, view);
 
     // invoke all interested contexts
     IndexT i;
@@ -546,9 +549,9 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
-    if (this->preViewCall != nullptr)
+    for (auto& cb : this->preViewCallbacks)
     {
-        this->preViewCall(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
     }
 
     // Go through views and call before view
@@ -560,9 +563,13 @@ GraphicsServer::Render()
             continue;
 
         this->currentView = view;
-        //FrameScript_default::Run(
         view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
         this->currentView = nullptr;
+    }
+
+    for (auto& cb : this->postViewCallbacks)
+    {
+        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
     }
 }
 
@@ -573,6 +580,8 @@ void
 GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
+
+    n_assert_msg(this->swapInfo.syncFunc != nullptr, "Please provide a valid SwapInfo with 'SetSwapInfo'");
 
     // Allocate command buffer to run swap
     CoreGraphics::CmdBufferCreateInfo bufInfo;
@@ -588,8 +597,8 @@ GraphicsServer::EndFrame()
     CoreGraphics::QueueBeginMarker(CoreGraphics::ComputeQueueType, NEBULA_MARKER_COMPUTE, "Swap");
     CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
     CoreGraphics::SwapchainSwap(swapchain);
-    FrameScript_default::Synchronize("Present_Sync", cmdBuf, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
-    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, FrameScript_default::Texture_ColorBuffer());
+    this->swapInfo.syncFunc(cmdBuf);
+    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, this->swapInfo.swapSource);
     CoreGraphics::QueueEndMarker(CoreGraphics::ComputeQueueType);
 
     CoreGraphics::CmdEndMarker(cmdBuf);
@@ -597,7 +606,7 @@ GraphicsServer::EndFrame()
     CoreGraphics::CmdEndRecord(cmdBuf);
 
     auto submission = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::ComputeQueueType);
-    CoreGraphics::WaitForSubmission(FrameScript_default::Submission_ForwardShadingandPostEffects, CoreGraphics::QueueType::ComputeQueueType);
+    CoreGraphics::WaitForSubmission(this->swapInfo.submission, CoreGraphics::QueueType::ComputeQueueType);
     CoreGraphics::DestroyCmdBuffer(cmdBuf);
 
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);

@@ -69,6 +69,8 @@ public:
     Ptr<View> CreateView(const Util::StringAtom& name, void(*)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport);
     /// create a new view without a framescript
     Ptr<View> CreateView(const Util::StringAtom& name);
+    /// Get view by name
+    const Ptr<View>& GetView(const Util::StringAtom& name);
     /// discard view
     void DiscardView(const Ptr<View>& view);
     /// get current view
@@ -76,10 +78,23 @@ public:
     /// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
     void SetCurrentView(const Ptr<View>& view);
 
-    /// Set a function to be run before the views render
-    void SetPreviewCall(void(*)(IndexT, IndexT));
+    using PreViewCallback = void(*)(IndexT, IndexT);
+    using PostViewCallback = void(*)(IndexT, IndexT);
+    /// Add callback for rendering before the views are processed
+    void AddPreViewCall(PreViewCallback callback);
+    /// Add callback for rendering after the views are processed
+    void AddPostViewCall(PostViewCallback callback);
     /// Set a function to be run when resize
     void SetResizeCall(void(*)(const SizeT, const SizeT));
+
+    struct SwapInfo
+    {
+        void (*syncFunc)(CoreGraphics::CmdBufferId) = nullptr;
+        CoreGraphics::TextureId swapSource = CoreGraphics::InvalidTextureId;
+        CoreGraphics::SubmissionWaitEvent submission;
+    };
+    /// Setup the swap info
+    void SetSwapInfo(const SwapInfo& info);
 
     /// create a new stage
     Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
@@ -139,9 +154,14 @@ private:
     Util::Array<GraphicsContextState*> states;
 
     Util::Array<Ptr<Stage>> stages;
+    Util::Dictionary<Util::StringAtom, Ptr<View>> viewsByName;
     Util::Array<Ptr<View>> views;
     Ptr<View> currentView;
-    void (*preViewCall) (IndexT, IndexT);
+
+
+    Util::Array<PreViewCallback> preViewCallbacks;
+    Util::Array<PostViewCallback> postViewCallbacks;
+
     void (*resizeCall) (const SizeT, const SizeT);
 
     Ptr<CoreGraphics::DisplayDevice> displayDevice;
@@ -152,6 +172,8 @@ private:
 
     Util::Array<ViewIndependentCall> preLogicCalls, postLogicCalls;
     Util::Array<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
+
+    SwapInfo swapInfo;
 
     bool isOpen;
 };
@@ -198,6 +220,15 @@ DeregisterEntity(const GraphicsEntityId id)
 /**
 */
 inline const Ptr<View>&
+GraphicsServer::GetView(const Util::StringAtom& name)
+{
+    return this->viewsByName[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Ptr<View>&
 GraphicsServer::GetCurrentView() const
 {
     return this->currentView;
@@ -207,9 +238,18 @@ GraphicsServer::GetCurrentView() const
 /**
 */
 inline void 
-GraphicsServer::SetPreviewCall(void(*func)(IndexT, IndexT))
+GraphicsServer::AddPreViewCall(PreViewCallback callback)
 {
-    this->preViewCall = func;
+    this->preViewCallbacks.Append(callback);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+GraphicsServer::AddPostViewCall(PostViewCallback callback)
+{
+    this->postViewCallbacks.Append(callback);
 }
 
 //------------------------------------------------------------------------------
@@ -219,6 +259,15 @@ inline void
 GraphicsServer::SetResizeCall(void(*func)(const SizeT windowWidth, const SizeT windowHeight))
 {
     this->resizeCall = func;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+GraphicsServer::SetSwapInfo(const SwapInfo& info)
+{
+    this->swapInfo = info;
 }
 
 //------------------------------------------------------------------------------

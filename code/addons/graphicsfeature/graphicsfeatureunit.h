@@ -74,10 +74,7 @@ public:
     /// Setup terrain biome, run before OnActivate
     void SetupTerrainBiome(const Terrain::BiomeSettings& biomeParameters);
 
-    using UIRenderFunc = std::function<void()>;
-    /// add a custom UI render function
-    void AddRenderUICallback(UIRenderFunc func);
-    
+
     Graphics::GraphicsEntityId globalLight;
 
 private:
@@ -91,7 +88,6 @@ private:
     CoreGraphics::WindowId wnd;
     //FIXME
 
-    Util::Array<UIRenderFunc> uiCallbacks;
 
     Game::ManagerHandle graphicsManagerHandle;
     Game::ManagerHandle cameraManagerHandle;

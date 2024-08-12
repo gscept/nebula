@@ -45,6 +45,9 @@
 
 #include "frame/default.h"
 #include "frame/shadows.h"
+#if WITH_NEBULA_EDITOR
+#include "frame/editorframe.h"
+#endif
 
 using namespace Graphics;
 using namespace Visibility;
@@ -135,6 +138,9 @@ GraphicsFeatureUnit::OnActivate()
 
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(width, height);
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::Initialize(width, height);
+#endif
     this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
@@ -247,14 +253,18 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::DownsamplingContext::Setup();
 
     Graphics::SetupBufferConstants();
-    this->gfxServer->SetPreviewCall([](IndexT frameIndex, IndexT bufferIndex) {
+    this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex) {
         FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
         FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
-        FrameScript_default::Bind_SunShadowDepth(FrameScript_shadows::Export_SunShadowDepth.tex, FrameScript_shadows::Export_SunShadowDepth.stage);
+        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
     });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
         FrameScript_default::Initialize(windowWidth, windowHeight);
         FrameScript_default::SetupPipelines();
+#if WITH_NEBULA_EDITOR
+        FrameScript_editorframe::Initialize(windowWidth, windowHeight);
+        FrameScript_editorframe::SetupPipelines();
+#endif
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
@@ -333,6 +343,9 @@ GraphicsFeatureUnit::OnActivate()
 
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::SetupPipelines();
+#endif
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
 }
 
@@ -403,11 +416,6 @@ GraphicsFeatureUnit::OnFrame()
 {
     FeatureUnit::OnFrame();
     this->gfxServer->Render();
-
-    for (auto const& uiFunc : this->uiCallbacks)
-    {
-        uiFunc();
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -439,15 +447,6 @@ void
 GraphicsFeatureUnit::OnRenderDebug()
 {
     FeatureUnit::OnRenderDebug();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsFeatureUnit::AddRenderUICallback(UIRenderFunc func)
-{
-    this->uiCallbacks.Append(func);
 }
 
 } // namespace GraphicsFeature

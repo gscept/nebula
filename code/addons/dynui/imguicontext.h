@@ -63,6 +63,10 @@ public:
         CoreGraphics::ShaderProgramId prog;
         CoreGraphics::PipelineId pipeline;
 
+#if WITH_NEBULA_EDITOR
+        CoreGraphics::PipelineId editorPipeline;
+#endif
+
         ImguiTextureId fontTexture;
         //CoreGraphics::TextureId fontTexture;
 
