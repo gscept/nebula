@@ -21,6 +21,24 @@ struct TextureExport
     CoreGraphics::PipelineStage stage;
 };
 
+struct TextureImport
+{
+    CoreGraphics::TextureId tex;
+    CoreGraphics::PipelineStage stage = CoreGraphics::PipelineStage::AllShadersRead;
+
+    explicit TextureImport(const CoreGraphics::TextureId id)
+    {
+        this->tex = id;
+    }
+
+    static TextureImport FromExport(const TextureExport& exp)
+    {
+        auto ret = TextureImport(exp.tex);
+        ret.stage = exp.stage;
+        return ret;
+    }
+};
+
 /// Draw
 void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex);
 /// Draw instanced

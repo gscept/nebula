@@ -40,7 +40,6 @@ struct
 
     struct AOVariables
     {
-        float fullWidth, fullHeight;
         float width, height;
         float downsample;
         float nearZ, farZ;
@@ -157,15 +156,12 @@ SSAOContext::Setup()
         ResourceTableCommitChanges(ssaoState.blurTableY[i]);
     }
 
-    TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_SSAOBuffer());
-    ssaoState.vars.fullWidth = (float)dims.width;
-    ssaoState.vars.fullHeight = (float)dims.height;
+
     ssaoState.vars.radius = 12.0f;
     ssaoState.vars.downsample = 1.0f;
     ssaoState.vars.sceneScale = 1.0f;
 
 #define MAX_RADIUS_PIXELS 0.5f
-    ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
     ssaoState.vars.tanAngleBias = tanf(Math::deg2rad(35.0));
     ssaoState.vars.strength = 1.0f;
 
@@ -183,8 +179,8 @@ SSAOContext::Setup()
     ssaoState.blurFalloff = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_FALLOFF);
     ssaoState.blurDepthThreshold = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_DEPTHTHRESHOLD);
 
-    FrameScript_default::Bind_HBAOInternal0(ssaoState.internalTargets[0]);
-    FrameScript_default::Bind_HBAOInternal1(ssaoState.internalTargets[1]);
+    FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
+    FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
     FrameScript_default::RegisterSubgraph_HBAOX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAOTileWidth);
@@ -253,8 +249,11 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     using namespace CoreGraphics;
     const CameraSettings& cameraSettings = CameraContext::GetSettings(view->GetCamera());
 
-    ssaoState.vars.width = ssaoState.vars.fullWidth / ssaoState.vars.downsample;
-    ssaoState.vars.height = ssaoState.vars.fullHeight / ssaoState.vars.downsample;
+    const Math::rectangle<int>& viewport = view->GetViewport();
+
+    ssaoState.vars.width = viewport.width() / ssaoState.vars.downsample;
+    ssaoState.vars.height = viewport.height() / ssaoState.vars.downsample;
+    ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(viewport.width(), viewport.height());
 
     ssaoState.vars.nearZ = cameraSettings.GetZNear() + 0.1f;
     ssaoState.vars.farZ = cameraSettings.GetZFar();
@@ -269,7 +268,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     ssaoState.vars.invAOResolution.y = 1.0f / ssaoState.vars.height;
 
     float fov = cameraSettings.GetFov();
-    ssaoState.vars.focalLength.x = 1.0f / tanf(fov * 0.5f) * (ssaoState.vars.fullHeight / ssaoState.vars.fullWidth);
+    ssaoState.vars.focalLength.x = 1.0f / tanf(fov * 0.5f) * (viewport.height() / float(viewport.width()));
     ssaoState.vars.focalLength.y = 1.0f / tanf(fov * 0.5f);
 
     Math::vec2 invFocalLength;
@@ -337,8 +336,8 @@ SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT h
     TextureWindowResized(ssaoState.internalTargets[0]);
     TextureWindowResized(ssaoState.internalTargets[1]);
 
-    FrameScript_default::Bind_HBAOInternal0(ssaoState.internalTargets[0]);
-    FrameScript_default::Bind_HBAOInternal1(ssaoState.internalTargets[1]);
+    FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
+    FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
 
     IndexT i;
     for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
@@ -357,12 +356,6 @@ SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT h
         ResourceTableSetRWTexture(ssaoState.blurTableY[i], { FrameScript_default::Texture_SSAOBuffer(), HbaoblurCs::Table_Batch::HBAOR_SLOT, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableCommitChanges(ssaoState.blurTableY[i]);
     }
-
-    TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_SSAOBuffer());
-    ssaoState.vars.fullWidth = (float)dims.width;
-    ssaoState.vars.fullHeight = (float)dims.height;
-
-    ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
 }
 
 } // namespace PostEffects

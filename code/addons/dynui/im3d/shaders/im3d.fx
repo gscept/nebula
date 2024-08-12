@@ -108,10 +108,10 @@ gsMain(
     vec2 pos1 = gl_in[1].gl_Position.xy / gl_in[1].gl_Position.w;
         
     vec2 dir = pos0 - pos1;
-    dir = normalize(vec2(dir.x, dir.y * RenderTargetDimensions[0].y * RenderTargetDimensions[0].z)); // correct for aspect ratio
+    dir = normalize(vec2(dir.x, dir.y * RenderTargetParameter[0].Dimensions.y * RenderTargetParameter[0].Dimensions.z)); // correct for aspect ratio
     vec2 tng0 = vec2(-dir.y, dir.x);
-    vec2 tng1 = tng0 * size[1] * RenderTargetDimensions[0].zw;
-    tng0 = tng0 * size[0] * RenderTargetDimensions[0].zw;
+    vec2 tng1 = tng0 * size[1] * RenderTargetParameter[0].Dimensions.zw;
+    tng0 = tng0 * size[0] * RenderTargetParameter[0].Dimensions.zw;
         
     // line start
     gl_Position = vec4((pos0 - tng0) * gl_in[0].gl_Position.w, gl_in[0].gl_Position.zw); 

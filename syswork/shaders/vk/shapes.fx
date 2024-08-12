@@ -97,10 +97,10 @@ gsLines(
     vec2 line0 = (p1 - p0);
     
     // Aspect correct the lines
-    line0 = normalize(line0.yx * vec2(-RenderTargetDimensions[0].y * RenderTargetDimensions[0].z, 1));
+    line0 = normalize(line0.yx * vec2(-RenderTargetParameter[0].Dimensions.y * RenderTargetParameter[0].Dimensions.z, 1));
 
     // Scale by line width and inversed resolution
-    line0 *= RenderTargetDimensions[0].zw * ShapeConstants.LineWidth;
+    line0 *= RenderTargetParameter[0].Dimensions.zw * ShapeConstants.LineWidth;
 
     // Emit triangle strip 
     Color = colors[0];

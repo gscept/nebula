@@ -264,8 +264,8 @@ TessellationFactorScreenSpace(vec4 p0, vec4 p1)
     clip1 /= clip1.w;
 
     // Convert to viewport coordinates
-    clip0.xy *= RenderTargetDimensions[0].xy;
-    clip1.xy *= RenderTargetDimensions[0].xy;
+    clip0.xy *= RenderTargetParameter[0].Dimensions.xy;
+    clip1.xy *= RenderTargetParameter[0].Dimensions.xy;
 
     // Return the tessellation factor based on the screen size 
     // given by the distance of the two edge control points in screen space
@@ -982,7 +982,7 @@ psGenerateLowresFallback(
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
     vec2 invWorldSize = 1.0f / worldSize;
 
-    vec2 texelSize = RenderTargetDimensions[0].zw;
+    vec2 texelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 pixel = vec2(gl_FragCoord.xy);
     vec2 uv = pixel * texelSize;
     vec2 pixelToWorldScale = vec2(WorldSizeX, WorldSizeZ) * texelSize;

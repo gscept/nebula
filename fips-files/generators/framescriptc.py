@@ -30,7 +30,7 @@ class TextureImportDefinition:
         self.name = name.replace(" ", "")
 
     def FormatHeader(self, file):
-        file.WriteLine("void Bind_{}(const CoreGraphics::TextureId id, const CoreGraphics::PipelineStage stage = CoreGraphics::PipelineStage::AllShadersRead);".format(self.name))
+        file.WriteLine("void Bind_{}(const Frame::TextureImport& imp);".format(self.name))
 
     def FormatSource(self, file):
         file.WriteLine("")
@@ -38,13 +38,13 @@ class TextureImportDefinition:
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine("void")
-        file.WriteLine("Bind_{}(const CoreGraphics::TextureId id, const CoreGraphics::PipelineStage stage)".format(self.name))
+        file.WriteLine("Bind_{}(const Frame::TextureImport& imp)".format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
-        file.WriteLine("Textures[(uint)TextureIndex::{}] = id;".format(self.name))
-        file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = stage;".format(self.name))
-        file.WriteLine("TextureOriginalStage[(uint)TextureIndex::{}] = stage;".format(self.name))
-        file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(id));".format(self.name))
+        file.WriteLine("Textures[(uint)TextureIndex::{}] = imp.tex;".format(self.name))
+        file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = imp.stage;".format(self.name))
+        file.WriteLine("TextureOriginalStage[(uint)TextureIndex::{}] = imp.stage;".format(self.name))
+        file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(imp.tex));".format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
 
@@ -201,6 +201,7 @@ class LocalTextureDefinition:
             file.WriteLine("Textures[(uint)TextureIndex::{}] = CoreGraphics::CreateTexture(info);".format(self.name))
             file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(info.format);".format(self.name, self.name))
             file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = CoreGraphics::PipelineStage::InvalidStage;".format(self.name))
+            file.WriteLine("TextureDimensions[(uint)TextureIndex::{}] = {{ {} * frameWidth, {} * frameHeight }};".format(self.name, self.relativeSize[0], self.relativeSize[1]))
             file.DecreaseIndent()
             file.WriteLine("}")
         else:
@@ -913,6 +914,8 @@ class PassDefinition:
         file.WriteLine("}")
 
     def FormatHeader(self, file):
+        file.WriteLine('static Util::FixedArray<Shared::RenderTargetParameters> Pass_{}_RenderTargetDimensions({});'.format(self.name, len(self.attachments)))
+
         for idx, attachment in enumerate(self.attachments):
             file.WriteLine("static const int Pass_{}_Attachment_{} = {};".format(self.name, attachment.name, idx))
         for subpass in self.subpasses:
@@ -930,6 +933,9 @@ class PassDefinition:
                 if type(op) == SubgraphDefinition:
                     file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, op.name, op.name))
 
+        for attachment in self.attachments: 
+            file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / viewport.width() * {}f, 1 / viewport.height() * {}f }}, {{ viewport.width() / TextureDimensions[(uint)TextureIndex::{}].first, viewport.height() / TextureDimensions[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))
+        file.WriteLine('CoreGraphics::PassSetRenderTargetDimensions(Pass_{}, Pass_{}_RenderTargetDimensions);'.format(self.name, self.name))
         file.WriteLine('CoreGraphics::CmdBeginPass(cmdBuf, Pass_{});'.format(self.name))
         
         for subpass in self.subpasses:
@@ -1153,6 +1159,7 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/buffer.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "coregraphics/pipeline.h"')
+        file.WriteLine('#include "system_shaders/shared.h"')
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
@@ -1260,7 +1267,7 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::PipelineStage TextureCurrentStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::PipelineStage TextureOriginalStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::TextureId Textures[(uint)TextureIndex::Num] = {};")
-            file.WriteLine("Util::Pair<float, float> TextureScaleFactors[(uint)TextureIndex::Num] = {};")
+            file.WriteLine("Util::Pair<float, float> TextureDimensions[(uint)TextureIndex::Num] = {};")
         if len(self.importBuffers) > 0:
             file.WriteLine("CoreGraphics::PipelineStage BufferCurrentStage[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")

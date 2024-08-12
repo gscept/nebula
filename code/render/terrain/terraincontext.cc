@@ -678,8 +678,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     FrameScript_default::Bind_TerrainUpdateList(terrainVirtualTileState.pageUpdateListBuffer);
     FrameScript_default::Bind_TerrainVirtualPageStatuses(terrainVirtualTileState.pageStatusBuffer);
     FrameScript_default::Bind_TerrainSubTextures(terrainVirtualTileState.subTextureBuffer);
-    FrameScript_default::Bind_TerrainIndirection(terrainVirtualTileState.indirectionTexture);
-    FrameScript_default::Bind_TerrainIndirectionCopy(terrainVirtualTileState.indirectionTextureCopy);
+    FrameScript_default::Bind_TerrainIndirection(Frame::TextureImport(terrainVirtualTileState.indirectionTexture));
+    FrameScript_default::Bind_TerrainIndirectionCopy(Frame::TextureImport(terrainVirtualTileState.indirectionTextureCopy));
 
     FrameScript_default::RegisterSubgraph_TerrainPrepare_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {

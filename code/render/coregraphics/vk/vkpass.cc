@@ -564,15 +564,15 @@ SetupPass(const PassId pid)
     {
         // setup uniform buffer for render target information
         ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.fxb"_atm);
-        loadInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock");
-        loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
+        runtimeInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock", CoreGraphics::BufferAccessMode::DeviceAndHost);
+        runtimeInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetParameter");
 
         CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
         runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout, 8 });
         runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
         CoreGraphics::ResourceTableBuffer write;
-        write.buf = loadInfo.passBlockBuffer;
+        write.buf = runtimeInfo.passBlockBuffer;
         write.offset = 0;
         write.size = NEBULA_WHOLE_BUFFER_SIZE;
         write.index = 0;
@@ -601,16 +601,19 @@ SetupPass(const PassId pid)
     }
 
     // Calculate texture dimensions
-    Util::FixedArray<Math::vec4> dimensions(loadInfo.attachments.Size());
+    Util::FixedArray<Shared::RenderTargetParameters> params(loadInfo.attachments.Size());
     for (i = 0; i < loadInfo.attachments.Size(); i++)
     {
         // update descriptor set based on images attachments
         TextureId tex = TextureViewGetTexture(loadInfo.attachments[i]);
         const CoreGraphics::TextureDimensions rtdims = TextureGetDimensions(tex);
-        Math::vec4& dims = dimensions[i];
-        dims = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
+        Shared::RenderTargetParameters& rtParams = params[i];
+        Math::vec4 dimensions = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
+        dimensions.storeu(rtParams.Dimensions);
+        rtParams.Scale[0] = 1;
+        rtParams.Scale[1] = 1;
     }
-    BufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
+    BufferUpdateArray(runtimeInfo.passBlockBuffer, params.Begin(), params.Size(), runtimeInfo.renderTargetDimensionsVar);
 
     // setup info
     runtimeInfo.framebufferPipelineInfo.renderPass = loadInfo.pass;
@@ -698,9 +701,9 @@ DestroyPass(const PassId id)
 
     // destroy pass and our descriptor set
     DestroyResourceTable(runtimeInfo.passDescriptorSet);
-    DestroyBuffer(loadInfo.passBlockBuffer);
+    DestroyBuffer(runtimeInfo.passBlockBuffer);
     runtimeInfo.passDescriptorSet = ResourceTableId::Invalid();
-    loadInfo.passBlockBuffer = BufferId::Invalid();
+    runtimeInfo.passBlockBuffer = BufferId::Invalid();
 
     DelayedDeletePass(id);
 }
@@ -723,6 +726,16 @@ PassWindowResizeCallback(const PassId id)
 
     // setup pass again
     SetupPass(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassSetRenderTargetDimensions(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
+{
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
+    BufferUpdateArray(runtimeInfo.passBlockBuffer, viewports.Begin(), viewports.Size(), runtimeInfo.renderTargetDimensionsVar);
 }
 
 //------------------------------------------------------------------------------

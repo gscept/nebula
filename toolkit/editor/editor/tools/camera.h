@@ -44,6 +44,9 @@ public:
     bool const GetProjectionMode() const;
     void SetProjectionMode(ProjectionMode mode);
 
+    /// Set view dimensions
+    void SetViewDimensions(SizeT screenWidth, SizeT screenHeight);
+
     void SetTransform(Math::mat4 const& val);
 
     Math::mat4 GetViewTransform() const;

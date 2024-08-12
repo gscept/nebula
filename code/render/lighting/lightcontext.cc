@@ -1222,8 +1222,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     ResourceTableCommitChanges(frameResourceTable);
 
     Combine::CombineUniforms combineConsts;
-    combineConsts.LowresResolution[0] = 1.0f / viewport.width();
-    combineConsts.LowresResolution[1] = 1.0f / viewport.height();
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
+    combineConsts.LowresResolution[0] = 1.0f / dims.width;
+    combineConsts.LowresResolution[1] = 1.0f / dims.height;
     offset = SetConstants(combineConsts);
     ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), (SizeT)offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
