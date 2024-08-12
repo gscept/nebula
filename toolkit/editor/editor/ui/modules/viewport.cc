@@ -198,17 +198,23 @@ Viewport::Render()
     textureInfo.layer = 0;
 
     ImVec2 space = ImGui::GetContentRegionAvail();
+    ImVec2 cursorPos = ImGui::GetCursorPos();
+    ImVec2 windowPos = ImGui::GetWindowPos();
 
     ImVec2 imageSize = {(float)space.x, (float)space.y};
+    imageSize.x = Math::max(imageSize.x, 1.0f);
+    imageSize.y = Math::max(imageSize.y, 1.0f);
     ImVec2 uv = { space.x / dims.width, space.y / dims.height };
     this->camera.SetViewDimensions(imageSize.x, imageSize.y);
 
     //auto windowSize = ImGui::GetWindowSize();
     //windowSize.y -= ImGui::GetCursorPosY() - 20;
     ImGui::Image((void*)&textureInfo, imageSize, ImVec2(0, 0), uv);
+
+    ImVec2 imagePosition = { cursorPos.x + windowPos.x, cursorPos.y + windowPos.y };
     
-    this->lastViewportImagePosition = { 0, 0 };
-    this->lastViewportImageSize = { imageSize.x, imageSize.y };
+    this->lastViewportImagePosition = { imagePosition.x / dims.width, imagePosition.y / dims.height };
+    this->lastViewportImageSize = { imageSize.x / dims.width, imageSize.y / dims.height };
 
     auto view = Graphics::GraphicsServer::Instance()->GetView("mainview");
     view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
