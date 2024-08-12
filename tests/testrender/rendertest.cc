@@ -55,7 +55,7 @@ RenderTest::Run()
     };
     CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, wnd);
+    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 640, 480));
     Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
     
     GraphicsEntityId cam = Graphics::CreateEntity();

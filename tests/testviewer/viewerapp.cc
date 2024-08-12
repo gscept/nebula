@@ -126,7 +126,7 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
-        Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, wnd);
+        Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
         gfxServer->SetCurrentView(this->view);
         this->stage = gfxServer->CreateStage("stage1", true);
 
@@ -224,7 +224,6 @@ SimpleViewerApplication::Open()
 
         Util::Array<Graphics::ViewIndependentCall> preLogicCalls = 
         {
-            Im3d::Im3dContext::NewFrame,
             Dynui::ImguiContext::NewFrame,
             CameraContext::UpdateCameras,
             ModelContext::UpdateTransforms,
@@ -256,7 +255,6 @@ SimpleViewerApplication::Open()
             ObserverContext::GenerateDrawLists,
 
             // At the very latest point, wait for work to finish
-            Dynui::ImguiContext::Render,
             ModelContext::WaitForWork,
             Characters::CharacterContext::WaitForCharacterJobs,
             Particles::ParticleContext::WaitForParticleUpdates,

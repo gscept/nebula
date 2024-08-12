@@ -76,7 +76,7 @@ VisibilityTest::Run()
     };
     CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, wnd);
+    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
     Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
 
     // create contexts, this could and should be bundled together

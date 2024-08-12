@@ -11,6 +11,8 @@
 #include "vktextureview.h"
 #include "coregraphics/pass.h"
 
+#include "system_shaders/shared.h"
+
 using namespace CoreGraphics;
 namespace Vulkan
 {
