@@ -164,7 +164,7 @@ psUnlit(in vec4 ViewSpacePosition,
     in vec2 UV,
     [color0] out vec4 FinalColor) 
 {
-    vec2 pixelSize = RenderTargetDimensions[0].zw;
+    vec2 pixelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
     vec4 diffColor = sample2D(_Unlit.AlbedoMap, ParticleSampler, UV);
     
@@ -185,7 +185,7 @@ psUnlit2Layers(in vec4 ViewSpacePosition,
     in vec2 UV,
     [color0] out vec4 FinalColor) 
 {
-    vec2 pixelSize = RenderTargetDimensions[0].zw;
+    vec2 pixelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
     vec4 layer1 = sample2D(_BlendAdd.AlbedoMap, LayerSampler, UV + _BlendAdd.UVAnim1 * Time_Random_Luminance_X.x);
     vec4 layer2 = sample2D(_BlendAdd.Layer2, LayerSampler, UV + _BlendAdd.UVAnim2 * Time_Random_Luminance_X.x);
@@ -209,7 +209,7 @@ psUnlit3Layers(in vec4 ViewSpacePosition,
     in vec2 UV,
     [color0] out vec4 FinalColor) 
 {
-    vec2 pixelSize = RenderTargetDimensions[0].zw;
+    vec2 pixelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
     vec4 layer1 = sample2D(_BlendAdd.AlbedoMap, LayerSampler, UV + _BlendAdd.UVAnim1 * Time_Random_Luminance_X.x);
     vec4 layer2 = sample2D(_BlendAdd.Layer2, LayerSampler, UV + _BlendAdd.UVAnim2 * Time_Random_Luminance_X.x);
@@ -234,7 +234,7 @@ psUnlit4Layers(in vec4 ViewSpacePosition,
     in vec2 UV,
     [color0] out vec4 FinalColor) 
 {
-    vec2 pixelSize = RenderTargetDimensions[0].zw;
+    vec2 pixelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
     vec4 layer1 = sample2D(_BlendAdd.AlbedoMap, LayerSampler, UV + _BlendAdd.UVAnim1 * Time_Random_Luminance_X.x);
     vec4 layer2 = sample2D(_BlendAdd.Layer2, LayerSampler, UV + _BlendAdd.UVAnim2 * Time_Random_Luminance_X.x);

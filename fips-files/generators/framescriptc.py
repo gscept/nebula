@@ -935,7 +935,7 @@ class PassDefinition:
 
         for attachment in self.attachments: 
             file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / float(viewport.width()) * {}f, 1 / float(viewport.height()) * {}f }}, {{ viewport.width() / TextureDimensions[(uint)TextureIndex::{}].first, viewport.height() / TextureDimensions[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))
-        file.WriteLine('CoreGraphics::PassSetRenderTargetDimensions(Pass_{}, Pass_{}_RenderTargetDimensions);'.format(self.name, self.name))
+        file.WriteLine('CoreGraphics::PassSetRenderTargetParameters(Pass_{}, Pass_{}_RenderTargetDimensions);'.format(self.name, self.name))
         file.WriteLine('CoreGraphics::CmdBeginPass(cmdBuf, Pass_{});'.format(self.name))
         
         for subpass in self.subpasses:

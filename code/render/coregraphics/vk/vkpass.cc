@@ -734,7 +734,7 @@ PassWindowResizeCallback(const PassId id)
 /**
 */
 void
-PassSetRenderTargetDimensions(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
+PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
 {
     VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
     BufferUpdateArray(runtimeInfo.passBlockBuffer, viewports.Begin(), viewports.Size(), runtimeInfo.renderTargetDimensionsVar);

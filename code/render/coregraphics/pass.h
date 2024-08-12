@@ -103,7 +103,7 @@ void DestroyPass(const PassId id);
 /// called when window is resized
 void PassWindowResizeCallback(const PassId id);
 /// Set viewports
-void PassSetRenderTargetDimensions(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
+void PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
 
 /// get number of color attachments for entire pass (attachment list)
 const Util::Array<CoreGraphics::TextureViewId>& PassGetAttachments(const CoreGraphics::PassId id);

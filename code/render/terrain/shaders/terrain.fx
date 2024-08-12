@@ -243,7 +243,7 @@ TessellationFactorScreenSpace(vec4 p0, vec4 p1)
     mat4 mvp = Transform * ViewProjection;
     vec4 p0Proj = mvp * p0;
     vec4 p1Proj = mvp * p1;
-    float screen = max(RenderTargetDimensions[0].x, RenderTargetDimensions[0].y);
+    float screen = max(RenderTargetParameter[0].Dimensionsx, RenderTargetParameter[0].Dimensions.y);
     float dist = distance(p0Proj.xy / p0Proj.w, p1Proj.xy / p1Proj.w);
     return clamp(dist * screen, MinTessellation, MaxTessellation);
     */
