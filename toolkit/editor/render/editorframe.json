@@ -1,0 +1,67 @@
+{
+    "Nebula": {
+        "version": 3,
+        "Dependencies": [
+            "Scene"
+        ],
+        "ImportTextures": [
+            "SceneBuffer"
+        ],
+        "LocalTextures": [
+            {
+                "name": "EditorBuffer",
+                "format": "SRGBA8",
+                "relative": true,
+                "usage": "Render|TransferSource",
+                "relativeSize": [ 1.0, 1.0 ],
+                "type": "Texture2D"
+            }
+        ],
+        "ExportTextures": [
+            "EditorBuffer",
+        ],
+        "Submissions": [
+            {
+                "name": "Editor UI",
+                "queue": "Graphics",
+                "wait_for_submissions": [ "Scene" ],
+                "_comment": "Render Editor UI",
+                "ops": [
+                    {
+                        "pass": {
+                            "name": "Editor",
+                            "attachments": [
+                                {
+                                    "name": "EditorBuffer",
+                                    "flags": "Store"
+                                }
+                            ],
+                            "subpasses": [
+                                {
+                                    "name": "Editor Pass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [
+                                        "EditorBuffer"
+                                    ],
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "ImGUI"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "transition": {
+                            "name": "EditorBuffer",
+                            "stage": "ComputeShaderRead"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
