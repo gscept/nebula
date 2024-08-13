@@ -25,6 +25,7 @@
                 "name": "Editor UI",
                 "queue": "Graphics",
                 "wait_for_submissions": [ "Scene" ],
+                "last_submit": true,
                 "_comment": "Render Editor UI",
                 "ops": [
                     {
