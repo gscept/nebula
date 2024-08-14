@@ -26,11 +26,15 @@ extern void InitVulkan();
 /// initialize Vulkan instance, loads function pointers directly from driver
 extern void InitInstance(VkInstance instance);
 
+extern PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName;
+
+
 } // namespace Vulkan
 
 #define _IMP_VK(name) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);n_assert_fmt(name != nullptr, "Unable to get function proc: %s\n",#name);
 #define _DEC_VK(name) extern PFN_##name name;
 #define _DEF_VK(name) PFN_##name name;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -216,6 +220,7 @@ _DEC_VK(vkGetRayTracingShaderGroupHandlesKHR);
 
 // mesh shaders
 _DEC_VK(vkCmdDrawMeshTasksEXT);
+
 
 #ifdef __cplusplus
 }

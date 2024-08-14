@@ -50,6 +50,26 @@ public:
         Util::Array<uint64> waitIndices;
     };
 
+    struct TimelineSubmission2
+    {
+#if NEBULA_GRAPHICS_DEBUG
+        const char* name = nullptr;
+#endif
+        CoreGraphics::QueueType queue;
+        Util::Array<uint64> signalIndices;
+        Util::Array<VkSemaphore> signalSemaphores;
+        Util::Array<VkCommandBuffer> buffers;
+        Util::Array<VkPipelineStageFlags> waitFlags;
+        Util::Array<VkSemaphore> waitSemaphores;
+        Util::Array<uint64> waitIndices;
+    };
+
+    struct SubmissionList
+    {
+        CoreGraphics::QueueType queue;
+        Util::Array<TimelineSubmission2> submissions;
+    };
+
     struct SparseBindSubmission
     {
         VkBindSparseInfo bindInfo;
@@ -73,7 +93,13 @@ public:
     void SetToNextContext(const CoreGraphics::QueueType type);
 
     /// append submission to context to execute later, supports waiting for a queue
-    uint64 AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds);
+    uint64 AppendSubmissionTimeline(
+        CoreGraphics::QueueType type
+        , VkCommandBuffer cmds
+#if NEBULA_GRAPHICS_DEBUG
+        , const char* name = nullptr
+#endif
+    );
     /// Gets the next submission id for a specific queue
     uint64 GetNextTimelineIndex(CoreGraphics::QueueType type);
     /// Append a wait for a submission timeline index
@@ -84,8 +110,8 @@ public:
     uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
     /// Append present signal
     void AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem);
-    /// flush submissions
-    void FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence);
+    /// Flush submissions
+    void FlushSubmissions(VkFence fence);
     /// wait for timeline index
     void Wait(CoreGraphics::QueueType type, uint64 index);
     /// check to see if timeline index has passed
@@ -119,7 +145,7 @@ private:
     VkSemaphore semaphores[CoreGraphics::NumQueueTypes];
     uint64 semaphoreSubmissionIds[CoreGraphics::NumQueueTypes];
 
-    Util::FixedArray<Util::Array<TimelineSubmission>> timelineSubmissions;
+    Util::Array<SubmissionList> orderedSubmissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
 };
 

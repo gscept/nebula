@@ -2,6 +2,7 @@
     "Nebula": {
         "version": 3,
         "Dependencies": [
+            "LastFrame",
             "Shadows"
         ],
         "ImportBuffers": [
@@ -376,7 +377,7 @@
             },
 
             {
-                "name": "Forward Shading and Post Effects",
+                "name": "Scene",
                 "wait_for_submissions": [ "Compute Prepass", "Prepass", "Shadows" ],
                 "queue": "Graphics",
                 "last_submit": true,

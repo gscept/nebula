@@ -91,7 +91,7 @@ OnActivate()
     {
         ImGui::DockSpaceOverViewport();
         windowServer->RunAll();
-        FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_ForwardShadingandPostEffects);
+        FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
         FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));
         CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::CurrentWindow);
         Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());

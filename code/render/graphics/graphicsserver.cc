@@ -605,7 +605,14 @@ GraphicsServer::EndFrame()
     CoreGraphics::CmdFinishQueries(cmdBuf);
     CoreGraphics::CmdEndRecord(cmdBuf);
 
-    auto submission = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::ComputeQueueType);
+    auto submission = CoreGraphics::SubmitCommandBuffer(
+        cmdBuf
+        , CoreGraphics::ComputeQueueType
+#if NEBULA_GRAPHICS_DEBUG
+        , "Swap"
+#endif
+
+    );
     CoreGraphics::WaitForSubmission(this->swapInfo.submission, CoreGraphics::QueueType::ComputeQueueType);
     CoreGraphics::DestroyCmdBuffer(cmdBuf);
 

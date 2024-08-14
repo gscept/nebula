@@ -152,18 +152,31 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         VK_NULL_HANDLE
     };
 
-    // get present queue
-    for (IndexT i = 0; i < NumQueueTypes; i++)
+    auto sets = CoreGraphics::GetQueueIndices();
+    VkBool32 canPresent;
+    res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, sets.KeyAtIndex(info.preferredQueue), surface, &canPresent);
+    n_assert(res == VK_SUCCESS);
+    if (canPresent)
     {
-        VkBool32 canPresent;
-        res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, i, surface, &canPresent);
-        n_assert(res == VK_SUCCESS);
-        if (canPresent)
+        queue = Vulkan::GetQueue(info.preferredQueue, 0);
+    }
+    else
+    {
+        // get present queue
+        for (IndexT i = 0; i < NumQueueTypes; i++)
         {
-            queue = Vulkan::GetQueue((CoreGraphics::QueueType)i, 0);
-            break;
+            VkBool32 canPresent;
+            res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, i, surface, &canPresent);
+            n_assert(res == VK_SUCCESS);
+            if (canPresent)
+            {
+                queue = Vulkan::GetQueue((CoreGraphics::QueueType)i, 0);
+                break;
+            }
         }
     }
+
+    n_assert(queue != VK_NULL_HANDLE);
 
     // create swapchain
     res = vkCreateSwapchainKHR(dev, &swapchainInfo, nullptr, &swapchain);
@@ -348,7 +361,7 @@ SwapchainPresent(const SwapchainId id)
     };
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLACK, "Presentation");
+    CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLACK, "Presentation");
 #endif
 
     const VkPresentInfoKHR info =
@@ -377,7 +390,7 @@ SwapchainPresent(const SwapchainId id)
 
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::QueueEndMarker(GraphicsQueueType);
+    CoreGraphics::QueueEndMarker(ComputeQueueType);
 #endif
 }
 

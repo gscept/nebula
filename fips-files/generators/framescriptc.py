@@ -1063,7 +1063,11 @@ class SubmissionDefinition:
         file.WriteLine("CoreGraphics::CmdEndMarker(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdFinishQueries(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdEndRecord(cmdBuf);")
-        file.WriteLine("Submission_{} = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::QueueType::{}QueueType);".format(self.name, self.queue))
+        file.WriteLine("Submission_{} = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::QueueType::{}QueueType".format(self.name, self.queue))
+        file.WriteLine("#if NEBULA_GRAPHICS_DEBUG")
+        file.WriteLine(', "{}"'.format(self.name))
+        file.WriteLine("#endif")
+        file.WriteLine(");")
         if self.waitForQueue is not None:
             file.WriteLine("CoreGraphics::WaitForLastSubmission(CoreGraphics::QueueType::{}QueueType, CoreGraphics::QueueType::{}QueueType);".format(self.queue, self.waitForQueue))
         for wait in self.waitForSubmissions:

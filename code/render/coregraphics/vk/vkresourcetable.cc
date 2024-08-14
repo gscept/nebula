@@ -16,8 +16,6 @@
 namespace Vulkan
 {
 
-extern PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName;
-
 VkResourceTableAllocator resourceTableAllocator;
 VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 VkResourcePipelineAllocator resourcePipelineAllocator;
