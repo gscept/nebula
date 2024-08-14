@@ -583,12 +583,13 @@ GraphicsServer::EndFrame()
 
     n_assert_msg(this->swapInfo.syncFunc != nullptr, "Please provide a valid SwapInfo with 'SetSwapInfo'");
 
-    // Finish submuissions
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
+    CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
+    CoreGraphics::SwapchainSwap(swapchain);
 
     // Allocate command buffer to run swap
     CoreGraphics::CmdBufferCreateInfo bufInfo;
     bufInfo.pool = this->swapBufferPool;
+    bufInfo.name = "Swap";
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(bufInfo);
     CoreGraphics::CmdBufferBeginInfo beginInfo;
     beginInfo.submitDuringPass = false;
@@ -597,12 +598,8 @@ GraphicsServer::EndFrame()
     CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
     CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
 
-    CoreGraphics::QueueBeginMarker(CoreGraphics::ComputeQueueType, NEBULA_MARKER_COMPUTE, "Swap");
-    CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
-    CoreGraphics::SwapchainSwap(swapchain);
     this->swapInfo.syncFunc(cmdBuf);
     CoreGraphics::SwapchainCopy(swapchain, cmdBuf, this->swapInfo.swapSource);
-    CoreGraphics::QueueEndMarker(CoreGraphics::ComputeQueueType);
 
     CoreGraphics::CmdEndMarker(cmdBuf);
     CoreGraphics::CmdFinishQueries(cmdBuf);
@@ -611,6 +608,9 @@ GraphicsServer::EndFrame()
     auto submission = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::ComputeQueueType);
     CoreGraphics::WaitForSubmission(this->swapInfo.submission, CoreGraphics::QueueType::ComputeQueueType);
     CoreGraphics::DestroyCmdBuffer(cmdBuf);
+
+    // Finish submuissions
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
 }
 
 //------------------------------------------------------------------------------

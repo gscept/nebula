@@ -335,8 +335,25 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 
     // execute all commands
     VkQueue queue = this->GetQueue(type);
+    switch (type)
+    {
+        case CoreGraphics::ComputeQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_COMPUTE, "Compute Queue");
+            break;
+        case CoreGraphics::GraphicsQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_GRAPHICS, "Graphics Queue");
+            break;
+        case CoreGraphics::TransferQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_TRANSFER, "Transfer Queue");
+            break;
+        case CoreGraphics::SparseQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_TRANSFER, "Sparse Queue");
+            break;
+    }
     VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
     n_assert(res == VK_SUCCESS);
+
+    CoreGraphics::QueueEndMarker(type);
 
     // clear submissions
     submissions.Clear();

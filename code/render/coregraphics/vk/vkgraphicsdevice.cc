@@ -1456,6 +1456,7 @@ LockTransferSetupCommandBuffer()
         cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
         cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
         cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        cmdCreateInfo.name = "Setup Transfer";
         state.setupTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
         CoreGraphics::CmdBeginRecord(state.setupTransferCommandBuffer, { true, false, false });
@@ -1492,6 +1493,7 @@ LockGraphicsSetupCommandBuffer()
         cmdCreateInfo.pool = state.setupGraphicsCommandBufferPool;
         cmdCreateInfo.usage = CoreGraphics::QueueType::GraphicsQueueType;
         cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        cmdCreateInfo.name = "Setup";
         state.setupGraphicsCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
         CoreGraphics::CmdBeginRecord(state.setupGraphicsCommandBuffer, { true, false, false });
@@ -1528,6 +1530,7 @@ LockTransferHandoverSetupCommandBuffer()
         cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
         cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
         cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        cmdCreateInfo.name = "Transfer Handover";
         state.handoverTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
         CoreGraphics::CmdBeginRecord(state.handoverTransferCommandBuffer, { true, false, false });

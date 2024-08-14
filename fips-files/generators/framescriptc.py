@@ -1026,15 +1026,25 @@ class SubmissionDefinition:
         file.WriteLine("cmdBufInfo.pool = CmdPool_{};".format(self.name))
         file.WriteLine("cmdBufInfo.usage = CoreGraphics::QueueType::{}QueueType;".format(self.queue))
         file.WriteLine("cmdBufInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::Timestamps;")
+        file.WriteLine("#if NEBULA_GRAPHICS_DEBUG")
+        file.WriteLine('cmdBufInfo.name = "{}";'.format(self.name))
+        file.WriteLine("#endif // NEBULA_GRAPHICS_DEBUG")
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdBufInfo);")
         file.WriteLine("CoreGraphics::CmdBufferBeginInfo beginInfo = { true, false, false };")
         file.WriteLine("CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);")
+        deps = ""
+        if len(self.waitForSubmissions) > 0:
+            deps = "- waits for: "
+            for dep in self.waitForSubmissions:
+                deps += "{}".format(dep)
+                if dep != self.waitForSubmissions[-1]:
+                    deps += ", "
         if self.queue == "Graphics":
-            file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, "{}");'.format(self.name))
+            file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, "{} {}");'.format(self.name, deps))
         else:
-            file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "{}");'.format(self.name))
+            file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "{} {}");'.format(self.name, deps))
         file.IncreaseIndent()
         file.WriteLine("Graphics::FlushUpdates(cmdBuf, CoreGraphics::QueueType::{}QueueType);".format(self.queue))
         file.WriteLine("Materials::MaterialLoader::FlushMaterialBuffers(cmdBuf, CoreGraphics::QueueType::{}QueueType);".format(self.queue))
@@ -1057,7 +1067,11 @@ class SubmissionDefinition:
         if self.waitForQueue is not None:
             file.WriteLine("CoreGraphics::WaitForLastSubmission(CoreGraphics::QueueType::{}QueueType, CoreGraphics::QueueType::{}QueueType);".format(self.queue, self.waitForQueue))
         for wait in self.waitForSubmissions:
+            file.WriteLine("if (Submission_{} != nullptr)".format(wait))
+            file.IncreaseIndent()
             file.WriteLine("CoreGraphics::WaitForSubmission(Submission_{}, CoreGraphics::QueueType::{}QueueType);".format(wait, self.queue))
+            file.DecreaseIndent()
+
         file.WriteLine("CoreGraphics::DestroyCmdBuffer(cmdBuf);")
 
         file.DecreaseIndent()

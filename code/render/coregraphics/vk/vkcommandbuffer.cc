@@ -209,6 +209,11 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     scissors.scissors.Resize(8);
 
     CmdBufferId ret = id;
+
+#if NEBULA_GRAPHICS_DEBUG
+    ObjectSetName(ret, info.name);
+#endif
+
     return ret;
 }
 

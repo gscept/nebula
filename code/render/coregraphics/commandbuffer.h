@@ -119,11 +119,18 @@ struct CmdBufferCreateInfo
     QueueType usage;
     CmdBufferQueryBits queryTypes;
 
+#if NEBULA_GRAPHICS_DEBUG
+    const char* name;
+#endif
+
     CmdBufferCreateInfo()
         : subBuffer(false)
         , pool(InvalidCmdBufferPoolId)
         , usage(QueueType::GraphicsQueueType)
         , queryTypes(CmdBufferQueryBits::Timestamps)
+#if NEBULA_GRAPHICS_DEBUG
+        , name(nullptr)
+#endif
     {};
 };
 

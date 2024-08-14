@@ -180,7 +180,7 @@
             {
                 "name": "Compute Prepass",
                 "queue": "Compute",
-                "wait_for_queue": "Graphics",
+                "wait_for_submissions": [ "LastFrame" ],
                 "_comment": "Perform clustering AABB generation and run culling for clustering systems",
                 "ops": [
                     {
