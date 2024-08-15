@@ -103,7 +103,7 @@ CubicWeights(float v)
     Sample texture using bicubic sampling
 */
 vec3
-SampleCubic(texture2D tex, sampler samp, vec4 res, vec2 pixel, int mip)
+SampleCubic(texture2D tex, sampler samp, vec4 res, vec2 pixel, uint mip)
 {
     vec2 coords = pixel * res.xy - 0.5f;
     vec2 fxy = fract(coords);

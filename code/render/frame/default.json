@@ -33,6 +33,7 @@
         "ImportTextures": [
             "HBAOInternal0",
             "HBAOInternal1",
+            "BloomIntermediate",
             "TerrainIndirection",
             "TerrainIndirectionCopy",
             "TerrainAlbedoCache",
@@ -554,7 +555,12 @@
 
                     {
                         "subgraph": {
-                            "name": "Bloom"
+                            "name": "Bloom Intermediate"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Bloom Merge"
                         }
                     },
 
