@@ -32,6 +32,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     VkQueue& queue = swapchainAllocator.Get<Swapchain_Queue>(id);
     Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id);
     Util::Array<VkImageView>& views = swapchainAllocator.Get<Swapchain_ImageViews>(id);
+    CoreGraphics::QueueType& queueType = swapchainAllocator.Get<Swapchain_QueueType>(id);
     swapchainAllocator.Set<Swapchain_DisplayMode>(id, info.displayMode);
     VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), info.window, nullptr, &surface);
     n_assert(res == VK_SUCCESS);
@@ -152,13 +153,13 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         VK_NULL_HANDLE
     };
 
-    auto sets = CoreGraphics::GetQueueIndices();
     VkBool32 canPresent;
-    res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, sets.KeyAtIndex(info.preferredQueue), surface, &canPresent);
+    res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, CoreGraphics::GetQueueIndex(info.preferredQueue), surface, &canPresent);
     n_assert(res == VK_SUCCESS);
     if (canPresent)
     {
         queue = Vulkan::GetQueue(info.preferredQueue, 0);
+        queueType = info.preferredQueue;
     }
     else
     {
@@ -166,11 +167,12 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         for (IndexT i = 0; i < NumQueueTypes; i++)
         {
             VkBool32 canPresent;
-            res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, i, surface, &canPresent);
+            res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDev, CoreGraphics::GetQueueIndex((CoreGraphics::QueueType)i), surface, &canPresent);
             n_assert(res == VK_SUCCESS);
             if (canPresent)
             {
                 queue = Vulkan::GetQueue((CoreGraphics::QueueType)i, 0);
+                queueType = (CoreGraphics::QueueType)i;
                 break;
             }
         }
@@ -229,6 +231,12 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     currentBackbuffer = 0;
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
+    CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
+    poolInfo.shortlived = true;
+    poolInfo.queue = queueType;
+    poolInfo.resetable = false;
+    CoreGraphics::CmdBufferPoolId pool = CoreGraphics::CreateCmdBufferPool(poolInfo);
+    swapchainAllocator.Set<Swapchain_CommandPool>(id, pool);
 
     SwapchainId ret = id;
     return ret;
@@ -283,6 +291,28 @@ SwapchainSwap(const SwapchainId id)
         default:
             n_error("Present failed");
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::QueueType
+SwapchainGetQueueType(const SwapchainId id)
+{
+    return swapchainAllocator.Get<Swapchain_QueueType>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::CmdBufferId
+SwapchainAllocateCmds(const SwapchainId id)
+{
+    const CoreGraphics::CmdBufferPoolId pool = swapchainAllocator.Get<Swapchain_CommandPool>(id.id);
+    CoreGraphics::CmdBufferCreateInfo bufInfo;
+    bufInfo.pool = pool;
+    bufInfo.name = "Swap";
+    return CoreGraphics::CreateCmdBuffer(bufInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -353,6 +383,7 @@ SwapchainPresent(const SwapchainId id)
     const uint currentBackbuffer = swapchainAllocator.Get<Swapchain_CurrentBackbuffer>(id.id);
     const VkSwapchainKHR& swapchain = swapchainAllocator.Get<Swapchain_Swapchain>(id.id);
     const VkQueue& queue = swapchainAllocator.Get<Swapchain_Queue>(id.id);
+    const CoreGraphics::QueueType queueType = swapchainAllocator.Get<Swapchain_QueueType>(id.id);
     const Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id.id);
 
     VkSemaphore semaphores[] =
@@ -361,7 +392,7 @@ SwapchainPresent(const SwapchainId id)
     };
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_BLACK, "Presentation");
+    CoreGraphics::QueueBeginMarker(queueType, NEBULA_MARKER_BLACK, "Presentation");
 #endif
 
     const VkPresentInfoKHR info =
@@ -390,7 +421,7 @@ SwapchainPresent(const SwapchainId id)
 
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::QueueEndMarker(ComputeQueueType);
+    CoreGraphics::QueueEndMarker(queueType);
 #endif
 }
 

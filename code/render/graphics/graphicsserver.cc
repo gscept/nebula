@@ -216,12 +216,6 @@ GraphicsServer::Open()
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();
-
-        CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
-        poolInfo.shortlived = true;
-        poolInfo.queue = CoreGraphics::ComputeQueueType;
-        poolInfo.resetable = false;
-        this->swapBufferPool = CoreGraphics::CreateCmdBufferPool(poolInfo);
     }
     else
     {
@@ -585,12 +579,10 @@ GraphicsServer::EndFrame()
 
     CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
     CoreGraphics::SwapchainSwap(swapchain);
+    CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
 
     // Allocate command buffer to run swap
-    CoreGraphics::CmdBufferCreateInfo bufInfo;
-    bufInfo.pool = this->swapBufferPool;
-    bufInfo.name = "Swap";
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(bufInfo);
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
     CoreGraphics::CmdBufferBeginInfo beginInfo;
     beginInfo.submitDuringPass = false;
     beginInfo.resubmittable = false;
@@ -607,13 +599,13 @@ GraphicsServer::EndFrame()
 
     auto submission = CoreGraphics::SubmitCommandBuffer(
         cmdBuf
-        , CoreGraphics::ComputeQueueType
+        , queue
 #if NEBULA_GRAPHICS_DEBUG
         , "Swap"
 #endif
 
     );
-    CoreGraphics::WaitForSubmission(this->swapInfo.submission, CoreGraphics::QueueType::ComputeQueueType);
+    CoreGraphics::WaitForSubmission(this->swapInfo.submission, queue);
     CoreGraphics::DestroyCmdBuffer(cmdBuf);
 
     // Finish submuissions

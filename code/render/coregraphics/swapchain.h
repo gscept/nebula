@@ -31,6 +31,10 @@ void DestroySwapchain(const SwapchainId id);
 
 /// Swap buffers
 void SwapchainSwap(const SwapchainId id);
+/// Get queue to use for swapchain
+CoreGraphics::QueueType SwapchainGetQueueType(const SwapchainId id);
+/// Allocate command buffer for swapchain operations
+CoreGraphics::CmdBufferId SwapchainAllocateCmds(const SwapchainId id);
 /// Copy to current backbuffer (call after swap)
 void SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId source);
 /// Present
