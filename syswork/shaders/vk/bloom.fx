@@ -30,6 +30,7 @@ render_state PostEffectState
 
 texture2D Input;
 write rgba16f image2D BloomOutput;
+texture2D Intermediate;
 readwrite rgba16f image2D BloomIntermediate[14];
 
 groupshared vec3 SampleLookup[KERNEL_SIZE][KERNEL_SIZE];
@@ -129,11 +130,13 @@ csMerge()
     // Only run waves on pixels within the target resolution
     vec3 sum = vec3(0);
     bool pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
-    
+    vec2 uv = vec2(outputPixel) / Resolutions[0].xy;
     for (int i = 0; i < Mips; i++)
     {
         ivec2 inputPixel = ivec2(outputPixel) >> i;
-        sum += imageLoad(BloomIntermediate[i], inputPixel).rgb;
+        
+        sum += textureLod(sampler2D(Intermediate, InputSampler), uv, i).rgb;
+        //sum += imageLoad(BloomIntermediate[i], inputPixel).rgb;
     }
     
     if (pixelOutputMask)

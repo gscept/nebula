@@ -117,6 +117,8 @@ BloomContext::Setup()
     {
         ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::Table_Batch::BloomIntermediate_SLOT, i });
     }
+    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Table_Batch::Intermediate_SLOT });
+
     ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
     ResourceTableCommitChanges(bloomState.resourceTable);
 
