@@ -29,104 +29,77 @@ VkSubContextHandler::~VkSubContextHandler()
 /**
 */
 void
-VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, const Util::FixedArray<uint> families)
+VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<Util::Pair<uint, uint>> queueMap)
 {
     // store device
     this->device = dev;
 
-    // get all queues related to their respective family (we can have more draw queues than 1, for example)
-    this->drawQueues.Resize(1);
-    this->computeQueues.Resize(1);
-    this->transferQueues.Resize(1);
-    this->sparseQueues.Resize(1);
+    this->queues.Resize(queueMap.Size());
+    this->semaphores.Resize(queueMap.Size());
+    this->semaphoreSubmissionIds.Resize(queueMap.Size());
+    this->currentQueue.Resize(queueMap.Size());
 
-    this->queueFamilies[CoreGraphics::GraphicsQueueType] = families[CoreGraphics::GraphicsQueueType];
-    this->queueFamilies[CoreGraphics::ComputeQueueType] = families[CoreGraphics::ComputeQueueType];
-    this->queueFamilies[CoreGraphics::TransferQueueType] = families[CoreGraphics::TransferQueueType];
-    this->queueFamilies[CoreGraphics::SparseQueueType] = families[CoreGraphics::SparseQueueType];
-
-    Util::FixedArray<IndexT> queueUses(CoreGraphics::QueueType::NumQueueTypes, 0);
-
-    SizeT i;
-    for (i = 0; i < this->drawQueues.Size(); i++)
+    for (int i = 0; i < queueMap.Size(); i++)
     {
-        IndexT& queueIndex = queueUses[families[CoreGraphics::GraphicsQueueType]];
-        vkGetDeviceQueue(dev, families[CoreGraphics::GraphicsQueueType], queueIndex++, &this->drawQueues[i]);
-    }
-
-    for (i = 0; i < this->computeQueues.Size(); i++)
-    {
-        IndexT& queueIndex = queueUses[families[CoreGraphics::ComputeQueueType]];
-        vkGetDeviceQueue(dev, families[CoreGraphics::ComputeQueueType], queueIndex++, &this->computeQueues[i]);
-    }
-
-    for (i = 0; i < this->transferQueues.Size(); i++)
-    {
-        IndexT& queueIndex = queueUses[families[CoreGraphics::TransferQueueType]];
-        vkGetDeviceQueue(dev, families[CoreGraphics::TransferQueueType], queueIndex++, &this->transferQueues[i]);
-    }
-
-    for (i = 0; i < this->sparseQueues.Size(); i++)
-    {
-        IndexT& queueIndex = queueUses[families[CoreGraphics::SparseQueueType]];
-        vkGetDeviceQueue(dev, families[CoreGraphics::SparseQueueType], queueIndex++, &this->sparseQueues[i]);
-    }
-
-    // setup timeline semaphores
-    for (IndexT i = 0; i < CoreGraphics::NumQueueTypes; i++)
-    {
-        VkSemaphoreTypeCreateInfo ext =
-        {
-            VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-            nullptr,
-            VkSemaphoreType::VK_SEMAPHORE_TYPE_TIMELINE,
-            0
-        };
-        VkSemaphoreCreateInfo inf =
-        {
-            VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            &ext,
-            0
-        };
-        VkResult res = vkCreateSemaphore(this->device, &inf, nullptr, &semaphores[i]);
-        n_assert(res == VK_SUCCESS);
+        auto& [family, count] = queueMap[i];
+        this->queues[i].Resize(count);
+        this->semaphores[i].Resize(count);
+        this->semaphoreSubmissionIds[i].Resize(count);
 
 #if NEBULA_GRAPHICS_DEBUG
-        const char* name = nullptr;
-        switch (i)
-        {
-            case CoreGraphics::ComputeQueueType:
-                name = "Compute Semaphore";
-                break;
-            case CoreGraphics::GraphicsQueueType:
-                name = "Graphics Semaphore";
-                break;
-            case CoreGraphics::TransferQueueType:
-                name = "Transfer Semaphore";
-                break;
-            case CoreGraphics::SparseQueueType:
-                name = "Sparse Semaphore";
-                break;
-        }
-        VkDebugUtilsObjectNameInfoEXT info =
-        {
-            VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            nullptr,
-            VK_OBJECT_TYPE_SEMAPHORE,
-            (uint64_t)semaphores[i],
-            name
-        };
-        VkResult res2 = VkDebugObjectName(this->device, &info);
-        n_assert(res2 == VK_SUCCESS);
+            const char* name = nullptr;
+            switch (i)
+            {
+                case CoreGraphics::ComputeQueueType:
+                    name = "Compute Semaphore";
+                    break;
+                case CoreGraphics::GraphicsQueueType:
+                    name = "Graphics Semaphore";
+                    break;
+                case CoreGraphics::TransferQueueType:
+                    name = "Transfer Semaphore";
+                    break;
+                case CoreGraphics::SparseQueueType:
+                    name = "Sparse Semaphore";
+                    break;
+            }
 #endif
+        for (int j = 0; j < count; j++)
+        {
+            vkGetDeviceQueue(dev, family, j, &this->queues[i][j]);
 
-        semaphoreSubmissionIds[i] = 0;
+            VkSemaphoreTypeCreateInfo ext =
+            {
+                VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+                nullptr,
+                VkSemaphoreType::VK_SEMAPHORE_TYPE_TIMELINE,
+                0
+            };
+            VkSemaphoreCreateInfo inf =
+            {
+                VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                &ext,
+                0
+            };
+            VkResult res = vkCreateSemaphore(this->device, &inf, nullptr, &this->semaphores[i][j]);
+            n_assert(res == VK_SUCCESS);
+            this->semaphoreSubmissionIds[i][j] = 0;
+        
+#if NEBULA_GRAPHICS_DEBUG
+            VkDebugUtilsObjectNameInfoEXT info =
+            {
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+                nullptr,
+                VK_OBJECT_TYPE_SEMAPHORE,
+                (uint64_t)this->semaphores[i][j],
+                name
+            };
+            VkResult res2 = VkDebugObjectName(this->device, &info);
+            n_assert(res2 == VK_SUCCESS);
+#endif
+        }
+        this->currentQueue[i] = 0;
     }
-
-    this->currentDrawQueue = 0;
-    this->currentComputeQueue = 0;
-    this->currentTransferQueue = 0;
-    this->currentSparseQueue = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -143,28 +116,8 @@ VkSubContextHandler::Discard()
 void
 VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 {
-    Util::FixedArray<VkQueue>* list = nullptr;
-    uint* currentQueue = nullptr;
-    switch (type)
-    {
-    case CoreGraphics::GraphicsQueueType:
-        list = &this->drawQueues;
-        currentQueue = &this->currentDrawQueue;
-        break;
-    case CoreGraphics::ComputeQueueType:
-        list = &this->computeQueues;
-        currentQueue = &this->currentComputeQueue;
-        break;
-    case CoreGraphics::TransferQueueType:
-        list = &this->transferQueues;
-        currentQueue = &this->currentTransferQueue;
-        break;
-    case CoreGraphics::SparseQueueType:
-        list = &this->sparseQueues;
-        currentQueue = &this->currentSparseQueue;
-        break;
-    default: n_error("unhandled enum"); break;
-    }
+    Util::Array<VkQueue>* list = &this->queues[type];
+    uint* currentQueue = &this->currentQueue[type];
 
     // progress the queue index
     *currentQueue = (*currentQueue + 1) % list->Size();
@@ -196,7 +149,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
     {
         TimelineSubmission2& sub = lastList->submissions.Emplace();
         sub.buffers.Append(cmds);
-        sub.signalSemaphores.Append(this->semaphores[type]);
+        sub.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
         sub.signalIndices.Append(ret);
     }
     else
@@ -207,7 +160,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
         // If command buffer is present, add it
         TimelineSubmission2& sub2 = list.submissions.Emplace();
         sub2.buffers.Append(cmds);
-        sub2.signalSemaphores.Append(this->semaphores[type]);
+        sub2.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
         sub2.signalIndices.Append(ret);
         sub2.queue = type;
 #if NEBULA_GRAPHICS_DEBUG
@@ -216,7 +169,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
     }
 
     // Progress the semaphore counter
-    this->semaphoreSubmissionIds[type] = ret;
+    this->semaphoreSubmissionIds[type][this->currentQueue[type]] = ret;
     
     return ret;
 }
@@ -227,7 +180,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 uint64
 VkSubContextHandler::GetNextTimelineIndex(CoreGraphics::QueueType type)
 {
-    return this->semaphoreSubmissionIds[type] + 1;
+    return this->semaphoreSubmissionIds[type][this->currentQueue[type]] + 1;
 }
 
 //------------------------------------------------------------------------------
@@ -246,7 +199,7 @@ VkSubContextHandler::AppendWaitTimeline(uint64 index, CoreGraphics::QueueType ty
         {
             auto& sub = it->submissions.Back();
             sub.waitIndices.Append(index);
-            sub.waitSemaphores.Append(this->semaphores[waitType]);
+            sub.waitSemaphores.Append(this->semaphores[waitType][this->currentQueue[waitType]]);
             sub.waitFlags.Append(waitFlags);
             break;
         }
@@ -290,18 +243,18 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
     }
 
     // add signal
-    submission.signalSemaphores.Append(this->semaphores[type]);
-    this->semaphoreSubmissionIds[type]++;
-    submission.signalIndices.Append(this->semaphoreSubmissionIds[type]);
+    submission.signalSemaphores.Append(this->GetSemaphore(type));
+    this->IncrementSemaphoreId(type);
+    submission.signalIndices.Append(this->GetSemaphoreId(type));
 
     // add wait
-    if (this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType] > 0)
+    if (this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType][this->currentQueue[CoreGraphics::GraphicsQueueType]] > 0)
     {
-        submission.waitSemaphores.Append(this->semaphores[CoreGraphics::GraphicsQueueType]);
-        submission.waitIndices.Append(this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType]);
+        submission.waitSemaphores.Append(this->GetSemaphore(CoreGraphics::GraphicsQueueType));
+        submission.waitIndices.Append(this->GetSemaphoreId(CoreGraphics::GraphicsQueueType));
     }
 
-    return this->semaphoreSubmissionIds[type];
+    return this->GetSemaphoreId(type);
 }
 
 //------------------------------------------------------------------------------
@@ -328,11 +281,11 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuff
     }
 
     // add signal
-    submission.signalSemaphores.Append(this->semaphores[type]);
-    this->semaphoreSubmissionIds[type]++;
-    submission.signalIndices.Append(this->semaphoreSubmissionIds[type]);
+    submission.signalSemaphores.Append(this->GetSemaphore(type));
+    this->IncrementSemaphoreId(type);
+    submission.signalIndices.Append(this->GetSemaphoreId(type));
 
-    return this->semaphoreSubmissionIds[type];
+    return this->GetSemaphoreId(type);
 }
 
 //------------------------------------------------------------------------------
@@ -429,13 +382,14 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
     if (index != UINT64_MAX)
     {
         // setup wait
+        VkSemaphore sem = this->GetSemaphore(type);
         VkSemaphoreWaitInfo waitInfo =
         {
             VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
             nullptr,
             0,
             1,
-            &this->semaphores[type],
+            &sem,
             &index
         };
         VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
@@ -450,7 +404,7 @@ bool
 VkSubContextHandler::Poll(CoreGraphics::QueueType type, uint64_t index)
 {
     uint64_t lastPayload;
-    VkResult res = vkGetSemaphoreCounterValue(this->device, this->semaphores[type], &lastPayload);
+    VkResult res = vkGetSemaphoreCounterValue(this->device, this->GetSemaphore(type), &lastPayload);
     n_assert(res == VK_SUCCESS);
     return index <= lastPayload;
 }
@@ -527,23 +481,7 @@ VkSubContextHandler::InsertFence(CoreGraphics::QueueType type, VkFence fence)
 void
 VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
 {
-    Util::FixedArray<VkQueue>* list = nullptr;
-    switch (type)
-    {
-    case CoreGraphics::GraphicsQueueType:
-        list = &this->drawQueues;
-        break;
-    case CoreGraphics::ComputeQueueType:
-        list = &this->computeQueues;
-        break;
-    case CoreGraphics::TransferQueueType:
-        list = &this->transferQueues;
-        break;
-    case CoreGraphics::SparseQueueType:
-        list = &this->sparseQueues;
-        break;
-    default: n_error("unhandled enum"); break;
-    }
+    Util::Array<VkQueue>* list = &this->queues[type];
     for (IndexT i = 0; i < list->Size(); i++)
     {
         VkResult res = vkQueueWaitIdle((*list)[i]);
@@ -557,20 +495,34 @@ VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
 VkQueue
 VkSubContextHandler::GetQueue(const CoreGraphics::QueueType type)
 {
-    switch (type)
-    {
-    case CoreGraphics::GraphicsQueueType:
-        return this->drawQueues[this->currentDrawQueue];
-    case CoreGraphics::ComputeQueueType:
-        return this->computeQueues[this->currentComputeQueue];
-    case CoreGraphics::TransferQueueType:
-        return this->transferQueues[this->currentTransferQueue];
-    case CoreGraphics::SparseQueueType:
-        return this->sparseQueues[this->currentSparseQueue];
-    default:
-        n_error("Invalid queue type %d", type);
-        return VK_NULL_HANDLE;
-    }
+    return this->queues[type][this->currentQueue[type]];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkSemaphore
+VkSubContextHandler::GetSemaphore(const CoreGraphics::QueueType type)
+{
+    return this->semaphores[type][this->currentQueue[type]];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64
+VkSubContextHandler::GetSemaphoreId(const CoreGraphics::QueueType type)
+{
+    return this->semaphoreSubmissionIds[type][this->currentQueue[type]];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkSubContextHandler::IncrementSemaphoreId(const CoreGraphics::QueueType type)
+{
+    this->semaphoreSubmissionIds[type][this->currentQueue[type]]++;
 }
 
 } // namespace Vulkan

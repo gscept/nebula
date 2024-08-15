@@ -193,6 +193,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     objectBindingBufferCreateInfo.name = "Raytracing Object Binding Buffer";
     objectBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::Object) * settings.maxNumAllowedInstances;
     objectBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    objectBindingBufferCreateInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     state.objectBindingBuffer = CoreGraphics::BufferWithStaging(objectBindingBufferCreateInfo);
 
     FrameScript_default::Bind_RayTracingObjectBindings(state.objectBindingBuffer.DeviceBuffer());

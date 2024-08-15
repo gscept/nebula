@@ -127,14 +127,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     uint32_t usedExtensions;
     const char* extensions[64];
 
-    uint32_t drawQueueFamily;
-    uint32_t computeQueueFamily;
-    uint32_t transferQueueFamily;
-    uint32_t sparseQueueFamily;
-    uint32_t drawQueueIdx;
-    uint32_t computeQueueIdx;
-    uint32_t transferQueueIdx;
-    uint32_t sparseQueueIdx;
+    uint32_t drawQueueFamily, computeQueueFamily, transferQueueFamily, sparseQueueFamily;
+    uint32_t drawQueueCount, computeQueueCount, transferQueueCount, sparseQueueCount;
     Util::Set<uint32_t> usedQueueFamilies;
     Util::FixedArray<uint32_t> queueFamilyMap;
 
@@ -464,23 +458,7 @@ WaitForPresent(VkSemaphore sem)
 const VkQueue 
 GetQueue(const CoreGraphics::QueueType type, const IndexT index)
 {
-    switch (type)
-    {
-    case CoreGraphics::GraphicsQueueType:
-        return state.queueHandler.drawQueues[index];
-        break;
-    case CoreGraphics::ComputeQueueType:
-        return state.queueHandler.computeQueues[index];
-        break;
-    case CoreGraphics::TransferQueueType:
-        return state.queueHandler.transferQueues[index];
-        break;
-    case CoreGraphics::SparseQueueType:
-        return state.queueHandler.sparseQueues[index];
-        break;
-    default: n_error("unhandled enum"); break;
-    }
-    return VK_NULL_HANDLE;
+    return state.queueHandler.queues[type][index];
 }
 
 //------------------------------------------------------------------------------
@@ -777,97 +755,81 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
     vkGetPhysicalDeviceMemoryProperties(state.physicalDevices[state.currentDevice], &state.memoryProps);
 
-    state.drawQueueIdx = UINT32_MAX;
-    state.computeQueueIdx = UINT32_MAX;
-    state.transferQueueIdx = UINT32_MAX;
-    state.sparseQueueIdx = UINT32_MAX;
+    state.drawQueueFamily = UINT32_MAX;
+    state.computeQueueFamily = UINT32_MAX;
+    state.transferQueueFamily = UINT32_MAX;
+    state.sparseQueueFamily = UINT32_MAX;
 
     // create three queues for each family
-    Util::FixedArray<uint> indexMap;
-    indexMap.Resize(numQueues);
-    indexMap.Fill(0);
     for (i = 0; i < numQueues; i++)
     {
-        for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
+        int numQueues = queuesProps[i].queueCount;
+        // just pick whichever queue supports graphics, it will most likely only be 1
+        if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+            && state.drawQueueFamily == UINT32_MAX)
         {
-            // just pick whichever queue supports graphics, it will most likely only be 1
-            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
-                && state.drawQueueIdx == UINT32_MAX)
-            {
-                state.drawQueueFamily = i;
-                state.drawQueueIdx = j;
-                indexMap[i]++;
-                continue;
-            }
+            state.drawQueueFamily = i;
+            state.drawQueueCount = numQueues;
+            continue;
+        }
 
-            // find a compute queue which is not for graphics
-            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
-                && state.computeQueueIdx == UINT32_MAX)
-            {
-                state.computeQueueFamily = i;
-                state.computeQueueIdx = j;
-                indexMap[i]++;
-                continue;
-            }
+        // find a compute queue which is not for graphics
+        if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
+            && state.computeQueueFamily == UINT32_MAX)
+        {
+            state.computeQueueFamily = i;
+            state.computeQueueCount = numQueues;
+            continue;
+        }
 
-            // find a transfer queue that is purely for transfers
-            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
-                && state.transferQueueIdx == UINT32_MAX)
-            {
-                state.transferQueueFamily = i;
-                state.transferQueueIdx = j;
-                indexMap[i]++;
-                continue;
-            }
+        // find a transfer queue that is purely for transfers
+        if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
+            && state.transferQueueFamily == UINT32_MAX)
+        {
+            state.transferQueueFamily = i;
+            state.transferQueueCount = numQueues;
+            continue;
+        }
 
-            // find a sparse or transfer queue that supports sparse binding
-            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
-                && state.sparseQueueIdx == UINT32_MAX)
-            {
-                state.sparseQueueFamily = i;
-                state.sparseQueueIdx = j;
-                indexMap[i]++;
-                continue;
-            }
+        // find a sparse or transfer queue that supports sparse binding
+        if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
+            && state.sparseQueueFamily == UINT32_MAX)
+        {
+            state.sparseQueueFamily = i;
+            state.sparseQueueCount = numQueues;
+            continue;
         }
     }
 
     // could not find pure compute queue
-    if (state.computeQueueIdx == UINT32_MAX)
+    if (state.computeQueueFamily == UINT32_MAX)
     {
         // assert that the graphics queue can handle computes
-        n_assert(queuesProps[state.drawQueueFamily].queueFlags& VK_QUEUE_COMPUTE_BIT);
+        n_assert(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_COMPUTE_BIT);
         state.computeQueueFamily = state.drawQueueFamily;
-        state.computeQueueIdx = state.drawQueueIdx;
+        state.computeQueueCount = 1;
     }
 
     // could not find pure transfer queue
-    if (state.transferQueueIdx == UINT32_MAX)
+    if (state.transferQueueFamily == UINT32_MAX)
     {
         // assert the draw queue can handle transfers
         n_assert(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_TRANSFER_BIT);
         state.transferQueueFamily = state.drawQueueFamily;
-        state.transferQueueIdx = state.drawQueueIdx;
+        state.transferQueueCount = 1;
     }
 
     // could not find pure transfer queue
-    if (state.sparseQueueIdx == UINT32_MAX)
+    if (state.sparseQueueFamily == UINT32_MAX)
     {
         if (queuesProps[state.transferQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
         {
             state.sparseQueueFamily = state.transferQueueFamily;
-
-            // if we have an extra transfer queue, use it for sparse bindings
-            if (queuesProps[state.sparseQueueFamily].queueCount > indexMap[state.sparseQueueFamily])
-                state.sparseQueueIdx = indexMap[state.sparseQueueFamily]++;
-            else
-                state.sparseQueueIdx = state.transferQueueIdx;
         }
         else
         {
             n_warn2(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT, "VkGraphicsDevice: No sparse binding queue could be found!\n");
             state.sparseQueueFamily = state.drawQueueFamily;
-            state.sparseQueueIdx = state.drawQueueIdx;
         }
     }
 
@@ -876,23 +838,34 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     if (state.transferQueueFamily == UINT32_MAX)	n_error("VkGraphicsDevice: Could not find a queue for transfers.\n");
     if (state.sparseQueueFamily == UINT32_MAX)		n_warning("VkGraphicsDevice: Could not find a queue for sparse binding.\n");
 
+
+
+    // This setup must match the enum CoreGraphics::QueueType
+    Util::FixedArray<Util::Pair<uint32_t, uint32_t>> queueSetup =
+    {
+        { state.drawQueueFamily, state.drawQueueCount }
+        , { state.computeQueueFamily, state.computeQueueCount }
+        , { state.transferQueueFamily, state.transferQueueCount }
+        , { state.sparseQueueFamily, state.sparseQueueCount }
+    };
+
     // create device
     Util::FixedArray<Util::FixedArray<float>> prios;
     Util::Array<VkDeviceQueueCreateInfo> queueInfos;
-    prios.Resize(numQueues);
+    prios.Resize(queueSetup.Size());
 
-    for (i = 0; i < numQueues; i++)
+    for (i = 0; i < queueSetup.Size(); i++)
     {
-        if (indexMap[i] == 0) continue;
-        prios[i].Resize(indexMap[i]);
+        auto& [family, count] = queueSetup[i];
+        prios[i].Resize(count);
         prios[i].Fill(1.0f);
         queueInfos.Append(
             {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
                 0,
-                i,
-                indexMap[i],
+                family,
+                count,
                 &prios[i][0]
             });
     }
@@ -1036,7 +1009,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         lastExtension,
         0,
         (uint32_t)queueInfos.Size(),
-        &queueInfos[0],
+        queueInfos.Begin(),
         (uint32_t)numLayers,
         layers,
         state.numCaps[state.currentDevice],
@@ -1049,12 +1022,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     n_assert(res == VK_SUCCESS);
 
     // setup queue handler
-    Util::FixedArray<uint> families(4);
-    families[GraphicsQueueType] = state.drawQueueFamily;
-    families[ComputeQueueType] = state.computeQueueFamily;
-    families[TransferQueueType] = state.transferQueueFamily;
-    families[SparseQueueType] = state.sparseQueueFamily;
-    state.queueHandler.Setup(state.devices[state.currentDevice], indexMap, families);
+    state.queueHandler.Setup(state.devices[state.currentDevice], queueSetup);
 
     state.usedQueueFamilies.Add(state.drawQueueFamily);
     state.usedQueueFamilies.Add(state.computeQueueFamily);
@@ -1230,7 +1198,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     vboInfo.name = "Global Vertex Cache";
     vboInfo.byteSize = info.globalVertexBufferMemorySize;
     vboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    vboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
+    vboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     vboInfo.usageFlags =
         CoreGraphics::BufferUsageFlag::VertexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
@@ -1244,7 +1212,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     iboInfo.name = "Global Index Cache";
     iboInfo.byteSize = info.globalIndexBufferMemorySize;
     iboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    iboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
+    iboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     iboInfo.usageFlags =
         CoreGraphics::BufferUsageFlag::IndexBuffer
         | CoreGraphics::BufferUsageFlag::TransferBufferDestination
@@ -1258,7 +1226,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     uploadInfo.name = "Global Upload Buffer";
     uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
-    uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
+    uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
 
     state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);

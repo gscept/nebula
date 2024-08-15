@@ -86,7 +86,7 @@ public:
     };
 
     /// setup subcontext handler
-    void Setup(VkDevice dev, const Util::FixedArray<uint> indexMap, const Util::FixedArray<uint> families);
+    void Setup(VkDevice dev, const Util::FixedArray<Util::Pair<uint, uint>> indexMap);
     /// discard
     void Discard();
     /// set to next context of type
@@ -131,19 +131,15 @@ public:
 private:
     friend const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 
-    VkDevice device;
-    Util::FixedArray<VkQueue> drawQueues;
-    Util::FixedArray<VkQueue> computeQueues;
-    Util::FixedArray<VkQueue> transferQueues;
-    Util::FixedArray<VkQueue> sparseQueues;
-    uint currentDrawQueue;
-    uint currentComputeQueue;
-    uint currentTransferQueue;
-    uint currentSparseQueue;
-    uint queueFamilies[CoreGraphics::NumQueueTypes];
+    VkSemaphore GetSemaphore(const CoreGraphics::QueueType type);
+    uint64 GetSemaphoreId(const CoreGraphics::QueueType type);
+    void IncrementSemaphoreId(const CoreGraphics::QueueType type);
 
-    VkSemaphore semaphores[CoreGraphics::NumQueueTypes];
-    uint64 semaphoreSubmissionIds[CoreGraphics::NumQueueTypes];
+    VkDevice device;
+    Util::FixedArray<Util::Array<VkQueue>> queues;
+    Util::FixedArray<uint> currentQueue;
+    Util::FixedArray<Util::Array<VkSemaphore>> semaphores;
+    Util::FixedArray<Util::Array<uint64>> semaphoreSubmissionIds;
 
     Util::Array<SubmissionList> orderedSubmissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
