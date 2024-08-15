@@ -43,7 +43,7 @@
         "LocalTextures": [
             {
                 "name": "ScreenBuffer",
-                "format": "R9G9B9E5F",
+                "format": "R11G11B10F",
                 "relative": true,
                 "usage": "Render|TransferDestination",
                 "relativeSize": [ 1.0, 1.0 ],
@@ -86,7 +86,7 @@
             },
             {
                 "name": "LightBuffer",
-                "format": "R9G9B9E5F",
+                "format": "R11G11B10F",
                 "usage": "Render|ReadWrite|TransferSource",
                 "relativeSize": [ 1.0, 1.0 ],
                 "mips": "auto",
