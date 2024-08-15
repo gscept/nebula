@@ -136,12 +136,14 @@ GraphicsFeatureUnit::OnActivate()
     };
     this->wnd = CreateWindow(wndInfo);
 
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
+
     FrameScript_shadows::Initialize(1024, 1024);
-    FrameScript_default::Initialize(width, height);
+    FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::Initialize(width, height);
+    FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
 #endif
-    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();
