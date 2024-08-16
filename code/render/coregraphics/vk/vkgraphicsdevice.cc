@@ -825,11 +825,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         if (queuesProps[state.transferQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
         {
             state.sparseQueueFamily = state.transferQueueFamily;
+            state.sparseQueueCount = state.transferQueueCount;
         }
         else
         {
             n_warn2(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT, "VkGraphicsDevice: No sparse binding queue could be found!\n");
             state.sparseQueueFamily = state.drawQueueFamily;
+            state.sparseQueueCount = state.drawQueueCount;
         }
     }
 
@@ -861,12 +863,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         prios[i].Fill(1.0f);
         queueInfos.Append(
             {
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                nullptr,
-                0,
-                family,
-                count,
-                &prios[i][0]
+                    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                    nullptr,
+                    0,
+                    family,
+                    count,
+                    &prios[i][0]
             });
     }
 
