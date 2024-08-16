@@ -201,7 +201,8 @@ class LocalTextureDefinition:
             file.WriteLine("Textures[(uint)TextureIndex::{}] = CoreGraphics::CreateTexture(info);".format(self.name))
             file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(info.format);".format(self.name, self.name))
             file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = CoreGraphics::PipelineStage::InvalidStage;".format(self.name))
-            file.WriteLine("TextureDimensions[(uint)TextureIndex::{}] = {{ {} * frameWidth, {} * frameHeight }};".format(self.name, self.relativeSize[0], self.relativeSize[1]))
+            file.WriteLine("TextureRelativeScale[(uint)TextureIndex::{}] = {{ {}, {} }};".format(self.name, self.relativeSize[0], self.relativeSize[1]))
+            file.WriteLine("TextureRelativeSize[(uint)TextureIndex::{}] = {{ {} * frameWidth, {} * frameHeight }};".format(self.name, self.relativeSize[0], self.relativeSize[1]))
             file.DecreaseIndent()
             file.WriteLine("}")
         else:
@@ -934,7 +935,7 @@ class PassDefinition:
                     file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, op.name, op.name))
 
         for attachment in self.attachments: 
-            file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / float(viewport.width()) * {}f, 1 / float(viewport.height()) * {}f }}, {{ viewport.width() / TextureDimensions[(uint)TextureIndex::{}].first, viewport.height() / TextureDimensions[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))
+            file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / float(viewport.width()) * {}f, 1 / float(viewport.height()) * {}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))
         file.WriteLine('CoreGraphics::PassSetRenderTargetParameters(Pass_{}, Pass_{}_RenderTargetDimensions);'.format(self.name, self.name))
         file.WriteLine('CoreGraphics::CmdBeginPass(cmdBuf, Pass_{});'.format(self.name))
         
@@ -1230,11 +1231,13 @@ class FrameScriptGenerator:
         file.WriteLine("")
         if len(self.localTextures + self.importTextures) > 0:
             file.WriteLine("extern CoreGraphics::TextureId Textures[(uint)TextureIndex::Num];")
+            file.WriteLine("extern Util::Pair<float,float> TextureRelativeScale[(uint)TextureIndex::Num];")
         if len(self.importBuffers) > 0:
             file.WriteLine("extern CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num];")
 
         for texture in (self.localTextures + self.importTextures):
             file.WriteLine("inline CoreGraphics::TextureId Texture_{}() {{ return Textures[(uint)TextureIndex::{}]; }}".format(texture.name, texture.name))
+            file.WriteLine("inline Util::Pair<float, float> TextureRelativeScale_{}() {{ return TextureRelativeScale[(uint)TextureIndex::{}]; }}".format(texture.name, texture.name))
         for buffer in (self.importBuffers):
             file.WriteLine("inline CoreGraphics::BufferId Buffer_{}() {{ return Buffers[(uint)BufferIndex::{}]; }}".format(buffer.name, buffer.name))
         for export in self.exportTextures:
@@ -1285,7 +1288,8 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::PipelineStage TextureCurrentStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::PipelineStage TextureOriginalStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::TextureId Textures[(uint)TextureIndex::Num] = {};")
-            file.WriteLine("Util::Pair<float, float> TextureDimensions[(uint)TextureIndex::Num] = {};")
+            file.WriteLine("Util::Pair<float, float> TextureRelativeScale[(uint)TextureIndex::Num] = {};")
+            file.WriteLine("Util::Pair<float, float> TextureRelativeSize[(uint)TextureIndex::Num] = {};")
         if len(self.importBuffers) > 0:
             file.WriteLine("CoreGraphics::PipelineStage BufferCurrentStage[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
