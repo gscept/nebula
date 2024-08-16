@@ -840,8 +840,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     if (state.transferQueueFamily == UINT32_MAX)	n_error("VkGraphicsDevice: Could not find a queue for transfers.\n");
     if (state.sparseQueueFamily == UINT32_MAX)		n_warning("VkGraphicsDevice: Could not find a queue for sparse binding.\n");
 
-
-
     // This setup must match the enum CoreGraphics::QueueType
     Util::FixedArray<Util::Pair<uint32_t, uint32_t>> queueSetup =
     {
@@ -851,24 +849,30 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         , { state.sparseQueueFamily, state.sparseQueueCount }
     };
 
+    Util::Dictionary<uint32_t, uint32_t> uniqueQueues;
+    for (auto& [family, count] : queueSetup)
+    {
+        uniqueQueues.Emplace(family) = count;
+    }
+
     // create device
     Util::FixedArray<Util::FixedArray<float>> prios;
     Util::Array<VkDeviceQueueCreateInfo> queueInfos;
-    prios.Resize(queueSetup.Size());
+    prios.Resize(uniqueQueues.Size());
 
-    for (i = 0; i < queueSetup.Size(); i++)
+    for (i = 0; i < uniqueQueues.Size(); i++)
     {
-        auto& [family, count] = queueSetup[i];
+        auto& [family, count] = uniqueQueues.KeyValuePairAtIndex(i);
         prios[i].Resize(count);
         prios[i].Fill(1.0f);
         queueInfos.Append(
             {
-                    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                    nullptr,
-                    0,
-                    family,
-                    count,
-                    &prios[i][0]
+                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                nullptr,
+                0,
+                family,
+                count,
+                &prios[i][0]
             });
     }
 
@@ -1754,8 +1758,7 @@ FinishFrame(IndexT frameIndex)
         state.currentFrameIndex = frameIndex;
     }
 
-    uploadWait = SubmissionWaitEvent();
-    graphicsWait = SubmissionWaitEvent();
+
 
     // Flush all pending submissions on the queues
     //state.queueHandler.FlushSparseBinds(nullptr);
@@ -1765,6 +1768,9 @@ FinishFrame(IndexT frameIndex)
         ComputeQueueType,
         SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
     );
+
+    if (graphicsWait != nullptr)
+        state.queueHandler.AppendWaitTimeline(graphicsWait.timelineIndex, CoreGraphics::ComputeQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, graphicsWait.queue);
 
     state.queueHandler.FlushSubmissions(nullptr);
 
@@ -1790,6 +1796,10 @@ FinishFrame(IndexT frameIndex)
         state.sparseBufferBinds.Clear();
         state.sparseImageBinds.Clear();
     }
+
+    uploadWait = nullptr;
+    graphicsWait = nullptr;
+    handoverWait = nullptr;
 }
 
 //------------------------------------------------------------------------------
