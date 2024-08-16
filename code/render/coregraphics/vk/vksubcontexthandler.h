@@ -140,8 +140,7 @@ private:
     Util::FixedArray<uint> currentQueue;
     Util::FixedArray<Util::Array<VkSemaphore>> semaphores;
     Util::FixedArray<Util::Array<uint64>> semaphoreSubmissionIds;
-
-    Util::Array<SubmissionList> orderedSubmissions;
+    Util::FixedArray<Util::Array<TimelineSubmission2>> submissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
 };
 
