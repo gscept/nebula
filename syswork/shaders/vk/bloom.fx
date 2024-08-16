@@ -6,7 +6,7 @@
 #include "lib/shared.fxh"
 #include "lib/techniques.fxh"
 
-#define KERNEL_SIZE 8
+#define KERNEL_SIZE 16
 
 sampler_state InputSampler
 {
@@ -94,7 +94,7 @@ csUpscale()
     // Only run waves on pixels within the target resolution
     bool pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
     vec2 mippedDimensions = Resolutions[gl_WorkGroupID.z].xy;
-    vec2 sampleUV = vec2(sampleCoord) / mippedDimensions;
+    vec2 sampleUV = (vec2(sampleCoord) + vec2(0.5f)) / mippedDimensions;
 
     const float weights[14] = { 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 };
 
@@ -114,14 +114,14 @@ csUpscale()
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
+[local_size_x] = 256
 shader
 void
 csMerge()
 {
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
-    const uvec2 tileStart = uvec2(gl_WorkGroupID.x * 64, gl_WorkGroupID.y);
-    const uvec2 tileEnd = tileStart + uvec2(64, 1);
+    const uvec2 tileStart = uvec2(gl_WorkGroupID.x * 256, gl_WorkGroupID.y);
+    const uvec2 tileEnd = tileStart + uvec2(256, 1);
 
     uvec2 outputPixel = tileStart + gl_LocalInvocationID.xy;
 
@@ -130,7 +130,7 @@ csMerge()
     // Only run waves on pixels within the target resolution
     vec3 sum = vec3(0);
     bool pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
-    vec2 uv = vec2(outputPixel) / Resolutions[0].xy;
+    vec2 uv = (vec2(outputPixel) + vec2(0.5f)) / Resolutions[0].xy;
     for (int i = 0; i < Mips; i++)
     {
         ivec2 inputPixel = ivec2(outputPixel) >> i;

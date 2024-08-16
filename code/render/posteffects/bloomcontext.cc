@@ -126,8 +126,8 @@ BloomContext::Setup()
     {
         CmdSetShaderProgram(cmdBuf, bloomState.intermediateProgram);
         CmdSetResourceTable(cmdBuf, bloomState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(viewport.width(), 6);
-        uint dispatchY = Math::divandroundup(viewport.height(), 6);
+        uint dispatchX = Math::divandroundup(viewport.width(), 14);
+        uint dispatchY = Math::divandroundup(viewport.height(), 14);
         CmdDispatch(cmdBuf, dispatchX, dispatchY, bloomState.numMips);
     }, nullptr, {
         { FrameScript_default::TextureIndex::LightBuffer, PipelineStage::ComputeShaderRead }
@@ -138,7 +138,7 @@ BloomContext::Setup()
     {
         CmdSetShaderProgram(cmdBuf, bloomState.mergeProgram);
         CmdSetResourceTable(cmdBuf, bloomState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(viewport.width(), 64);
+        uint dispatchX = Math::divandroundup(viewport.width(), 256);
         uint dispatchY = viewport.height();
         CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
     }, nullptr, {
@@ -162,6 +162,13 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
     }
     bloomState.lightBufferViews.Clear();
 
+    for (auto& view : bloomState.intermediateBloomBufferViews)
+    {
+        DestroyTextureView(view);
+    }
+    bloomState.intermediateBloomBufferViews.Clear();
+    DestroyTexture(bloomState.intermediateBloomTexture);
+
     uint mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer());
 
     bloomState.lightBufferViews.Resize(mips);
@@ -173,6 +180,24 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
         inf.numMips = 1;
         inf.tex = FrameScript_default::Texture_LightBuffer();
         bloomState.lightBufferViews[i] = CreateTextureView(inf);
+    }
+
+    CoreGraphics::TextureCreateInfo intermediateTextureInfo;
+    intermediateTextureInfo.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
+    intermediateTextureInfo.width = dims.width;
+    intermediateTextureInfo.height = dims.height;
+    intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    intermediateTextureInfo.mips = CoreGraphics::TextureAutoMips;
+    bloomState.intermediateBloomTexture = CoreGraphics::CreateTexture(intermediateTextureInfo);
+    bloomState.intermediateBloomBufferViews.Resize(mips);
+    for (IndexT i = 0; i < mips; i++)
+    {
+        TextureViewCreateInfo inf;
+        inf.format = intermediateTextureInfo.format;
+        inf.startMip = i;
+        inf.numMips = 1;
+        inf.tex = bloomState.intermediateBloomTexture;
+        bloomState.intermediateBloomBufferViews[i] = CreateTextureView(inf);
     }
 
     Bloom::BloomUniforms uniforms;
@@ -188,6 +213,11 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
 
     ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Table_Batch::Input_SLOT });
     ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::Table_Batch::BloomOutput_SLOT });
+    for (IndexT i = 0; i < mips; i++)
+    {
+        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::Table_Batch::BloomIntermediate_SLOT, i });
+    }
+    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Table_Batch::Intermediate_SLOT });
     ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
     ResourceTableCommitChanges(bloomState.resourceTable);
 }
