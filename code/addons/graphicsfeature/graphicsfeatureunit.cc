@@ -258,7 +258,6 @@ GraphicsFeatureUnit::OnActivate()
     this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex) {
         static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
         FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
-        FrameScript_default::Bind_LastFrame(lastFrameSubmission);
         FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
         FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
     });

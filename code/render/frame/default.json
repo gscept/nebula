@@ -2,7 +2,6 @@
     "Nebula": {
         "version": 3,
         "Dependencies": [
-            "LastFrame",
             "Shadows"
         ],
         "ImportBuffers": [
@@ -182,7 +181,6 @@
             {
                 "name": "Compute Prepass",
                 "queue": "Compute",
-                "wait_for_submissions": [ "LastFrame" ],
                 "_comment": "Perform clustering AABB generation and run culling for clustering systems",
                 "ops": [
                     {
