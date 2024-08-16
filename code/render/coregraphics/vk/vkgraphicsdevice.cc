@@ -1646,10 +1646,6 @@ SubmitCommandBuffer(
 #endif
     );
     ret.queue = type;
-    //if (uploadWait != nullptr)
-    //    state.queueHandler.AppendWaitTimeline(uploadWait.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, uploadWait.queue);
-    //if (graphicsWait != nullptr)
-    //    state.queueHandler.AppendWaitTimeline(graphicsWait.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, graphicsWait.queue);
 
     // Add wait event
     AddSubmissionEvent(ret);
@@ -1758,24 +1754,13 @@ FinishFrame(IndexT frameIndex)
         state.currentFrameIndex = frameIndex;
     }
 
-
-
-    // Flush all pending submissions on the queues
-    //state.queueHandler.FlushSparseBinds(nullptr);
-    
     // Signal rendering finished semaphore just before submitting graphics queue
     state.queueHandler.AppendPresentSignal(
         ComputeQueueType,
         SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
     );
 
-    if (graphicsWait != nullptr)
-        state.queueHandler.AppendWaitTimeline(graphicsWait.timelineIndex, CoreGraphics::ComputeQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, graphicsWait.queue);
-
     state.queueHandler.FlushSubmissions(nullptr);
-
-    // Flush graphics (main)
-    //state.queueHandler.FlushSubmissionsTimeline(CoreGraphics::GraphicsQueueType, nullptr);
 
     if (!state.sparseBufferBinds.IsEmpty() || !state.sparseImageBinds.IsEmpty())
     {

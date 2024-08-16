@@ -285,8 +285,8 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
     {
         CoreGraphics::TransferQueueType,
         CoreGraphics::SparseQueueType,
-        CoreGraphics::ComputeQueueType,
-        CoreGraphics::GraphicsQueueType
+        CoreGraphics::GraphicsQueueType,
+        CoreGraphics::ComputeQueueType
     };
     for (auto queueIndex : submissionOrder)
     {
