@@ -20,9 +20,7 @@ struct VkPassLoadInfo
     VkDevice dev;
     Util::StringAtom name;
 
-    // these hold the per-pass shader state
-    CoreGraphics::BufferId passBlockBuffer;
-    IndexT renderTargetDimensionsVar;
+
 
     // we need these stored for resizing
     Util::Array<CoreGraphics::TextureViewId> attachments;
@@ -42,6 +40,10 @@ struct VkPassLoadInfo
 
 struct VkPassRuntimeInfo
 {
+    // these hold the per-pass shader state
+    CoreGraphics::BufferId passBlockBuffer;
+    IndexT renderTargetDimensionsVar;
+
     VkGraphicsPipelineCreateInfo framebufferPipelineInfo;
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
     VkPipelineViewportStateCreateInfo viewportInfo;
@@ -50,8 +52,6 @@ struct VkPassRuntimeInfo
     CoreGraphics::ResourceTableId passDescriptorSet;
     CoreGraphics::ResourcePipelineId passPipelineLayout;
 
-    Util::FixedArray<Util::FixedArray<Math::rectangle<int>>> subpassRects;
-    Util::FixedArray<Util::FixedArray<Math::rectangle<int>>> subpassViewports;
     Util::FixedArray<VkPipelineViewportStateCreateInfo> subpassPipelineInfo;
     CoreGraphics::PassRecordMode recordMode;
 };

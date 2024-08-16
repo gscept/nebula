@@ -28,6 +28,7 @@ fips_dir(.)
     fips_files_ex(scripts/ *.py GROUP "scripts")
 
 fips_dir(render)
+    nebula_framescript_add(editorframe.json) 
     fips_files(
         pickingcontext.h
         pickingcontext.cc

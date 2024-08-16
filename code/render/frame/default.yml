@@ -1,0 +1,397 @@
+Nebula:
+  version: 3
+  Dependencies:
+    - name: Shadows
+  ImportBuffers:
+    - name: ClusterBuffer
+    - name: ClusterLightList
+    - name: ClusterLightIndexLists
+  ImportTextures:
+    - name: SunShadowDepth
+  LocalTextures:
+    - name: ScreenBuffer
+      format: R11G11B10F
+      relative: true
+      usage: Render|TransferDestination
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: ColorBuffer
+      format: R8G8B8A8
+      usage: Render|TransferSource
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: ColorBufferNoGUI
+      format: R8G8B8A8
+      usage: Render|TransferSource
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: ShapeBuffer
+      format: R8G8B8A8
+      usage: Render
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: AverageLumBuffer
+      format: R16F
+      usage: Render|TransferSource
+      fixedSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: SSAOBuffer
+      format: R16F
+      usage: ReadWrite
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: BloomBuffer
+      format: R16G16B16A16F
+      usage: Render|TransferSource|ReadWrite
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: LightBuffer
+      format: R11G11B10F
+      usage: Render|ReadWrite|TransferSource
+      relativeSize:
+        - 1
+        - 1
+      mips: auto
+      type: Texture2D
+    - name: LightDebugBuffer
+      format: R16G16B16A16F
+      usage: ReadWrite
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: VolumetricFogBuffer0
+      format: R16G16B16A16F
+      usage: ReadWrite
+      relativeSize:
+        - 0.25
+        - 0.25
+      type: Texture2D
+    - name: VolumetricFogBuffer1
+      format: R16G16B16A16F
+      usage: ReadWrite
+      relativeSize:
+        - 0.25
+        - 0.25
+      type: Texture2D
+    - name: ZBuffer
+      format: D32S8
+      usage: Render|Sample
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: Depth
+      format: R32F
+      mips: auto
+      usage: Sample|ReadWrite
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: Stencil
+      format: R8
+      usage: TransferDestination|Sample
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: ReflectionBuffer
+      format: R16G16B16A16F
+      usage: ReadWrite
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: NormalBuffer
+      format: R16G16B16A16F
+      usage: Render
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - _comment: 'RGB = Specular reflectivity, A = Roughness'
+      name: SpecularBuffer
+      format: R8G8B8A8
+      usage: Render
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: TerrainPosBuffer
+      format: R16G16F
+      usage: Render
+      relativeSize:
+        - 1
+        - 1
+      type: Texture2D
+    - name: RayTracingTestOutput
+      format: R16G16B16A16F
+      fixedSize:
+        - 640
+        - 480
+      usage: ReadWrite
+      type: Texture2D
+  ExportTextures:
+    - name: ColorBuffer
+  Submissions:
+    - name: Compute Prepass
+      queue: Compute
+      wait_for_queue: Graphics
+      _comment: >-
+        Perform clustering AABB generation and run culling for clustering
+        systems
+      ops:
+        - subgraph:
+            name: Cluster AABB Generation
+        - subgraph:
+            name: Lights Copy
+        - subgraph:
+            name: Lights Cull
+        - subgraph:
+            name: Decal Cull
+        - subgraph:
+            name: Fog Cull
+        - subgraph:
+            name: Sun Terrain Shadows
+        - subgraph:
+            name: Raytracing Light Update
+        - subgraph:
+            name: Terrain Raytracing Mesh Generate
+    - name: Prepass
+      queue: Graphics
+      _comment: Calculate shadow maps and depth prepass
+      ops:
+        - subgraph:
+            name: Raytracing Test
+        - subgraph:
+            name: StaticUI
+        - subgraph:
+            name: Vegetation Generate Draws
+        - subgraph:
+            name: Terrain Prepare
+        - pass:
+            name: Prepass
+            attachments:
+              - name: ZBuffer
+                clear_depth: 1
+                clear_stencil: 0
+                flags: Store|StoreStencil
+              - name: TerrainPosBuffer
+                clear:
+                  - 0
+                  - 0
+                  - 0
+                  - 255
+                flags: Store
+            subpasses:
+              - name: TerrainPass
+                subpass_dependencies: []
+                attachments:
+                  - TerrainPosBuffer
+                depth: ZBuffer
+                ops:
+                  - subgraph:
+                      name: Terrain Prepass
+              - name: DepthPrepass
+                subpass_dependencies:
+                  - TerrainPass
+                attachments: []
+                depth: ZBuffer
+                ops:
+                  - batch:
+                      name: FlatGeometryDepth
+                  - subgraph:
+                      name: Vegetation Prepass
+        - subgraph:
+            name: Terrain Update Caches
+        - subgraph:
+            name: Depth Extract
+        - subgraph:
+            name: Depth Downsample
+    - name: Forward Shading and Post Effects
+      wait_for_submissions:
+        - Compute Prepass
+        - Prepass
+      queue: Graphics
+      _comment: Main graphics submission
+      ops:
+        - pass:
+            name: ForwardRendering
+            attachments:
+              - name: ZBuffer
+                flags: Store|Load|LoadStencil
+              - name: LightBuffer
+                clear:
+                  - 0
+                  - 0
+                  - 0
+                  - 0
+                flags: Store
+              - name: NormalBuffer
+                flags: Store
+                clear:
+                  - 0
+                  - 0
+                  - 0
+                  - 0
+              - name: SpecularBuffer
+                flags: Store
+                clear:
+                  - 0
+                  - 0
+                  - 0
+                  - 0
+            subpasses:
+              - name: OpaquePass
+                subpass_dependencies: []
+                attachments:
+                  - LightBuffer
+                resource_dependencies:
+                  - name: SunShadowDepth
+                    stage: PixelShaderRead
+                depth: ZBuffer
+                ops:
+                  - subgraph:
+                      name: Terrain Resolve
+                  - subgraph:
+                      name: Vegetation Render
+                  - batch:
+                      name: FlatGeometryLit
+                  - batch:
+                      name: LightMeshes
+              - name: Skypass
+                subpass_dependencies:
+                  - OpaquePass
+                attachments:
+                  - LightBuffer
+                depth: ZBuffer
+                ops:
+                  - batch:
+                      name: Background
+              - name: AlphaPass
+                _comment: 'TODO: Move this to a separate pass later on'
+                subpass_dependencies:
+                  - Skypass
+                attachments:
+                  - LightBuffer
+                depth: ZBuffer
+                ops:
+                  - batch:
+                      name: FlatGeometryAlphaLit
+        - subgraph:
+            name: Vegetation Copy Indirect
+        - subgraph:
+            name: HBAO
+            disabled:
+              - name: SSAOBuffer
+                value: Black
+        - subgraph:
+            name: Fog Compute
+        - subgraph:
+            name: Lights Combine
+        - subgraph:
+            name: Color Downsample
+        - subgraph:
+            name: Histogram
+        - subgraph:
+            name: Bloom
+        - pass:
+            name: PostEffects
+            attachments:
+              - name: ColorBuffer
+                flags: Load|Store
+              - name: ZBuffer
+                flags: Load
+            subpasses:
+              - name: FinalizePass
+                subpass_dependencies: []
+                attachments:
+                  - ColorBuffer
+                resource_dependencies:
+                  - name: BloomBuffer
+                    stage: PixelShaderRead
+                  - name: AverageLumBuffer
+                    stage: PixelShaderRead
+                  - name: LightBuffer
+                    stage: PixelShaderRead
+                  - name: Depth
+                    stage: PixelShaderRead
+                ops:
+                  - fullscreen_effect:
+                      name: Finalize
+                      shader_state:
+                        shader: 'shd:system_shaders/finalize.fxb'
+                        variables:
+                          - semantic: LuminanceTexture
+                            value: AverageLumBuffer
+                          - semantic: DepthTexture
+                            value: Depth
+                          - semantic: ColorTexture
+                            value: LightBuffer
+                          - semantic: BloomTexture
+                            value: BloomBuffer
+                      size_from_texture: ColorBuffer
+              - name: Direct
+                subpass_dependencies:
+                  - FinalizePass
+                depth: ZBuffer
+                attachments:
+                  - ColorBuffer
+                resource_dependencies:
+                  - name: Depth
+                    stage: PixelShaderRead
+                ops:
+                  - batch:
+                      name: DirectToColor
+                  - batch:
+                      name: ParticleUnlit
+                  - batch:
+                      name: ParticleLit
+                  - subgraph:
+                      name: Im3D
+        - blit:
+            name: ColorBuffer Copy
+            from:
+              tex: ColorBuffer
+            to:
+              tex: ColorBufferNoGUI
+        - pass:
+            name: GUI
+            attachments:
+              - name: ColorBuffer
+                flags: Load|Store
+              - name: ZBuffer
+                flags: Load|Discard
+            subpasses:
+              - name: DynUI
+                depth: ZBuffer
+                attachments:
+                  - ColorBuffer
+                resource_dependencies:
+                  - name: Depth
+                    stage: PixelShaderRead
+                ops:
+                  - subgraph:
+                      name: Debug Shapes
+                  - subgraph:
+                      name: ImGUI
+                  - subgraph:
+                      name: StaticUI To Backbuffer
+        - swap:
+            name: Swap
+            from: ColorBuffer

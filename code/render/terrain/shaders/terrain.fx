@@ -243,7 +243,7 @@ TessellationFactorScreenSpace(vec4 p0, vec4 p1)
     mat4 mvp = Transform * ViewProjection;
     vec4 p0Proj = mvp * p0;
     vec4 p1Proj = mvp * p1;
-    float screen = max(RenderTargetDimensions[0].x, RenderTargetDimensions[0].y);
+    float screen = max(RenderTargetParameter[0].Dimensionsx, RenderTargetParameter[0].Dimensions.y);
     float dist = distance(p0Proj.xy / p0Proj.w, p1Proj.xy / p1Proj.w);
     return clamp(dist * screen, MinTessellation, MaxTessellation);
     */
@@ -264,8 +264,8 @@ TessellationFactorScreenSpace(vec4 p0, vec4 p1)
     clip1 /= clip1.w;
 
     // Convert to viewport coordinates
-    clip0.xy *= RenderTargetDimensions[0].xy;
-    clip1.xy *= RenderTargetDimensions[0].xy;
+    clip0.xy *= RenderTargetParameter[0].Dimensions.xy;
+    clip1.xy *= RenderTargetParameter[0].Dimensions.xy;
 
     // Return the tessellation factor based on the screen size 
     // given by the distance of the two edge control points in screen space
@@ -982,7 +982,7 @@ psGenerateLowresFallback(
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
     vec2 invWorldSize = 1.0f / worldSize;
 
-    vec2 texelSize = RenderTargetDimensions[0].zw;
+    vec2 texelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 pixel = vec2(gl_FragCoord.xy);
     vec2 uv = pixel * texelSize;
     vec2 pixelToWorldScale = vec2(WorldSizeX, WorldSizeZ) * texelSize;
@@ -1030,7 +1030,7 @@ psGenerateLowresFallback(
     Material = totalMaterial;
 }
 
-group(SYSTEM_GROUP) readwrite r32f image2D TerrainShadowMap;
+group(SYSTEM_GROUP) readwrite rg16f image2D TerrainShadowMap;
 //------------------------------------------------------------------------------
 /**
     Copy between indirection textures
@@ -1060,6 +1060,7 @@ csTerrainShadows()
     vec3 coord = startCoord + GlobalLightDirWorldspace.xyz * stepSize;
 
     float smallestDistance = 10000000.0f;
+    float highestPoint = 100000.0f;
     vec4 plane = vec4(GlobalLightDirWorldspace.xyz, 0);
     for (uint i = 0; i < NumSamples; i++)
     {
@@ -1081,6 +1082,7 @@ csTerrainShadows()
             // Calculate distance for contact hardening shadows
             float dist = distance(startCoord, sampleCoord);
             smallestDistance = min(smallestDistance, dist);
+            highestPoint = intersection.y;
 
             // Half step size in preparation of the next sample
             stepSize *= 0.5f;
@@ -1094,14 +1096,9 @@ csTerrainShadows()
             coord += GlobalLightDirWorldspace.xyz * stepSize;
         }
     }
-    float shadow;
-    if (smallestDistance == 10000000.0f)
-        shadow = 1.0f;
-    else
-        // Do a bit of dirty inverse square falloff
-        shadow = (smallestDistance * smallestDistance) / (MaxDistance * MaxDistance);
+    float shadow = smallestDistance == 10000000.0f ? 1.0f : (smallestDistance * smallestDistance) / (MaxDistance * MaxDistance);
 
-    imageStore(TerrainShadowMap, ivec2(gl_GlobalInvocationID.xy), vec4(shadow));
+    imageStore(TerrainShadowMap, ivec2(gl_GlobalInvocationID.xy), vec4(shadow, highestPoint, 0, 0));
 }
 
 //------------------------------------------------------------------------------

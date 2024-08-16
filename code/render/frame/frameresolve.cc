@@ -104,15 +104,8 @@ FrameResolve::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const In
 
         TextureDimensions fromDims = TextureGetDimensions(this->from);
         TextureDimensions toDims = TextureGetDimensions(this->to);
-        CoreGraphics::TextureCopy from, to;
-        from.region.set(0, 0, fromDims.width, fromDims.height);
-        from.mip = 0;
-        from.layer = 0;
-        from.bits = this->fromBits;
-        to.region.set(0, 0, toDims.width, toDims.height);
-        to.mip = 0;
-        to.layer = 0;
-        to.bits = this->toBits;
+        CoreGraphics::TextureCopy from{ .region = { 0, 0, fromDims.width, fromDims.height }, .mip = 0, .layer = 0, .bits = this->fromBits };
+        CoreGraphics::TextureCopy to{ .region = { 0, 0, toDims.width, toDims.height }, .mip = 0, .layer = 0, .bits = this->toBits };
         CmdResolve(cmdBuf, this->from, from, this->to, to);
     }
 }

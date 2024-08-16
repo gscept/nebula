@@ -5,9 +5,9 @@
 #include "foundation/stdneb.h"
 #include "staticuicontext.h"
 #include "Ultralight/JavaScript.h"
-#include "frame/framecode.h"
-#include "frame/framesubgraph.h"
 #include "graphics/graphicsserver.h"
+
+#include "frame/default.h"
 
 namespace StaticUI
 {
@@ -92,22 +92,15 @@ StaticUIContext::Create()
     JSObjectSetProperty(js.get().ctx(), global, nativeBoxFuncName, nativeBoxFunc, 0, nullptr);
     JSStringRelease(nativeBoxFuncName);
 
-    Frame::FrameCode* drawOp = new Frame::FrameCode;
-    drawOp->domain = CoreGraphics::BarrierDomain::Global;
-    drawOp->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_StaticUI_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         state.Backend->Render(cmdBuf, bufferIndex);
-    };
-    Frame::AddSubgraph("StaticUI", { drawOp });
+    });
 
-    Frame::FrameCode* copyOp = new Frame::FrameCode;
-    copyOp->domain = CoreGraphics::BarrierDomain::Pass;
-    copyOp->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         state.Backend->DrawToBackbuffer(cmdBuf, bufferIndex);
-    };
-    Frame::AddSubgraph("StaticUI To Backbuffer", { copyOp });
-
+    });
 }
 
 //------------------------------------------------------------------------------

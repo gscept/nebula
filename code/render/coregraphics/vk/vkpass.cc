@@ -11,6 +11,8 @@
 #include "vktextureview.h"
 #include "coregraphics/pass.h"
 
+#include "system_shaders/shared.h"
+
 using namespace CoreGraphics;
 namespace Vulkan
 {
@@ -130,8 +132,6 @@ GetSubpassInfo(
     , Util::Array<VkSubpassDependency>& outDeps
     , Util::FixedArray<VkAttachmentDescription>& outAttachments
     , Util::Array<uint32>& usedAttachmentCounts
-    , Util::FixedArray<Util::FixedArray<Math::rectangle<int>>>& outViewports
-    , Util::FixedArray<Util::FixedArray<Math::rectangle<int>>>& outScissorRects
     , Util::FixedArray<VkPipelineViewportStateCreateInfo>& outPipelineInfos
     , uint32& numUsedAttachmentsTotal)
 {
@@ -161,8 +161,6 @@ GetSubpassInfo(
         // resize rects
         n_assert(subpass.numViewports >= subpass.attachments.Size());
         n_assert(subpass.numScissors >= subpass.attachments.Size());
-        outViewports[i].Resize(subpass.numViewports);
-        outScissorRects[i].Resize(subpass.numScissors);
         outPipelineInfos[i] =
         {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -196,13 +194,6 @@ GetSubpassInfo(
             ds.attachment = subpass.depth;
 
             consumedAttachments[subpass.depth] = true;
-
-            if (subpass.attachments.IsEmpty())
-            {
-                outViewports[i][j] = VkViewportToRect(loadInfo.viewports[subpass.depth]);
-                outScissorRects[i][j] = VkScissorToRect(loadInfo.rects[subpass.depth]);
-                j++;
-            }
         }
         else
         {
@@ -225,10 +216,6 @@ GetSubpassInfo(
 
             consumedAttachments[attachment] = true;
             usedAttachments++;
-
-            outViewports[i][j] = VkViewportToRect(loadInfo.viewports[ref.attachment]);
-            outScissorRects[i][j] = VkScissorToRect(loadInfo.rects[ref.attachment]);
-            j++;
         }
 
         for (IndexT k = 0; k < subpass.resolves.Size(); k++)
@@ -522,8 +509,6 @@ SetupPass(const PassId pid)
     // resize subpass contents
     subpassDescs.Resize(loadInfo.subpasses.Size());
     attachments.Resize(loadInfo.attachments.Size() + 1);
-    runtimeInfo.subpassViewports.Resize(loadInfo.subpasses.Size());
-    runtimeInfo.subpassRects.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
     uint32 numUsedAttachmentsTotal = 0;
 
@@ -534,8 +519,6 @@ SetupPass(const PassId pid)
         , subpassDeps
         , attachments
         , subpassAttachmentCounts
-        , runtimeInfo.subpassViewports
-        , runtimeInfo.subpassRects
         , runtimeInfo.subpassPipelineInfo
         , numUsedAttachmentsTotal);
 
@@ -583,15 +566,15 @@ SetupPass(const PassId pid)
     {
         // setup uniform buffer for render target information
         ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.fxb"_atm);
-        loadInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock");
-        loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
+        runtimeInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock", CoreGraphics::BufferAccessMode::DeviceAndHost);
+        runtimeInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetParameter");
 
         CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
         runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout, 8 });
         runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
         CoreGraphics::ResourceTableBuffer write;
-        write.buf = loadInfo.passBlockBuffer;
+        write.buf = runtimeInfo.passBlockBuffer;
         write.offset = 0;
         write.size = NEBULA_WHOLE_BUFFER_SIZE;
         write.index = 0;
@@ -605,39 +588,34 @@ SetupPass(const PassId pid)
         for (i = 0; i < loadInfo.attachments.Size(); i++)
         {
             n_assert(j < 16); // only allow 8 input attachments in the shader, so we must limit it
-            CoreGraphics::ResourceTableInputAttachment write;
             if (!loadInfo.attachmentIsDepthStencil[i])
             {
+                CoreGraphics::ResourceTableInputAttachment write;
                 write.tex = loadInfo.attachments[i];
                 write.isDepth = false;
                 write.sampler = InvalidSamplerId;
                 write.slot = Shared::Table_Pass::InputAttachment0_SLOT + j;
                 write.index = 0;
+                ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
             }
-            else
-            {
-                write.tex = loadInfo.attachments[i];
-                write.isDepth = true;
-                write.sampler = InvalidSamplerId;
-                write.slot = Shared::Table_Pass::DepthAttachment_SLOT;
-                write.index = 0;
-            }
-            ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
         }
         ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
     }
 
     // Calculate texture dimensions
-    Util::FixedArray<Math::vec4> dimensions(loadInfo.attachments.Size());
+    Util::FixedArray<Shared::RenderTargetParameters> params(loadInfo.attachments.Size());
     for (i = 0; i < loadInfo.attachments.Size(); i++)
     {
         // update descriptor set based on images attachments
         TextureId tex = TextureViewGetTexture(loadInfo.attachments[i]);
         const CoreGraphics::TextureDimensions rtdims = TextureGetDimensions(tex);
-        Math::vec4& dims = dimensions[i];
-        dims = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
+        Shared::RenderTargetParameters& rtParams = params[i];
+        Math::vec4 dimensions = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
+        dimensions.storeu(rtParams.Dimensions);
+        rtParams.Scale[0] = 1;
+        rtParams.Scale[1] = 1;
     }
-    BufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
+    BufferUpdateArray(runtimeInfo.passBlockBuffer, params.Begin(), params.Size(), runtimeInfo.renderTargetDimensionsVar);
 
     // setup info
     runtimeInfo.framebufferPipelineInfo.renderPass = loadInfo.pass;
@@ -725,9 +703,9 @@ DestroyPass(const PassId id)
 
     // destroy pass and our descriptor set
     DestroyResourceTable(runtimeInfo.passDescriptorSet);
-    DestroyBuffer(loadInfo.passBlockBuffer);
+    DestroyBuffer(runtimeInfo.passBlockBuffer);
     runtimeInfo.passDescriptorSet = ResourceTableId::Invalid();
-    loadInfo.passBlockBuffer = BufferId::Invalid();
+    runtimeInfo.passBlockBuffer = BufferId::Invalid();
 
     DelayedDeletePass(id);
 }
@@ -750,6 +728,16 @@ PassWindowResizeCallback(const PassId id)
 
     // setup pass again
     SetupPass(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
+{
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
+    BufferUpdateArray(runtimeInfo.passBlockBuffer, viewports.Begin(), viewports.Size(), runtimeInfo.renderTargetDimensionsVar);
 }
 
 //------------------------------------------------------------------------------
@@ -787,26 +775,6 @@ const Util::StringAtom
 PassGetName(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).name;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<Math::rectangle<int>>&
-PassGetRects(const CoreGraphics::PassId& id)
-{
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
-    return info.subpassRects[info.currentSubpassIndex];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<Math::rectangle<int>>&
-PassGetViewports(const CoreGraphics::PassId& id)
-{
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
-    return info.subpassViewports[info.currentSubpassIndex];
 }
 
 } // namespace Vulkan

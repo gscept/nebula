@@ -10,7 +10,7 @@
 #endif
 namespace Vulkan
 {
-
+PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName = nullptr;
 //------------------------------------------------------------------------------
 /**
 */

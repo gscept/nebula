@@ -42,6 +42,11 @@ sampler_state InputSampler
 	AddressV = Clamp;
 };
 
+constant BlurUniforms
+{
+    ivec2 Viewport;
+};
+
 #if !(BLUR_KERNEL_8 || BLUR_KERNEL_16 || BLUR_KERNEL_32 || BLUR_KERNEL_64)
 #define BLUR_KERNEL_16 1
 #endif
@@ -98,7 +103,7 @@ void
 csMainX()
 {
 	// get full resolution and inverse full resolution
-	ivec2 size = imageSize(BlurImageX).xy;
+	ivec2 size = Viewport;
 
 	// calculate offsets
 	const int         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
@@ -108,15 +113,20 @@ csMainX()
 
     const int x = max(0, min(apronStart + int(gl_LocalInvocationID.x), size.x - 1));
     const int y = int(gl_WorkGroupID.y);
-    
-	// load into workgroup saved memory, this allows us to use the original pixel even though
-	// we might have replaced it with the result from this thread!
+    const uint z = gl_WorkGroupID.z;
+
+    if (x >= Viewport.x || y >= Viewport.y)
+        SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_VEC(0);
+    else
+    {
+    // load into workgroup saved memory, this allows us to use the original pixel even though
+    // we might have replaced it with the result from this thread!
 #if IMAGE_IS_ARRAY
-	const uint z = gl_WorkGroupID.z;
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2DArray(InputImageX, InputSampler, ivec3(x, y, z), 0));
+        SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2DArray(InputImageX, InputSampler, ivec3(x, y, z), 0));
 #else
-    SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2D(InputImageX, InputSampler, ivec2(x, y), 0));
+        SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2D(InputImageX, InputSampler, ivec2(x, y), 0));
 #endif
+    }
 	groupMemoryBarrier();
 	barrier();
 
@@ -152,7 +162,7 @@ void
 csMainY()
 {
 	// get full resolution and inverse full resolution
-	ivec2 size = imageSize(BlurImageY).xy;
+	ivec2 size = Viewport;
 
 	// calculate offsets
 	const int         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
@@ -162,15 +172,20 @@ csMainY()
 
     const int x = int(gl_WorkGroupID.y);
     const int y = max(0, min(apronStart + int(gl_LocalInvocationID.x), size.y - 1));
+    const uint z = gl_WorkGroupID.z;
 
-	// load into workgroup saved memory, this allows us to use the original pixel even though
-	// we might have replaced it with the result from this thread!
+    if (x >= Viewport.x || y >= Viewport.y)
+        SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_VEC(0);
+    else
+    {
+    // load into workgroup saved memory, this allows us to use the original pixel even though
+    // we might have replaced it with the result from this thread!
 #if IMAGE_IS_ARRAY
-	const uint z = gl_WorkGroupID.z;
-	SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2DArray(InputImageY, InputSampler, ivec3(x, y, z), 0));
+        SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2DArray(InputImageY, InputSampler, ivec3(x, y, z), 0));
 #else
-    SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2D(InputImageY, InputSampler, ivec2(x, y), 0));
+        SharedMemory[gl_LocalInvocationID.x] = IMAGE_LOAD_SWIZZLE(imageFetch2D(InputImageY, InputSampler, ivec2(x, y), 0));
 #endif
+    }
 	groupMemoryBarrier();
 	barrier();
 

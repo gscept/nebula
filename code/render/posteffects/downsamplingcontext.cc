@@ -8,6 +8,9 @@
 #include "system_shaders/downsample/downsample_cs_light.h"
 #include "system_shaders/downsample/downsample_cs_depth.h"
 #include "system_shaders/downsample/depth_extract_cs.h"
+
+#include "frame/default.h"
+
 namespace PostEffects
 {
 
@@ -34,12 +37,6 @@ struct
     Util::FixedArray<CoreGraphics::TextureViewId> downsampledDepthBufferViews;
     CoreGraphics::BufferId depthBufferCounter;
     CoreGraphics::BufferId depthBufferConstants;
-
-    CoreGraphics::TextureId lightBuffer, depthBuffer, zbuffer;
-
-    Ptr<Frame::FrameScript> frameScript;
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 2> frameOpAllocator;
 
 } state;
 
@@ -148,11 +145,10 @@ SetupMipChainResources(
 /**
 */
 void
-DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
+DownsamplingContext::Setup()
 {
     using namespace CoreGraphics;
 
-    state.frameScript = script;
     state.downsampleColorShader = ShaderGet("shd:system_shaders/downsample/downsample_cs_light.fxb");
     state.downsampleColorProgram = ShaderGetProgram(state.downsampleColorShader, ShaderFeatureMask("Downsample"));
     state.downsampleDepthShader = ShaderGet("shd:system_shaders/downsample/downsample_cs_depth.fxb");
@@ -165,10 +161,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     state.depthDownsampleResourceTable = ShaderCreateResourceTable(state.downsampleDepthShader, NEBULA_BATCH_GROUP);
     state.extractResourceTable = ShaderCreateResourceTable(state.extractShader, NEBULA_BATCH_GROUP);
 
-    state.lightBuffer = state.frameScript->GetTexture("LightBuffer");
-    state.depthBuffer = state.frameScript->GetTexture("Depth");
-    state.zbuffer = state.frameScript->GetTexture("ZBuffer");
-
+ 
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.elementSize = sizeof(uint);
     bufInfo.size = 6;
@@ -189,8 +182,8 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     state.colorBufferConstants = CoreGraphics::CreateBuffer(bufInfo);
     state.depthBufferConstants = CoreGraphics::CreateBuffer(bufInfo);
 
-    auto dims = TextureGetDimensions(state.lightBuffer);
-    auto mips = TextureGetNumMips(state.lightBuffer);
+    auto dims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
+    auto mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer());
     uint dispatchX = DispatchSize(dims.width);
     uint dispatchY = DispatchSize(dims.height);
 
@@ -201,8 +194,8 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     constants.Dimensions[1] = dims.height - 1;
     BufferUpdate(state.colorBufferConstants, constants, 0);
 
-    dims = TextureGetDimensions(state.depthBuffer);
-    mips = TextureGetNumMips(state.depthBuffer);
+    dims = TextureGetDimensions(FrameScript_default::Texture_Depth());
+    mips = TextureGetNumMips(FrameScript_default::Texture_Depth());
     dispatchX = DispatchSize(dims.width);
     dispatchY = DispatchSize(dims.height);
 
@@ -233,7 +226,7 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     });
 
     CoreGraphics::ResourceTableSetTexture(state.extractResourceTable, {
-        state.zbuffer,
+        FrameScript_default::Texture_ZBuffer(),
         DepthExtractCs::Table_Batch::ZBufferInput_SLOT,
         0,
         CoreGraphics::InvalidSamplerId,
@@ -242,85 +235,47 @@ DownsamplingContext::Setup(const Ptr<Frame::FrameScript>& script)
     });
 
     CoreGraphics::ResourceTableSetRWTexture(state.extractResourceTable, {
-        state.depthBuffer,
+        FrameScript_default::Texture_Depth(),
         DepthExtractCs::Table_Batch::DepthOutput_SLOT
     });
     CoreGraphics::ResourceTableCommitChanges(state.extractResourceTable);
 
-    Frame::FrameCode* colorDownsamplePass = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    colorDownsamplePass->SetName("Color Downsample");
-    colorDownsamplePass->domain = BarrierDomain::Global;
-    colorDownsamplePass->textureDeps.Add(state.lightBuffer,
-                                        {
-                                             "LightBuffer"
-                                             , PipelineStage::ComputeShaderWrite
-                                             , TextureSubresourceInfo::Color(state.lightBuffer)
-                                        });
-
-    colorDownsamplePass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_DepthExtract_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        TextureDimensions dims = TextureGetDimensions(state.lightBuffer);
-        CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, false);
-        CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(dims.width, 64);
-        uint dispatchY = Math::divandroundup(dims.height, 64);
-        CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
-    };
-
-    Frame::AddSubgraph("Color Downsample", { colorDownsamplePass });
-
-    Frame::FrameCode* depthDownsamplePass = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    depthDownsamplePass->SetName("Depth Downsample");
-    depthDownsamplePass->domain = BarrierDomain::Global;
-    depthDownsamplePass->textureDeps.Add(state.depthBuffer,
-                                        {
-                                             "DepthBuffer"
-                                             , PipelineStage::ComputeShaderWrite
-                                             , TextureSubresourceInfo::Color(state.depthBuffer)
-                                        });
-
-    depthDownsamplePass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        TextureDimensions dims = TextureGetDimensions(state.depthBuffer);
-        CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, false);
-        CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = DispatchSize(dims.width);
-        uint dispatchY = DispatchSize(dims.height);
-        CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
-    };
-
-    Frame::AddSubgraph("Depth Downsample", { depthDownsamplePass });
-
-    Frame::FrameCode* extractPass = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    extractPass->SetName("Depth Extract");
-    extractPass->domain = BarrierDomain::Global;
-    extractPass->textureDeps.Add(state.depthBuffer,
-                                 {
-                                     "DepthBuffer"
-                                     , PipelineStage::ComputeShaderWrite
-                                     , TextureSubresourceInfo::Color(state.depthBuffer)
-                                 });
-
-    extractPass->textureDeps.Add(state.zbuffer,
-                                 {
-                                     "ZBuffer"
-                                     , PipelineStage::ComputeShaderRead
-                                     , TextureSubresourceInfo::DepthStencil(state.zbuffer)
-                                 });
-    extractPass->func = [](const CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        TextureDimensions dims = TextureGetDimensions(state.depthBuffer);
         CmdSetShaderProgram(cmdBuf, state.extractProgram, false);
         CmdSetResourceTable(cmdBuf, state.extractResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
-        uint dispatchX = Math::divandroundup(dims.width, 64);
-        CmdDispatch(cmdBuf, dispatchX, dims.height, 1);
-    };
+        uint dispatchX = Math::divandroundup(viewport.width(), 64);
+        CmdDispatch(cmdBuf, dispatchX, viewport.height(), 1);
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::Depth, PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::TextureIndex::ZBuffer, PipelineStage::ComputeShaderRead }
+    });
 
-    Frame::AddSubgraph("Depth Extract", { extractPass });
+    FrameScript_default::RegisterSubgraph_ColorDownsample_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, state.downsampleColorProgram, false);
+        CmdSetResourceTable(cmdBuf, state.colorDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        uint dispatchX = Math::divandroundup(viewport.width(), 64);
+        uint dispatchY = Math::divandroundup(viewport.height(), 64);
+        CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::LightBuffer, PipelineStage::ComputeShaderWrite }
+    });
+
+    FrameScript_default::RegisterSubgraph_DepthDownsample_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, state.downsampleDepthProgram, false);
+        CmdSetResourceTable(cmdBuf, state.depthDownsampleResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        uint dispatchX = DispatchSize(viewport.width());
+        uint dispatchY = DispatchSize(viewport.height());
+        CmdDispatch(cmdBuf, dispatchX, dispatchY, 1);
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::Depth, PipelineStage::ComputeShaderWrite }
+    });
 
     // Setup mip chains in resource tables
-    SetupMipChainResources(state.lightBuffer, state.downsampledColorBufferViews, state.colorDownsampleResourceTable, "Color Downsample", false, DownsampleCsLight::Table_Batch::Input_SLOT, DownsampleCsLight::Table_Batch::Output_SLOT);
-    SetupMipChainResources(state.depthBuffer, state.downsampledDepthBufferViews, state.depthDownsampleResourceTable, "Depth Downsample", false, DownsampleCsDepth::Table_Batch::Input_SLOT, DownsampleCsDepth::Table_Batch::Output_SLOT);
+    SetupMipChainResources(FrameScript_default::Texture_LightBuffer(), state.downsampledColorBufferViews, state.colorDownsampleResourceTable, "Color Downsample", false, DownsampleCsLight::Table_Batch::Input_SLOT, DownsampleCsLight::Table_Batch::Output_SLOT);
+    SetupMipChainResources(FrameScript_default::Texture_Depth(), state.downsampledDepthBufferViews, state.depthDownsampleResourceTable, "Depth Downsample", false, DownsampleCsDepth::Table_Batch::Input_SLOT, DownsampleCsDepth::Table_Batch::Output_SLOT);
 }
 
 //------------------------------------------------------------------------------
@@ -340,11 +295,11 @@ DownsamplingContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT 
     }
 
     // Setup new views
-    SetupMipChainResources(state.lightBuffer, state.downsampledColorBufferViews, state.colorDownsampleResourceTable, "Color Downsample", false, DownsampleCsLight::Table_Batch::Input_SLOT, DownsampleCsLight::Table_Batch::Output_SLOT);
-    SetupMipChainResources(state.depthBuffer, state.downsampledDepthBufferViews, state.depthDownsampleResourceTable, "Depth Downsample", true, DownsampleCsDepth::Table_Batch::Input_SLOT, DownsampleCsDepth::Table_Batch::Output_SLOT);
+    SetupMipChainResources(FrameScript_default::Texture_LightBuffer(), state.downsampledColorBufferViews, state.colorDownsampleResourceTable, "Color Downsample", false, DownsampleCsLight::Table_Batch::Input_SLOT, DownsampleCsLight::Table_Batch::Output_SLOT);
+    SetupMipChainResources(FrameScript_default::Texture_Depth(), state.downsampledDepthBufferViews, state.depthDownsampleResourceTable, "Depth Downsample", false, DownsampleCsDepth::Table_Batch::Input_SLOT, DownsampleCsDepth::Table_Batch::Output_SLOT);
 
-    auto dims = TextureGetDimensions(state.lightBuffer);
-    auto mips = TextureGetNumMips(state.lightBuffer);
+    auto dims = TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
+    auto mips = TextureGetNumMips(FrameScript_default::Texture_LightBuffer());
     uint dispatchX = DispatchSize(dims.width);
     uint dispatchY = DispatchSize(dims.height);
 
@@ -355,8 +310,8 @@ DownsamplingContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT 
     constants.Dimensions[1] = dims.height - 1;
     BufferUpdate(state.colorBufferConstants, constants, 0);
 
-    dims = TextureGetDimensions(state.depthBuffer);
-    mips = TextureGetNumMips(state.depthBuffer);
+    dims = TextureGetDimensions(FrameScript_default::Texture_Depth());
+    mips = TextureGetNumMips(FrameScript_default::Texture_Depth());
     dispatchX = DispatchSize(dims.width);
     dispatchY = DispatchSize(dims.height);
 
@@ -367,7 +322,7 @@ DownsamplingContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT 
     BufferUpdate(state.depthBufferConstants, constants, 0);
 
     CoreGraphics::ResourceTableSetTexture(state.extractResourceTable, {
-        state.zbuffer,
+        FrameScript_default::Texture_ZBuffer(),
         DepthExtractCs::Table_Batch::ZBufferInput_SLOT,
         0,
         CoreGraphics::InvalidSamplerId,
@@ -376,7 +331,7 @@ DownsamplingContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT 
     });
 
     CoreGraphics::ResourceTableSetRWTexture(state.extractResourceTable, {
-        state.depthBuffer,
+        FrameScript_default::Texture_Depth(),
         DepthExtractCs::Table_Batch::DepthOutput_SLOT
     });
     CoreGraphics::ResourceTableCommitChanges(state.extractResourceTable);

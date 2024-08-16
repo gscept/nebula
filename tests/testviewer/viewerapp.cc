@@ -26,6 +26,8 @@
 #include "posteffects/downsamplingcontext.h"
 #include "physicsinterface.h"
 
+#include "frame/default.h"
+
 using namespace Timing;
 using namespace Graphics;
 using namespace Visibility;
@@ -124,12 +126,9 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
-        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+        Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
         gfxServer->SetCurrentView(this->view);
         this->stage = gfxServer->CreateStage("stage1", true);
-
-        // setup post effects
-        Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
 
         // Create contexts, this could and should be bundled together
         CameraContext::Create();
@@ -165,10 +164,10 @@ SimpleViewerApplication::Open()
         //Vegetation::VegetationContext::Create(vegSettings);
 
         Clustering::ClusterContext::Create(0.1f, 10000.0f, this->wnd);
-        Lighting::LightContext::Create(frameScript);
+        Lighting::LightContext::Create();
         Decals::DecalContext::Create();
         Im3d::Im3dContext::Create();
-        Fog::VolumetricFogContext::Create(frameScript);
+        Fog::VolumetricFogContext::Create();
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
         PostEffects::HistogramContext::Create();
@@ -176,12 +175,12 @@ SimpleViewerApplication::Open()
         //PostEffects::SSRContext::Create();
 
         // setup gbuffer bindings after frame script is loaded
-        Graphics::SetupBufferConstants(frameScript);
-        PostEffects::BloomContext::Setup(frameScript);
-        PostEffects::SSAOContext::Setup(frameScript);
+        Graphics::SetupBufferConstants();
+        PostEffects::BloomContext::Setup();
+        PostEffects::SSAOContext::Setup();
         //PostEffects::SSRContext::Setup(frameScript);
-        PostEffects::DownsamplingContext::Setup(frameScript);
-        PostEffects::HistogramContext::Setup(frameScript);
+        PostEffects::DownsamplingContext::Setup();
+        PostEffects::HistogramContext::Setup();
         PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 
         Im3d::Im3dContext::SetGridStatus(this->showGrid);
@@ -225,7 +224,6 @@ SimpleViewerApplication::Open()
 
         Util::Array<Graphics::ViewIndependentCall> preLogicCalls = 
         {
-            Im3d::Im3dContext::NewFrame,
             Dynui::ImguiContext::NewFrame,
             CameraContext::UpdateCameras,
             ModelContext::UpdateTransforms,
@@ -257,7 +255,6 @@ SimpleViewerApplication::Open()
             ObserverContext::GenerateDrawLists,
 
             // At the very latest point, wait for work to finish
-            Dynui::ImguiContext::Render,
             ModelContext::WaitForWork,
             Characters::CharacterContext::WaitForCharacterJobs,
             Particles::ParticleContext::WaitForParticleUpdates,
@@ -281,9 +278,6 @@ SimpleViewerApplication::Open()
         this->console->Setup();
         this->consoleHandler->Setup();
         this->profiler = Dynui::ImguiProfiler::Create();
-
-        // Before starting the frame, build the frame script
-        this->view->BuildFrameScript();
 
         return true;
     }

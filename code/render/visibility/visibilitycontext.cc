@@ -353,16 +353,15 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
                 // update packet and add to list
                 Models::ShaderStateNode::DrawPacket* packet = reinterpret_cast<Models::ShaderStateNode::DrawPacket*>(mem);
-                packet->numOffsets[0] = renderables->nodeStates[index].resourceTableOffsets.Size();
-                packet->numTables = 1;
-                packet->tables[0] = renderables->nodeStates[index].resourceTables[CoreGraphics::GetBufferedFrameIndex()];
+                packet->numOffsets = renderables->nodeStates[index].resourceTableOffsets.Size();
+                packet->table = renderables->nodeStates[index].resourceTables[CoreGraphics::GetBufferedFrameIndex()];
                 packet->materialInstance = renderables->nodeStates[index].materialInstance;
 #ifndef PUBLIC_BUILD
                 packet->boundingBox = renderables->nodeBoundingBoxes[index];
                 packet->nodeInstanceHash = index;
 #endif
-                memcpy(packet->offsets[0], renderables->nodeStates[index].resourceTableOffsets.Begin(), renderables->nodeStates[index].resourceTableOffsets.ByteSize());
-                packet->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
+                memcpy(packet->offsets, renderables->nodeStates[index].resourceTableOffsets.Begin(), renderables->nodeStates[index].resourceTableOffsets.ByteSize());
+                packet->slot = NEBULA_DYNAMIC_OFFSET_GROUP;
                 drawList->drawPackets.Append(packet);
                 cmd->numDrawPackets++;
                 numDraws++;

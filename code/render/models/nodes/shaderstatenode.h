@@ -24,22 +24,19 @@ public:
     virtual ~ShaderStateNode();
 
     struct DrawPacket;
-    static const uint NumTables = 1;
     static const uint NumMaxOffsets = 4; // object, instancing, skeleton, particles
 
     struct DrawPacket
     {
-        Materials::MaterialInstanceId materialInstance;
-        SizeT numTables;
-        CoreGraphics::ResourceTableId tables[NumTables];
-        uint32 numOffsets[NumTables];
-        uint32 offsets[NumTables][NumMaxOffsets];
-        IndexT slots[NumTables];
-
 #ifndef PUBLIC_BUILD
-        uint32_t nodeInstanceHash;
         Math::bbox boundingBox;
+        uint32_t nodeInstanceHash;
 #endif
+        Materials::MaterialInstanceId materialInstance;
+        CoreGraphics::ResourceTableId table;
+        uint32 offsets[NumMaxOffsets];
+        uint8 numOffsets;
+        uint8 slot;
 
         /// Apply the resource table
         void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, IndexT bufferIndex);

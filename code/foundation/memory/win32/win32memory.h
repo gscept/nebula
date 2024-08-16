@@ -50,6 +50,7 @@ extern char* DuplicateCString(const char* from);
 extern bool IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const unsigned char* dstPtr, size_t dstSize);
 /// Allocate memory on the stack
 #define StackAlloc(size) _malloca(size);
+#define StackFree(ptr) _freea(ptr);
 
 //------------------------------------------------------------------------------
 /**

@@ -288,7 +288,7 @@ shader
 void
 psDepthOnly()
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    vec2 seed = gl_FragCoord.xy * RenderTargetParameter[0].Dimensions.zw;
     float dither = hash12(seed);
     if (dither < DitherFactor)
         discard;
@@ -301,7 +301,7 @@ shader
 void
 psDepthOnlyAlphaMask(in vec2 UV)
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    vec2 seed = gl_FragCoord.xy * RenderTargetParameter[0].Dimensions.zw;
     float dither = hash12(seed);
     if (dither < DitherFactor)
         discard;
@@ -592,7 +592,7 @@ psUberAlphaTest(
     [color2] out vec4 Material
 )
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    vec2 seed = gl_FragCoord.xy * RenderTargetParameter[0].Dimensions.zw;
     vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     float dither = (rnd.z + rnd.x + rnd.y) * DitherFactor;
     if (dither > 1.0f)
@@ -627,7 +627,7 @@ psUberVertexColor(
     [color2] out vec4 Material
 )
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    vec2 seed = gl_FragCoord.xy * RenderTargetParameter[0].Dimensions.zw;
     vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     float dither = (rnd.z + rnd.x + rnd.y) * DitherFactor;
     if (dither > 1.0f)
@@ -658,7 +658,7 @@ psUberAlpha(in vec3 ViewSpacePos,
     [color2] out vec4 Material
 )
 {
-    vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+    vec2 seed = gl_FragCoord.xy * RenderTargetParameter[0].Dimensions.zw;
     vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     float dither = (rnd.z + rnd.x + rnd.y) * DitherFactor;
     if (dither > 1.0f)

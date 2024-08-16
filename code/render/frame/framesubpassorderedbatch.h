@@ -9,7 +9,6 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "coregraphics/batchgroup.h"
 namespace Frame
 {
 class FrameSubpassOrderedBatch : public FrameOp
@@ -24,12 +23,12 @@ public:
     {
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
-        CoreGraphics::BatchGroup::Code batch;
+        MaterialTemplates::BatchGroup batch;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-    CoreGraphics::BatchGroup::Code batch;
+    MaterialTemplates::BatchGroup batch;
 };
 
 } // namespace Frame2

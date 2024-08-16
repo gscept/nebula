@@ -17,6 +17,11 @@
 #include "frame/framesubgraph.h"
 #include "core/cvar.h"
 
+#include "frame/default.h"
+#if WITH_NEBULA_EDITOR
+#include "frame/editorframe.h"
+#endif
+
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Base;
@@ -33,22 +38,25 @@ static Core::CVar* ui_opacity;
     Imgui rendering function
 */
 void
-ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
+ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport
+#if WITH_NEBULA_EDITOR
+                  , bool editor = false
+#endif
+)
 {
     ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
     ImGuiIO& io = ImGui::GetIO();
-    int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
-    int fb_height = (int)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
+    int fb_width = (int)(viewport.width() * io.DisplayFramebufferScale.x);
+    int fb_height = (int)(viewport.height() * io.DisplayFramebufferScale.y);
     data->ScaleClipRects(io.DisplayFramebufferScale);
 
     // get renderer 
     //const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
     //const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
     IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
-    BufferId vbo = state.vbos[currentBuffer];
-    BufferId ibo = state.ibos[currentBuffer];
-    const ImguiRendererParams& params = state.params;
+    BufferId vbo = ImguiContext::state.vbos[currentBuffer];
+    BufferId ibo = ImguiContext::state.ibos[currentBuffer];
 
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "ImGUI");
 
@@ -57,33 +65,33 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
 
     // create orthogonal matrix
 #if __VULKAN__
-    mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
+    mat4 proj = orthooffcenterrh(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
 #else
-    mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
+    mat4 proj = orthooffcenterrh(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
 #endif
 
     // if buffers are too small, create new buffers
-    if (data->TotalVtxCount > CoreGraphics::BufferGetSize(state.vbos[currentBuffer]))
+    if (data->TotalVtxCount > CoreGraphics::BufferGetSize(ImguiContext::state.vbos[currentBuffer]))
     {
-        CoreGraphics::BufferUnmap(state.vbos[currentBuffer]);
-        CoreGraphics::DestroyBuffer(state.vbos[currentBuffer]);
+        CoreGraphics::BufferUnmap(ImguiContext::state.vbos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(ImguiContext::state.vbos[currentBuffer]);
 
         CoreGraphics::BufferCreateInfo vboInfo;
         vboInfo.name = "ImGUI VBO"_atm;
         vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
-        vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
+        vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(ImguiContext::state.vlo);
         vboInfo.mode = CoreGraphics::HostCached;
         vboInfo.usageFlags = CoreGraphics::VertexBuffer;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
-        state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
-        state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.vbos[currentBuffer]);
+        ImguiContext::state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
+        ImguiContext::state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(ImguiContext::state.vbos[currentBuffer]);
     }
 
-    if (data->TotalIdxCount > CoreGraphics::BufferGetSize(state.ibos[currentBuffer]))
+    if (data->TotalIdxCount > CoreGraphics::BufferGetSize(ImguiContext::state.ibos[currentBuffer]))
     {
-        CoreGraphics::BufferUnmap(state.ibos[currentBuffer]);
-        CoreGraphics::DestroyBuffer(state.ibos[currentBuffer]);
+        CoreGraphics::BufferUnmap(ImguiContext::state.ibos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(ImguiContext::state.ibos[currentBuffer]);
 
         CoreGraphics::BufferCreateInfo iboInfo;
         iboInfo.name = "ImGUI IBO"_atm;
@@ -93,21 +101,35 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
         iboInfo.usageFlags = CoreGraphics::IndexBuffer;
         iboInfo.data = nullptr;
         iboInfo.dataSize = 0;
-        state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
-        state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.ibos[currentBuffer]);
+        ImguiContext::state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
+        ImguiContext::state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(ImguiContext::state.ibos[currentBuffer]);
     }
 
     // setup device
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, state.pipeline);
+#if WITH_NEBULA_EDITOR
+    if (editor)
+    {
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.editorPipeline);
+    }
+    else
+    {
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.pipeline);
+    }
+#else
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.pipeline);
+#endif
 
     // setup input buffers
-    CoreGraphics::CmdSetVertexLayout(cmdBuf, state.vlo);
-    CoreGraphics::CmdSetResourceTable(cmdBuf, state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
-    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, state.vbos[currentBuffer], 0);
-    CoreGraphics::CmdSetIndexBuffer(cmdBuf, IndexType::Index16, state.ibos[currentBuffer], 0);
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, ImguiContext::state.vlo);
+    CoreGraphics::CmdSetResourceTable(cmdBuf, ImguiContext::state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, ImguiContext::state.vbos[currentBuffer], 0);
+    CoreGraphics::CmdSetIndexBuffer(cmdBuf, IndexType::Index16, ImguiContext::state.ibos[currentBuffer], 0);
+    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+    CoreGraphics::CmdSetViewport(cmdBuf, viewport, 0);
+    CoreGraphics::CmdSetScissorRect(cmdBuf, viewport, 0);
 
     // set projection
-    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.textProjectionConstant, sizeof(proj), (byte*)&proj);
 
     struct TextureInfo
     {
@@ -134,12 +156,12 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
         const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);                    // using 16 bit indices
 
         // if we render too many vertices, we will simply assert, but should never happen really
-        n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::BufferGetByteSize(state.vbos[currentBuffer]));
-        n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(state.ibos[currentBuffer]));
+        n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::BufferGetByteSize(ImguiContext::state.vbos[currentBuffer]));
+        n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(ImguiContext::state.ibos[currentBuffer]));
 
         // wait for previous draws to finish...
-        Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
-        Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
+        Memory::Copy(vertexBuffer, ImguiContext::state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
+        Memory::Copy(indexBuffer, ImguiContext::state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
         IndexT j;
         IndexT primitiveIndexOffset = 0;
         for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -182,7 +204,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
                 texInfo.mip = tex.mip;
                 texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
                 
-                CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
+                CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
 
                 // setup primitive
                 CoreGraphics::PrimitiveGroup primitive;
@@ -207,11 +229,8 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
         indexBufferOffset += indexBufferSize;
     }
 
-    CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
-    CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
-
-    // reset clip settings
-    CoreGraphics::CmdResetClipToPass(cmdBuf);
+    CoreGraphics::BufferFlush(ImguiContext::state.vbos[currentBuffer]);
+    CoreGraphics::BufferFlush(ImguiContext::state.ibos[currentBuffer]);
 }
 
 //------------------------------------------------------------------------------
@@ -323,13 +342,10 @@ ImguiContext::Create()
 
     // allocate imgui shader
     state.uiShader = CoreGraphics::ShaderGet("shd:imgui/shaders/imgui.fxb");
-    state.params.projVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader,"TextProjectionModel");
-    state.params.fontVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
     state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureMask("Static"));
 
     state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 
-    state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "Texture");
     state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
     state.packedTextureInfo = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
 
@@ -343,23 +359,42 @@ ImguiContext::Create()
     components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ .name = "ImGui"_atm, .comps = components });
 
-    Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    op->domain = CoreGraphics::BarrierDomain::Pass;
-    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    /*
+    FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    {
+        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+        if (state.pipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
+        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+    });
+    FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
         ImguiContext::RecoverImGuiContextErrors();
 #endif
-        ImguiContext::ImguiDrawFunction(cmdBuf);
-    };
-    op->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
+        ImGui::Render();
+        ImguiDrawFunction(cmdBuf, viewport);
+    });
+    */
+
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
     {
-        CoreGraphics::InputAssemblyKey inputAssembly { CoreGraphics::PrimitiveTopology::TriangleList, false  };
-        if (state.pipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
-    };
-    Frame::AddSubgraph("ImGUI", { op });
+        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+        if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
+        state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+    });
+
+    FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+#ifdef NEBULA_NO_DYNUI_ASSERTS
+        ImguiContext::RecoverImGuiContextErrors();
+#endif
+        ImGui::Render();
+        ImguiDrawFunction(cmdBuf, viewport, true);
+    });
+#endif
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
@@ -599,8 +634,6 @@ ImguiContext::Discard()
     Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
     state.inputHandler = nullptr;
 
-    state.frameOpAllocator.Release();
-
     CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
     ImGui::DestroyContext();
 }
@@ -675,22 +708,8 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
-    ImGui::NewFrame();
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
-#ifdef IMGUI_HAS_DOCK
-    if (state.dockOverViewport)
-        ImGui::DockSpaceOverViewport();
-#endif
-
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImguiContext::Render(const Graphics::FrameContext& ctx)
-{
-    ImGui::Render();
+    ImGui::NewFrame();
 }
 
 } // namespace Dynui

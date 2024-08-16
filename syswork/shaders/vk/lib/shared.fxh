@@ -480,9 +480,15 @@ group(PASS_GROUP) inputAttachment InputAttachment14;
 group(PASS_GROUP) inputAttachment InputAttachment15;
 group(PASS_GROUP) inputAttachment DepthAttachment;
 
+struct RenderTargetParameters
+{
+    vec4 Dimensions;    // render target dimensions are size (xy) inversed size (zw)
+    vec2 Scale;         // dimensions / viewport
+};
+
 group(PASS_GROUP) constant PassBlock
 {
-    vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
+    RenderTargetParameters RenderTargetParameter[16]; // render target dimensions are size (xy) inversed size (zw)
 };
 
 #endif // SHARED_H

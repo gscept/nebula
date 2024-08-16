@@ -63,7 +63,6 @@ public:
     /// read access to key
     const VALUETYPE& Value() const;
 
-protected:
     KEYTYPE keyData = KEYTYPE();
     VALUETYPE valueData = VALUETYPE();
 };

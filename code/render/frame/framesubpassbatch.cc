@@ -58,11 +58,11 @@ FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
+FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[(uint)batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
@@ -153,11 +153,11 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
 /**
 */
 void
-FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
+FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[batch];
+    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[(uint)batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)

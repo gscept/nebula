@@ -22,6 +22,14 @@
 #include "bindlessregistry.h"
 #include "globalconstants.h"
 
+#include "frame/default.h"
+#include "frame/shadows.h"
+#if WITH_NEBULA_EDITOR
+#include "frame/editorframe.h"
+#endif
+
+#include "coregraphics/swapchain.h"
+
 namespace Graphics
 {
 
@@ -33,6 +41,7 @@ __ImplementSingleton(Graphics::GraphicsServer);
 */
 GraphicsServer::GraphicsServer() :
     isOpen(false)
+    , resizeCall(nullptr)
 {
     __ConstructSingleton;
 }
@@ -84,7 +93,7 @@ GraphicsServer::Open()
             8_MB,                   // Device <-> host mirrored memory block size
         },
         .maxOcclusionQueries = 0x1000,
-        .maxTimestampQueries = 0x100,
+        .maxTimestampQueries = 0x400,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
         .enableValidation = true,
@@ -195,9 +204,6 @@ GraphicsServer::Open()
         CoreGraphics::RectangleMesh = RenderUtil::GeometryHelpers::CreateRectangle();
         CoreGraphics::DiskMesh = RenderUtil::GeometryHelpers::CreateDisk(16);
 
-        this->frameServer = Frame::FrameServer::Create();
-        this->frameServer->Open();
-
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
         
@@ -207,8 +213,6 @@ GraphicsServer::Open()
         // start timer
         if (!this->timer->IsTimeRunning())
             this->timer->StartTime();
-
-
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();
@@ -237,9 +241,6 @@ GraphicsServer::Close()
 
     this->shapeRenderer->Close();
     this->shapeRenderer = nullptr;
-
-    this->frameServer->Close();
-    this->frameServer = nullptr;
 
     this->shaderServer->Close();
     this->shaderServer = nullptr;
@@ -283,6 +284,13 @@ void
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
     CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
+
+    CoreGraphics::WaitAndClearPendingCommands();
+
+    // First, call the resize callback to trigger an update of the frame scripts
+    if (this->resizeCall != nullptr)
+        this->resizeCall(mode.GetWidth(), mode.GetHeight());
+
     for (IndexT i = 0; i < this->contexts.Size(); ++i)
     {
         if (this->contexts[i]->OnWindowResized != nullptr)
@@ -347,19 +355,14 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 /**
 */
 Ptr<Graphics::View>
-GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript, const CoreGraphics::WindowId window)
+GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Math::rectangle<int>&, IndexT, IndexT), const Math::rectangle<int>& viewport)
 {
+    n_assert(viewport.width() > 0 && viewport.height() > 0);
     Ptr<View> view = View::Create();
-
-    // Make sure the window we pass is made current for the frame script loading to get the correct window
-    CoreGraphics::WindowId prevWindow = CoreGraphics::CurrentWindow;
-    CoreGraphics::WindowMakeCurrent(window);
-    Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript, window);
-    frameScript->window = window;
-    CoreGraphics::WindowMakeCurrent(prevWindow);
-
-    view->script = frameScript;
+    view->SetFrameScript(render);
+    view->SetViewport(viewport);
     this->views.Append(view);
+    this->viewsByName.Add(name, view);
 
     // invoke all interested contexts
     IndexT i;
@@ -378,7 +381,7 @@ Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& name)
 {
     Ptr<View> view = View::Create();
-    view->script = nullptr;
+    view->func = nullptr;
     this->views.Append(view);
 
     // invoke all interested contexts
@@ -406,9 +409,7 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
         if (this->contexts[i]->OnDiscardView != nullptr)
             this->contexts[i]->OnDiscardView(view);
     }
-    view->script->Discard();
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -418,7 +419,6 @@ GraphicsServer::SetCurrentView(const Ptr<View>& view)
 {
     this->currentView = view;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -543,6 +543,11 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
+    for (auto& cb : this->preViewCallbacks)
+    {
+        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    }
+
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
@@ -555,6 +560,11 @@ GraphicsServer::Render()
         view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
         this->currentView = nullptr;
     }
+
+    for (auto& cb : this->postViewCallbacks)
+    {
+        cb(this->frameContext.frameIndex, this->frameContext.bufferIndex);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -564,6 +574,41 @@ void
 GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
+
+    n_assert_msg(this->swapInfo.syncFunc != nullptr, "Please provide a valid SwapInfo with 'SetSwapInfo'");
+
+    CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);
+    CoreGraphics::SwapchainSwap(swapchain);
+    CoreGraphics::QueueType queue = CoreGraphics::SwapchainGetQueueType(swapchain);
+
+    // Allocate command buffer to run swap
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::SwapchainAllocateCmds(swapchain);
+    CoreGraphics::CmdBufferBeginInfo beginInfo;
+    beginInfo.submitDuringPass = false;
+    beginInfo.resubmittable = false;
+    beginInfo.submitOnce = true;
+    CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TURQOISE, "Swap");
+
+    this->swapInfo.syncFunc(cmdBuf);
+    CoreGraphics::SwapchainCopy(swapchain, cmdBuf, this->swapInfo.swapSource);
+
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::CmdFinishQueries(cmdBuf);
+    CoreGraphics::CmdEndRecord(cmdBuf);
+
+    auto submission = CoreGraphics::SubmitCommandBuffer(
+        cmdBuf
+        , queue
+#if NEBULA_GRAPHICS_DEBUG
+        , "Swap"
+#endif
+
+    );
+    CoreGraphics::WaitForSubmission(this->swapInfo.submission, queue);
+    CoreGraphics::DestroyCmdBuffer(cmdBuf);
+
+    // Finish submuissions
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);
 }
 

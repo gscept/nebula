@@ -178,6 +178,20 @@ Camera::SetProjectionMode(ProjectionMode mode)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+Camera::SetViewDimensions(SizeT screenWidth, SizeT screenHeight)
+{
+    if (this->screenWidth != screenWidth || this->screenHeight != screenHeight)
+    {
+        this->screenWidth = screenWidth;
+        this->screenHeight = screenHeight;
+        this->SetProjectionMode(this->projectionMode);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Camera::SetTransform(Math::mat4 const& val)
 {

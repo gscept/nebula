@@ -30,6 +30,9 @@ enum SemaphoreType
 
 struct SemaphoreCreateInfo
 {
+#if NEBULA_GRAPHICS_DEBUG
+    const char* name = nullptr;
+#endif
     SemaphoreType type;
 };
 

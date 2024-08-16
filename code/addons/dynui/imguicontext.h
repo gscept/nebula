@@ -25,12 +25,6 @@ struct ImFont;
 namespace Dynui
 {
 
-struct ImguiRendererParams
-{
-    IndexT projVar;
-    IndexT fontVar;
-};
-
 struct ImguiTextureId
 {
     CoreGraphics::TextureId nebulaHandle;
@@ -62,15 +56,16 @@ public:
     static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
     /// called before frame
     static void NewFrame(const Graphics::FrameContext& ctx);
-    /// called before frame
-    static void Render(const Graphics::FrameContext& ctx);
 
     struct ImguiState
     {
-        ImguiRendererParams params;
         CoreGraphics::ShaderId uiShader;
         CoreGraphics::ShaderProgramId prog;
         CoreGraphics::PipelineId pipeline;
+
+#if WITH_NEBULA_EDITOR
+        CoreGraphics::PipelineId editorPipeline;
+#endif
 
         ImguiTextureId fontTexture;
         //CoreGraphics::TextureId fontTexture;
@@ -79,7 +74,6 @@ public:
         Util::FixedArray<CoreGraphics::BufferId> ibos;
         CoreGraphics::VertexLayoutId vlo;
 
-        IndexT textureConstant;
         IndexT textProjectionConstant;
         IndexT packedTextureInfo;
         CoreGraphics::ResourceTableId resourceTable;
@@ -93,15 +87,12 @@ public:
         ImFont* boldFont;
         ImFont* itFont;
 
-        Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
-
         Ptr<ImguiInputHandler> inputHandler;
         bool dockOverViewport;
     };
     static ImguiState state;
 
 private:
-    static void ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf);
     static void RecoverImGuiContextErrors();
 };
 

@@ -20,6 +20,8 @@
 
 #include "raytracing/shaders/light_grid_cs.h"
 
+#include "frame/default.h"
+
 namespace Raytracing
 {
 
@@ -38,12 +40,10 @@ struct
     Memory::RangeAllocator blasInstanceAllocator;
     bool topLevelNeedsReconstruction, topLevelNeedsBuild, topLevelNeedsUpdate;
 
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 1> frameOpAllocator;
     Util::HashTable<CoreGraphics::MeshId, Util::Tuple<uint, CoreGraphics::BlasId>> blasLookup;
     CoreGraphics::BufferWithStaging blasInstanceBuffer;
 
     CoreGraphics::ResourceTableSet raytracingTestTables;
-    CoreGraphics::TextureId raytracingTestOutput;
 
     CoreGraphics::BufferId geometryBindingBuffer;
     CoreGraphics::BufferWithStaging objectBindingBuffer;
@@ -193,60 +193,33 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     objectBindingBufferCreateInfo.name = "Raytracing Object Binding Buffer";
     objectBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::Object) * settings.maxNumAllowedInstances;
     objectBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    objectBindingBufferCreateInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
     state.objectBindingBuffer = CoreGraphics::BufferWithStaging(objectBindingBufferCreateInfo);
 
+    FrameScript_default::Bind_RayTracingObjectBindings(state.objectBindingBuffer.DeviceBuffer());
+    FrameScript_default::Bind_GridLightList(state.lightGrid);
+    FrameScript_default::Bind_GridLightIndexLists(state.lightGridIndexLists);
 
-    Frame::FrameCode* lightGridGen = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    lightGridGen->SetName("Raytracing Light Grid Update");
-    lightGridGen->domain = CoreGraphics::BarrierDomain::Global;
-    lightGridGen->queue = CoreGraphics::QueueType::ComputeQueueType;
-    lightGridGen->bufferDeps.Add(state.lightGrid,
-                                  {
-                                      "Light Grid"
-                                      , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                      , CoreGraphics::BufferSubresourceInfo()
-                                  });
-    lightGridGen->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_RaytracingLightGridGen_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridGenProgram);
         CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::GridLightList, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* lightGridCull = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    lightGridCull->SetName("Raytracing Light Grid Cull");
-    lightGridCull->domain = CoreGraphics::BarrierDomain::Global;
-    lightGridCull->queue = CoreGraphics::QueueType::ComputeQueueType;
-    lightGridCull->bufferDeps.Add(state.lightGrid,
-                                  {
-                                      "Light Grid"
-                                      , CoreGraphics::PipelineStage::ComputeShaderRead
-                                      , CoreGraphics::BufferSubresourceInfo()
-                                  });
-    lightGridCull->bufferDeps.Add(state.lightGridIndexLists,
-                                  {
-                                      "Light Grid Index Lists"
-                                      , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                      , CoreGraphics::BufferSubresourceInfo()
-                                  });
-    lightGridCull->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_RaytracingLightGridCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridCullProgram);
         CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
         CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
-    };
-    Frame::AddSubgraph("Raytracing Light Update", { lightGridGen, lightGridCull });
+    }, {
+        { FrameScript_default::BufferIndex::GridLightList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* blasUpdate = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    blasUpdate->SetName("Bottom Level Acceleration Structure Update");
-    blasUpdate->domain = CoreGraphics::BarrierDomain::Global;
-    blasUpdate->bufferDeps.Add(state.objectBindingBuffer.DeviceBuffer(),
-                        {
-                            "Object Raytracing Bindings"
-                            , CoreGraphics::PipelineStage::TransferWrite
-                            , CoreGraphics::BufferSubresourceInfo()
-                        });
-    blasUpdate->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_RaytracingStructuresUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!state.objects.IsEmpty())
             state.objectBindingBuffer.Flush(cmdBuf, state.objects.ByteSize());
@@ -266,7 +239,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                     nullptr,
                     nullptr,
                     {
-                        CoreGraphics::AccelerationStructureBarrierInfo {.blas = state.blasesToRebuild[i], .type = CoreGraphics::AccelerationStructureBarrierInfo::BlasBarrier }
+                        CoreGraphics::AccelerationStructureBarrierInfo{ .blas = state.blasesToRebuild[i], .type = CoreGraphics::AccelerationStructureBarrierInfo::BlasBarrier }
                     }
                 );
                 CoreGraphics::CmdBuildBlas(cmdBuf, state.blasesToRebuild[i]);
@@ -278,7 +251,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                     nullptr,
                     nullptr,
                     {
-                        CoreGraphics::AccelerationStructureBarrierInfo {.blas = state.blasesToRebuild[i], .type = CoreGraphics::AccelerationStructureBarrierInfo::BlasBarrier}
+                        CoreGraphics::AccelerationStructureBarrierInfo{ .blas = state.blasesToRebuild[i], .type = CoreGraphics::AccelerationStructureBarrierInfo::BlasBarrier }
                     }
                 );
             }
@@ -305,7 +278,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                 nullptr,
                 nullptr,
                 {
-                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
                 }
             );
 
@@ -322,7 +295,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                 nullptr,
                 nullptr,
                 {
-                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
                 }
             );
         }
@@ -336,7 +309,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                 nullptr,
                 nullptr,
                 {
-                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
                 }
             );
 
@@ -353,30 +326,16 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
                 nullptr,
                 nullptr,
                 {
-                    CoreGraphics::AccelerationStructureBarrierInfo {.tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
+                    CoreGraphics::AccelerationStructureBarrierInfo{ .tlas = state.toplevelAccelerationStructure, .type = CoreGraphics::AccelerationStructureBarrierInfo::TlasBarrier }
                 }
             );
         }
         state.blasLock.Leave();
-    };
-    Frame::AddSubgraph("Raytracing Structures Update", { blasUpdate });
+    }, {
+        { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::TransferWrite }
+    });
 
-    Frame::FrameCode* testRays = state.frameOpAllocator.Alloc<Frame::FrameCode>();
-    testRays->SetName("Ray Tracing Test Shader");
-    testRays->domain = CoreGraphics::BarrierDomain::Global;
-    testRays->bufferDeps.Add(state.lightGridIndexLists,
-                              {
-                                "Light Grid Index Lists"
-                                , CoreGraphics::PipelineStage::RayTracingShaderRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                              });
-    testRays->bufferDeps.Add(state.objectBindingBuffer.DeviceBuffer(),
-                            {
-                                "Object Raytracing Bindings"
-                                , CoreGraphics::PipelineStage::RayTracingShaderRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    testRays->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_RaytracingTest_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
         {
@@ -385,10 +344,11 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
         }
-    };
-    Frame::AddSubgraph("Raytracing Test", { testRays });
+    }, {
+        { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
+        , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
+    } );
 
-    state.raytracingTestOutput = settings.script->GetTexture("RayTracingTestOutput");
 
     state.maxAllowedInstances = settings.maxNumAllowedInstances;
 
@@ -630,7 +590,7 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
         );
         CoreGraphics::ResourceTableSetRWTexture(
             state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableTexture(state.raytracingTestOutput, Raytracetest::Table_Batch::RaytracingOutput_SLOT)
+            CoreGraphics::ResourceTableTexture(FrameScript_default::Texture_RayTracingTestOutput(), Raytracetest::Table_Batch::RaytracingOutput_SLOT)
         );
 
         CoreGraphics::ResourceTableSetRWBuffer(

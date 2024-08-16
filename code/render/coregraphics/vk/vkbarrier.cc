@@ -69,9 +69,15 @@ CreateBarrier(const BarrierCreateInfo& info)
         bool isDepthStencil = AnyBits(subres.bits, CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseMipLevel = subres.mip;
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.levelCount = subres.mipCount;
+        if (subres.mipCount == NEBULA_ALL_MIPS)
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        else
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.levelCount = subres.mipCount;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseArrayLayer = subres.layer;
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.layerCount = subres.layerCount;
+        if (subres.layerCount == NEBULA_ALL_LAYERS)
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+        else
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.layerCount = subres.layerCount;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].image = TextureGetVkImage(info.textures[i].tex);
         if (info.fromQueue == QueueType::InvalidQueueType)
             vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -103,7 +109,7 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = 0;
         vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = VK_WHOLE_SIZE; 
 
-        if (info.buffers[i].subres.size == -1)
+        if (info.buffers[i].subres.size == NEBULA_WHOLE_BUFFER_SIZE)
         {
             vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = 0;
             vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = VK_WHOLE_SIZE;

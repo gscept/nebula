@@ -1,8 +1,6 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @struct CoreGraphics::GraphicsDeviceCreateInfo
-
     The Graphics Device is the engine which drives the graphics abstraction layer
 
     @copyright
@@ -185,11 +183,15 @@ uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);
 bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
 
 /// Submit a command buffer, but doesn't necessarily execute it immediately
-SubmissionWaitEvent SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type);
+SubmissionWaitEvent SubmitCommandBuffer(
+    const CoreGraphics::CmdBufferId cmds
+    , CoreGraphics::QueueType type
+#if NEBULA_GRAPHICS_DEBUG
+    , const char* name = nullptr
+#endif
+);
 /// Wait for a submission
-void WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type, CoreGraphics::QueueType waitType);
-/// Have a queue wait for another queue
-void WaitForLastSubmission(CoreGraphics::QueueType type, CoreGraphics::QueueType waitType);
+void WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type);
 
 /// Unlock constants
 void UnlockConstantUpdates();

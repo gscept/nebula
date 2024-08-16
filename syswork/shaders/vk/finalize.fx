@@ -112,7 +112,7 @@ DepthOfField(float depth, vec2 uv)
     // perform a gaussian blur around uv
     vec3 sampleColor = vec3(0.0f);
     float dofWeight = 1.0f / MAXDOFSAMPLES;
-    vec2 pixelSize = RenderTargetDimensions[0].zw;
+    vec2 pixelSize = RenderTargetParameter[0].Dimensions.zw;
     vec2 uvMul = focus * filterRadius * pixelSize.xy;
     int i;
     for (i = 0; i < MAXDOFSAMPLES; i++)
@@ -132,17 +132,17 @@ psMain(in vec2 UV,
     [color0] out vec4 color) 
 {
     // get an averaged depth value        
-    float depth = sample2DLod(DepthTexture, DefaultSampler, UV, 0).r;
+    float depth = sample2DLod(DepthTexture, DefaultSampler, UV * RenderTargetParameter[0].Scale, 0).r;
     vec4 viewPos = PixelToView(UV, depth, InvProjection);
-    vec3 normal = sample2DLod(NormalBuffer, DefaultSampler, UV, 0).xyz;
+    vec3 normal = sample2DLod(NormalBuffer, DefaultSampler, UV * RenderTargetParameter[0].Scale, 0).xyz;
 
     vec4 worldPos = ViewToWorld(viewPos, InvView);
     vec3 viewVec = EyePos.xyz - worldPos.xyz;
     vec3 viewNormal = (View * vec4(normal, 0)).xyz;
     
-    vec4 c = vec4(sample2DLod(ColorTexture, DefaultSampler, UV, 0).rgb, 1.0f);
+    vec4 c = vec4(sample2DLod(ColorTexture, DefaultSampler, UV * RenderTargetParameter[0].Scale, 0).rgb, 1.0f);
     
-    vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
+    vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV * RenderTargetParameter[0].Scale, 0);
     //vec4 godray = subpassLoad(InputAttachment1);
     c.rgb = lerp(c.rgb, bloom.rgb, bloom.a);
 

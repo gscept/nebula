@@ -33,10 +33,12 @@ public:
     /// render through view
     void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 
-    /// get frame script
-    const Ptr<Frame::FrameScript> GetFrameScript() const;
-    /// Build frame script
-    void BuildFrameScript();
+    /// Set run function
+    void SetFrameScript(void(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex));
+    /// Set viewport
+    void SetViewport(const Math::rectangle<int>& rect);
+    /// Get viewport
+    const Math::rectangle<int>& GetViewport();
 
     /// set camera
     void SetCamera(const GraphicsEntityId& camera);
@@ -59,7 +61,8 @@ public:
 private:    
     friend class GraphicsServer;
 
-    Ptr<Frame::FrameScript> script;
+    Math::rectangle<int> viewport;
+    void (*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex);
     GraphicsEntityId camera;
     Ptr<Stage> stage;
     bool enabled;
@@ -131,10 +134,28 @@ View::Disable()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Ptr<Frame::FrameScript> 
-View::GetFrameScript() const
+inline void
+View::SetFrameScript(void(*func)(const Math::rectangle<int>& viewport, IndexT frameIndex, IndexT bufferIndex))
 {
-    return this->script;
+    this->func = func;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+View::SetViewport(const Math::rectangle<int>& rect)
+{
+    this->viewport = rect;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const 
+Math::rectangle<int>& View::GetViewport()
+{
+    return this->viewport;
 }
 
 } // namespace Graphics

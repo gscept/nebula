@@ -23,6 +23,9 @@
 #include "io/filedialog.h"
 #include "window.h"
 
+#include "frame/default.h"
+#include "frame/editorframe.h"
+
 namespace Editor
 {
 
@@ -84,11 +87,24 @@ OnActivate()
             Editor::state.editorWorld->ExportLevel(path.AsCharPtr());
     }, "Export", "Ctrl+Shift+E", "File");
 
-    Dynui::ImguiContext::state.dockOverViewport = true;
-
-    GraphicsFeature::GraphicsFeatureUnit::Instance()->AddRenderUICallback([]()
+    Graphics::GraphicsServer::Instance()->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
     {
+        ImGui::DockSpaceOverViewport();
         windowServer->RunAll();
+        FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
+        FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));
+        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::CurrentWindow);
+        Math::rectangle<int> viewport(0, 0, mode.GetWidth(), mode.GetHeight());
+        FrameScript_editorframe::Run(viewport, frameIndex, bufferIndex);
+
+        Graphics::GraphicsServer::SwapInfo swapInfo;
+        swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
+        {
+            FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+        };
+        swapInfo.submission = FrameScript_editorframe::Submission_EditorUI;
+        swapInfo.swapSource = FrameScript_editorframe::Export_EditorBuffer.tex;
+        Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo);
     });
 }
 

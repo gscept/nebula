@@ -51,6 +51,7 @@ PixelFormat::FromString(const Util::String& str)
     else if (str == "R32G32B32F") return R32G32B32F;
     else if (str == "R32G32B32") return R32G32B32;
     else if (str == "R11G11B10F") return R11G11B10F;
+    else if (str == "R9G9B9E5F") return R9G9B9E5F;
     else if (str == "R10G10B10X2") return R10G10B10X2;
     else if (str == "R10G10B10A2") return R10G10B10A2;
     else if (str == "D24S8") return D24S8;
@@ -79,6 +80,7 @@ PixelFormat::ToString(PixelFormat::Code code)
         case R8G8B8A8:      return "R8G8B8A8";
         case SRGBA8:        return "SRGBA8";
         case R11G11B10F:    return "R11G11B10F";
+        case R9G9B9E5F:      return "R9G9B9E5F";
         case R5G6B5:        return "R5G6B5";
         case R5G5B5A1:      return "R5G5B5A1";
         case R4G4B4A4:      return "R4G4B4A4";
@@ -114,6 +116,7 @@ PixelFormat::ToString(PixelFormat::Code code)
         case D16S8:         return "D16S8";
         case D24X8:         return "D24X8";
         case D24S8:         return "D24S8";
+        case D32:           return "D32";
         case D32S8:         return "D32S8";
 
         default:
@@ -151,8 +154,10 @@ PixelFormat::ToSize(Code code)
     case R10G10B10X2:
     case R10G10B10A2:
     case R11G11B10F:
+    case R9G9B9E5F:
     case D24X8:
     case D24S8:
+    case D32:
         return 4;
     case D32S8:
         return 5;
@@ -202,6 +207,7 @@ PixelFormat::ToChannels(Code code)
     case R8G8B8A8:      return 4;
     case SRGBA8:        return 4;
     case R11G11B10F:    return 3;
+    case R9G9B9E5F:     return 3;
     case R8G8B8:        return 3;
     case R5G6B5:        return 3;
     case R5G5B5A1:      return 4;
@@ -305,6 +311,7 @@ PixelFormat::ToTexelSize(Code code)
         case PixelFormat::R16G16B16A16F:    return 8;
         case PixelFormat::R16G16B16A16:     return 8;
         case PixelFormat::R11G11B10F:       return 4;
+        case PixelFormat::R9G9B9E5F:        return 4;
         case PixelFormat::R32F:             return 4;
         case PixelFormat::R32:              return 4;
         case PixelFormat::R32G32F:          return 8;
@@ -359,10 +366,14 @@ PixelFormat::IsDepthFormat(Code code)
 {
     switch (code)
     {
-    case PixelFormat::D24X8:
-    case PixelFormat::D24S8:
-    case PixelFormat::D32S8:            return true;
-    default: return false;
+        case PixelFormat::D32:
+        case PixelFormat::D16S8:
+        case PixelFormat::D24X8:
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
     }
     return false;
 }
@@ -376,9 +387,34 @@ PixelFormat::IsStencilFormat(Code code)
 {
     switch (code)
     {
+        case PixelFormat::S8:
+        case PixelFormat::D16S8:
         case PixelFormat::D24S8:
-        case PixelFormat::D32S8:            return true;
-        default: return false;
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PixelFormat::IsDepthStencilFormat(Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::S8:
+        case PixelFormat::D32:
+        case PixelFormat::D16S8:
+        case PixelFormat::D24X8:
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:
+            return true;
+        default:
+            return false;
     }
     return false;
 }

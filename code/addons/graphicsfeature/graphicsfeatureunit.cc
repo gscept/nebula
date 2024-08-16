@@ -43,6 +43,12 @@
 
 #include "terrain/terraincontext.h"
 
+#include "frame/default.h"
+#include "frame/shadows.h"
+#if WITH_NEBULA_EDITOR
+#include "frame/editorframe.h"
+#endif
+
 using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
@@ -130,12 +136,17 @@ GraphicsFeatureUnit::OnActivate()
     };
     this->wnd = CreateWindow(wndInfo);
 
-    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript, this->wnd);
+    CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
+
+    FrameScript_shadows::Initialize(1024, 1024);
+    FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
+#endif
+    this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
     this->globalLight = Graphics::CreateEntity();
-
-    Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
 
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
@@ -150,7 +161,6 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingSetupSettings raytracingSettings =
     {
         .maxNumAllowedInstances = 0xFFFF,
-        .script = frameScript
     };
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
@@ -170,6 +180,7 @@ GraphicsFeatureUnit::OnActivate()
         Terrain::TerrainContext::Create(settings);
         Terrain::TerrainContext::SetSun(this->globalLight);
 
+        /*
         this->terrain.entity = Graphics::CreateEntity();
         Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
         Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision, terrainSettings.config->raytracing);
@@ -225,27 +236,42 @@ GraphicsFeatureUnit::OnActivate()
                 Math::vec2 {terrainSettings.config->world_size_width, terrainSettings.config->world_size_height}};
             Vegetation::VegetationContext::Create(vegSettings);
         }
-    }    
+        */
+    }
   
-    Lighting::LightContext::Create(frameScript);
+    Lighting::LightContext::Create();
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
-    Fog::VolumetricFogContext::Create(frameScript);
+    Fog::VolumetricFogContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
     PostEffects::DownsamplingContext::Create();
 
-    PostEffects::BloomContext::Setup(frameScript);
-    PostEffects::SSAOContext::Setup(frameScript);
-    PostEffects::HistogramContext::Setup(frameScript);
+    PostEffects::BloomContext::Setup();
+    PostEffects::SSAOContext::Setup();
+    PostEffects::HistogramContext::Setup();
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
-    PostEffects::DownsamplingContext::Setup(frameScript);
+    PostEffects::DownsamplingContext::Setup();
 
-    Graphics::SetupBufferConstants(frameScript);
+    Graphics::SetupBufferConstants();
+    this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex) {
+        static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+        FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+        FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+        FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
+    });
+    this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
+        FrameScript_default::Initialize(windowWidth, windowHeight);
+        FrameScript_default::SetupPipelines();
+#if WITH_NEBULA_EDITOR
+        FrameScript_editorframe::Initialize(windowWidth, windowHeight);
+        FrameScript_editorframe::SetupPipelines();
+#endif
+    });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 60_rad, 0_rad, true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 70_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -254,7 +280,6 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewIndependentCall> preLogicCalls =
     {
-        Im3d::Im3dContext::NewFrame,
         Dynui::ImguiContext::NewFrame,
         CameraContext::UpdateCameras,
         ModelContext::UpdateTransforms,
@@ -287,7 +312,6 @@ GraphicsFeatureUnit::OnActivate()
         Raytracing::RaytracingContext::UpdateTransforms,
 
         // At the very latest point, wait for work to finish
-        Dynui::ImguiContext::Render,
         ModelContext::WaitForWork,
         Raytracing::RaytracingContext::WaitForJobs,
         Characters::CharacterContext::WaitForCharacterJobs,
@@ -320,9 +344,12 @@ GraphicsFeatureUnit::OnActivate()
     this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
     this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
 
+    FrameScript_default::SetupPipelines();
+    FrameScript_shadows::SetupPipelines();
+#if WITH_NEBULA_EDITOR
+    FrameScript_editorframe::SetupPipelines();
+#endif
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
-
-    this->defaultView->BuildFrameScript();
 }
 
 //------------------------------------------------------------------------------
@@ -363,11 +390,6 @@ GraphicsFeatureUnit::OnBeginFrame()
 
     this->gfxServer->RunPreLogic();
 
-    for (auto const& uiFunc : this->uiCallbacks)
-    {
-        uiFunc();
-    }
-
     switch (Core::CVarReadInt(this->r_debug))
     {
     case 2:
@@ -377,10 +399,6 @@ GraphicsFeatureUnit::OnBeginFrame()
     default:
         break;
     }
-
-    if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
-        Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
-
 }
 
 //------------------------------------------------------------------------------
@@ -432,15 +450,6 @@ void
 GraphicsFeatureUnit::OnRenderDebug()
 {
     FeatureUnit::OnRenderDebug();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsFeatureUnit::AddRenderUICallback(UIRenderFunc func)
-{
-    this->uiCallbacks.Append(func);
 }
 
 } // namespace GraphicsFeature

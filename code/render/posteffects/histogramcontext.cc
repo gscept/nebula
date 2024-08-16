@@ -15,6 +15,8 @@
 #include "system_shaders/shared.h"
 #include "core/cvar.h"
 
+#include "frame/default.h"
+
 namespace PostEffects
 {
 
@@ -29,13 +31,7 @@ struct
     CoreGraphics::ResourceTableId histogramResourceTable;
     CoreGraphics::BufferSet histogramReadbackBuffers;
 
-    Ptr<Frame::FrameScript> frameScript;
-    CoreGraphics::TextureDimensions sourceTextureDimensions;
-    CoreGraphics::TextureId sourceTexture;
-    IndexT sourceTextureBinding;
     Util::FixedArray<CoreGraphics::TextureViewId> downsampledColorBufferViews;
-
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 4> frameOpAllocator;
 
     Math::float2 offset, size;
     int mip;
@@ -130,7 +126,6 @@ HistogramContext::Create()
 void
 HistogramContext::Discard()
 {
-    histogramState.frameOpAllocator.Release();
 }
 
 //------------------------------------------------------------------------------
@@ -139,8 +134,10 @@ HistogramContext::Discard()
 void
 HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mip)
 {
-    SizeT mippedWidth = histogramState.sourceTextureDimensions.width >> mip;
-    SizeT mippedHeight = histogramState.sourceTextureDimensions.height >> mip;
+    CoreGraphics::TextureId source = FrameScript_default::Texture_LightBuffer();
+    auto dims = CoreGraphics::TextureGetDimensions(source);
+    SizeT mippedWidth = dims.width >> mip;
+    SizeT mippedHeight = dims.height >> mip;
     histogramState.offset = { mippedWidth * offset.x, mippedHeight * offset.y };
     histogramState.size = { mippedWidth * size.x, mippedHeight * size.y };
     histogramState.mip = mip;
@@ -152,17 +149,14 @@ HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mi
 /**
 */
 void
-HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
+HistogramContext::Setup()
 {
-    histogramState.frameScript = script;
-    histogramState.sourceTexture = histogramState.frameScript->GetTexture("LightBuffer");
-    auto dims = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
-    histogramState.sourceTextureBinding = HistogramCs::Table_Batch::ColorSource_SLOT;
-    histogramState.sourceTextureDimensions = dims;
+    CoreGraphics::TextureId source = FrameScript_default::Texture_LightBuffer();
+    auto dims = CoreGraphics::TextureGetDimensions(source);
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
-            histogramState.sourceTexture,
-            histogramState.sourceTextureBinding,
+            source,
+            HistogramCs::Table_Batch::ColorSource_SLOT,
             0,
             CoreGraphics::InvalidSamplerId,
             false,
@@ -178,45 +172,32 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     histogramState.size.x = 1.0f;
     histogramState.size.y = 1.0f;
 
-    Frame::FrameCode* bucket = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    bucket->SetName("Histogram Bucket");
-    bucket->bufferDeps.Add(histogramState.histogramCounters,
-                            {
-                                "Histogram Downsample"
-                                , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    bucket->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::Bind_HistogramCounters(histogramState.histogramCounters);
+    FrameScript_default::RegisterSubgraph_HistogramBin_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, histogramState.histogramCategorizeProgram, false);
         CoreGraphics::CmdSetResourceTable(cmdBuf, histogramState.histogramResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         int groupsX = (histogramState.size.x - histogramState.offset.x) / 256;
         int groupsY = (histogramState.size.y - histogramState.offset.y);
         CoreGraphics::CmdDispatch(cmdBuf, groupsX, groupsY, 1);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::HistogramCounters, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* copy = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    copy->SetName("Histogram Copy To Readback");
-    copy->bufferDeps.Add(histogramState.histogramCounters,
-                            {
-                                "Histogram Downsample"
-                                , CoreGraphics::PipelineStage::TransferRead
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    copy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HistogramCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::BarrierPush(
-        cmdBuf,
-        CoreGraphics::PipelineStage::HostRead,
-        CoreGraphics::PipelineStage::TransferWrite,
-        CoreGraphics::BarrierDomain::Global,
-        {
-            CoreGraphics::BufferBarrierInfo
+            cmdBuf,
+            CoreGraphics::PipelineStage::HostRead,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::BarrierDomain::Global,
             {
+                CoreGraphics::BufferBarrierInfo
+                {
                 histogramState.histogramReadbackBuffers.buffers[bufferIndex],
                 CoreGraphics::BufferSubresourceInfo()
-            },
-        });
+                },
+            });
 
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
@@ -227,25 +208,18 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
             histogramState.histogramReadbackBuffers.buffers[bufferIndex], { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
 
         CoreGraphics::BarrierPop(cmdBuf);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::HistogramCounters, CoreGraphics::PipelineStage::TransferRead }
+    });
 
-    Frame::FrameCode* clear = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    clear->SetName("Histogram Clear");
-    clear->bufferDeps.Add(histogramState.histogramCounters,
-                            {
-                                "Histogram Clear"
-                                , CoreGraphics::PipelineStage::TransferWrite
-                                , CoreGraphics::BufferSubresourceInfo()
-                            });
-    clear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_HistogramClear_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         // Clear histogram counters
         uint initDatas[255] = { 0 };
         CoreGraphics::BufferUpload(cmdBuf, histogramState.histogramCounters, initDatas, 255, 0);
-    };
-
-    // Add subgraph
-    Frame::AddSubgraph("Histogram", { bucket, copy, clear });
+    }, {
+        { FrameScript_default::BufferIndex::HistogramCounters, CoreGraphics::PipelineStage::TransferWrite }
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -314,12 +288,11 @@ HistogramContext::UpdateConstants()
 void
 HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
-    histogramState.sourceTextureDimensions = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
-
+    CoreGraphics::TextureId source = FrameScript_default::Texture_LightBuffer();
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
-        histogramState.sourceTexture,
-        histogramState.sourceTextureBinding,
+        source,
+        HistogramCs::Table_Batch::ColorSource_SLOT,
         0,
         CoreGraphics::InvalidSamplerId,
         false,

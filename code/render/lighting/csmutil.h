@@ -55,9 +55,9 @@ public:
     /// gets the shadow view transform (valid after Compute)
     const Math::mat4& GetShadowView() const;
     /// returns raw pointer to array of cascade transforms
-    const Util::FixedArray<Math::mat4> GetCascadeProjectionTransforms() const;
+    const Util::FixedArray<Math::mat4>& GetCascadeProjectionTransforms() const;
     /// returns raw pointer to array of cascade distances
-    const Util::FixedArray<float> GetCascadeDistances() const;
+    const Util::FixedArray<float>& GetCascadeDistances() const;
 
     /// gets cascade debug camera (only valid after Compute, and if the debug flag is set)
     const Math::mat4& GetCascadeCamera(IndexT index)  const;
@@ -156,7 +156,7 @@ CSMUtil::GetShadowView() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::FixedArray<Math::mat4>
+inline const Util::FixedArray<Math::mat4>&
 CSMUtil::GetCascadeProjectionTransforms() const
 {
     return this->cascadeProjectionTransform;
@@ -165,7 +165,7 @@ CSMUtil::GetCascadeProjectionTransforms() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::FixedArray<float>
+inline const Util::FixedArray<float>&
 CSMUtil::GetCascadeDistances() const
 {
     return this->intervalDistances;

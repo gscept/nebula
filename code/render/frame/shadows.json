@@ -1,0 +1,105 @@
+{
+    "Nebula": {
+        "version": 3,
+        "LocalTextures": [
+            {
+                "name": "LocalLightShadow",
+                "format": "D32",
+                "relativeSize": [ 0.5, 0.5 ],
+                "layers": 16,
+                "usage": "Render",
+                "type": "Texture2DArray"
+            },
+            {
+                "name": "SunShadowDepth",
+                "format": "D32",
+                "relativeSize":  [1.0, 1.0],
+                "layers": 4,
+                "usage": "Render",
+                "type": "Texture2DArray"
+            },
+
+        ],
+        "ExportTextures": [
+                "SunShadowDepth"
+        ],
+        "Submissions": [
+            {
+                "name": "Shadows",
+                "queue": "Graphics",
+                "_comment": "Render and blur shadow maps",
+                "ops": [
+
+                    {
+                        "pass": {
+                            "name": "Sun Shadows Pass",
+                            "attachments": [
+                                {
+                                    "name": "SunShadowDepth",
+                                    "clear_depth": 1,
+                                    "flags": "Store"
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "Sun Shadows",
+                                    "subpass_dependencies": [],
+                                    "depth": "SunShadowDepth",
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "Sun Shadows"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+
+                    },
+
+                    {
+                        "pass": {
+                            "name": "Local Shadows Pass",
+                            "attachments": [
+                                {
+                                    "name": "LocalLightShadow",
+                                    "clear_depth": 1,
+                                    "flags": "Store"
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "Spotlight Shadows",
+                                    "subpass_dependencies": [],
+                                    "depth": "LocalLightShadow",
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "Spotlight Shadows"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Spotlight Blur"
+
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Sun Blur"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -58,6 +58,7 @@ public:
         R32G32B32F,                 // 96 bit float, 32 bit rgb each
         R32G32B32,                  // 96 bit integer, 32 bit rgb each
         R11G11B10F,                 // 32 bit float, 11 bits red and green, 10 bit blue
+        R9G9B9E5F,
         SRGBA8,
         R10G10B10X2,
         R10G10B10A2,
@@ -66,6 +67,8 @@ public:
 
         D32S8,
         D16S8,
+        D32,
+        S8,
 
         B8G8R8,
         B8G8R8A8,
@@ -96,6 +99,8 @@ public:
     static bool IsDepthFormat(Code code);
     /// return true if depth format
     static bool IsStencilFormat(Code code);
+    /// Return true if depth/stencil format
+    static bool IsDepthStencilFormat(Code code);
 
     /// Return Image bits from format
     static CoreGraphics::ImageBits ToImageBits(Code code);

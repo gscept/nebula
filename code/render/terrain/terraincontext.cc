@@ -26,6 +26,8 @@
 #include "terrain/shaders/terrain.h"
 #include "terrain/shaders/terrain_mesh_generate.h"
 
+#include "frame/default.h"
+
 N_DECLARE_COUNTER(N_TERRAIN_TOTAL_AVAILABLE_DATA, Terrain Total Data Size);
 
 namespace Terrain
@@ -57,7 +59,7 @@ const uint PhysicalTextureTilePaddedSize = PhysicalTextureTileSize + PhysicalTex
 const uint PhysicalTextureSize = (PhysicalTextureTileSize) * PhysicalTextureNumTiles;
 const uint PhysicalTexturePaddedSize = (PhysicalTextureTilePaddedSize) * PhysicalTextureNumTiles;
 
-const uint TerrainShadowMapSize = 1024;
+const uint TerrainShadowMapSize = 2048;
 
 
 __ImplementContext(TerrainContext, TerrainContext::terrainAllocator);
@@ -90,7 +92,6 @@ struct
     CoreGraphics::ResourceTableId terrainShadowResourceTable;
 
     CoreGraphics::TextureId terrainPosBuffer;
-    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 4> frameOpAllocator;
     
     float mipLoadDistance = 1500.0f;
     float mipRenderPadding = 150.0f;
@@ -321,7 +322,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     shadowMapInfo.name = "TerrainShadowMap"_atm;
     shadowMapInfo.width = TerrainShadowMapSize;
     shadowMapInfo.height = TerrainShadowMapSize;
-    shadowMapInfo.format = CoreGraphics::PixelFormat::R16F;
+    shadowMapInfo.format = CoreGraphics::PixelFormat::R16G16F;
     shadowMapInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     terrainState.terrainShadowMap = CoreGraphics::CreateTexture(shadowMapInfo);
 
@@ -391,7 +392,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     texInfo.width = IndirectionTextureSize;
     texInfo.height = IndirectionTextureSize;
     texInfo.format = CoreGraphics::PixelFormat::R32;
-    texInfo.usage = CoreGraphics::SampleTexture | CoreGraphics::TransferTextureDestination | CoreGraphics::TransferTextureSource;
+    texInfo.usage = CoreGraphics::SampleTexture | CoreGraphics::TransferDestinationTexture | CoreGraphics::TransferSourceTexture;
     texInfo.mips = IndirectionNumMips;
     texInfo.clear = true;
     texInfo.clearColorU4 = Math::uint4{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
@@ -498,7 +499,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     lowResAlbedoInfo.width = LowresFallbackSize;
     lowResAlbedoInfo.height = LowresFallbackSize;
     lowResAlbedoInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    lowResAlbedoInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination | CoreGraphics::TextureUsage::TransferTextureSource;
+    lowResAlbedoInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferDestinationTexture | CoreGraphics::TextureUsage::TransferSourceTexture;
     terrainVirtualTileState.lowresAlbedo = CoreGraphics::CreateTexture(lowResAlbedoInfo);
 
     CoreGraphics::TextureCreateInfo lowResNormalInfo;
@@ -507,7 +508,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     lowResNormalInfo.width = LowresFallbackSize;
     lowResNormalInfo.height = LowresFallbackSize;
     lowResNormalInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    lowResNormalInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination | CoreGraphics::TextureUsage::TransferTextureSource;
+    lowResNormalInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferDestinationTexture | CoreGraphics::TextureUsage::TransferSourceTexture;
     terrainVirtualTileState.lowresNormal = CoreGraphics::CreateTexture(lowResNormalInfo);
 
     CoreGraphics::TextureCreateInfo lowResMaterialInfo;
@@ -516,7 +517,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     lowResMaterialInfo.width = LowresFallbackSize;
     lowResMaterialInfo.height = LowresFallbackSize;
     lowResMaterialInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    lowResMaterialInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination | CoreGraphics::TextureUsage::TransferTextureSource;
+    lowResMaterialInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferDestinationTexture | CoreGraphics::TextureUsage::TransferSourceTexture;
     terrainVirtualTileState.lowresMaterial = CoreGraphics::CreateTexture(lowResMaterialInfo);
 
     // setup virtual sub textures buffer
@@ -654,10 +655,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
     if (CoreGraphics::RayTracingSupported)
     {
-        Frame::FrameCode* terrainMeshGenerate = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-        terrainMeshGenerate->domain = CoreGraphics::BarrierDomain::Global;
-        terrainMeshGenerate->queue = CoreGraphics::ComputeQueueType;
-        terrainMeshGenerate->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+        FrameScript_default::RegisterSubgraph_TerrainRaytracingMeshGenerate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
         {
             if (raytracingState.updateMesh)
             {
@@ -674,38 +672,16 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
                 raytracingState.setupBlasFrame = bufferIndex + CoreGraphics::GetNumBufferedFrames();
             }
-        };
+        });
+    }
 
-        Frame::AddSubgraph("Terrain Raytracing Mesh Generate", { terrainMeshGenerate });
-    } 
+    FrameScript_default::Bind_TerrainUpdateList(terrainVirtualTileState.pageUpdateListBuffer);
+    FrameScript_default::Bind_TerrainVirtualPageStatuses(terrainVirtualTileState.pageStatusBuffer);
+    FrameScript_default::Bind_TerrainSubTextures(terrainVirtualTileState.subTextureBuffer);
+    FrameScript_default::Bind_TerrainIndirection(Frame::TextureImport(terrainVirtualTileState.indirectionTexture));
+    FrameScript_default::Bind_TerrainIndirectionCopy(Frame::TextureImport(terrainVirtualTileState.indirectionTextureCopy));
 
-    Frame::FrameCode* terrainPrepare = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    terrainPrepare->domain = CoreGraphics::BarrierDomain::Global;
-    terrainPrepare->bufferDeps.Add(terrainVirtualTileState.pageStatusBuffer,
-                                {
-                                    "Page Status Buffer",
-                                    CoreGraphics::PipelineStage::TransferWrite,
-                                    CoreGraphics::BufferSubresourceInfo()
-                                });
-    terrainPrepare->bufferDeps.Add(terrainVirtualTileState.subTextureBuffer,
-                                {
-                                    "Sub Texture Buffer",
-                                    CoreGraphics::PipelineStage::TransferWrite,
-                                    CoreGraphics::BufferSubresourceInfo()
-                                });
-    terrainPrepare->textureDeps.Add(terrainVirtualTileState.indirectionTexture,
-                                {
-                                    "Indirection Texture",
-                                    CoreGraphics::PipelineStage::TransferWrite,
-                                    CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
-                                });
-    terrainPrepare->textureDeps.Add(terrainVirtualTileState.indirectionTextureCopy,
-                                {
-                                    "Indirection Texture Copy",
-                                    CoreGraphics::PipelineStage::TransferRead,
-                                    CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTextureCopy)
-                                });
-    terrainPrepare->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPrepare_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Size() > 0
             || terrainVirtualTileState.indirectionBufferClearsThisFrame.Size() > 0
@@ -823,7 +799,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             CmdCopy(cmdBuf
                 , terrainVirtualTileState.subtextureStagingBuffers.buffers[bufferIndex], { from }
                 , terrainVirtualTileState.subTextureBuffer, { to }
-                , BufferGetByteSize(terrainVirtualTileState.subTextureBuffer));
+            , BufferGetByteSize(terrainVirtualTileState.subTextureBuffer));
 
             CmdBarrier(cmdBuf,
                 PipelineStage::TransferRead,
@@ -840,23 +816,15 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainVirtualTileState.virtualSubtextureBufferUpdate = false;
             CmdEndMarker(cmdBuf);
         }
-    };
+    }, {
+        { FrameScript_default::BufferIndex::TerrainVirtualPageStatuses, CoreGraphics::PipelineStage::TransferWrite }
+        , { FrameScript_default::BufferIndex::TerrainSubTextures, CoreGraphics::PipelineStage::TransferWrite }
+    }, {
+        { FrameScript_default::TextureIndex::TerrainIndirection, CoreGraphics::PipelineStage::TransferWrite }
+        , { FrameScript_default::TextureIndex::TerrainIndirectionCopy, CoreGraphics::PipelineStage::TransferRead }
+    });
 
-    Frame::FrameCode* indirectionCopy = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    indirectionCopy->domain = CoreGraphics::BarrierDomain::Global;
-    indirectionCopy->textureDeps.Add(terrainVirtualTileState.indirectionTexture,
-                            {
-                                "Indirection Texture",
-                                CoreGraphics::PipelineStage::TransferRead,
-                                CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
-                            });
-    indirectionCopy->textureDeps.Add(terrainVirtualTileState.indirectionTextureCopy,
-                            {
-                                "Indirection Texture Copy",
-                                CoreGraphics::PipelineStage::TransferWrite,
-                                CoreGraphics::TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTextureCopy)
-                            });
-    indirectionCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainIndirectionCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Copy Indirection Mips");
 
@@ -873,25 +841,12 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         }
 
         CmdEndMarker(cmdBuf);
-    };
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::TerrainIndirection, CoreGraphics::PipelineStage::TransferRead }
+        , { FrameScript_default::TextureIndex::TerrainIndirectionCopy, CoreGraphics::PipelineStage::TransferWrite }
+    });
 
-    Frame::AddSubgraph("Terrain Prepare", { terrainPrepare, indirectionCopy });
-
-    Frame::FrameCode* terrainPrepass = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    terrainPrepass->domain = CoreGraphics::BarrierDomain::Pass;
-    terrainPrepass->bufferDeps.Add(terrainVirtualTileState.pageUpdateListBuffer,
-                    {
-                        "Page Update List",
-                        CoreGraphics::PipelineStage::PixelShaderWrite,
-                        CoreGraphics::BufferSubresourceInfo()
-                    });
-    terrainPrepass->bufferDeps.Add(terrainVirtualTileState.subTextureBuffer,
-                    {
-                        "Sub Texture Buffer",
-                        CoreGraphics::PipelineStage::PixelShaderRead,
-                        CoreGraphics::BufferSubresourceInfo()
-                    });
-    terrainPrepass->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_TerrainPrepass_Pass([](const CoreGraphics::PassId pass, uint subpass)
     {
         if (terrainVirtualTileState.terrainPrepassPipeline != InvalidPipelineId)
             DestroyGraphicsPipeline(terrainVirtualTileState.terrainPrepassPipeline);
@@ -902,8 +857,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 .subpass = subpass,
                 .inputAssembly = InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::PatchList, .primRestart = false } }
             });
-    };
-    terrainPrepass->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    });
+
+    FrameScript_default::RegisterSubgraph_TerrainPrepass_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainState.renderToggle == false)
             return;
@@ -941,12 +897,12 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
             CmdDraw(cmdBuf, terrainVirtualTileState.numPatchesThisFrame, group);
         }
-    };
-    Frame::AddSubgraph("Terrain Prepass", { terrainPrepass });
+    }, {
+        { FrameScript_default::BufferIndex::TerrainUpdateList, CoreGraphics::PipelineStage::PixelShaderWrite }
+        , { FrameScript_default::BufferIndex::TerrainSubTextures, CoreGraphics::PipelineStage::PixelShaderRead }
+    });
 
-    Frame::FrameCode* terrainShadows = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    terrainShadows->domain = CoreGraphics::BarrierDomain::Global;
-    terrainShadows->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_SunTerrainShadows_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!terrainState.renderToggle)
             return;
@@ -966,18 +922,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         // Dispatch
         uint x = Math::divandroundup(TerrainShadowMapSize, 64);
         CmdDispatch(cmdBuf, x, TerrainShadowMapSize, 1);
-    };
-    Frame::AddSubgraph("Sun Terrain Shadows", { terrainShadows });
+    });
 
-    Frame::FrameCode* pageExtract = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    pageExtract->domain = CoreGraphics::BarrierDomain::Global;
-    pageExtract->bufferDeps.Add(terrainVirtualTileState.pageUpdateListBuffer,
-                {
-                    "Page Update List",
-                    CoreGraphics::PipelineStage::TransferRead,
-                    CoreGraphics::BufferSubresourceInfo()
-                });
-    pageExtract->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainUpdateCaches_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Copy Pages to Readback");
         CoreGraphics::BufferCopy from, to;
@@ -989,17 +936,11 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             sizeof(Terrain::PageUpdateList)
         );
         CmdEndMarker(cmdBuf);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::TerrainUpdateList, CoreGraphics::PipelineStage::TransferRead }
+    });
 
-    Frame::FrameCode* pageClear = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    pageClear->domain = CoreGraphics::BarrierDomain::Global;
-    pageClear->bufferDeps.Add(terrainVirtualTileState.pageUpdateListBuffer,
-                        {
-                            "Page Update List",
-                            CoreGraphics::PipelineStage::ComputeShaderWrite,
-                            CoreGraphics::BufferSubresourceInfo()
-                        });
-    pageClear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainPagesClear_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_COMPUTE, "Clear Page Status Buffer");
 
@@ -1011,29 +952,11 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         CmdDispatch(cmdBuf, numDispatches, 1, 1);
 
         CmdEndMarker(cmdBuf);
-    };
+    }, {
+        { FrameScript_default::BufferIndex::TerrainUpdateList, CoreGraphics::PipelineStage::ComputeShaderWrite }
+    });
 
-    Frame::FrameCode* cacheUpdate = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    cacheUpdate->domain = CoreGraphics::BarrierDomain::Global;
-    cacheUpdate->textureDeps.Add(terrainVirtualTileState.physicalAlbedoCache,
-                            {
-                                "Terrain Albedo Cache",
-                                CoreGraphics::PipelineStage::ColorWrite,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalAlbedoCache)
-                            });
-    cacheUpdate->textureDeps.Add(terrainVirtualTileState.physicalMaterialCache,
-                            {
-                                "Terrain Albedo Cache",
-                                CoreGraphics::PipelineStage::ColorWrite,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalMaterialCache)
-                            });
-    cacheUpdate->textureDeps.Add(terrainVirtualTileState.physicalNormalCache,
-                            {
-                                "Terrain Albedo Cache",
-                                CoreGraphics::PipelineStage::ColorWrite,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalNormalCache)
-                            });
-    cacheUpdate->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_TerrainUpdateCaches_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (terrainVirtualTileState.updateLowres)
         {
@@ -1063,6 +986,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
             // Update textures
             RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
+            CmdSetGraphicsPipeline(cmdBuf);
             CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
 
             CmdEndPass(cmdBuf);
@@ -1107,6 +1031,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
             // apply the mesh for all quads
             RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
+            CmdSetGraphicsPipeline(cmdBuf);
             CmdSetResourceTable(cmdBuf, PassGetResourceTable(terrainVirtualTileState.tileUpdatePass), NEBULA_PASS_GROUP, GraphicsPipeline, nullptr);
             CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
             Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
@@ -1144,36 +1069,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
             CmdEndMarker(cmdBuf);
         }
-    };
-    Frame::AddSubgraph("Terrain Update Caches", { pageExtract, cacheUpdate, pageClear });
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::TerrainAlbedoCache, CoreGraphics::PipelineStage::ColorWrite }
+        , { FrameScript_default::TextureIndex::TerrainMaterialCache, CoreGraphics::PipelineStage::ColorWrite }
+        , { FrameScript_default::TextureIndex::TerrainNormalCache, CoreGraphics::PipelineStage::ColorWrite }
+    });
 
-    Frame::FrameCode* resolve = terrainState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    resolve->domain = CoreGraphics::BarrierDomain::Pass;
-    resolve->textureDeps.Add(terrainVirtualTileState.physicalAlbedoCache,
-                            {
-                                "Terrain Albedo Cache",
-                                CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalAlbedoCache)
-                            });
-    resolve->textureDeps.Add(terrainVirtualTileState.physicalMaterialCache,
-                            {
-                                "Terrain Albedo Cache",
-                                CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalMaterialCache)
-                            });
-    resolve->textureDeps.Add(terrainVirtualTileState.physicalNormalCache,
-                            {
-                                "Terrain Albedo Cache",
-                                CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.physicalNormalCache)
-                            });
-    resolve->textureDeps.Add(terrainVirtualTileState.indirectionTexture,
-                            {
-                                "Indirection Texture",
-                                CoreGraphics::PipelineStage::PixelShaderRead,
-                                TextureSubresourceInfo::Color(terrainVirtualTileState.indirectionTexture)
-                            });
-    resolve->buildFunc = [](const CoreGraphics::PassId pass, uint subpass)
+    FrameScript_default::RegisterSubgraphPipelines_TerrainResolve_Pass([](const CoreGraphics::PassId pass, uint subpass)
     {
         if (terrainVirtualTileState.terrainResolvePipeline != InvalidPipelineId)
             DestroyGraphicsPipeline(terrainVirtualTileState.terrainResolvePipeline);
@@ -1184,8 +1086,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 .subpass = subpass,
                 .inputAssembly = InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::PatchList, .primRestart = false } }
             });
-    };
-    resolve->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    });
+    FrameScript_default::RegisterSubgraph_TerrainResolve_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetGraphicsPipeline(cmdBuf, terrainVirtualTileState.terrainResolvePipeline);
         CmdSetVertexLayout(cmdBuf, terrainState.vlo);
@@ -1222,8 +1124,12 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
             CmdDraw(cmdBuf, terrainVirtualTileState.numPatchesThisFrame, group);
         }
-    };
-    Frame::AddSubgraph("Terrain Resolve", { resolve });
+    }, nullptr, {
+        { FrameScript_default::TextureIndex::TerrainAlbedoCache, CoreGraphics::PipelineStage::PixelShaderRead }
+        , { FrameScript_default::TextureIndex::TerrainMaterialCache, CoreGraphics::PipelineStage::PixelShaderRead }
+        , { FrameScript_default::TextureIndex::TerrainNormalCache, CoreGraphics::PipelineStage::PixelShaderRead }
+        , { FrameScript_default::TextureIndex::TerrainIndirection, CoreGraphics::PipelineStage::PixelShaderRead }
+    });
 
     // create vlo
     terrainState.layers = 1;
@@ -1925,8 +1831,8 @@ skipResolution:
                 }
             }
         }, rt.sectionBoxes.Size(), 256, {}, & sectionCullDoneCounter, & sectionCullFinishedEvent);
+        CoreGraphics::BufferUnmap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
     }
-    CoreGraphics::BufferUnmap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
     if (runtimes.IsEmpty())
         sectionCullFinishedEvent.Signal();
 }
@@ -2183,10 +2089,8 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         terrainState.cachedSunDirection = sunTransform.z_axis;
     }
 
-    CoreGraphics::TextureId posBuffer = view->GetFrameScript()->GetTexture("TerrainPosBuffer");
-
     Terrain::TerrainSystemUniforms systemUniforms;
-    systemUniforms.TerrainPosBuffer = CoreGraphics::TextureGetBindlessHandle(posBuffer);
+    systemUniforms.TerrainPosBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_TerrainPosBuffer());
     systemUniforms.MinLODDistance = 0.0f;
     systemUniforms.MaxLODDistance = terrainState.mipLoadDistance;
     systemUniforms.VirtualLodDistance = terrainState.mipLoadDistance;
@@ -2450,7 +2354,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         uniforms.HeightMap = TextureGetBindlessHandle(CoreGraphics::TextureId(rt.heightMap));
 
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(rt.heightMap);
-        CoreGraphics::TextureDimensions dataBufferDims = CoreGraphics::TextureGetDimensions(posBuffer);
+        CoreGraphics::TextureDimensions dataBufferDims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_TerrainPosBuffer());
         uniforms.VirtualTerrainTextureSize[0] = dims.width;
         uniforms.VirtualTerrainTextureSize[1] = dims.height;
         uniforms.VirtualTerrainTextureSize[2] = 1.0f / dims.width;
@@ -2589,7 +2493,6 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                 textureInfo.nebulaHandle = terrainState.terrainShadowMap;
                 textureInfo.mip = mip;
                 textureInfo.layer = 0;
-
 
                 imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
                 float ratio = (float)dims.height / (float)dims.width;

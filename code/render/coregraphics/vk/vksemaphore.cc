@@ -55,8 +55,24 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
     semaphoreAllocator.Get<Semaphore_Device>(id) = dev;
     semaphoreAllocator.Get<Semaphore_Type>(id) = info.type;
 
-    VkResult res = vkCreateSemaphore(dev, &cinfo, nullptr, &semaphoreAllocator.Get<Semaphore_VkHandle>(id));
+    VkSemaphore sem;
+    VkResult res = vkCreateSemaphore(dev, &cinfo, nullptr, &sem);
     n_assert(res == VK_SUCCESS);
+
+    semaphoreAllocator.Set<Semaphore_VkHandle>(id, sem);
+
+#if NEBULA_GRAPHICS_DEBUG
+    VkDebugUtilsObjectNameInfoEXT semInfo =
+    {
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        nullptr,
+        VK_OBJECT_TYPE_SEMAPHORE,
+        (uint64_t)sem,
+        info.name
+    };
+    VkResult res2 = VkDebugObjectName(dev, &semInfo);
+    n_assert(res2 == VK_SUCCESS);
+#endif
 
     SemaphoreId ret = id;
     return ret;

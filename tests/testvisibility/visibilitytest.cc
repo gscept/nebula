@@ -32,6 +32,8 @@
 #include "dynui/imguicontext.h"
 #include "imgui.h"
 
+#include "frame/default.h"
+
 using namespace Timing;
 using namespace Graphics;
 using namespace Visibility;
@@ -74,11 +76,8 @@ VisibilityTest::Run()
     };
     CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
 
-    Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+    Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, 1024, 768));
     Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
-
-    // setup post effects
-    Ptr<Frame::FrameScript> frameScript = view->GetFrameScript();
 
     // create contexts, this could and should be bundled together
     CameraContext::Create();
@@ -88,9 +87,7 @@ VisibilityTest::Run()
     Clustering::ClusterContext::Create(0.1f, 1000.0f, wnd);
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
-    Lighting::LightContext::Create(frameScript);
-    
-
+    Lighting::LightContext::Create();
 
     // setup camera and view
     GraphicsEntityId cam = Graphics::CreateEntity();
@@ -167,8 +164,6 @@ VisibilityTest::Run()
     Math::vec2 panning(0.0f, 0.0f);
     float zoomIn = 0.0f;
     float zoomOut = 0.0f;
-
-    view->BuildFrameScript();
 
     Timer timer;
     IndexT frameIndex = -1;

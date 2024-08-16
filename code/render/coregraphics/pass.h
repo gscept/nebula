@@ -15,6 +15,11 @@
 #include "frame/framebatchtype.h"
 #include "coregraphics/textureview.h"
 
+namespace Shared
+{
+struct RenderTargetParameters;
+}
+
 namespace CoreGraphics
 {
 
@@ -50,7 +55,7 @@ AttachmentFlagsFromString(const Util::String& string)
         else if (bits[i] == "Store")            ret |= AttachmentFlagBits::Store;
         else if (bits[i] == "StoreStencil")     ret |= AttachmentFlagBits::StoreStencil;
         else if (bits[i] == "Discard")          ret |= AttachmentFlagBits::Discard;
-        else if (bits[i] == "DiscardStenci;")   ret |= AttachmentFlagBits::DiscardStencil;
+        else if (bits[i] == "DiscardStencil")   ret |= AttachmentFlagBits::DiscardStencil;
     }
     return ret;
 };
@@ -97,6 +102,8 @@ void DestroyPass(const PassId id);
 
 /// called when window is resized
 void PassWindowResizeCallback(const PassId id);
+/// Set viewports
+void PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports);
 
 /// get number of color attachments for entire pass (attachment list)
 const Util::Array<CoreGraphics::TextureViewId>& PassGetAttachments(const CoreGraphics::PassId id);
@@ -105,12 +112,6 @@ const Util::Array<CoreGraphics::TextureViewId>& PassGetAttachments(const CoreGra
 const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);
 /// Get pass resource table
 const CoreGraphics::ResourceTableId PassGetResourceTable(const CoreGraphics::PassId id);
-
-/// get scissor rects for current subpass
-const Util::FixedArray<Math::rectangle<int>>& PassGetRects(const CoreGraphics::PassId& id);
-/// get viewports for current subpass
-const Util::FixedArray<Math::rectangle<int>>& PassGetViewports(const CoreGraphics::PassId& id);
-
 
 /// get name
 const Util::StringAtom PassGetName(const CoreGraphics::PassId id);
