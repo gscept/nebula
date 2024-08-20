@@ -10,8 +10,11 @@
 #include "lib/clustering.fxh"
 #include "lib/lighting_functions.fxh"
 
+#include "lib/compression/bccompression.fxh"
+
 const int MAX_MATERIAL_TEXTURES = 16;
 const int MAX_BIOMES = 16;
+const int MAX_TILES_PER_FRAME = 256;
 
 group(SYSTEM_GROUP) constant TerrainSystemUniforms [ string Visibility = "VS|HS|DS|PS|CS"; ]
 {
@@ -98,10 +101,22 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
     uvec4 VirtualPageBufferMipSizes[4];
 };
 
-group(DYNAMIC_OFFSET_GROUP) constant TerrainTileUpdateUniforms [ string Visbility = "PS|CS"; ]
+
+group(BATCH_GROUP) write rgba8 image2D AlbedoCacheOutput;
+group(BATCH_GROUP) write rgba8 image2D NormalCacheOutput;
+group(BATCH_GROUP) write rgba8 image2D MaterialCacheOutput;
+group(BATCH_GROUP) write rgba8 image2D AlbedoLowresOutput;
+group(BATCH_GROUP) write rgba8 image2D NormalLowresOutput;
+group(BATCH_GROUP) write rgba8 image2D MaterialLowresOutput;
+
+struct TileWrite
 {
-    vec2 SparseTileWorldOffset;
-    float MetersPerTile;
+    uvec2 WriteOffset_MetersPerTile;
+    vec2 WorldOffset;
+};
+group(BATCH_GROUP) constant TilesToWrite
+{
+    TileWrite TileWrites[MAX_TILES_PER_FRAME];
 };
 
 struct TerrainSubTexture
@@ -508,7 +523,7 @@ psTerrainPrepass(
     in vec3 WorldPos,
     [color0] out vec4 Pos)
 {
-    Pos.x = 100.0f;
+    Pos.x = 0.0f;
     Pos.y = query_lod2D(AlbedoLowresBuffer, TextureSampler, UV).y;
 
     // convert world space to positive integer interval [0..WorldSize]
@@ -598,6 +613,7 @@ psTerrainPrepass(
 
         // if the position has w == 1, it means we found a page
         Pos.x = lod + mipBias;
+        //Pos.y += mipBias;
     }
 }
 
@@ -737,18 +753,23 @@ SampleTerrain(
 //------------------------------------------------------------------------------
 /**
 */
+[local_size_x] = 8
+[local_size_y] = 8
 shader
 void
-psTerrainTileUpdate(
-    in vec2 UV,
-    [color0] out vec3 Albedo,
-    [color1] out vec3 Normal,
-    [color2] out vec4 Material)
+csWriteTile()
 {
     // calculate 
+    ivec2 location = ivec2(gl_GlobalInvocationID.xy);
+    if (location.x >= PhysicalTilePaddedSize || location.y >= PhysicalTilePaddedSize)
+        return;
+
+    ivec2 writeOffset = ivec2(unpack_2u16(TileWrites[gl_GlobalInvocationID.z].WriteOffset_MetersPerTile.x));
+    float metersPerTile = uintBitsToFloat(TileWrites[gl_GlobalInvocationID.z].WriteOffset_MetersPerTile.y);
+    vec2 UV = (vec2(location) + vec2(0.5f)) / vec2(PhysicalTilePaddedSize, PhysicalTilePaddedSize);
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
     vec2 invWorldSize = 1.0f / worldSize;
-    vec2 worldPos2D = vec2(SparseTileWorldOffset + UV * MetersPerTile) + worldSize * 0.5f;
+    vec2 worldPos2D = vec2(TileWrites[gl_GlobalInvocationID.z].WorldOffset + UV * metersPerTile) + worldSize * 0.5f;
     vec2 inputUv = worldPos2D;
 
     //vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
@@ -788,9 +809,70 @@ psTerrainTileUpdate(
     }
 
     // write output to virtual textures
-    Albedo = totalAlbedo;
-    Normal = totalNormal;
-    Material = totalMaterial;
+    imageStore(AlbedoCacheOutput, writeOffset + location, vec4(totalAlbedo, 0));
+    imageStore(NormalCacheOutput, writeOffset + location, vec4(totalNormal, 0));
+    imageStore(MaterialCacheOutput, writeOffset + location, totalMaterial);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+[local_size_x] = 8
+[local_size_y] = 8
+shader
+void
+csWriteLowres()
+{
+    // calculate 
+    vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
+    vec2 invWorldSize = 1.0f / worldSize;
+
+    vec2 texelSize = 1 / vec2(gl_NumWorkGroups.xy * gl_WorkGroupSize.xy);
+    vec2 pixel = vec2(gl_GlobalInvocationID.xy);
+    vec2 uv = (pixel + vec2(0.5f)) * texelSize;
+    vec2 pixelToWorldScale = vec2(WorldSizeX, WorldSizeZ) * texelSize;
+
+    float heightValue = sample2DLod(HeightMap, TextureSampler, uv, 0).r;
+    float height = MinHeight + heightValue * (MaxHeight - MinHeight);
+
+    vec3 worldPos = vec3(pixel.x * pixelToWorldScale.x, height, pixel.y * pixelToWorldScale.y);
+
+    // calculate normals by grabbing pixels around our UV
+    ivec3 offset = ivec3(-1, 1, 0.0f);
+    vec3 normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
+
+    // setup the TBN
+    vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
+    tangent = normalize(cross(normal.xyz, tangent));
+    vec3 binormal = normalize(cross(normal.xyz, tangent));
+    mat3 tbn = mat3(tangent, binormal, normal.xyz);
+
+    // calculate weights for triplanar mapping
+    vec3 triplanarWeights = abs(normal.xyz);
+    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
+
+    vec3 totalAlbedo = vec3(0, 0, 0);
+    vec4 totalMaterial = vec4(0, 0, 0, 0);
+    vec3 totalNormal = vec3(0, 0, 0);
+
+    for (uint i = 0; i < NumBiomes; i++)
+    {
+        // get biome data
+        float mask = sampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
+        vec4 rules = BiomeRules[i];
+
+        // calculate rules
+        float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
+        float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
+
+        vec2 tilingFactor = vec2(rules.z);
+
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
+    }
+
+    imageStore(AlbedoLowresOutput, ivec2(pixel), vec4(totalAlbedo, 0));
+    imageStore(NormalLowresOutput, ivec2(pixel), vec4(totalNormal, 0));
+    imageStore(MaterialLowresOutput, ivec2(pixel), totalMaterial);
 }
 
 //------------------------------------------------------------------------------
@@ -967,69 +1049,6 @@ psTerrainResolve(
     OutColor = vec4(light.rgb, 1);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-shader
-void
-psGenerateLowresFallback(
-    in vec2 dummy,
-    [color0] out vec3 Albedo,
-    [color1] out vec3 Normal,
-    [color2] out vec4 Material)
-{
-    // calculate 
-    vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-    vec2 invWorldSize = 1.0f / worldSize;
-
-    vec2 texelSize = RenderTargetParameter[0].Dimensions.zw;
-    vec2 pixel = vec2(gl_FragCoord.xy);
-    vec2 uv = pixel * texelSize;
-    vec2 pixelToWorldScale = vec2(WorldSizeX, WorldSizeZ) * texelSize;
-
-    float heightValue = sample2DLod(HeightMap, TextureSampler, uv, 0).r;
-    float height = MinHeight + heightValue * (MaxHeight - MinHeight);
-
-    vec3 worldPos = vec3(pixel.x * pixelToWorldScale.x, height, pixel.y * pixelToWorldScale.y);
-
-    // calculate normals by grabbing pixels around our UV
-    ivec3 offset = ivec3(-1, 1, 0.0f);
-    vec3 normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
-
-    // setup the TBN
-    vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
-    tangent = normalize(cross(normal.xyz, tangent));
-    vec3 binormal = normalize(cross(normal.xyz, tangent));
-    mat3 tbn = mat3(tangent, binormal, normal.xyz);
-
-    // calculate weights for triplanar mapping
-    vec3 triplanarWeights = abs(normal.xyz);
-    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
-
-    vec3 totalAlbedo = vec3(0, 0, 0);
-    vec4 totalMaterial = vec4(0, 0, 0, 0);
-    vec3 totalNormal = vec3(0, 0, 0);
-
-    for (uint i = 0; i < NumBiomes; i++)
-    {
-        // get biome data
-        float mask = sampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
-        vec4 rules = BiomeRules[i];
-
-        // calculate rules
-        float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
-        float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
-
-        vec2 tilingFactor = vec2(rules.z);
-
-        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
-    }
-
-    Albedo = totalAlbedo;
-    Normal = totalNormal;
-    Material = totalMaterial;
-}
-
 group(SYSTEM_GROUP) readwrite rg16f image2D TerrainShadowMap;
 //------------------------------------------------------------------------------
 /**
@@ -1124,8 +1143,6 @@ render_state FinalState
 
 TessellationTechnique(TerrainPrepass, "TerrainPrepass", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainPrepass(), TerrainState);
 TessellationTechnique(TerrainResolve, "TerrainResolve", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainResolve(), ResolveState);
-SimpleTechnique(TerrainTileUpdate, "TerrainTileUpdate", vsScreenSpace(), psTerrainTileUpdate(), FinalState);
-SimpleTechnique(TerrainLowresFallback, "TerrainLowresFallback", vsScreenSpace(), psGenerateLowresFallback(), FinalState);
 
 program TerrainPageClearUpdateBuffer [ string Mask = "TerrainPageClearUpdateBuffer"; ]
 {
@@ -1135,4 +1152,14 @@ program TerrainPageClearUpdateBuffer [ string Mask = "TerrainPageClearUpdateBuff
 program TerrainShadows [ string Mask = "TerrainShadows"; ]
 {
     ComputeShader = csTerrainShadows();
+};
+
+program TerrainTileWrite[string Mask = "TerrainTileWrite"; ]
+{
+    ComputeShader = csWriteTile();
+};
+
+program TerrailLowresWrite[string Mask = "TerrainLowresWrite"; ]
+{
+    ComputeShader = csWriteLowres();
 };
