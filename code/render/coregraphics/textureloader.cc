@@ -216,7 +216,7 @@ LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::Tex
 quit_loop:
 
     CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::UnlockTransferSetupCommandBuffer();
+    CoreGraphics::UnlockTransferSetupCommandBuffer(cmdBuf);
 
     return loadedBits;
 }
@@ -270,7 +270,7 @@ FinishMips(TextureStreamData* streamData, uint mipBits, const CoreGraphics::Text
     CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdEndMarker(handoverBuf);
-    CoreGraphics::UnlockTransferHandoverSetupCommandBuffer();
+    CoreGraphics::UnlockTransferHandoverSetupCommandBuffer(handoverBuf);
 }
 
 //------------------------------------------------------------------------------

@@ -86,7 +86,7 @@ struct GraphicsDeviceState
     Util::Array<CoreGraphics::TextureId> backBuffers;
 
     CoreGraphics::CmdBufferPoolId setupTransferCommandBufferPool;
-    CoreGraphics::CmdBufferId setupTransferCommandBuffer;
+    Util::Array<CoreGraphics::CmdBufferId> setupTransferCommandBuffers;
     Util::Array<CoreGraphics::CmdBufferId> handoverTransferCommandBuffers;
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
     Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
@@ -167,7 +167,7 @@ void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 /// Lock resource command buffer
 const CoreGraphics::CmdBufferId LockTransferSetupCommandBuffer();
 /// Release lock on resource command buffer
-void UnlockTransferSetupCommandBuffer();
+void UnlockTransferSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 /// Lock immediate graphics command buffer
 const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer(const char* name = nullptr);
 /// Release lock on immediate graphics command buffer
@@ -175,7 +175,7 @@ void UnlockGraphicsSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 /// Lock handover transfer command buffer
 const CoreGraphics::CmdBufferId LockTransferHandoverSetupCommandBuffer();
 /// Release lock on handover command buffer
-void UnlockTransferHandoverSetupCommandBuffer();
+void UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 
 /// Get the next submission index for a specific queue
 uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);

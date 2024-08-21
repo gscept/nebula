@@ -1128,7 +1128,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.setupGraphicsCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
     setupResourcePoolInfo.queue = CoreGraphics::QueueType::TransferQueueType;
     state.setupTransferCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
-    state.setupTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
 
     state.pendingDeletes.Resize(info.numBufferedFrames);
     state.waitEvents.Resize(info.numBufferedFrames);
@@ -1424,33 +1423,28 @@ const CoreGraphics::CmdBufferId
 LockTransferSetupCommandBuffer()
 {
     transferLock.Enter();
-    if (state.setupTransferCommandBuffer == CoreGraphics::InvalidCmdBufferId)
-    {
-        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
-        cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
-        cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
-        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
-        cmdCreateInfo.name = "Setup Transfer";
-        state.setupTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+    CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+    cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
+    cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
+    cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+    cmdCreateInfo.name = "Setup Transfer";
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
-        CoreGraphics::CmdBeginRecord(state.setupTransferCommandBuffer, { true, false, false });
-        CoreGraphics::CmdBeginMarker(state.setupTransferCommandBuffer, NEBULA_MARKER_PURPLE, "Transfer");
-    }
-    else
-    {
-        CoreGraphics::CmdBufferIdAcquire(state.setupTransferCommandBuffer);
-    }
-    
-    return state.setupTransferCommandBuffer;
+    CoreGraphics::CmdBeginRecord(cmdBuf, { true, false, false });
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, "Transfer");
+    return cmdBuf;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-UnlockTransferSetupCommandBuffer()
+UnlockTransferSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf)
 {
-    CmdBufferIdRelease(state.setupTransferCommandBuffer);
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::CmdEndRecord(cmdBuf);
+    state.setupTransferCommandBuffers.Append(cmdBuf);
+    CoreGraphics::CmdBufferIdRelease(cmdBuf);
     transferLock.Leave();
 }
 
@@ -1493,33 +1487,28 @@ const CoreGraphics::CmdBufferId
 LockTransferHandoverSetupCommandBuffer()
 {
     transferLock.Enter();
-    if (state.handoverTransferCommandBuffer == CoreGraphics::InvalidCmdBufferId)
-    {
-        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
-        cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
-        cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
-        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
-        cmdCreateInfo.name = "Transfer Handover";
-        state.handoverTransferCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+    CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+    cmdCreateInfo.pool = state.setupTransferCommandBufferPool;
+    cmdCreateInfo.usage = CoreGraphics::QueueType::TransferQueueType;
+    cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+    cmdCreateInfo.name = "Transfer Handover";
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
-        CoreGraphics::CmdBeginRecord(state.handoverTransferCommandBuffer, { true, false, false });
-        CoreGraphics::CmdBeginMarker(state.handoverTransferCommandBuffer, NEBULA_MARKER_PURPLE, "Transfer Handover");
-    }
-    else
-    {
-        CoreGraphics::CmdBufferIdAcquire(state.handoverTransferCommandBuffer);
-    }
-
-    return state.handoverTransferCommandBuffer;
+    CoreGraphics::CmdBeginRecord(cmdBuf, { true, false, false });
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, "Transfer Handover");
+    return cmdBuf;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-UnlockTransferHandoverSetupCommandBuffer()
+UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf)
 {
-    CoreGraphics::CmdBufferIdRelease(state.handoverTransferCommandBuffer);
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::CmdEndRecord(cmdBuf);
+    state.handoverTransferCommandBuffers.Append(cmdBuf);
+    CoreGraphics::CmdBufferIdRelease(cmdBuf);
     transferLock.Leave();
 }
 
@@ -1565,42 +1554,50 @@ SubmitCommandBuffer(
 {
     // Submit transfer and graphics commands from this frame
     transferLock.Enter();
-    if (state.setupTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
+    if (!state.setupTransferCommandBuffers.IsEmpty())
     {
-        CmdBufferIdAcquire(state.setupTransferCommandBuffer);
-        CmdEndMarker(state.setupTransferCommandBuffer);
-        CmdEndRecord(state.setupTransferCommandBuffer);
-        uploadWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.setupTransferCommandBuffer), "Transfer");
+        Util::Array<VkCommandBuffer> vkBufs;
+        vkBufs.Reserve(state.setupTransferCommandBuffers.Size());
+        for (int i = 0; i < state.setupTransferCommandBuffers.Size(); i++)
+        {
+            const auto cmdBuf = state.setupTransferCommandBuffers[i];
+            vkBufs.Append(CmdBufferGetVk(cmdBuf));
+        }
+
+        uploadWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, "Transfer");
         uploadWait.queue = CoreGraphics::TransferQueueType;
 
         // Set wait events in graphics device
         AddSubmissionEvent(uploadWait);
 
-        // Delete command buffer
-        DestroyCmdBuffer(state.setupTransferCommandBuffer);
-        CmdBufferIdRelease(state.setupTransferCommandBuffer);
-
-        // Reset command buffer id for the next frame
-        state.setupTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
+        for (int i = 0; i < state.setupTransferCommandBuffers.Size(); i++)
+        {
+            DestroyCmdBuffer(state.setupTransferCommandBuffers[i]);
+        }
+        state.setupTransferCommandBuffers.Clear();
     }
 
-    if (state.handoverTransferCommandBuffer != CoreGraphics::InvalidCmdBufferId)
+    if (!state.handoverTransferCommandBuffers.IsEmpty())
     {
-        CmdBufferIdAcquire(state.handoverTransferCommandBuffer);
-        CmdEndMarker(state.handoverTransferCommandBuffer);
-        CmdEndRecord(state.handoverTransferCommandBuffer);
-        handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.handoverTransferCommandBuffer), "Handover");
+        Util::Array<VkCommandBuffer> vkBufs;
+        vkBufs.Reserve(state.handoverTransferCommandBuffers.Size());
+        for (int i = 0; i < state.handoverTransferCommandBuffers.Size(); i++)
+        {
+            const auto cmdBuf = state.handoverTransferCommandBuffers[i];
+            vkBufs.Append(CmdBufferGetVk(cmdBuf));
+        }
+
+        handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, "Handover");
         handoverWait.queue = CoreGraphics::TransferQueueType;
 
         // Set wait events in graphics device
         AddSubmissionEvent(handoverWait);
 
-        // Delete command buffer
-        DestroyCmdBuffer(state.handoverTransferCommandBuffer);
-        CmdBufferIdRelease(state.handoverTransferCommandBuffer);
-         
-        // Reset command buffer id for the next frame
-        state.handoverTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
+        for (int i = 0; i < state.handoverTransferCommandBuffers.Size(); i++)
+        {
+            DestroyCmdBuffer(state.handoverTransferCommandBuffers[i]);
+        }
+        state.handoverTransferCommandBuffers.Clear();
     }
     transferLock.Leave();
 
