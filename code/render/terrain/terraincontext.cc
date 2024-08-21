@@ -482,7 +482,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     albedoCacheInfo.width = PhysicalTexturePaddedSize;
     albedoCacheInfo.height = PhysicalTexturePaddedSize;
     albedoCacheInfo.format = CoreGraphics::PixelFormat::BC3;
-    albedoCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    albedoCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture | CoreGraphics::TextureUsage::ReadWriteTexture;
+    albedoCacheInfo.excludeViewUsage = CoreGraphics::TextureUsage::ReadWriteTexture;
     albedoCacheInfo.allowCast = true;
     terrainVirtualTileState.physicalAlbedoCacheBC = CoreGraphics::CreateTexture(albedoCacheInfo);
 
@@ -490,6 +491,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     albedoCacheWriteInfo.name = "Terrain Cache Albedo Write"_atm;
     albedoCacheWriteInfo.tex = terrainVirtualTileState.physicalAlbedoCacheBC;
     albedoCacheWriteInfo.format = CoreGraphics::PixelFormat::R32G32B32A32;
+    albedoCacheWriteInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     terrainVirtualTileState.physicalAlbedoCacheBCWrite = CoreGraphics::CreateTextureView(albedoCacheWriteInfo);
 
     CoreGraphics::TextureCreateInfo normalCacheInfo;
@@ -497,7 +499,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     normalCacheInfo.width = PhysicalTexturePaddedSize;
     normalCacheInfo.height = PhysicalTexturePaddedSize;
     normalCacheInfo.format = CoreGraphics::PixelFormat::BC5;
-    normalCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    normalCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture | CoreGraphics::TextureUsage::ReadWriteTexture;
+    normalCacheInfo.excludeViewUsage = CoreGraphics::TextureUsage::ReadWriteTexture;
     normalCacheInfo.allowCast = true;
     terrainVirtualTileState.physicalNormalCacheBC = CoreGraphics::CreateTexture(normalCacheInfo);
 
@@ -505,6 +508,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     normalCacheWriteInfo.name = "Terrain Cache Normals Write";
     normalCacheWriteInfo.format = CoreGraphics::PixelFormat::R32G32B32A32;
     normalCacheWriteInfo.tex = terrainVirtualTileState.physicalNormalCacheBC;
+    normalCacheWriteInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     terrainVirtualTileState.physicalNormalCacheBCWrite = CoreGraphics::CreateTextureView(normalCacheWriteInfo);
 
     CoreGraphics::TextureCreateInfo materialCacheInfo;
@@ -512,7 +516,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     materialCacheInfo.width = PhysicalTexturePaddedSize;
     materialCacheInfo.height = PhysicalTexturePaddedSize;
     materialCacheInfo.format = CoreGraphics::PixelFormat::BC3;
-    materialCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    materialCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture | CoreGraphics::TextureUsage::ReadWriteTexture;
+    materialCacheInfo.excludeViewUsage = CoreGraphics::TextureUsage::ReadWriteTexture;
     materialCacheInfo.allowCast = true;
     terrainVirtualTileState.physicalMaterialCacheBC = CoreGraphics::CreateTexture(materialCacheInfo);
 
@@ -520,6 +525,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     materialCacheWriteInfo.name = "Terrain Cache Material Write"_atm;
     materialCacheWriteInfo.format = CoreGraphics::PixelFormat::R32G32B32A32;
     materialCacheWriteInfo.tex = terrainVirtualTileState.physicalMaterialCacheBC;
+    materialCacheWriteInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     terrainVirtualTileState.physicalMaterialCacheBCWrite = CoreGraphics::CreateTextureView(materialCacheWriteInfo);
 
     CoreGraphics::TextureCreateInfo lowResAlbedoInfo;

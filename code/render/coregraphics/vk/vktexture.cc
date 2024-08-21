@@ -265,7 +265,17 @@ SetupTexture(const TextureId id)
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         0x0 // Device exclusive?
     };
+        constexpr uint ExcludeLookup[] =
+    {
+        VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        0x0 // Device exclusive?
+    };
     VkImageUsageFlags usage = Util::BitmaskConvert(loadInfo.usage, Lookup);
+    VkImageUsageFlags viewExcludeUsage = Util::BitmaskConvert(loadInfo.excludeViewUsage, ExcludeLookup);
 
     if (loadInfo.usage & TextureUsage::RenderTexture)
         usage |= (AnyBits(bits, ImageBits::DepthBits | ImageBits::StencilBits) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
@@ -424,10 +434,16 @@ SetupTexture(const TextureId id)
     mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
     mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
 
+    
+    VkImageViewUsageCreateInfo usageInfo;
+    usageInfo.pNext = nullptr;
+    usageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+    usageInfo.usage = usage & ~viewExcludeUsage;
+
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        nullptr,
+        &usageInfo,
         0,
         loadInfo.img,
         viewType,
@@ -611,6 +627,7 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
     loadInfo.allowCast = info.allowCast;
+    loadInfo.excludeViewUsage = info.excludeViewUsage;
 
     // borrow buffer pointer
     loadInfo.data = adjustedInfo.data;
