@@ -182,7 +182,7 @@ struct ResourceTableTextureView
         , isStencil(false)
     {};
 
-    ResourceTableTextureView(const CoreGraphics::TextureViewId tex, IndexT slot, bool isDepth = false, bool isStencil = false)
+    ResourceTableTextureView(const CoreGraphics::TextureViewId tex, IndexT slot, bool isDepth, bool isStencil)
         : tex(tex)
         , slot(slot)
         , index(0)

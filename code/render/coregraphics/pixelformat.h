@@ -78,7 +78,10 @@ public:
 
 
         NumPixelFormats,
-        InvalidPixelFormat,
+
+        BC1 = DXT1,
+        BC3 = DXT5,
+        InvalidPixelFormat = 0xFFFFFFFF,
     };
 
     /// convert from string
