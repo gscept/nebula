@@ -180,7 +180,6 @@ GraphicsFeatureUnit::OnActivate()
         Terrain::TerrainContext::Create(settings);
         Terrain::TerrainContext::SetSun(this->globalLight);
 
-        /*
         this->terrain.entity = Graphics::CreateEntity();
         Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
         Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision, terrainSettings.config->raytracing);
@@ -236,7 +235,6 @@ GraphicsFeatureUnit::OnActivate()
                 Math::vec2 {terrainSettings.config->world_size_width, terrainSettings.config->world_size_height}};
             Vegetation::VegetationContext::Create(vegSettings);
         }
-        */
     }
   
     Lighting::LightContext::Create();
