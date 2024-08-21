@@ -289,6 +289,8 @@ SetupTexture(const TextureId id)
         createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     if (loadInfo.sparse)
         createFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
+    if (loadInfo.allowCast)
+        createFlags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
 
     VkImageCreateInfo imgInfo =
     {
@@ -608,6 +610,7 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
+    loadInfo.allowCast = info.allowCast;
 
     // borrow buffer pointer
     loadInfo.data = adjustedInfo.data;
