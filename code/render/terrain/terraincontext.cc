@@ -25,6 +25,7 @@
 
 #include "terrain/shaders/terrain.h"
 #include "terrain/shaders/terrain_mesh_generate.h"
+#include "terrain/shaders/terrain_tile_write.h"
 
 #include "frame/default.h"
 
@@ -68,6 +69,7 @@ struct
 {
     TerrainSetupSettings settings;
     CoreGraphics::ShaderId terrainShader;
+    CoreGraphics::ShaderId tileShader;
     CoreGraphics::ShaderProgramId terrainShadowProgram;
     CoreGraphics::ResourceTableId resourceTable;
     CoreGraphics::BufferId systemConstants;
@@ -155,16 +157,19 @@ struct
     CoreGraphics::BufferId                                          runtimeConstants;
     CoreGraphics::BufferWithStaging                                 tileWriteBufferSet;
 
-    CoreGraphics::TextureId                                         physicalAlbedoCache;
-    CoreGraphics::TextureId                                         physicalNormalCache;
-    CoreGraphics::TextureId                                         physicalMaterialCache;
+    CoreGraphics::TextureId                                         physicalAlbedoCacheBC;
+    CoreGraphics::TextureViewId                                     physicalAlbedoCacheBCWrite;
+    CoreGraphics::TextureId                                         physicalNormalCacheBC;
+    CoreGraphics::TextureViewId                                     physicalNormalCacheBCWrite;
+    CoreGraphics::TextureId                                         physicalMaterialCacheBC;
+    CoreGraphics::TextureViewId                                     physicalMaterialCacheBCWrite;
     CoreGraphics::TextureId                                         lowresAlbedo;
     CoreGraphics::TextureId                                         lowresNormal;
     CoreGraphics::TextureId                                         lowresMaterial;
     bool                                                            updateLowres = false;
 
-    CoreGraphics::ResourceTableSet                                  virtualTerrainSystemResourceTable;
-    CoreGraphics::ResourceTableId                                   virtualTerrainRuntimeResourceTable;
+    CoreGraphics::ResourceTableSet                                  systemTable;
+    CoreGraphics::ResourceTableId                                   runtimeTable;
     SizeT                                                           numPageBufferUpdateEntries;
 
     Util::FixedArray<SubTexture>                                    subTextures;
@@ -183,8 +188,8 @@ struct
     CoreGraphics::BufferSet                                         indirectionUploadBuffers;
     Util::FixedArray<uint>                                          indirectionUploadOffsets;
 
-    Util::Array<Terrain::TileWrite>                                 tileWrites;
-    Util::Array<Terrain::TileWrite>                                 tileWritesThisFrame;
+    Util::Array<TerrainTileWrite::TileWrite>                                 tileWrites;
+    Util::Array<TerrainTileWrite::TileWrite>                                 tileWritesThisFrame;
 
     Util::Array<CoreGraphics::BufferCopy>                           indirectionBufferUpdatesThisFrame;
     Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureUpdatesThisFrame;
@@ -293,6 +298,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainState.vlo = CreateVertexLayout({ .name = "Terrain"_atm, .comps = vertexComponents });
 
     terrainState.terrainShader = ShaderGet("shd:terrain/shaders/terrain.fxb");
+    terrainState.tileShader = ShaderGet("shd:terrain/shaders/terrain_tile_write.fxb");
+
     terrainState.resourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
     terrainState.terrainShadowProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureMask("TerrainShadows"));
 
@@ -352,11 +359,11 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainVirtualTileState.terrainPageClearUpdateBufferProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureMask("TerrainPageClearUpdateBuffer"));
     terrainVirtualTileState.terrainPrepassProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureMask("TerrainPrepass"));
     terrainVirtualTileState.terrainResolveProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureMask("TerrainResolve"));
-    terrainVirtualTileState.terrainTileWriteProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureMask("TerrainTileWrite"));
-    terrainVirtualTileState.terrainWriteLowresProgram = ShaderGetProgram(terrainState.terrainShader, ShaderFeatureMask("TerrainLowresWrite"));
+    terrainVirtualTileState.terrainTileWriteProgram = ShaderGetProgram(terrainState.tileShader, ShaderFeatureMask("TerrainTileWrite"));
+    terrainVirtualTileState.terrainWriteLowresProgram = ShaderGetProgram(terrainState.tileShader, ShaderFeatureMask("TerrainLowresWrite"));
 
-    terrainVirtualTileState.virtualTerrainSystemResourceTable = ShaderCreateResourceTableSet(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
-    terrainVirtualTileState.virtualTerrainRuntimeResourceTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_BATCH_GROUP);
+    terrainVirtualTileState.systemTable = ShaderCreateResourceTableSet(terrainState.terrainShader, NEBULA_SYSTEM_GROUP);
+    terrainVirtualTileState.runtimeTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_BATCH_GROUP);
 
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.name = "VirtualRuntimeBuffer"_atm;
@@ -368,7 +375,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
     bufInfo.name = "TerrainTileWrites"_atm;
     bufInfo.size = 1;
-    bufInfo.elementSize = sizeof(Terrain::TilesToWrite);
+    bufInfo.elementSize = sizeof(TerrainTileWrite::TilesToWrite);
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     terrainVirtualTileState.tileWriteBufferSet = CoreGraphics::BufferWithStaging(bufInfo);
 
@@ -471,31 +478,52 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
     CoreGraphics::TextureCreateInfo albedoCacheInfo;
-    albedoCacheInfo.name = "AlbedoPhysicalCache"_atm;
+    albedoCacheInfo.name = "Terrain Cache Albedo"_atm;
     albedoCacheInfo.width = PhysicalTexturePaddedSize;
     albedoCacheInfo.height = PhysicalTexturePaddedSize;
-    albedoCacheInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    albedoCacheInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture | CoreGraphics::TextureUsage::SampleTexture;
-    terrainVirtualTileState.physicalAlbedoCache = CoreGraphics::CreateTexture(albedoCacheInfo);
+    albedoCacheInfo.format = CoreGraphics::PixelFormat::BC3;
+    albedoCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    albedoCacheInfo.allowCast = true;
+    terrainVirtualTileState.physicalAlbedoCacheBC = CoreGraphics::CreateTexture(albedoCacheInfo);
+
+    CoreGraphics::TextureViewCreateInfo albedoCacheWriteInfo;
+    albedoCacheWriteInfo.name = "Terrain Cache Albedo Write"_atm;
+    albedoCacheWriteInfo.tex = terrainVirtualTileState.physicalAlbedoCacheBC;
+    albedoCacheWriteInfo.format = CoreGraphics::PixelFormat::R32G32B32A32;
+    terrainVirtualTileState.physicalAlbedoCacheBCWrite = CoreGraphics::CreateTextureView(albedoCacheWriteInfo);
 
     CoreGraphics::TextureCreateInfo normalCacheInfo;
-    normalCacheInfo.name = "NormalPhysicalCache"_atm;
+    normalCacheInfo.name = "Terrain Cache Normals"_atm;
     normalCacheInfo.width = PhysicalTexturePaddedSize;
     normalCacheInfo.height = PhysicalTexturePaddedSize;
-    normalCacheInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    normalCacheInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture | CoreGraphics::TextureUsage::SampleTexture;
-    terrainVirtualTileState.physicalNormalCache = CoreGraphics::CreateTexture(normalCacheInfo);
+    normalCacheInfo.format = CoreGraphics::PixelFormat::BC5;
+    normalCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    normalCacheInfo.allowCast = true;
+    terrainVirtualTileState.physicalNormalCacheBC = CoreGraphics::CreateTexture(normalCacheInfo);
+
+    CoreGraphics::TextureViewCreateInfo normalCacheWriteInfo;
+    normalCacheWriteInfo.name = "Terrain Cache Normals Write";
+    normalCacheWriteInfo.format = CoreGraphics::PixelFormat::R32G32B32A32;
+    normalCacheWriteInfo.tex = terrainVirtualTileState.physicalNormalCacheBC;
+    terrainVirtualTileState.physicalNormalCacheBCWrite = CoreGraphics::CreateTextureView(normalCacheWriteInfo);
 
     CoreGraphics::TextureCreateInfo materialCacheInfo;
-    materialCacheInfo.name = "MaterialPhysicalCache"_atm;
+    materialCacheInfo.name = "Terrain Cache Material"_atm;
     materialCacheInfo.width = PhysicalTexturePaddedSize;
     materialCacheInfo.height = PhysicalTexturePaddedSize;
-    materialCacheInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
-    materialCacheInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture | CoreGraphics::TextureUsage::SampleTexture;
-    terrainVirtualTileState.physicalMaterialCache = CoreGraphics::CreateTexture(materialCacheInfo);
+    materialCacheInfo.format = CoreGraphics::PixelFormat::BC3;
+    materialCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+    materialCacheInfo.allowCast = true;
+    terrainVirtualTileState.physicalMaterialCacheBC = CoreGraphics::CreateTexture(materialCacheInfo);
+
+    CoreGraphics::TextureViewCreateInfo materialCacheWriteInfo;
+    materialCacheWriteInfo.name = "Terrain Cache Material Write"_atm;
+    materialCacheWriteInfo.format = CoreGraphics::PixelFormat::R32G32B32A32;
+    materialCacheWriteInfo.tex = terrainVirtualTileState.physicalMaterialCacheBC;
+    terrainVirtualTileState.physicalMaterialCacheBCWrite = CoreGraphics::CreateTextureView(materialCacheWriteInfo);
 
     CoreGraphics::TextureCreateInfo lowResAlbedoInfo;
-    lowResAlbedoInfo.name = "TerrainAlbedoLowres"_atm;
+    lowResAlbedoInfo.name = "Terrain Lowres Albedo"_atm;
     lowResAlbedoInfo.mips = LowresFallbackMips;
     lowResAlbedoInfo.width = LowresFallbackSize;
     lowResAlbedoInfo.height = LowresFallbackSize;
@@ -504,7 +532,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainVirtualTileState.lowresAlbedo = CoreGraphics::CreateTexture(lowResAlbedoInfo);
 
     CoreGraphics::TextureCreateInfo lowResNormalInfo;
-    lowResNormalInfo.name = "TerrainNormalLowres"_atm;
+    lowResNormalInfo.name = "Terrain Lowres Normal"_atm;
     lowResNormalInfo.mips = LowresFallbackMips;
     lowResNormalInfo.width = LowresFallbackSize;
     lowResNormalInfo.height = LowresFallbackSize;
@@ -513,7 +541,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainVirtualTileState.lowresNormal = CoreGraphics::CreateTexture(lowResNormalInfo);
 
     CoreGraphics::TextureCreateInfo lowResMaterialInfo;
-    lowResMaterialInfo.name = "TerrainMaterialLowres"_atm;
+    lowResMaterialInfo.name = "Terrain Lowres Material"_atm;
     lowResMaterialInfo.mips = LowresFallbackMips;
     lowResMaterialInfo.width = LowresFallbackSize;
     lowResMaterialInfo.height = LowresFallbackSize;
@@ -556,7 +584,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     //terrainVirtualTileState.physicalTextureTileOccupancy.Setup(PhysicalTexturePaddedSize, PhysicalTexturePaddedSize, PhysicalTextureTilePaddedSize);
     terrainVirtualTileState.physicalTextureTileCache.Setup(PhysicalTextureTilePaddedSize, PhysicalTexturePaddedSize);
 
-    terrainVirtualTileState.virtualTerrainSystemResourceTable.ForEach([](const ResourceTableId table, const IndexT i)
+    terrainVirtualTileState.systemTable.ForEach([](const ResourceTableId table, const IndexT i)
     {
         ResourceTableSetConstantBuffer(table,
                                     {
@@ -599,57 +627,56 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     });
     
 
-    ResourceTableSetConstantBuffer(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetConstantBuffer(terrainVirtualTileState.runtimeTable,
         {
             terrainVirtualTileState.runtimeConstants,
             Terrain::Table_Batch::TerrainRuntimeUniforms_SLOT,
             sizeof(Terrain::TerrainRuntimeUniforms),
         });
 
-
-    ResourceTableSetRWTexture(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetRWTexture(terrainVirtualTileState.runtimeTable,
         {
-            terrainVirtualTileState.physicalAlbedoCache,
-            Terrain::Table_Batch::AlbedoCacheOutput_SLOT
+            terrainVirtualTileState.physicalAlbedoCacheBCWrite,
+            Terrain::Table_Batch::AlbedoCacheOutputBC_SLOT
         });
 
-    ResourceTableSetRWTexture(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetRWTexture(terrainVirtualTileState.runtimeTable,
         {
-            terrainVirtualTileState.physicalNormalCache,
-            Terrain::Table_Batch::NormalCacheOutput_SLOT
+            terrainVirtualTileState.physicalNormalCacheBCWrite,
+            Terrain::Table_Batch::NormalCacheOutputBC_SLOT
         });
 
-    ResourceTableSetRWTexture(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetRWTexture(terrainVirtualTileState.runtimeTable,
         {
-            terrainVirtualTileState.physicalMaterialCache,
-            Terrain::Table_Batch::MaterialCacheOutput_SLOT
+            terrainVirtualTileState.physicalMaterialCacheBCWrite,
+            Terrain::Table_Batch::MaterialCacheOutputBC_SLOT
         });
 
-    ResourceTableSetRWTexture(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetRWTexture(terrainVirtualTileState.runtimeTable,
         {
             terrainVirtualTileState.lowresAlbedo,
             Terrain::Table_Batch::AlbedoLowresOutput_SLOT
         });
 
-    ResourceTableSetRWTexture(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetRWTexture(terrainVirtualTileState.runtimeTable,
         {
             terrainVirtualTileState.lowresNormal,
             Terrain::Table_Batch::NormalLowresOutput_SLOT
         });
 
-    ResourceTableSetRWTexture(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetRWTexture(terrainVirtualTileState.runtimeTable,
         {
             terrainVirtualTileState.lowresMaterial,
             Terrain::Table_Batch::MaterialLowresOutput_SLOT
         });
 
-    ResourceTableSetConstantBuffer(terrainVirtualTileState.virtualTerrainRuntimeResourceTable,
+    ResourceTableSetConstantBuffer(terrainVirtualTileState.runtimeTable,
         {
             terrainVirtualTileState.tileWriteBufferSet.DeviceBuffer(),
             Terrain::Table_Batch::TilesToWrite_SLOT
         });
 
-    ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainRuntimeResourceTable);
+    ResourceTableCommitChanges(terrainVirtualTileState.runtimeTable);
 
     if (CoreGraphics::RayTracingSupported)
     {
@@ -868,7 +895,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::PatchList);
 
         // set shared resources
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
 
         // Draw terrains
         Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
@@ -889,7 +916,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         for (IndexT i = 0; i < runtimes.Size(); i++)
         {
             TerrainRuntimeInfo& rt = runtimes[i];
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.runtimeTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
             CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
             CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
@@ -932,7 +959,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
         // Set shared resources
         CmdSetResourceTable(cmdBuf, terrainState.resourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.runtimeTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         // Dispatch
         uint x = Math::divandroundup(TerrainShadowMapSize, 64);
@@ -944,7 +971,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         CmdBeginMarker(cmdBuf, NEBULA_MARKER_COMPUTE, "Clear Page Status Buffer");
 
         CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainPageClearUpdateBufferProgram);
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
 
         // run a single compute shader to clear the number of page entries
         uint numDispatches = Math::divandroundup(Terrain::MAX_PAGE_UPDATES, 64);
@@ -987,8 +1014,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
             // Setup state for update
             CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainWriteLowresProgram);
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.runtimeTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
             CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.lowresAlbedo);
 
@@ -1042,13 +1069,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                 }
             );
             CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainTileWriteProgram);
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
             Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
             // go through pending page updates and render into the physical texture caches
             for (IndexT i = 0; i < runtimes.Size(); i++)
             {
-                CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+                CmdSetResourceTable(cmdBuf, terrainVirtualTileState.runtimeTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
                 static const uint numDispatches = Math::divandroundup(PhysicalTextureTilePaddedSize, 8);
                 //CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, ComputePipeline, nullptr);
 
@@ -1084,7 +1111,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::PatchList);
 
         // set shared resources
-        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainSystemResourceTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, terrainVirtualTileState.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
 
         if (terrainState.renderToggle == false)
             return;
@@ -1108,7 +1135,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         for (IndexT i = 0; i < runtimes.Size(); i++)
         {
             TerrainRuntimeInfo& rt = runtimes[i];
-            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, terrainVirtualTileState.runtimeTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 
             CmdSetVertexBuffer(cmdBuf, 0, rt.vbo, 0);
             CmdSetIndexBuffer(cmdBuf, IndexType::Index32, rt.ibo, 0);
@@ -1184,7 +1211,7 @@ TerrainContext::SetupTerrain(
     bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
     terrainVirtualTileState.patchConstants = CoreGraphics::BufferSet(bufInfo);
 
-    terrainVirtualTileState.virtualTerrainSystemResourceTable.ForEach([](const ResourceTableId table, IndexT i)
+    terrainVirtualTileState.systemTable.ForEach([](const ResourceTableId table, IndexT i)
     {
         ResourceTableSetRWBuffer(
             table
@@ -2089,9 +2116,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     systemUniforms.MaxTessellation = 32.0f;
     systemUniforms.Debug = terrainState.debugRender;
     systemUniforms.NumBiomes = terrainState.biomeCounter;
-    systemUniforms.AlbedoPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalAlbedoCache);
-    systemUniforms.NormalPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalNormalCache);
-    systemUniforms.MaterialPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalMaterialCache);
+    systemUniforms.AlbedoPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalAlbedoCacheBC);
+    systemUniforms.NormalPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalNormalCacheBC);
+    systemUniforms.MaterialPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalMaterialCacheBC);
     systemUniforms.AlbedoLowresBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresAlbedo);
     systemUniforms.NormalLowresBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresNormal);
     systemUniforms.MaterialLowresBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.lowresMaterial);
@@ -2232,7 +2259,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
             float metersPerPixel = metersPerTile / float(PhysicalTextureTilePaddedSize);
             float metersPerTilePadded = metersPerTile + PhysicalTextureTilePadding * metersPerPixel;
 
-            Terrain::TileWrite write;
+            TerrainTileWrite::TileWrite write;
             write.WorldOffset[0] = subTexture.worldCoordinate.x + subTextureTileX * metersPerTile - metersPerPixel * PhysicalTextureTileHalfPadding;
             write.WorldOffset[1] = subTexture.worldCoordinate.y + subTextureTileY * metersPerTile - metersPerPixel * PhysicalTextureTileHalfPadding;
             n_assert(result.cached.x < USHRT_MAX && result.cached.y < USHRT_MAX);
@@ -2285,10 +2312,10 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     IndexT i;
 
     // Setup constants for tile updates
-    SizeT numPagesThisFrame = Math::min(Terrain::MAX_TILES_PER_FRAME, terrainVirtualTileState.tileWrites.Size());
+    SizeT numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.tileWrites.Size());
     for (i = 0; i < numPagesThisFrame; i++)
     {
-        Terrain::TileWrite& write = terrainVirtualTileState.tileWrites[i];
+        TerrainTileWrite::TileWrite& write = terrainVirtualTileState.tileWrites[i];
         terrainVirtualTileState.tileWritesThisFrame.Append(write);
     }
     if (i > 0)
@@ -2299,7 +2326,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         CoreGraphics::BufferUpdateArray(terrainVirtualTileState.tileWriteBufferSet.HostBuffer(), terrainVirtualTileState.tileWritesThisFrame.Begin(), terrainVirtualTileState.tileWritesThisFrame.Size());
 
     // Update buffers for indirection pixel uploads
-    numPagesThisFrame = Math::min(Terrain::MAX_TILES_PER_FRAME, terrainVirtualTileState.indirectionEntryUpdates.Size());
+    numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.indirectionEntryUpdates.Size());
     uint offset = Upload(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
     for (i = 0; i < numPagesThisFrame; i++)
     {
@@ -2449,12 +2476,12 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                 ImGui::NewLine();
                 ImGui::Separator();
                 ImGui::Text("Physical Normal Cache");
-                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.physicalNormalCache);
+                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.physicalNormalCacheBC);
 
                 ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
                 static Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = terrainVirtualTileState.physicalNormalCache;
+                textureInfo.nebulaHandle = terrainVirtualTileState.physicalNormalCacheBC;
                 textureInfo.mip = 0;
                 textureInfo.layer = 0;
 

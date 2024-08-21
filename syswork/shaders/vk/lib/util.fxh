@@ -396,13 +396,22 @@ TangentSpace(vec3 tangent, vec3 normal, float sign)
 //------------------------------------------------------------------------------
 /**
 */
-vec3
-TangentSpaceNormal(vec2 normalMapComponents, mat3 tbn)
+vec3 
+UnpackBC5Normal(vec2 normalMapComponents)
 {
     vec3 normal = vec3(0, 0, 0);
     normal.xy = (normalMapComponents * 2.0f) - 1.0f;
     normal.z = saturate(sqrt(1.0f - dot(normal.xy, normal.xy)));
-    return tbn * normal;
+    return normal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+TangentSpaceNormal(vec2 normalMapComponents, mat3 tbn)
+{
+    return tbn * UnpackBC5Normal(normalMapComponents);
 }
 
 //-------------------------------------------------------------------------------------------------------------
