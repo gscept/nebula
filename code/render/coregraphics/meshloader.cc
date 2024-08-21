@@ -150,9 +150,9 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
             CoreGraphics::BufferCopy from, to;
             from.offset = offset;
             to.offset = baseVertexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Mesh loader vertex upload");
             CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, vbo, { to }, header->vertexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
             BufferIdRelease(vbo);
 
             loadBits |= 1 << 0;
@@ -172,9 +172,9 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
             CoreGraphics::BufferCopy from, to;
             from.offset = offset;
             to.offset = baseIndexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Mesh loader index upload");
             CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, ibo, { to }, header->indexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
             BufferIdRelease(ibo);
 
             loadBits |= 1 << 1;

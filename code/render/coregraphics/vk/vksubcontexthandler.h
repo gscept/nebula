@@ -100,6 +100,15 @@ public:
         , const char* name = nullptr
 #endif
     );
+
+    /// append submissions to context to execute later, supports waiting for a queue
+    uint64 AppendSubmissionTimeline(
+        CoreGraphics::QueueType type
+        , Util::Array<VkCommandBuffer> cmds
+#if NEBULA_GRAPHICS_DEBUG
+        , const char* name = nullptr
+#endif
+    );
     /// Gets the next submission id for a specific queue
     uint64 GetNextTimelineIndex(CoreGraphics::QueueType type);
     /// Append a wait for a submission timeline index

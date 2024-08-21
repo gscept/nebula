@@ -296,7 +296,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     to.offset = this->vertexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, this->vbo, {to}, this->vertexDataSize);
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 }
 
 //------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     to.offset = this->indexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, this->ibo, {to}, this->indexDataSize);
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 }
 
 } // namespace Legacy

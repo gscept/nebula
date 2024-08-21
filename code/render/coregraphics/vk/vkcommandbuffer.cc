@@ -55,7 +55,7 @@ const VkCommandBuffer
 CmdBufferGetVk(const CoreGraphics::CmdBufferId id)
 {
     if (id == CoreGraphics::InvalidCmdBufferId) return VK_NULL_HANDLE;
-    else                                        return commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    else                                        return commandBuffers.ConstGet<CmdBuffer_VkCommandBuffer>(id.id);
 }
 
 //------------------------------------------------------------------------------

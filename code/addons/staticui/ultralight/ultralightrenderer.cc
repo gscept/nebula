@@ -180,7 +180,7 @@ UltralightRenderer::UpdateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
     bitmap->UnlockPixels();
 
     // Lock setup command buffer for update
-    CoreGraphics::CmdBufferId setupCmd = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId setupCmd = CoreGraphics::LockGraphicsSetupCommandBuffer("Ultralight texture update");
 
     CoreGraphics::BufferCopy from;
     from.offset = 0;
@@ -215,7 +215,7 @@ UltralightRenderer::UpdateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
                         });
 
     // Finish command buffer
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(setupCmd);
 
     // Delete temporary buffer
     CoreGraphics::DestroyBuffer(tempBuf);
@@ -402,7 +402,7 @@ UltralightRenderer::UpdateGeometry(uint32_t geometry_id, const ultralight::Verte
     CoreGraphics::BufferId ibo = CoreGraphics::CreateBuffer(iboInfo);
 
     // Lock setup command buffer for update
-    CoreGraphics::CmdBufferId setupCmd = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId setupCmd = CoreGraphics::LockGraphicsSetupCommandBuffer("Ultralight geometry update");
 
     CoreGraphics::BufferCopy from, to;
     from.offset = 0;
@@ -413,7 +413,7 @@ UltralightRenderer::UpdateGeometry(uint32_t geometry_id, const ultralight::Verte
     CoreGraphics::CmdCopy(setupCmd, ibo, { from }, geo.ibo, { to }, indices.size);
 
     // Finish command buffer
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(setupCmd);
 
     // Delete temporary buffer
     CoreGraphics::DestroyBuffer(vbo);

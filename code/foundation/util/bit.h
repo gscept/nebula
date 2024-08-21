@@ -242,12 +242,12 @@ Lsb(uint value, byte bit)
 /**
 */
 inline uint 
-BitmaskConvert(uint mask, const uint* table)
+BitmaskConvert(uint mask, const uint* table, const uint numEntries = 0xFFFFFFFF)
 {
     uint ret = 0x0;
     uint usageFlags = mask;
     uint flagIndex = 0;
-    while (usageFlags != 0x0)
+    while (usageFlags != 0x0 && flagIndex < numEntries)
     {
         if (usageFlags & (1 << flagIndex))
         {

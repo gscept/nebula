@@ -1126,7 +1126,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     setupResourcePoolInfo.resetable = true;
     setupResourcePoolInfo.shortlived = true;
     state.setupGraphicsCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
-    state.setupGraphicsCommandBuffer = CoreGraphics::InvalidCmdBufferId;
     setupResourcePoolInfo.queue = CoreGraphics::QueueType::TransferQueueType;
     state.setupTransferCommandBufferPool = CoreGraphics::CreateCmdBufferPool(setupResourcePoolInfo);
     state.setupTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
@@ -1459,36 +1458,31 @@ UnlockTransferSetupCommandBuffer()
 /**
 */
 const CoreGraphics::CmdBufferId
-LockGraphicsSetupCommandBuffer()
+LockGraphicsSetupCommandBuffer(const char* name)
 {
     setupLock.Enter();
-    if (state.setupGraphicsCommandBuffer == CoreGraphics::InvalidCmdBufferId)
-    {
-        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
-        cmdCreateInfo.pool = state.setupGraphicsCommandBufferPool;
-        cmdCreateInfo.usage = CoreGraphics::QueueType::GraphicsQueueType;
-        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
-        cmdCreateInfo.name = "Setup";
-        state.setupGraphicsCommandBuffer = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+    CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+    cmdCreateInfo.pool = state.setupGraphicsCommandBufferPool;
+    cmdCreateInfo.usage = CoreGraphics::QueueType::GraphicsQueueType;
+    cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+    cmdCreateInfo.name = name == nullptr ? "Setup" : name;
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
-        CoreGraphics::CmdBeginRecord(state.setupGraphicsCommandBuffer, { true, false, false });
-        CoreGraphics::CmdBeginMarker(state.setupGraphicsCommandBuffer, NEBULA_MARKER_PURPLE, "Setup");
-    }
-    else
-    {
-        CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
-    }
-    
-    return state.setupGraphicsCommandBuffer;
+    CoreGraphics::CmdBeginRecord(cmdBuf, { true, false, false });
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_PURPLE, name == nullptr ? "Setup" : name);
+    return cmdBuf;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-UnlockGraphicsSetupCommandBuffer()
+UnlockGraphicsSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf)
 {
-    CmdBufferIdRelease(state.setupGraphicsCommandBuffer);
+    CoreGraphics::CmdEndMarker(cmdBuf);
+    CoreGraphics::CmdEndRecord(cmdBuf);
+    state.setupGraphicsCommandBuffers.Append(cmdBuf);
+    CoreGraphics::CmdBufferIdRelease(cmdBuf);
     setupLock.Leave();
 }
 
@@ -1604,20 +1598,24 @@ SubmitCommandBuffer(
         // Delete command buffer
         DestroyCmdBuffer(state.handoverTransferCommandBuffer);
         CmdBufferIdRelease(state.handoverTransferCommandBuffer);
-
+         
         // Reset command buffer id for the next frame
         state.handoverTransferCommandBuffer = CoreGraphics::InvalidCmdBufferId;
     }
     transferLock.Leave();
 
     setupLock.Enter();
-    if (state.setupGraphicsCommandBuffer != CoreGraphics::InvalidCmdBufferId)
+    if (!state.setupGraphicsCommandBuffers.IsEmpty())
     {
-        CmdBufferIdAcquire(state.setupGraphicsCommandBuffer);
-        CmdEndMarker(state.setupGraphicsCommandBuffer);
-        CmdEndRecord(state.setupGraphicsCommandBuffer);
-        
-        graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, CmdBufferGetVk(state.setupGraphicsCommandBuffer), "Setup");
+        Util::Array<VkCommandBuffer> vkBufs;
+        vkBufs.Reserve(state.setupGraphicsCommandBuffers.Size());
+        for (int i = 0; i < state.setupGraphicsCommandBuffers.Size(); i++)
+        {
+            const auto cmdBuf = state.setupGraphicsCommandBuffers[i];
+            vkBufs.Append(CmdBufferGetVk(cmdBuf));
+        }
+
+        graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, vkBufs, "Setup");
         graphicsWait.queue = CoreGraphics::GraphicsQueueType;
 
         // This command buffer will have handover commands, so wait for that transfer
@@ -1627,12 +1625,11 @@ SubmitCommandBuffer(
         // Add wait event
         AddSubmissionEvent(graphicsWait);
 
-        // Delete command buffer
-        DestroyCmdBuffer(state.setupGraphicsCommandBuffer);
-        CmdBufferIdRelease(state.setupGraphicsCommandBuffer);
-
-        // Reset command buffer id for the next frame
-        state.setupGraphicsCommandBuffer = CoreGraphics::InvalidCmdBufferId;
+        for (int i = 0; i < state.setupGraphicsCommandBuffers.Size(); i++)
+        {
+            DestroyCmdBuffer(state.setupGraphicsCommandBuffers[i]);
+        }
+        state.setupGraphicsCommandBuffers.Clear();
     }
     setupLock.Leave();
 

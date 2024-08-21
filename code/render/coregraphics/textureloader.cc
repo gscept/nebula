@@ -230,7 +230,7 @@ FinishMips(TextureStreamData* streamData, uint mipBits, const CoreGraphics::Text
     CoreGraphics::CmdBufferId handoverBuf = CoreGraphics::LockTransferHandoverSetupCommandBuffer();
     CoreGraphics::CmdBeginMarker(handoverBuf, NEBULA_MARKER_TRANSFER, name);
 
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Texture mip upload");
     CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, name);
 
     // Finish the mips by handing them over 
@@ -267,7 +267,7 @@ FinishMips(TextureStreamData* streamData, uint mipBits, const CoreGraphics::Text
     }
 
     CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdEndMarker(handoverBuf);
     CoreGraphics::UnlockTransferHandoverSetupCommandBuffer();

@@ -87,9 +87,9 @@ struct GraphicsDeviceState
 
     CoreGraphics::CmdBufferPoolId setupTransferCommandBufferPool;
     CoreGraphics::CmdBufferId setupTransferCommandBuffer;
-    CoreGraphics::CmdBufferId handoverTransferCommandBuffer;
+    Util::Array<CoreGraphics::CmdBufferId> handoverTransferCommandBuffers;
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
-    CoreGraphics::CmdBufferId setupGraphicsCommandBuffer;
+    Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
     Util::FixedArray<CoreGraphics::FenceId> presentFences;
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
@@ -169,9 +169,9 @@ const CoreGraphics::CmdBufferId LockTransferSetupCommandBuffer();
 /// Release lock on resource command buffer
 void UnlockTransferSetupCommandBuffer();
 /// Lock immediate graphics command buffer
-const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer();
+const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer(const char* name = nullptr);
 /// Release lock on immediate graphics command buffer
-void UnlockGraphicsSetupCommandBuffer();
+void UnlockGraphicsSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 /// Lock handover transfer command buffer
 const CoreGraphics::CmdBufferId LockTransferHandoverSetupCommandBuffer();
 /// Release lock on handover command buffer

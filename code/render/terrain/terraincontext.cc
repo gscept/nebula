@@ -438,7 +438,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     terrainVirtualTileState.indirectionUploadOffsets.Resize(CoreGraphics::GetNumBufferedFrames());
     terrainVirtualTileState.indirectionUploadOffsets.Fill(0x0);
 
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
     // clear the buffer, the subsequent fills are to clear the buffers
 
@@ -468,6 +467,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
 
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Terrain Page Setup");
     terrainVirtualTileState.pageUpdateReadbackBuffers = BufferSet(bufInfo);
     for (IndexT i = 0; i < terrainVirtualTileState.pageUpdateReadbackBuffers.buffers.Size(); i++)
     {
@@ -475,7 +475,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     }
 
     // we're done
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::TextureCreateInfo albedoCacheInfo;
     albedoCacheInfo.name = "Terrain Cache Albedo"_atm;
@@ -483,7 +483,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     albedoCacheInfo.height = PhysicalTexturePaddedSize;
     albedoCacheInfo.format = CoreGraphics::PixelFormat::BC3;
     albedoCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture | CoreGraphics::TextureUsage::ReadWriteTexture;
-    albedoCacheInfo.excludeViewUsage = CoreGraphics::TextureUsage::ReadWriteTexture;
     albedoCacheInfo.allowCast = true;
     terrainVirtualTileState.physicalAlbedoCacheBC = CoreGraphics::CreateTexture(albedoCacheInfo);
 
@@ -500,7 +499,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     normalCacheInfo.height = PhysicalTexturePaddedSize;
     normalCacheInfo.format = CoreGraphics::PixelFormat::BC5;
     normalCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture | CoreGraphics::TextureUsage::ReadWriteTexture;
-    normalCacheInfo.excludeViewUsage = CoreGraphics::TextureUsage::ReadWriteTexture;
     normalCacheInfo.allowCast = true;
     terrainVirtualTileState.physicalNormalCacheBC = CoreGraphics::CreateTexture(normalCacheInfo);
 
@@ -517,7 +515,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     materialCacheInfo.height = PhysicalTexturePaddedSize;
     materialCacheInfo.format = CoreGraphics::PixelFormat::BC3;
     materialCacheInfo.usage = CoreGraphics::TextureUsage::SampleTexture | CoreGraphics::TextureUsage::ReadWriteTexture;
-    materialCacheInfo.excludeViewUsage = CoreGraphics::TextureUsage::ReadWriteTexture;
     materialCacheInfo.allowCast = true;
     terrainVirtualTileState.physicalMaterialCacheBC = CoreGraphics::CreateTexture(materialCacheInfo);
 
@@ -1189,7 +1186,8 @@ TerrainContext::SetupTerrain(
     using namespace CoreGraphics;
     const Graphics::ContextEntityId cid = GetContextId(entity);
     TerrainRuntimeInfo& runtimeInfo = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
-    runtimeInfo.enableRayTracing = CoreGraphics::RayTracingSupported & enableRayTracing;
+    runtimeInfo.enableRayTracing = false;
+    //CoreGraphics::RayTracingSupported& enableRayTracing;
 
     runtimeInfo.worldWidth = terrainState.settings.worldSizeX;
     runtimeInfo.worldHeight = terrainState.settings.worldSizeZ;
@@ -1438,7 +1436,7 @@ TerrainContext::SetupTerrain(
         indexUploadBufferInfo.dataSize = indices.ByteSize();
         CoreGraphics::BufferId tempIndexBuffer = CoreGraphics::CreateBuffer(indexUploadBufferInfo);
 
-        CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+        CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Terrain geometry setup");
 
         // The index buffer is static for all patches, so let's just copy it over
         for (IndexT i = 0; i < runtimeInfo.numTilesY * runtimeInfo.numTilesX; i++)
@@ -1446,7 +1444,7 @@ TerrainContext::SetupTerrain(
             CoreGraphics::BufferCopy fromCopy{ .offset = 0 }, toCopy{ .offset = raytracingState.indexBuffer.offset + i * (indices.ByteSize()) };
             CoreGraphics::CmdCopy(cmdBuf, tempIndexBuffer, { fromCopy }, CoreGraphics::GetIndexBuffer(), { toCopy }, indices.ByteSize());
         }
-        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+        CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
         CoreGraphics::DestroyBuffer(tempIndexBuffer);
 
         // Prepare to run a compute shader to displace every vertex based on the height map

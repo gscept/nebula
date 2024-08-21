@@ -195,7 +195,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     res = vkGetSwapchainImagesKHR(dev, swapchain, &numBuffers, images.Begin());
     n_assert(res == VK_SUCCESS);
 
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Swap chain setup");
     for (i = 0; i < numBuffers; i++)
     {
         // Transition image to present source
@@ -229,7 +229,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         n_assert(res == VK_SUCCESS);
     }
     currentBackbuffer = 0;
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
     poolInfo.shortlived = true;

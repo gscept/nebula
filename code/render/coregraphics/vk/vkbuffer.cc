@@ -245,7 +245,7 @@ CreateBuffer(const BufferCreateInfo& info)
             char* buf = (char*)GetMappedMemory(tempAlloc);
             memcpy(buf, info.data, info.dataSize);
 
-            CoreGraphics::CmdBufferId cmd = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            CoreGraphics::CmdBufferId cmd = CoreGraphics::LockGraphicsSetupCommandBuffer("Buffer upload");
             VkBufferCopy copy;
             copy.dstOffset = 0;
             copy.srcOffset = 0;
@@ -257,7 +257,7 @@ CreateBuffer(const BufferCreateInfo& info)
             // add delayed delete for this temporary buffer
             Vulkan::DelayedDeleteVkBuffer(loadInfo.dev, tempBuffer);
             CoreGraphics::DelayedFreeMemory(tempAlloc);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmd);
         }
     }
 
@@ -582,9 +582,9 @@ BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, cons
     CoreGraphics::BufferCopy from, to;
     from.offset = 0;
     to.offset = offset;
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Staging buffer upload");
     CoreGraphics::CmdCopy(cmdBuf, buf, { from }, dest, { to }, size);
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     // Destroy the buffer
     CoreGraphics::DestroyBuffer(buf);

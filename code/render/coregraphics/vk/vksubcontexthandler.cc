@@ -160,6 +160,35 @@ VkSubContextHandler::AppendSubmissionTimeline(
 /**
 */
 uint64
+VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, Util::Array<VkCommandBuffer> cmds,
+#if NEBULA_GRAPHICS_DEBUG
+    const char* name
+#endif
+)
+{
+    n_assert(!cmds.IsEmpty());
+    uint64 ret = GetNextTimelineIndex(type);
+
+    Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[type];
+    TimelineSubmission2& sub = submissionsForQueue.Emplace();
+    sub.buffers.AppendArray(cmds);
+    sub.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
+    sub.signalIndices.Append(ret);
+    sub.queue = type;
+#if NEBULA_GRAPHICS_DEBUG
+    sub.name = name;
+#endif
+
+    // Progress the semaphore counter
+    this->semaphoreSubmissionIds[type][this->currentQueue[type]] = ret;
+    
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64
 VkSubContextHandler::GetNextTimelineIndex(CoreGraphics::QueueType type)
 {
     return this->semaphoreSubmissionIds[type][this->currentQueue[type]] + 1;
