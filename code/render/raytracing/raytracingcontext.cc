@@ -184,8 +184,10 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     
     // Create buffers for updating blas instances
     CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.name = "BLAS Instance Buffer";
     bufInfo.elementSize = CoreGraphics::BlasInstanceGetSize();
     bufInfo.size = settings.maxNumAllowedInstances;  // This is a virtual max-size, as this buffer is virtual memory managed
+    bufInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
     bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureInstances;
     state.blasInstanceBuffer = CoreGraphics::BufferWithStaging(bufInfo);
 
