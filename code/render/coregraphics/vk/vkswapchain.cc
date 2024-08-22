@@ -276,6 +276,8 @@ SwapchainSwap(const SwapchainId id)
     // get present fence and be sure it is finished before getting the next image
     VkFence fence = Vulkan::GetPresentFence();
     VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
+    if (res == VK_ERROR_DEVICE_LOST)
+        Vulkan::DeviceLost();
     n_assert(res == VK_SUCCESS);
     res = vkResetFences(dev, 1, &fence);
     n_assert(res == VK_SUCCESS);

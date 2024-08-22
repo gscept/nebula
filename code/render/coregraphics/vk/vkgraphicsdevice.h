@@ -16,6 +16,14 @@
 #include "vkcommandbufferthread.h"
 #include "vkmemory.h"
 
+#if NEBULA_GRAPHICS_DEBUG
+struct NvidiaAftermathCheckpoint
+{
+    char* name;
+    bool push : 1;
+};
+#endif
+
 namespace Vulkan
 {
 
@@ -69,5 +77,8 @@ void SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>&
 
 /// Clear pending resources
 void ClearPending();
+
+/// Handle VK Results
+void DeviceLost();
 
 } // namespace Vulkan

@@ -194,7 +194,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
             n_printf("Found %d GPUs, which is more than 1! Perhaps the Render Device should be able to use it?\n", gpuCount);
 
         IndexT i;
-        for (i = 0; i < (IndexT)gpuCount; i++)
+        for (i = 0; i < (IndexT)1; i++)
         {
             // Get device props and features
             state.accelerationStructureDeviceProps[i] =
@@ -250,7 +250,11 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                     VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
                     VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
                     VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME,
-                    VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME
+                    VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+#if NEBULA_GRAPHICS_DEBUG
+                    VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
+                    VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME
+#endif
                 };
 
                 uint32_t newNumCaps = 0;
@@ -286,6 +290,16 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                             {
                                 CoreGraphics::VariableRateShadingSupported = true;
                                 n_printf("[Graphics Device] Variable Rate Shading is enabled\n");
+                            }
+                        }
+                        if (features.enableGPUCrashAnalytics)
+                        {
+                            if (wantedExtensions[j] == VK_NV_DEVICE_DIAGNOSTIC_CHECKPOINTS_EXTENSION_NAME)
+                            {
+                                CoreGraphics::NvidiaCheckpointsSupported = true;
+                                _IMP_VK_DYN(vkCmdSetCheckpointNV, state.instance);
+                                _IMP_VK_DYN(vkGetQueueCheckpointDataNV, state.instance);
+                                n_printf("[Graphics Device] Nvidia Checkpoints are enabled\n");
                             }
                         }
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
@@ -584,6 +598,68 @@ ClearPending()
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeviceLost()
+{
+    #if NEBULA_GRAPHICS_DEBUG
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        n_printf("--- NVIDIA crash report ---\n");
+        for (int i = 0; i < CoreGraphics::QueueType::NumQueueTypes; i++)
+        {
+            switch (i)
+            {
+            case CoreGraphics::QueueType::GraphicsQueueType:
+                n_printf("Graphics Queue: \n");
+                break;
+            case CoreGraphics::QueueType::ComputeQueueType:
+                n_printf("Compute Queue: \n");
+                break;
+            case CoreGraphics::QueueType::TransferQueueType:
+                n_printf("Transfer Queue: \n");
+                break;
+            case CoreGraphics::QueueType::SparseQueueType:
+                n_printf("Sparse Queue: \n");
+                break;
+            }
+            VkQueue queue = state.queueHandler.GetQueue((CoreGraphics::QueueType)i);
+            uint32_t numCheckpoints;
+            vkGetQueueCheckpointDataNV(queue, &numCheckpoints, nullptr);
+            Util::FixedArray<VkCheckpointDataNV> checkpoints(numCheckpoints);
+            for (auto& checkpoint : checkpoints)
+            {
+                checkpoint.sType = VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV;
+                checkpoint.pNext = nullptr;
+            }
+            vkGetQueueCheckpointDataNV(queue, &numCheckpoints, checkpoints.Begin());
+
+            // Print GPU stack trace
+            int indentation = 0;
+            for (int j = 0; j < numCheckpoints; j++)
+            {
+                const VkCheckpointDataNV& data = checkpoints[j];
+                NvidiaAftermathCheckpoint* userData = (NvidiaAftermathCheckpoint*)data.pCheckpointMarker;
+                
+                if (!userData->push)
+                    indentation--;
+
+                if (userData->name != nullptr)
+                    n_printf("%0*s%s\n", indentation * 4, " ", userData->name);
+
+                if (userData->push)
+                    indentation++;
+
+            }
+        }
+        n_printf("--- END ---\n");
+
+    }
+    #endif
+}
+
 } // namespace Vulkan
 
 #include "debug/stacktrace.h"
@@ -609,6 +685,8 @@ bool RayTracingSupported = false;
 bool DynamicVertexInputSupported = false;
 bool MeshShadersSupported = false;
 bool VariableRateShadingSupported = false;
+
+bool NvidiaCheckpointsSupported = false;
 using namespace Vulkan;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -879,8 +957,22 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     delete[] queuesProps;
 
     // get physical device features
-    VkPhysicalDeviceFeatures features;
-    vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
+    //VkPhysicalDeviceFeatures features;
+    //vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
+
+    VkPhysicalDeviceDiagnosticsConfigFeaturesNV nvidiaDeviceDiagnosticsFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV,
+        .pNext = nullptr,
+        .diagnosticsConfig = false
+    };
+
+    VkPhysicalDeviceFeatures2 features2 =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .pNext = &nvidiaDeviceDiagnosticsFeature
+    };
+    vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
 
     VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
     {
@@ -1003,10 +1095,33 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .storagePushConstant16 = false,
         .storageInputOutput16 = false
     };
+
     if (info.features.enableRayTracing)
     {
         lastExtension = &buffer16BitFeature;
     }
+#pragma endregion
+
+#pragma region Nvidia extensions
+#if NEBULA_GRAPHICS_DEBUG
+
+    VkDeviceDiagnosticsConfigCreateInfoNV nvidiaCheckpointConfig =
+    {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV,
+        .pNext = lastExtension,
+        .flags = VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV | VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV
+    };
+    nvidiaDeviceDiagnosticsFeature =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DIAGNOSTICS_CONFIG_FEATURES_NV,
+        .pNext = &nvidiaCheckpointConfig,
+        .diagnosticsConfig = true
+    };
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        lastExtension = &nvidiaDeviceDiagnosticsFeature;
+    }
+#endif
 #pragma endregion
 
     VkDeviceCreateInfo deviceInfo =
@@ -1020,7 +1135,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         layers,
         state.numCaps[state.currentDevice],
         state.deviceFeatureStrings[state.currentDevice].Begin(),
-        &features
+        &features2.features
     };
 
     // create device

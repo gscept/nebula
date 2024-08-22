@@ -100,7 +100,10 @@ GraphicsServer::Open()
         .features = {
             .enableRayTracing = true,
             .enableMeshShaders = true,
-            .enableVariableRateShading = true
+            .enableVariableRateShading = true,
+#if NEBULA_GRAPHICS_DEBUG
+            .enableGPUCrashAnalytics = true
+#endif
         }
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);

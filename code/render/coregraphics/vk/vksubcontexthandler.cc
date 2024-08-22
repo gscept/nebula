@@ -5,7 +5,7 @@
 
 #include "vksubcontexthandler.h"
 #include "coregraphics/config.h"
-
+#include "vkgraphicsdevice.h"
 namespace Vulkan
 {
 
@@ -398,6 +398,8 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
             &index
         };
         VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
+        if (res == VK_ERROR_DEVICE_LOST)
+            Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
     }
 }
@@ -490,6 +492,8 @@ VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
     for (IndexT i = 0; i < list->Size(); i++)
     {
         VkResult res = vkQueueWaitIdle((*list)[i]);
+        if (res == VK_ERROR_DEVICE_LOST)
+            Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
     }
 }

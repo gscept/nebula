@@ -1548,6 +1548,17 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
         { col[0], col[1], col[2], col[3] }
     };
     VkCmdDebugMarkerBegin(cmdBuf, &info);
+
+#if NEBULA_GRAPHICS_DEBUG
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        NvidiaAftermathCheckpoint* checkpoint = new NvidiaAftermathCheckpoint;
+        checkpoint->name = new char[strlen(name) + 1];
+        checkpoint->push = 1;
+        strcpy(checkpoint->name, name);
+        vkCmdSetCheckpointNV(cmdBuf, checkpoint);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1578,6 +1589,16 @@ CmdEndMarker(const CmdBufferId id)
     }
 #endif
     VkCmdDebugMarkerEnd(cmdBuf);
+
+    #if NEBULA_GRAPHICS_DEBUG
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        NvidiaAftermathCheckpoint* checkpoint = new NvidiaAftermathCheckpoint;
+        checkpoint->name = nullptr;
+        checkpoint->push = 0;
+        vkCmdSetCheckpointNV(cmdBuf, checkpoint);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------

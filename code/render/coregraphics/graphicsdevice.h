@@ -29,6 +29,7 @@ extern bool RayTracingSupported;
 extern bool DynamicVertexInputSupported;
 extern bool VariableRateShadingSupported;
 extern bool MeshShadersSupported;
+extern bool NvidiaCheckpointsSupported;
 
 struct GraphicsDeviceCreateInfo
 {
@@ -45,6 +46,7 @@ struct GraphicsDeviceCreateInfo
         bool enableRayTracing : 1;
         bool enableMeshShaders : 1;
         bool enableVariableRateShading : 1;
+        bool enableGPUCrashAnalytics : 1;
     } features;
 };
 
