@@ -284,14 +284,13 @@ CreateBuffer(const BufferCreateInfo& info)
 void 
 DestroyBuffer(const BufferId id)
 {
-    bufferAllocator.Acquire(id.id);
+    __Lock(bufferAllocator, id.id);
     VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id);
     
     CoreGraphics::DelayedDeleteBuffer(id);
     CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     loadInfo.mem = CoreGraphics::Alloc{};
     bufferAllocator.Dealloc(id.id);
-    bufferAllocator.Release(id.id);
 }
 
 //------------------------------------------------------------------------------
