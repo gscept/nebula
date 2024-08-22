@@ -148,6 +148,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     commandBuffers.Set<CmdBuffer_VkDevice>(id, dev);
     commandBuffers.Set<CmdBuffer_Usage>(id, info.usage);
 
+
     QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id);
 
     uint bits = (uint)info.queryTypes;
@@ -234,6 +235,10 @@ DestroyCmdBuffer(const CmdBufferId id)
     CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
     markers.markerStack.Clear();
     markers.finishedMarkers.Clear();
+#endif
+
+#if NEBULA_GRAPHICS_DEBUG
+    commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).Clear();
 #endif
 
     CoreGraphics::DelayedDeleteCommandBuffer(id);
