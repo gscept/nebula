@@ -16,13 +16,6 @@
 #include "vkcommandbufferthread.h"
 #include "vkmemory.h"
 
-#if NEBULA_GRAPHICS_DEBUG
-struct NvidiaAftermathCheckpoint
-{
-    char* name;
-    bool push : 1;
-};
-#endif
 
 namespace Vulkan
 {

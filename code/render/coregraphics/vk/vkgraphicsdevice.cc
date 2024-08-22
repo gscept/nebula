@@ -607,7 +607,7 @@ DeviceLost()
     #if NEBULA_GRAPHICS_DEBUG
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
-        n_printf("--- NVIDIA crash report ---\n");
+        n_printf("******** NVIDIA CRASH REPORT ********\n");
         for (int i = 0; i < CoreGraphics::QueueType::NumQueueTypes; i++)
         {
             switch (i)
@@ -641,20 +641,32 @@ DeviceLost()
             for (int j = 0; j < numCheckpoints; j++)
             {
                 const VkCheckpointDataNV& data = checkpoints[j];
-                NvidiaAftermathCheckpoint* userData = (NvidiaAftermathCheckpoint*)data.pCheckpointMarker;
-                
-                if (!userData->push)
-                    indentation--;
+                CoreGraphics::NvidiaAftermathCheckpoint* userData = (CoreGraphics::NvidiaAftermathCheckpoint*)data.pCheckpointMarker;
 
-                if (userData->name != nullptr)
-                    n_printf("%0*s%s\n", indentation * 4, " ", userData->name);
+                if (userData != nullptr)
+                {
+                    CoreGraphics::NvidiaAftermathCheckpoint* next = userData;
+                    while (next != nullptr)
+                    {
+                        if (!next->push)
+                            indentation--;
 
-                if (userData->push)
-                    indentation++;
+                        if (next->name != nullptr)
+                        {
+                            n_printf("%*s", indentation * 4, "-");
+                            n_printf(" %s\n", next->name.AsCharPtr());
+                        }
 
+                        if (next->push)
+                            indentation++;
+
+                        CoreGraphics::NvidiaAftermathCheckpoint* prev = next->prev;
+                        next = prev;
+                    }
+                }
             }
         }
-        n_printf("--- END ---\n");
+        n_printf("******** END OF CRASH REPORT ********\n");
 
     }
     #endif
@@ -1109,7 +1121,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         .sType = VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV,
         .pNext = lastExtension,
-        .flags = VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_AUTOMATIC_CHECKPOINTS_BIT_NV | VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV
+        .flags = VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV  | VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV
     };
     nvidiaDeviceDiagnosticsFeature =
     {

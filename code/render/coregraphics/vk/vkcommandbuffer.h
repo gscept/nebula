@@ -13,6 +13,7 @@
 #include "coregraphics/pass.h"
 #include "coregraphics/shader.h"
 
+
 namespace CoreGraphics
 {
 struct PassId;
@@ -69,6 +70,9 @@ enum
 #if NEBULA_ENABLE_PROFILING
     , CmdBuffer_ProfilingMarkers
     , CmdBuffer_Query
+#endif
+#if NEBULA_GRAPHICS_DEBUG
+    , CmdBuffer_NVCheckpoints
 #endif
 };
 
@@ -163,6 +167,9 @@ typedef Ids::IdAllocatorSafe<
 #if NEBULA_ENABLE_PROFILING
     , CoreGraphics::CmdBufferMarkerBundle
     , QueryBundle
+#endif
+#if NEBULA_GRAPHICS_DEBUG
+    , Util::Array<CoreGraphics::NvidiaAftermathCheckpoint>
 #endif
 > VkCommandBufferAllocator;
 

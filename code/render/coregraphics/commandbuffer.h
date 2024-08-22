@@ -95,6 +95,15 @@ struct FrameProfilingMarker
 };
 #endif
 
+#if NEBULA_GRAPHICS_DEBUG
+struct NvidiaAftermathCheckpoint
+{
+    Util::String name;
+    NvidiaAftermathCheckpoint* prev;
+    bool push : 1;
+};
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */

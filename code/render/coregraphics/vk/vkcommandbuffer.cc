@@ -1550,13 +1550,14 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     VkCmdDebugMarkerBegin(cmdBuf, &info);
 
 #if NEBULA_GRAPHICS_DEBUG
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
-        NvidiaAftermathCheckpoint* checkpoint = new NvidiaAftermathCheckpoint;
-        checkpoint->name = new char[strlen(name) + 1];
-        checkpoint->push = 1;
-        strcpy(checkpoint->name, name);
-        vkCmdSetCheckpointNV(cmdBuf, checkpoint);
+        NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
+        checkpoint.name = name;
+        checkpoint.push = 1;
+        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif
 }
@@ -1590,13 +1591,15 @@ CmdEndMarker(const CmdBufferId id)
 #endif
     VkCmdDebugMarkerEnd(cmdBuf);
 
-    #if NEBULA_GRAPHICS_DEBUG
+#if NEBULA_GRAPHICS_DEBUG
+Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
-        NvidiaAftermathCheckpoint* checkpoint = new NvidiaAftermathCheckpoint;
-        checkpoint->name = nullptr;
-        checkpoint->push = 0;
-        vkCmdSetCheckpointNV(cmdBuf, checkpoint);
+        NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
+        checkpoint.name = nullptr;
+        checkpoint.push = 0;
+        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif
 }
@@ -1619,6 +1622,18 @@ CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
         { col[0], col[1], col[2], col[3] }
     };
     VkCmdDebugMarkerInsert(cmdBuf, &info);
+
+#if NEBULA_GRAPHICS_DEBUG
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
+        checkpoint.name = name;
+        checkpoint.push = 0;
+        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
