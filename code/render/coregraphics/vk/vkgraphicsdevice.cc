@@ -991,69 +991,33 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .diagnosticsConfig = false
     };
 
+    VkPhysicalDeviceVulkan11Features vk11Features =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+        .pNext = &nvidiaDeviceDiagnosticsFeature,
+    };
+
+    VkPhysicalDeviceVulkan12Features vk12Features =
+    {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+        .pNext = &vk11Features,
+    };
+
     VkPhysicalDeviceFeatures2 features2 =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-        .pNext = &nvidiaDeviceDiagnosticsFeature
+        .pNext = &vk12Features
     };
     vkGetPhysicalDeviceFeatures2(state.physicalDevices[state.currentDevice], &features2);
 
-    VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-        .pNext = nullptr,
-        .hostQueryReset = true
-    };
-
-    VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-        .pNext = &hostQueryReset,
-        .timelineSemaphore = true
-    };
-
-    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-        .pNext = &timelineSemaphores,
-        .shaderInputAttachmentArrayDynamicIndexing = false,
-        .shaderUniformTexelBufferArrayDynamicIndexing = false,
-        .shaderStorageTexelBufferArrayDynamicIndexing = false,
-        .shaderUniformBufferArrayNonUniformIndexing = true,
-        .shaderSampledImageArrayNonUniformIndexing = true,
-        .shaderStorageBufferArrayNonUniformIndexing = true,
-        .shaderStorageImageArrayNonUniformIndexing = true,
-        .shaderInputAttachmentArrayNonUniformIndexing = false,
-        .shaderUniformTexelBufferArrayNonUniformIndexing = false,
-        .shaderStorageTexelBufferArrayNonUniformIndexing = false,
-        .descriptorBindingUniformBufferUpdateAfterBind = true,
-        .descriptorBindingSampledImageUpdateAfterBind = true,
-        .descriptorBindingStorageImageUpdateAfterBind = true,
-        .descriptorBindingStorageBufferUpdateAfterBind = true,
-        .descriptorBindingUniformTexelBufferUpdateAfterBind = true,
-        .descriptorBindingStorageTexelBufferUpdateAfterBind = true,
-        .descriptorBindingUpdateUnusedWhilePending = true,
-        .descriptorBindingPartiallyBound = true,
-        .descriptorBindingVariableDescriptorCount = true,
-        .runtimeDescriptorArray = true
-    };
-
+    vk11Features.pNext = nullptr;
     VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexFeatures =
     {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT,
-        .pNext = &descriptorIndexingFeatures,
+        .pNext = &vk12Features,
         .vertexInputDynamicState = true
     };
-
-    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
-        .pNext = &dynamicVertexFeatures,
-        .bufferDeviceAddress = true,
-        .bufferDeviceAddressCaptureReplay = false,
-        .bufferDeviceAddressMultiDevice = false
-    };
-    void* lastExtension = &bufferDeviceAddressFeatures;
+    void* lastExtension = &dynamicVertexFeatures;
 
 #pragma region Mesh Shader Features
     VkPhysicalDeviceMeshShaderFeaturesEXT meshShadersFeatures =
@@ -1110,19 +1074,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .rayTraversalPrimitiveCulling = false
     };
 
-    VkPhysicalDevice16BitStorageFeatures buffer16BitFeature =
-    {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
-        .pNext = &raytracingFeatures,
-        .storageBuffer16BitAccess = true,
-        .uniformAndStorageBuffer16BitAccess = true,
-        .storagePushConstant16 = false,
-        .storageInputOutput16 = false
-    };
-
     if (info.features.enableRayTracing)
     {
-        lastExtension = &buffer16BitFeature;
+        lastExtension = &raytracingFeatures;
     }
 #pragma endregion
 
