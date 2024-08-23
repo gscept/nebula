@@ -11,8 +11,8 @@
 
 namespace CoreGraphics
 {
-using namespace IO;
 using namespace CoreGraphics;
+using namespace Resources;
 using namespace Util;
 __ImplementClass(CoreGraphics::MeshLoader, 'VKML', Resources::ResourceLoader);
 
@@ -80,6 +80,12 @@ MeshLoader::MeshLoader()
         , VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // x: Particle::rotation, y: Particle::size
     };
     Layouts[(uint)CoreGraphics::VertexLayoutType::Particle] = CreateVertexLayout(vlCreateInfo);
+
+    CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
+    cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
+    cmdPoolInfo.resetable = false;
+    cmdPoolInfo.shortlived = true;
+    this->transferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -120,7 +126,7 @@ uint
 MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
 {
     ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
-
+    ResourceName name = this->names[entry.loaderInstanceId];
     MeshStreamData* streamData = (MeshStreamData*)stream.data;
     auto header = (Nvx3Header*)streamData->mappedData;
 
@@ -137,6 +143,21 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
     
     int loadBits = 0x0;
 
+    CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+    cmdCreateInfo.name = name.Value();
+    cmdCreateInfo.pool = this->transferPool;
+    cmdCreateInfo.usage = CoreGraphics::TransferQueueType;
+    cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+    CoreGraphics::CmdBufferId transferCommands = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+
+    CoreGraphics::CmdBufferBeginInfo beginInfo;
+    beginInfo.submitOnce = true;
+    beginInfo.submitDuringPass = false;
+    beginInfo.resubmittable = false;
+
+    CoreGraphics::CmdBeginRecord(transferCommands, beginInfo);
+    CoreGraphics::CmdBeginMarker(transferCommands, NEBULA_MARKER_GRAPHICS, name.Value());
+
     // Upload vertices
     if (requestedBits & ~0x1)
     {
@@ -150,9 +171,7 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
             CoreGraphics::BufferCopy from, to;
             from.offset = offset;
             to.offset = baseVertexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Mesh loader vertex upload");
-            CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, vbo, { to }, header->vertexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
+            CoreGraphics::CmdCopy(transferCommands, buffer, { from }, vbo, { to }, header->vertexDataSize);
             BufferIdRelease(vbo);
 
             loadBits |= 1 << 0;
@@ -172,14 +191,20 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
             CoreGraphics::BufferCopy from, to;
             from.offset = offset;
             to.offset = baseIndexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Mesh loader index upload");
-            CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, ibo, { to }, header->indexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
+            CoreGraphics::CmdCopy(transferCommands, buffer, { from }, ibo, { to }, header->indexDataSize);
             BufferIdRelease(ibo);
 
             loadBits |= 1 << 1;
         }
     }
+    streamData->cmdBuf = transferCommands;
+
+    CoreGraphics::CmdEndMarker(transferCommands);
+    CoreGraphics::CmdEndRecord(transferCommands);
+    CoreGraphics::CmdBufferIdRelease(transferCommands);
+
+    if (loadBits != 0)
+        this->partiallyCompleteResources.Append(entry);
 
     return loadBits;
 }
@@ -200,6 +225,22 @@ uint
 MeshLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
 {
     return 0x3;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshLoader::UpdateLoaderSyncState()
+{
+    for (auto& entry : this->partiallyCompleteResources)
+    {
+        ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
+        MeshStreamData* streamData = static_cast<MeshStreamData*>(stream.data);
+        CoreGraphics::SubmitCommandBuffers({ streamData->cmdBuf }, CoreGraphics::GraphicsQueueType, "Upload mesh");
+        CoreGraphics::DestroyCmdBuffer(streamData->cmdBuf);
+    }
+    this->partiallyCompleteResources.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -259,6 +300,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
 
         this->streams[entry].stream = stream;
         this->streams[entry].data = streamData;
+        streamData->cmdBuf = CoreGraphics::InvalidCmdBufferId;
 
         CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
         CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();

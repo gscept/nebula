@@ -34,6 +34,7 @@ private:
     {
         void* mappedData;
         CoreGraphics::VertexAlloc indexAllocationOffset, vertexAllocationOffset;
+        CoreGraphics::CmdBufferId cmdBuf;
     };
     
     /// Initialize mesh
@@ -45,10 +46,17 @@ private:
     /// Create load mask based on LOD
     uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
 
+    /// Update intermediate loaded state
+    void UpdateLoaderSyncState() override;
+
     /// Get vertex layout
     static const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexLayoutType type);
     /// setup mesh from nvx3 file in memory
     void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource, bool immediate);
+
+    Util::Array<Resources::ResourceId> partiallyCompleteResources;
+    CoreGraphics::CmdBufferPoolId transferPool;
+
 };
 
 } // namespace CoreGraphics
