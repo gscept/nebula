@@ -159,7 +159,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     commandBuffers.Set<CmdBuffer_VkCommandPool>(id, pool);
     commandBuffers.Set<CmdBuffer_VkDevice>(id, dev);
     commandBuffers.Set<CmdBuffer_Usage>(id, info.usage);
-
+    commandBuffers.Set<CmdBuffer_RecordsMarkers>(id, info.queryTypes != 0);
 
     QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id);
 
@@ -1687,10 +1687,19 @@ CmdFinishQueries(const CmdBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+CmdRecordsMarkers(const CmdBufferId id)
+{
+    return commandBuffers.ConstGet<CmdBuffer_RecordsMarkers>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Util::Array<CoreGraphics::FrameProfilingMarker>
 CmdCopyProfilingMarkers(const CmdBufferId id)
 {
-    CoreGraphics::CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+    CoreGraphics::CmdBufferMarkerBundle markers = commandBuffers.ConstGet<CmdBuffer_ProfilingMarkers>(id.id);
     return markers.finishedMarkers;
 }
 
@@ -1700,7 +1709,7 @@ CmdCopyProfilingMarkers(const CmdBufferId id)
 uint
 CmdGetMarkerOffset(const CmdBufferId id)
 {
-    CoreGraphics::QueryBundle& queries = commandBuffers.Get<CmdBuffer_Query>(id.id);
+    const CoreGraphics::QueryBundle& queries = commandBuffers.ConstGet<CmdBuffer_Query>(id.id);
     n_assert(queries.enabled[CoreGraphics::QueryType::TimestampsQueryType]);
     return queries.chunks[CoreGraphics::TimestampsQueryType][0].offset;
 }

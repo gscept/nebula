@@ -82,6 +82,7 @@ enum
     , CmdBuffer_PendingScissors
     , CmdBuffer_Usage
 #if NEBULA_ENABLE_PROFILING
+    , CmdBuffer_RecordsMarkers
     , CmdBuffer_ProfilingMarkers
     , CmdBuffer_Query
 #endif
@@ -169,7 +170,7 @@ struct ScissorBundle
 };
 
 typedef Ids::IdAllocatorSafe<
-    0xFFF
+    0x1000
     , VkDevice
     , VkCommandBuffer
     , VkCommandPool
@@ -179,6 +180,7 @@ typedef Ids::IdAllocatorSafe<
     , ScissorBundle
     , CoreGraphics::QueueType
 #if NEBULA_ENABLE_PROFILING
+    , bool
     , CoreGraphics::CmdBufferMarkerBundle
     , QueryBundle
 #endif
