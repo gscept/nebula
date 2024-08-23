@@ -1306,7 +1306,7 @@ class FrameScriptGenerator:
         file.WriteLine("Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>>& bufferDeps)")
         file.WriteLine("{")
         file.IncreaseIndent()
-        file.WriteLine("CoreGraphics::BarrierScope scope = CoreGraphics::BarrierScope::Begin(name, buf);")
+        file.WriteLine("static CoreGraphics::BarrierScope scope; scope.Init(name, buf);")
 
         if len(self.importTextures + self.localTextures) > 0:
             file.WriteLine("for (const auto [index, stage] : textureDeps)")
