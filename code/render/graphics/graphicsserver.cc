@@ -609,7 +609,7 @@ GraphicsServer::EndFrame()
 
     );
     CoreGraphics::WaitForSubmission(this->swapInfo.submission, queue);
-    CoreGraphics::DestroyCmdBuffer(cmdBuf);
+    CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
 
     // Finish submuissions
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);

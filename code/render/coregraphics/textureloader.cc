@@ -46,6 +46,8 @@ TextureLoader::TextureLoader()
     this->transferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
     cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
     this->handoverPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+
+    this->retiredCommandBuffers.Resize(CoreGraphics::GetNumBufferedFrames());
 }
 
 //------------------------------------------------------------------------------
@@ -331,6 +333,7 @@ TextureLoader::StreamResource(const Resources::ResourceId entry, IndexT frameInd
                 CoreGraphics::CmdBeginMarker(handoverCommands, NEBULA_MARKER_GRAPHICS, name.Value());
                 addToFinish = true;
             }
+
             // Handover mips to the graphics queue
             FinishMips(transferCommands, handoverCommands, streamData, bits.bits, texture, name.Value());
 
@@ -415,6 +418,16 @@ TextureLoader::Unload(const Resources::ResourceId id)
 void
 TextureLoader::UpdateLoaderSyncState()
 {
+    Util::Array<CoreGraphics::CmdBufferId>& retiredCommandBuffersThisFrame = this->retiredCommandBuffers[CoreGraphics::GetBufferedFrameIndex()];
+
+    // Cleanup any command buffers from this frame
+    for (auto buf : retiredCommandBuffersThisFrame)
+    {
+        // We own the pool, so we should destroy them directly and not have the graphics device do it
+        CoreGraphics::DestroyCmdBuffer(buf);
+    }
+    retiredCommandBuffersThisFrame.Clear();
+
     for (auto& entry : this->partiallyCompleteResources)
     {
         ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
@@ -425,7 +438,7 @@ TextureLoader::UpdateLoaderSyncState()
             {
                 bits.submissionId = CoreGraphics::NextSubmissionIndex(CoreGraphics::TransferQueueType);
                 CoreGraphics::SubmitCommandBuffers({bits.cmdBuf}, CoreGraphics::TransferQueueType, "Texture Loader Stream");
-                CoreGraphics::DestroyCmdBuffer(bits.cmdBuf);
+                retiredCommandBuffersThisFrame.Append(bits.cmdBuf);
                 bits.cmdBuf = CoreGraphics::InvalidCmdBufferId;
             }
         }
@@ -438,11 +451,8 @@ TextureLoader::UpdateLoaderSyncState()
         TextureStreamData* streamData = static_cast<TextureStreamData*>(stream.data);
         CoreGraphics::SubmitCommandBuffers(streamData->transferCommands, CoreGraphics::TransferQueueType, "Finished Texture Send");
         CoreGraphics::SubmitCommandBuffers(streamData->handoverCommands, CoreGraphics::GraphicsQueueType, "Finished Textures Receive");
-
-        for (auto cmd : streamData->transferCommands)
-            CoreGraphics::DestroyCmdBuffer(cmd);
-        for (auto cmd : streamData->handoverCommands)
-            CoreGraphics::DestroyCmdBuffer(cmd);
+        retiredCommandBuffersThisFrame.AppendArray(streamData->transferCommands);
+        retiredCommandBuffersThisFrame.AppendArray(streamData->handoverCommands);
         streamData->transferCommands.Clear();
         streamData->handoverCommands.Clear();
     }

@@ -249,6 +249,38 @@ DestroyCmdBuffer(const CmdBufferId id)
     markers.finishedMarkers.Clear();
 #endif
 
+    VkDevice dev = CmdBufferGetVkDevice(id);
+    VkCommandPool pool = CmdBufferGetVkPool(id);
+    VkCommandBuffer buf = CmdBufferGetVk(id);
+    vkFreeCommandBuffers(dev, pool, 1, &buf);
+
+#if NEBULA_GRAPHICS_DEBUG
+    // This array should have been moved away
+    n_assert(commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).IsEmpty())
+#endif
+
+    commandBuffers.Dealloc(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeferredDestroyCmdBuffer(const CmdBufferId id)
+{
+    __Lock(commandBuffers, id.id);
+
+#if NEBULA_ENABLE_PROFILING
+    QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id.id);
+    queryBundles.chunks[0].Clear();
+    queryBundles.chunks[1].Clear();
+    queryBundles.chunks[2].Clear();
+
+    CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+    markers.markerStack.Clear();
+    markers.finishedMarkers.Clear();
+#endif
+
     CoreGraphics::DelayedDeleteCommandBuffer(id);
 
 #if NEBULA_GRAPHICS_DEBUG

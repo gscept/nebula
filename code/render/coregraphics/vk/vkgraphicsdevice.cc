@@ -1660,7 +1660,7 @@ SubmitCommandBuffers(
 
         for (int i = 0; i < state.setupTransferCommandBuffers.Size(); i++)
         {
-            DestroyCmdBuffer(state.setupTransferCommandBuffers[i]);
+            DeferredDestroyCmdBuffer(state.setupTransferCommandBuffers[i]);
         }
         state.setupTransferCommandBuffers.Clear();
     }
@@ -1683,7 +1683,7 @@ SubmitCommandBuffers(
 
         for (int i = 0; i < state.handoverTransferCommandBuffers.Size(); i++)
         {
-            DestroyCmdBuffer(state.handoverTransferCommandBuffers[i]);
+            DeferredDestroyCmdBuffer(state.handoverTransferCommandBuffers[i]);
         }
         state.handoverTransferCommandBuffers.Clear();
     }
@@ -1709,7 +1709,7 @@ SubmitCommandBuffers(
 
         for (int i = 0; i < state.setupGraphicsCommandBuffers.Size(); i++)
         {
-            DestroyCmdBuffer(state.setupGraphicsCommandBuffers[i]);
+            DeferredDestroyCmdBuffer(state.setupGraphicsCommandBuffers[i]);
         }
         state.setupGraphicsCommandBuffers.Clear();
     }

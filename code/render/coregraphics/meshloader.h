@@ -54,6 +54,8 @@ private:
     /// setup mesh from nvx3 file in memory
     void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource, bool immediate);
 
+    Util::FixedArray<Util::Array<CoreGraphics::CmdBufferId>> retiredCommandBuffers;
+
     Util::Array<Resources::ResourceId> partiallyCompleteResources;
     CoreGraphics::CmdBufferPoolId transferPool;
 

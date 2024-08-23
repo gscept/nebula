@@ -1077,7 +1077,7 @@ class SubmissionDefinition:
             file.WriteLine("CoreGraphics::WaitForSubmission(Submission_{}, CoreGraphics::QueueType::{}QueueType);".format(wait, self.queue))
             file.DecreaseIndent()
 
-        file.WriteLine("CoreGraphics::DestroyCmdBuffer(cmdBuf);")
+        file.WriteLine("CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);")
 
         file.DecreaseIndent()
         file.WriteLine("}")

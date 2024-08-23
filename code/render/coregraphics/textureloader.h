@@ -44,6 +44,8 @@ private:
     /// Update intermediate loaded state
     void UpdateLoaderSyncState() override;
 
+    Util::FixedArray<Util::Array<CoreGraphics::CmdBufferId>> retiredCommandBuffers;
+
     // Fill this array with resources that needs updating on the main thread while in a pending state
     Util::Array<Resources::ResourceId> partiallyCompleteResources;
     Util::Array<Resources::ResourceId> finishedResources;
