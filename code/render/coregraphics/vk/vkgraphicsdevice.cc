@@ -1768,9 +1768,7 @@ SubmitCommandBuffers(
     Util::Array<VkCommandBuffer> vkBufs;
     vkBufs.Reserve(cmds.Size());
     for (auto cmd : cmds)
-    {
         vkBufs.Append(CmdBufferGetVk(cmd));
-    }
     CoreGraphics::SubmissionWaitEvent ret;
     ret.timelineIndex = state.queueHandler.AppendSubmissionTimeline(
         type
@@ -1784,12 +1782,17 @@ SubmitCommandBuffers(
     // Add wait event
     AddSubmissionEvent(ret);
 
+#if NEBULA_ENABLE_PROFILING
     for (auto cmdBuf : cmds)
     {
-        Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmdBuf);
-        state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
-        state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmdBuf));
+        if (CoreGraphics::CmdRecordsMarkers(cmdBuf))
+        {
+            Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmdBuf);
+            state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
+            state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmdBuf));
+        }
     }
+#endif
     
     return ret;
 }
