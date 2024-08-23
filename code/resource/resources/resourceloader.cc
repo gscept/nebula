@@ -285,7 +285,6 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
     Resource::State state = loader->states[res.entry];
     ResourceId originalResource = loader->resources[res.entry];
     ResourceName name = loader->names[res.entry];
-    loader->asyncSection.Leave();
 
     ResourceLoader::_LoadMetaData& metaData = loader->metaData[res.entry];
 
@@ -360,7 +359,6 @@ _LoadInternal(ResourceLoader* loader, const ResourceLoader::_PendingResourceLoad
     }
 
 skip_stream:
-    loader->asyncSection.Enter();
     loader->requestedBits[res.entry] = requestedBits;
     loader->loadedBits[res.entry] = loadedBits;
     loader->states[res.entry] = state;

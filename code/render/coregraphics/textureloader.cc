@@ -419,15 +419,6 @@ void
 TextureLoader::UpdateLoaderSyncState()
 {
     Util::Array<CoreGraphics::CmdBufferId>& retiredCommandBuffersThisFrame = this->retiredCommandBuffers[CoreGraphics::GetBufferedFrameIndex()];
-
-    // Cleanup any command buffers from this frame
-    for (auto buf : retiredCommandBuffersThisFrame)
-    {
-        // We own the pool, so we should destroy them directly and not have the graphics device do it
-        CoreGraphics::DestroyCmdBuffer(buf);
-    }
-    retiredCommandBuffersThisFrame.Clear();
-
     for (auto& entry : this->partiallyCompleteResources)
     {
         ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
@@ -477,6 +468,23 @@ TextureLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
 
     // Create mask containing all bits set to the lowest mip
     return (1 << numMipsRequested) - 1;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TextureLoader::OnBeforeJobs()
+{
+    Util::Array<CoreGraphics::CmdBufferId>& retiredCommandBuffersThisFrame = this->retiredCommandBuffers[CoreGraphics::GetBufferedFrameIndex()];
+
+    // Cleanup any command buffers from this frame
+    for (auto buf : retiredCommandBuffersThisFrame)
+    {
+        // We own the pool, so we should destroy them directly and not have the graphics device do it
+        CoreGraphics::DestroyCmdBuffer(buf);
+    }
+    retiredCommandBuffersThisFrame.Clear();
 }
 
 } // namespace CoreGraphics

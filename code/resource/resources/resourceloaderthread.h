@@ -31,6 +31,12 @@ public:
     /// wait for the thread to be done (must be called from outside this thread!)
     void Wait();
 
+protected:
+    /// Runs before jobs are getting picked off the list
+    virtual void OnBeforeJobs();
+    /// Runs after jobs are finished for this iteration
+    virtual void OnAfterJobs();
+
 private:
     friend class ResourceLoader;
 

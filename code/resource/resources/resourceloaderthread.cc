@@ -45,6 +45,9 @@ ResourceLoaderThread::DoWork()
     {
         this->completeEvent.Reset();
 
+        // Run before jobs get processed
+        this->OnBeforeJobs();
+
         this->jobs.DequeueAll(arr);
         IndexT i;
         for (i = 0; i < arr.Size(); i++)
@@ -52,6 +55,9 @@ ResourceLoaderThread::DoWork()
             arr[i]();
         }
         arr.Reset();
+
+        // Run after jobs are processed
+        this->OnAfterJobs();
 
         // signal that this batch is complete
         this->completeEvent.Signal();
@@ -79,6 +85,22 @@ void
 ResourceLoaderThread::Wait()
 {
     this->completeEvent.Wait();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceLoaderThread::OnBeforeJobs()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceLoaderThread::OnAfterJobs()
+{
 }
 
 } // namespace Resources
