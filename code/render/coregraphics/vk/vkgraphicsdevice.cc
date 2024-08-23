@@ -91,7 +91,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Tuple<VkDevice, VkImageView, VkImage>> textures;
         Util::Array<Util::Tuple<VkDevice, VkImageView>> textureViews;
         Util::Array<Util::Tuple<VkDevice, VkBuffer>> buffers;
-        Util::Array<Util::Tuple<VkDevice, VkCommandPool, VkCommandBuffer>> commandBuffers;
+        Util::Array<Util::Tuple<VkDevice, VkCommandPool, VkCommandBuffer
+            #if NEBULA_GRAPHICS_DEBUG
+            , Util::Array<NvidiaAftermathCheckpoint
+            #endif
+            >>> commandBuffers;
         Util::Array<Util::Tuple<VkDevice, VkDescriptorPool, VkDescriptorSet, uint*>> resourceTables;
         Util::Array<Util::Tuple<VkDevice, VkFramebuffer, VkRenderPass>> passes;
         Util::Array<Util::Tuple<VkDevice, VkAccelerationStructureKHR>> ases;
@@ -538,9 +542,17 @@ ClearPending()
     GraphicsDeviceState::PendingDeletes& pendingDeletes = state.pendingDeletes[state.currentBufferedFrameIndex];
 
     // Clear up any pending deletes
-    for (const auto& [dev, pool, buf] : pendingDeletes.commandBuffers)
+    for (auto& [dev, pool, buf
+#if NEBULA_GRAPHICS_DEBUG
+        , nvCheckpoints
+#endif
+
+    ] : pendingDeletes.commandBuffers)
     {
         vkFreeCommandBuffers(dev, pool, 1, &buf);
+#if NEBULA_GRAPHICS_DEBUG
+        nvCheckpoints.Clear();
+#endif
     }
     pendingDeletes.commandBuffers.Clear();
 
@@ -641,11 +653,11 @@ DeviceLost()
             for (int j = 0; j < numCheckpoints; j++)
             {
                 const VkCheckpointDataNV& data = checkpoints[j];
-                CoreGraphics::NvidiaAftermathCheckpoint* userData = (CoreGraphics::NvidiaAftermathCheckpoint*)data.pCheckpointMarker;
+                NvidiaAftermathCheckpoint* userData = (NvidiaAftermathCheckpoint*)data.pCheckpointMarker;
 
                 if (userData != nullptr)
                 {
-                    CoreGraphics::NvidiaAftermathCheckpoint* next = userData;
+                    NvidiaAftermathCheckpoint* next = userData;
                     while (next != nullptr)
                     {
                         if (!next->push)
@@ -660,7 +672,7 @@ DeviceLost()
                         if (next->push)
                             indentation++;
 
-                        CoreGraphics::NvidiaAftermathCheckpoint* prev = next->prev;
+                        NvidiaAftermathCheckpoint* prev = next->prev;
                         next = prev;
                     }
                 }
@@ -1669,27 +1681,25 @@ AddSubmissionEvent(const CoreGraphics::SubmissionWaitEvent& event)
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait, uploadWait;
 CoreGraphics::SubmissionWaitEvent
-SubmitCommandBuffer(
-    const CoreGraphics::CmdBufferId cmds
+SubmitCommandBuffers(
+    const Util::Array<CoreGraphics::CmdBufferId>& cmds
     , CoreGraphics::QueueType type
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name
 #endif
 )
 {
+    CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait, uploadWait;
+
     // Submit transfer and graphics commands from this frame
     transferLock.Enter();
     if (!state.setupTransferCommandBuffers.IsEmpty())
     {
         Util::Array<VkCommandBuffer> vkBufs;
         vkBufs.Reserve(state.setupTransferCommandBuffers.Size());
-        for (int i = 0; i < state.setupTransferCommandBuffers.Size(); i++)
-        {
-            const auto cmdBuf = state.setupTransferCommandBuffers[i];
+        for (auto cmdBuf : state.setupTransferCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
-        }
 
         uploadWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, "Transfer");
         uploadWait.queue = CoreGraphics::TransferQueueType;
@@ -1708,14 +1718,14 @@ SubmitCommandBuffer(
     {
         Util::Array<VkCommandBuffer> vkBufs;
         vkBufs.Reserve(state.handoverTransferCommandBuffers.Size());
-        for (int i = 0; i < state.handoverTransferCommandBuffers.Size(); i++)
-        {
-            const auto cmdBuf = state.handoverTransferCommandBuffers[i];
+        for (auto cmdBuf : state.handoverTransferCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
-        }
 
         handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, "Handover");
         handoverWait.queue = CoreGraphics::TransferQueueType;
+
+        if (uploadWait != nullptr)
+            state.queueHandler.AppendWaitTimeline(uploadWait.timelineIndex, CoreGraphics::TransferQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, uploadWait.queue);
 
         // Set wait events in graphics device
         AddSubmissionEvent(handoverWait);
@@ -1733,11 +1743,8 @@ SubmitCommandBuffer(
     {
         Util::Array<VkCommandBuffer> vkBufs;
         vkBufs.Reserve(state.setupGraphicsCommandBuffers.Size());
-        for (int i = 0; i < state.setupGraphicsCommandBuffers.Size(); i++)
-        {
-            const auto cmdBuf = state.setupGraphicsCommandBuffers[i];
+        for (auto cmdBuf : state.setupGraphicsCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
-        }
 
         graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, vkBufs, "Setup");
         graphicsWait.queue = CoreGraphics::GraphicsQueueType;
@@ -1758,10 +1765,16 @@ SubmitCommandBuffer(
     setupLock.Leave();
 
     // Append submission
+    Util::Array<VkCommandBuffer> vkBufs;
+    vkBufs.Reserve(cmds.Size());
+    for (auto cmd : cmds)
+    {
+        vkBufs.Append(CmdBufferGetVk(cmd));
+    }
     CoreGraphics::SubmissionWaitEvent ret;
     ret.timelineIndex = state.queueHandler.AppendSubmissionTimeline(
         type
-        , CmdBufferGetVk(cmds)
+        , vkBufs
 #if NEBULA_GRAPHICS_DEBUG
         , name
 #endif
@@ -1771,9 +1784,13 @@ SubmitCommandBuffer(
     // Add wait event
     AddSubmissionEvent(ret);
 
-    Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmds);
-    state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
-    state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmds));
+    for (auto cmdBuf : cmds)
+    {
+        Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmdBuf);
+        state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
+        state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmdBuf));
+    }
+    
     return ret;
 }
 
@@ -1902,10 +1919,6 @@ FinishFrame(IndexT frameIndex)
         state.sparseBufferBinds.Clear();
         state.sparseImageBinds.Clear();
     }
-
-    uploadWait = nullptr;
-    graphicsWait = nullptr;
-    handoverWait = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -1992,7 +2005,10 @@ DelayedDeleteCommandBuffer(const CoreGraphics::CmdBufferId id)
     VkDevice dev = CmdBufferGetVkDevice(id);
     VkCommandPool pool = CmdBufferGetVkPool(id);
     VkCommandBuffer buf = CmdBufferGetVk(id);
-    state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers.Append(Util::MakeTuple(dev, pool, buf));
+#if NEBULA_GRAPHICS_DEBUG
+    Util::Array<NvidiaAftermathCheckpoint> checkpoints = CmdBufferMoveVkNvCheckpoints(id);
+#endif
+    state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers.Append(Util::MakeTuple(dev, pool, buf, std::move(checkpoints)));
 }
 
 //------------------------------------------------------------------------------

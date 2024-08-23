@@ -23,6 +23,16 @@ struct ShaderProgramId;
 namespace Vulkan
 {
 
+    
+#if NEBULA_GRAPHICS_DEBUG
+struct NvidiaAftermathCheckpoint
+{
+    Util::String name;
+    NvidiaAftermathCheckpoint* prev;
+    bool push : 1;
+};
+#endif
+
 extern PFN_vkCmdBeginDebugUtilsLabelEXT VkCmdDebugMarkerBegin;
 extern PFN_vkCmdEndDebugUtilsLabelEXT VkCmdDebugMarkerEnd;
 extern PFN_vkCmdInsertDebugUtilsLabelEXT VkCmdDebugMarkerInsert;
@@ -56,6 +66,10 @@ const VkCommandBuffer CmdBufferGetVk(const CoreGraphics::CmdBufferId id);
 const VkCommandPool CmdBufferGetVkPool(const CoreGraphics::CmdBufferId id);
 /// Get vk device 
 const VkDevice CmdBufferGetVkDevice(const CoreGraphics::CmdBufferId id);
+#if NEBULA_GRAPHICS_DEBUG
+/// Get nvidia checkpoints
+Util::Array<NvidiaAftermathCheckpoint> CmdBufferMoveVkNvCheckpoints(const CoreGraphics::CmdBufferId id);
+#endif
 
 enum
 {
@@ -169,7 +183,7 @@ typedef Ids::IdAllocatorSafe<
     , QueryBundle
 #endif
 #if NEBULA_GRAPHICS_DEBUG
-    , Util::Array<CoreGraphics::NvidiaAftermathCheckpoint>
+    , Util::Array<NvidiaAftermathCheckpoint>
 #endif
 > VkCommandBufferAllocator;
 

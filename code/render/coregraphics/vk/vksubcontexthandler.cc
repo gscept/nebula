@@ -370,6 +370,8 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
                 break;
         }
         VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
+        if (res == VK_ERROR_DEVICE_LOST)
+            Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
 
         CoreGraphics::QueueEndMarker(type);

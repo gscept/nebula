@@ -94,6 +94,15 @@ ResourceLoader::LoadFallbackResources()
 //------------------------------------------------------------------------------
 /**
 */
+void
+ResourceLoader::UpdateLoaderSyncState()
+{
+    // Empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 ResourceLoader::StreamResource(const ResourceId entry, IndexT frameIndex, uint requestedBits)
 {
@@ -144,6 +153,13 @@ ResourceLoader::RequestLOD(const Ids::Id32 entry, float lod) const
 void
 ResourceLoader::Update(IndexT frameIndex)
 {
+    // Update the state of round trip resources
+    this->asyncSection.Enter();
+    this->UpdateLoaderSyncState();
+    this->partiallyCompleteResources.Clear();
+    this->finishedResources.Clear();
+    this->asyncSection.Leave();
+
     IndexT i;
     for (i = this->pendingLoads.Size() - 1; i >= 0; i--)
     {

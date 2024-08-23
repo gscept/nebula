@@ -185,8 +185,8 @@ uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);
 bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
 
 /// Submit a command buffer, but doesn't necessarily execute it immediately
-SubmissionWaitEvent SubmitCommandBuffer(
-    const CoreGraphics::CmdBufferId cmds
+SubmissionWaitEvent SubmitCommandBuffers(
+    const Util::Array<CoreGraphics::CmdBufferId>& cmds
     , CoreGraphics::QueueType type
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name = nullptr

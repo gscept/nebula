@@ -39,6 +39,7 @@
 #include "resource.h"
 #include "threading/safequeue.h"
 #include "threading/threadid.h"
+#include "coregraphics/commandbuffer.h"
 #include "ids/idpool.h"
 #include <tuple>
 #include <functional>
@@ -50,6 +51,7 @@ struct PartialLoadBits
 {
     uint bits;
     uint64 submissionId;
+    CoreGraphics::CmdBufferId cmdBuf;
 };
 
 class Resource;
@@ -109,6 +111,9 @@ public:
 
 protected:
     friend class ResourceServer;
+
+    /// Update loader internal state
+    virtual void UpdateLoaderSyncState();
 
     /// struct for pending resources which are about to be loaded
     struct _PendingResourceLoad
@@ -252,6 +257,10 @@ protected:
 
     /// id in resource manager
     int32_t uniqueId;
+
+    // Fill this array with resources that needs updating on the main thread while in a pending state
+    Util::Array<Resources::ResourceId> partiallyCompleteResources;
+    Util::Array<Resources::ResourceId> finishedResources;
 
     /// async section to sync callbacks and pending list with thread
     Threading::CriticalSection asyncSection;

@@ -1064,7 +1064,7 @@ class SubmissionDefinition:
         file.WriteLine("CoreGraphics::CmdEndMarker(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdFinishQueries(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdEndRecord(cmdBuf);")
-        file.WriteLine("Submission_{} = CoreGraphics::SubmitCommandBuffer(cmdBuf, CoreGraphics::QueueType::{}QueueType".format(self.name, self.queue))
+        file.WriteLine("Submission_{} = CoreGraphics::SubmitCommandBuffers({{ cmdBuf }}, CoreGraphics::QueueType::{}QueueType".format(self.name, self.queue))
         file.WriteLine("#if NEBULA_GRAPHICS_DEBUG")
         file.WriteLine(', "{}"'.format(self.name))
         file.WriteLine("#endif")

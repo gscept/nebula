@@ -16,6 +16,9 @@
 
 namespace CoreGraphics
 {
+
+struct TextureStreamData;
+
 class TextureLoader : public Resources::ResourceLoader
 {
     __DeclareClass(TextureLoader);
@@ -27,6 +30,8 @@ public:
 
 private:
 
+    friend void FinishMips(TextureLoader* loader, TextureStreamData* streamData, uint mipBits, const CoreGraphics::TextureId texture, const char* name);
+
     /// load texture
     Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// Stream texture
@@ -34,8 +39,13 @@ private:
     /// unload texture
     void Unload(const Resources::ResourceId id) override;
 
+    /// Update intermediate loaded state
+    void UpdateLoaderSyncState() override;
+
     /// Create load mask based on LOD
     uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
+
+    CoreGraphics::CmdBufferPoolId transferPool, handoverPool;
 };
 
 } // namespace CoreGraphics

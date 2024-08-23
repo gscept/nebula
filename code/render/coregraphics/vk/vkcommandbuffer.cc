@@ -76,6 +76,18 @@ CmdBufferGetVkDevice(const CoreGraphics::CmdBufferId id)
     return commandBuffers.Get<CmdBuffer_VkDevice>(id.id);
 }
 
+#if NEBULA_GRAPHICS_DEBUG
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<NvidiaAftermathCheckpoint>
+CmdBufferMoveVkNvCheckpoints(const CoreGraphics::CmdBufferId id)
+{
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    return std::forward<Util::Array<NvidiaAftermathCheckpoint>>(checkpoints);
+}
+#endif
+
 } // Vulkan
 
 namespace CoreGraphics
@@ -237,11 +249,13 @@ DestroyCmdBuffer(const CmdBufferId id)
     markers.finishedMarkers.Clear();
 #endif
 
+    CoreGraphics::DelayedDeleteCommandBuffer(id);
+
 #if NEBULA_GRAPHICS_DEBUG
-    commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).Clear();
+    // This array should have been moved away
+    n_assert(commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).IsEmpty())
 #endif
 
-    CoreGraphics::DelayedDeleteCommandBuffer(id);
     commandBuffers.Dealloc(id.id);
 }
 
