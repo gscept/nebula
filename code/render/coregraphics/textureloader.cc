@@ -286,44 +286,53 @@ TextureLoader::StreamResource(const Resources::ResourceId entry, IndexT frameInd
     TextureId texture = entry.resource;
     TextureIdAcquire(texture);
 
-    CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
-    cmdCreateInfo.name = name.Value();
-    cmdCreateInfo.pool = this->transferPool;
-    cmdCreateInfo.usage = CoreGraphics::TransferQueueType;
-    cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
-    CoreGraphics::CmdBufferId transferCommands = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+    CoreGraphics::CmdBufferCreateInfo transferCmdCreateInfo;
+    transferCmdCreateInfo.name = name.Value();
+    transferCmdCreateInfo.pool = this->transferPool;
+    transferCmdCreateInfo.usage = CoreGraphics::TransferQueueType;
+    transferCmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
 
     CoreGraphics::CmdBufferBeginInfo beginInfo;
     beginInfo.submitOnce = true;
     beginInfo.submitDuringPass = false;
     beginInfo.resubmittable = false;
 
-    cmdCreateInfo.name = "Texture Mip Upload";
-    cmdCreateInfo.pool = this->handoverPool;
-    cmdCreateInfo.usage = CoreGraphics::GraphicsQueueType;
-    cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
-    CoreGraphics::CmdBufferId handoverCommands = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+    CoreGraphics::CmdBufferCreateInfo handoverCmdCreateInfo;
+    handoverCmdCreateInfo.name = "Texture Mip Upload";
+    handoverCmdCreateInfo.pool = this->handoverPool;
+    handoverCmdCreateInfo.usage = CoreGraphics::GraphicsQueueType;
+    handoverCmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
 
-    CoreGraphics::CmdBeginRecord(transferCommands, beginInfo);
-    CoreGraphics::CmdBeginRecord(handoverCommands, beginInfo);
-
-    CoreGraphics::CmdBeginMarker(transferCommands, NEBULA_MARKER_TRANSFER, name.Value());
-    CoreGraphics::CmdBeginMarker(handoverCommands, NEBULA_MARKER_GRAPHICS, name.Value());
+    CoreGraphics::CmdBufferId transferCommands;
+    CoreGraphics::CmdBufferId handoverCommands;
 
     // First, poll all submissions to find what's finished loading
+    bool addToFinish = false;
     for (IndexT i = 0; i < streamData->partialLoadBits.Size(); i++)
     {
         auto& bits = streamData->partialLoadBits[i];
+        if (bits.submissionId == UINT64_MAX)
+            continue;
 
         // Remove pending bits from requests
         bitsToLoad &= ~bits.bits;
 
-        n_assert(bits.submissionId != UINT64_MAX);
         if (CoreGraphics::PollSubmissionIndex(CoreGraphics::TransferQueueType, bits.submissionId))
         {
+            if (!addToFinish)
+            {
+                transferCommands = CoreGraphics::CreateCmdBuffer(transferCmdCreateInfo);
+                handoverCommands = CoreGraphics::CreateCmdBuffer(handoverCmdCreateInfo);
+
+                CoreGraphics::CmdBeginRecord(transferCommands, beginInfo);
+                CoreGraphics::CmdBeginRecord(handoverCommands, beginInfo);
+
+                CoreGraphics::CmdBeginMarker(transferCommands, NEBULA_MARKER_TRANSFER, name.Value());
+                CoreGraphics::CmdBeginMarker(handoverCommands, NEBULA_MARKER_GRAPHICS, name.Value());
+                addToFinish = true;
+            }
             // Handover mips to the graphics queue
             FinishMips(transferCommands, handoverCommands, streamData, bits.bits, texture, name.Value());
-            this->finishedResources.Append(entry);
 
             ret |= bits.bits;
             streamData->partialLoadBits.EraseIndex(i);
@@ -331,16 +340,20 @@ TextureLoader::StreamResource(const Resources::ResourceId entry, IndexT frameInd
         }
     }
 
-    CoreGraphics::CmdEndMarker(handoverCommands);
-    CoreGraphics::CmdEndMarker(transferCommands);
+    if (addToFinish)
+    {
+        CoreGraphics::CmdEndMarker(handoverCommands);
+        CoreGraphics::CmdEndMarker(transferCommands);
 
-    CoreGraphics::CmdEndRecord(handoverCommands);
-    CoreGraphics::CmdEndRecord(transferCommands);
+        CoreGraphics::CmdEndRecord(handoverCommands);
+        CoreGraphics::CmdEndRecord(transferCommands);
 
-    CoreGraphics::CmdBufferIdRelease(handoverCommands);
-    CoreGraphics::CmdBufferIdRelease(transferCommands);
-    streamData->handoverCommands.Append(handoverCommands);
-    streamData->transferCommands.Append(transferCommands);
+        CoreGraphics::CmdBufferIdRelease(handoverCommands);
+        CoreGraphics::CmdBufferIdRelease(transferCommands);
+        this->finishedResources.Append(entry);
+        streamData->handoverCommands.Append(handoverCommands);
+        streamData->transferCommands.Append(transferCommands);
+    }
 
     bitsToLoad &= ~ret;
     if (bitsToLoad != 0x0)
@@ -408,9 +421,13 @@ TextureLoader::UpdateLoaderSyncState()
         TextureStreamData* streamData = static_cast<TextureStreamData*>(stream.data);
         for (auto& bits : streamData->partialLoadBits)
         {
-            bits.submissionId = CoreGraphics::NextSubmissionIndex(CoreGraphics::TransferQueueType);
-            CoreGraphics::SubmitCommandBuffers({ bits.cmdBuf }, CoreGraphics::TransferQueueType, "Texture Loader Stream");
-            CoreGraphics::DestroyCmdBuffer(bits.cmdBuf);
+            if (bits.cmdBuf != CoreGraphics::InvalidCmdBufferId)
+            {
+                bits.submissionId = CoreGraphics::NextSubmissionIndex(CoreGraphics::TransferQueueType);
+                CoreGraphics::SubmitCommandBuffers({bits.cmdBuf}, CoreGraphics::TransferQueueType, "Texture Loader Stream");
+                CoreGraphics::DestroyCmdBuffer(bits.cmdBuf);
+                bits.cmdBuf = CoreGraphics::InvalidCmdBufferId;
+            }
         }
     }
     this->partiallyCompleteResources.Clear();
