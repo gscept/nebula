@@ -156,8 +156,6 @@ ResourceLoader::Update(IndexT frameIndex)
     // Update the state of round trip resources
     this->asyncSection.Enter();
     this->UpdateLoaderSyncState();
-    this->partiallyCompleteResources.Clear();
-    this->finishedResources.Clear();
     this->asyncSection.Leave();
 
     IndexT i;

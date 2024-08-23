@@ -184,7 +184,7 @@ protected:
     /// perform a lod update
     virtual SubresourceLoadStatus StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
-    /// Create load mask based on LOD
+    /// Create load mask based on LOD. This will be used to determine if the resoure is fully loaded
     virtual uint LodMask(const Ids::Id32 entry, float lod, bool stream) const;
     /// Set lod factor for resource
     virtual void RequestLOD(const Ids::Id32 entry, float lod) const;
@@ -258,9 +258,7 @@ protected:
     /// id in resource manager
     int32_t uniqueId;
 
-    // Fill this array with resources that needs updating on the main thread while in a pending state
-    Util::Array<Resources::ResourceId> partiallyCompleteResources;
-    Util::Array<Resources::ResourceId> finishedResources;
+
 
     /// async section to sync callbacks and pending list with thread
     Threading::CriticalSection asyncSection;

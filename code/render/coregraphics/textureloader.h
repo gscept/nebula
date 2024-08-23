@@ -38,13 +38,15 @@ private:
     uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
     /// unload texture
     void Unload(const Resources::ResourceId id) override;
+    /// Create load mask based on LOD
+    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
 
     /// Update intermediate loaded state
     void UpdateLoaderSyncState() override;
 
-    /// Create load mask based on LOD
-    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
-
+    // Fill this array with resources that needs updating on the main thread while in a pending state
+    Util::Array<Resources::ResourceId> partiallyCompleteResources;
+    Util::Array<Resources::ResourceId> finishedResources;
     CoreGraphics::CmdBufferPoolId transferPool, handoverPool;
 };
 
