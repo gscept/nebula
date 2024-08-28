@@ -180,7 +180,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
 
                 TextureInfo texInfo;
                 texInfo.type = 0;
-                texInfo.useAlpha = 1;
+                texInfo.useAlpha = tex.useAlpha;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
                 CoreGraphics::TextureId texture = tex.nebulaHandle;
@@ -600,6 +600,7 @@ ImguiContext::Create()
     state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo);
     state.fontTexture.mip = 0;
     state.fontTexture.layer = 0;
+    state.fontTexture.useAlpha = true;
     io.Fonts->TexID = &state.fontTexture;
     io.Fonts->ClearTexData();
 

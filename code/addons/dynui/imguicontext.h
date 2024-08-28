@@ -28,8 +28,9 @@ namespace Dynui
 struct ImguiTextureId
 {
     CoreGraphics::TextureId nebulaHandle;
-    uint8 layer = 0;
-    uint8 mip = 0;
+    uint layer : 8 = 0;
+    uint mip : 4 = 0;
+    uint useAlpha : 1 = 0;
 };
 
 class ImguiContext : public Graphics::GraphicsContext

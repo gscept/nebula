@@ -98,11 +98,13 @@ ResourceBrowser::Run(SaveMode save)
         float ratio = dims.width / dims.height;
         ImVec2 remainder = ImGui::GetContentRegionAvail();
         static int mip = 0, layer = 0;
+        static bool alpha = false;
         if (ImGui::BeginChild("Preview", ImVec2{ size.x / 2, size.y }))
         {
             ImGui::Image(&selectedTex, ImVec2{ (float)remainder.x / 2, (float)remainder.x / 2 * ratio });
             ImGui::InputInt("Mip", &mip);
             ImGui::InputInt("Layer", &layer);
+            ImGui::Checkbox("Alpha", &alpha);
             mip = Math::min(Math::max(0, mip), CoreGraphics::TextureGetNumMips(CoreGraphics::TrackedTextures[current]) - 1);
             layer = Math::min(Math::max(0, layer), CoreGraphics::TextureGetNumLayers(CoreGraphics::TrackedTextures[current]) - 1);
             ImGui::EndChild();
@@ -110,6 +112,7 @@ ResourceBrowser::Run(SaveMode save)
 
         selectedTex.layer = layer;
         selectedTex.mip = mip;
+        selectedTex.useAlpha = alpha;
     }
     else
     {
