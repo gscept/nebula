@@ -188,6 +188,7 @@ bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
 SubmissionWaitEvent SubmitCommandBuffers(
     const Util::Array<CoreGraphics::CmdBufferId>& cmds
     , CoreGraphics::QueueType type
+    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents = nullptr
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name = nullptr
 #endif

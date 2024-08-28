@@ -1469,7 +1469,7 @@ TextureSetHighestLod(const CoreGraphics::TextureId id, uint lod)
         viewSubres
     };
 
-    VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
+    VkShaderServer::Instance()->AddPendingImageView(id, viewCreate, runtimeInfo.bind);
 }
 
 } // namespace CoreGraphics

@@ -463,18 +463,20 @@ LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const M
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
     reader->SetStream(stream);
+    Resources::ResourceLoader::ResourceInitOutput ret;
+
     if (reader->Open())
     {
         // make sure it's a valid frame shader file
         if (!reader->HasNode("/Nebula/Surface"))
         {
             n_error("MaterialLoader: '%s' is not a valid surface!", stream->GetURI().AsString().AsCharPtr());
-            return Resources::InvalidResourceUnknownId;
+            return ret;
         }
 
         // send to first node
@@ -487,6 +489,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
         n_assert_fmt(templateIndex != InvalidIndex, "Unknown material template '%s'", templateName.AsCharPtr());
         const MaterialTemplates::Entry* materialTemplate = MaterialTemplates::Lookup.ValueAtIndex(templateIndex);
         MaterialId id = CreateMaterial(materialTemplate);
+        ret.id = id;
 
         // New material upload system, the defaults and types can be discarded
         if (reader->SetToFirstChild("Params"))
@@ -496,7 +499,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             if (loaderIndex != InvalidIndex)
             {
                 auto loader = LoaderMap.ValueAtIndex(loaderIndex);
-                loader(reader, id, tag);
+                loader(reader, id, job.tag);
                 state.dirtySet.bits = 0x3;
 
                 // jump up one level
@@ -507,7 +510,7 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             if (reader->SetToFirstChild()) do
             {
                 Util::StringAtom paramName = reader->GetCurrentNodeName();
-                LoadMaterialParameter(reader, paramName, materialTemplate, id, immediate);
+                LoadMaterialParameter(reader, paramName, materialTemplate, id, job.immediate);
             }
             while (reader->SetToNextChild());
         }
@@ -517,13 +520,12 @@ MaterialLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
             if (reader->SetToFirstChild("Param")) do
             {
                 Util::StringAtom paramName = reader->GetString("name");
-                LoadMaterialParameter(reader, paramName, materialTemplate, id, immediate);
+                LoadMaterialParameter(reader, paramName, materialTemplate, id, job.immediate);
             }
             while (reader->SetToNextChild("Param"));
         }
-        return id;
     }
-    return InvalidMaterialId;
+    return ret;
 }
 
 //------------------------------------------------------------------------------

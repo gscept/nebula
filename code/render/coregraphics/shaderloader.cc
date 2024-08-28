@@ -32,8 +32,8 @@ ShaderLoader::~ShaderLoader()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-ShaderLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+ShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     n_assert(stream.isvalid());
     n_assert(stream->CanBeMapped());
@@ -41,19 +41,21 @@ ShaderLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, c
     void* srcData = stream->Map();
     uint srcDataSize = stream->GetSize();
 
+    Resources::ResourceLoader::ResourceInitOutput ret;
+
     // load effect from memory
     AnyFX::ShaderEffect* effect = AnyFX::EffectFactory::Instance()->CreateShaderEffectFromMemory(srcData, srcDataSize);
 
     // catch any potential error coming from AnyFX
     if (!effect)
     {
-        return InvalidShaderId;
+        return ret;
     }
 
     ShaderCreateInfo shaderInfo;
     shaderInfo.effect = effect;
-    shaderInfo.name = this->names[entry];
-    ShaderId ret = CreateShader(shaderInfo);
+    shaderInfo.name = job.name;
+    ret.id = CreateShader(shaderInfo);
     return ret;
 }
 

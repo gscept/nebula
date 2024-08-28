@@ -57,14 +57,15 @@ ModelLoader::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+ModelLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     // a model is a list of resources, a bounding box, and a dictionary of nodes
     Math::bbox boundingBox;
     boundingBox.set(Math::vec3(0), Math::vec3(0));
     Util::Array<Models::ModelNode*> nodes;
     Ptr<BinaryReader> reader = BinaryReader::Create();
+    Resources::ResourceLoader::ResourceInitOutput ret;
 
     // setup stack for loading nodes
     Util::Stack<Models::ModelNode*> nodeStack;
@@ -81,20 +82,19 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
         streamData->requiredBits = LoadBits::NoBits;
         streamData->loadedBits = LoadBits::NoBits;
 
-        this->streams[entry].stream = stream;
-        this->streams[entry].data = streamData;
+        ret.loaderStreamData = _StreamData{ .stream = stream, .data = streamData };
 
         FourCC magic = reader->ReadUInt();
         uint version = reader->ReadUInt();
         if (magic != FourCC('NEB3'))
         {
             n_error("StreamModelLoader: '%s' is not a N3 binary file!", stream->GetURI().AsString().AsCharPtr());
-            return Resources::InvalidResourceUnknownId;
+            return ret;
         }
         if (version != 1)
         {
             n_error("StreamModelLoader: '%s' has wrong version!", stream->GetURI().AsString().AsCharPtr());
-            return Resources::InvalidResourceUnknownId;
+            return ret;
         }
 
         // start reading tags
@@ -134,7 +134,7 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
                 node->parent = nullptr;
                 node->boundingBox = Math::bbox();
                 node->name = name;
-                node->tag = tag;
+                node->tag = job.tag;
                 if (!nodeStack.IsEmpty())
                 {
                     Models::ModelNode* parent = nodeStack.Peek();
@@ -155,7 +155,7 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
             {
                 // if not opening or closing a node, assume it's a data tag
                 ModelNode* node = nodeStack.Peek();
-                if (!node->Load(fourCC, tag, reader, immediate))
+                if (!node->Load(fourCC, job.tag, reader, job.immediate))
                 {
                     break;
                 }
@@ -169,7 +169,8 @@ ModelLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, co
     createInfo.boundingBox = boundingBox;
     createInfo.nodes = nodes;
     ModelId id = CreateModel(createInfo);
-    return id;
+    ret.id = id;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -193,25 +194,27 @@ ModelLoader::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-uint
-ModelLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
+Resources::ResourceLoader::ResourceStreamOutput
+ModelLoader::StreamResource(const ResourceLoadJob& job)
 {
+    ResourceLoader::ResourceStreamOutput ret;
+
     // The requested bits have already been issued for loading, so just return what's been loaded
-    ResourceLoader::StreamData& streamData = this->streams[entry.loaderInstanceId];
-    ModelStreamingData* modelStreamingData = static_cast<ModelStreamingData*>(streamData.data);
-    uint loadedBits = this->loadedBits[entry.loaderInstanceId];
-    loadedBits |= modelStreamingData->loadedBits;
-    return loadedBits;
+    ModelStreamingData* modelStreamingData = static_cast<ModelStreamingData*>(job.streamData.data);
+    ret.loadedBits = job.loadState.loadedBits;
+    ret.loadedBits |= modelStreamingData->loadedBits;
+    ret.pendingBits = 0x0;
+    
+    return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 uint
-ModelLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
+ModelLoader::LodMask(const _StreamData& stream, float lod, bool async) const
 {
-    ResourceLoader::StreamData& streamData = this->streams[entry];
-    ModelStreamingData* modelStreamingData = static_cast<ModelStreamingData*>(streamData.data);
+    ModelStreamingData* modelStreamingData = static_cast<ModelStreamingData*>(stream.data);
     return (uint)modelStreamingData->requiredBits;
 }
 

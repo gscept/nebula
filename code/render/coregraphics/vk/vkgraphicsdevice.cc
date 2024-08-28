@@ -1636,6 +1636,7 @@ CoreGraphics::SubmissionWaitEvent
 SubmitCommandBuffers(
     const Util::Array<CoreGraphics::CmdBufferId>& cmds
     , CoreGraphics::QueueType type
+    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name
 #endif
@@ -1728,6 +1729,10 @@ SubmitCommandBuffers(
         , name
 #endif
     );
+    for (const auto& wait : waitEvents)
+    {
+        state.queueHandler.AppendWaitTimeline(wait.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, wait.queue);
+    }
     ret.queue = type;
 
     // Add wait event

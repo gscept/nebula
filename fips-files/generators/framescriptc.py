@@ -1064,18 +1064,23 @@ class SubmissionDefinition:
         file.WriteLine("CoreGraphics::CmdEndMarker(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdFinishQueries(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdEndRecord(cmdBuf);")
-        file.WriteLine("Submission_{} = CoreGraphics::SubmitCommandBuffers({{ cmdBuf }}, CoreGraphics::QueueType::{}QueueType".format(self.name, self.queue))
+
+        waits = ""
+        if len(self.waitForSubmissions) > 0:
+            for wait in self.waitForSubmissions:
+                waits += "Submission_{}".format(wait)
+                if wait != self.waitForSubmissions[-1]:
+                    waits += ", "
+            waits = "{{ {} }}".format(waits)
+        else:
+            waits = "nullptr"
+        file.WriteLine("Submission_{} = CoreGraphics::SubmitCommandBuffers({{ cmdBuf }}, CoreGraphics::QueueType::{}QueueType, {}".format(self.name, self.queue, waits))
         file.WriteLine("#if NEBULA_GRAPHICS_DEBUG")
         file.WriteLine(', "{}"'.format(self.name))
         file.WriteLine("#endif")
         file.WriteLine(");")
         if self.waitForQueue is not None:
             file.WriteLine("CoreGraphics::WaitForLastSubmission(CoreGraphics::QueueType::{}QueueType, CoreGraphics::QueueType::{}QueueType);".format(self.queue, self.waitForQueue))
-        for wait in self.waitForSubmissions:
-            file.WriteLine("if (Submission_{} != nullptr)".format(wait))
-            file.IncreaseIndent()
-            file.WriteLine("CoreGraphics::WaitForSubmission(Submission_{}, CoreGraphics::QueueType::{}QueueType);".format(wait, self.queue))
-            file.DecreaseIndent()
 
         file.WriteLine("CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);")
 

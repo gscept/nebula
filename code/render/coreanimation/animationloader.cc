@@ -21,10 +21,11 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-AnimationLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+AnimationLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     Ptr<AnimKeyBuffer> keyBuffer = nullptr;
+    Resources::ResourceLoader::ResourceInitOutput ret;
     
     // map buffer
     uchar* ptr = (uchar*)stream->Map();
@@ -37,7 +38,7 @@ AnimationLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAto
     if (FourCC(naxHeader->magic) != NEBULA_NAX3_MAGICNUMBER)
     {
         n_error("StreamAnimationLoader::InitializeResource(): '%s' has invalid file format (magic number doesn't match)!", stream->GetURI().AsString().AsCharPtr());
-        return Resources::InvalidResourceUnknownId;
+        return ret;
     }
 
     // load animation if it has clips in it
@@ -134,7 +135,7 @@ AnimationLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAto
 
     auto id = animationResourceAllocator.Alloc();
     animationResourceAllocator.Set<0>(id, animations);
-    AnimationResourceId ret = id;
+    ret.id = id;
     return ret;
 }
 

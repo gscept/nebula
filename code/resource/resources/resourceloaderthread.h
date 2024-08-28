@@ -31,12 +31,6 @@ public:
     /// wait for the thread to be done (must be called from outside this thread!)
     void Wait();
 
-protected:
-    /// Runs before jobs are getting picked off the list
-    virtual void OnBeforeJobs();
-    /// Runs after jobs are finished for this iteration
-    virtual void OnAfterJobs();
-
 private:
     friend class ResourceLoader;
 
@@ -44,7 +38,7 @@ private:
     void DoWork() override;
     /// emit wakeup signal
     virtual void EmitWakeupSignal() override;
-    
+
     Threading::SafeQueue<std::function<void()>> jobs;
     Threading::Event completeEvent;
     Ptr<IO::IoServer> ioServer;

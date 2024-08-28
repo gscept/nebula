@@ -160,9 +160,11 @@ VkSubContextHandler::AppendSubmissionTimeline(
 /**
 */
 uint64
-VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, Util::Array<VkCommandBuffer> cmds,
+VkSubContextHandler::AppendSubmissionTimeline(
+    CoreGraphics::QueueType type
+    , Util::Array<VkCommandBuffer> cmds
 #if NEBULA_GRAPHICS_DEBUG
-    const char* name
+    , const char* name
 #endif
 )
 {

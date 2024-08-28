@@ -14,8 +14,9 @@ __ImplementClass(Resources::ResourceLoaderThread, 'RETH', Threading::Thread);
 //------------------------------------------------------------------------------
 /**
 */
-ResourceLoaderThread::ResourceLoaderThread() :
-    completeEvent(true)
+ResourceLoaderThread::ResourceLoaderThread()
+    : completeEvent(true)
+    
 {
     // empty
 }
@@ -45,19 +46,12 @@ ResourceLoaderThread::DoWork()
     {
         this->completeEvent.Reset();
 
-        // Run before jobs get processed
-        this->OnBeforeJobs();
-
         this->jobs.DequeueAll(arr);
-        IndexT i;
-        for (i = 0; i < arr.Size(); i++)
+        for (IndexT i = 0; i < arr.Size(); i++)
         {
             arr[i]();
         }
         arr.Reset();
-
-        // Run after jobs are processed
-        this->OnAfterJobs();
 
         // signal that this batch is complete
         this->completeEvent.Signal();
@@ -85,22 +79,6 @@ void
 ResourceLoaderThread::Wait()
 {
     this->completeEvent.Wait();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceLoaderThread::OnBeforeJobs()
-{
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceLoaderThread::OnAfterJobs()
-{
 }
 
 } // namespace Resources

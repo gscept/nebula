@@ -33,26 +33,38 @@ private:
     friend void FinishMips(TextureLoader* loader, TextureStreamData* streamData, uint mipBits, const CoreGraphics::TextureId texture, const char* name);
 
     /// load texture
-    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// Stream texture
-    uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
+    ResourceLoader::ResourceStreamOutput StreamResource(const ResourceLoadJob& job) override;
     /// unload texture
     void Unload(const Resources::ResourceId id) override;
     /// Create load mask based on LOD
-    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
-
-    /// Handle before jobs
-    void OnBeforeJobs();
+    uint LodMask(const _StreamData& stream, float lod, bool async) const override;
 
     /// Update intermediate loaded state
     void UpdateLoaderSyncState() override;
 
-    Util::FixedArray<Util::Array<CoreGraphics::CmdBufferId>> retiredCommandBuffers;
 
-    // Fill this array with resources that needs updating on the main thread while in a pending state
-    Util::Array<Resources::ResourceId> partiallyCompleteResources;
-    Util::Array<Resources::ResourceId> finishedResources;
-    CoreGraphics::CmdBufferPoolId transferPool, handoverPool;
+    // First step of the load chain is to invoke a mip load on the main thread
+    struct MipLoadMainThread
+    {
+        Resources::ResourceId id;
+        uint bits;
+        CoreGraphics::CmdBufferId transferCmdBuf, graphicsCmdBuf;
+    };
+    Threading::SafeQueue<MipLoadMainThread> mipLoadsToSubmit;
+
+    // Then, we have to wait for the GPU to finish before we can issue a mip finish on the loader thread
+    struct MipHandoverLoaderThread
+    {
+        uint64 handoverSubmissionId;
+        uint bits;
+        CoreGraphics::CmdBufferId uploadBuffer, receiveBuffer;
+    };
+    Util::HashTable<Resources::ResourceId, Util::Array<MipHandoverLoaderThread>> mipHandovers;
+    Threading::CriticalSection handoverLock;
+
+    CoreGraphics::CmdBufferPoolId asyncTransferPool, immediateTransferPool, asyncHandoverPool, immediateHandoverPool;
 };
 
 } // namespace CoreGraphics

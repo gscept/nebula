@@ -435,10 +435,11 @@ AddHeightField(PhysicsResource::HeightFieldColliderT* colliderNode, Math::mat4 c
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
-    n_assert(stream.isvalid());    
+    n_assert(stream.isvalid());
+    Resources::ResourceLoader::ResourceInitOutput ret;
     
     /// during the load-phase, we can safetly get the structs
     ActorInfo actorInfo;
@@ -463,21 +464,21 @@ StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAto
                 
                 float radius = collider->data.AsSphereCollider()->radius;
                 physx::PxGeometryHolder geometry = PxSphereGeometry(radius);
-                AddCollider(geometry, material, shape->transform, "Sphere", collider->name, actorInfo, tag, entry);
+                AddCollider(geometry, material, shape->transform, "Sphere", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
             }
             break;
             case ColliderType_Cube:
             {
                 Math::vector extents = collider->data.AsBoxCollider()->extents;
                 physx::PxGeometryHolder geometry = PxBoxGeometry(Neb2PxVec(extents));
-                AddCollider(geometry, material, shape->transform, "Cube", collider->name, actorInfo, tag, entry);
+                AddCollider(geometry, material, shape->transform, "Cube", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
             }
             break;
             case ColliderType_Plane:
             {
                 // plane is defined via transform of the actor
                 physx::PxGeometryHolder geometry = PxPlaneGeometry();
-                AddCollider(geometry, material, shape->transform, "Plane", collider->name, actorInfo, tag, entry);
+                AddCollider(geometry, material, shape->transform, "Plane", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
             }
             break;
             case ColliderType_Capsule:
@@ -486,12 +487,12 @@ StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAto
                 float radius = capsule->radius;
                 float halfHeight = capsule->halfheight;
                 physx::PxGeometryHolder geometry = PxCapsuleGeometry(radius, halfHeight);
-                AddCollider(geometry, material, shape->transform, "Capsule", collider->name, actorInfo, tag, entry);
+                AddCollider(geometry, material, shape->transform, "Capsule", collider->name, actorInfo, job.tag, job.id.loaderInstanceId);
             }
             break;
             case ColliderType_Mesh:
             {
-                AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, tag, entry, actorInfo);
+                AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, actorInfo);
 /*
                 auto mesh = collider->data.AsMeshCollider();
                 MeshTopology type = mesh->type;
@@ -505,7 +506,7 @@ StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAto
             break;
             case ColliderType_HeightField:
             {
-                AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, tag, entry, actorInfo);
+                AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, actorInfo);
             }
             break;
             default:
@@ -515,8 +516,7 @@ StreamActorPool::InitializeResource(const Ids::Id32 entry, const Util::StringAto
 
     Ids::Id32 id = allocator.Alloc();
     allocator.Set<Actor_Info>(id, actorInfo);
-
-    ActorResourceId ret = id;
+    ret.id = id;
     return ret;
 }
 

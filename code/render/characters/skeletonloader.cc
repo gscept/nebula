@@ -16,10 +16,11 @@ __ImplementClass(Characters::SkeletonLoader, 'SSKP', Resources::ResourceLoader)
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-SkeletonLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+SkeletonLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     // map buffer
+    Resources::ResourceLoader::ResourceInitOutput ret;
     byte* ptr = (byte*)stream->Map();
 
     // read header
@@ -30,7 +31,7 @@ SkeletonLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
     if (Util::FourCC(header->magic) != NEBULA_NSK3_MAGICNUMBER)
     {
         n_error("StreamSkeletonCache::InitializeResource(): '%s' has invalid file format (magic number doesn't match)!", stream->GetURI().AsString().AsCharPtr());
-        return Resources::InvalidResourceUnknownId;
+        return ret;
     }
 
     Util::FixedArray<SkeletonId> skeletons(header->numSkeletons);
@@ -92,7 +93,7 @@ SkeletonLoader::InitializeResource(const Ids::Id32 entry, const Util::StringAtom
 
     auto id = skeletonResourceAllocator.Alloc();
     skeletonResourceAllocator.Set<0>(id, skeletons);
-    SkeletonResourceId ret = id;
+    ret.id = id;
     return ret;
 }
 

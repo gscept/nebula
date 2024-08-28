@@ -62,7 +62,7 @@ private:
     
 
     /// perform actual load, override in subclass
-    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate) override;
+    ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// unload resource
     void Unload(const Resources::ResourceId id) override;
 

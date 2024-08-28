@@ -54,6 +54,15 @@ struct PartialLoadBits
     CoreGraphics::CmdBufferId cmdBuf;
 };
 
+
+enum LoadFlags
+{
+    None = 0x0,
+    Create = 0x1,
+    Update = 0x2
+};
+__ImplementEnumBitOperators(LoadFlags);
+
 class Resource;
 class ResourceLoaderThread;
 class ResourceLoader : public Core::RefCounted
@@ -109,12 +118,6 @@ public:
     /// begin updating a resources lod
     void SetMinLod(const Resources::ResourceId& id, const float lod, bool immediate);
 
-protected:
-    friend class ResourceServer;
-
-    /// Update loader internal state
-    virtual void UpdateLoaderSyncState();
-
     /// struct for pending resources which are about to be loaded
     struct _PendingResourceLoad
     {
@@ -125,17 +128,112 @@ protected:
         bool reload;
         IndexT frame;
         float lod;
-
-        enum Mode
-        {
-            None = 0x0,
-            Create = 0x1,
-            Update = 0x2
-        };
-        uint mode;
+        LoadFlags flags;
 
         _PendingResourceLoad() : entry(-1) {};
     };
+
+    struct _LoadMetaData
+    {
+        void* data;
+        SizeT size;
+    };
+
+    struct _StreamData
+    {
+        Ptr<IO::Stream> stream;
+        void* data;
+    };
+
+    struct ResourceInitOutput
+    {
+        ResourceUnknownId id;
+        _StreamData loaderStreamData;
+
+        ResourceInitOutput()
+            : id(InvalidResourceUnknownId)
+        {
+        }
+
+        bool operator==(nullptr_t)
+        {
+            return id == InvalidResourceUnknownId;
+        }
+    };
+
+    struct ResourceStreamOutput
+    {
+        uint loadedBits = 0x0;
+        uint pendingBits = 0x0;
+    };
+
+    struct LoadState
+    {
+        uint requestedBits;
+        uint pendingBits;
+        uint loadedBits;
+    };
+
+    struct ResourceLoadJob
+    {
+        Util::String name;
+        Util::String tag;
+        Resource::State state;
+        ResourceId id;
+        LoadState loadState;
+        _StreamData streamData;
+        _LoadMetaData metadata;
+        bool immediate;
+        float lod;
+        IndexT frameIndex;
+        LoadFlags flags;
+
+        static ResourceLoadJob FromPending(ResourceLoader* loader, IndexT frameIndex, const _PendingResourceLoad& load)
+        {
+            ResourceLoadJob job;
+            job.name = loader->names[load.entry].Value();
+            job.state = loader->states[load.entry];
+            job.id = loader->resources[load.entry];
+            job.loadState = loader->loadStates[load.entry];
+            job.streamData = loader->streamDatas[load.entry];
+            job.metadata = loader->metaData[load.entry];
+            job.tag = load.tag.Value();
+            job.immediate = load.immediate;
+            job.lod = load.lod;
+            job.frameIndex = frameIndex;
+            job.flags = load.flags;
+            return job;
+        };
+    };
+
+    struct ResourceLoadOutput
+    {
+        _StreamData streamData;
+        LoadState loadState;
+        Resource::State state;
+        ResourceId id;
+        ResourceLoadJob remainderJob;
+
+        void UpdateLoaderState(ResourceLoader* loader) const
+        {
+            loader->streamDatas[id.loaderInstanceId] = this->streamData;
+            loader->loadStates[id.loaderInstanceId] = this->loadState;
+            loader->states[id.loaderInstanceId] = this->state;
+            loader->resources[id.loaderInstanceId] = this->id;
+        }
+    };
+
+
+protected:
+    friend class ResourceServer;
+    
+    friend void ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput& output);
+    friend void ImmediateJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job);
+    friend void AsyncJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job);
+    friend ResourceLoadOutput _LoadInternal(ResourceLoader* loader, ResourceLoadJob res);
+
+    /// Update loader internal state
+    virtual void UpdateLoaderSyncState();
 
     /// struct for pending stream
     struct _PendingStreamLod
@@ -155,37 +253,22 @@ protected:
     /// callback functions to run when an associated resource is loaded (can be stacked)
     struct _Callbacks
     {
-        Resources::ResourceId id;
         std::function<void(const Resources::ResourceId)> success;
         std::function<void(const Resources::ResourceId)> failed;
     };
 
-    struct _LoadMetaData
-    {
-        void* data;
-        SizeT size;
-    };
-
-    enum SubresourceLoadStatus
-    {
-        Full,       // All requested subresources were loaded
-        Partial,    // Some of the requested subresources could be loaded, but not all
-        Rejected    // None of the requested subresources were loaded, loader out of budget
-    };
 
     static const uint32_t ResourceIndexGrow = 512;
 
     /// Initialize and create the resource, optionally load if no subresource management is necessary
-    virtual ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
+    virtual ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) = 0;
     /// Stream resource
-    virtual uint StreamResource(const ResourceId entry, IndexT frameIndex, uint requestedBits);
+    virtual ResourceStreamOutput StreamResource(const ResourceLoadJob& job);
     /// perform a reload
     virtual Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
-    /// perform a lod update
-    virtual SubresourceLoadStatus StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
     /// Create load mask based on LOD. This will be used to determine if the resoure is fully loaded
-    virtual uint LodMask(const Ids::Id32 entry, float lod, bool stream) const;
+    virtual uint LodMask(const _StreamData& stream, float lod, bool async) const;
     /// Set lod factor for resource
     virtual void RequestLOD(const Ids::Id32 entry, float lod) const;
 
@@ -197,14 +280,11 @@ protected:
     /// Construct resource ID based on loader entry
     void SetupIdFromEntry(const Ids::Id32 entry, ResourceId& cacheEntry);
 
-    /// Load immediately
-    Resource::State LoadImmediate(_PendingResourceLoad& res);
-    /// Load async
-    void LoadAsync(_PendingResourceLoad res);
     /// run callbacks
     void RunCallbacks(Resource::State status, const Resources::ResourceId id);
 
-    friend Resource::State _LoadInternal(ResourceLoader* loader, const _PendingResourceLoad res);
+    /// Issue async job
+    void EnqueueJob(const std::function<void()>& func);
 
     struct _PlaceholderResource
     {
@@ -223,21 +303,20 @@ protected:
     Resources::ResourceId placeholderResourceId;
     Resources::ResourceId failResourceId;
 
-    struct StreamData
-    {
-        void* data;
-        Ptr<IO::Stream> stream;
-    };
-
     bool async;
 
     Ptr<ResourceLoaderThread> streamerThread;
+    std::function<void()> preJobFunc;
+    std::function<void()> postJobFunc;
     Util::StringAtom streamerThreadName;
 
     Util::Array<IndexT> pendingLoads;
     Util::Array<_PendingResourceUnload> pendingUnloads;
     Util::Array<_PendingStreamLod> pendingStreamLods;
     Threading::SafeQueue<_PendingStreamLod> pendingStreamQueue;
+
+    Threading::SafeQueue<ResourceLoadOutput> loadOutputs;
+    Util::Array<ResourceLoadJob> dependentJobs;
 
     Util::Dictionary<Resources::ResourceName, uint32_t> ids;
     Ids::IdPool resourceInstanceIndexPool;
@@ -246,24 +325,22 @@ protected:
     Util::FixedArray<uint32_t> usage;
     Util::FixedArray<Util::StringAtom> tags;
     Util::FixedArray<Resource::State> states;
-    Util::FixedArray<uint> requestedBits;
-    Util::FixedArray<uint> loadedBits;
+    Util::FixedArray<LoadState> loadStates;
     Util::FixedArray<ResourceId> resources;
     Util::FixedArray<Util::Array<_Callbacks>> callbacks;
     Util::FixedArray<_PendingResourceLoad> loads;
     Util::FixedArray<_LoadMetaData> metaData;
-    Util::FixedArray<StreamData> streams;
+    Util::FixedArray<_StreamData> streamDatas;
     uint32_t uniqueResourceId;
 
     /// id in resource manager
     int32_t uniqueId;
 
-
-
     /// async section to sync callbacks and pending list with thread
     Threading::CriticalSection asyncSection;
     Threading::ThreadId creatorThread;
 };
+
 
 //------------------------------------------------------------------------------
 /**
