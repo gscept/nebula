@@ -1605,15 +1605,6 @@ UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf)
 //------------------------------------------------------------------------------
 /**
 */
-uint64
-NextSubmissionIndex(const CoreGraphics::QueueType queue)
-{
-    return state.queueHandler.GetNextTimelineIndex(queue);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
 PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index)
 {
@@ -1721,6 +1712,7 @@ SubmitCommandBuffers(
     vkBufs.Reserve(cmds.Size());
     for (auto cmd : cmds)
         vkBufs.Append(CmdBufferGetVk(cmd));
+
     CoreGraphics::SubmissionWaitEvent ret;
     ret.timelineIndex = state.queueHandler.AppendSubmissionTimeline(
         type
@@ -1751,15 +1743,6 @@ SubmitCommandBuffers(
 #endif
     
     return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type)
-{
-    state.queueHandler.AppendWaitTimeline(index.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, index.queue);
 }
 
 //------------------------------------------------------------------------------

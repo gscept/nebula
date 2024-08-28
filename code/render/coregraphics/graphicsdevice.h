@@ -179,8 +179,6 @@ const CoreGraphics::CmdBufferId LockTransferHandoverSetupCommandBuffer();
 /// Release lock on handover command buffer
 void UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 
-/// Get the next submission index for a specific queue
-uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);
 /// Poll a submission for completion
 bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
 
@@ -193,8 +191,6 @@ SubmissionWaitEvent SubmitCommandBuffers(
     , const char* name = nullptr
 #endif
 );
-/// Wait for a submission
-void WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type);
 
 /// Unlock constants
 void UnlockConstantUpdates();
