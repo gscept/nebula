@@ -82,7 +82,7 @@ struct
     Util::Array<CoreGraphics::TextureId> biomeTextures;
     CoreGraphics::TextureId biomeMasks[Terrain::MAX_BIOMES];
     CoreGraphics::TextureId biomeWeights[Terrain::MAX_BIOMES];
-    Threading::AtomicCounter biomeLoaded[Terrain::MAX_BIOMES];
+    Threading::AtomicCounter biomeLoaded[Terrain::MAX_BIOMES][4];
     uint biomeLowresGenerated[Terrain::MAX_BIOMES];
     IndexT biomeCounter;
 
@@ -1561,7 +1561,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
     IndexT biomeIndex = terrainState.biomeCounter;
     for (int i = 0; i < mats.Size(); i++)
     {
-        terrainState.biomeLoaded[i] = 0x0;
+        terrainState.biomeLoaded[biomeIndex][i] = 0x0;
         terrainState.biomeLowresGenerated[i] = false;
         Resources::CreateResource(mats[i].albedo.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
@@ -1570,7 +1570,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
             terrainState.biomeMaterials.MaterialAlbedos[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             terrainState.biomeLowresGenerated[biomeIndex] = false;
-            terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::AlbedoLoaded;
+            terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::AlbedoLoaded;
         }, nullptr, false, false);
 
         Resources::CreateResource(mats[i].normal.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
@@ -1580,7 +1580,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
             terrainState.biomeMaterials.MaterialNormals[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             terrainState.biomeLowresGenerated[biomeIndex] = false;
-            terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::NormalLoaded;
+            terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::NormalLoaded;
         }, nullptr, false, false);
 
         Resources::CreateResource(mats[i].material.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
@@ -1590,7 +1590,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
             terrainState.biomeMaterials.MaterialPBRs[biomeIndex][i] = CoreGraphics::TextureGetBindlessHandle(id);
             terrainState.biomeTextures.Append(id);
             terrainState.biomeLowresGenerated[biomeIndex] = false;
-            terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::MaterialLoaded;
+            terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::MaterialLoaded;
         }, nullptr, false, false);
     }
 
@@ -1602,7 +1602,8 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
         terrainState.biomeTextures.Append(id);
         terrainState.biomeMasks[terrainState.biomeCounter] = id;
         terrainState.biomeLowresGenerated[biomeIndex] = false;
-        terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::MaskLoaded;
+        for (int i = 0; i < 4; i++)
+            terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::MaskLoaded;
     }, nullptr, false, false);
 
     if (settings.biomeParameters.useMaterialWeights)
@@ -1615,13 +1616,15 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
             terrainState.biomeTextures.Append(id);
             terrainState.biomeWeights[terrainState.biomeCounter] = id;
             terrainState.biomeLowresGenerated[biomeIndex] = false;
-            terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::WeightsLoaded;
+            for (int i = 0; i < 4; i++)
+                terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::WeightsLoaded;
         }, nullptr, false, false);
     }
     else
     {
         Threading::CriticalScope scope(&terrainState.syncPoint);
-        terrainState.biomeLoaded[biomeIndex] |= BiomeLoadBits::WeightsLoaded;
+        for (int i = 0; i < 4; i++)
+            terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::WeightsLoaded;
     }
 
     //CoreGraphics::BufferUpdate(terrainState.biomeBuffer, terrainState.biomeMaterials);
@@ -2133,9 +2136,12 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     {
         Threading::CriticalScope scope(&terrainState.syncPoint);
         BiomeParameters settings = terrainBiomeAllocator.Get<TerrainBiome_Settings>(j).biomeParameters;
-        bool allBitsLoaded = AllBits(terrainState.biomeLoaded[j], BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
-        biomesLoaded &= allBitsLoaded;
-        if (!terrainState.biomeLowresGenerated[j] && allBitsLoaded)
+        for (IndexT i = 0; i < 4; i++)
+        {
+            bool allBitsLoaded = AllBits(terrainState.biomeLoaded[j][i], BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded | BiomeLoadBits::MaskLoaded | BiomeLoadBits::WeightsLoaded);
+            biomesLoaded &= allBitsLoaded;
+        }
+        if (!terrainState.biomeLowresGenerated[j] && biomesLoaded)
         {
             terrainVirtualTileState.updateLowres = true;
             terrainState.biomeLowresGenerated[j] = true;
@@ -2152,9 +2158,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         systemUniforms.BiomeRules[j][2] = settings.uvScaleFactor;
     }
     BufferUpdate(terrainState.systemConstants, systemUniforms, 0);
-
-    if (!biomesLoaded)
-        return;
 
     struct PendingDelete
     {
@@ -2221,131 +2224,134 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         }
     }
 
-    // Handle readback from the GPU
-    CoreGraphics::BufferInvalidate(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
-    Terrain::PageUpdateList* updateList = (Terrain::PageUpdateList*)CoreGraphics::BufferMap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
-    terrainVirtualTileState.numPixels = updateList->NumEntries;
-    n_assert(terrainVirtualTileState.numPixels < Terrain::MAX_PAGE_UPDATES);
-    for (uint i = 0; i < updateList->NumEntries; i++)
+    if (biomesLoaded)
     {
-        uint status, subTextureIndex, mip, maxMip, subTextureTileX, subTextureTileY;
-        UnpackPageDataEntry(updateList->Entry[i], status, subTextureIndex, mip, maxMip, subTextureTileX, subTextureTileY);
-
-        // the update state is either 1 if the page is allocated, or 2 if it used to be allocated but has since been deallocated
-        uint updateState = status;
-        SubTexture& subTexture = terrainVirtualTileState.subTextures[subTextureIndex];
-
-        if (subTexture.numTiles == 0)
-            continue;
-
-        n_assert(mip < 0xF);
-        n_assert(subTextureTileX < PhysicalTextureTileSize);
-        n_assert(subTextureTileY < PhysicalTextureTileSize);
-
-        // If the subtexture has changed size, just ignore this update
-        if (subTexture.maxMip != maxMip)
-            continue;
-
-        TileCacheEntry cacheEntry;
-        cacheEntry.entry.tileX = subTextureTileX;
-        cacheEntry.entry.tileY = subTextureTileY;
-        cacheEntry.entry.tiles = subTexture.numTiles >> mip;
-        cacheEntry.entry.subTextureIndex = subTextureIndex;
-
-        // Get new or cached coords from the virtual texture cache
-        TextureTileCache::CacheResult result = terrainVirtualTileState.physicalTextureTileCache.Cache(cacheEntry);
-        if (result.didCache)
+        // Handle readback from the GPU
+        CoreGraphics::BufferInvalidate(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
+        Terrain::PageUpdateList* updateList = (Terrain::PageUpdateList*)CoreGraphics::BufferMap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
+        terrainVirtualTileState.numPixels = updateList->NumEntries;
+        n_assert(terrainVirtualTileState.numPixels < Terrain::MAX_PAGE_UPDATES);
+        for (uint i = 0; i < updateList->NumEntries; i++)
         {
-            IndirectionUpdate(mip, result.cached.x, result.cached.y, subTexture.indirectionOffset.x, subTexture.indirectionOffset.y, subTextureTileX, subTextureTileY);
+            uint status, subTextureIndex, mip, maxMip, subTextureTileX, subTextureTileY;
+            UnpackPageDataEntry(updateList->Entry[i], status, subTextureIndex, mip, maxMip, subTextureTileX, subTextureTileY);
 
-            // Calculate some metrics, the meters per tile, meters per pixel and then the padded meters per tile value
-            float metersPerTile = SubTextureWorldSize / float(subTexture.numTiles >> mip);
-            float metersPerPixel = metersPerTile / float(PhysicalTextureTilePaddedSize);
-            float metersPerTilePadded = metersPerTile + PhysicalTextureTilePadding * metersPerPixel;
+            // the update state is either 1 if the page is allocated, or 2 if it used to be allocated but has since been deallocated
+            uint updateState = status;
+            SubTexture& subTexture = terrainVirtualTileState.subTextures[subTextureIndex];
 
-            TerrainTileWrite::TileWrite write;
-            write.WorldOffset[0] = subTexture.worldCoordinate.x + subTextureTileX * metersPerTile - metersPerPixel * PhysicalTextureTileHalfPadding;
-            write.WorldOffset[1] = subTexture.worldCoordinate.y + subTextureTileY * metersPerTile - metersPerPixel * PhysicalTextureTileHalfPadding;
-            n_assert(result.cached.x < USHRT_MAX && result.cached.y < USHRT_MAX);
-            write.WriteOffset_MetersPerTile[0] = (result.cached.x & 0xFFFF) | ((result.cached.y & 0xFFFF) << 16);
-            write.WriteOffset_MetersPerTile[1] = *reinterpret_cast<int*>(&metersPerTilePadded);
+            if (subTexture.numTiles == 0)
+                continue;
 
-            terrainVirtualTileState.tileWrites.Append(write);
-        }
-        else
-        {
-            // Calculate indirection pixel in subtexture
-            uint indirectionPixelX = (subTexture.indirectionOffset.x >> mip) + subTextureTileX;
-            uint indirectionPixelY = (subTexture.indirectionOffset.y >> mip) + subTextureTileY;
-            uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[mip];
-            uint mipSize = terrainVirtualTileState.indirectionMipSizes[mip];
+            n_assert(mip < 0xF);
+            n_assert(subTextureTileX < PhysicalTextureTileSize);
+            n_assert(subTextureTileY < PhysicalTextureTileSize);
 
-            // If the cache has the tile but the indirection has been cleared, issue an update for the indirection only
-            const IndirectionEntry& entry = terrainVirtualTileState.indirectionBuffer[mipOffset + indirectionPixelX + indirectionPixelY * mipSize];
-            if (entry.mip == 0xF)
+            // If the subtexture has changed size, just ignore this update
+            if (subTexture.maxMip != maxMip)
+                continue;
+
+            TileCacheEntry cacheEntry;
+            cacheEntry.entry.tileX = subTextureTileX;
+            cacheEntry.entry.tileY = subTextureTileY;
+            cacheEntry.entry.tiles = subTexture.numTiles >> mip;
+            cacheEntry.entry.subTextureIndex = subTextureIndex;
+
+            // Get new or cached coords from the virtual texture cache
+            TextureTileCache::CacheResult result = terrainVirtualTileState.physicalTextureTileCache.Cache(cacheEntry);
+            if (result.didCache)
+            {
                 IndirectionUpdate(mip, result.cached.x, result.cached.y, subTexture.indirectionOffset.x, subTexture.indirectionOffset.y, subTextureTileX, subTextureTileY);
-        }
 
-        // If evicted, clear the tile in the indirection texture
-        /*
-        if (result.evicted != InvalidTileCacheEntry)
-        {
-            const TerrainSubTexture& evictSubtexture = terrainVirtualTileState.subTextures[result.evicted.entry.subTextureIndex];
+                // Calculate some metrics, the meters per tile, meters per pixel and then the padded meters per tile value
+                float metersPerTile = SubTextureWorldSize / float(subTexture.numTiles >> mip);
+                float metersPerPixel = metersPerTile / float(PhysicalTextureTilePaddedSize);
+                float metersPerTilePadded = metersPerTile + PhysicalTextureTilePadding * metersPerPixel;
 
-            // Calculate the mip, which is relative to the max number of mips in the current
-            // SubTexture and whatever was cached before
-            int evictMip = Math::log2(evictSubtexture.tiles) - Math::log2(result.evicted.entry.tiles);
+                TerrainTileWrite::TileWrite write;
+                write.WorldOffset[0] = subTexture.worldCoordinate.x + subTextureTileX * metersPerTile - metersPerPixel * PhysicalTextureTileHalfPadding;
+                write.WorldOffset[1] = subTexture.worldCoordinate.y + subTextureTileY * metersPerTile - metersPerPixel * PhysicalTextureTileHalfPadding;
+                n_assert(result.cached.x < USHRT_MAX && result.cached.y < USHRT_MAX);
+                write.WriteOffset_MetersPerTile[0] = (result.cached.x & 0xFFFF) | ((result.cached.y & 0xFFFF) << 16);
+                write.WriteOffset_MetersPerTile[1] = *reinterpret_cast<int*>(&metersPerTilePadded);
 
-            // If the mip is positive, it means the pixel still exists and can therefore be discarded
-            if (evictMip >= 0)
+                terrainVirtualTileState.tileWrites.Append(write);
+            }
+            else
             {
                 // Calculate indirection pixel in subtexture
-                uint indirectionPixelX = (subTexture.indirectionOffset[0] >> evictMip) + result.evicted.entry.tileX;
-                uint indirectionPixelY = (subTexture.indirectionOffset[1] >> evictMip) + result.evicted.entry.tileY;
-                uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[evictMip];
-                uint mipSize = terrainVirtualTileState.indirectionMipSizes[evictMip];
+                uint indirectionPixelX = (subTexture.indirectionOffset.x >> mip) + subTextureTileX;
+                uint indirectionPixelY = (subTexture.indirectionOffset.y >> mip) + subTextureTileY;
+                uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[mip];
+                uint mipSize = terrainVirtualTileState.indirectionMipSizes[mip];
 
-                // Now simply just clear that pixel
-                IndirectionErase(evictMip, indirectionPixelX, indirectionPixelY, result.evicted.entry.tileX, result.evicted.entry.tileY);
+                // If the cache has the tile but the indirection has been cleared, issue an update for the indirection only
+                const IndirectionEntry& entry = terrainVirtualTileState.indirectionBuffer[mipOffset + indirectionPixelX + indirectionPixelY * mipSize];
+                if (entry.mip == 0xF)
+                    IndirectionUpdate(mip, result.cached.x, result.cached.y, subTexture.indirectionOffset.x, subTexture.indirectionOffset.y, subTextureTileX, subTextureTileY);
             }
+
+            // If evicted, clear the tile in the indirection texture
+            /*
+            if (result.evicted != InvalidTileCacheEntry)
+            {
+                const TerrainSubTexture& evictSubtexture = terrainVirtualTileState.subTextures[result.evicted.entry.subTextureIndex];
+
+                // Calculate the mip, which is relative to the max number of mips in the current
+                // SubTexture and whatever was cached before
+                int evictMip = Math::log2(evictSubtexture.tiles) - Math::log2(result.evicted.entry.tiles);
+
+                // If the mip is positive, it means the pixel still exists and can therefore be discarded
+                if (evictMip >= 0)
+                {
+                    // Calculate indirection pixel in subtexture
+                    uint indirectionPixelX = (subTexture.indirectionOffset[0] >> evictMip) + result.evicted.entry.tileX;
+                    uint indirectionPixelY = (subTexture.indirectionOffset[1] >> evictMip) + result.evicted.entry.tileY;
+                    uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[evictMip];
+                    uint mipSize = terrainVirtualTileState.indirectionMipSizes[evictMip];
+
+                    // Now simply just clear that pixel
+                    IndirectionErase(evictMip, indirectionPixelX, indirectionPixelY, result.evicted.entry.tileX, result.evicted.entry.tileY);
+                }
+            }
+            */
         }
-        */
-    }
-    CoreGraphics::BufferUnmap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
+        CoreGraphics::BufferUnmap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
 
-    IndexT i;
+        IndexT i;
 
-    // Setup constants for tile updates
-    SizeT numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.tileWrites.Size());
-    for (i = 0; i < numPagesThisFrame; i++)
-    {
-        TerrainTileWrite::TileWrite& write = terrainVirtualTileState.tileWrites[i];
-        terrainVirtualTileState.tileWritesThisFrame.Append(write);
-    }
-    if (i > 0)
-    {
-        terrainVirtualTileState.tileWrites.EraseRange(0, numPagesThisFrame - 1);
-    }
-    if (!terrainVirtualTileState.tileWritesThisFrame.IsEmpty())
-        CoreGraphics::BufferUpdateArray(terrainVirtualTileState.tileWriteBufferSet.HostBuffer(), terrainVirtualTileState.tileWritesThisFrame.Begin(), terrainVirtualTileState.tileWritesThisFrame.Size());
+        // Setup constants for tile updates
+        SizeT numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.tileWrites.Size());
+        for (i = 0; i < numPagesThisFrame; i++)
+        {
+            TerrainTileWrite::TileWrite& write = terrainVirtualTileState.tileWrites[i];
+            terrainVirtualTileState.tileWritesThisFrame.Append(write);
+        }
+        if (i > 0)
+        {
+            terrainVirtualTileState.tileWrites.EraseRange(0, numPagesThisFrame - 1);
+        }
+        if (!terrainVirtualTileState.tileWritesThisFrame.IsEmpty())
+            CoreGraphics::BufferUpdateArray(terrainVirtualTileState.tileWriteBufferSet.HostBuffer(), terrainVirtualTileState.tileWritesThisFrame.Begin(), terrainVirtualTileState.tileWritesThisFrame.Size());
 
-    // Update buffers for indirection pixel uploads
-    numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.indirectionEntryUpdates.Size());
-    uint offset = Upload(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
-    for (i = 0; i < numPagesThisFrame; i++)
-    {
-        // setup indirection update
-        terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append(CoreGraphics::BufferCopy{ static_cast<uint>(offset + i * sizeof(Terrain::IndirectionEntry)) });
-        terrainVirtualTileState.indirectionTextureUpdatesThisFrame.Append(terrainVirtualTileState.indirectionTextureCopies[i]);
-    }
-    if (i > 0)
-    {
-        terrainVirtualTileState.indirectionEntryUpdates.EraseRange(0, numPagesThisFrame);
-        terrainVirtualTileState.indirectionTextureCopies.EraseRange(0, numPagesThisFrame);
-    }
+        // Update buffers for indirection pixel uploads
+        numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.indirectionEntryUpdates.Size());
+        uint offset = Upload(terrainVirtualTileState.indirectionEntryUpdates.Begin(), terrainVirtualTileState.indirectionEntryUpdates.Size(), 4);
+        for (i = 0; i < numPagesThisFrame; i++)
+        {
+            // setup indirection update
+            terrainVirtualTileState.indirectionBufferUpdatesThisFrame.Append(CoreGraphics::BufferCopy{ static_cast<uint>(offset + i * sizeof(Terrain::IndirectionEntry)) });
+            terrainVirtualTileState.indirectionTextureUpdatesThisFrame.Append(terrainVirtualTileState.indirectionTextureCopies[i]);
+        }
+        if (i > 0)
+        {
+            terrainVirtualTileState.indirectionEntryUpdates.EraseRange(0, numPagesThisFrame);
+            terrainVirtualTileState.indirectionTextureCopies.EraseRange(0, numPagesThisFrame);
+        }
 
-    // Flush upload buffer
-    CoreGraphics::BufferFlush(terrainVirtualTileState.indirectionUploadBuffers.buffers[ctx.bufferIndex], 0, terrainVirtualTileState.indirectionUploadOffsets[ctx.bufferIndex]);
+        // Flush upload buffer
+        CoreGraphics::BufferFlush(terrainVirtualTileState.indirectionUploadBuffers.buffers[ctx.bufferIndex], 0, terrainVirtualTileState.indirectionUploadOffsets[ctx.bufferIndex]);
+    }
 
     // Wait for jobs to finish
     sectionCullFinishedEvent.Wait();
