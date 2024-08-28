@@ -214,7 +214,7 @@ template<class TYPE> void
 SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE>& outArray)
 {
     this->criticalSection.Enter();
-#if NEBULA_BOUNDSCHECKS
+#if NEBULA_ENABLE_PERFORMANCE_WARNINGS
     n_warn_fmt(outArray.Capacity() >= this->queue.Size(), "SafeQueue::DequeueAll(): (PERFORMANCE) Output array is too small (%d), requires (%d), array will have to grow.\n", outArray.Capacity(), this->queue.Size());
 #endif
     outArray.Clear();
@@ -295,4 +295,3 @@ SafeQueue<TYPE>::EraseMatchingElements(const TYPE& e)
 } // namespace Threading
 //------------------------------------------------------------------------------
 
-    
