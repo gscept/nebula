@@ -603,12 +603,12 @@ GraphicsServer::EndFrame()
     auto submission = CoreGraphics::SubmitCommandBuffers(
         {cmdBuf}
         , queue
+        , { this->swapInfo.submission }
 #if NEBULA_GRAPHICS_DEBUG
         , "Swap"
 #endif
 
     );
-    CoreGraphics::WaitForSubmission(this->swapInfo.submission, queue);
     CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
 
     // Finish submuissions
