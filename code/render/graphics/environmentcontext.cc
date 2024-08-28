@@ -78,15 +78,13 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         [](const Resources::ResourceId id)
         {
             envState.defaultEnvironmentMap = id;
-            Resources::SetMinLod(id, 0.0f, false);
-        });
+        }, nullptr, false, false);
 
     envState.defaultIrradianceMap = Resources::CreateResource("systex:sky_irr.dds"_atm, "system"_atm,
         [](const Resources::ResourceId id)
         {
             envState.defaultIrradianceMap = id;
-            Resources::SetMinLod(id, 0.0f, false);
-        });
+        }, nullptr, false, false);
 
     envState.r_show_env_params = Core::CVarCreate(Core::CVar_Int, "r_show_env_params", "0", "Show/hide environment parameters debug ui");
 }
