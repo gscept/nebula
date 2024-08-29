@@ -209,8 +209,32 @@ ResourceLoader::Update(IndexT frameIndex)
         }
     }
 
-    IndexT i;
-    for (i = 0; i < this->pendingLoads.Size(); i++)
+    // go through pending unloads
+    for (IndexT  i = this->pendingUnloads.Size() - 1; i >= 0; i--)
+    {
+        const _PendingResourceUnload& unload = this->pendingUnloads[i];
+        if (this->states[unload.resourceId.loaderInstanceId] == Resource::Loaded)
+        {
+            n_assert(this->usage[unload.resourceId.loaderInstanceId] >= 0);
+            this->usage[unload.resourceId.loaderInstanceId]--;
+            if (this->usage[unload.resourceId.loaderInstanceId] == 0)
+            {
+                // unload if loaded
+                this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
+                this->Unload(unload.resourceId);
+
+                Memory::Free(Memory::ScratchHeap, this->metaData[unload.resourceId.loaderInstanceId].data);
+
+                // give up the resource id
+                this->resourceInstanceIndexPool.Dealloc(unload.resourceId.loaderInstanceId);
+            }
+
+            // remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
+            this->pendingUnloads.EraseIndex(i);
+        }
+    }
+
+    for (IndexT i = 0; i < this->pendingLoads.Size(); i++)
     {
         _PendingResourceLoad& resourceLoad = this->loads[this->pendingLoads[i]];
         Resource::State state = this->states[resourceLoad.entry];
@@ -238,7 +262,7 @@ ResourceLoader::Update(IndexT frameIndex)
     Util::Array<_PendingStreamLod> pendingStreams(128, 8);
     this->pendingStreamQueue.DequeueAll(pendingStreams);
     this->pendingStreamLods.AppendArray(pendingStreams);
-    for (i = this->pendingStreamLods.Size() - 1; i >= 0; i--)
+    for (IndexT i = this->pendingStreamLods.Size() - 1; i >= 0; i--)
     {
         const _PendingStreamLod& streamLod = this->pendingStreamLods[i];
 
@@ -256,26 +280,11 @@ ResourceLoader::Update(IndexT frameIndex)
             this->pendingStreamLods.EraseIndex(i);
             i--;
         }
-    }
-
-    // go through pending unloads
-    for (i = this->pendingUnloads.Size() - 1; i >= 0; i--)
-    {
-        const _PendingResourceUnload& unload = this->pendingUnloads[i];
-        if (this->states[unload.resourceId.loaderInstanceId] != Resource::Pending)
+        else if (this->states[streamLod.id.loaderInstanceId] == Resource::Unloaded)
         {
-            if (this->states[unload.resourceId.loaderInstanceId] == Resource::Loaded)
-            {
-                // unload if loaded
-                this->Unload(unload.resourceId);
-                this->states[unload.resourceId.loaderInstanceId] = Resource::Unloaded;
-            }
-
-            // give up the resource id
-            this->resourceInstanceIndexPool.Dealloc(unload.resourceId.loaderInstanceId);
-            
-            // remove pending unload if not Pending or Loaded (so explicitly Unloaded or Failed)
-            this->pendingUnloads.EraseIndex(i);
+            // If resource was unloaded before streaming started, remove the request
+            this->pendingStreamLods.EraseIndex(i);
+            i--;
         }
     }
 }
@@ -639,23 +648,8 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
     if (id != this->placeholderResourceId && id != this->failResourceId)
     {
-        // if usage reaches 0, add it to the list of pending unloads
-        if (this->usage[id.loaderInstanceId] == 0)
-        {
-            if (this->async)
-            {
-                // add pending unload, it will be unloaded once loaded
-                this->pendingUnloads.Append({ id });
-            
-            }
-            else
-            {
-                this->Unload(id);
-                this->states[id.loaderInstanceId] = Resource::Unloaded;
-                Memory::Free(Memory::ScratchHeap, this->metaData[id.loaderInstanceId].data);
-            }
-            this->resourceInstanceIndexPool.Dealloc(id.loaderInstanceId);
-        }
+        // add pending unload, it will be unloaded once loaded
+        this->pendingUnloads.Append({ id });
     }
 #if N_DEBUG
     else
