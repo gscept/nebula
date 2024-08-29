@@ -148,6 +148,8 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
 
     ResourceLoader::ResourceStreamOutput ret;
     CoreGraphics::CmdBufferId transferCommands;
+    Util::Array<Memory::RangeAllocation> rangesToFlush;
+
     if (bitsToLoad != 0x0)
     {
         CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
@@ -165,18 +167,20 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
         CoreGraphics::CmdBeginRecord(transferCommands, beginInfo);
         CoreGraphics::CmdBeginMarker(transferCommands, NEBULA_MARKER_GRAPHICS, name.Value());
 
+
         // Upload vertices
         if (bitsToLoad & 0x1)
         {
-            auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
+            auto [alloc, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
             if (buffer != CoreGraphics::InvalidBufferId)
             {
+                rangesToFlush.Append(alloc);
                 BufferIdAcquire(vbo);
                 SizeT baseVertexOffset = streamData->vertexAllocationOffset.offset;
 
                 // Copy from host mappable buffer to device local buffer
                 CoreGraphics::BufferCopy from, to;
-                from.offset = offset;
+                from.offset = alloc.offset;
                 to.offset = baseVertexOffset;
                 CoreGraphics::CmdCopy(transferCommands, buffer, { from }, vbo, { to }, header->vertexDataSize);
                 BufferIdRelease(vbo);
@@ -188,15 +192,16 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
         // Upload indices
         if (bitsToLoad & 0x2)
         {
-            auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
+            auto [alloc, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
             if (buffer != CoreGraphics::InvalidBufferId)
             {
+                rangesToFlush.Append(alloc);
                 BufferIdAcquire(ibo);
                 SizeT baseIndexOffset = streamData->indexAllocationOffset.offset;
 
                 // Copy from host mappable buffer to device local buffer
                 CoreGraphics::BufferCopy from, to;
-                from.offset = offset;
+                from.offset = alloc.offset;
                 to.offset = baseIndexOffset;
                 CoreGraphics::CmdCopy(transferCommands, buffer, { from }, ibo, { to }, header->indexDataSize);
                 BufferIdRelease(ibo);
@@ -214,18 +219,19 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
     {
         if (job.immediate)
         {
+            CoreGraphics::FlushUploads(rangesToFlush);
             CoreGraphics::SubmissionWaitEvent waitEvent = CoreGraphics::SubmitCommandBuffers({ transferCommands }, CoreGraphics::GraphicsQueueType, nullptr, "Upload meshes");
             CoreGraphics::DeferredDestroyCmdBuffer(transferCommands);
 
             IndexT index = this->meshesToFinish.FindIndex(job.id);
             if (index == InvalidIndex)
-                this->meshesToFinish.Add(job.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .cmdBuf = transferCommands } });
+                this->meshesToFinish.Add(job.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands } });
             else
-                this->meshesToFinish.ValueAtIndex(job.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .cmdBuf = transferCommands });
+                this->meshesToFinish.ValueAtIndex(job.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands });
         }
         else
         {
-            this->meshesToSubmit.Enqueue(MeshesToSubmit{ .id = job.id, .bits = ret.pendingBits, .cmdBuf = transferCommands });
+            this->meshesToSubmit.Enqueue(MeshesToSubmit{ .id = job.id, .bits = ret.pendingBits, .rangesToFlush = rangesToFlush, .cmdBuf = transferCommands });
         }
     }
     if (job.loadState.pendingBits != 0x0)
@@ -240,6 +246,7 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
                 const FinishedMesh& mesh = meshes[i];
                 if (CoreGraphics::PollSubmissionIndex(CoreGraphics::GraphicsQueueType, mesh.submissionId))
                 {
+                    CoreGraphics::FreeUploads(mesh.rangesToFree);
                     CoreGraphics::DestroyCmdBuffer(mesh.cmdBuf);
                     ret.loadedBits |= mesh.bits;
                     ret.pendingBits &= ~mesh.bits;
@@ -290,14 +297,15 @@ MeshLoader::UpdateLoaderSyncState()
     // Enqueue cleanups
     for (const auto& submit : meshesToSubmit)
     {
+        CoreGraphics::FlushUploads(submit.rangesToFlush);
         CoreGraphics::SubmissionWaitEvent waitEvent = CoreGraphics::SubmitCommandBuffers({ submit.cmdBuf }, CoreGraphics::GraphicsQueueType, nullptr, "Upload meshes");
 
         this->meshLock.Enter();
         IndexT index = meshesToFinish.FindIndex(submit.id);
         if (index == InvalidIndex)
-            this->meshesToFinish.Add(submit.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = submit.bits, .cmdBuf = submit.cmdBuf } });
+            this->meshesToFinish.Add(submit.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = submit.bits, .rangesToFree = submit.rangesToFlush, .cmdBuf = submit.cmdBuf } });
         else
-            this->meshesToFinish.ValueAtIndex(submit.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = submit.bits, .cmdBuf = submit.cmdBuf });
+            this->meshesToFinish.ValueAtIndex(submit.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = submit.bits, .rangesToFree = submit.rangesToFlush, .cmdBuf = submit.cmdBuf });
         this->meshLock.Leave();
     }
     meshesToSubmit.Clear();

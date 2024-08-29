@@ -57,6 +57,7 @@ private:
     {
         Resources::ResourceId id;
         uint bits;
+        Util::Array<Memory::RangeAllocation> rangesToFlush;
         CoreGraphics::CmdBufferId cmdBuf;
     };
     Threading::SafeQueue<MeshesToSubmit> meshesToSubmit;
@@ -65,6 +66,7 @@ private:
     {
         uint64 submissionId;
         uint bits;
+        Util::Array<Memory::RangeAllocation> rangesToFree;
         CoreGraphics::CmdBufferId cmdBuf;
     };
     Util::HashTable<Resources::ResourceId, Util::Array<FinishedMesh>> meshesToFinish;

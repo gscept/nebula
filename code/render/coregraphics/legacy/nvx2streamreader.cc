@@ -281,7 +281,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->vertexComponents.Size() > 0);
 
     // Get upload buffer
-    auto [offset, buffer] = CoreGraphics::Upload(this->vertexDataPtr, this->vertexDataSize);
+    auto [alloc, buffer] = CoreGraphics::Upload(this->vertexDataPtr, this->vertexDataSize);
 
     // Get main vertex buffer
     this->vbo = CoreGraphics::GetVertexBuffer();
@@ -292,10 +292,12 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 
     // Copy from host mappable buffer to device local buffer
     CoreGraphics::BufferCopy from, to;
-    from.offset = offset;
+    from.offset = alloc.offset;
     to.offset = this->vertexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, this->vbo, {to}, this->vertexDataSize);
+    CoreGraphics::FlushUploads({ alloc });
+    CoreGraphics::EnqueueUploadsFlushAndFree({ alloc });
     CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 }
 
@@ -312,7 +314,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     n_assert(this->numIndices > 0);
 
     // Get upload buffer
-    auto [offset, buffer] = CoreGraphics::Upload(this->indexDataPtr, this->indexDataSize);
+    auto [alloc, buffer] = CoreGraphics::Upload(this->indexDataPtr, this->indexDataSize);
 
     // Get main index buffer
     this->ibo = CoreGraphics::GetIndexBuffer();
@@ -322,10 +324,12 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 
     // Copy from host mappable buffer to device local buffer
     CoreGraphics::BufferCopy from, to;
-    from.offset = offset;
+    from.offset = alloc.offset;
     to.offset = this->indexAllocation.offset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, buffer, {from}, this->ibo, {to}, this->indexDataSize);
+    CoreGraphics::FlushUploads({ alloc });
+    CoreGraphics::EnqueueUploadsFlushAndFree({ alloc });
     CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 }
 

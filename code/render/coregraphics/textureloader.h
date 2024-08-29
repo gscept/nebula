@@ -50,6 +50,7 @@ private:
     {
         Resources::ResourceId id;
         uint bits;
+        Util::Array<Memory::RangeAllocation> rangesToFlush;
         CoreGraphics::CmdBufferId transferCmdBuf, graphicsCmdBuf;
     };
     Threading::SafeQueue<MipLoadMainThread> mipLoadsToSubmit;
@@ -59,6 +60,7 @@ private:
     {
         uint64 handoverSubmissionId;
         uint bits;
+        Util::Array<Memory::RangeAllocation> rangesToFree;
         CoreGraphics::CmdBufferId uploadBuffer, receiveBuffer;
     };
     Util::HashTable<Resources::ResourceId, Util::Array<MipHandoverLoaderThread>> mipHandovers;

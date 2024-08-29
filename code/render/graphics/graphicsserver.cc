@@ -96,7 +96,7 @@ GraphicsServer::Open()
         .maxTimestampQueries = 0x400,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
-        .enableValidation = true,
+        .enableValidation = false,
         .features = {
             .enableRayTracing = true,
             .enableMeshShaders = true,

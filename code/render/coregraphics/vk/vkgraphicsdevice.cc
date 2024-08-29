@@ -64,12 +64,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     };
     Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
-    struct UploadRingBuffer
-    {
-        Util::Array<Memory::RangeAllocation> allocs;
-        Util::Array<uint> allocSizes;
-    };
-    Util::FixedArray<UploadRingBuffer> uploadRingBuffers;
+    Util::Array<Memory::RangeAllocation> uploadAllocationsToFlush;
+    Util::FixedArray<Util::Array<Memory::RangeAllocation>> uploadAllocationsToFree;
     CoreGraphics::BufferId uploadBuffer;
 
     struct SparseImageBind
@@ -1336,9 +1332,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
 
+    state.uploadAllocationsToFree.Resize(info.numBufferedFrames);
     state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);
-    state.globalUploadBufferPoolSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
-    state.uploadRingBuffers.Resize(info.numBufferedFrames);
     state.uploadAllocator = Memory::RangeAllocator(info.globalUploadMemorySize, 2048);
 
     _setup_grouped_timer(state.DebugTimer, "GraphicsDevice");
@@ -1689,6 +1684,9 @@ void
 SubmitImmediateCommandBuffers()
 {
     CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait, uploadWait;
+
+    CoreGraphics::FlushUploads(state.uploadAllocationsToFlush);
+    state.uploadAllocationsToFlush.Clear();
 
     // Submit transfer and graphics commands from this frame
     transferLock.Enter();
@@ -2115,7 +2113,7 @@ void
 DeallocateVertices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    state.vertexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .node = alloc.node});
+    state.vertexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .size = 0, .node = alloc.node});
     N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, alloc.size);
 }
 
@@ -2163,7 +2161,7 @@ void
 DeallocateIndices(const VertexAlloc& alloc)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
-    state.indexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .node = alloc.node});
+    state.indexAllocator.Dealloc(Memory::RangeAllocation{.offset = (uint)alloc.offset, .size = 0, .node = alloc.node});
     N_BUDGET_COUNTER_DECR(N_INDEX_MEMORY, alloc.size);
 }
 
@@ -2180,11 +2178,10 @@ GetIndexBuffer()
 /**
 */
 Threading::CriticalSection UploadLock;
-Util::Pair<uint, CoreGraphics::BufferId>
+Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 AllocateUpload(const SizeT numBytes, const SizeT alignment)
 {
     Threading::CriticalScope _0(&UploadLock);
-    Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     // Calculate aligned upper bound
     SizeT adjustedAlignment = Math::max(alignment, (SizeT)state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
@@ -2194,11 +2191,9 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     Memory::RangeAllocation alloc = state.uploadAllocator.Alloc(numBytes, adjustedAlignment);
     if (alloc.offset != alloc.OOM)
     {
-        ring.allocs.Append(alloc);
-        ring.allocSizes.Append(alignedBytes);
-        return Util::MakePair(alloc.offset, state.uploadBuffer);
+        return Util::MakePair(alloc, state.uploadBuffer);
     }
-    return Util::MakePair(0xFFFFFFFF, InvalidBufferId);
+    return Util::MakePair(Memory::RangeAllocation(), InvalidBufferId);
 }
 
 //------------------------------------------------------------------------------
@@ -2215,27 +2210,49 @@ UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const voi
 /**
 */
 void
-FlushUpload()
+FreeUploads(const Util::Array<Memory::RangeAllocation>& allocations)
 {
-    Threading::CriticalScope _0(&UploadLock);
-    const Vulkan::GraphicsDeviceState::UploadRingBuffer& uploadBuffer = state.uploadRingBuffers[state.currentBufferedFrameIndex];
-
-    Util::FixedArray<VkMappedMemoryRange> ranges(uploadBuffer.allocs.Size());
-    for (IndexT i = 0; i < uploadBuffer.allocs.Size(); i++)
+    for (const auto& alloc : allocations)
     {
-        VkMappedMemoryRange& range = ranges[i];
-        range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-        range.pNext = nullptr;
-        range.offset = uploadBuffer.allocs[i].offset; //uploadBuffer.interval.start;
-        range.size = Math::align(uploadBuffer.allocSizes[i], state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);// (DeviceSize)size;
-        range.memory = BufferGetVkMemory(state.uploadBuffer);
+        state.uploadAllocator.Dealloc(alloc);
     }
+}
 
-    if (ranges.Size() > 0)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations)
+{
+    if (!allocations.IsEmpty())
     {
-        VkResult res = vkFlushMappedMemoryRanges(state.devices[state.currentDevice], ranges.Size(), ranges.Begin());
-        n_assert(res == VK_SUCCESS);
+        Util::FixedArray<VkMappedMemoryRange> ranges(allocations.Size());
+        for (IndexT i = 0; i < allocations.Size(); i++)
+        {
+            VkMappedMemoryRange& range = ranges[i];
+            range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+            range.pNext = nullptr;
+            range.offset = allocations[i].offset; //uploadBuffer.interval.start;
+            range.size = Math::align(allocations[i].size, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);// (DeviceSize)size;
+            range.memory = BufferGetVkMemory(state.uploadBuffer);
+        }
+
+        if (ranges.Size() > 0)
+        {
+            VkResult res = vkFlushMappedMemoryRanges(state.devices[state.currentDevice], ranges.Size(), ranges.Begin());
+            n_assert(res == VK_SUCCESS);
+        }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocations)
+{
+    state.uploadAllocationsToFlush.AppendArray(allocations);
+    state.uploadAllocationsToFree[state.currentBufferedFrameIndex].AppendArray(allocations);
 }
 
 //------------------------------------------------------------------------------
@@ -2319,18 +2336,16 @@ NewFrame()
         state.queries[state.currentBufferedFrameIndex].queryFreeCount[i] = 0;
     }
 
+    for (const auto& alloc : state.uploadAllocationsToFree[state.currentBufferedFrameIndex])
+    {
+        state.uploadAllocator.Dealloc(alloc);
+    }
+    state.uploadAllocationsToFree[state.currentBufferedFrameIndex].Clear();
+
     // update constant buffer offsets
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
     nextCboRing.endAddress = 0;
     nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.endAddress;
-
-    Vulkan::GraphicsDeviceState::UploadRingBuffer& nextUploadRing = state.uploadRingBuffers[state.currentBufferedFrameIndex];
-    for (IndexT i = 0; i < nextUploadRing.allocs.Size(); i++)
-    {
-        state.uploadAllocator.Dealloc(nextUploadRing.allocs[i]);
-    }
-    nextUploadRing.allocs.Clear();
-    nextUploadRing.allocSizes.Clear();
 
     N_BUDGET_COUNTER_RESET(N_CONSTANT_MEMORY);
     N_BUDGET_COUNTER_RESET(N_UPLOAD_MEMORY);

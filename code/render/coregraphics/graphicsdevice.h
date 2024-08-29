@@ -112,7 +112,6 @@ struct GraphicsDeviceState
     Memory::RangeAllocator indexAllocator;
     CoreGraphics::BufferId indexBuffer;
 
-    int globalUploadBufferPoolSize;
     Memory::RangeAllocator uploadAllocator;
     //CoreGraphics::BufferId uploadBuffer;
 
@@ -235,19 +234,24 @@ void DeallocateIndices(const VertexAlloc& alloc);
 const CoreGraphics::BufferId GetIndexBuffer();
 
 /// Allocate upload memory
-Util::Pair<uint, CoreGraphics::BufferId> AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
+Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
 /// Upload single item to GPU source buffer
-template<class TYPE> Util::Pair<uint, CoreGraphics::BufferId> Upload(const TYPE& data, const SizeT alignment = 1);
+template<class TYPE> Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> Upload(const TYPE& data, const SizeT alignment = 1);
 /// Upload array of items to GPU source buffer
-template<class TYPE> Util::Pair<uint, CoreGraphics::BufferId> UploadArray(const TYPE* data, SizeT elements, const SizeT alignment = 1);
+template<class TYPE> Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> UploadArray(const TYPE* data, SizeT elements, const SizeT alignment = 1);
 /// Upload item to GPU source buffer with preallocated memory
 template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE& data);
 /// Upload array of items GPU source buffer with preallocated memory
 template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE* data, SizeT elements);
 /// Upload memory to upload buffer with given offset, return offset
 void UploadInternal(const CoreGraphics::BufferId buffer, uint offset, const void* data, SizeT size);
-/// Flush upload buffer
-void FlushUpload();
+
+/// Free upload allocations directly
+void FreeUploads(const Util::Array<Memory::RangeAllocation>& allocations);
+/// Flush upload allocations directly
+void FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations);
+/// Queue uploads to flush and free at immediate submit
+void EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocations);
 
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
@@ -374,28 +378,28 @@ SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements)
 /**
 */
 template<class TYPE>
-inline Util::Pair<uint, CoreGraphics::BufferId>
+inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 Upload(const TYPE& data, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE);
-    auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
+    auto [alloc, buffer] = AllocateUpload(uploadSize, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
-        UploadInternal(buffer, offset, &data, uploadSize);
-    return Util::MakePair(offset, buffer);
+        UploadInternal(buffer, alloc.offset, &data, uploadSize);
+    return Util::MakePair(alloc, buffer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline Util::Pair<uint, CoreGraphics::BufferId>
+inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 UploadArray(const TYPE* data, SizeT numElements, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
-    auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
+    auto [alloc, buffer] = AllocateUpload(uploadSize, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
-        UploadInternal(buffer, offset, data, uploadSize);
-    return Util::MakePair(offset, buffer);
+        UploadInternal(buffer, alloc.offset, data, uploadSize);
+    return Util::MakePair(alloc, buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -424,13 +428,13 @@ Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE* data,
 /**
 */
 template<>
-inline Util::Pair<uint, CoreGraphics::BufferId>
+inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 UploadArray(const void* data, SizeT numBytes, SizeT alignment)
 {
-    auto [offset, buffer] = AllocateUpload(numBytes, alignment);
+    auto [alloc, buffer] = AllocateUpload(numBytes, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
-        UploadInternal(buffer, offset, data, numBytes);
-    return Util::MakePair(offset, buffer);
+        UploadInternal(buffer, alloc.offset, data, numBytes);
+    return Util::MakePair(alloc, buffer);
 }
 
 } // namespace CoreGraphics
