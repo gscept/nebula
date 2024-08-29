@@ -192,6 +192,9 @@ SubmissionWaitEvent SubmitCommandBuffers(
 #endif
 );
 
+/// Submit immediate command buffers
+void SubmitImmediateCommandBuffers();
+
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of memory and set data, return offset (thread safe)
@@ -241,8 +244,6 @@ template<class TYPE> Util::Pair<uint, CoreGraphics::BufferId> UploadArray(const 
 template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE& data);
 /// Upload array of items GPU source buffer with preallocated memory
 template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE* data, SizeT elements);
-/// Upload memory to upload buffer with alignment, return offset
-//template<> Util::Pair<uint, CoreGraphics::BufferId> Upload(const void* data, SizeT numBytes, SizeT alignment = 1);
 /// Upload memory to upload buffer with given offset, return offset
 void UploadInternal(const CoreGraphics::BufferId buffer, uint offset, const void* data, SizeT size);
 /// Flush upload buffer

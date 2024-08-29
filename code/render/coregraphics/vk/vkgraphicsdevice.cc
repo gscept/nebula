@@ -33,6 +33,7 @@ namespace Vulkan
 static Threading::CriticalSection delayedDeleteSection;
 static Threading::CriticalSection transferLock;
 static Threading::CriticalSection setupLock;
+static Threading::CriticalSection submitLock;
 
 struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 {
@@ -237,20 +238,34 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                 for (const VkExtensionProperties& extension : caps)
                     existingExtensions.Add(extension.extensionName);
 
-                static const Util::String wantedExtensions[] =
+                uint32_t newNumCaps = 0;
+
+                static const Util::String requiredExtensions[] =
                 {
                     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                     VK_KHR_MAINTENANCE_1_EXTENSION_NAME,
                     VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
                     VK_KHR_MAINTENANCE_3_EXTENSION_NAME,
                     VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+                    VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME,
+                };
+
+                for (int j = 0; j < lengthof(requiredExtensions); j++)
+                {
+                    if (existingExtensions.FindIndex(requiredExtensions[j]) == InvalidIndex)
+                        validDevice = false;
+                    else
+                        state.deviceFeatureStrings[i][newNumCaps++] = requiredExtensions[j].AsCharPtr();
+                }
+
+                static const Util::String wantedExtensions[] =
+                {
                     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
                     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                     VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
                     VK_EXT_MESH_SHADER_EXTENSION_NAME,
                     VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
                     VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
-                    VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME,
                     VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
 #if NEBULA_GRAPHICS_DEBUG
                     VK_NV_DEVICE_DIAGNOSTICS_CONFIG_EXTENSION_NAME,
@@ -258,7 +273,6 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
 #endif
                 };
 
-                uint32_t newNumCaps = 0;
                 for (uint32_t j = 0; j < lengthof(wantedExtensions); j++)
                 {
                     if (existingExtensions.FindIndex(wantedExtensions[j]) != InvalidIndex)
@@ -305,10 +319,6 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                         }
                         state.deviceFeatureStrings[i][newNumCaps++] = wantedExtensions[j].AsCharPtr();
                     }
-                    else
-                    {
-                        validDevice = false;
-                    }
                 }
 
                 if (!CoreGraphics::RayTracingSupported)
@@ -324,7 +334,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
 
                 if (validDevice)
                 {
-                    n_printf("Picking device '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
+                    n_printf("[Graphics Device] Using '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
                     state.currentDevice = i;
                     break;
                 }
