@@ -1633,6 +1633,48 @@ SubmitCommandBuffers(
 #endif
 )
 {
+    // Append submission
+    Threading::CriticalScope _0(&submitLock);
+    Util::Array<VkCommandBuffer> vkBufs;
+    vkBufs.Reserve(cmds.Size());
+    for (auto cmd : cmds)
+        vkBufs.Append(CmdBufferGetVk(cmd));
+
+    CoreGraphics::SubmissionWaitEvent ret;
+    ret.timelineIndex = state.queueHandler.AppendSubmissionTimeline(
+        type
+        , vkBufs
+        , waitEvents
+#if NEBULA_GRAPHICS_DEBUG
+        , name
+#endif
+    );
+    ret.queue = type;
+
+    // Add wait event
+    AddSubmissionEvent(ret);
+
+#if NEBULA_ENABLE_PROFILING
+    for (auto cmdBuf : cmds)
+    {
+        if (CoreGraphics::CmdRecordsMarkers(cmdBuf))
+        {
+            Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmdBuf);
+            state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
+            state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmdBuf));
+        }
+    }
+#endif
+    
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmitImmediateCommandBuffers()
+{
     CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait, uploadWait;
 
     // Submit transfer and graphics commands from this frame
@@ -1644,7 +1686,7 @@ SubmitCommandBuffers(
         for (auto cmdBuf : state.setupTransferCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
 
-        uploadWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, "Transfer");
+        uploadWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, nullptr, "Transfer");
         uploadWait.queue = CoreGraphics::TransferQueueType;
 
         // Set wait events in graphics device
@@ -1664,11 +1706,8 @@ SubmitCommandBuffers(
         for (auto cmdBuf : state.handoverTransferCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
 
-        handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, "Handover");
+        handoverWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, vkBufs, { uploadWait }, "Handover");
         handoverWait.queue = CoreGraphics::TransferQueueType;
-
-        if (uploadWait != nullptr)
-            state.queueHandler.AppendWaitTimeline(uploadWait.timelineIndex, CoreGraphics::TransferQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, uploadWait.queue);
 
         // Set wait events in graphics device
         AddSubmissionEvent(handoverWait);
@@ -1689,12 +1728,8 @@ SubmitCommandBuffers(
         for (auto cmdBuf : state.setupGraphicsCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
 
-        graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, vkBufs, "Setup");
+        graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, vkBufs, { handoverWait }, "Setup");
         graphicsWait.queue = CoreGraphics::GraphicsQueueType;
-
-        // This command buffer will have handover commands, so wait for that transfer
-        if (handoverWait != nullptr)
-            state.queueHandler.AppendWaitTimeline(handoverWait.timelineIndex, CoreGraphics::GraphicsQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, handoverWait.queue);
 
         // Add wait event
         AddSubmissionEvent(graphicsWait);
@@ -1706,43 +1741,6 @@ SubmitCommandBuffers(
         state.setupGraphicsCommandBuffers.Clear();
     }
     setupLock.Leave();
-
-    // Append submission
-    Util::Array<VkCommandBuffer> vkBufs;
-    vkBufs.Reserve(cmds.Size());
-    for (auto cmd : cmds)
-        vkBufs.Append(CmdBufferGetVk(cmd));
-
-    CoreGraphics::SubmissionWaitEvent ret;
-    ret.timelineIndex = state.queueHandler.AppendSubmissionTimeline(
-        type
-        , vkBufs
-#if NEBULA_GRAPHICS_DEBUG
-        , name
-#endif
-    );
-    for (const auto& wait : waitEvents)
-    {
-        state.queueHandler.AppendWaitTimeline(wait.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, wait.queue);
-    }
-    ret.queue = type;
-
-    // Add wait event
-    AddSubmissionEvent(ret);
-
-#if NEBULA_ENABLE_PROFILING
-    for (auto cmdBuf : cmds)
-    {
-        if (CoreGraphics::CmdRecordsMarkers(cmdBuf))
-        {
-            Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmdBuf);
-            state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
-            state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmdBuf));
-        }
-    }
-#endif
-    
-    return ret;
 }
 
 //------------------------------------------------------------------------------

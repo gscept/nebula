@@ -96,6 +96,7 @@ public:
     uint64 AppendSubmissionTimeline(
         CoreGraphics::QueueType type
         , VkCommandBuffer cmds
+        , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
         , const char* name = nullptr
 #endif
@@ -105,14 +106,13 @@ public:
     uint64 AppendSubmissionTimeline(
         CoreGraphics::QueueType type
         , Util::Array<VkCommandBuffer> cmds
+        , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
         , const char* name = nullptr
 #endif
     );
     /// Gets the next submission id for a specific queue
     uint64 GetNextTimelineIndex(CoreGraphics::QueueType type);
-    /// Append a wait for a submission timeline index
-    void AppendWaitTimeline(uint64 index, CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitType);
     /// append a sparse image bind timeline operation
     uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
     /// append a sparse buffer bind timeline operation
@@ -151,6 +151,7 @@ private:
     Util::FixedArray<Util::Array<uint64>> semaphoreSubmissionIds;
     Util::FixedArray<Util::Array<TimelineSubmission2>> submissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
+    Threading::CriticalSection submissionLock;
 };
 
 } // namespace Vulkan
