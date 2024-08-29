@@ -76,7 +76,7 @@ MemoryPool::DeallocateMemory(const Alloc& alloc)
     if (alloc.nodeIndex != DedicatedBlockNodeIndex)
     {
         Memory::RangeAllocator& allocator = this->allocators[alloc.blockIndex];
-        allocator.Dealloc(Memory::RangeAllocation{ (uint)alloc.offset, alloc.nodeIndex });
+        allocator.Dealloc(Memory::RangeAllocation{ .offset = (uint)alloc.offset, .size = 0, .node = alloc.nodeIndex });
         deleteBlock = allocator.Empty();
     }
     if (deleteBlock)
