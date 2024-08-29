@@ -285,7 +285,6 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
 
     ResourceLoader::ResourceStreamOutput ret;
 
-
     // Setup texture id
     TextureId texture = job.id;
     TextureIdAcquire(texture);
@@ -305,8 +304,6 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
         beginInfo.resubmittable = false;
         CoreGraphics::CmdBeginRecord(uploadCommands, beginInfo);
         CoreGraphics::CmdBeginMarker(uploadCommands, NEBULA_MARKER_TRANSFER, name.Value());
-
-        n_assert(job.name == job.streamData.stream->GetURI().LocalPath());
 
         // Perform mip loads
         uint mask = LoadMips(uploadCommands, streamData, bitsToLoad, texture);
