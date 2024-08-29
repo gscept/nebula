@@ -26,6 +26,7 @@ uint BinFromSize(uint size, uint bucket);
 struct RangeAllocation
 {
     uint offset;
+    uint size;
     uint node;
 
     static constexpr uint OOM = 0xFFFFFFFF;
@@ -186,7 +187,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
     uint alignedSize = size + alignment - 1;
     if (this->freeStorage < alignedSize)
     {
-        return { RangeAllocation::OOM, RangeAllocatorNode::END };
+        return RangeAllocation{ .offset = RangeAllocation::OOM, .size = 0, .node = RangeAllocatorNode::END };
     }
 
     BinIndex minIndex = IndexFromSize(alignedSize, true);
@@ -206,7 +207,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
         // If this means we get 32, it means we're out of buckets that fit
         if (bucket == 0xFFFFFFFF)
         {
-            return { RangeAllocation::OOM, RangeAllocatorNode::END };
+            return RangeAllocation{ .offset = RangeAllocation::OOM, .size = 0, .node = RangeAllocatorNode::END };
         }
 
         // Find any bit, since this bucket has to fit
@@ -269,7 +270,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
         }
     }
     
-    return { node.offset, nodeIndex };
+    return RangeAllocation{ .offset = node.offset, .size = alignedSize, .node = nodeIndex };
 }
 
 //------------------------------------------------------------------------------
