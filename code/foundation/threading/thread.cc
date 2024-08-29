@@ -17,4 +17,6 @@ __ImplementClass(Threading::Thread, 'TRED', Linux::LinuxThread);
 #else
 #error "Thread class not implemented on this platform!"
 #endif
+
+Threading::ThreadId MainThreadId = Threading::InvalidThreadId;
 }
