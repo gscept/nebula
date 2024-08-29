@@ -1854,7 +1854,7 @@ skipResolution:
                     visibilities[index] = false;
                 }
             }
-        }, rt.sectionBoxes.Size(), 256, {}, & sectionCullDoneCounter, & sectionCullFinishedEvent);
+        }, rt.sectionBoxes.Size(), 256, {}, &sectionCullDoneCounter, &sectionCullFinishedEvent);
         CoreGraphics::BufferUnmap(terrainVirtualTileState.patchConstants.buffers[ctx.bufferIndex]);
     }
     if (runtimes.IsEmpty())
