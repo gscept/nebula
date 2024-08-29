@@ -252,10 +252,18 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
 
                 for (int j = 0; j < lengthof(requiredExtensions); j++)
                 {
-                    if (existingExtensions.FindIndex(requiredExtensions[j]) == InvalidIndex)
-                        validDevice = false;
-                    else
+                    if (existingExtensions.FindIndex(requiredExtensions[j]) != InvalidIndex)
+                    {
+                        if (requiredExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
+                        {
+                            CoreGraphics::DynamicVertexInputSupported = true;
+                            n_printf("[Graphics Device] Dynamic Vertex Input is enabled\n");
+                        }
+
                         state.deviceFeatureStrings[i][newNumCaps++] = requiredExtensions[j].AsCharPtr();
+                    }
+                    else
+                        validDevice = false;
                 }
 
                 static const Util::String wantedExtensions[] =
@@ -284,11 +292,6 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                                 CoreGraphics::RayTracingSupported = true;
                                 n_printf("[Graphics Device] Ray Tracing is enabled\n");
                             }
-                        }
-                        if (wantedExtensions[j] == VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME)
-                        {
-                            CoreGraphics::DynamicVertexInputSupported = true;
-                            n_printf("[Graphics Device] Dynamic Vertex Input is enabled\n");
                         }
                         if (features.enableMeshShaders)
                         {
