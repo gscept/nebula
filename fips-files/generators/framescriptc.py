@@ -1079,6 +1079,7 @@ class SubmissionDefinition:
         file.WriteLine(', "{}"'.format(self.name))
         file.WriteLine("#endif")
         file.WriteLine(");")
+        file.WriteLine("CoreGraphics::SubmitImmediateCommandBuffers();")
         if self.waitForQueue is not None:
             file.WriteLine("CoreGraphics::WaitForLastSubmission(CoreGraphics::QueueType::{}QueueType, CoreGraphics::QueueType::{}QueueType);".format(self.queue, self.waitForQueue))
 
