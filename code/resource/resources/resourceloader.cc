@@ -155,26 +155,24 @@ ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput
 /**
 */
 void
-AsyncJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job)
+DispatchJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job)
 {
-    // Create and send off job to thread
-    auto jobFunc = [loader, job]() -> void
+    if (loader->async && !job.immediate)
     {
+        // Create and send off job to thread
+        auto jobFunc = [loader, job]() -> void
+        {
+            ResourceLoader::ResourceLoadOutput output = _LoadInternal(loader, job);
+            loader->loadOutputs.Enqueue(output);
+        };
+        loader->EnqueueJob(jobFunc);
+    }
+    else
+    {
+        // Perform immediate load and update the state of the loader
         ResourceLoader::ResourceLoadOutput output = _LoadInternal(loader, job);
-        loader->loadOutputs.Enqueue(output);
-    };
-    loader->EnqueueJob(jobFunc);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ImmediateJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job)
-{
-    // Perform immediate load and update the state of the loader
-    ResourceLoader::ResourceLoadOutput output = _LoadInternal(loader, job);
-    ApplyLoadOutput(loader, output);
+        ApplyLoadOutput(loader, output);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -199,14 +197,7 @@ ResourceLoader::Update(IndexT frameIndex)
     this->dependentJobs.Clear();
     for (const auto& job : dependencyJobs)
     {
-        if (this->async)
-        {
-            AsyncJob(this, job);
-        }
-        else
-        {
-            ImmediateJob(this, job);
-        }
+        DispatchJob(this, job);
     }
 
     // go through pending unloads
@@ -246,14 +237,8 @@ ResourceLoader::Update(IndexT frameIndex)
 
         LoadState loadState = this->loadStates[resourceLoad.entry];
         ResourceLoadJob job = ResourceLoadJob::FromPending(this, frameIndex, resourceLoad);
-        if (this->async)
-        {
-            AsyncJob(this, job);
-        }
-        else
-        {
-            ImmediateJob(this, job);
-        }
+        DispatchJob(this, job);
+
         resourceLoad.flags = LoadFlags::None;
     }
     this->pendingLoads.Clear();
@@ -402,7 +387,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
                 job.state = Resource::Failed;
                 job.id.resourceId = loader->failResourceId.resourceId;
                 job.id.generation = loader->failResourceId.generation;
-                n_printf("[RESOURCE LOADER] Failed to load resource %s\n", job.name.AsCharPtr());
+                n_printf("[Resource loader] Failed to load resource %s\n", job.name.AsCharPtr());
                 goto skip_stream;
             }
         }
@@ -410,7 +395,7 @@ _LoadInternal(ResourceLoader* loader, ResourceLoader::ResourceLoadJob job)
         {
             job.id.resourceId = loader->failResourceId.resourceId;
             job.id.generation = loader->failResourceId.generation;
-            n_printf("[RESOURCE LOADER] Failed to open resource %s\n", job.name.AsCharPtr());
+            n_printf("[Resource loader] Failed to open resource %s\n", job.name.AsCharPtr());
             job.state = Resource::Failed;
             goto skip_stream;
         }

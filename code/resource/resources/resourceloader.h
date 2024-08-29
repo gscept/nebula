@@ -228,8 +228,7 @@ protected:
     friend class ResourceServer;
     
     friend void ApplyLoadOutput(ResourceLoader* loader, const ResourceLoader::ResourceLoadOutput& output);
-    friend void ImmediateJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job);
-    friend void AsyncJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job);
+    friend void DispatchJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job);
     friend ResourceLoadOutput _LoadInternal(ResourceLoader* loader, ResourceLoadJob res);
 
     /// Update loader internal state
