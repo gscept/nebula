@@ -172,12 +172,36 @@ void
 csTerrainPageClearUpdateBuffer()
 {
     // Clear page statuses
+    /*
+    if (gl_GlobalInvocationID.x < VirtualPageBufferMipOffsets[3][3])
+        PageStatuses[gl_GlobalInvocationID.x] = 0x0;
+        */
+
+    // Early out if this thread is slow and all the other ones have finished
+    if (PageList.NumEntries == 0)
+        return;
+
+    // Decrement the entries list
+    int numLeft = atomicAdd(PageList.NumEntries, -1);
+
+    // If we get 0 or lower, it means the last item was dealt with already
+    if (numLeft > 0)
+        PageStatuses[PageList.PageStatuses[numLeft - 1]] = 0x0;
+
+    // Ensure we can't get negative NumEntries
+    atomicMax(PageList.NumEntries, 0);
+
+    /*
     if (gl_GlobalInvocationID.x < PageList.NumEntries)
         PageStatuses[PageList.PageStatuses[gl_GlobalInvocationID.x]] = 0x0;
+
+    // Wait for all clear jobs to finish
+    memoryBarrierBuffer();
 
     // Then reset the number of entries to 0
     if (gl_GlobalInvocationID.x == 0 && gl_GlobalInvocationID.y == 0)
         PageList.NumEntries = 0u;
+        */
 }
 
 //------------------------------------------------------------------------------
@@ -245,7 +269,7 @@ psTerrainPrepass(
         {
             uvec4 entry = PackPageDataEntry(1u, subTextureIndex, lowerMip, maxMip, subTextureTile.x, subTextureTile.y);
 
-            uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
+            uint entryIndex = atomicAdd(PageList.NumEntries, 1);
             PageList.Entry[entryIndex] = entry;
             PageList.PageStatuses[entryIndex] = index;
         }
@@ -274,7 +298,7 @@ psTerrainPrepass(
             {
                 uvec4 entry = PackPageDataEntry(1u, subTextureIndex, upperMip, maxMip, subTextureTile.x, subTextureTile.y);
 
-                uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
+                uint entryIndex = atomicAdd(PageList.NumEntries, 1);
                 PageList.Entry[entryIndex] = entry;
                 PageList.PageStatuses[entryIndex] = index;
             }
@@ -340,8 +364,6 @@ psTerrainResolve(
         uint maxMip, tiles, mipBias;
         UnpackSubTexture(subTexture, dummydummy, indirectionOffset, maxMip, mipBias, tiles);
 
-        vec2 debugCoord = uvec2(0, 0);
-
         if (tiles != 1)
         {
             int lowerMip = int(floor(posBuf.x));
@@ -379,8 +401,6 @@ psTerrainResolve(
                 // get the indirection coord and normalize it to the physical space
                 uvec3 indirectionUpper = fetchIndirection(ivec2(pageCoordUpper), int(upperMip), 0);
                 uvec3 indirectionLower = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
-                debugCoord = indirectionLower.xy / vec2(2048.0f);
-
 
                 vec3 albedo1;
                 vec3 normal1;
@@ -428,7 +448,6 @@ psTerrainResolve(
             {
                 // do the cheap path and just do a single lookup
                 uvec3 indirection = fetchIndirection(ivec2(pageCoordLower), int(lowerMip), 0);
-                debugCoord = indirection.xy;
 
                 // use physical cache if indirection is valid
                 if (indirection.z != 0xF)

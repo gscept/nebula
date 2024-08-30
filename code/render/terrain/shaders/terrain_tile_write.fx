@@ -48,39 +48,39 @@ uint4
 BlockCompressNormals(uvec2 blockStart)
 {
     float blockU[16], blockV[16];
-    blockU[4] = NormalCacheResult[blockStart.x][blockStart.y].x;
-    blockU[5] = NormalCacheResult[blockStart.x + 1][blockStart.y].x;
-    blockU[1] = NormalCacheResult[blockStart.x + 2][blockStart.y].x;
-    blockU[0] = NormalCacheResult[blockStart.x + 3][blockStart.y].x;
-    blockV[4] = NormalCacheResult[blockStart.x][blockStart.y].y;
-    blockV[5] = NormalCacheResult[blockStart.x + 1][blockStart.y].y;
-    blockV[1] = NormalCacheResult[blockStart.x + 2][blockStart.y].y;
-    blockV[0] = NormalCacheResult[blockStart.x + 3][blockStart.y].y;
+    blockU[0] = NormalCacheResult[blockStart.x][blockStart.y].x;
+    blockU[1] = NormalCacheResult[blockStart.x + 1][blockStart.y].x;
+    blockU[2] = NormalCacheResult[blockStart.x + 2][blockStart.y].x;
+    blockU[3] = NormalCacheResult[blockStart.x + 3][blockStart.y].x;
+    blockV[0] = NormalCacheResult[blockStart.x][blockStart.y].y;
+    blockV[1] = NormalCacheResult[blockStart.x + 1][blockStart.y].y;
+    blockV[2] = NormalCacheResult[blockStart.x + 2][blockStart.y].y;
+    blockV[3] = NormalCacheResult[blockStart.x + 3][blockStart.y].y;
 
-    blockU[7] = NormalCacheResult[blockStart.x][blockStart.y + 1].x;
-    blockU[6] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1].x;
-    blockU[3] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1].x;
-    blockU[2] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1].x;
-    blockV[7] = NormalCacheResult[blockStart.x][blockStart.y + 1].y;
-    blockV[6] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1].y;
-    blockV[3] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1].y;
-    blockV[2] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1].y;
+    blockU[4] = NormalCacheResult[blockStart.x][blockStart.y + 1].x;
+    blockU[5] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1].x;
+    blockU[6] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1].x;
+    blockU[7] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1].x;
+    blockV[4] = NormalCacheResult[blockStart.x][blockStart.y + 1].y;
+    blockV[5] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1].y;
+    blockV[6] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1].y;
+    blockV[7] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1].y;
 
-    blockU[13] = NormalCacheResult[blockStart.x][blockStart.y + 2].x;
-    blockU[12] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2].x;
-    blockU[9] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2].x;
-    blockU[8] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2].x;
-    blockV[12] = NormalCacheResult[blockStart.x][blockStart.y + 2].y;
-    blockV[13] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2].y;
-    blockV[9] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2].y;
-    blockV[8] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2].y;
+    blockU[8] = NormalCacheResult[blockStart.x][blockStart.y + 2].x;
+    blockU[9] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2].x;
+    blockU[10] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2].x;
+    blockU[11] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2].x;
+    blockV[8] = NormalCacheResult[blockStart.x][blockStart.y + 2].y;
+    blockV[9] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2].y;
+    blockV[10] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2].y;
+    blockV[11] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2].y;
 
-    blockU[10] = NormalCacheResult[blockStart.x][blockStart.y + 3].x;
-    blockU[11] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3].x;
+    blockU[12] = NormalCacheResult[blockStart.x][blockStart.y + 3].x;
+    blockU[13] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3].x;
     blockU[14] = NormalCacheResult[blockStart.x + 2][blockStart.y + 3].x;
     blockU[15] = NormalCacheResult[blockStart.x + 3][blockStart.y + 3].x;
-    blockV[10] = NormalCacheResult[blockStart.x][blockStart.y + 3].y;
-    blockV[11] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3].y;
+    blockV[12] = NormalCacheResult[blockStart.x][blockStart.y + 3].y;
+    blockV[13] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3].y;
     blockV[14] = NormalCacheResult[blockStart.x + 2][blockStart.y + 3].y;
     blockV[15] = NormalCacheResult[blockStart.x + 3][blockStart.y + 3].y;
 

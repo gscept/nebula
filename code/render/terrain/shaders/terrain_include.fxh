@@ -129,9 +129,9 @@ const uint MAX_PAGE_UPDATES = 4096;
 
 struct PageUpdateList
 {
-    uint NumEntries;
     uvec4 Entry[MAX_PAGE_UPDATES];
     uint PageStatuses[MAX_PAGE_UPDATES];
+    int NumEntries;
 };
 
 group(SYSTEM_GROUP) rw_buffer       PageUpdateListBuffer[string Visibility = "PS|CS";]

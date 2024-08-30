@@ -983,6 +983,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         CmdEndMarker(cmdBuf);
     }, {
         { FrameScript_default::BufferIndex::TerrainUpdateList, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::TerrainVirtualPageStatuses, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
     FrameScript_default::RegisterSubgraph_TerrainUpdateCaches_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -1057,11 +1058,10 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
         {
             CmdBeginMarker(cmdBuf, NEBULA_MARKER_COMPUTE, "Update Texture Caches");
 
-            terrainVirtualTileState.tileWriteBufferSet.Flush(cmdBuf, terrainVirtualTileState.tileWritesThisFrame.ByteSize());
             CoreGraphics::BarrierPush(
                 cmdBuf
-                , CoreGraphics::PipelineStage::TransferWrite
                 , CoreGraphics::PipelineStage::ComputeShaderRead
+                , CoreGraphics::PipelineStage::TransferWrite
                 , CoreGraphics::BarrierDomain::Global
                 , {
                     CoreGraphics::BufferBarrierInfo
@@ -1071,6 +1071,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                     }
                 }
             );
+            terrainVirtualTileState.tileWriteBufferSet.Flush(cmdBuf, terrainVirtualTileState.tileWritesThisFrame.ByteSize());
+            CoreGraphics::BarrierPop(cmdBuf);
             CmdSetShaderProgram(cmdBuf, terrainVirtualTileState.terrainTileWriteProgram);
             CmdSetResourceTable(cmdBuf, terrainVirtualTileState.systemTable.tables[bufferIndex], NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
             Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
@@ -1080,12 +1082,10 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             {
                 CmdSetResourceTable(cmdBuf, terrainVirtualTileState.runtimeTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
                 static const uint numDispatches = Math::divandroundup(PhysicalTextureTilePaddedSize, 8);
-                //CmdSetResourceTable(cmdBuf, terrainVirtualTileState.virtualTerrainDynamicResourceTable[bufferIndex], NEBULA_DYNAMIC_OFFSET_GROUP, ComputePipeline, nullptr);
 
                 CmdDispatch(cmdBuf, numDispatches, numDispatches, terrainVirtualTileState.tileWritesThisFrame.Size());
             }
             terrainVirtualTileState.tileWritesThisFrame.Clear();
-            CoreGraphics::BarrierPop(cmdBuf);
 
             CmdEndMarker(cmdBuf);
         }
@@ -1769,7 +1769,7 @@ skipResolution:
                 output.newMaxMip = tiles > 0 ? Math::log2(tiles) : 0;
                 output.newTiles = tiles;
 
-                output.mipBias = Math::max(0u, output.newMaxMip - output.oldMaxMip);
+                output.mipBias = output.newMaxMip > output.oldMaxMip ? output.newMaxMip - output.oldMaxMip : 0.0f;
 
                 // default is that the subtexture did not change
                 output.updateState = state;
@@ -2179,8 +2179,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         {
             case SubTextureUpdateState::Grew:
             case SubTextureUpdateState::Shrank:
-                terrainVirtualTileState.indirectionOccupancy.Deallocate(output.oldCoord, output.oldTiles);
-                [[fallthrough]];
             case SubTextureUpdateState::Created:
             {
                 Math::uint2 newCoord = terrainVirtualTileState.indirectionOccupancy.Allocate(output.newTiles);
@@ -2198,9 +2196,11 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
                     case SubTextureUpdateState::Grew:
                         IndirectionClear(output.newMaxMip - output.oldMaxMip, output.newTiles, newCoord);
                         IndirectionMoveGrow(output.oldMaxMip, output.oldTiles, output.oldCoord, output.newMaxMip, output.newTiles, newCoord);
+                        terrainVirtualTileState.indirectionOccupancy.Deallocate(output.oldCoord, output.oldTiles);
                         break;
                     case SubTextureUpdateState::Shrank:
                         IndirectionMoveShrink(output.oldMaxMip, output.oldTiles, output.oldCoord, output.newMaxMip, output.newTiles, newCoord);
+                        terrainVirtualTileState.indirectionOccupancy.Deallocate(output.oldCoord, output.oldTiles);
                         break;
                     case SubTextureUpdateState::Created:
                         IndirectionClear(output.newMaxMip, output.newTiles, newCoord);
@@ -2332,7 +2332,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
             terrainVirtualTileState.tileWrites.EraseRange(0, numPagesThisFrame - 1);
         }
         if (!terrainVirtualTileState.tileWritesThisFrame.IsEmpty())
-            CoreGraphics::BufferUpdateArray(terrainVirtualTileState.tileWriteBufferSet.HostBuffer(), terrainVirtualTileState.tileWritesThisFrame.Begin(), terrainVirtualTileState.tileWritesThisFrame.Size());
+            CoreGraphics::BufferUpdateArray(terrainVirtualTileState.tileWriteBufferSet.HostBuffer(), terrainVirtualTileState.tileWritesThisFrame);
 
         // Update buffers for indirection pixel uploads
         numPagesThisFrame = Math::min(TerrainTileWrite::MAX_TILES_PER_FRAME, terrainVirtualTileState.indirectionEntryUpdates.Size());

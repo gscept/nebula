@@ -20,6 +20,8 @@ struct IndirectionEntry
     uint physicalOffsetX : 14;
     uint physicalOffsetY : 14;
 };
+static_assert(alignof(IndirectionEntry) == 4);
+static_assert(sizeof(IndirectionEntry) == 4);
 
 struct TileCacheEntry
 {
