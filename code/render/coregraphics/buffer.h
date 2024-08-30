@@ -127,6 +127,10 @@ void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, con
 template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const uint offset = 0);
 /// update buffer data as array
 template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset = 0);
+/// Update buffer data as array
+template<class TYPE> void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const uint offset = 0);
+/// Update buffer data as array
+template<class TYPE> void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, const uint offset = 0);
 /// upload data from pointer directly to buffer through submission context
 template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count = 1, const uint offset = 0);
 
@@ -183,6 +187,24 @@ inline void
 BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset)
 {
     BufferUpdate(id, (const void*)data, sizeof(TYPE) * count, offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void BufferUpdateArray(const BufferId id, const Util::Array<TYPE>& data, const uint offset)
+{
+    BufferUpdate(id, (const void*)data.Begin(), data.ByteSize(), offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void BufferUpdateArray(const BufferId id, const Util::FixedArray<TYPE>& data, const uint offset)
+{
+    BufferUpdate(id, (const void*)data.Begin(), data.ByteSize(), offset);
 }
 
 //------------------------------------------------------------------------------
