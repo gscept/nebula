@@ -145,11 +145,6 @@ public:
             : id(InvalidResourceUnknownId)
         {
         }
-
-        bool operator==(nullptr_t)
-        {
-            return id == InvalidResourceUnknownId;
-        }
     };
 
     struct ResourceStreamOutput
