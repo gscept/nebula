@@ -105,7 +105,7 @@ BaseWindow::Update()
 //------------------------------------------------------------------------------
 /**
 */
-const ImGuiWindowFlags_&
+const ImGuiWindowFlags_
 BaseWindow::GetAdditionalFlags() const
 {
     return this->additionalFlags;
