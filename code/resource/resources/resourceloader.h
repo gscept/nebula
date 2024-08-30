@@ -39,21 +39,12 @@
 #include "resource.h"
 #include "threading/safequeue.h"
 #include "threading/threadid.h"
-#include "coregraphics/commandbuffer.h"
 #include "ids/idpool.h"
 #include <tuple>
 #include <functional>
 
 namespace Resources
 {
-
-struct PartialLoadBits
-{
-    uint bits;
-    uint64 submissionId;
-    CoreGraphics::CmdBufferId cmdBuf;
-};
-
 
 enum LoadFlags
 {
