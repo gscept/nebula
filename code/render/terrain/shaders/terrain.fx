@@ -171,12 +171,6 @@ shader
 void
 csTerrainPageClearUpdateBuffer()
 {
-    // Clear page statuses
-    /*
-    if (gl_GlobalInvocationID.x < VirtualPageBufferMipOffsets[3][3])
-        PageStatuses[gl_GlobalInvocationID.x] = 0x0;
-        */
-
     // Early out if this thread is slow and all the other ones have finished
     if (PageList.NumEntries == 0)
         return;
@@ -190,18 +184,6 @@ csTerrainPageClearUpdateBuffer()
 
     // Ensure we can't get negative NumEntries
     atomicMax(PageList.NumEntries, 0);
-
-    /*
-    if (gl_GlobalInvocationID.x < PageList.NumEntries)
-        PageStatuses[PageList.PageStatuses[gl_GlobalInvocationID.x]] = 0x0;
-
-    // Wait for all clear jobs to finish
-    memoryBarrierBuffer();
-
-    // Then reset the number of entries to 0
-    if (gl_GlobalInvocationID.x == 0 && gl_GlobalInvocationID.y == 0)
-        PageList.NumEntries = 0u;
-        */
 }
 
 //------------------------------------------------------------------------------

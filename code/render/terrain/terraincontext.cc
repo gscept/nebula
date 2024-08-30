@@ -1950,6 +1950,7 @@ IndirectionErase(
     uint size = terrainVirtualTileState.indirectionMipSizes[mip];
     terrainVirtualTileState.indirectionBuffer[mipOffset + indirectionPixelX + indirectionPixelY * size] = entry;
 }
+
 //------------------------------------------------------------------------------
 /**
     Copies mip chain from old region to new region which is bigger by mapping mips 0..X to 1..X in the new region
@@ -2292,21 +2293,20 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
             }
 
             // If evicted, clear the tile in the indirection texture
-            /*
             if (result.evicted != InvalidTileCacheEntry)
             {
-                const TerrainSubTexture& evictSubtexture = terrainVirtualTileState.subTextures[result.evicted.entry.subTextureIndex];
+                const SubTexture& evictSubtexture = terrainVirtualTileState.subTextures[result.evicted.entry.subTextureIndex];
 
                 // Calculate the mip, which is relative to the max number of mips in the current
                 // SubTexture and whatever was cached before
-                int evictMip = Math::log2(evictSubtexture.tiles) - Math::log2(result.evicted.entry.tiles);
+                int evictMip = Math::log2(evictSubtexture.numTiles) - Math::log2(result.evicted.entry.tiles);
 
                 // If the mip is positive, it means the pixel still exists and can therefore be discarded
                 if (evictMip >= 0)
                 {
                     // Calculate indirection pixel in subtexture
-                    uint indirectionPixelX = (subTexture.indirectionOffset[0] >> evictMip) + result.evicted.entry.tileX;
-                    uint indirectionPixelY = (subTexture.indirectionOffset[1] >> evictMip) + result.evicted.entry.tileY;
+                    uint indirectionPixelX = (subTexture.indirectionOffset.x >> evictMip) + result.evicted.entry.tileX;
+                    uint indirectionPixelY = (subTexture.indirectionOffset.y >> evictMip) + result.evicted.entry.tileY;
                     uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[evictMip];
                     uint mipSize = terrainVirtualTileState.indirectionMipSizes[evictMip];
 
@@ -2314,7 +2314,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
                     IndirectionErase(evictMip, indirectionPixelX, indirectionPixelY, result.evicted.entry.tileX, result.evicted.entry.tileY);
                 }
             }
-            */
         }
         CoreGraphics::BufferUnmap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
 
