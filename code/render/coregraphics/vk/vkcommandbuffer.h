@@ -13,6 +13,7 @@
 #include "coregraphics/pass.h"
 #include "coregraphics/shader.h"
 
+
 namespace CoreGraphics
 {
 struct PassId;
@@ -21,6 +22,16 @@ struct ShaderProgramId;
 
 namespace Vulkan
 {
+
+    
+#if NEBULA_GRAPHICS_DEBUG
+struct NvidiaAftermathCheckpoint
+{
+    Util::String name;
+    NvidiaAftermathCheckpoint* prev;
+    bool push : 1;
+};
+#endif
 
 extern PFN_vkCmdBeginDebugUtilsLabelEXT VkCmdDebugMarkerBegin;
 extern PFN_vkCmdEndDebugUtilsLabelEXT VkCmdDebugMarkerEnd;
@@ -55,6 +66,10 @@ const VkCommandBuffer CmdBufferGetVk(const CoreGraphics::CmdBufferId id);
 const VkCommandPool CmdBufferGetVkPool(const CoreGraphics::CmdBufferId id);
 /// Get vk device 
 const VkDevice CmdBufferGetVkDevice(const CoreGraphics::CmdBufferId id);
+#if NEBULA_GRAPHICS_DEBUG
+/// Get nvidia checkpoints
+Util::Array<NvidiaAftermathCheckpoint> CmdBufferMoveVkNvCheckpoints(const CoreGraphics::CmdBufferId id);
+#endif
 
 enum
 {
@@ -67,8 +82,12 @@ enum
     , CmdBuffer_PendingScissors
     , CmdBuffer_Usage
 #if NEBULA_ENABLE_PROFILING
+    , CmdBuffer_RecordsMarkers
     , CmdBuffer_ProfilingMarkers
     , CmdBuffer_Query
+#endif
+#if NEBULA_GRAPHICS_DEBUG
+    , CmdBuffer_NVCheckpoints
 #endif
 };
 
@@ -151,7 +170,7 @@ struct ScissorBundle
 };
 
 typedef Ids::IdAllocatorSafe<
-    0xFFF
+    0x1000
     , VkDevice
     , VkCommandBuffer
     , VkCommandPool
@@ -161,8 +180,12 @@ typedef Ids::IdAllocatorSafe<
     , ScissorBundle
     , CoreGraphics::QueueType
 #if NEBULA_ENABLE_PROFILING
+    , bool
     , CoreGraphics::CmdBufferMarkerBundle
     , QueryBundle
+#endif
+#if NEBULA_GRAPHICS_DEBUG
+    , Util::Array<NvidiaAftermathCheckpoint>
 #endif
 > VkCommandBufferAllocator;
 

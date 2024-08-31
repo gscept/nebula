@@ -16,6 +16,7 @@
 #include "vkcommandbufferthread.h"
 #include "vkmemory.h"
 
+
 namespace Vulkan
 {
 
@@ -69,5 +70,8 @@ void SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>&
 
 /// Clear pending resources
 void ClearPending();
+
+/// Handle VK Results
+void DeviceLost();
 
 } // namespace Vulkan

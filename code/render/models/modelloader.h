@@ -44,14 +44,14 @@ private:
     friend class Visibility::VisibilityContext;
 
     /// perform actual load, override in subclass
-    Resources::ResourceUnknownId InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    ResourceLoader::ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// unload resource
     void Unload(const Resources::ResourceId id) override;
 
     /// Stream texture
-    uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
+    ResourceStreamOutput StreamResource(const ResourceLoadJob& job) override;
     /// Create load mask based on LOD
-    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
+    uint LodMask(const _StreamData& stream, float lod, bool async) const override;
 
     /// used for looking up constructors
     Util::Dictionary<Util::FourCC, std::function<Models::ModelNode* ()>> nodeConstructors;

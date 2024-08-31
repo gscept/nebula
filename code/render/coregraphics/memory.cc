@@ -76,7 +76,7 @@ MemoryPool::DeallocateMemory(const Alloc& alloc)
     if (alloc.nodeIndex != DedicatedBlockNodeIndex)
     {
         Memory::RangeAllocator& allocator = this->allocators[alloc.blockIndex];
-        allocator.Dealloc(Memory::RangeAllocation{ (uint)alloc.offset, alloc.nodeIndex });
+        allocator.Dealloc(Memory::RangeAllocation{ .offset = (uint)alloc.offset, .size = 0, .node = alloc.nodeIndex });
         deleteBlock = allocator.Empty();
     }
     if (deleteBlock)
@@ -142,7 +142,7 @@ MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
     }
     this->blockSize = oldSize;
 
-    n_warning("Allocation of size %ld is bigger than block size %ld will receive a dedicated memory block\n", size, this->blockSize);
+    n_warning("[GPU Memory] Allocation of size %ld is bigger than block size %ld will receive a dedicated memory block\n", size, this->blockSize);
     Alloc ret{ this->blocks[id], 0, size, DedicatedBlockNodeIndex, this->memoryType, id };
     return ret;
 }

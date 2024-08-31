@@ -78,10 +78,26 @@ CreateTextureView(const TextureViewCreateInfo& info)
     mapping.b = VkSwizzle[(uint)info.swizzle.blue];
     mapping.a = VkSwizzle[(uint)info.swizzle.alpha];
 
+    constexpr uint Lookup[] =
+    {
+        0x0,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_IMAGE_USAGE_STORAGE_BIT,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        0x0 // Device exclusive?
+    };
+    VkImageUsageFlags usage = Util::BitmaskConvert(info.usage, Lookup);
+
+    VkImageViewUsageCreateInfo usageInfo;
+    usageInfo.pNext = nullptr;
+    usageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+    usageInfo.usage = usage;
+
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        nullptr,
+        info.usage != 0x0 ? &usageInfo : nullptr,
         0,
         img,
         type,

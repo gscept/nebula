@@ -40,4 +40,8 @@ class Thread : public Posix::PosixThread
 #else
 #error "Threading::Thread not implemented on this platform!"
 #endif
+namespace Threading
+{
+extern Threading::ThreadId MainThreadId;
+}
 //------------------------------------------------------------------------------

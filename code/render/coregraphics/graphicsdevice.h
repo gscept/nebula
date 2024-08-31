@@ -29,6 +29,7 @@ extern bool RayTracingSupported;
 extern bool DynamicVertexInputSupported;
 extern bool VariableRateShadingSupported;
 extern bool MeshShadersSupported;
+extern bool NvidiaCheckpointsSupported;
 
 struct GraphicsDeviceCreateInfo
 {
@@ -45,6 +46,7 @@ struct GraphicsDeviceCreateInfo
         bool enableRayTracing : 1;
         bool enableMeshShaders : 1;
         bool enableVariableRateShading : 1;
+        bool enableGPUCrashAnalytics : 1;
     } features;
 };
 
@@ -86,10 +88,10 @@ struct GraphicsDeviceState
     Util::Array<CoreGraphics::TextureId> backBuffers;
 
     CoreGraphics::CmdBufferPoolId setupTransferCommandBufferPool;
-    CoreGraphics::CmdBufferId setupTransferCommandBuffer;
-    CoreGraphics::CmdBufferId handoverTransferCommandBuffer;
+    Util::Array<CoreGraphics::CmdBufferId> setupTransferCommandBuffers;
+    Util::Array<CoreGraphics::CmdBufferId> handoverTransferCommandBuffers;
     CoreGraphics::CmdBufferPoolId setupGraphicsCommandBufferPool;
-    CoreGraphics::CmdBufferId setupGraphicsCommandBuffer;
+    Util::Array<CoreGraphics::CmdBufferId> setupGraphicsCommandBuffers;
 
     Util::FixedArray<CoreGraphics::FenceId> presentFences;
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
@@ -110,7 +112,6 @@ struct GraphicsDeviceState
     Memory::RangeAllocator indexAllocator;
     CoreGraphics::BufferId indexBuffer;
 
-    int globalUploadBufferPoolSize;
     Memory::RangeAllocator uploadAllocator;
     //CoreGraphics::BufferId uploadBuffer;
 
@@ -167,31 +168,31 @@ void RemoveBackBufferTexture(const CoreGraphics::TextureId tex);
 /// Lock resource command buffer
 const CoreGraphics::CmdBufferId LockTransferSetupCommandBuffer();
 /// Release lock on resource command buffer
-void UnlockTransferSetupCommandBuffer();
+void UnlockTransferSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 /// Lock immediate graphics command buffer
-const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer();
+const CoreGraphics::CmdBufferId LockGraphicsSetupCommandBuffer(const char* name = nullptr);
 /// Release lock on immediate graphics command buffer
-void UnlockGraphicsSetupCommandBuffer();
+void UnlockGraphicsSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 /// Lock handover transfer command buffer
 const CoreGraphics::CmdBufferId LockTransferHandoverSetupCommandBuffer();
 /// Release lock on handover command buffer
-void UnlockTransferHandoverSetupCommandBuffer();
+void UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 
-/// Get the next submission index for a specific queue
-uint64 NextSubmissionIndex(const CoreGraphics::QueueType queue);
 /// Poll a submission for completion
 bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
 
 /// Submit a command buffer, but doesn't necessarily execute it immediately
-SubmissionWaitEvent SubmitCommandBuffer(
-    const CoreGraphics::CmdBufferId cmds
+SubmissionWaitEvent SubmitCommandBuffers(
+    const Util::Array<CoreGraphics::CmdBufferId>& cmds
     , CoreGraphics::QueueType type
+    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents = nullptr
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name = nullptr
 #endif
 );
-/// Wait for a submission
-void WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type);
+
+/// Submit immediate command buffers
+void SubmitImmediateCommandBuffers();
 
 /// Unlock constants
 void UnlockConstantUpdates();
@@ -233,21 +234,24 @@ void DeallocateIndices(const VertexAlloc& alloc);
 const CoreGraphics::BufferId GetIndexBuffer();
 
 /// Allocate upload memory
-Util::Pair<uint, CoreGraphics::BufferId> AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
+Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
 /// Upload single item to GPU source buffer
-template<class TYPE> Util::Pair<uint, CoreGraphics::BufferId> Upload(const TYPE& data, const SizeT alignment = 1);
+template<class TYPE> Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> Upload(const TYPE& data, const SizeT alignment = 1);
 /// Upload array of items to GPU source buffer
-template<class TYPE> Util::Pair<uint, CoreGraphics::BufferId> UploadArray(const TYPE* data, SizeT elements, const SizeT alignment = 1);
+template<class TYPE> Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId> UploadArray(const TYPE* data, SizeT elements, const SizeT alignment = 1);
 /// Upload item to GPU source buffer with preallocated memory
 template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE& data);
 /// Upload array of items GPU source buffer with preallocated memory
 template<class TYPE> void Upload(const CoreGraphics::BufferId buffer, uint offset, const TYPE* data, SizeT elements);
-/// Upload memory to upload buffer with alignment, return offset
-//template<> Util::Pair<uint, CoreGraphics::BufferId> Upload(const void* data, SizeT numBytes, SizeT alignment = 1);
 /// Upload memory to upload buffer with given offset, return offset
 void UploadInternal(const CoreGraphics::BufferId buffer, uint offset, const void* data, SizeT size);
-/// Flush upload buffer
-void FlushUpload();
+
+/// Free upload allocations directly
+void FreeUploads(const Util::Array<Memory::RangeAllocation>& allocations);
+/// Flush upload allocations directly
+void FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations);
+/// Queue uploads to flush and free at immediate submit
+void EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocations);
 
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
@@ -374,28 +378,28 @@ SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements)
 /**
 */
 template<class TYPE>
-inline Util::Pair<uint, CoreGraphics::BufferId>
+inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 Upload(const TYPE& data, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE);
-    auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
+    auto [alloc, buffer] = AllocateUpload(uploadSize, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
-        UploadInternal(buffer, offset, &data, uploadSize);
-    return Util::MakePair(offset, buffer);
+        UploadInternal(buffer, alloc.offset, &data, uploadSize);
+    return Util::MakePair(alloc, buffer);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline Util::Pair<uint, CoreGraphics::BufferId>
+inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 UploadArray(const TYPE* data, SizeT numElements, const SizeT alignment)
 {
     const uint uploadSize = sizeof(TYPE) * numElements;
-    auto [offset, buffer] = AllocateUpload(uploadSize, alignment);
+    auto [alloc, buffer] = AllocateUpload(uploadSize, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
-        UploadInternal(buffer, offset, data, uploadSize);
-    return Util::MakePair(offset, buffer);
+        UploadInternal(buffer, alloc.offset, data, uploadSize);
+    return Util::MakePair(alloc, buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -424,13 +428,13 @@ Upload(const CoreGraphics::BufferId buffer, const uint offset, const TYPE* data,
 /**
 */
 template<>
-inline Util::Pair<uint, CoreGraphics::BufferId>
+inline Util::Pair<Memory::RangeAllocation, CoreGraphics::BufferId>
 UploadArray(const void* data, SizeT numBytes, SizeT alignment)
 {
-    auto [offset, buffer] = AllocateUpload(numBytes, alignment);
+    auto [alloc, buffer] = AllocateUpload(numBytes, alignment);
     if (buffer != CoreGraphics::InvalidBufferId)
-        UploadInternal(buffer, offset, data, numBytes);
-    return Util::MakePair(offset, buffer);
+        UploadInternal(buffer, alloc.offset, data, numBytes);
+    return Util::MakePair(alloc, buffer);
 }
 
 } // namespace CoreGraphics

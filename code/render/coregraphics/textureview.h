@@ -25,6 +25,7 @@ struct TextureViewCreateInfo
     SizeT numLayers = 1;
     PixelFormat::Code format = PixelFormat::InvalidPixelFormat;
     ImageBits bits = ImageBits::ColorBits;
+    CoreGraphics::TextureUsage usage = CoreGraphics::TextureUsage::InvalidTextureUsage;
     CoreGraphics::TextureSwizzle swizzle = { TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None };
 };
 

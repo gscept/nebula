@@ -32,7 +32,7 @@ private:
     friend void CoreGraphics::CmdSetShaderProgram(const CoreGraphics::CmdBufferId, const CoreGraphics::ShaderProgramId, bool);
 
     /// load shader
-    Resources::ResourceUnknownId InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// reload shader
     Resources::Resource::State ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream) override;
 

@@ -45,7 +45,7 @@ public:
     // Runs every frame, no matter if the window is open or not.
     virtual void Update();
 
-    const ImGuiWindowFlags_& GetAdditionalFlags() const;
+    const ImGuiWindowFlags_ GetAdditionalFlags() const;
 
     /// Retrieve window padding from window
     Math::vec2 GetWindowPadding() const;

@@ -276,164 +276,13 @@ sqr(float f)
     return f * f;
 }
 
-//-------------------------------------------------------------------------------------------------------------
-/**
-    pack an unsigned 16 bit value into 8 bit values, to store it into an RGBA8 texture
-    input:
-        0 <= input <= 65535.0
-    output:
-        0 <= byte_a < 1.0f
-        0 <= byte_b < 1.0f
-*/
-void
-pack_u16(in float depth, out float byte_a, out float byte_b)
-{
-    float tmp = depth / 256.0f;
-    byte_a = floor(tmp) / 256.0f;
-    byte_b = fract(tmp);
-
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    loot at pack_u16 for details
-*/
-float
-unpack_u16(in float byte_a, in float byte_b)
-{
-    return ((byte_a * 256.0f) * 256.0f) + (byte_b * 256.0f);
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    Encode a float value between -1.0 .. 1.0 into 2 seperate 8 bits. Used to store a normal component
-    into 2 channels of an 8-Bit RGBA texture, so the normal component is stored in 16 bits
-    Normal.x -> AR 16 bit
-    Normal.y -> GB 16 bit
-*/
-void
-pack_16bit_normal_component(in float n, out float byte_a, out float byte_b)
-{
-    n = ((n * 0.5f) + 0.5f) * 65535.0f;
-
-    pack_u16(n, byte_a, byte_b);
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    loot at pack_16bit_normal_component for details
-*/
-float
-unpack_16bit_normal_component(in float byte_a, in float byte_b)
-{
-    return ((unpack_u16(byte_a, byte_b) / 65535.0f) - 0.5f) * 2.0f;
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    loot at pack_16bit_normal_component for details
-*/
-vec4
-pack_normalxy_into_rgba8(in float normal_x, in float normal_y)
-{
-    vec4 ret;
-    pack_16bit_normal_component(normal_x, ret.x, ret.y);
-    pack_16bit_normal_component(normal_y, ret.z, ret.w);
-    return ret;
-}
-
-//-------------------------------------------------------------------------------------------------------------
-/**
-    loot at pack_16bit_normal_component for details
-*/
-vec4
-unpack_normalxy_from_rgba8(in vec4 packedData)
-{
-    return vec4(  unpack_16bit_normal_component(packedData.x, packedData.y),
-                    unpack_16bit_normal_component(packedData.z, packedData.w),
-                    0.0f,
-                    0.0f);
-}
-
 //------------------------------------------------------------------------------
 /**
-    Pack
-
-    out vec4 normal -> a view space normal into 16 bit's for x (normal.x & normal.y) and y-component (normal.z & normal.w), preserve sign of z-component.
 */
-vec4
-PackViewSpaceNormal(in vec3 viewSpaceNormal)
+uvec2
+unpack_2u16(uint value)
 {
-    // make sure normal is actually normalized
-    viewSpaceNormal = normalize(viewSpaceNormal);
-
-    // use Stereographic Projection, to avoid saveing a sign bit
-    // see http://aras-p.info/texts/CompactNormalStorage.html for further info
-    const float scale = 1.7777f;
-    vec2 enc = viewSpaceNormal.xy / (viewSpaceNormal.z+1.0f);
-    enc /= scale;
-    enc = enc * 0.5f + 0.5f;
-
-    // pack normal x and y
-    vec4 normal = pack_normalxy_into_rgba8(enc.x, enc.y);
-    return normal;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Unpack a view space normal packedData with PackViewSpaceNormalPosition().
-*/
-vec3
-UnpackViewSpaceNormal(in vec4 packedDataValue)
-{
-    // unpack x and y of the normal
-    vec4 unpackedData = unpack_normalxy_from_rgba8(packedDataValue);
-
-    // packedDataValue is vec4, with .rg containing encoded normal
-    const float scale = 1.7777f;
-    vec3 nn = unpackedData.xyz * vec3(2.0f * scale, 2.0f * scale, 0.0f) + vec3(-scale, -scale, 1.0f);
-    float g = 2.0f / dot(nn.xyz, nn.xyz);
-    vec3 outViewSpaceNormal;
-    outViewSpaceNormal.xy = g * nn.xy;
-    outViewSpaceNormal.z = g - 1.0f;
-    return outViewSpaceNormal;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Pack ObjectId NormalGroup Depth
-
-    x: objectId
-    y: NormalGroupId
-    z: depth upper 8 bit
-    w: depth lower 8 bit
-*/
-vec4
-PackObjectDepth(in float ObjectId, in float NormalGroupId, in float depth)
-{
-    vec4 packedData;
-    packedData.x = ObjectId;
-    packedData.y = NormalGroupId;
-    // we need to multiply the depth by a factor, otherwise we would have a raster on small distances
-    // normal minimal raster is 1 / 255 (0.00392)
-    depth = depth * depthScale;
-    pack_u16(depth, packedData.z, packedData.w);
-    return packedData;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Unpack Depth
-
-    x: objectId
-    y: NormalGroupId
-    z: depth upper 8 bit
-    w: depth lower 8 bit
-*/
-float
-UnpackDepth(in vec4 packedData)
-{
-    return unpack_u16(packedData.z, packedData.w) / depthScale;
+    return uvec2(value & 0xFFFF, (value >> 16) & 0xFFFF);
 }
 
 #define PI 3.14159265
@@ -547,13 +396,22 @@ TangentSpace(vec3 tangent, vec3 normal, float sign)
 //------------------------------------------------------------------------------
 /**
 */
-vec3
-TangentSpaceNormal(vec2 normalMapComponents, mat3 tbn)
+vec3 
+UnpackBC5Normal(vec2 normalMapComponents)
 {
     vec3 normal = vec3(0, 0, 0);
     normal.xy = (normalMapComponents * 2.0f) - 1.0f;
     normal.z = saturate(sqrt(1.0f - dot(normal.xy, normal.xy)));
-    return tbn * normal;
+    return normal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+TangentSpaceNormal(vec2 normalMapComponents, mat3 tbn)
+{
+    return tbn * UnpackBC5Normal(normalMapComponents);
 }
 
 //-------------------------------------------------------------------------------------------------------------

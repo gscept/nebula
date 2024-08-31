@@ -157,8 +157,10 @@ _DECL_ACQUIRE_RELEASE(CmdBufferId);
 
 /// create new command buffer
 const CmdBufferId CreateCmdBuffer(const CmdBufferCreateInfo& info);
-/// destroy command buffer
+/// Destroy the command buffer immediately (use with caution as buffer might be in use by GPU)
 void DestroyCmdBuffer(const CmdBufferId id);
+/// Issue command buffer for deletion (happens when GPU is finished with it)
+void DeferredDestroyCmdBuffer(const CmdBufferId id);
 
 /// begin recording to command buffer
 void CmdBeginRecord(const CmdBufferId id, const CmdBufferBeginInfo& info);
@@ -407,6 +409,8 @@ void CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* 
 void CmdFinishQueries(const CmdBufferId id);
 
 #if NEBULA_ENABLE_PROFILING
+/// Returns true if command buffer uses markers
+bool CmdRecordsMarkers(const CmdBufferId id);
 /// This is not a command buffer command, but is used to get the markers in the buffer
 Util::Array<CoreGraphics::FrameProfilingMarker> CmdCopyProfilingMarkers(const CmdBufferId id);
 /// Get the offset to the first query

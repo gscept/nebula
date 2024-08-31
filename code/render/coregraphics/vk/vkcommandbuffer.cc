@@ -55,7 +55,7 @@ const VkCommandBuffer
 CmdBufferGetVk(const CoreGraphics::CmdBufferId id)
 {
     if (id == CoreGraphics::InvalidCmdBufferId) return VK_NULL_HANDLE;
-    else                                        return commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    else                                        return commandBuffers.ConstGet<CmdBuffer_VkCommandBuffer>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -75,6 +75,18 @@ CmdBufferGetVkDevice(const CoreGraphics::CmdBufferId id)
 {
     return commandBuffers.Get<CmdBuffer_VkDevice>(id.id);
 }
+
+#if NEBULA_GRAPHICS_DEBUG
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<NvidiaAftermathCheckpoint>
+CmdBufferMoveVkNvCheckpoints(const CoreGraphics::CmdBufferId id)
+{
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    return std::forward<Util::Array<NvidiaAftermathCheckpoint>>(checkpoints);
+}
+#endif
 
 } // Vulkan
 
@@ -147,6 +159,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     commandBuffers.Set<CmdBuffer_VkCommandPool>(id, pool);
     commandBuffers.Set<CmdBuffer_VkDevice>(id, dev);
     commandBuffers.Set<CmdBuffer_Usage>(id, info.usage);
+    commandBuffers.Set<CmdBuffer_RecordsMarkers>(id, info.queryTypes != 0);
 
     QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id);
 
@@ -236,7 +249,45 @@ DestroyCmdBuffer(const CmdBufferId id)
     markers.finishedMarkers.Clear();
 #endif
 
+    VkDevice dev = CmdBufferGetVkDevice(id);
+    VkCommandPool pool = CmdBufferGetVkPool(id);
+    VkCommandBuffer buf = CmdBufferGetVk(id);
+    vkFreeCommandBuffers(dev, pool, 1, &buf);
+
+#if NEBULA_GRAPHICS_DEBUG
+    // This array should have been moved away
+    n_assert(commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).IsEmpty())
+#endif
+
+    commandBuffers.Dealloc(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeferredDestroyCmdBuffer(const CmdBufferId id)
+{
+    __Lock(commandBuffers, id.id);
+
+#if NEBULA_ENABLE_PROFILING
+    QueryBundle& queryBundles = commandBuffers.Get<CmdBuffer_Query>(id.id);
+    queryBundles.chunks[0].Clear();
+    queryBundles.chunks[1].Clear();
+    queryBundles.chunks[2].Clear();
+
+    CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+    markers.markerStack.Clear();
+    markers.finishedMarkers.Clear();
+#endif
+
     CoreGraphics::DelayedDeleteCommandBuffer(id);
+
+#if NEBULA_GRAPHICS_DEBUG
+    // This array should have been moved away
+    n_assert(commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).IsEmpty())
+#endif
+
     commandBuffers.Dealloc(id.id);
 }
 
@@ -1548,6 +1599,18 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
         { col[0], col[1], col[2], col[3] }
     };
     VkCmdDebugMarkerBegin(cmdBuf, &info);
+
+#if NEBULA_GRAPHICS_DEBUG
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
+        checkpoint.name = name;
+        checkpoint.push = 1;
+        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1578,6 +1641,18 @@ CmdEndMarker(const CmdBufferId id)
     }
 #endif
     VkCmdDebugMarkerEnd(cmdBuf);
+
+#if NEBULA_GRAPHICS_DEBUG
+Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
+        checkpoint.name = nullptr;
+        checkpoint.push = 0;
+        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1598,6 +1673,18 @@ CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
         { col[0], col[1], col[2], col[3] }
     };
     VkCmdDebugMarkerInsert(cmdBuf, &info);
+
+#if NEBULA_GRAPHICS_DEBUG
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    if (CoreGraphics::NvidiaCheckpointsSupported)
+    {
+        NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
+        checkpoint.name = name;
+        checkpoint.push = 0;
+        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1632,10 +1719,19 @@ CmdFinishQueries(const CmdBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+CmdRecordsMarkers(const CmdBufferId id)
+{
+    return commandBuffers.ConstGet<CmdBuffer_RecordsMarkers>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Util::Array<CoreGraphics::FrameProfilingMarker>
 CmdCopyProfilingMarkers(const CmdBufferId id)
 {
-    CoreGraphics::CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+    CoreGraphics::CmdBufferMarkerBundle markers = commandBuffers.ConstGet<CmdBuffer_ProfilingMarkers>(id.id);
     return markers.finishedMarkers;
 }
 
@@ -1645,7 +1741,7 @@ CmdCopyProfilingMarkers(const CmdBufferId id)
 uint
 CmdGetMarkerOffset(const CmdBufferId id)
 {
-    CoreGraphics::QueryBundle& queries = commandBuffers.Get<CmdBuffer_Query>(id.id);
+    const CoreGraphics::QueryBundle& queries = commandBuffers.ConstGet<CmdBuffer_Query>(id.id);
     n_assert(queries.enabled[CoreGraphics::QueryType::TimestampsQueryType]);
     return queries.chunks[CoreGraphics::TimestampsQueryType][0].offset;
 }

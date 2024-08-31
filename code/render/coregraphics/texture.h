@@ -124,6 +124,7 @@ struct TextureCreateInfo
         , windowRelative(false)
         , bindless(true)
         , sparse(false)
+        , allowCast(false)
         , alias(CoreGraphics::InvalidTextureId)
         , defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
         , swizzle({ TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None })
@@ -150,6 +151,7 @@ struct TextureCreateInfo
     bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
     bool bindless : 1;
     bool sparse : 1;                            // use sparse memory
+    bool allowCast : 1;                         // Allow view to cast format, also enables access modes not available for original format
     CoreGraphics::TextureId alias;
     CoreGraphics::ImageLayout defaultLayout;
     CoreGraphics::TextureSwizzle swizzle;

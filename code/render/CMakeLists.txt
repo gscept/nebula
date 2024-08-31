@@ -630,7 +630,7 @@ ENDIF()
             )
         fips_dir(terrain/shaders)
             add_shaders(
-                terrain.fx terrain_mesh_generate.fx
+                terrain_include.fxh terrain.fx terrain_tile_write.fx terrain_mesh_generate.fx
             )
 
         fips_dir(vegetation)

@@ -14,8 +14,9 @@ __ImplementClass(Resources::ResourceLoaderThread, 'RETH', Threading::Thread);
 //------------------------------------------------------------------------------
 /**
 */
-ResourceLoaderThread::ResourceLoaderThread() :
-    completeEvent(true)
+ResourceLoaderThread::ResourceLoaderThread()
+    : completeEvent(true)
+    
 {
     // empty
 }
@@ -46,8 +47,7 @@ ResourceLoaderThread::DoWork()
         this->completeEvent.Reset();
 
         this->jobs.DequeueAll(arr);
-        IndexT i;
-        for (i = 0; i < arr.Size(); i++)
+        for (IndexT i = 0; i < arr.Size(); i++)
         {
             arr[i]();
         }

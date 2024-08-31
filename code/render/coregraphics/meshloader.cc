@@ -11,8 +11,8 @@
 
 namespace CoreGraphics
 {
-using namespace IO;
 using namespace CoreGraphics;
+using namespace Resources;
 using namespace Util;
 __ImplementClass(CoreGraphics::MeshLoader, 'VKML', Resources::ResourceLoader);
 
@@ -80,6 +80,13 @@ MeshLoader::MeshLoader()
         , VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1)   // x: Particle::rotation, y: Particle::size
     };
     Layouts[(uint)CoreGraphics::VertexLayoutType::Particle] = CreateVertexLayout(vlCreateInfo);
+
+    CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
+    cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
+    cmdPoolInfo.resetable = false;
+    cmdPoolInfo.shortlived = true;
+    this->asyncTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    this->immediateTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -93,36 +100,40 @@ MeshLoader::~MeshLoader()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId
-MeshLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+ResourceLoader::ResourceInitOutput
+MeshLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     n_assert(stream.isvalid());
-    String resIdExt = this->names[entry].AsString().GetFileExtension();
-
-    MeshResourceId ret = meshResourceAllocator.Alloc();
+    String resIdExt = job.name.GetFileExtension();
 
     if (resIdExt == "nvx")
     {
-        this->SetupMeshFromNvx(stream, entry, ret, immediate);
+        MeshResourceId id = meshResourceAllocator.Alloc();
+        ResourceLoader::ResourceInitOutput ret;
+
+        ret.loaderStreamData = this->SetupMeshFromNvx(stream, job, id);
+        ret.id = id;
         return ret;
     }
     else
     {
         n_error("StreamMeshCache::SetupMeshFromStream(): unrecognized file extension in '%s'\n", resIdExt.AsCharPtr());
-        return InvalidMeshResourceId;
+        return ResourceLoader::ResourceInitOutput();
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint
-MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
+ResourceLoader::ResourceStreamOutput
+MeshLoader::StreamResource(const ResourceLoadJob& job)
 {
-    ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
-
+    const ResourceLoader::_StreamData& stream = job.streamData;
+    ResourceName name = job.name;
     MeshStreamData* streamData = (MeshStreamData*)stream.data;
     auto header = (Nvx3Header*)streamData->mappedData;
+
+    uint bitsToLoad = job.loadState.requestedBits & ~(job.loadState.loadedBits | job.loadState.pendingBits);
 
     n_assert(header->magic == NEBULA_NVX_MAGICNUMBER);
     n_assert(header->numMeshes > 0);
@@ -134,54 +145,126 @@ MeshLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex,
 
     CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
     CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
-    
-    int loadBits = 0x0;
 
-    // Upload vertices
-    if (requestedBits & ~0x1)
+    ResourceLoader::ResourceStreamOutput ret;
+    CoreGraphics::CmdBufferId transferCommands;
+    Util::Array<Memory::RangeAllocation> rangesToFlush;
+
+    if (bitsToLoad != 0x0)
     {
-        auto [offset, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
-        if (buffer != CoreGraphics::InvalidBufferId)
+        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+        cmdCreateInfo.name = name.Value();
+        cmdCreateInfo.pool = job.immediate ? this->immediateTransferPool : this->asyncTransferPool;
+        cmdCreateInfo.usage = CoreGraphics::TransferQueueType;
+        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        transferCommands = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
+
+        CoreGraphics::CmdBufferBeginInfo beginInfo;
+        beginInfo.submitOnce = true;
+        beginInfo.submitDuringPass = false;
+        beginInfo.resubmittable = false;
+
+        CoreGraphics::CmdBeginRecord(transferCommands, beginInfo);
+        CoreGraphics::CmdBeginMarker(transferCommands, NEBULA_MARKER_GRAPHICS, name.Value());
+
+
+        // Upload vertices
+        if (bitsToLoad & 0x1)
         {
-            BufferIdAcquire(vbo);
-            SizeT baseVertexOffset = streamData->vertexAllocationOffset.offset;
+            auto [alloc, buffer] = CoreGraphics::UploadArray(vertexData, header->vertexDataSize);
+            if (buffer != CoreGraphics::InvalidBufferId)
+            {
+                rangesToFlush.Append(alloc);
+                BufferIdAcquire(vbo);
+                SizeT baseVertexOffset = streamData->vertexAllocationOffset.offset;
 
-            // Copy from host mappable buffer to device local buffer
-            CoreGraphics::BufferCopy from, to;
-            from.offset = offset;
-            to.offset = baseVertexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-            CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, vbo, { to }, header->vertexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-            BufferIdRelease(vbo);
+                // Copy from host mappable buffer to device local buffer
+                CoreGraphics::BufferCopy from, to;
+                from.offset = alloc.offset;
+                to.offset = baseVertexOffset;
+                CoreGraphics::CmdCopy(transferCommands, buffer, { from }, vbo, { to }, header->vertexDataSize);
+                BufferIdRelease(vbo);
 
-            loadBits |= 1 << 0;
+                ret.pendingBits |= 1 << 0;
+            }
         }
+
+        // Upload indices
+        if (bitsToLoad & 0x2)
+        {
+            auto [alloc, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
+            if (buffer != CoreGraphics::InvalidBufferId)
+            {
+                rangesToFlush.Append(alloc);
+                BufferIdAcquire(ibo);
+                SizeT baseIndexOffset = streamData->indexAllocationOffset.offset;
+
+                // Copy from host mappable buffer to device local buffer
+                CoreGraphics::BufferCopy from, to;
+                from.offset = alloc.offset;
+                to.offset = baseIndexOffset;
+                CoreGraphics::CmdCopy(transferCommands, buffer, { from }, ibo, { to }, header->indexDataSize);
+                BufferIdRelease(ibo);
+
+                ret.pendingBits |= 1 << 1;
+            }
+        }
+
+        CoreGraphics::CmdEndMarker(transferCommands);
+        CoreGraphics::CmdEndRecord(transferCommands);
+        CoreGraphics::CmdBufferIdRelease(transferCommands);
     }
 
-    // Upload indices
-    if (requestedBits & ~0x2)
+    if (ret.pendingBits != 0)
     {
-        auto [offset, buffer] = CoreGraphics::UploadArray(indexData, header->indexDataSize);
-        if (buffer != CoreGraphics::InvalidBufferId)
+        if (job.immediate)
         {
-            BufferIdAcquire(ibo);
-            SizeT baseIndexOffset = streamData->indexAllocationOffset.offset;
+            CoreGraphics::FlushUploads(rangesToFlush);
+            CoreGraphics::SubmissionWaitEvent waitEvent = CoreGraphics::SubmitCommandBuffers({ transferCommands }, CoreGraphics::GraphicsQueueType, nullptr, "Upload meshes");
+            CoreGraphics::DeferredDestroyCmdBuffer(transferCommands);
 
-            // Copy from host mappable buffer to device local buffer
-            CoreGraphics::BufferCopy from, to;
-            from.offset = offset;
-            to.offset = baseIndexOffset;
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-            CoreGraphics::CmdCopy(cmdBuf, buffer, { from }, ibo, { to }, header->indexDataSize);
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-            BufferIdRelease(ibo);
-
-            loadBits |= 1 << 1;
+            IndexT index = this->meshesToFinish.FindIndex(job.id);
+            if (index == InvalidIndex)
+                this->meshesToFinish.Add(job.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands } });
+            else
+                this->meshesToFinish.ValueAtIndex(job.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands });
+        }
+        else
+        {
+            this->meshesToSubmit.Enqueue(MeshesToSubmit{ .id = job.id, .bits = ret.pendingBits, .rangesToFlush = rangesToFlush, .cmdBuf = transferCommands });
         }
     }
+    if (job.loadState.pendingBits != 0x0)
+    {
+        this->meshLock.Enter();
+        IndexT index = this->meshesToFinish.FindIndex(job.id);
+        if (index != InvalidIndex)
+        {
+            Util::Array<FinishedMesh>& meshes = this->meshesToFinish.ValueAtIndex(job.id, index);
+            for (int i = 0; i < meshes.Size(); i++)
+            {
+                const FinishedMesh& mesh = meshes[i];
+                if (CoreGraphics::PollSubmissionIndex(CoreGraphics::GraphicsQueueType, mesh.submissionId))
+                {
+                    CoreGraphics::FreeUploads(mesh.rangesToFree);
+                    CoreGraphics::DestroyCmdBuffer(mesh.cmdBuf);
+                    ret.loadedBits |= mesh.bits;
+                    ret.pendingBits &= ~mesh.bits;
+                    meshes.EraseIndex(i);
+                    i--;
+                }
+            }
+            if (meshes.IsEmpty())
+                this->meshesToFinish.EraseIndex(job.id, index);
+        }
+        this->meshLock.Leave();
+    }
+    else if (job.loadState.pendingBits == 0x0 && bitsToLoad == 0x0)
+    {
+        n_warning("Resource '%s' is stuck in an infinite state", job.name.AsCharPtr());
+    }
 
-    return loadBits;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -197,9 +280,35 @@ MeshLoader::Unload(const Resources::ResourceId id)
 /**
 */
 uint
-MeshLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
+MeshLoader::LodMask(const _StreamData& stream, float lod, bool async) const
 {
     return 0x3;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshLoader::UpdateLoaderSyncState()
+{
+    Util::Array<MeshesToSubmit> meshesToSubmit(128, 8);
+    this->meshesToSubmit.DequeueAll(meshesToSubmit);
+
+    // Enqueue cleanups
+    for (const auto& submit : meshesToSubmit)
+    {
+        CoreGraphics::FlushUploads(submit.rangesToFlush);
+        CoreGraphics::SubmissionWaitEvent waitEvent = CoreGraphics::SubmitCommandBuffers({ submit.cmdBuf }, CoreGraphics::GraphicsQueueType, nullptr, "Upload meshes");
+
+        this->meshLock.Enter();
+        IndexT index = meshesToFinish.FindIndex(submit.id);
+        if (index == InvalidIndex)
+            this->meshesToFinish.Add(submit.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = submit.bits, .rangesToFree = submit.rangesToFlush, .cmdBuf = submit.cmdBuf } });
+        else
+            this->meshesToFinish.ValueAtIndex(submit.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = submit.bits, .rangesToFree = submit.rangesToFlush, .cmdBuf = submit.cmdBuf });
+        this->meshLock.Leave();
+    }
+    meshesToSubmit.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -216,14 +325,16 @@ MeshLoader::GetLayout(const CoreGraphics::VertexLayoutType type)
     Setup the mesh resource from a nvx3 file (Nebula's
     native binary mesh file format).
 */
-void
-MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource, bool immediate)
+ResourceLoader::_StreamData
+MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJob& job, const MeshResourceId meshResource)
 {
     n_assert(stream.isvalid());
 
     Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
     void* mapPtr = nullptr;
     Util::FixedArray<MeshId> meshes;
+
+    ResourceLoader::_StreamData ret;
 
     Ptr<IO::StreamReader> reader = IO::StreamReader::Create();
     reader->SetStream(stream);
@@ -257,8 +368,8 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
         MeshStreamData* streamData = (MeshStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(MeshStreamData));
         streamData->mappedData = mapPtr;
 
-        this->streams[entry].stream = stream;
-        this->streams[entry].data = streamData;
+        ret.stream = stream;
+        ret.data = streamData;
 
         CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
         CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
@@ -270,7 +381,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             vertexAllocation = CoreGraphics::AllocateVertices(header->vertexDataSize);
             streamData->vertexAllocationOffset = vertexAllocation;
 
-            if (immediate)
+            if (job.immediate)
             {
                 BufferCopyWithStaging(CoreGraphics::GetVertexBuffer(), streamData->vertexAllocationOffset.offset, vertexData, header->vertexDataSize);
             }
@@ -282,7 +393,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
             streamData->indexAllocationOffset = indexAllocation;
 
-            if (immediate)
+            if (job.immediate)
             {
                 BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocationOffset.offset, indexData, header->indexDataSize);
             }
@@ -309,7 +420,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
             mshInfo.vertexLayout = Layouts[(uint)vertexRanges[i].layout];
             mshInfo.vertexBufferAllocation = vertexAllocation;
             mshInfo.indexBufferAllocation = indexAllocation;
-            mshInfo.name = this->names[entry];
+            mshInfo.name = job.name;
             MeshId mesh = CreateMesh(mshInfo);
             meshes[i] = mesh;
         }
@@ -319,6 +430,8 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entr
 
     // Update mesh allocator
     meshResourceAllocator.Set<0>(meshResource.id, meshes);
+
+    return ret;
 }
 
 } // namespace CoreGraphics

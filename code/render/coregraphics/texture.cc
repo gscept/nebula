@@ -118,16 +118,19 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
 bool
 TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, const void* data, SizeT dataSize)
 {
+    // Only allow this on the main thread
+    n_assert(Threading::Thread::GetMyThreadId() == Threading::MainThreadId);
+
     CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(tex);
     uint blockSize = CoreGraphics::PixelFormat::ToBlockSize(fmt);
     SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(fmt) / blockSize;
-    auto [offset, buffer] = CoreGraphics::UploadArray(data, dataSize, alignment);
+    auto [alloc, buffer] = CoreGraphics::UploadArray(data, dataSize, alignment);
     if (buffer == CoreGraphics::InvalidBufferId)
         return false;
 
     // Then run a copy on the command buffer
     CoreGraphics::BufferCopy bufCopy;
-    bufCopy.offset = offset;
+    bufCopy.offset = alloc.offset;
     bufCopy.imageHeight = 0;
     bufCopy.rowLength = 0;
     CoreGraphics::TextureCopy texCopy;
@@ -135,6 +138,7 @@ TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::TextureId tex, 
     texCopy.mip = mip;
     texCopy.region.set(0, 0, width, height);
     CoreGraphics::CmdCopy(cmd, buffer, {bufCopy}, tex, {texCopy});
+    CoreGraphics::EnqueueUploadsFlushAndFree({ alloc });
     return true;
 }
 

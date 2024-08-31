@@ -289,6 +289,8 @@ SetupTexture(const TextureId id)
         createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     if (loadInfo.sparse)
         createFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
+    if (loadInfo.allowCast)
+        createFlags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT;
 
     VkImageCreateInfo imgInfo =
     {
@@ -354,7 +356,7 @@ SetupTexture(const TextureId id)
         if (loadInfo.data != nullptr)
         {
             // use resource submission
-            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+            CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Image upload");
 
             // Initial state will be transfer
             CoreGraphics::CmdBarrier(cmdBuf,
@@ -396,23 +398,10 @@ SetupTexture(const TextureId id)
                         CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                     }
                 });
-            CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+            CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
             // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
             loadInfo.data = nullptr;
-        }
-    }
-
-    // if used for render, find appropriate renderable format
-    if (loadInfo.usage & TextureUsage::RenderTexture)
-    {
-        if (bits == ImageBits::None)
-        {
-            VkFormatProperties formatProps;
-            vkGetPhysicalDeviceFormatProperties(Vulkan::GetCurrentPhysicalDevice(), vkformat, &formatProps);
-            n_assert(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT &&
-                formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT &&
-                formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
         }
     }
 
@@ -422,10 +411,61 @@ SetupTexture(const TextureId id)
     mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
     mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
 
+    constexpr uint StorageFeatureLookup[] =
+    {
+        VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+        , VK_FORMAT_FEATURE_TRANSFER_DST_BIT
+        , VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+        , VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
+        , VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT
+        , VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+        , 0x0
+        , 0x0 // input attachment
+    };
+    VkFormatFeatureFlags flags = Util::BitmaskConvert(usage, StorageFeatureLookup, lengthof(StorageFeatureLookup));
+    VkFormatFeatureFlags supportedFlags = formatProps.optimalTilingFeatures & flags;
+
+    // Remove usage bits which are not supported by the format if we intend to cast
+    if (loadInfo.allowCast && flags != supportedFlags)
+    {
+        constexpr uint UsageLookup[] =
+        {
+            VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_USAGE_STORAGE_BIT,
+            0x0, // Storage atomic
+            0x0, // Uniform atomic
+            0x0, // Storage texel
+            0x0, // Storage texel atomic
+            0x0, // Vertex buffer
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            0x0, // Color attachment blend
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            0x0, // Blit source
+            0x0, // Blit dest
+            0x0, // Sampled image filter lienar
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT
+        };
+
+        // Mask out unsupported usages
+        VkImageUsageFlags supportedUsage = Util::BitmaskConvert(supportedFlags, UsageLookup, lengthof(UsageLookup));
+        usage &= supportedUsage;
+    }
+    else
+    {
+        n_assert(flags == supportedFlags);
+    }
+
+    VkImageViewUsageCreateInfo usageInfo;
+    usageInfo.pNext = nullptr;
+    usageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+    usageInfo.usage = usage;
+    n_assert(usage != 0x0);
+
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        nullptr,
+        &usageInfo,
         0,
         loadInfo.img,
         viewType,
@@ -456,7 +496,7 @@ SetupTexture(const TextureId id)
     }
 
     // use setup submission
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Image upload");
 
     CoreGraphics::TextureSubresourceInfo subres(
         bits != ImageBits::None ? bits : CoreGraphics::ImageBits::ColorBits
@@ -538,7 +578,7 @@ SetupTexture(const TextureId id)
             });
     }
 
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     // register image with shader server
     if (loadInfo.bindless)
@@ -608,6 +648,7 @@ CreateTexture(const TextureCreateInfo& info)
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
     loadInfo.swizzle = adjustedInfo.swizzle;
+    loadInfo.allowCast = info.allowCast;
 
     // borrow buffer pointer
     loadInfo.data = adjustedInfo.data;
@@ -1428,7 +1469,7 @@ TextureSetHighestLod(const CoreGraphics::TextureId id, uint lod)
         viewSubres
     };
 
-    VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
+    VkShaderServer::Instance()->AddPendingImageView(id, viewCreate, runtimeInfo.bind);
 }
 
 } // namespace CoreGraphics

@@ -101,6 +101,10 @@ static const int JobMaxSliceSize = 0xFFFF;
     #define NEBULA_ENABLE_PROFILING (0)
 #endif
 
+#if NEBULA_ENABLE_PROFILING
+#define NEBULA_ENABLE_PERFORMANCE_WARNINGS (1)
+#endif
+
 // max length of a path name
 #define NEBULA_MAXPATH (512)
 

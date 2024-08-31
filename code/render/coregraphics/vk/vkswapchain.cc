@@ -195,7 +195,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     res = vkGetSwapchainImagesKHR(dev, swapchain, &numBuffers, images.Begin());
     n_assert(res == VK_SUCCESS);
 
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer("Swap chain setup");
     for (i = 0; i < numBuffers; i++)
     {
         // Transition image to present source
@@ -229,7 +229,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
         n_assert(res == VK_SUCCESS);
     }
     currentBackbuffer = 0;
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
     poolInfo.shortlived = true;
@@ -276,6 +276,8 @@ SwapchainSwap(const SwapchainId id)
     // get present fence and be sure it is finished before getting the next image
     VkFence fence = Vulkan::GetPresentFence();
     VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
+    if (res == VK_ERROR_DEVICE_LOST)
+        Vulkan::DeviceLost();
     n_assert(res == VK_SUCCESS);
     res = vkResetFences(dev, 1, &fence);
     n_assert(res == VK_SUCCESS);

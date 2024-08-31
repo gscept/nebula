@@ -33,7 +33,9 @@ extern PFN_vkSetDebugUtilsObjectNameEXT VkDebugObjectName;
 
 #define _IMP_VK(name) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);n_assert_fmt(name != nullptr, "Unable to get function proc: %s\n",#name);
 #define _DEC_VK(name) extern PFN_##name name;
-#define _DEF_VK(name) PFN_##name name;
+#define _DEF_VK(name) PFN_##name name = nullptr;
+
+#define _IMP_VK_DYN(name, instance) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);n_assert_fmt(name != nullptr, "Unable to get function proc: %s\n",#name);
 
 
 #ifdef __cplusplus
@@ -83,6 +85,7 @@ _DEC_VK(vkResetQueryPool);
 // physical device
 _DEC_VK(vkGetPhysicalDeviceProperties2);
 _DEC_VK(vkGetPhysicalDeviceFeatures);
+_DEC_VK(vkGetPhysicalDeviceFeatures2);
 _DEC_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEC_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEC_VK(vkGetPhysicalDeviceFormatProperties);
@@ -221,6 +224,9 @@ _DEC_VK(vkGetRayTracingShaderGroupHandlesKHR);
 // mesh shaders
 _DEC_VK(vkCmdDrawMeshTasksEXT);
 
+// Nvidia
+_DEC_VK(vkCmdSetCheckpointNV);
+_DEC_VK(vkGetQueueCheckpointDataNV);
 
 #ifdef __cplusplus
 }

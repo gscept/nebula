@@ -615,7 +615,7 @@ SetupPass(const PassId pid)
         rtParams.Scale[0] = 1;
         rtParams.Scale[1] = 1;
     }
-    BufferUpdateArray(runtimeInfo.passBlockBuffer, params.Begin(), params.Size(), runtimeInfo.renderTargetDimensionsVar);
+    BufferUpdateArray(runtimeInfo.passBlockBuffer, params, runtimeInfo.renderTargetDimensionsVar);
 
     // setup info
     runtimeInfo.framebufferPipelineInfo.renderPass = loadInfo.pass;
@@ -737,7 +737,7 @@ void
 PassSetRenderTargetParameters(const PassId id, const Util::FixedArray<Shared::RenderTargetParameters>& viewports)
 {
     VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id);
-    BufferUpdateArray(runtimeInfo.passBlockBuffer, viewports.Begin(), viewports.Size(), runtimeInfo.renderTargetDimensionsVar);
+    BufferUpdateArray(runtimeInfo.passBlockBuffer, viewports, runtimeInfo.renderTargetDimensionsVar);
 }
 
 //------------------------------------------------------------------------------

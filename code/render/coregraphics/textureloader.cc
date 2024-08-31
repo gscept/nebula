@@ -21,117 +21,12 @@ struct TextureStreamData
     ubyte nextLayerToLoad;
     ubyte numLayersToLoad, numLayers;
     uchar layers[15];
-    Util::Array<Resources::PartialLoadBits> partialLoadBits;
 };
 
 using namespace CoreGraphics;
 using namespace Resources;
 using namespace IO;
-//------------------------------------------------------------------------------
-/**
-*/
-TextureLoader::TextureLoader()
-{
-    this->async = true;
-    this->placeholderResourceName = "systex:white.dds";
-    this->failResourceName = "systex:error.dds";
 
-    this->streamerThreadName = "Texture Streamer Thread";
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TextureLoader::~TextureLoader()
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Resources::ResourceUnknownId
-TextureLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
-{
-    N_SCOPE_ACCUM(CreateAndLoad, TextureStream);
-    n_assert(stream.isvalid());
-    n_assert(stream->CanBeMapped());
-
-    // Map memory, we will keep the memory mapping so we can stream in LODs later
-    void* srcData = stream->MemoryMap();
-    uint srcDataSize = stream->GetSize();
-    ResourceName name = this->names[entry];
-
-    Resources::ResourceUnknownId ret = InvalidResourceUnknownId;
-
-    // load using gliml
-    gliml::context ctx;
-    if (ctx.load_dds(srcData, srcDataSize))
-    {
-        // We have a total amount of mip maps, say 10
-        int numMips = ctx.num_mipmaps(0);
-        int depth = ctx.image_depth(0, 0);
-        int width = ctx.image_width(0, 0);
-        int height = ctx.image_height(0, 0);
-        int layers = ctx.num_faces();
-
-        auto streamData = (TextureStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(TextureStreamData));
-        memset(streamData, 0x0, sizeof(TextureStreamData));
-
-        streamData->mappedBuffer = srcData;
-        streamData->mappedBufferSize = srcDataSize;
-        streamData->ctx = ctx;
-
-        streamData->numMips = numMips;
-
-        streamData->numLayers = layers;
-        streamData->nextLayerToLoad = 0;
-        streamData->numLayersToLoad = layers;
-        streamData->partialLoadBits = Util::Array<PartialLoadBits>();
-        memset(streamData->layers, 0x0, sizeof(streamData->layers));
-        for (uint i = 0; i < numMips; i++)
-        {
-            streamData->layers[i] = (1 << layers) - 1;
-        }
-
-        this->streams[entry].stream = stream;
-        this->streams[entry].data = streamData;
-
-        CoreGraphics::PixelFormat::Code format = CoreGraphics::Gliml::ToPixelFormat(ctx);
-        CoreGraphics::TextureType type = ctx.is_3d() ? CoreGraphics::Texture3D : (layers == 6 ? CoreGraphics::TextureCube : CoreGraphics::Texture2D);
-
-        CoreGraphics::TextureCreateInfo textureInfo;
-        textureInfo.name = name.Value();
-        textureInfo.width = width;
-        textureInfo.height = height;
-        textureInfo.depth = depth;
-        textureInfo.mips = numMips;
-        textureInfo.minMip = numMips - 1;
-        textureInfo.layers = layers;
-        textureInfo.type = type;
-        textureInfo.format = format;
-        if (immediate)
-        {
-            textureInfo.minMip = 0;
-            textureInfo.data = ctx.image_data(0, 0);
-            for (IndexT i = 0; i < ctx.num_faces(); i++)
-            {
-                for (IndexT j = 0; j < ctx.num_mipmaps(i); j++)
-                {
-                    textureInfo.dataSize += ctx.image_size(i, j);
-                }
-            }
-        }
-            
-        CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
-
-        TextureIdRelease(texture);
-        return texture;
-    }
-
-    stream->MemoryUnmap();
-    return ret;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -139,7 +34,7 @@ TextureLoader::InitializeResource(Ids::Id32 entry, const Util::StringAtom& tag, 
     May fail if the upload buffer is full, in which case the function returns false
 */
 bool
-UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBufferId cmdBuf, gliml::context& ctx, uchar layer, uint mip)
+UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBufferId cmdBuf, gliml::context& ctx, uchar layer, uint mip, Memory::RangeAllocation& outAlloc)
 {
     // Attempt to upload
     CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, mip, 1, layer, 1);
@@ -147,7 +42,7 @@ UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBu
     CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(texture);
     uint blockSize = CoreGraphics::PixelFormat::ToBlockSize(fmt);
     SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(fmt) / blockSize;
-    auto [offset, buffer] = CoreGraphics::UploadArray((byte*)ctx.image_data(layer, mip), ctx.image_size(layer, mip), alignment);
+    auto [alloc, buffer] = CoreGraphics::UploadArray((byte*)ctx.image_data(layer, mip), ctx.image_size(layer, mip), alignment);
     if (buffer == CoreGraphics::InvalidBufferId)
     {
         return false;
@@ -167,7 +62,7 @@ UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBu
         uint width = ctx.image_width(layer, mip);
         uint height = ctx.image_height(layer, mip);
         CoreGraphics::BufferCopy bufCopy;
-        bufCopy.offset = offset;
+        bufCopy.offset = alloc.offset;
         bufCopy.imageHeight = 0;
         bufCopy.rowLength = 0;
         CoreGraphics::TextureCopy texCopy;
@@ -175,6 +70,7 @@ UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBu
         texCopy.mip = mip;
         texCopy.region.set(0, 0, width, height);
         CoreGraphics::CmdCopy(cmdBuf, buffer, { bufCopy }, texture, { texCopy });
+        outAlloc = alloc;
     }
     return true;
 }
@@ -183,11 +79,9 @@ UploadToTexture(const CoreGraphics::TextureId texture, const CoreGraphics::CmdBu
 /**
 */
 uint
-LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::TextureId texture, const char* name)
+LoadMips(CoreGraphics::CmdBufferId cmdBuf, TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::TextureId texture, Util::Array<Memory::RangeAllocation>& rangesToFlush)
 {
     // use resource submission
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, name);
     uint loadedBits = 0x0;
     while (bitsToLoad != 0x0)
     {
@@ -199,13 +93,15 @@ LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::Tex
         while (layerMask != 0x0)
         {
             uint layer = Util::FirstOne(layerMask);
+            Memory::RangeAllocation alloc;
 
             // Attempt to upload, if it fails we continue from here next time
-            if (!UploadToTexture(texture, cmdBuf, streamData->ctx, layer, mipToLoad))
+            if (!UploadToTexture(texture, cmdBuf, streamData->ctx, layer, mipToLoad, alloc))
             {
                 // If upload fails, escape the loop
                 goto quit_loop;
             }
+            rangesToFlush.Append(alloc);
 
             layerMask &= ~(1 << layer);
         }
@@ -215,9 +111,6 @@ LoadMips(TextureStreamData* streamData, uint bitsToLoad, const CoreGraphics::Tex
 
 quit_loop:
 
-    CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::UnlockTransferSetupCommandBuffer();
-
     return loadedBits;
 }
 
@@ -225,14 +118,8 @@ quit_loop:
 /**
 */
 void
-FinishMips(TextureStreamData* streamData, uint mipBits, const CoreGraphics::TextureId texture, const char* name)
+FinishMips(CoreGraphics::CmdBufferId transferCommands, CoreGraphics::CmdBufferId handoverCommands, TextureStreamData* streamData, uint mipBits, const CoreGraphics::TextureId texture, const char* name)
 {
-    CoreGraphics::CmdBufferId handoverBuf = CoreGraphics::LockTransferHandoverSetupCommandBuffer();
-    CoreGraphics::CmdBeginMarker(handoverBuf, NEBULA_MARKER_TRANSFER, name);
-
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, name);
-
     // Finish the mips by handing them over 
     Util::FixedArray<TextureBarrierInfo> barriers(Util::PopCnt(mipBits) * streamData->numLayers);
 
@@ -255,8 +142,8 @@ FinishMips(TextureStreamData* streamData, uint mipBits, const CoreGraphics::Text
     {
         // Issue handover
         CoreGraphics::CmdHandover(
-            handoverBuf
-            , cmdBuf
+            transferCommands
+            , handoverCommands
             , CoreGraphics::PipelineStage::TransferWrite
             , CoreGraphics::PipelineStage::AllShadersRead
             , barriers
@@ -265,69 +152,260 @@ FinishMips(TextureStreamData* streamData, uint mipBits, const CoreGraphics::Text
             , CoreGraphics::GetQueueIndex(QueueType::GraphicsQueueType)
         );
     }
-
-    CoreGraphics::CmdEndMarker(cmdBuf);
-    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
-
-    CoreGraphics::CmdEndMarker(handoverBuf);
-    CoreGraphics::UnlockTransferHandoverSetupCommandBuffer();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uint
-TextureLoader::StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits)
+TextureLoader::TextureLoader()
+{
+    this->async = true;
+    this->placeholderResourceName = "systex:white.dds";
+    this->failResourceName = "systex:error.dds";
+
+    this->streamerThreadName = "Texture Streamer Thread";
+
+    CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
+    cmdPoolInfo.queue = CoreGraphics::QueueType::TransferQueueType;
+    cmdPoolInfo.resetable = false;
+    cmdPoolInfo.shortlived = true;
+    this->asyncTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    this->immediateTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
+    this->asyncHandoverPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    this->immediateHandoverPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TextureLoader::~TextureLoader()
+{
+    // empty
+    CoreGraphics::DestroyCmdBufferPool(this->asyncTransferPool);
+    CoreGraphics::DestroyCmdBufferPool(this->immediateTransferPool);
+    CoreGraphics::DestroyCmdBufferPool(this->asyncHandoverPool);
+    CoreGraphics::DestroyCmdBufferPool(this->immediateHandoverPool);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceLoader::ResourceInitOutput
+TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
+{
+    N_SCOPE_ACCUM(CreateAndLoad, TextureStream);
+    n_assert(stream.isvalid());
+    n_assert(stream->CanBeMapped());
+
+    // Map memory, we will keep the memory mapping so we can stream in LODs later
+    void* srcData = stream->MemoryMap();
+    uint srcDataSize = stream->GetSize();
+
+    ResourceLoader::ResourceInitOutput ret;
+    ret.id = InvalidResourceUnknownId;
+    ret.loaderStreamData.stream = stream;
+    ret.loaderStreamData.data = nullptr;
+
+    // load using gliml
+    gliml::context ctx;
+    if (ctx.load_dds(srcData, srcDataSize))
+    {
+        // We have a total amount of mip maps, say 10
+        int numMips = ctx.num_mipmaps(0);
+        int depth = ctx.image_depth(0, 0);
+        int width = ctx.image_width(0, 0);
+        int height = ctx.image_height(0, 0);
+        int layers = ctx.num_faces();
+
+        auto streamData = (TextureStreamData*)Memory::Alloc(Memory::ScratchHeap, sizeof(TextureStreamData));
+        memset(streamData, 0x0, sizeof(TextureStreamData));
+
+        streamData->mappedBuffer = srcData;
+        streamData->mappedBufferSize = srcDataSize;
+        streamData->ctx = ctx;
+        streamData->numMips = numMips;
+        streamData->numLayers = layers;
+        streamData->nextLayerToLoad = 0;
+        streamData->numLayersToLoad = layers;
+        memset(streamData->layers, 0x0, sizeof(streamData->layers));
+        for (uint i = 0; i < numMips; i++)
+        {
+            streamData->layers[i] = (1 << layers) - 1;
+        }
+
+        ret.loaderStreamData.data = streamData;
+
+        CoreGraphics::PixelFormat::Code format = CoreGraphics::Gliml::ToPixelFormat(ctx);
+        CoreGraphics::TextureType type = ctx.is_3d() ? CoreGraphics::Texture3D : (layers == 6 ? CoreGraphics::TextureCube : CoreGraphics::Texture2D);
+
+        CoreGraphics::TextureCreateInfo textureInfo;
+        textureInfo.name = job.name.AsCharPtr();
+        textureInfo.width = width;
+        textureInfo.height = height;
+        textureInfo.depth = depth;
+        textureInfo.mips = numMips;
+        textureInfo.minMip = numMips - 1;
+        textureInfo.layers = layers;
+        textureInfo.type = type;
+        textureInfo.format = format;
+        if (job.immediate)
+        {
+            textureInfo.minMip = 0;
+            textureInfo.data = ctx.image_data(0, 0);
+            for (IndexT i = 0; i < ctx.num_faces(); i++)
+            {
+                for (IndexT j = 0; j < ctx.num_mipmaps(i); j++)
+                {
+                    textureInfo.dataSize += ctx.image_size(i, j);
+                }
+            }
+        }
+            
+        CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
+
+        TextureIdRelease(texture);
+        ret.id = texture;
+        return ret;
+    }
+
+    stream->MemoryUnmap();
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ResourceLoader::ResourceStreamOutput
+TextureLoader::StreamResource(const ResourceLoadJob& job)
 {
     // Get resource data
-    ResourceLoader::StreamData& stream = this->streams[entry.loaderInstanceId];
-    TextureStreamData* streamData = static_cast<TextureStreamData*>(stream.data);
-    ResourceName name = this->names[entry.loaderInstanceId];
+    TextureStreamData* streamData = static_cast<TextureStreamData*>(job.streamData.data);
+    ResourceName name = job.name;
 
-    uint loadedBits = this->loadedBits[entry.loaderInstanceId];
-    uint ret = loadedBits;
-    uint bitsToLoad = requestedBits;
+    uint loadedBits = job.loadState.loadedBits;
+    uint pendingBits = job.loadState.pendingBits;
+    uint bitsToLoad = job.loadState.requestedBits & ~(pendingBits | loadedBits);
+
+    ResourceLoader::ResourceStreamOutput ret;
 
     // Setup texture id
-    TextureId texture = entry.resource;
+    TextureId texture = job.id;
     TextureIdAcquire(texture);
 
-    // First, poll all submissions to find what's finished loading
-    for (IndexT i = 0; i < streamData->partialLoadBits.Size(); i++)
-    {
-        auto& bits = streamData->partialLoadBits[i];
-
-        // Remove pending bits from requests
-        bitsToLoad &= ~bits.bits;
-
-        if (CoreGraphics::PollSubmissionIndex(CoreGraphics::TransferQueueType, bits.submissionId))
-        {
-            // Handover mips to the graphics queue
-            FinishMips(streamData, bits.bits, texture, name.Value());
-
-            ret |= bits.bits;
-            streamData->partialLoadBits.EraseIndex(i);
-            i--;
-        }
-    }
-
-    bitsToLoad &= ~ret;
+    Util::Array<Memory::RangeAllocation> rangesToFlush;
     if (bitsToLoad != 0x0)
     {
-        // Prepare return state
-        uint mask = LoadMips(streamData, bitsToLoad, texture, name.Value());
+        CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
+        cmdCreateInfo.name = name.Value();
+        cmdCreateInfo.pool = job.immediate ? this->immediateTransferPool : this->asyncTransferPool;
+        cmdCreateInfo.usage = CoreGraphics::TransferQueueType;
+        cmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+        CoreGraphics::CmdBufferId uploadCommands = CoreGraphics::CreateCmdBuffer(cmdCreateInfo);
 
-        // Get the submission index associated with the load this frame
-        uint64 submissionId = CoreGraphics::NextSubmissionIndex(CoreGraphics::TransferQueueType);
-        streamData->partialLoadBits.Append(PartialLoadBits{ .bits = mask, .submissionId = submissionId });
+        CoreGraphics::CmdBufferBeginInfo beginInfo;
+        beginInfo.submitOnce = true;
+        beginInfo.submitDuringPass = false;
+        beginInfo.resubmittable = false;
+        CoreGraphics::CmdBeginRecord(uploadCommands, beginInfo);
+        CoreGraphics::CmdBeginMarker(uploadCommands, NEBULA_MARKER_TRANSFER, name.Value());
+
+        // Perform mip loads
+        uint mask = LoadMips(uploadCommands, streamData, bitsToLoad, texture, rangesToFlush);
+        if (mask != 0x0)
+        {
+            pendingBits |= mask;
+
+            // Then record mip finishes
+            CoreGraphics::CmdBufferCreateInfo handoverCmdCreateInfo;
+            handoverCmdCreateInfo.name = "Texture Mip Upload";
+            handoverCmdCreateInfo.pool = job.immediate ? this->immediateHandoverPool : this->asyncHandoverPool;
+            handoverCmdCreateInfo.usage = CoreGraphics::GraphicsQueueType;
+            handoverCmdCreateInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+
+            CoreGraphics::CmdBufferId handoverCommands = CoreGraphics::CreateCmdBuffer(handoverCmdCreateInfo);
+            CoreGraphics::CmdBeginRecord(handoverCommands, beginInfo);
+            CoreGraphics::CmdBeginMarker(handoverCommands, NEBULA_MARKER_GRAPHICS, job.name.AsCharPtr());
+
+            FinishMips(uploadCommands, handoverCommands, streamData, mask, texture, job.name.AsCharPtr());
+
+            CoreGraphics::CmdEndMarker(handoverCommands);
+            CoreGraphics::CmdEndRecord(handoverCommands);
+            CoreGraphics::CmdBufferIdRelease(handoverCommands);
+
+            CoreGraphics::CmdEndMarker(uploadCommands);
+            CoreGraphics::CmdEndRecord(uploadCommands);
+            CoreGraphics::CmdBufferIdRelease(uploadCommands);
+
+            if (job.immediate)
+            {
+                CoreGraphics::FlushUploads(rangesToFlush);
+                CoreGraphics::SubmissionWaitEvent transferWait = CoreGraphics::SubmitCommandBuffers({ uploadCommands }, CoreGraphics::TransferQueueType, nullptr, "Texture mip upload");
+                CoreGraphics::SubmissionWaitEvent graphicsWait = CoreGraphics::SubmitCommandBuffers({ handoverCommands }, CoreGraphics::GraphicsQueueType, { transferWait }, "Receive texture");
+                CoreGraphics::DeferredDestroyCmdBuffer(uploadCommands);
+
+                IndexT index = this->mipHandovers.FindIndex(job.id);
+                if (index == InvalidIndex)
+                    this->mipHandovers.Add(job.id, { MipHandoverLoaderThread{ .handoverSubmissionId = graphicsWait.timelineIndex, .bits = mask, .rangesToFree = rangesToFlush, .uploadBuffer = uploadCommands, .receiveBuffer = handoverCommands } });
+                else
+                    this->mipHandovers.ValueAtIndex(job.id, index).Append(MipHandoverLoaderThread{ .handoverSubmissionId = graphicsWait.timelineIndex, .bits = mask, .rangesToFree = rangesToFlush, .uploadBuffer = uploadCommands, .receiveBuffer = handoverCommands });
+            }
+            else
+            {
+                // If job is async, add to submit queue
+                this->mipLoadsToSubmit.Enqueue(MipLoadMainThread{ .id = job.id, .bits = mask, .rangesToFlush = rangesToFlush, .transferCmdBuf = uploadCommands, .graphicsCmdBuf = handoverCommands });
+            }
+        }
+        else
+        {
+            CoreGraphics::CmdEndMarker(uploadCommands);
+            CoreGraphics::CmdEndRecord(uploadCommands);
+            CoreGraphics::CmdBufferIdRelease(uploadCommands);
+            CoreGraphics::DestroyCmdBuffer(uploadCommands);
+        }
     }
-
-    if (loadedBits != ret)
+    if (job.loadState.pendingBits != 0x0)
     {
-        TextureSetHighestLod(texture, streamData->numMips - 1 - Util::LastOne(ret));
+        // Check for pending handovers
+        this->handoverLock.Enter();
+        IndexT index = this->mipHandovers.FindIndex(job.id);
+        if (index != InvalidIndex)
+        {
+            Util::Array<MipHandoverLoaderThread>& handovers = this->mipHandovers.ValueAtIndex(job.id, index);
+            for (int i = 0; i < handovers.Size(); i++)
+            {
+                const MipHandoverLoaderThread& handover = handovers[i];
+                if (CoreGraphics::PollSubmissionIndex(CoreGraphics::GraphicsQueueType, handover.handoverSubmissionId))
+                {
+                    // First, delete the initial buffer
+                    CoreGraphics::FreeUploads(handover.rangesToFree);
+                    CoreGraphics::DestroyCmdBuffer(handover.uploadBuffer);
+                    CoreGraphics::DestroyCmdBuffer(handover.receiveBuffer);
+
+                    loadedBits |= handover.bits;
+                    pendingBits &= ~handover.bits;
+
+                    TextureSetHighestLod(texture, streamData->numMips - 1 - Util::LastOne(loadedBits));
+
+                    // Erase the handover entry for this job
+                    handovers.EraseIndex(i);
+                    i--;
+                }
+            }
+            if (handovers.IsEmpty())
+                this->mipHandovers.EraseIndex(job.id, index);
+        }
+        this->handoverLock.Leave();
     }
+    else if (job.loadState.pendingBits == 0x0 && bitsToLoad == 0x0)
+    {
+        n_warning("Resource '%s' is stuck in an infinite state\n", job.name.AsCharPtr());
+    }
+
     TextureIdRelease(texture);
 
+    ret.loadedBits = loadedBits;
+    ret.pendingBits = pendingBits;
     return ret;
 }
 
@@ -338,8 +416,8 @@ inline void
 TextureLoader::Unload(const Resources::ResourceId id)
 {
     // Free streamer alloc
-    this->streams[id.loaderInstanceId].stream->MemoryUnmap();
-    Memory::Free(Memory::ScratchHeap, this->streams[id.loaderInstanceId].data);
+    this->streamDatas[id.loaderInstanceId].stream->MemoryUnmap();
+    Memory::Free(Memory::ScratchHeap, this->streamDatas[id.loaderInstanceId].data);
     TextureId tex = id.resource;
     CoreGraphics::DestroyTexture(tex);
 }
@@ -347,12 +425,37 @@ TextureLoader::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-uint
-TextureLoader::LodMask(const Ids::Id32 entry, float lod, bool stream) const
+void
+TextureLoader::UpdateLoaderSyncState()
 {
-    ResourceLoader::StreamData& streamData = this->streams[entry];
-    TextureStreamData* texStreamData = static_cast<TextureStreamData*>(streamData.data);
-    uint numMipsRequested = stream ? Math::min(8u, (uint)texStreamData->numMips) : texStreamData->numMips;
+    Util::Array<MipLoadMainThread> mipLoads(128, 8);
+    this->mipLoadsToSubmit.DequeueAll(mipLoads);
+    for (const auto& mipLoad : mipLoads)
+    {
+        n_assert(mipLoad.transferCmdBuf != CoreGraphics::InvalidCmdBufferId);
+        CoreGraphics::FlushUploads(mipLoad.rangesToFlush);
+        CoreGraphics::SubmissionWaitEvent transferEvent = CoreGraphics::SubmitCommandBuffers({ mipLoad.transferCmdBuf }, CoreGraphics::TransferQueueType, nullptr, "Texture mip upload");
+        CoreGraphics::SubmissionWaitEvent graphicsEvent = CoreGraphics::SubmitCommandBuffers({ mipLoad.graphicsCmdBuf }, CoreGraphics::GraphicsQueueType, { transferEvent }, "Receive texture");
+
+        this->handoverLock.Enter();
+        IndexT index = this->mipHandovers.FindIndex(mipLoad.id);
+        if (index == InvalidIndex)
+            this->mipHandovers.Add(mipLoad.id, { MipHandoverLoaderThread{ .handoverSubmissionId = graphicsEvent.timelineIndex, .bits = mipLoad.bits, .rangesToFree = mipLoad.rangesToFlush, .uploadBuffer = mipLoad.transferCmdBuf, .receiveBuffer = mipLoad.graphicsCmdBuf } });
+        else
+            this->mipHandovers.ValueAtIndex(mipLoad.id, index).Append(MipHandoverLoaderThread{ .handoverSubmissionId = graphicsEvent.timelineIndex, .bits = mipLoad.bits, .rangesToFree = mipLoad.rangesToFlush, .uploadBuffer = mipLoad.transferCmdBuf, .receiveBuffer = mipLoad.graphicsCmdBuf });
+        this->handoverLock.Leave();
+    }
+    mipLoads.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint
+TextureLoader::LodMask(const _StreamData& stream, float lod, bool async) const
+{
+    TextureStreamData* texStreamData = static_cast<TextureStreamData*>(stream.data);
+    uint numMipsRequested = stream.data ? Math::min(8u, (uint)texStreamData->numMips) : texStreamData->numMips;
 
     // Base case when Lod is 1.0f is to request 8 mips
     if (lod < 1.0f)

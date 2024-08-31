@@ -19,7 +19,7 @@ public:
     ResourceBrowser();
     ~ResourceBrowser();
 
-    void Update();
+    /// Render
     void Run(SaveMode save) override;
 private:
 };

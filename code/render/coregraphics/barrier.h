@@ -165,10 +165,13 @@ struct BarrierScope
         n_assert(this->buffers.IsEmpty());
     }
 
-    /// Start barrier
-    static BarrierScope Begin(const char* name, CmdBufferId cmdBuf)
+    /// Initiate
+    void Init(const char* name, CmdBufferId cmdBuf)
     {
-         return BarrierScope{ .name = name, .cmdBuf = cmdBuf, .fromStage = CoreGraphics::PipelineStage::InvalidStage, .toStage = CoreGraphics::PipelineStage::InvalidStage };
+        this->name = name;
+        this->cmdBuf = cmdBuf;
+        this->fromStage = CoreGraphics::PipelineStage::InvalidStage;
+        this->toStage = CoreGraphics::PipelineStage::InvalidStage;
     }
 
     /// Add texture barrier

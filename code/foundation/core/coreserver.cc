@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include "core/coreserver.h"
+#include "threading/thread.h"
 
 namespace Core
 {
@@ -23,6 +24,7 @@ CoreServer::CoreServer() :
     toolDirectory("root:"),
     isOpen(false)
 {
+    Threading::MainThreadId = Threading::Thread::GetMyThreadId();
     __ConstructSingleton;
 }
 

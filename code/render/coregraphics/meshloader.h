@@ -37,18 +37,44 @@ private:
     };
     
     /// Initialize mesh
-    Resources::ResourceUnknownId InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
+    ResourceInitOutput InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream) override;
     /// Stream texture
-    uint StreamResource(const Resources::ResourceId entry, IndexT frameIndex, uint requestedBits) override;
+    ResourceStreamOutput StreamResource(const ResourceLoadJob& job) override;
     /// unload resource (overload to implement resource deallocation)
     void Unload(const Resources::ResourceId id) override;
     /// Create load mask based on LOD
-    uint LodMask(const Ids::Id32 entry, float lod, bool stream) const override;
+    uint LodMask(const _StreamData& stream, float lod, bool async) const override;
+
+    /// Update intermediate loaded state
+    void UpdateLoaderSyncState() override;
 
     /// Get vertex layout
     static const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexLayoutType type);
     /// setup mesh from nvx3 file in memory
-    void SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const Ids::Id32 entry, const MeshResourceId meshResource, bool immediate);
+    ResourceLoader::_StreamData SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJob& job, const MeshResourceId meshResource);
+
+    struct MeshesToSubmit
+    {
+        Resources::ResourceId id;
+        uint bits;
+        Util::Array<Memory::RangeAllocation> rangesToFlush;
+        CoreGraphics::CmdBufferId cmdBuf;
+    };
+    Threading::SafeQueue<MeshesToSubmit> meshesToSubmit;
+
+    struct FinishedMesh
+    {
+        uint64 submissionId;
+        uint bits;
+        Util::Array<Memory::RangeAllocation> rangesToFree;
+        CoreGraphics::CmdBufferId cmdBuf;
+    };
+    Util::HashTable<Resources::ResourceId, Util::Array<FinishedMesh>> meshesToFinish;
+    Threading::CriticalSection meshLock;
+
+
+    CoreGraphics::CmdBufferPoolId asyncTransferPool, immediateTransferPool;
+
 };
 
 } // namespace CoreGraphics

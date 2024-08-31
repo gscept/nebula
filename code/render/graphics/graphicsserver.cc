@@ -96,11 +96,14 @@ GraphicsServer::Open()
         .maxTimestampQueries = 0x400,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
-        .enableValidation = true,
+        .enableValidation = false,
         .features = {
             .enableRayTracing = true,
             .enableMeshShaders = true,
-            .enableVariableRateShading = true
+            .enableVariableRateShading = true,
+#if NEBULA_GRAPHICS_DEBUG
+            .enableGPUCrashAnalytics = true
+#endif
         }
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
@@ -597,16 +600,16 @@ GraphicsServer::EndFrame()
     CoreGraphics::CmdFinishQueries(cmdBuf);
     CoreGraphics::CmdEndRecord(cmdBuf);
 
-    auto submission = CoreGraphics::SubmitCommandBuffer(
-        cmdBuf
+    auto submission = CoreGraphics::SubmitCommandBuffers(
+        {cmdBuf}
         , queue
+        , { this->swapInfo.submission }
 #if NEBULA_GRAPHICS_DEBUG
         , "Swap"
 #endif
 
     );
-    CoreGraphics::WaitForSubmission(this->swapInfo.submission, queue);
-    CoreGraphics::DestroyCmdBuffer(cmdBuf);
+    CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
 
     // Finish submuissions
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);

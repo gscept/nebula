@@ -142,7 +142,7 @@ protected:
      
     uint32_t size;
     std::tuple<Util::PinnedArray<MAX_ALLOCS, TYPES>...> objects;
-    Util::Array<Threading::ThreadId> owners;
+    Util::PinnedArray<MAX_ALLOCS, Threading::ThreadId> owners;
 
     Threading::Spinlock allocationLock;
 };

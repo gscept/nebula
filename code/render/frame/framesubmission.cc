@@ -113,7 +113,7 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
 
     // End the recording and submit
     CoreGraphics::CmdEndRecord(submissionBuffer);
-    this->submissionId = CoreGraphics::SubmitCommandBuffer(submissionBuffer, this->queue);
+    this->submissionId = CoreGraphics::SubmitCommandBuffers({submissionBuffer}, this->queue);
 
     // If a wait submission is present, append a wait for the subission we just did
     for (IndexT i = 0; i < this->waitSubmissions.Size(); i++)

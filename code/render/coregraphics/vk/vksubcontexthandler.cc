@@ -5,7 +5,7 @@
 
 #include "vksubcontexthandler.h"
 #include "coregraphics/config.h"
-
+#include "vkgraphicsdevice.h"
 namespace Vulkan
 {
 
@@ -131,12 +131,14 @@ uint64
 VkSubContextHandler::AppendSubmissionTimeline(
     CoreGraphics::QueueType type
     , VkCommandBuffer cmds
+    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name
 #endif
 )
 {
     n_assert(cmds != VK_NULL_HANDLE);
+    Threading::CriticalScope _0(&this->submissionLock);
 
     uint64 ret = GetNextTimelineIndex(type);
 
@@ -149,6 +151,59 @@ VkSubContextHandler::AppendSubmissionTimeline(
 #if NEBULA_GRAPHICS_DEBUG
     sub.name = name;
 #endif
+
+    for (const auto& ev : waitEvents)
+    {
+        if (ev != nullptr)
+        {
+            sub.waitIndices.Append(ev.timelineIndex);
+            sub.waitSemaphores.Append(this->semaphores[ev.queue][this->currentQueue[ev.queue]]);
+            sub.waitFlags.Append(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+        }
+    }
+
+    // Progress the semaphore counter
+    this->semaphoreSubmissionIds[type][this->currentQueue[type]] = ret;
+    
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64
+VkSubContextHandler::AppendSubmissionTimeline(
+    CoreGraphics::QueueType type
+    , Util::Array<VkCommandBuffer> cmds
+    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
+#if NEBULA_GRAPHICS_DEBUG
+    , const char* name
+#endif
+)
+{
+    n_assert(!cmds.IsEmpty());
+    Threading::CriticalScope _0(&this->submissionLock);
+    uint64 ret = GetNextTimelineIndex(type);
+
+    Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[type];
+    TimelineSubmission2& sub = submissionsForQueue.Emplace();
+    sub.buffers.AppendArray(cmds);
+    sub.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
+    sub.signalIndices.Append(ret);
+    sub.queue = type;
+#if NEBULA_GRAPHICS_DEBUG
+    sub.name = name;
+#endif
+
+    for (const auto& ev : waitEvents)
+    {
+        if (ev != nullptr)
+        {
+            sub.waitIndices.Append(ev.timelineIndex);
+            sub.waitSemaphores.Append(this->semaphores[ev.queue][this->currentQueue[ev.queue]]);
+            sub.waitFlags.Append(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+        }
+    }
 
     // Progress the semaphore counter
     this->semaphoreSubmissionIds[type][this->currentQueue[type]] = ret;
@@ -168,25 +223,10 @@ VkSubContextHandler::GetNextTimelineIndex(CoreGraphics::QueueType type)
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkSubContextHandler::AppendWaitTimeline(uint64 index, CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitType)
-{
-    n_assert(type != CoreGraphics::InvalidQueueType);
-    n_assert(index != UINT64_MAX);
-
-    Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[type];
-    TimelineSubmission2& sub = submissionsForQueue.Back();
-    sub.waitIndices.Append(index);
-    sub.waitSemaphores.Append(this->semaphores[waitType][this->currentQueue[waitType]]);
-    sub.waitFlags.Append(waitFlags);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 uint64_t 
 VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds)
 {
+    Threading::CriticalScope _0(&this->submissionLock);
     this->sparseBindSubmissions.Append(SparseBindSubmission());
     SparseBindSubmission& submission = this->sparseBindSubmissions.Back();
 
@@ -238,6 +278,7 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 uint64
 VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds)
 {
+    Threading::CriticalScope _0(&this->submissionLock);
     this->sparseBindSubmissions.Append(SparseBindSubmission());
     SparseBindSubmission& submission = this->sparseBindSubmissions.Back();
 
@@ -341,6 +382,8 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
                 break;
         }
         VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
+        if (res == VK_ERROR_DEVICE_LOST)
+            Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
 
         CoreGraphics::QueueEndMarker(type);
@@ -369,6 +412,8 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
             &index
         };
         VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
+        if (res == VK_ERROR_DEVICE_LOST)
+            Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
     }
 }
@@ -461,6 +506,8 @@ VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
     for (IndexT i = 0; i < list->Size(); i++)
     {
         VkResult res = vkQueueWaitIdle((*list)[i]);
+        if (res == VK_ERROR_DEVICE_LOST)
+            Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
     }
 }

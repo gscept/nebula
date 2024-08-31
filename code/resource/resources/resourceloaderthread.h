@@ -38,7 +38,7 @@ private:
     void DoWork() override;
     /// emit wakeup signal
     virtual void EmitWakeupSignal() override;
-    
+
     Threading::SafeQueue<std::function<void()>> jobs;
     Threading::Event completeEvent;
     Ptr<IO::IoServer> ioServer;
