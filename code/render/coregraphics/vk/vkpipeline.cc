@@ -105,7 +105,6 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
     Util::Array<VkPipeline> libraries;
     Util::Array<char> genHandleData, hitHandleData, missHandleData, callableHandleData;
     Util::Array<char*> groupHandleDatas;
-    uint handleSize = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleSize;
     uint rayPayload, hitAttribute;
 
     enum ShaderGroup
@@ -320,7 +319,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         .pStages = shaders.Begin(),
         .groupCount = (uint)groupStack.Size(),
         .pGroups = groupStack.Begin(),
-        .maxPipelineRayRecursionDepth = Math::min(4u, Vulkan::GetCurrentRaytracingProperties().maxRayRecursionDepth), // TODO: make configurable
+        .maxPipelineRayRecursionDepth = Math::min(4u, CoreGraphics::MaxRecursionDepth), // TODO: make configurable
         .pLibraryInfo = nullptr,
         .pLibraryInterface = &interfaceInfo,
         .pDynamicState = &dynamicState,
@@ -332,7 +331,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
     VkResult pipelineRes = vkCreateRayTracingPipelinesKHR(dev, nullptr, CoreGraphics::GetPipelineCache(), 1, &createInfo, nullptr, &pipeline);
     n_assert(pipelineRes == VK_SUCCESS);
 
-    size_t dataSize = handleSize * groups.Size();
+    size_t dataSize = CoreGraphics::ShaderGroupSize * groups.Size();
     char* buf = (char*)Memory::Alloc(Memory::ResourceHeap, dataSize);
     char* parseBuf = buf;
     VkResult groupFetchRes = vkGetRayTracingShaderGroupHandlesKHR(dev, pipeline, 0, groups.Size(), dataSize, buf);
@@ -345,26 +344,26 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         switch (group)
         {
             case ShaderGroup::Gen:
-                genHandleData.AppendArray(parseBuf, handleSize);
+                genHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Intersect:
             case ShaderGroup::Hit:
-                hitHandleData.AppendArray(parseBuf, handleSize);
+                hitHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Miss:
-                missHandleData.AppendArray(parseBuf, handleSize);
+                missHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
                 break;
             case ShaderGroup::Callable:
-                callableHandleData.AppendArray(parseBuf, handleSize);
+                callableHandleData.AppendArray(parseBuf, CoreGraphics::ShaderGroupSize);
                 break;
 
         }
-        parseBuf += handleSize;
+        parseBuf += CoreGraphics::ShaderGroupSize;
     }
 
     Memory::Free(Memory::ResourceHeap, buf);
 
-    auto CreateShaderTableBuffer = [handleSize](const Util::Array<char>& data, RayDispatchTable::Entry& tableEntry) -> CoreGraphics::BufferId
+    auto CreateShaderTableBuffer = [](const Util::Array<char>& data, RayDispatchTable::Entry& tableEntry) -> CoreGraphics::BufferId
     {
         tableEntry.baseAddress = 0xFFFFFFFF;
         tableEntry.numEntries = 0;
@@ -381,7 +380,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         tableInfo.dataSize = data.Size();
         auto ret = CoreGraphics::CreateBuffer(tableInfo);
         tableEntry.baseAddress = CoreGraphics::BufferGetDeviceAddress(ret);
-        tableEntry.numEntries = data.Size() / handleSize;
+        tableEntry.numEntries = data.Size() / CoreGraphics::ShaderGroupSize;
         tableEntry.entrySize = data.Size();
         return ret;
     };

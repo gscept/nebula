@@ -72,7 +72,6 @@ void
 ShaderSetup(
     VkDevice dev,
     const Util::StringAtom& name,
-    const VkPhysicalDeviceProperties props,
     AnyFX::ShaderEffect* effect,
     Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
     Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
@@ -96,7 +95,7 @@ ShaderSetup(
     uint32_t numsets = 0;
 
     // always create push constant range in layout, making all shaders using push constants compatible
-    uint32_t maxConstantBytes = props.limits.maxPushConstantsSize;
+    uint32_t maxConstantBytes = CoreGraphics::MaxPushConstantSize;
     uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
     constantRange.Resize(NumShaders); // one per shader stage
     uint i;
@@ -139,7 +138,7 @@ ShaderSetup(
         if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
         {
             n_assert(block->alignedSize <= maxConstantBytes);
-            n_assert(block->alignedSize <= props.limits.maxPushConstantsSize);
+            n_assert(block->alignedSize <= CoreGraphics::MaxPushConstantSize);
             maxConstantBytes -= block->alignedSize;
             CoreGraphics::ResourcePipelinePushConstantRange range;
             range.offset = pushRangeOffset;
@@ -165,7 +164,7 @@ ShaderSetup(
             }
 
             rinfo.constantBuffers.Append(cbo);
-            n_assert(block->alignedSize <= props.limits.maxUniformBufferRange);
+            n_assert(block->alignedSize <= CoreGraphics::MaxConstantBufferSize);
         }
         skipbuffer:
 
@@ -180,11 +179,10 @@ ShaderSetup(
             constantBindings.Add(var->name.c_str(), { (IndexT)block->offsetsByName[var->name] });
         }
     }
-    n_assert(props.limits.maxDescriptorSetUniformBuffersDynamic >= numUniformDyn);
-    n_assert(props.limits.maxDescriptorSetUniformBuffers >= numUniform);
-    uint32_t maxPerStageUniformBuffers = props.limits.maxPerStageDescriptorUniformBuffers;
+    n_assert(CoreGraphics::MaxResourceTableDynamicOffsetConstantBuffers >= numUniformDyn);
+    n_assert(CoreGraphics::MaxResourceTableConstantBuffers >= numUniform);
     for (uint i = 0; i < NumShaders; i++)
-        n_assert(maxPerStageUniformBuffers >= numPerStageUniformBuffers[i]);
+        n_assert(CoreGraphics::MaxPerStageConstantBuffers >= numPerStageUniformBuffers[i]);
 
     // do the same for storage buffers
     uint32_t numStorageDyn = 0;
@@ -225,15 +223,14 @@ ShaderSetup(
         }
 
         rinfo.rwBuffers.Append(rwbo);
-        n_assert(buffer->alignedSize < props.limits.maxStorageBufferRange);
+        n_assert(buffer->alignedSize < CoreGraphics::MaxConstantBufferSize);
     }
-    n_assert(props.limits.maxDescriptorSetStorageBuffersDynamic >= numStorageDyn);
-    n_assert(props.limits.maxDescriptorSetStorageBuffers >= numStorage);
-    uint32_t maxPerStageStorageBuffers = props.limits.maxPerStageDescriptorStorageBuffers;
+    n_assert(CoreGraphics::MaxResourceTableDynamicOffsetReadWriteBuffers >= numStorageDyn);
+    n_assert(CoreGraphics::MaxResourceTableReadWriteBuffers >= numStorage);
     for (uint i = 0; i < NumShaders; i++)
-        n_assert(maxPerStageStorageBuffers >= numPerStageStorageBuffers[i]);
+        n_assert(CoreGraphics::MaxPerStageReadWriteBuffers >= numPerStageStorageBuffers[i]);
 
-    uint32_t maxTextures = props.limits.maxDescriptorSetSampledImages;
+    uint32_t maxTextures = CoreGraphics::MaxResourceTableSampledImages;
     uint32_t remainingTextures = maxTextures;
 
     // setup samplers as immutable coupled with the texture input, before we setup the variables so that it's part of their layout
@@ -296,9 +293,8 @@ ShaderSetup(
     }
 
     // make sure we don't use too many samplers
-    uint32_t maxPerStageSamplers = props.limits.maxPerStageDescriptorSamplers;
     for (uint i = 0; i < NumShaders; i++)
-        n_assert(maxPerStageSamplers >= numPerStageSamplers[i]);
+        n_assert(CoreGraphics::MaxPerStageSamplers >= numPerStageSamplers[i]);
 
     SamplerCreateInfo placeholderSamplerInfo =
     {
@@ -402,15 +398,13 @@ ShaderSetup(
             numsets = Math::max(numsets, variable->set + 1);
         }
     }
-    uint32_t maxPerStageStorageImages = props.limits.maxPerStageDescriptorStorageImages;
     for (uint i = 0; i < NumShaders; i++)
-        n_assert(maxPerStageStorageImages >= numPerStageStorageImages[i]);
+        n_assert(CoreGraphics::MaxPerStageReadWriteImages >= numPerStageStorageImages[i]);
 
-    uint32_t maxPerStageSampledImages = props.limits.maxPerStageDescriptorSampledImages;
     for (uint i = 0; i < NumShaders; i++)
-        n_assert(maxPerStageSampledImages >= numPerStageSampledImages[i]);
+        n_assert(CoreGraphics::MaxPerStageSampledImages >= numPerStageSampledImages[i]);
 
-    n_assert(numInputAttachments <= props.limits.maxDescriptorSetInputAttachments);
+    n_assert(numInputAttachments <= CoreGraphics::MaxResourceTableInputAttachments);
 
     // skip the rest if we don't have any descriptor sets
     if (!layoutCreateInfos.IsEmpty())
@@ -536,7 +530,6 @@ CreateShader(const ShaderCreateInfo& info)
     ShaderSetup(
         setupInfo.dev,
         info.name,
-        Vulkan::GetCurrentProperties(),
         effect,
         setupInfo.constantRangeLayout,
         setupInfo.immutableSamplers,

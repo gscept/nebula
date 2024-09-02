@@ -30,12 +30,6 @@ VkInstance GetInstance();
 VkDevice GetCurrentDevice();
 /// get the currently activated physical device
 VkPhysicalDevice GetCurrentPhysicalDevice();
-/// get the current device properties
-VkPhysicalDeviceProperties GetCurrentProperties();
-/// Get the current device acceleration structure properties
-VkPhysicalDeviceAccelerationStructurePropertiesKHR GetCurrentAccelerationStructureProperties();
-/// Get the current device raytracing properties
-VkPhysicalDeviceRayTracingPipelinePropertiesKHR GetCurrentRaytracingProperties();
 /// get the current device features
 VkPhysicalDeviceFeatures GetCurrentFeatures();
 /// get pipeline cache

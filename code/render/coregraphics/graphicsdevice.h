@@ -31,6 +31,37 @@ extern bool VariableRateShadingSupported;
 extern bool MeshShadersSupported;
 extern bool NvidiaCheckpointsSupported;
 
+extern uint ReadWriteBufferAlignment;
+extern uint ConstantBufferAlignment;
+extern uint64 MaxConstantBufferSize;
+extern uint MaxPushConstantSize;
+extern uint64 SparseAddressSize;
+
+extern uint MaxPerStageConstantBuffers;
+extern uint MaxPerStageReadWriteBuffers;
+extern uint MaxPerStageSampledImages;
+extern uint MaxPerStageReadWriteImages;
+extern uint MaxPerStageSamplers;
+extern uint MaxPerStageInputAttachments;
+
+extern uint MaxResourceTableConstantBuffers;
+extern uint MaxResourceTableDynamicOffsetConstantBuffers;
+extern uint MaxResourceTableReadWriteBuffers;
+extern uint MaxResourceTableDynamicOffsetReadWriteBuffers;
+extern uint MaxResourceTableSampledImages;
+extern uint MaxResourceTableReadWriteImages;
+extern uint MaxResourceTableSamplers;
+extern uint MaxResourceTableInputAttachments;
+
+extern uint MemoryRangeGranularity; // Set to the smallest amount of bytes allowed for a non-coherent memory write
+extern uint TimestampPeriod;
+
+/// Raytracing properties
+extern uint AccelerationStructureScratchAlignment;
+extern uint ShaderGroupAlignment;
+extern uint64 ShaderGroupSize;
+extern uint MaxRecursionDepth;
+
 struct GraphicsDeviceCreateInfo
 {
     uint64 globalConstantBufferMemorySize;
