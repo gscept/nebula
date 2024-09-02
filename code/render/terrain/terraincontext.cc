@@ -2291,29 +2291,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
                 if (entry.mip == 0xF)
                     IndirectionUpdate(mip, result.cached.x, result.cached.y, subTexture.indirectionOffset.x, subTexture.indirectionOffset.y, subTextureTileX, subTextureTileY);
             }
-
-            // If evicted, clear the tile in the indirection texture
-            if (result.evicted != InvalidTileCacheEntry)
-            {
-                const SubTexture& evictSubtexture = terrainVirtualTileState.subTextures[result.evicted.entry.subTextureIndex];
-
-                // Calculate the mip, which is relative to the max number of mips in the current
-                // SubTexture and whatever was cached before
-                int evictMip = Math::log2(evictSubtexture.numTiles) - Math::log2(result.evicted.entry.tiles);
-
-                // If the mip is positive, it means the pixel still exists and can therefore be discarded
-                if (evictMip >= 0)
-                {
-                    // Calculate indirection pixel in subtexture
-                    uint indirectionPixelX = (subTexture.indirectionOffset.x >> evictMip) + result.evicted.entry.tileX;
-                    uint indirectionPixelY = (subTexture.indirectionOffset.y >> evictMip) + result.evicted.entry.tileY;
-                    uint mipOffset = terrainVirtualTileState.indirectionMipOffsets[evictMip];
-                    uint mipSize = terrainVirtualTileState.indirectionMipSizes[evictMip];
-
-                    // Now simply just clear that pixel
-                    IndirectionErase(evictMip, indirectionPixelX, indirectionPixelY, result.evicted.entry.tileX, result.evicted.entry.tileY);
-                }
-            }
         }
         CoreGraphics::BufferUnmap(terrainVirtualTileState.pageUpdateReadbackBuffers.buffers[ctx.bufferIndex]);
 
