@@ -299,7 +299,8 @@ class SubgraphDefinition:
         file.DecreaseIndent()
         file.WriteLine("else")
         file.IncreaseIndent()
-        file.WriteLine('n_warning("No registered pipeline creation callback is registered for {}\\n");'.format(self.name))
+        global framescriptName
+        file.WriteLine('n_warning("[Frame Script {}] No registered pipeline creation callback is registered for {}\\n");'.format(framescriptName, self.name))
         file.DecreaseIndent()
 
     def FormatHeader(self, file):
@@ -1065,6 +1066,7 @@ class SubmissionDefinition:
         file.WriteLine("CoreGraphics::CmdFinishQueries(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdEndRecord(cmdBuf);")
 
+        file.WriteLine("CoreGraphics::SubmitImmediateCommandBuffers();")
         waits = ""
         if len(self.waitForSubmissions) > 0:
             for wait in self.waitForSubmissions:
@@ -1079,7 +1081,6 @@ class SubmissionDefinition:
         file.WriteLine(', "{}"'.format(self.name))
         file.WriteLine("#endif")
         file.WriteLine(");")
-        file.WriteLine("CoreGraphics::SubmitImmediateCommandBuffers();")
         if self.waitForQueue is not None:
             file.WriteLine("CoreGraphics::WaitForLastSubmission(CoreGraphics::QueueType::{}QueueType, CoreGraphics::QueueType::{}QueueType);".format(self.queue, self.waitForQueue))
 
@@ -1456,15 +1457,28 @@ class FrameScriptGenerator:
 if __name__ == '__main__':
     globals()
 
-    queues = set(['Graphics', 'Compute', 'Transfer', 'Sparse'])
-
     generator = FrameScriptGenerator()
     generator.SetVersion(Version)
     file = sys.argv[-3]
     outH = sys.argv[-2]
     outS = sys.argv[-1]
 
-    print("Compiling frame script '{}' -> '{}' & '{}'".format(file, outH, outS))
+    try:
+        compilerChangeTime = os.path.getmtime(sys.argv[0])
+        inputChangeTime = os.path.getmtime(file)
+        outputHeaderChangeTime = os.path.getmtime(outH)
+        outputSourceChangeTime = os.path.getmtime(outS)
+
+        if compilerChangeTime < outputHeaderChangeTime and compilerChangeTime < outputSourceChangeTime:
+            if inputChangeTime <= outputHeaderChangeTime and inputChangeTime <= outputSourceChangeTime:
+                exit(0)
+    except FileNotFoundError:
+        pass
+
+    print("[Frame Script Compiler] Compiling '{}' -> '{}' & '{}'".format(file, outH, outS))
+
+    queues = set(['Graphics', 'Compute', 'Transfer', 'Sparse'])
+    framescriptName = Path(file).stem
 
     headerF = IDLC.filewriter.FileWriter()
     headerF.Open(outH)
