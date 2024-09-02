@@ -310,12 +310,13 @@ macro(nebula_material_template_compile)
     set(out_header "materialtemplates.h")
     set(out_source "materialtemplates.cc")
     set(out_shader "material_interfaces.fx")
+    set(out_shader_header "material_interfaces.h")
 
     set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials")
     file(MAKE_DIRECTORY ${abs_output_folder})
     add_custom_target(materialtemplates
-        COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files} "${abs_output_folder}"
-        BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}"
+        COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files} ${SHADERC} ${NROOT}/syswork/shaders/vk "${abs_output_folder}"
+        BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" "${abs_output_folder}/${out_shader_header}"
         WORKING_DIRECTORY "${NROOT}"
         DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files}
         VERBATIM)
@@ -326,27 +327,7 @@ macro(nebula_material_template_compile)
     target_sources(render PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
 
     target_include_directories(render PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
-
-    set(depoutput ${abs_output_folder}/material_interfaces.dep)
-    set(headerOutput ${abs_output_folder}/material_interfaces.h)
-    set(shaderInput ${abs_output_folder}/material_interfaces.fx)
-    set(binaryOutput ${abs_output_folder}/material_interfaces.fxb)
-    execute_process(COMMAND ${SHADERC} -M -i ${shaderInput} -I ${NROOT}/syswork/shaders/vk -I ${abs_output_folder} -o ${depoutput} -h ${headerOutput}.h -t shader)
-
-    if(N_NEBULA_DEBUG_SHADERS)
-        set(shader_debug "-debug")
-    endif()
-
-    add_custom_target(materialinterface
-        COMMAND ${SHADERC} -i ${shaderInput} -I ${NROOT}/syswork/shaders/vk -I ${abs_output_folder} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
-        BYPRODUCTS  ${headerOutput}.h
-        WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-        DEPENDS ${SHADERC} ${depoutput}
-        VERBATIM
-    )
-    set_target_properties(materialinterface PROPERTIES FOLDER "Material Definitions")
-    add_dependencies(materialinterface materialtemplates)
-    add_dependencies(render materialinterface)
+    add_dependencies(render materialtemplates)
 endmacro()
 
 macro(nebula_framescript_add)

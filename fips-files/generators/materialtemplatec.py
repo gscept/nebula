@@ -1,6 +1,7 @@
 import os, platform, sys
 import sjson
 import ntpath
+import subprocess
 from pathlib import Path
 Version = 1
 
@@ -571,87 +572,130 @@ if __name__ == '__main__':
 
     generator = MaterialTemplateGenerator()
     generator.SetVersion(Version)
-    files = sys.argv[1:-1]
+    files = sys.argv[1:-3]
+    shaderC = sys.argv[-3]
+    shaderInclude = sys.argv[-2]
     outDir = sys.argv[-1]
 
-    generator.SetName("materialtemplates")
-    headerF = IDLC.filewriter.FileWriter()
-    headerF.Open('{}/materialtemplates.h'.format(outDir))
-    generator.BeginHeader(headerF)
+    outHeaderPath = '{}/materialtemplates.h'.format(outDir)
+    outSourcePath = '{}/materialtemplates.cc'.format(outDir)
+    outShaderPath = '{}/material_interfaces.fx'.format(outDir)
+    compilerChangeTime = os.path.getmtime(sys.argv[0])
 
-    sourceF = IDLC.filewriter.FileWriter()
-    sourceF.Open('{}/materialtemplates.cc'.format(outDir))
-    generator.BeginSource(sourceF)
+    hasModifications = False
+    try:
+        outputHeaderChangeTime = os.path.getmtime(outHeaderPath)
+        outputSourceChangeTime = os.path.getmtime(outSourcePath)
+        outputShaderChangeTime = os.path.getmtime(outShaderPath)
 
-    sourceF.WriteLine('Util::Dictionary<uint, Entry*> Lookup;')
-    sourceF.WriteLine('Util::Array<Entry*> Configs[(uint)MaterialTemplates::BatchGroup::Num];')
+        for file in files:
+            inputChangeTime = os.path.getmtime(file)
+            if compilerChangeTime < outputHeaderChangeTime and compilerChangeTime < outputSourceChangeTime and compilerChangeTime < outputShaderChangeTime:
+                if inputChangeTime <= outputHeaderChangeTime and inputChangeTime <= outputSourceChangeTime and inputChangeTime <= outputShaderChangeTime:
+                    continue
 
-    shaderF = IDLC.filewriter.FileWriter()
-    shaderF.Open('{}/material_interfaces.fx'.format(outDir))
-    generator.BeginShader(shaderF)
-
-    for file in files:
-        path = Path(file).stem
-        print("Compiling material template '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc'".format(file, outDir, outDir))
-        generator.SetDocument(file)
-        generator.SetName(path)
-        generator.Parse()
-        generator.FormatHeader(headerF)
-        generator.FormatSource(sourceF)
-        generator.FormatShader(shaderF)
-
-    enumStr = '\tInvalid = -1,\n'
-    for batch in generator.batchGroupDict:
-        enumStr += '\t{} = {},\n'.format(batch, generator.batchGroupDict[batch])
-    enumStr += '\tNum\n'
-    headerF.WriteLine('enum class BatchGroup\n{{\n{}}};'.format(enumStr))
-
-    conversionStr = ''
-    for batch in generator.batchGroupDict:
-        conversionStr += '\t\tcase "{}"_hash: return BatchGroup::{};\n'.format(batch, batch)
-    conversionStr += '\t\tdefault: return BatchGroup::Invalid;'
-    headerF.WriteLine('''
-//------------------------------------------------------------------------------
-/**
-*/
-inline BatchGroup\nBatchGroupFromName(const char* name)\n{{\n\tuint code = Util::String::Hash(name, strlen(name));\n\tswitch(code)\n\t{{\n{}\n\t}}\n}}\n'''.format(conversionStr))
-
-    # Finish header
-    enumStr = ''
-    for file in files:
-        name = Path(file).stem
-        enumStr += '\tENUM_{}\n'.format(name)
-    enumStr += '\tNum\n'
-
-    headerF.WriteLine('enum class MaterialProperties\n{{\n{}}};'.format(enumStr))
-    headerF.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
-    headerF.WriteLine('extern Util::Array<Entry*> Configs[(uint)MaterialTemplates::BatchGroup::Num];\n')
-    headerF.WriteLine('void SetupMaterialTemplates();\n')
+            hasModifications = True
+    except FileNotFoundError:
+        hasModifications = True
     
-    generator.EndHeader(headerF)
-    headerF.Close()
 
-    # Finish source
-    setupStr = ''
-    for file in files:
-        name = Path(file).stem
-        setupStr += '\t{}::SetupMaterialTemplates();\n'.format(name)
+    if hasModifications:
+        generator.SetName("materialtemplates")
+        headerF = IDLC.filewriter.FileWriter()
+        headerF.Open(outHeaderPath)
+        generator.BeginHeader(headerF)
 
-    sourceF.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates() \n{{\n{}}}'.format(setupStr))
+        sourceF = IDLC.filewriter.FileWriter()
+        sourceF.Open(outSourcePath)
+        generator.BeginSource(sourceF)
 
-    generator.EndSource(sourceF)
-    sourceF.Close()
+        sourceF.WriteLine('Util::Dictionary<uint, Entry*> Lookup;')
+        sourceF.WriteLine('Util::Array<Entry*> Configs[(uint)MaterialTemplates::BatchGroup::Num];')
 
-    # Finish shader
-    shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
-    shaderF.WriteLine("const uint MaterialBindingSlot = 51;")
-    shaderF.WriteLine("const uint MaterialBufferSlot = 52;")
+        shaderF = IDLC.filewriter.FileWriter()
+        shaderF.Open(outShaderPath)
+        generator.BeginShader(shaderF)
 
-    bindingsContent = ''
-    for file in files:
-        fileName = Path(file).stem
-        bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
+        for file in files:
+            path = Path(file).stem
 
-    shaderF.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
-    generator.EndShader(shaderF)
-    shaderF.Close()
+            print("[Material Template Compiler] '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc & '{}/material_interfaces.fx' ".format(file, outDir, outDir, outDir))
+            generator.SetDocument(file)
+            generator.SetName(path)
+            generator.Parse()
+            generator.FormatHeader(headerF)
+            generator.FormatSource(sourceF)
+            generator.FormatShader(shaderF)
+
+        enumStr = '\tInvalid = -1,\n'
+        for batch in generator.batchGroupDict:
+            enumStr += '\t{} = {},\n'.format(batch, generator.batchGroupDict[batch])
+        enumStr += '\tNum\n'
+        headerF.WriteLine('enum class BatchGroup\n{{\n{}}};'.format(enumStr))
+
+        conversionStr = ''
+        for batch in generator.batchGroupDict:
+            conversionStr += '\t\tcase "{}"_hash: return BatchGroup::{};\n'.format(batch, batch)
+        conversionStr += '\t\tdefault: return BatchGroup::Invalid;'
+        headerF.WriteLine('''
+    //------------------------------------------------------------------------------
+    /**
+    */
+    inline BatchGroup\nBatchGroupFromName(const char* name)\n{{\n\tuint code = Util::String::Hash(name, strlen(name));\n\tswitch(code)\n\t{{\n{}\n\t}}\n}}\n'''.format(conversionStr))
+
+        # Finish header
+        enumStr = ''
+        for file in files:
+            name = Path(file).stem
+            enumStr += '\tENUM_{}\n'.format(name)
+        enumStr += '\tNum\n'
+
+        headerF.WriteLine('enum class MaterialProperties\n{{\n{}}};'.format(enumStr))
+        headerF.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
+        headerF.WriteLine('extern Util::Array<Entry*> Configs[(uint)MaterialTemplates::BatchGroup::Num];\n')
+        headerF.WriteLine('void SetupMaterialTemplates();\n')
+        
+        generator.EndHeader(headerF)
+        headerF.Close()
+
+        # Finish source
+        setupStr = ''
+        for file in files:
+            name = Path(file).stem
+            setupStr += '\t{}::SetupMaterialTemplates();\n'.format(name)
+
+        sourceF.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates() \n{{\n{}}}'.format(setupStr))
+
+        generator.EndSource(sourceF)
+        sourceF.Close()
+
+        # Finish shader
+        shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
+        shaderF.WriteLine("const uint MaterialBindingSlot = 51;")
+        shaderF.WriteLine("const uint MaterialBufferSlot = 52;")
+
+        bindingsContent = ''
+        for file in files:
+            fileName = Path(file).stem
+            bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
+
+        shaderF.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
+        generator.EndShader(shaderF)
+        shaderF.Close()
+
+    
+    # Finally, run the AnyFX compiler
+    shaderBinaryOutput = "{}/material_interfaces.fxb".format(outDir)
+    shaderHeaderOutput = "{}/material_interfaces.h".format(outDir)
+
+    try:
+        outputShaderBinaryChangeTime = os.path.getmtime(shaderBinaryOutput)
+        outputShaderHeaderChangeTime = os.path.getmtime(shaderHeaderOutput)
+        shaderCompilerChangeTime = os.path.getmtime(shaderC)
+        if shaderCompilerChangeTime < outputShaderBinaryChangeTime and shaderCompilerChangeTime < outputShaderHeaderChangeTime:
+            if outputShaderChangeTime <= outputShaderBinaryChangeTime and outputShaderChangeTime <= outputShaderHeaderChangeTime:
+                exit(0)
+    except FileNotFoundError:
+        pass
+
+    subprocess.run([shaderC, "-i", outShaderPath, "-I", shaderInclude, "-I", outDir, "-o", shaderBinaryOutput, "-h", shaderHeaderOutput, "-t", "shader"])
