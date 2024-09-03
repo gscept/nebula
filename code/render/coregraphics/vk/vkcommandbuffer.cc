@@ -1178,7 +1178,7 @@ void
 CmdRaysDispatch(const CmdBufferId id, const RayDispatchTable& table, int dimX, int dimY, int dimZ)
 {
     VkStridedDeviceAddressRegionKHR genRegion, hitRegion, missRegion, callableRegion;
-    uint handleSize = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupHandleSize;
+    uint handleSize = CoreGraphics::ShaderGroupSize;
 
     auto RegionSetup = [handleSize](VkStridedDeviceAddressRegionKHR& region, const RayDispatchTable::Entry& entry)
     {

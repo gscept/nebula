@@ -335,6 +335,36 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                 {
                     n_printf("[Graphics Device] Using '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
                     state.currentDevice = i;
+                    CoreGraphics::ReadWriteBufferAlignment = state.deviceProps[i].properties.limits.minStorageBufferOffsetAlignment;
+                    CoreGraphics::ConstantBufferAlignment = state.deviceProps[i].properties.limits.minUniformBufferOffsetAlignment;
+                    CoreGraphics::MaxConstantBufferSize = state.deviceProps[i].properties.limits.maxUniformBufferRange;
+                    CoreGraphics::SparseAddressSize = state.deviceProps[i].properties.limits.sparseAddressSpaceSize;
+
+                    CoreGraphics::MaxPerStageConstantBuffers = state.deviceProps[i].properties.limits.maxPerStageDescriptorUniformBuffers;
+                    CoreGraphics::MaxPerStageReadWriteBuffers = state.deviceProps[i].properties.limits.maxPerStageDescriptorStorageBuffers;
+                    CoreGraphics::MaxPerStageSampledImages = state.deviceProps[i].properties.limits.maxPerStageDescriptorSampledImages;
+                    CoreGraphics::MaxPerStageReadWriteImages = state.deviceProps[i].properties.limits.maxPerStageDescriptorStorageImages;
+                    CoreGraphics::MaxPerStageSamplers = state.deviceProps[i].properties.limits.maxPerStageDescriptorSamplers;
+                    CoreGraphics::MaxPerStageInputAttachments = state.deviceProps[i].properties.limits.maxPerStageDescriptorInputAttachments;
+
+                    CoreGraphics::MaxPushConstantSize = state.deviceProps[i].properties.limits.maxPushConstantsSize;
+                    CoreGraphics::MaxResourceTableConstantBuffers = state.deviceProps[i].properties.limits.maxDescriptorSetUniformBuffers;
+                    CoreGraphics::MaxResourceTableDynamicOffsetConstantBuffers = state.deviceProps[i].properties.limits.maxDescriptorSetUniformBuffersDynamic;
+                    CoreGraphics::MaxResourceTableReadWriteBuffers = state.deviceProps[i].properties.limits.maxDescriptorSetStorageBuffers;
+                    CoreGraphics::MaxResourceTableDynamicOffsetReadWriteBuffers = state.deviceProps[i].properties.limits.maxDescriptorSetStorageBuffersDynamic;
+                    CoreGraphics::MaxResourceTableSampledImages = state.deviceProps[i].properties.limits.maxDescriptorSetSampledImages;
+                    CoreGraphics::MaxResourceTableReadWriteImages = state.deviceProps[i].properties.limits.maxDescriptorSetStorageImages;
+                    CoreGraphics::MaxResourceTableSamplers = state.deviceProps[i].properties.limits.maxDescriptorSetSamplers;
+                    CoreGraphics::MaxResourceTableInputAttachments = state.deviceProps[i].properties.limits.maxDescriptorSetInputAttachments;
+
+                    CoreGraphics::MemoryRangeGranularity = state.deviceProps[i].properties.limits.nonCoherentAtomSize;
+                    CoreGraphics::TimestampPeriod = state.deviceProps[i].properties.limits.timestampPeriod;
+
+                    CoreGraphics::AccelerationStructureScratchAlignment = state.accelerationStructureDeviceProps[i].minAccelerationStructureScratchOffsetAlignment;
+                    CoreGraphics::ShaderGroupAlignment = state.raytracingDeviceProps[i].shaderGroupBaseAlignment;
+                    CoreGraphics::ShaderGroupSize = state.raytracingDeviceProps[i].shaderGroupHandleSize;
+                    CoreGraphics::MaxRecursionDepth = state.raytracingDeviceProps[i].maxRayRecursionDepth;
+
                     break;
                 }
             }
@@ -376,37 +406,10 @@ GetCurrentPhysicalDevice()
 //------------------------------------------------------------------------------
 /**
 */
-VkPhysicalDeviceProperties
-GetCurrentProperties()
-{
-    return state.deviceProps[state.currentDevice].properties;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkPhysicalDeviceAccelerationStructurePropertiesKHR
-GetCurrentAccelerationStructureProperties()
-{
-    return state.accelerationStructureDeviceProps[state.currentDevice];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkPhysicalDeviceRayTracingPipelinePropertiesKHR
-GetCurrentRaytracingProperties()
-{
-    return state.raytracingDeviceProps[state.currentDevice];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 VkPhysicalDeviceFeatures 
 GetCurrentFeatures()
 {
-    return state.deviceFeatures[state.currentDevice];;
+    return state.deviceFeatures[state.currentDevice];
 }
 
 //------------------------------------------------------------------------------
@@ -715,8 +718,38 @@ bool RayTracingSupported = false;
 bool DynamicVertexInputSupported = false;
 bool MeshShadersSupported = false;
 bool VariableRateShadingSupported = false;
-
 bool NvidiaCheckpointsSupported = false;
+
+uint ReadWriteBufferAlignment = UINT_MAX;
+uint ConstantBufferAlignment = UINT_MAX;
+uint64 MaxConstantBufferSize = UINT_MAX;
+uint MaxPushConstantSize = UINT_MAX;
+uint64 SparseAddressSize = UINT_MAX;
+
+uint MaxPerStageConstantBuffers = UINT_MAX;
+uint MaxPerStageReadWriteBuffers = UINT_MAX;
+uint MaxPerStageSampledImages = UINT_MAX;
+uint MaxPerStageReadWriteImages = UINT_MAX;
+uint MaxPerStageSamplers = UINT_MAX;
+uint MaxPerStageInputAttachments = UINT_MAX;
+
+uint MaxResourceTableConstantBuffers = UINT_MAX;
+uint MaxResourceTableDynamicOffsetConstantBuffers = UINT_MAX;
+uint MaxResourceTableReadWriteBuffers = UINT_MAX;
+uint MaxResourceTableDynamicOffsetReadWriteBuffers = UINT_MAX;
+uint MaxResourceTableSampledImages = UINT_MAX;
+uint MaxResourceTableReadWriteImages = UINT_MAX;
+uint MaxResourceTableSamplers = UINT_MAX;
+uint MaxResourceTableInputAttachments = UINT_MAX;
+
+uint MemoryRangeGranularity = UINT_MAX;
+uint TimestampPeriod = UINT_MAX;
+
+uint AccelerationStructureScratchAlignment = UINT_MAX;
+uint ShaderGroupAlignment = UINT_MAX;
+uint64 ShaderGroupSize = UINT_MAX;
+uint MaxRecursionDepth = UINT_MAX;
+
 using namespace Vulkan;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -1327,7 +1360,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     CoreGraphics::BufferCreateInfo uploadInfo;
     uploadInfo.name = "Global Upload Buffer";
-    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
+    uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, CoreGraphics::MemoryRangeGranularity);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
@@ -1427,7 +1460,7 @@ DestroyGraphicsDevice()
     VkDestroyDebugMessenger(state.instance, VkErrorDebugMessageHandle, nullptr);
 #endif
 
-    vkDestroyDevice(state.devices[0], nullptr);
+    vkDestroyDevice(state.devices[state.currentDevice], nullptr);
     vkDestroyInstance(state.instance, nullptr);
 }
 
@@ -2184,7 +2217,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     Threading::CriticalScope _0(&UploadLock);
 
     // Calculate aligned upper bound
-    SizeT adjustedAlignment = Math::max(alignment, (SizeT)state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);
+    SizeT adjustedAlignment = Math::max(alignment, (SizeT)CoreGraphics::MemoryRangeGranularity);
     const SizeT alignedBytes = numBytes + adjustedAlignment - 1;
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
@@ -2233,7 +2266,7 @@ FlushUploads(const Util::Array<Memory::RangeAllocation>& allocations)
             range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             range.pNext = nullptr;
             range.offset = allocations[i].offset; //uploadBuffer.interval.start;
-            range.size = Math::align(allocations[i].size, state.deviceProps[state.currentDevice].properties.limits.nonCoherentAtomSize);// (DeviceSize)size;
+            range.size = Math::align(allocations[i].size, CoreGraphics::MemoryRangeGranularity);// (DeviceSize)size;
             range.memory = BufferGetVkMemory(state.uploadBuffer);
         }
 

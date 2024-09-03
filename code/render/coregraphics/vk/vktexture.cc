@@ -70,8 +70,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
     VkMemoryRequirements memoryReqs;
     vkGetImageMemoryRequirements(dev, img, &memoryReqs);
 
-    VkPhysicalDeviceProperties devProps = GetCurrentProperties();
-    n_assert(memoryReqs.size < devProps.limits.sparseAddressSpaceSize);
+    n_assert(memoryReqs.size < CoreGraphics::SparseAddressSize);
 
     // get sparse memory requirements
     uint32_t sparseMemoryRequirementsCount;

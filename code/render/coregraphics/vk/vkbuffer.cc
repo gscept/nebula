@@ -99,7 +99,7 @@ CreateBuffer(const BufferCreateInfo& info)
         VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
         VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
-        0x0,
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR,
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
         VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
         VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
@@ -147,13 +147,15 @@ CreateBuffer(const BufferCreateInfo& info)
     else if (info.mode == HostCached)
         pool = CoreGraphics::MemoryPool_HostCached;
 
-    uint baseAlignment = 1;
-    if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureScratch))
-        baseAlignment = CoreGraphics::GetCurrentAccelerationStructureProperties().minAccelerationStructureScratchOffsetAlignment;
-    else if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureInstances))
+
+    VkMemoryRequirements memoryReqs;
+    vkGetBufferMemoryRequirements(loadInfo.dev, runtimeInfo.buf, &memoryReqs);
+
+    uint baseAlignment = memoryReqs.alignment;
+    if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureInstances))
         baseAlignment = 16;
-    else if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
-        baseAlignment = CoreGraphics::GetCurrentRaytracingProperties().shaderGroupBaseAlignment;
+    if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
+        baseAlignment = Math::max(baseAlignment, CoreGraphics::ShaderGroupAlignment);
 
     if (info.sparse)
     {
@@ -161,14 +163,10 @@ CreateBuffer(const BufferCreateInfo& info)
         loadInfo.sparseExtension = sparseExtension;
         BufferSparsePageTable& table = bufferSparseExtensionAllocator.Get<BufferExtension_SparsePageTable>(sparseExtension);
 
-        VkMemoryRequirements memoryReqs;
-        vkGetBufferMemoryRequirements(loadInfo.dev, runtimeInfo.buf, &memoryReqs);
-
-        VkPhysicalDeviceProperties devProps = GetCurrentProperties();
-        n_assert(memoryReqs.size < devProps.limits.sparseAddressSpaceSize);
+        n_assert(memoryReqs.size < CoreGraphics::SparseAddressSize);
 
         table.memoryReqs = memoryReqs;
-        table.bindCounts = size / memoryReqs.alignment;
+        table.bindCounts = size / baseAlignment;
         table.pages.Resize(table.bindCounts);
 
         SizeT offset = 0;
@@ -204,13 +202,11 @@ CreateBuffer(const BufferCreateInfo& info)
                 // if not host-local memory, we need to flush the initial update
                 if (info.mode == HostCached || info.mode == DeviceAndHost)
                 {
-                    VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
-
                     VkMappedMemoryRange range;
                     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
                     range.pNext = nullptr;
-                    range.offset = Math::align_down(alloc.offset, props.limits.nonCoherentAtomSize);
-                    range.size = Math::align(alloc.size, props.limits.nonCoherentAtomSize);
+                    range.offset = Math::align_down(alloc.offset, CoreGraphics::MemoryRangeGranularity);
+                    range.size = Math::align(alloc.size, CoreGraphics::MemoryRangeGranularity);
                     range.memory = alloc.mem;
                     VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
                     n_assert(res == VK_SUCCESS);

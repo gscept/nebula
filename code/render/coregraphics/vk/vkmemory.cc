@@ -233,7 +233,6 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type, uin
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(dev, buf, &req);
     req.alignment = Math::align(req.alignment, (DeviceSize)alignment);
-    VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
     VkMemoryPropertyFlags flags = 0;
 
@@ -251,8 +250,8 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type, uin
     case MemoryPool_DeviceAndHost:
         flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         // Memory needs to be aligned to non coherent atom size for flushing
-        req.size = Math::align(req.size, props.limits.nonCoherentAtomSize);
-        req.alignment = Math::align(req.alignment, props.limits.nonCoherentAtomSize);
+        req.size = Math::align(req.size, CoreGraphics::MemoryRangeGranularity);
+        req.alignment = Math::align(req.alignment, CoreGraphics::MemoryRangeGranularity);
         break;
     default:
         n_crash("AllocateMemory(): Only buffer pool types are allowed for buffer memory");
@@ -302,15 +301,14 @@ AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize alloc
 void 
 Flush(const VkDevice dev, const Alloc& alloc, IndexT offset, SizeT size)
 {
-    VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
     CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
     VkMappedMemoryRange range;
     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range.pNext = nullptr;
-    range.offset = Math::align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
+    range.offset = Math::align_down(alloc.offset + offset, CoreGraphics::MemoryRangeGranularity);
     uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::min(size, (SizeT)alloc.size);
     range.size = Math::min(
-        (VkDeviceSize)Math::align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
+        (VkDeviceSize)Math::align(flushSize + (alloc.offset + offset - range.offset), CoreGraphics::MemoryRangeGranularity),
         pool.blockSize);
     range.memory = alloc.mem;
     VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
@@ -323,15 +321,14 @@ Flush(const VkDevice dev, const Alloc& alloc, IndexT offset, SizeT size)
 void 
 Invalidate(const VkDevice dev, const CoreGraphics::Alloc& alloc, IndexT offset, SizeT size)
 {
-    VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
     CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
     VkMappedMemoryRange range;
     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range.pNext = nullptr;
-    range.offset = Math::align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
+    range.offset = Math::align_down(alloc.offset + offset, CoreGraphics::MemoryRangeGranularity);
     uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::min((VkDeviceSize)size, alloc.size);
     range.size = Math::min(
-        (VkDeviceSize)Math::align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
+        (VkDeviceSize)Math::align(flushSize + (alloc.offset + offset - range.offset), CoreGraphics::MemoryRangeGranularity),
         pool.blockSize);
     range.memory = alloc.mem;
     VkResult res = vkInvalidateMappedMemoryRanges(dev, 1, &range);

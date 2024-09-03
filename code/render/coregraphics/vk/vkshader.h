@@ -28,7 +28,6 @@ const VkProgramReflectionInfo& ShaderGetProgramReflection(const CoreGraphics::Sh
 void ShaderSetup(
     VkDevice dev,
     const Util::StringAtom& name,
-    const VkPhysicalDeviceProperties props,
     AnyFX::ShaderEffect* effect,
     Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
     Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
