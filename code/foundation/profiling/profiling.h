@@ -78,10 +78,10 @@ const Util::Array<ProfilingContext> ProfilingGetContexts();
 /// clear all scopes
 void ProfilingClear();
 
-extern Util::Array<ProfilingContext> profilingContexts;
-extern Util::Array<Threading::CriticalSection*> contextMutexes;
-extern Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
-extern Threading::CriticalSection categoryLock;
+extern Util::Array<ProfilingContext> ProfilingContexts;
+extern Util::Array<Threading::CriticalSection*> ContextMutexes;
+extern Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> ScopesByCategory;
+extern Threading::CriticalSection CategoryLock;
 
 /// atomic counter used to give each thread a unique id
 extern Threading::AtomicCounter ProfilingContextCounter;
@@ -107,6 +107,11 @@ const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>& ProfilingGetBud
 extern Threading::CriticalSection counterLock;
 extern Util::Dictionary<const char*, Util::Pair<uint64, uint64>> budgetCounters;
 extern Util::Dictionary<const char*, uint64> counters;
+
+/// Enable profiling
+void ProfilingEnable(bool enabled);
+
+extern Threading::Interlocked::AtomicInt Enabled;
 
 struct ProfilingScope
 {

@@ -62,45 +62,55 @@ int64 Decrement(int64 volatile* var);
 
 struct AtomicInt
 {
+    AtomicInt(int init)
+        : value(init)
+    {};
+
     /// Add 
     int Add(int add) 
     {
-        Threading::Interlocked::Add((volatile int*)&this->value, add);
+        return Threading::Interlocked::Add((volatile int*)&this->value, add);
     }
     /// Subtract
     int Sub(int sub)
     {
-        Threading::Interlocked::Add((volatile int*)&this->value, -sub);
+        return Threading::Interlocked::Add((volatile int*)&this->value, -sub);
     }
     /// Or
     int Or(int mask)
     {
-        Threading::Interlocked::Or((volatile int*)&this->value, mask);
+        return Threading::Interlocked::Or((volatile int*)&this->value, mask);
     }
     /// And
     int And(int mask)
     {
-        Threading::Interlocked::And((volatile int*)&this->value, mask);
+        return Threading::Interlocked::And((volatile int*)&this->value, mask);
     }
     /// Exchange
     int Exchange(int value)
     {
-        Threading::Interlocked::Exchange((volatile int*)&this->value, value);
+        return Threading::Interlocked::Exchange((volatile int*)&this->value, value);
     }
     /// Compare and exchange
     int CompareExchange(int exchange, int comparand)
     {
-        Threading::Interlocked::CompareExchange((volatile int*)&this->value, exchange, comparand);
+        return Threading::Interlocked::CompareExchange((volatile int*)&this->value, exchange, comparand);
     }
     /// Increment and return new value
     int Increment(int incr)
     {
-        Threading::Interlocked::Increment((volatile int*)&this->value);
+        return Threading::Interlocked::Increment((volatile int*)&this->value);
     }
     /// Decrement and return new value
     int Decrement(int decr)
     {
-        Threading::Interlocked::Decrement((volatile int*)&this->value);
+        return Threading::Interlocked::Decrement((volatile int*)&this->value);
+    }
+
+    /// Get value
+    int Load()
+    {
+        return this->value;
     }
 
 private:
@@ -112,42 +122,42 @@ struct AtomicInt64
     /// Add 
     int64 Add(int64 add) 
     {
-        Threading::Interlocked::Add((volatile int64*)&this->value, add);
+        return Threading::Interlocked::Add((volatile int64*)&this->value, add);
     }
     /// Subtract
     int64 Sub(int64 sub)
     {
-        Threading::Interlocked::Add((volatile int64*)&this->value, -sub);
+        return Threading::Interlocked::Add((volatile int64*)&this->value, -sub);
     }
     /// Or
     int64 Or(int64 mask)
     {
-        Threading::Interlocked::Or((volatile int64*)&this->value, mask);
+        return Threading::Interlocked::Or((volatile int64*)&this->value, mask);
     }
     /// And
     int64 And(int64 mask)
     {
-        Threading::Interlocked::And((volatile int64*)&this->value, mask);
+        return Threading::Interlocked::And((volatile int64*)&this->value, mask);
     }
     /// Exchange
     int64 Exchange(int64 value)
     {
-        Threading::Interlocked::Exchange((volatile int64*)&this->value, value);
+        return Threading::Interlocked::Exchange((volatile int64*)&this->value, value);
     }
     /// Compare and exchange
     int64 CompareExchange(int64 exchange, int64 comparand)
     {
-        Threading::Interlocked::CompareExchange((volatile int64*)&this->value, exchange, comparand);
+        return Threading::Interlocked::CompareExchange((volatile int64*)&this->value, exchange, comparand);
     }
     /// Increment and return new value
     int64 Increment(int64 incr)
     {
-        Threading::Interlocked::Increment((volatile int64*)&this->value);
+        return Threading::Interlocked::Increment((volatile int64*)&this->value);
     }
     /// Decrement and return new value
     int64 Decrement(int64 decr)
     {
-        Threading::Interlocked::Decrement((volatile int64*)&this->value);
+        return Threading::Interlocked::Decrement((volatile int64*)&this->value);
     }
 private:
     volatile int64 value;

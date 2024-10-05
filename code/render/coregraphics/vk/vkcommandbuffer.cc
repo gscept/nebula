@@ -1572,20 +1572,23 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
 
 #if NEBULA_ENABLE_PROFILING
-    CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
-    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id);
-    VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
-    if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
+    if (Profiling::Enabled.Load())
     {
-        QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
-        CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id);
-        FrameProfilingMarker marker;
-        marker.color = color;
-        marker.name = name;
-        marker.queue = usage;
-        marker.gpuBegin = chunk.offset + chunk.queryCount++;
-        vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, marker.gpuBegin);
-        markers.markerStack.Push(marker);
+        CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+        QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id);
+        VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
+        if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
+        {
+            QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
+            CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id);
+            FrameProfilingMarker marker;
+            marker.color = color;
+            marker.name = name;
+            marker.queue = usage;
+            marker.gpuBegin = chunk.offset + chunk.queryCount++;
+            vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, pool, marker.gpuBegin);
+            markers.markerStack.Push(marker);
+        }
     }
 #endif
 
@@ -1620,24 +1623,28 @@ void
 CmdEndMarker(const CmdBufferId id)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
+    
 
 #if NEBULA_ENABLE_PROFILING
-    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id);
-    VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
-    if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
+    if (Profiling::Enabled.Load())
     {
-        QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
-        CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
-        n_assert(!markers.markerStack.IsEmpty());
-        FrameProfilingMarker marker = markers.markerStack.Pop();
-        marker.gpuEnd = chunk.offset + chunk.queryCount++;
-        vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, marker.gpuEnd);
+        QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id);
+        VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
+        if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
+        {
+            QueryBundle::QueryChunk& chunk = queryBundle.GetChunk(CoreGraphics::TimestampsQueryType);
+            CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+            n_assert(!markers.markerStack.IsEmpty());
+            FrameProfilingMarker marker = markers.markerStack.Pop();
+            marker.gpuEnd = chunk.offset + chunk.queryCount++;
+            vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, marker.gpuEnd);
 
-        // Push marker to finished list
-        if (markers.markerStack.IsEmpty())
-            markers.finishedMarkers.Append(marker);
-        else
-            markers.markerStack.Peek().children.Append(marker);
+            // Push marker to finished list
+            if (markers.markerStack.IsEmpty())
+                markers.finishedMarkers.Append(marker);
+            else
+                markers.markerStack.Peek().children.Append(marker);
+        }
     }
 #endif
     VkCmdDebugMarkerEnd(cmdBuf);
