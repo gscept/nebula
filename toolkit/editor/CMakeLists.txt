@@ -90,6 +90,8 @@ fips_dir(editor)
                 history.h
                 outline.cc
                 outline.h
+                profiler.cc
+                profiler.h
                 resourcebrowser.cc
                 resourcebrowser.h
                 styleeditor.cc

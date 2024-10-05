@@ -16,6 +16,7 @@
 #include "windows/assetbrowser.h"
 #include "windows/asseteditor/asseteditor.h"
 #include "windows/resourcebrowser.h"
+#include "windows/profiler.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
@@ -66,7 +67,8 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::Inspector", "Inspector");
     windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");
     windowServer->RegisterWindow("Presentation::AssetEditor", "Asset Editor", "Editor");
-    windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser", "Resources");
+    windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser");
+    windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     
     Icons::play          = NLoadIcon("systex:icon_play.dds");
     Icons::pause         = NLoadIcon("systex:icon_pause.dds");
