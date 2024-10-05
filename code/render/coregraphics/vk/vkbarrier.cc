@@ -180,8 +180,8 @@ BarrierPush(const CoreGraphics::CmdBufferId buf
     , CoreGraphics::PipelineStage fromStage
     , CoreGraphics::PipelineStage toStage
     , CoreGraphics::BarrierDomain domain
-    , const Util::FixedArray<TextureBarrierInfo>& textures
-    , const Util::FixedArray<BufferBarrierInfo>& buffers)
+    , const Util::FixedArray<TextureBarrierInfo, true>& textures
+    , const Util::FixedArray<BufferBarrierInfo, true>& buffers)
 {
     // first insert the barrier as is
     CmdBarrier(buf, fromStage, toStage, domain, textures, buffers, nullptr);
@@ -206,7 +206,7 @@ BarrierPush(const CoreGraphics::CmdBufferId buf
     , CoreGraphics::PipelineStage fromStage
     , CoreGraphics::PipelineStage toStage
     , CoreGraphics::BarrierDomain domain
-    , const Util::FixedArray<TextureBarrierInfo>& textures)
+    , const Util::FixedArray<TextureBarrierInfo, true>& textures)
 {
     // first insert the barrier as is
     CmdBarrier(buf, fromStage, toStage, domain, textures, nullptr, nullptr);
@@ -231,7 +231,7 @@ BarrierPush(const CoreGraphics::CmdBufferId buf
     , CoreGraphics::PipelineStage fromStage
     , CoreGraphics::PipelineStage toStage
     , CoreGraphics::BarrierDomain domain
-    , const Util::FixedArray<BufferBarrierInfo>& buffers)
+    , const Util::FixedArray<BufferBarrierInfo, true>& buffers)
 {
     // first insert the barrier as is
     CmdBarrier(buf, fromStage, toStage, domain, nullptr, buffers, nullptr);

@@ -210,7 +210,7 @@ void CmdBarrier(
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
-            const Util::FixedArray<TextureBarrierInfo>& textures,
+            const Util::FixedArray<TextureBarrierInfo, true>& textures,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
@@ -221,7 +221,7 @@ void CmdBarrier(
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
-            const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const Util::FixedArray<BufferBarrierInfo, true>& buffers,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
@@ -232,7 +232,7 @@ void CmdBarrier(
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
-            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
+            const Util::FixedArray<AccelerationStructureBarrierInfo, true>& accelerationStructures,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
@@ -243,9 +243,9 @@ void CmdBarrier(
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
-            const Util::FixedArray<TextureBarrierInfo>& textures,
-            const Util::FixedArray<BufferBarrierInfo>& buffers,
-            const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
+            const Util::FixedArray<TextureBarrierInfo, true>& textures,
+            const Util::FixedArray<BufferBarrierInfo, true>& buffers,
+            const Util::FixedArray<AccelerationStructureBarrierInfo, true>& accelerationStructures,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
@@ -257,8 +257,8 @@ void CmdHandover(
             const CmdBufferId to,
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
-            const Util::FixedArray<TextureBarrierInfo>& textures,
-            const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const Util::FixedArray<TextureBarrierInfo, true>& textures,
+            const Util::FixedArray<BufferBarrierInfo, true>& buffers,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
@@ -324,34 +324,34 @@ void CmdDrawMeshlets(const CmdBufferId id, int dimX, int dimY, int dimZ);
 void CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::TextureId fromTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& from
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& from
     , const CoreGraphics::TextureId toTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& to
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& to
 );
 /// Copy from texture to buffer
 void CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::TextureId fromTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& from
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& to
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& to
 );
 /// Copy between buffers
 void CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::BufferId fromBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& from
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& to
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& to
     , const SizeT size
 );
 /// Copy from buffer to texture
 void CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::BufferId fromBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& from
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::TextureId toTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& to
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& to
 );
 /// Blit textures
 void CmdBlit(
@@ -363,9 +363,9 @@ void CmdBlit(
 );
 
 /// Set viewport array
-void CmdSetViewports(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> viewports);
+void CmdSetViewports(const CmdBufferId id, const Util::FixedArray<Math::rectangle<int>>& viewports);
 /// Set scissor array
-void CmdSetScissors(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> rects);
+void CmdSetScissors(const CmdBufferId id, const Util::FixedArray<Math::rectangle<int>>& rects);
 /// Sets a viewport for a certain index
 void CmdSetViewport(const CmdBufferId id, const Math::rectangle<int>& rect, int index);
 /// Sets a scissor rect for a certain index

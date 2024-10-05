@@ -41,6 +41,24 @@ ArrayAlloc(size_t size)
 /**
 */
 template<typename TYPE>
+TYPE*
+ArrayAllocStack(size_t size)
+{
+    TYPE* buffer = (TYPE*)StackAlloc(size * sizeof(TYPE));
+    if constexpr (!std::is_trivially_constructible<TYPE>::value)
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            ::new(&buffer[i]) TYPE;
+        }
+    }
+    return buffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
 void 
 ArrayFree(size_t size, TYPE* buffer)
 {
@@ -52,4 +70,21 @@ ArrayFree(size_t size, TYPE* buffer)
         }
     }
     Memory::Free(Memory::ObjectArrayHeap, (void*)buffer);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+void
+ArrayFreeStack(size_t size, TYPE* buffer)
+{
+    if constexpr (!std::is_trivially_destructible<TYPE>::value)
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            buffer[i].~TYPE();
+        }
+    }
+    StackFree((void*)buffer);
 }

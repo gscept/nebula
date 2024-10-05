@@ -206,9 +206,9 @@ struct BarrierScope
     void Flush()
     {
         if (!this->textures.IsEmpty())
-            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, this->textures, InvalidIndex, InvalidIndex, this->name);
+            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, std::move(this->textures), InvalidIndex, InvalidIndex, this->name);
         if (!this->buffers.IsEmpty())
-            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, this->buffers, InvalidIndex, InvalidIndex, this->name);
+            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, std::move(this->buffers), InvalidIndex, InvalidIndex, this->name);
         this->buffers.Clear();
         this->textures.Clear();
     }
@@ -249,22 +249,22 @@ void BarrierPush(
     CoreGraphics::PipelineStage fromStage,
     CoreGraphics::PipelineStage toStage,
     CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<TextureBarrierInfo>& textures,
-    const Util::FixedArray<BufferBarrierInfo>& buffers);
+    const Util::FixedArray<TextureBarrierInfo, true>& textures,
+    const Util::FixedArray<BufferBarrierInfo, true>& buffers);
 /// Push barrier to stack
 void BarrierPush(
     const CoreGraphics::CmdBufferId buf,
     CoreGraphics::PipelineStage fromStage,
     CoreGraphics::PipelineStage toStage,
     CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<TextureBarrierInfo>& textures);
+    const Util::FixedArray<TextureBarrierInfo, true>& textures);
 /// Push barrier to stack
 void BarrierPush(
     const CoreGraphics::CmdBufferId buf,
     CoreGraphics::PipelineStage fromStage,
     CoreGraphics::PipelineStage toStage,
     CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<BufferBarrierInfo>& buffers);
+    const Util::FixedArray<BufferBarrierInfo, true>& buffers);
 /// pop barrier, reverses the from-to stages and any access flags in the buffers and texture barriers
 void BarrierPop(const CoreGraphics::CmdBufferId buf);
 /// repeat barrier in queue

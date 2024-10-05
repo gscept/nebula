@@ -185,7 +185,7 @@ ResourceLoader::Update(IndexT frameIndex)
     this->UpdateLoaderSyncState();
 
     // Iterate through async outputs and update loader state
-    Util::Array<ResourceLoadOutput> asyncOutputs(128, 8);
+    Util::Array<ResourceLoadOutput, 128> asyncOutputs;
     this->loadOutputs.DequeueAll(asyncOutputs);
     for (auto output : asyncOutputs)
     {
@@ -193,7 +193,7 @@ ResourceLoader::Update(IndexT frameIndex)
     }
 
     // Make a copy since ImmediateJob might add jobs to the dependentJobs list
-    Util::Array<ResourceLoadJob> dependencyJobs = this->dependentJobs;
+    Util::FixedArray<ResourceLoadJob, true> dependencyJobs = this->dependentJobs;
     this->dependentJobs.Clear();
     for (const auto& job : dependencyJobs)
     {
@@ -244,9 +244,9 @@ ResourceLoader::Update(IndexT frameIndex)
     this->pendingLoads.Clear();
 
     // go through pending lod streams
-    Util::Array<_PendingStreamLod> pendingStreams(128, 8);
+    Util::Array<_PendingStreamLod, 128> pendingStreams;
     this->pendingStreamQueue.DequeueAll(pendingStreams);
-    this->pendingStreamLods.AppendArray(pendingStreams);
+    this->pendingStreamLods.AppendArray(pendingStreams.Begin(), pendingStreams.Size()); 
     for (IndexT i = this->pendingStreamLods.Size() - 1; i >= 0; i--)
     {
         const _PendingStreamLod& streamLod = this->pendingStreamLods[i];

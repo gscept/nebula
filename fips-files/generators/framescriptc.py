@@ -261,8 +261,8 @@ class SubgraphDefinition:
         file.WriteLine("")
         if len(self.disabledBindings) > 0:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
-        file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> SubgraphTextureDependencies_{};'.format(self.name))
-        file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> SubgraphBufferDependencies_{};'.format(self.name))
+        file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> SubgraphTextureDependencies_{};'.format(self.name))
+        file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> SubgraphBufferDependencies_{};'.format(self.name))
         file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);\n".format(self.name))
         file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
 
@@ -270,7 +270,7 @@ class SubgraphDefinition:
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine('void')
-        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> textureDeps)'.format(self.name))
+        file.WriteLine('RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps)'.format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("Subgraph_{} = func;".format(self.name))
@@ -306,7 +306,7 @@ class SubgraphDefinition:
     def FormatHeader(self, file):
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
-        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> textureDeps = nullptr);'.format(self.name))
+        file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
     
     def FormatSource(self, file):
         file.WriteLine("")
@@ -513,7 +513,7 @@ class BlitDefinition:
         file.WriteLine("*/")
         
         if len(self.resourceDependencies) > 0:
-            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> Blit_{}_TextureDependencies;".format(self.name))
+            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> Blit_{}_TextureDependencies;".format(self.name))
 
         file.WriteLine("void")
         file.WriteLine("Initialize_Blit_{}()".format(self.name))
@@ -816,7 +816,7 @@ class PassDefinition:
 
         
         if len(self.resourceDependencies) > 0:
-            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> Pass_{}_TextureDependencies;".format(self.name))
+            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> Pass_{}_TextureDependencies;".format(self.name))
 
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
@@ -1055,7 +1055,7 @@ class SubmissionDefinition:
             op.FormatSource(file)
 
         if len(imports) > 0:
-            file.WriteLine("static Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> EndOfFrameSyncs;")
+            file.WriteLine("static Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> EndOfFrameSyncs;")
             file.WriteLine("EndOfFrameSyncs.Clear();")
             for imp in imports:
                 file.WriteLine("EndOfFrameSyncs.Append({{ TextureIndex::{}, TextureOriginalStage[(uint)TextureIndex::{}] }});".format(imp.name, imp.name))
@@ -1209,7 +1209,7 @@ class FrameScriptGenerator:
         file.WriteLine("Num")
         file.DecreaseIndent()
         file.WriteLine("};")        
-        file.WriteLine("void Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>>& bufferDeps);")
+        file.WriteLine("void Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8>& bufferDeps);")
 
     
         for importBuffer in self.importBuffers:
@@ -1310,7 +1310,7 @@ class FrameScriptGenerator:
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine("inline void")
-        file.WriteLine("Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>>& bufferDeps)")
+        file.WriteLine("Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8>& bufferDeps)")
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("static CoreGraphics::BarrierScope scope; scope.Init(name, buf);")

@@ -291,7 +291,7 @@ MeshLoader::LodMask(const _StreamData& stream, float lod, bool async) const
 void
 MeshLoader::UpdateLoaderSyncState()
 {
-    Util::Array<MeshesToSubmit> meshesToSubmit(128, 8);
+    Util::Array<MeshesToSubmit, 128> meshesToSubmit;
     this->meshesToSubmit.DequeueAll(meshesToSubmit);
 
     // Enqueue cleanups

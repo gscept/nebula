@@ -92,7 +92,7 @@ public:
     /// prepare system with entities to insert into the structure
     virtual void PrepareEntities(const Math::bbox* transforms, const uint32* ranges, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
-    virtual void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters);
+    virtual void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*, true>& extraCounters);
 
     /// Return completion counter for an observer
     const Threading::AtomicCounter GetCompletionCounter(IndexT i) const;

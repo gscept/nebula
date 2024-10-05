@@ -15,7 +15,7 @@ CmdBarrier(const CmdBufferId id
                          , CoreGraphics::PipelineStage fromStage
                          , CoreGraphics::PipelineStage toStage
                          , CoreGraphics::BarrierDomain domain
-                         , const Util::FixedArray<TextureBarrierInfo>& textures
+                         , const Util::FixedArray<TextureBarrierInfo, true>& textures
                          , const IndexT fromQueue
                          , const IndexT toQueue
                          , const char* name)
@@ -31,7 +31,7 @@ CmdBarrier(const CmdBufferId id
                          , CoreGraphics::PipelineStage fromStage
                          , CoreGraphics::PipelineStage toStage
                          , CoreGraphics::BarrierDomain domain
-                         , const Util::FixedArray<BufferBarrierInfo>& buffers
+                         , const Util::FixedArray<BufferBarrierInfo, true>& buffers
                          , const IndexT fromQueue
                          , const IndexT toQueue
                          , const char* name)
@@ -47,7 +47,7 @@ CmdBarrier(const CmdBufferId id
                          , CoreGraphics::PipelineStage fromStage
                          , CoreGraphics::PipelineStage toStage
                          , CoreGraphics::BarrierDomain domain
-                         , const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures
+                         , const Util::FixedArray<AccelerationStructureBarrierInfo, true>& accelerationStructures
                          , const IndexT fromQueue
                          , const IndexT toQueue
                          , const char* name)

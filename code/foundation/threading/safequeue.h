@@ -52,6 +52,9 @@ public:
     TYPE Dequeue();
     /// dequeue all events (only requires one lock)
     void DequeueAll(Util::Array<TYPE>& outArray);
+    /// Dequeue all events to an array with a stack size
+    template<int STACK_SIZE>
+    void DequeueAll(Util::Array<TYPE, STACK_SIZE>& outArray);
     /// access to element at front of queue without removing it
     TYPE Peek() const;
     /// wait until queue contains at least one element
@@ -223,6 +226,27 @@ SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE>& outArray)
         outArray.Append(std::move(this->queue[i]));
     }
     this->queue.Clear();    
+    this->criticalSection.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> 
+template<int STACK_SIZE>
+void
+SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE, STACK_SIZE>& outArray)
+{
+    this->criticalSection.Enter();
+#if NEBULA_ENABLE_PERFORMANCE_WARNINGS
+    n_warn_fmt(outArray.Capacity() >= this->queue.Size(), "SafeQueue::DequeueAll(): (PERFORMANCE) Output array is too small (%d), requires (%d), array will have to grow.\n", outArray.Capacity(), this->queue.Size());
+#endif
+    outArray.Clear();
+    for (IndexT i = 0; i < this->queue.Size(); i++)
+    {
+        outArray.Append(std::move(this->queue[i]));
+    }
+    this->queue.Clear();
     this->criticalSection.Leave();
 }
 

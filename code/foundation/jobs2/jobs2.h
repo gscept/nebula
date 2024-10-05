@@ -185,7 +185,7 @@ extern const Threading::AtomicCounter* prevDoneCounter;
 extern Threading::ThreadId sequenceThread;
 
 /// Begin a sequence of jobs
-void JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+void JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
     , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr);
 
@@ -224,7 +224,7 @@ JobDispatch(
     LAMBDA&& func
     , const SizeT numInvocations
     , const SizeT groupSize
-    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
     , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
@@ -288,7 +288,7 @@ template <typename LAMBDA> void
 JobDispatch(
     LAMBDA&& func
     , const SizeT numInvocations
-    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
     , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
@@ -305,7 +305,7 @@ JobDispatch(
     , const SizeT numInvocations
     , const SizeT groupSize
     , const CTX& context
-    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
     , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )
@@ -376,7 +376,7 @@ JobDispatch(
     const JobFunc& func
     , const SizeT numInvocations
     , const CTX& context
-    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters = nullptr
     , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 )

@@ -16,7 +16,7 @@
 //------------------------------------------------------------------------------
 namespace Util
 {
-template<class TYPE> class FixedArray
+template<class TYPE, bool StackAlloc = false> class FixedArray
 {
 public:
     /// define element iterator
@@ -29,11 +29,15 @@ public:
     /// constructor with size and initial value
     FixedArray(const SizeT s, const TYPE& initialValue);
     /// copy constructor
-    FixedArray(const FixedArray<TYPE>& rhs);
+    FixedArray(const FixedArray<TYPE, false>& rhs);
+    /// copy constructor
+    FixedArray(const FixedArray<TYPE, true>& rhs);
     /// construct from array
     FixedArray(const Array<TYPE>& rhs);
+    /// move from array
+    FixedArray(Array<TYPE>&& rhs);
     /// move constructor
-    FixedArray(FixedArray<TYPE>&& rhs);
+    FixedArray(FixedArray<TYPE, StackAlloc>&& rhs);
     /// constructor from initializer list
     FixedArray(std::initializer_list<TYPE> list);
     /// construct an empty fixed array
@@ -41,15 +45,15 @@ public:
     /// destructor
     ~FixedArray();
     /// assignment operator
-    void operator=(const FixedArray<TYPE>& rhs);
+    void operator=(const FixedArray<TYPE, StackAlloc>& rhs);
     /// move assignment operator
-    void operator=(FixedArray<TYPE>&& rhs) noexcept;
+    void operator=(FixedArray<TYPE, StackAlloc>&& rhs) noexcept;
     /// write [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
-    bool operator==(const FixedArray<TYPE>& rhs) const;
+    bool operator==(const FixedArray<TYPE, StackAlloc>& rhs) const;
     /// inequality operator
-    bool operator!=(const FixedArray<TYPE>& rhs) const;
+    bool operator!=(const FixedArray<TYPE, StackAlloc>& rhs) const;
 
     /// set number of elements (clears existing content)
     void SetSize(SizeT s);
@@ -88,22 +92,27 @@ public:
     size_t size() const;
     void resize(size_t size);
 private:
+
+    template<class T, bool S>
+    friend class FixedArray;
+
     /// delete content
     void Delete();
     /// allocate array for given size
     void Alloc(SizeT s);
     /// copy content
-    void Copy(const FixedArray<TYPE>& src);
+    void Copy(const FixedArray<TYPE, StackAlloc>& src);
 
     SizeT count;
     TYPE* elements;
 };
 
+
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray() :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray() :
     count(0),
     elements(nullptr)
 {
@@ -113,13 +122,22 @@ FixedArray<TYPE>::FixedArray() :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Delete()
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Delete()
 {
     if (this->elements)
     {
-        delete[] this->elements;
+        if constexpr (StackAlloc)
+        {
+            ArrayFreeStack(this->count, this->elements);
+        }
+        else
+        {
+            ArrayFree(this->count, this->elements);
+        }
+
         this->elements = nullptr;
+        
     }
     this->count = 0;
 }
@@ -127,15 +145,22 @@ FixedArray<TYPE>::Delete()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Alloc(SizeT s)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Alloc(SizeT s)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(0 == this->elements) 
+    n_assert(0 == this->elements);
     #endif
     if (s > 0)
     {
-        this->elements = new TYPE[s];
+        if constexpr (StackAlloc)
+        {
+            this->elements = ArrayAllocStack<TYPE>(s);
+        }
+        else
+        {
+            this->elements = ArrayAlloc<TYPE>(s);
+        }
     }
     this->count = s;
 }
@@ -144,10 +169,10 @@ FixedArray<TYPE>::Alloc(SizeT s)
 /**
     NOTE: only works on deleted array. This is intended.
 */
-template<class TYPE> void
-FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Copy(const FixedArray<TYPE, StackAlloc>& rhs)
 {
-    if (this != &rhs && rhs.count > 0)
+    if (this->elements != rhs.elements && rhs.count > 0)
     {
         this->Alloc(rhs.count);
         if constexpr (!std::is_trivially_copyable<TYPE>::value)
@@ -166,8 +191,8 @@ FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(const SizeT s) :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(const SizeT s) :
     count(0),
     elements(nullptr)
 {
@@ -177,8 +202,8 @@ FixedArray<TYPE>::FixedArray(const SizeT s) :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(const SizeT s, const TYPE& initialValue) :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(const SizeT s, const TYPE& initialValue) :
     count(0),
     elements(nullptr)
 {
@@ -189,19 +214,56 @@ FixedArray<TYPE>::FixedArray(const SizeT s, const TYPE& initialValue) :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(const FixedArray<TYPE, true>& rhs) :
     count(0),
     elements(nullptr)
 {
-    this->Copy(rhs);
+    if (this->elements != rhs.elements && rhs.count > 0)
+    {
+        this->Alloc(rhs.count);
+        if constexpr (!std::is_trivially_copyable<TYPE>::value)
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i] = rhs.elements[i];
+            }
+        }
+        else
+            memcpy(this->elements, rhs.elements, this->count * sizeof(TYPE));
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(const Array<TYPE>& rhs) :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(const FixedArray<TYPE, false>& rhs) :
+    count(0),
+    elements(nullptr)
+{
+    if (this->elements != rhs.elements && rhs.count > 0)
+    {
+        this->Alloc(rhs.count);
+        if constexpr (!std::is_trivially_copyable<TYPE>::value)
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i] = rhs.elements[i];
+            }
+        }
+        else
+            memcpy(this->elements, rhs.elements, this->count * sizeof(TYPE));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(const Array<TYPE>& rhs) :
     count(rhs.Size()),
     elements(nullptr)
 {
@@ -224,20 +286,73 @@ FixedArray<TYPE>::FixedArray(const Array<TYPE>& rhs) :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
-    count(rhs.count),
-    elements(rhs.elements)
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(Array<TYPE>&& rhs)
+    : elements(nullptr)
+    , count(0)
 {
-    rhs.count = 0;
-    rhs.elements = nullptr;
+    // If array lives on the stack, then we need to allocate
+    if (rhs.count > 0)
+    {
+        if (rhs.stackElements.data() == rhs.elements || StackAlloc)
+        {
+            this->Alloc(rhs.count);
+            if constexpr (!std::is_trivially_copyable<TYPE>::value)
+            {
+                IndexT i;
+                for (i = 0; i < this->count; i++)
+                {
+                    this->elements[i] = rhs.Begin()[i];
+                }
+            }
+            else
+                memcpy(this->elements, rhs.Begin(), this->count * sizeof(TYPE));
+        }
+        else
+        {
+            this->elements = rhs.elements;
+            rhs.elements = nullptr;
+            this->count = rhs.count;
+            rhs.capacity = 0;
+            rhs.count = 0;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(std::initializer_list<TYPE> list) :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(FixedArray<TYPE, StackAlloc>&& rhs) :
+    count(rhs.count),
+    elements(rhs.elements)
+{
+    if constexpr (StackAlloc)
+    {
+        this->Alloc(rhs.count);
+        if constexpr (!std::is_trivially_copyable<TYPE>::value)
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i] = rhs.Begin()[i];
+            }
+        }
+        else
+            memcpy(this->elements, rhs.Begin(), this->count * sizeof(TYPE));
+    }
+    else
+    {
+        rhs.count = 0;
+        rhs.elements = nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(std::initializer_list<TYPE> list) :
     count(0),
     elements(nullptr)
 {
@@ -257,8 +372,8 @@ FixedArray<TYPE>::FixedArray(std::initializer_list<TYPE> list) :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::FixedArray(std::nullptr_t) :
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::FixedArray(std::nullptr_t) :
     count(0),
     elements(nullptr)
 {
@@ -267,8 +382,8 @@ FixedArray<TYPE>::FixedArray(std::nullptr_t) :
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE>
-FixedArray<TYPE>::~FixedArray()
+template<class TYPE, bool StackAlloc>
+FixedArray<TYPE, StackAlloc>::~FixedArray()
 {
     this->Delete();
 }
@@ -276,8 +391,8 @@ FixedArray<TYPE>::~FixedArray()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::operator=(const FixedArray<TYPE, StackAlloc>& rhs)
 {
     if (this != &rhs)
     {
@@ -289,8 +404,8 @@ FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs) noexcept
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::operator=(FixedArray<TYPE, StackAlloc>&& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -305,8 +420,8 @@ FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs) noexcept
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> TYPE&
-FixedArray<TYPE>::operator[](IndexT index) const
+template<class TYPE, bool StackAlloc> TYPE&
+FixedArray<TYPE, StackAlloc>::operator[](IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (index < this->count));
@@ -317,8 +432,8 @@ FixedArray<TYPE>::operator[](IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> bool
-FixedArray<TYPE>::operator==(const FixedArray<TYPE>& rhs) const
+template<class TYPE, bool StackAlloc> bool
+FixedArray<TYPE, StackAlloc>::operator==(const FixedArray<TYPE, StackAlloc>& rhs) const
 {
     if (this->count != rhs.count)
     {
@@ -345,8 +460,8 @@ FixedArray<TYPE>::operator==(const FixedArray<TYPE>& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> bool
-FixedArray<TYPE>::operator!=(const FixedArray<TYPE>& rhs) const
+template<class TYPE, bool StackAlloc> bool
+FixedArray<TYPE, StackAlloc>::operator!=(const FixedArray<TYPE, StackAlloc>& rhs) const
 {
     return !(*this == rhs);
 }
@@ -354,8 +469,8 @@ FixedArray<TYPE>::operator!=(const FixedArray<TYPE>& rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::SetSize(SizeT s)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::SetSize(SizeT s)
 {
     this->Delete();
     this->Alloc(s);
@@ -364,8 +479,8 @@ FixedArray<TYPE>::SetSize(SizeT s)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Resize(SizeT newSize)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Resize(SizeT newSize)
 {
     // allocate new array and copy over old elements
     if (newSize == this->count)
@@ -374,7 +489,14 @@ FixedArray<TYPE>::Resize(SizeT newSize)
     TYPE* newElements = 0;
     if (newSize > 0)
     {
-        newElements = new TYPE[newSize];
+        if constexpr (StackAlloc)
+        {
+            newElements = ArrayAllocStack<TYPE>(newSize);
+        }
+        else
+        {
+            newElements = ArrayAlloc<TYPE>(newSize);
+        }
         SizeT numCopy = this->count;
         if (numCopy > 0)
         {
@@ -406,8 +528,8 @@ FixedArray<TYPE>::Resize(SizeT newSize)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> const SizeT
-FixedArray<TYPE>::Size() const
+template<class TYPE, bool StackAlloc> const SizeT
+FixedArray<TYPE, StackAlloc>::Size() const
 {
     return this->count;
 }
@@ -415,8 +537,8 @@ FixedArray<TYPE>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> const SizeT
-FixedArray<TYPE>::ByteSize() const
+template<class TYPE, bool StackAlloc> const SizeT
+FixedArray<TYPE, StackAlloc>::ByteSize() const
 {
     return this->count * sizeof(TYPE);
 }
@@ -424,8 +546,8 @@ FixedArray<TYPE>::ByteSize() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> bool
-FixedArray<TYPE>::IsEmpty() const
+template<class TYPE, bool StackAlloc> bool
+FixedArray<TYPE, StackAlloc>::IsEmpty() const
 {
     return 0 == this->count;
 }
@@ -433,8 +555,8 @@ FixedArray<TYPE>::IsEmpty() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Clear()
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Clear()
 {
     this->Delete();
 }
@@ -442,8 +564,8 @@ FixedArray<TYPE>::Clear()
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Fill(const TYPE& val)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Fill(const TYPE& val)
 {
     IndexT i;
     for (i = 0; i < this->count; i++)
@@ -455,8 +577,8 @@ FixedArray<TYPE>::Fill(const TYPE& val)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Fill(IndexT first, SizeT num, const TYPE& val)
 {
     #if NEBULA_BOUNDSCHECKS
     n_assert((first + num) <= this->count);
@@ -472,8 +594,8 @@ FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> typename FixedArray<TYPE>::Iterator
-FixedArray<TYPE>::Begin() const
+template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Iterator
+FixedArray<TYPE, StackAlloc>::Begin() const
 {
     return this->elements;
 }
@@ -481,8 +603,8 @@ FixedArray<TYPE>::Begin() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> typename FixedArray<TYPE>::Iterator
-FixedArray<TYPE>::End() const
+template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Iterator
+FixedArray<TYPE, StackAlloc>::End() const
 {
     return this->elements + this->count;
 }
@@ -490,8 +612,8 @@ FixedArray<TYPE>::End() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> typename FixedArray<TYPE>::Iterator
-FixedArray<TYPE>::Find(const TYPE& elm) const
+template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Iterator
+FixedArray<TYPE, StackAlloc>::Find(const TYPE& elm) const
 {
     IndexT i;
     for (i = 0; i < this->count; i++)
@@ -507,8 +629,8 @@ FixedArray<TYPE>::Find(const TYPE& elm) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> IndexT
-FixedArray<TYPE>::FindIndex(const TYPE& elm) const
+template<class TYPE, bool StackAlloc> IndexT
+FixedArray<TYPE, StackAlloc>::FindIndex(const TYPE& elm) const
 {
     IndexT i;
     for (i = 0; i < this->count; i++)
@@ -524,8 +646,8 @@ FixedArray<TYPE>::FindIndex(const TYPE& elm) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::Sort()
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::Sort()
 {
     std::sort(this->Begin(), this->End());
 }
@@ -534,8 +656,8 @@ FixedArray<TYPE>::Sort()
 /**
     @todo hmm, this is copy-pasted from Array...
 */
-template<class TYPE> IndexT
-FixedArray<TYPE>::BinarySearchIndex(const TYPE& elm) const
+template<class TYPE, bool StackAlloc> IndexT
+FixedArray<TYPE, StackAlloc>::BinarySearchIndex(const TYPE& elm) const
 {
     SizeT num = this->Size();
     if (num > 0)
@@ -587,8 +709,8 @@ FixedArray<TYPE>::BinarySearchIndex(const TYPE& elm) const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> Array<TYPE>
-FixedArray<TYPE>::AsArray() const
+template<class TYPE, bool StackAlloc> Array<TYPE>
+FixedArray<TYPE, StackAlloc>::AsArray() const
 {
     Array<TYPE> result;
     result.Reserve(this->count);
@@ -603,8 +725,8 @@ FixedArray<TYPE>::AsArray() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> typename FixedArray<TYPE>::Iterator
-FixedArray<TYPE>::begin() const
+template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Iterator
+FixedArray<TYPE, StackAlloc>::begin() const
 {
     return this->elements;
 }
@@ -612,8 +734,8 @@ FixedArray<TYPE>::begin() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> typename FixedArray<TYPE>::Iterator
-FixedArray<TYPE>::end() const
+template<class TYPE, bool StackAlloc> typename FixedArray<TYPE, StackAlloc>::Iterator
+FixedArray<TYPE, StackAlloc>::end() const
 {
     return this->elements + this->count;
 }
@@ -621,8 +743,8 @@ FixedArray<TYPE>::end() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
-FixedArray<TYPE>::resize(size_t s)
+template<class TYPE, bool StackAlloc> void
+FixedArray<TYPE, StackAlloc>::resize(size_t s)
 {
     if (s > this->capacity)
     {
@@ -634,8 +756,8 @@ FixedArray<TYPE>::resize(size_t s)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> size_t
-FixedArray<TYPE>::size() const
+template<class TYPE, bool StackAlloc> size_t
+FixedArray<TYPE, StackAlloc>::size() const
 {
     return this->count;
 }

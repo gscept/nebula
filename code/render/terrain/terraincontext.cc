@@ -191,12 +191,12 @@ struct
     Util::Array<TerrainTileWrite::TileWrite>                                 tileWrites;
     Util::Array<TerrainTileWrite::TileWrite>                                 tileWritesThisFrame;
 
-    Util::Array<CoreGraphics::BufferCopy>                           indirectionBufferUpdatesThisFrame;
-    Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureUpdatesThisFrame;
-    Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureFromCopiesThisFrame;
-    Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureToCopiesThisFrame;
-    Util::Array<CoreGraphics::BufferCopy>                           indirectionBufferClearsThisFrame;
-    Util::Array<CoreGraphics::TextureCopy>                          indirectionTextureClearsThisFrame;
+    Util::Array<CoreGraphics::BufferCopy, 4>                        indirectionBufferUpdatesThisFrame;
+    Util::Array<CoreGraphics::TextureCopy, 4>                       indirectionTextureUpdatesThisFrame;
+    Util::Array<CoreGraphics::TextureCopy, 4>                       indirectionTextureFromCopiesThisFrame;
+    Util::Array<CoreGraphics::TextureCopy, 4>                       indirectionTextureToCopiesThisFrame;
+    Util::Array<CoreGraphics::BufferCopy, 4>                        indirectionBufferClearsThisFrame;
+    Util::Array<CoreGraphics::TextureCopy, 4>                       indirectionTextureClearsThisFrame;
     uint numPixels;
 
 } terrainVirtualTileState;
@@ -1186,8 +1186,7 @@ TerrainContext::SetupTerrain(
     using namespace CoreGraphics;
     const Graphics::ContextEntityId cid = GetContextId(entity);
     TerrainRuntimeInfo& runtimeInfo = terrainAllocator.Get<Terrain_RuntimeInfo>(cid.id);
-    runtimeInfo.enableRayTracing = false;
-    //CoreGraphics::RayTracingSupported& enableRayTracing;
+    runtimeInfo.enableRayTracing = CoreGraphics::RayTracingSupported && enableRayTracing;
 
     runtimeInfo.worldWidth = terrainState.settings.worldSizeX;
     runtimeInfo.worldHeight = terrainState.settings.worldSizeZ;

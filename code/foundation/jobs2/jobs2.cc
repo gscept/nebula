@@ -292,7 +292,7 @@ Threading::ThreadId sequenceThread;
 */
 void
 JobBeginSequence(
-    const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters
+    const Util::FixedArray<const Threading::AtomicCounter*, true>& waitCounters
     , Threading::AtomicCounter* doneCounter
     , Threading::Event* signalEvent)
 {

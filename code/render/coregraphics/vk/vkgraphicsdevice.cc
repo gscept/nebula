@@ -997,15 +997,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     }
 
     // create device
-    Util::FixedArray<Util::FixedArray<float>> prios;
     Util::Array<VkDeviceQueueCreateInfo> queueInfos;
-    prios.Resize(uniqueQueues.Size());
-
     for (i = 0; i < uniqueQueues.Size(); i++)
     {
         auto& [family, count] = uniqueQueues.KeyValuePairAtIndex(i);
-        prios[i].Resize(count);
-        prios[i].Fill(1.0f);
+        Util::FixedArray<float, true> prios;
+        prios.Resize(count);
+        prios.Fill(1.0f);
         queueInfos.Append(
             {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -1013,7 +1011,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
                 0,
                 family,
                 count,
-                &prios[i][0]
+                prios.Begin()
             });
     }
 
@@ -1666,9 +1664,9 @@ AddSubmissionEvent(const CoreGraphics::SubmissionWaitEvent& event)
 */
 CoreGraphics::SubmissionWaitEvent
 SubmitCommandBuffers(
-    const Util::Array<CoreGraphics::CmdBufferId>& cmds
+    const Util::Array<CoreGraphics::CmdBufferId, 8>& cmds
     , CoreGraphics::QueueType type
-    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
+    , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name
 #endif
@@ -1676,7 +1674,7 @@ SubmitCommandBuffers(
 {
     // Append submission
     Threading::CriticalScope _0(&submitLock);
-    Util::Array<VkCommandBuffer> vkBufs;
+    Util::Array<VkCommandBuffer, 16> vkBufs;
     vkBufs.Reserve(cmds.Size());
     for (auto cmd : cmds)
         vkBufs.Append(CmdBufferGetVk(cmd));
@@ -1725,7 +1723,7 @@ SubmitImmediateCommandBuffers()
     transferLock.Enter();
     if (!state.setupTransferCommandBuffers.IsEmpty())
     {
-        Util::Array<VkCommandBuffer> vkBufs;
+        Util::Array<VkCommandBuffer, 16> vkBufs;
         vkBufs.Reserve(state.setupTransferCommandBuffers.Size());
         for (auto cmdBuf : state.setupTransferCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
@@ -1745,7 +1743,7 @@ SubmitImmediateCommandBuffers()
 
     if (!state.handoverTransferCommandBuffers.IsEmpty())
     {
-        Util::Array<VkCommandBuffer> vkBufs;
+        Util::Array<VkCommandBuffer, 16> vkBufs;
         vkBufs.Reserve(state.handoverTransferCommandBuffers.Size());
         for (auto cmdBuf : state.handoverTransferCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
@@ -1767,7 +1765,7 @@ SubmitImmediateCommandBuffers()
     setupLock.Enter();
     if (!state.setupGraphicsCommandBuffers.IsEmpty())
     {
-        Util::Array<VkCommandBuffer> vkBufs;
+        Util::Array<VkCommandBuffer, 16> vkBufs;
         vkBufs.Reserve(state.setupGraphicsCommandBuffers.Size());
         for (auto cmdBuf : state.setupGraphicsCommandBuffers)
             vkBufs.Append(CmdBufferGetVk(cmdBuf));
