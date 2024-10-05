@@ -22,7 +22,7 @@ BruteforceSystem::Setup(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
+BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*, true>& extraCounters)
 {
     IndexT i;
     for (i = 0; i < this->obs.count; i++)
@@ -33,7 +33,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         this->obs.completionCounters[i] = 1;
 
         // Setup counters
-        Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters == nullptr ? 0 : 1));
+        Util::FixedArray<const Threading::AtomicCounter*, true> counters(extraCounters.Size() + (previousSystemCompletionCounters == nullptr ? 0 : 1));
         if (!extraCounters.IsEmpty())
             Memory::CopyElements(extraCounters.Begin(), counters.Begin(), extraCounters.Size());
         if (previousSystemCompletionCounters != nullptr)

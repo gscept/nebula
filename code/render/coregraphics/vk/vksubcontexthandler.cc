@@ -131,7 +131,7 @@ uint64
 VkSubContextHandler::AppendSubmissionTimeline(
     CoreGraphics::QueueType type
     , VkCommandBuffer cmds
-    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
+    , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name
 #endif
@@ -142,7 +142,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 
     uint64 ret = GetNextTimelineIndex(type);
 
-    Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[type];
+    Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Emplace();
     sub.buffers.Append(cmds);
     sub.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
@@ -174,8 +174,8 @@ VkSubContextHandler::AppendSubmissionTimeline(
 uint64
 VkSubContextHandler::AppendSubmissionTimeline(
     CoreGraphics::QueueType type
-    , Util::Array<VkCommandBuffer> cmds
-    , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
+    , Util::Array<VkCommandBuffer, 16> cmds
+    , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
     , const char* name
 #endif
@@ -185,7 +185,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
     Threading::CriticalScope _0(&this->submissionLock);
     uint64 ret = GetNextTimelineIndex(type);
 
-    Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[type];
+    Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Emplace();
     sub.buffers.AppendArray(cmds);
     sub.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
@@ -310,7 +310,7 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuff
 void
 VkSubContextHandler::AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem)
 {
-    Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[type];
+    Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Back();
     sub.signalIndices.Append(0);
     sub.signalSemaphores.Append(sem);
@@ -331,11 +331,11 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
     };
     for (auto queueIndex : submissionOrder)
     {
-        Util::Array<TimelineSubmission2>& submissionsForQueue = this->submissions[queueIndex];
+        Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[queueIndex];
         if (submissionsForQueue.IsEmpty())
             continue;
-        Util::FixedArray<VkSubmitInfo> submitInfos(submissionsForQueue.Size());
-        Util::FixedArray<VkTimelineSemaphoreSubmitInfo> timelineInfos(submissionsForQueue.Size());
+        Util::FixedArray<VkSubmitInfo, true> submitInfos(submissionsForQueue.Size());
+        Util::FixedArray<VkTimelineSemaphoreSubmitInfo, true> timelineInfos(submissionsForQueue.Size());
 
         for (int i = 0; i < submissionsForQueue.Size(); i++)
         {

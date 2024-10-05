@@ -743,7 +743,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 n_assert(renderables.nodeTypes[node] == Models::NodeType::CharacterSkinNodeType);
                 Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
                 const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-                Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
+                Util::FixedArray<Math::mat4, true> usedMatrices(usedIndices.Size());
 
                 // update joints, which is stored in character context
                 if (!jointPalette.IsEmpty())

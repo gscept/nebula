@@ -79,7 +79,7 @@ VkShaderServer::UpdateResources()
     VkDevice dev = GetCurrentDevice();
 
     // Setup new views for newly streamed LODs
-    Util::Array<_PendingView> pendingViewsThisFrame(32, 32);
+    Util::Array<_PendingView, 32> pendingViewsThisFrame;
     this->pendingViews.DequeueAll(pendingViewsThisFrame);
 
     // Delete views which have been discarded due to LOD streaming

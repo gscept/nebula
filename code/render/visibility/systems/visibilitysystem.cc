@@ -46,7 +46,7 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, co
 /**
 */
 void
-VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
+VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*, true>& extraCounters)
 {
     // do nothing
 }

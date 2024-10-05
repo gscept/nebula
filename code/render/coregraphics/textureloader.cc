@@ -428,7 +428,7 @@ TextureLoader::Unload(const Resources::ResourceId id)
 void
 TextureLoader::UpdateLoaderSyncState()
 {
-    Util::Array<MipLoadMainThread> mipLoads(128, 8);
+    Util::Array<MipLoadMainThread, 128> mipLoads;
     this->mipLoadsToSubmit.DequeueAll(mipLoads);
     for (const auto& mipLoad : mipLoads)
     {

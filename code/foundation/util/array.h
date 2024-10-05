@@ -222,6 +222,8 @@ public:
     /// grow array with grow value
     void Grow();
 protected:
+    template<class T, bool S>
+    friend class FixedArray;
 
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);

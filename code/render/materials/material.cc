@@ -415,7 +415,7 @@ MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBuffer
 
         // Set instance table
         CoreGraphics::ConstantBufferOffset offset = materialInstanceAllocator.Get<MaterialInstance_Offsets>(id.instance);
-        CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, { offset });
+        CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, 1, &offset);
     }
 }
 

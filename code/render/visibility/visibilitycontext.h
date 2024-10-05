@@ -125,8 +125,8 @@ public:
     {
         uint32 packetOffset;
         uint32 numDrawPackets;
-        Util::Array<VisibilityModelCommand> models;
-        Util::Array<VisibilityDrawCommand> draws;
+        Util::Array<VisibilityModelCommand, 256> models;
+        Util::Array<VisibilityDrawCommand, 1024> draws;
     };
 
     struct VisibilityDrawList

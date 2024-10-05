@@ -692,9 +692,9 @@ CmdBarrier(
         CoreGraphics::PipelineStage fromStage,
         CoreGraphics::PipelineStage toStage,
         CoreGraphics::BarrierDomain domain,
-        const Util::FixedArray<TextureBarrierInfo>& textures,
-        const Util::FixedArray<BufferBarrierInfo>& buffers,
-        const Util::FixedArray<AccelerationStructureBarrierInfo>& accelerationStructures,
+        const Util::FixedArray<TextureBarrierInfo, true>& textures,
+        const Util::FixedArray<BufferBarrierInfo, true>& buffers,
+        const Util::FixedArray<AccelerationStructureBarrierInfo, true>& accelerationStructures,
         const IndexT fromQueue,
         const IndexT toQueue,
         const char* name
@@ -812,8 +812,8 @@ CmdHandover(
     , const CmdBufferId to
     , CoreGraphics::PipelineStage fromStage
     , CoreGraphics::PipelineStage toStage
-    , const Util::FixedArray<TextureBarrierInfo>& textures
-    , const Util::FixedArray<BufferBarrierInfo>& buffers
+    , const Util::FixedArray<TextureBarrierInfo, true>& textures
+    , const Util::FixedArray<BufferBarrierInfo, true>& buffers
     , const IndexT fromQueue
     , const IndexT toQueue
     , const char* name
@@ -1224,15 +1224,15 @@ void
 CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::TextureId fromTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& from
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& from
     , const CoreGraphics::TextureId toTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& to
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& to
 )
 {
     n_assert(from.Size() > 0);
     n_assert(from.Size() == to.Size());
 
-    Util::FixedArray<VkImageCopy> copies(from.Size());
+    Util::FixedArray<VkImageCopy, true> copies(from.Size());
     for (IndexT i = 0; i < copies.Size(); i++)
     {
         n_assert(from[i].bits != ImageBits::Auto && to[i].bits != ImageBits::Auto);
@@ -1255,9 +1255,9 @@ void
 CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::TextureId fromTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& from
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& to
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& to
 )
 {
     n_assert(from.Size() > 0);
@@ -1292,16 +1292,16 @@ void
 CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::BufferId fromBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& from
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::BufferId toBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& to
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& to
     , const SizeT size
 )
 {
     n_assert(from.Size() > 0);
     n_assert(from.Size() == to.Size());
 
-    Util::FixedArray<VkBufferCopy> copies(from.Size());
+    Util::FixedArray<VkBufferCopy, true> copies(from.Size());
     for (IndexT i = 0; i < copies.Size(); i++)
     {
         VkBufferCopy& copy = copies[i];
@@ -1321,9 +1321,9 @@ void
 CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::BufferId fromBuffer
-    , const Util::Array<CoreGraphics::BufferCopy>& from
+    , const Util::Array<CoreGraphics::BufferCopy, 4>& from
     , const CoreGraphics::TextureId toTexture
-    , const Util::Array<CoreGraphics::TextureCopy>& to
+    , const Util::Array<CoreGraphics::TextureCopy, 4>& to
 )
 {
     n_assert(from.Size() > 0);
@@ -1390,7 +1390,7 @@ CmdBlit(
 /**
 */
 void
-CmdSetViewports(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> viewports)
+CmdSetViewports(const CmdBufferId id, const Util::FixedArray<Math::rectangle<int>>& viewports)
 {
     ViewportBundle& pending = commandBuffers.Get<CmdBuffer_PendingViewports>(id.id);
     pending.numPending = 0;
@@ -1411,7 +1411,7 @@ CmdSetViewports(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> vie
 /**
 */
 void
-CmdSetScissors(const CmdBufferId id, Util::FixedArray<Math::rectangle<int>> rects)
+CmdSetScissors(const CmdBufferId id, const Util::FixedArray<Math::rectangle<int>>& rects)
 {
     ScissorBundle& pending = commandBuffers.Get<CmdBuffer_PendingScissors>(id.id);
     pending.numPending = 0;
@@ -1700,8 +1700,8 @@ CmdFinishQueries(const CmdBufferId id)
         const Util::Array<QueryBundle::QueryChunk>& chunks = queryBundle.chunks[i];
         if (!chunks.IsEmpty())
         {
-            Util::FixedArray<IndexT> offsets(chunks.Size());
-            Util::FixedArray<SizeT> counts(chunks.Size());
+            Util::FixedArray<IndexT, true> offsets(chunks.Size());
+            Util::FixedArray<SizeT, true> counts(chunks.Size());
             for (IndexT j = 0; j < chunks.Size(); j++)
             {
                 offsets[j] = chunks[j].offset;

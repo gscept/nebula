@@ -56,12 +56,12 @@ public:
         const char* name = nullptr;
 #endif
         CoreGraphics::QueueType queue;
-        Util::Array<uint64> signalIndices;
-        Util::Array<VkSemaphore> signalSemaphores;
-        Util::Array<VkCommandBuffer> buffers;
-        Util::Array<VkPipelineStageFlags> waitFlags;
-        Util::Array<VkSemaphore> waitSemaphores;
-        Util::Array<uint64> waitIndices;
+        Util::Array<uint64, 16> signalIndices;
+        Util::Array<VkSemaphore, 16> signalSemaphores;
+        Util::Array<VkCommandBuffer, 16> buffers;
+        Util::Array<VkPipelineStageFlags, 16> waitFlags;
+        Util::Array<VkSemaphore, 16> waitSemaphores;
+        Util::Array<uint64, 16> waitIndices;
     };
 
     struct SubmissionList
@@ -73,16 +73,16 @@ public:
     struct SparseBindSubmission
     {
         VkBindSparseInfo bindInfo;
-        Util::Array<uint64> signalIndices;
-        Util::Array<VkSemaphore> signalSemaphores;
+        Util::Array<uint64, 16> signalIndices;
+        Util::Array<VkSemaphore, 16> signalSemaphores;
         Util::FixedArray<VkSparseMemoryBind> opaqueMemoryBinds;
         Util::FixedArray<VkSparseImageMemoryBind> imageMemoryBinds;
         Util::FixedArray<VkSparseMemoryBind> bufferMemoryBinds;
-        Util::Array<VkSparseBufferMemoryBindInfo> bufferMemoryBindInfos;
-        Util::Array<VkSparseImageOpaqueMemoryBindInfo> imageOpaqueBindInfos;
-        Util::Array<VkSparseImageMemoryBindInfo> imageMemoryBindInfos;
-        Util::Array<VkSemaphore> waitSemaphores;
-        Util::Array<uint64> waitIndices;
+        Util::Array<VkSparseBufferMemoryBindInfo, 16> bufferMemoryBindInfos;
+        Util::Array<VkSparseImageOpaqueMemoryBindInfo, 16> imageOpaqueBindInfos;
+        Util::Array<VkSparseImageMemoryBindInfo, 16> imageMemoryBindInfos;
+        Util::Array<VkSemaphore, 16> waitSemaphores;
+        Util::Array<uint64, 16> waitIndices;
     };
 
     /// setup subcontext handler
@@ -96,7 +96,7 @@ public:
     uint64 AppendSubmissionTimeline(
         CoreGraphics::QueueType type
         , VkCommandBuffer cmds
-        , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
+        , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
         , const char* name = nullptr
 #endif
@@ -105,8 +105,8 @@ public:
     /// append submissions to context to execute later, supports waiting for a queue
     uint64 AppendSubmissionTimeline(
         CoreGraphics::QueueType type
-        , Util::Array<VkCommandBuffer> cmds
-        , Util::Array<CoreGraphics::SubmissionWaitEvent> waitEvents
+        , Util::Array<VkCommandBuffer, 16> cmds
+        , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
 #if NEBULA_GRAPHICS_DEBUG
         , const char* name = nullptr
 #endif
@@ -149,7 +149,7 @@ private:
     Util::FixedArray<uint> currentQueue;
     Util::FixedArray<Util::Array<VkSemaphore>> semaphores;
     Util::FixedArray<Util::Array<uint64>> semaphoreSubmissionIds;
-    Util::FixedArray<Util::Array<TimelineSubmission2>> submissions;
+    Util::FixedArray<Util::Array<TimelineSubmission2, 16>> submissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
     Threading::CriticalSection submissionLock;
 };

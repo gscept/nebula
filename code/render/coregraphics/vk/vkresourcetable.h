@@ -59,8 +59,8 @@ typedef Ids::IdAllocator<
     IndexT,
     Threading::Spinlock,
     CoreGraphics::ResourceTableLayoutId,
-    Util::Array<WriteInfo>,
-    Util::Array<VkCopyDescriptorSet>
+    Util::Array<WriteInfo, 16>,
+    Util::Array<VkCopyDescriptorSet, 4>
 > VkResourceTableAllocator;
 extern VkResourceTableAllocator resourceTableAllocator;
 

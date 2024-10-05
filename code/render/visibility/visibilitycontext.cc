@@ -208,7 +208,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
         // Before we create our draws, we have to wait for the constants to be allocated first
         // For particles, that's done before visibility so we can omit it here
-        Util::Array<const Threading::AtomicCounter*> waitCounters =
+        Util::FixedArray<const Threading::AtomicCounter*, true> waitCounters =
         {
             &prevSystemCounters[i],
             &Models::ModelContext::ConstantsUpdateCounter,
@@ -234,18 +234,21 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             if (numNodeInstances == 0)
                 return;
 
-            Util::Array<uint64> indexBuffer(numNodeInstances, 0);
-            Util::Array<Math::ClipStatus::Type> clipStatuses(statuses, numNodeInstances);
+            uint64 visibleCounter = 0;
+            Util::FixedArray<uint64, true> indexBuffer(numNodeInstances);
+            Util::FixedArray<Math::ClipStatus::Type, true> clipStatuses(numNodeInstances);
             for (uint32 i = 0; i < numNodeInstances; i++)
             {
                 // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
                 n_assert(ids[i] < 0xFFFFFFFF);
-                indexBuffer.Append(ids[i]);
+                clipStatuses[visibleCounter] = statuses[i];
+                indexBuffer[visibleCounter] = ids[i];
+                visibleCounter++;
             }
 
             // loop over each node and give them the appropriate weight
             uint32 i = 0;
-            while (i < indexBuffer.Size())
+            while (i < visibleCounter)
             {
                 n_assert(indexBuffer[i] < 0x00000000FFFFFFFF);
                 uint64 index = indexBuffer[i] & 0x00000000FFFFFFFF;
@@ -255,8 +258,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 if (!AllBits(renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active)
                     || clipStatus == Math::ClipStatus::Outside)
                 {
-                    indexBuffer.EraseIndexSwap(i);
-                    clipStatuses.EraseIndexSwap(i);
+                    indexBuffer[i] = indexBuffer[visibleCounter - 1];
+                    clipStatuses[i] = clipStatuses[visibleCounter - 1];
+                    visibleCounter--;
                     continue;
                 }
                 else
@@ -271,11 +275,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 i++;
             }
 
-            if (indexBuffer.IsEmpty())
+            if (visibleCounter == 0)
                 return; // early out
 
             // sort the index buffer
-            std::qsort(indexBuffer.Begin(), indexBuffer.Size(), sizeof(uint64), [](const void* a, const void* b)
+            std::qsort(indexBuffer.Begin(), visibleCounter, sizeof(uint64), [](const void* a, const void* b)
             {
                 uint64 arg1 = *static_cast<const uint64*>(a);
                 uint64 arg2 = *static_cast<const uint64*>(b);
@@ -284,7 +288,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
             // Now resolve the indexbuffer into draw commands
             uint32 numDraws = 0;
-            const uint32 numPackets = indexBuffer.Size();
+            const uint32 numPackets = visibleCounter;
             drawList->drawPackets.Reserve(numPackets);
 
             // Allocate single command which we can 
