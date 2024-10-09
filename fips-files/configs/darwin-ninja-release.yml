@@ -1,0 +1,11 @@
+---
+platform: osx
+generator: Ninja 
+build_tool: ninja
+build_type: Release
+defines:
+    N_USE_MOLTEN_VK: ON
+    N_USE_VULKAN: ON
+    FIPS_RTTI: ON
+    FIPS_EXCEPTIONS: ON
+    N_USE_CURL: OFF

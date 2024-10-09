@@ -15,7 +15,7 @@ namespace System
 {
 typedef Win32::Win32Registry NebulaSettings;
 }
-#elif __LINUX__
+#elif __linux__ || __APPLE__
 #include "system/posix/posixsettings.h"
 namespace System
 {

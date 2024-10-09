@@ -209,7 +209,7 @@ vec4::storeu(scalar* ptr) const
 __forceinline void 
 vec4::store3(scalar* ptr) const
 {
-    __m128 vv = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 vv = _mm_shuffle_ps(this->vec, this->vec, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
     _mm_store_ss(&ptr[2], vv);
 }
@@ -220,8 +220,8 @@ vec4::store3(scalar* ptr) const
 __forceinline void 
 vec4::storeu3(scalar* ptr) const
 {
-    __m128 t1 = _mm_permute_ps(this->vec, _MM_SHUFFLE(1, 1, 1, 1));
-    __m128 t2 = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 t1 = _mm_shuffle_ps(this->vec, this->vec, _MM_SHUFFLE(1, 1, 1, 1));
+    __m128 t2 = _mm_shuffle_ps(this->vec, this->vec, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_store_ss(&ptr[0], this->vec);
     _mm_store_ss(&ptr[1], t1);
     _mm_store_ss(&ptr[2], t2);
@@ -1071,8 +1071,13 @@ permute(const vec4& v0, const vec4& v1, unsigned int i0, unsigned int i1, unsign
     __m128i vSelect = _mm_cmpgt_epi32(vControl, three);
     vControl = _mm_and_si128(vControl, three);
 
+#if N_USE_NEON
+    __m128 shuffled1 = vbslq_f32(vreinterpretq_u32_f32(vControl), v0.vec, v0.vec);
+    __m128 shuffled2 = vbslq_f32(vreinterpretq_u32_f32(vControl), v1.vec, v1.vec);
+#elif N_USE_AVX
     __m128 shuffled1 = _mm_permutevar_ps(v0.vec, vControl);
     __m128 shuffled2 = _mm_permutevar_ps(v1.vec, vControl);
+#endif
 
     __m128 masked1 = _mm_andnot_ps(_mm_castsi128_ps(vSelect), shuffled1);
     __m128 masked2 = _mm_and_ps(_mm_castsi128_ps(vSelect), shuffled2);

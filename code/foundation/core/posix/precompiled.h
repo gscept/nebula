@@ -3,7 +3,7 @@
 #define CORE_POSIX_PRECOMPILED_H
 //------------------------------------------------------------------------------
 /**
-    @file core/win32/precompiled.h
+    @file core/posix/precompiled.h
     
     Contains precompiled headers on the Posix platform.
     
@@ -28,8 +28,12 @@
 #include <limits.h>
 
 // sse intrinsics
+#ifdef __linux__
 #include <emmintrin.h>
 #include <immintrin.h>
+#elif __APPLE__
+#include <sse2neon.h>
+#endif
 
 //------------------------------------------------------------------------------
 #endif

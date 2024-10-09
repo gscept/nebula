@@ -12,7 +12,9 @@ def run(fips_dir, proj_dir, args) :
     """run the 'anyfx' verb"""
     if sys.platform == "win32" :
         target = "anyfxcompiler-windows/anyfxcompiler.exe"        
-    else :
+    elif sys.platform == "darwin":
+        target = "anyfxcompiler-darwin/anyfxcompiler"
+    else:
         target = "anyfxcompiler-linux/anyfxcompiler"        
     if len(args) > 0 :
         noun = args[0]
@@ -26,8 +28,10 @@ def run(fips_dir, proj_dir, args) :
                 log.info(log.YELLOW + "Compiling anyfxcompiler")
                 if sys.platform == "win32" :
                     ext = ".bat"
+                elif sys.platform == "darwin":
+                    ext = "-macos.sh"
                 else:
-                    ext = ".sh"
+                    ext = "-linux.sh"
 
                 if (len(args) > 2 and args[2] == 'quiet'):
                     ret_code = subprocess.call(proj_dir + "/../fips-anyfx/anyfxcompiler/build{}".format(ext), stdout=subprocess.DEVNULL)

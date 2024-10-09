@@ -179,7 +179,7 @@ vector::loadu(const scalar* ptr)
 __forceinline void
 vector::store(scalar* ptr) const
 {
-    __m128 v = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 v = _mm_shuffle_ps(this->vec, this->vec, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
     _mm_store_ss(&ptr[2], v);
 }
@@ -191,8 +191,8 @@ vector::store(scalar* ptr) const
 __forceinline void
 vector::storeu(scalar* ptr) const
 {
-    __m128 t1 = _mm_permute_ps(this->vec, _MM_SHUFFLE(1, 1, 1, 1));
-    __m128 t2 = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 t1 = _mm_shuffle_ps(this->vec, this->vec, _MM_SHUFFLE(1, 1, 1, 1));
+    __m128 t2 = _mm_shuffle_ps(this->vec, this->vec, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_store_ss(&ptr[0], this->vec);
     _mm_store_ss(&ptr[1], t1);
     _mm_store_ss(&ptr[2], t2);
