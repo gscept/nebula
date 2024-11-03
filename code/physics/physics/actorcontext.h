@@ -66,7 +66,10 @@ public:
     static Math::vector GetAngularVelocity(ActorId id);
 
     /// apply a global impulse vector at the next time step at a global position
-    void ApplyImpulseAtPos(ActorId id, const Math::vector& impulse, const Math::point& pos);
+    static void ApplyImpulseAtPos(ActorId id, const Math::vector& impulse, const Math::point& pos);
+
+    /// modify collision callback handling
+    static void SetCollisionFeedback(ActorId id, CollisionFeedback feedback);
 
     // shape stuff
     enum { DefaultShapeAlloc = 16 };

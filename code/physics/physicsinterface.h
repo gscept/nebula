@@ -96,6 +96,19 @@ struct Aggregate
 
 using UpdateFunctionType = void (*) (const Actor&);
 
+struct ContactEvent
+{
+    ActorId actor0;
+    ActorId actor1;
+
+    Math::point position;
+    Math::vector normal;
+    Math::vector impulse;
+    float separation;
+};
+
+using EventCallbackType = void (*) (const Util::Array<ContactEvent>&);
+
 /// physx scene classes, foundation and physics are duplicated here for convenience
 /// instead of static getters, might be removed later on
 struct Scene
@@ -106,8 +119,11 @@ struct Scene
     physx::PxControllerManager *controllerManager;
     physx::PxDefaultCpuDispatcher *dispatcher;
     UpdateFunctionType updateFunction = nullptr;
+    EventCallbackType eventCallback = nullptr;
     Timing::Time time;
     bool isSimulating = false;
+    Util::Array<Physics::ContactEvent> eventBuffer;
+    Util::Set<Ids::Id32> modifiedActors;
 };
 
 /// initialize the physics subsystem and create a default scene
@@ -136,11 +152,12 @@ Physics::Scene& GetScene(IndexT idx = 0);
 
 ///
 void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId = 0);
+///
+void SetEventCallback(EventCallbackType callback, IndexT sceneId = 0);
+
 
 /// render a debug visualization of the level
 void RenderDebug();
-///
-void HandleCollisions();
 
 /// 
 void SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback);

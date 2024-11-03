@@ -83,7 +83,7 @@ public:
     ///
     void onSleep(physx::PxActor** actors, physx::PxU32 count);
     ///
-    void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs) {}
+    void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs);
     ///
     void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count) {}
     ///

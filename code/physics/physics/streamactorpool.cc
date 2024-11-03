@@ -27,7 +27,7 @@ namespace Physics
 {
 
 
-static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& scale);
+static PxShape* GetShapeCopy(PxShape* shape, Math::vec3 const& scale);
 
 StreamActorPool *actorPool = nullptr;
 //------------------------------------------------------------------------------
@@ -88,13 +88,8 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::transform const& 
         
     for (IndexT i = 0; i < info.body.shapes.Size(); i++)
     {
-        PxShape* newShape = info.body.shapes[i];
-        if (isScaled)
-        {
-            newShape = GetScaledShape(newShape, trans.scale);
-        }
+        PxShape* newShape = GetShapeCopy(info.body.shapes[i], trans.scale);
         newActor->attachShape(*newShape);
-            
     }
     if (type == ActorType::Dynamic)
     {
@@ -300,7 +295,7 @@ static void AddCollider(physx::PxGeometryHolder geometry, IndexT material, const
     shapeDebugName = Util::String::Sprintf("%s %s %s %d", name, colliderName.AsCharPtr(), tag.Value(), entry);
     bodyInfo.shapeDebugNames.Append(shapeDebugName);
 #endif
-    PxShape* newShape = CreateColliderShape(geometry, mat.material, Neb2PxTrans(trans), shapeDebugName, false);
+    PxShape* newShape = CreateColliderShape(geometry, mat.material, Neb2PxTrans(trans), shapeDebugName, true);
     bodyInfo.shapes.Append(newShape);
     bodyInfo.densities.Append(GetMaterial(material).density);
 }
@@ -496,7 +491,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
 
        
-    static auto parseBody = [&](const PhysicsResource::BodyT& body) 
+    static auto parseBody = [&,tag](const PhysicsResource::BodyT& body) 
         {
             BodyInfo bodyInfo;
             bodyInfo.feedbackFlag = body.feedback;
@@ -663,7 +658,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
 }
 
 
-static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& inScale)
+static PxShape* GetShapeCopy(PxShape* shape, Math::vec3 const& inScale)
 {
     n_assert(shape != nullptr);
     physx::PxTransform localTrans = shape->getLocalPose();
@@ -714,6 +709,12 @@ static PxShape* GetScaledShape(PxShape* shape, Math::vec3 const& inScale)
             physx::PxTriangleMeshGeometry geom = static_cast<const PxTriangleMeshGeometry&>(geometry);
             physx::PxMeshScale meshScale(scale, physx::PxQuat(physx::PxIDENTITY::PxIdentity));
             holder = physx::PxTriangleMeshGeometry(geom.triangleMesh, meshScale);
+        }
+        break;
+        case physx::PxGeometryType::eHEIGHTFIELD:
+        {
+            // we never copy these
+            return shape;
         }
         break;
         default:

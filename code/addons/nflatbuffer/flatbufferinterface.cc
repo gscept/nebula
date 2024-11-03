@@ -205,7 +205,9 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
             // FIXME could use own writer
             target += "/";
             if (IO::IoServer::Instance()->CreateDirectory(target))
+            {
                 result = flatbuffers::GenerateBinary(*parser, target.AsCharPtr(), filename.AsCharPtr());
+            }
         }
     }
     delete parser;

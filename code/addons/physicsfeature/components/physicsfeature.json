@@ -1,5 +1,9 @@
 {
 	"namespace": "PhysicsFeature",
+	"includes": [
+		"physicsinterface.h",
+		"game/api.h"
+	]
 	"enums": {
 		"ActorType": {
 			"Static": 0,
@@ -23,5 +27,14 @@
 			}
 		},
 		"IsKinematic": {}
+	},
+	"messages": {
+		"ContactEventMessage": {
+			"fourcc": "CEVM",
+			"args": {
+				"entity":  "Game::Entity",
+				"event": "const Physics::ContactEvent&"
+			}
+		}
 	}
 }

@@ -503,7 +503,8 @@ World::ManageEntities()
     {
         auto const cmd = this->allocQueue.Dequeue();
         n_assert(this->IsValid(cmd.entity));
-        this->AllocateInstance(cmd.entity, cmd.tid);
+        //this->AllocateInstance(cmd.entity, cmd.tid);
+        this->FinalizeAllocate(cmd.entity);
     }
 
     // Delete all remaining invalid instances
@@ -578,11 +579,12 @@ World::CreateEntity(EntityCreateInfo const& info)
 
     if (!info.immediate)
     {
+        this->AllocateInstance(cmd.entity, cmd.tid, false);
         this->allocQueue.Enqueue(std::move(cmd));
     }
     else
     {
-        this->AllocateInstance(cmd.entity, cmd.tid);
+        this->AllocateInstance(cmd.entity, cmd.tid, true);
     }
 
     return entity;
@@ -1178,7 +1180,7 @@ World::AllocateInstance(Entity entity, BlueprintId blueprint)
 /**
 */
 MemDb::RowId
-World::AllocateInstance(Entity entity, TemplateId templateId)
+World::AllocateInstance(Entity entity, TemplateId templateId, bool performInitialize)
 {
     n_assert(this->pool.IsValid(entity));
     n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
@@ -1197,11 +1199,20 @@ World::AllocateInstance(Entity entity, TemplateId templateId)
                                .GetBuffer(mapping.instance.partition, Game::Entity::Traits::fixed_column_index);
     owners[mapping.instance.index] = entity;
 
-    InitializeAllComponents(entity, mapping.table, mapping.instance);
+    if (performInitialize)
+    {
+        InitializeAllComponents(entity, mapping.table, mapping.instance);
+    }
 
     return mapping.instance;
 }
 
+void 
+World::FinalizeAllocate(Entity entity)
+{
+    EntityMapping& mapping = this->entityMap[entity.index];
+    InitializeAllComponents(entity, mapping.table, mapping.instance);
+}
 //------------------------------------------------------------------------------
 /**
 */

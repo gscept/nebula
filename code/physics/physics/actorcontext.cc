@@ -51,10 +51,7 @@ ActorContext::AllocateActorId(PxRigidActor* pxActor, ActorResourceId res)
     actor.id = id;
     actor.actor = pxActor;
     actor.res = res;
-#pragma warning(push)
-#pragma warning(disable: 4312)
     pxActor->userData = (void*)(uintptr_t)id.id;
-#pragma warning(pop)
     return id;
 }
 
@@ -352,6 +349,32 @@ void ActorContext::SetShapeTransform(const ShapeHandle& shape, const Math::trans
     if (shape.IsValid())
     {
         shape.shape->setLocalPose(Neb2PxTrans(transform));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void ActorContext::SetCollisionFeedback(ActorId id, CollisionFeedback feedback)
+{
+    if (id.id != Ids::InvalidId32)
+    {
+        physx::PxRigidActor* actor = GetPxActor(id);
+        if (actor != nullptr)
+        {
+            auto count = actor->getNbShapes();
+
+            Util::StackArray<physx::PxShape*, DefaultShapeAlloc> buffer;
+            PxShape** shapeBuffer = buffer.EmplaceArray(count);
+
+            actor->getShapes(shapeBuffer, count);
+            for (auto shape : buffer)
+            {
+                PxFilterData filter = shape->getSimulationFilterData();
+                filter.word1 = feedback;
+                shape->setSimulationFilterData(filter);
+            }
+        }
     }
 }
 
