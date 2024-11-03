@@ -491,7 +491,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
 
        
-    static auto parseBody = [&,tag](const PhysicsResource::BodyT& body) 
+    static auto parseBody = [&](const PhysicsResource::BodyT& body) 
         {
             BodyInfo bodyInfo;
             bodyInfo.feedbackFlag = body.feedback;
@@ -605,8 +605,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
         }
         break;
         default:
-            PhysicsResourceId ret;
-            ret = Physics::InvalidPhysicsResourceId;
+            ret.id = Physics::InvalidPhysicsResourceId;
             return ret;
     }
     ret.id = resId;

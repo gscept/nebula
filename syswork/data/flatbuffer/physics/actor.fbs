@@ -68,7 +68,7 @@ table Shape
 
 table Body
 {
-    feedback : Physics.CollisionFeedback;
+    feedback : Physics.CollisionFeedback = Full;
     collision : string;
     shapes : [Shape];
 }
