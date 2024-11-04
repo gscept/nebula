@@ -887,13 +887,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     VkCmdDebugMarkerInsert = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdInsertDebugUtilsLabelEXT");
 #endif
 
-    uint32_t numQueues;
-    vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, NULL);
+    uint32_t numQueues = 64;
+    VkQueueFamilyProperties queuesProps[64];
+    vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
     n_assert(numQueues > 0);
 
     // now get queues from device
-    VkQueueFamilyProperties* queuesProps = new VkQueueFamilyProperties[numQueues];
-    vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
     vkGetPhysicalDeviceMemoryProperties(state.physicalDevices[state.currentDevice], &state.memoryProps);
 
     state.drawQueueFamily = UINT32_MAX;
@@ -1014,8 +1013,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
                 prios.Begin()
             });
     }
-
-    delete[] queuesProps;
 
     // get physical device features
     //VkPhysicalDeviceFeatures features;

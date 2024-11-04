@@ -67,102 +67,6 @@ GLFWWindow::Reopen()
 }
 */
 
-
-//------------------------------------------------------------------------------
-/**
-callback for key events
-*/
-void
-staticKeyFunc(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    KeyFunc(*id, key, scancode, action, mods);
-}
-
-//------------------------------------------------------------------------------
-/**
-callbacks for character input
-*/
-void
-staticCharFunc(GLFWwindow* window, unsigned int key)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    CharFunc(*id, key);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-staticMouseButtonFunc(GLFWwindow* window, int button, int action, int mods)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    MouseButtonFunc(*id, button, action, mods);
-}
-
-//------------------------------------------------------------------------------
-/**
-callbacks for mouse position
-*/
-void
-staticMouseFunc(GLFWwindow* window, double xpos, double ypos)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    MouseFunc(*id, xpos, ypos);
-}
-
-//------------------------------------------------------------------------------
-/**
-callbacks for scroll event
-*/
-void
-staticScrollFunc(GLFWwindow* window, double xs, double ys)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    ScrollFunc(*id, xs, ys);
-}
-
-//------------------------------------------------------------------------------
-/**
-callback for close requested
-*/
-void
-staticCloseFunc(GLFWwindow* window)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    CloseFunc(*id);
-}
-
-//------------------------------------------------------------------------------
-/**
-callback for focus
-*/
-void
-staticFocusFunc(GLFWwindow* window, int focus)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    FocusFunc(*id, focus);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-staticSizeFunc(GLFWwindow* window, int width, int height)
-{
-    CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
-    ResizeFunc(*id, width, height);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-staticDropFunc(GLFWwindow* window, int files, const char** args)
-{
-    // empty for now
-}
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -288,15 +192,50 @@ void
 EnableCallbacks(const CoreGraphics::WindowId & id)
 {
     GLFWwindow* window = glfwWindowAllocator.Get<GLFW_Window>(id.id);
-    glfwSetKeyCallback(window, staticKeyFunc);
-    glfwSetMouseButtonCallback(window, staticMouseButtonFunc);
-    glfwSetCursorPosCallback(window, staticMouseFunc);
-    glfwSetWindowCloseCallback(window, staticCloseFunc);
-    glfwSetWindowFocusCallback(window, staticFocusFunc);
-    glfwSetWindowSizeCallback(window, staticSizeFunc);
-    glfwSetScrollCallback(window, staticScrollFunc);
-    glfwSetCharCallback(window, staticCharFunc);
-    glfwSetDropCallback(window, staticDropFunc);
+    glfwSetKeyCallback(window, [](GLFWwindow * window, int key, int scancode, int action, int mods)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        KeyFunc(*id, key, scancode, action, mods);
+    });
+    glfwSetMouseButtonCallback(window, [](GLFWwindow * window, int button, int action, int mods)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        MouseButtonFunc(*id, button, action, mods);
+    });
+    glfwSetCursorPosCallback(window, [](GLFWwindow * window, double xpos, double ypos)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        MouseFunc(*id, xpos, ypos);
+    });
+    glfwSetWindowCloseCallback(window, [](GLFWwindow * window)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        CloseFunc(*id);
+    });
+    glfwSetWindowFocusCallback(window, [](GLFWwindow * window, int focus)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        FocusFunc(*id, focus);
+    });
+    glfwSetWindowSizeCallback(window, [](GLFWwindow * window, int width, int height)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        ResizeFunc(*id, width, height);
+    });
+    glfwSetScrollCallback(window, [](GLFWwindow * window, double xs, double ys)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        ScrollFunc(*id, xs, ys);
+    });
+    glfwSetCharCallback(window, [](GLFWwindow * window, unsigned int key)
+    {
+        CoreGraphics::WindowId* id = (CoreGraphics::WindowId*)glfwGetWindowUserPointer(window);
+        CharFunc(*id, key);
+    });
+    glfwSetDropCallback(window, [](GLFWwindow* window, int path_count, const char* paths[])
+    {
+
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -401,7 +340,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
         glfwSetWindowTitle(wnd, info.title.Value());
     }
 
-    glfwSwapInterval(info.vsync ? 1 : 0);
+    glfwSwapInterval(info.vsync ? CoreGraphics::GetNumBufferedFrames() : 0);
 
     CoreGraphics::SwapchainCreateInfo swapCreate;
     swapCreate.displayMode = mode;
