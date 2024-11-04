@@ -16,6 +16,7 @@ __ImplementClass(Presentation::Profiler, 'PrBw', Presentation::BaseWindow);
 */
 Profiler::Profiler()
 {
+    this->pauseProfiling = false;
     this->additionalFlags = ImGuiWindowFlags_(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 }
 
@@ -164,14 +165,17 @@ Profiler::Run(SaveMode save)
         }
     }
 
-    ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
-    ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, { ImGui::GetContentRegionAvail().x, 90 });
-    ImGui::Separator();
-    ImGui::Checkbox("Fixed FPS", &this->profileFixedFps);
-    if (this->profileFixedFps)
+    if (!this->frametimeHistory.IsEmpty())
     {
-        ImGui::InputInt("FPS", &this->fixedFps);
-        this->currentFrameTime = 1 / float(this->fixedFps);
+        ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
+        ImGui::PlotLines("Frame Times", &this->frametimeHistory[0], this->frametimeHistory.Size(), 0, 0, FLT_MIN, FLT_MAX, { ImGui::GetContentRegionAvail().x, 90 });
+        ImGui::Separator();
+        ImGui::Checkbox("Fixed FPS", &this->profileFixedFps);
+        if (this->profileFixedFps)
+        {
+            ImGui::InputInt("FPS", &this->fixedFps);
+            this->currentFrameTime = 1 / float(this->fixedFps);
+        }
     }
 
 #if NEBULA_ENABLE_PROFILING
