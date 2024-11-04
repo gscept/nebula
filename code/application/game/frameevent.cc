@@ -195,8 +195,8 @@ FrameEvent::Batch::TryInsert(Processor* processor)
                 }
             }
         }
-    }   
-    
+    }
+
     this->processors.Append(processor);
     return true;
 }
@@ -307,8 +307,6 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     event.Wait();
 
     delete[] context.inputs;
-
-    Jobs2::JobNewFrame();
 }
 
 //------------------------------------------------------------------------------
@@ -450,7 +448,7 @@ FramePipeline::RunThru(Util::StringAtom name)
         {
             break;
         }
-    } 
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -464,7 +462,7 @@ FramePipeline::RunRemaining()
     {
         frameEvent = this->frameEvents[currentIndex++];
         frameEvent->Run(this->world);
-    } 
+    }
 }
 
 //------------------------------------------------------------------------------
