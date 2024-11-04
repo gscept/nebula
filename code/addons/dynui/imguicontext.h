@@ -52,6 +52,8 @@ public:
     
     /// handle event
     static bool HandleInput(const Input::InputEvent& event);
+    /// reset key events
+    static void ResetKeyDownState();
 
     /// called if the window size has changed
     static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
