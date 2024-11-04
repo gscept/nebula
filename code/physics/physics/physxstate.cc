@@ -174,7 +174,7 @@ PhysxState::onContact(const physx::PxContactPairHeader& pairHeader, const physx:
         n_printf("first touch");
         PxScene* pxScene = baseDynamic->getScene();
         n_assert(pxScene != nullptr);
-        SizeT sceneIdx = (SizeT)pxScene->userData;
+        SizeT sceneIdx = (SizeT)(uint64_t)pxScene->userData;
         n_assert(this->activeSceneIds.FindIndex(sceneIdx) != InvalidIndex && this->activeScenes.IsValidIndex(sceneIdx));
         Scene& scene = this->activeScenes[sceneIdx];
         Physics::ContactEvent& event = scene.eventBuffer.Emplace();
