@@ -42,7 +42,7 @@ InternalCreateEntity(Editor::Entity id, Util::StringAtom templateName)
 
     if (Editor::state.editables.Size() >= id.index)
         Editor::state.editables.Append({});
-    Editor::state.editorWorld->AllocateInstance(id, tid);
+    Editor::state.editorWorld->AllocateInstance(id, tid, true);
 
     Editor::Editable& edit = Editor::state.editables[id.index];
     edit.gameEntity = entity;

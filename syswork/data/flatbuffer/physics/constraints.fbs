@@ -1,0 +1,108 @@
+//------------------------------------------------------------------------------
+//    Physics types for flatbuffer
+//
+//    (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+include "foundation/math.fbs";
+namespace Physics;
+
+enum ConstraintType : byte
+{
+	Distance = 0,
+	Fixed = 1,
+	Linear = 2,
+	Hinge = 3,
+	Spherical = 4,
+	D6 = 5
+}
+
+table DistanceJointData
+{
+	limits : Flat.Vec2 (native_inline);
+	stiffness : float = 0;
+	damping : float = 0;
+	tolerance : float = 0.25;
+	max_limit : bool = false;
+	min_limit : bool = false;
+	spring : bool = false;
+}
+
+table LinearJointData
+{
+	limits : Flat.Vec2 (native_inline);
+	limits_enabled : bool = false;
+}
+
+table HingeJointData
+{
+	limits  :Flat.Vec2 (native_inline);
+	force_limit : float = 3.4028234663852885981170418348452e+38;
+	gear_ratio : float = 1;
+	velocity : float = 0;
+	limit_enabled : bool = false;
+	drive_enabled : bool = false;
+	freespin : bool = false;
+}
+
+table JointLimitParams
+{
+	restitution : float = 0;
+	bounce_threshold : float = 0;
+	stiffness : float = 0;
+	damping : float = 0;
+}
+
+table ConeLimitParams
+{
+	base : JointLimitParams;
+	y_angle : float = 1.5707963267948;
+	z_angle : float = 1.5707963267948;
+}
+
+table PairLimitParams
+{
+	base : JointLimitParams;
+	limits : Flat.Vec2 (native_inline);
+}
+
+table SphericalJointData
+{
+	limit_cone : ConeLimitParams;
+	limit_enabled : bool = false;
+}
+
+enum AxisMotion : byte
+{
+	Locked = 0,
+	Limited = 1,
+	Free = 2,
+}
+
+table D6JointData
+{
+	x_motion : AxisMotion;
+	y_motion : AxisMotion;
+	z_motion : AxisMotion;
+	twist_motion : AxisMotion;
+	swing1_motion : AxisMotion;
+	swint2_motion : AxisMotion;
+	x_limits : PairLimitParams;
+	y_limits : PairLimitParams;
+	z_limits : PairLimitParams;
+	twist_limits : PairLimitParams;
+	swing_limits : ConeLimitParams;
+}
+
+union ConstraintData
+{
+	DistanceJointData, LinearJointData, HingeJointData, SphericalJointData, D6JointData
+}
+
+table Joint
+{
+	type : ConstraintType;
+	body1 : string;
+	body2 : string;
+	data : ConstraintData;
+}

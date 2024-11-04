@@ -53,6 +53,8 @@ public:
         return this->hovered;
     }
 
+    const Ptr<Graphics::View> GetView() const;
+
     Editor::Camera camera;
     /// the latest actual position of the viewport. This is in normalized space (0...1)
     Math::vec2 lastViewportImagePosition;

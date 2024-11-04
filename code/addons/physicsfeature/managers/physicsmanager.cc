@@ -56,7 +56,7 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
         actor->resource = res;
     }
 
-    Math::mat4 worldTransform = Math::trs(
+    Math::transform worldTransform = Math::transform(
         world->GetComponent<Game::Position>(entity),
         world->GetComponent<Game::Orientation>(entity),
         world->GetComponent<Game::Scale>(entity)
@@ -67,7 +67,7 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
         Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id32(entity));
     actor->actorId = actorid.id;
 
-    if (actor->actorType == Physics::ActorType::Kinematic)
+    if (actor->actorType == Physics::Kinematic)
     {
         world->AddComponent<PhysicsFeature::IsKinematic>(entity);
     }
@@ -79,6 +79,8 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
     {
         Physics::ActorContext::SetAngularVelocity(actorid, world->GetComponent<Game::AngularVelocity>(entity));
     }
+    // fixme, this should be configured, just brute force it for now
+    Physics::ActorContext::SetCollisionFeedback(actorid, Physics::CollisionFeedback_Full);
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +104,10 @@ PhysicsManager::OnDecay()
 void
 PollRigidbodyTransforms(Game::World* world, Game::Position& position, Game::Orientation& orientation, PhysicsFeature::PhysicsActor const& actor)
 {
-    Physics::ActorContext::GetPositionOrientation(actor.actorId, position, orientation);
+    if (actor.actorId != -1)
+    {
+        Physics::ActorContext::GetPositionOrientation(actor.actorId, position, orientation);
+    }
 }
 
 //------------------------------------------------------------------------------

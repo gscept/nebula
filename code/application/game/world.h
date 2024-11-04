@@ -134,7 +134,8 @@ public:
     /// Allocate an entity instance from a blueprint. Use this with caution!
     MemDb::RowId AllocateInstance(Entity entity, BlueprintId blueprint);
     /// Allocate an entity instance from a template. Use this with caution!
-    MemDb::RowId AllocateInstance(Entity entity, TemplateId templateId);
+    MemDb::RowId AllocateInstance(Entity entity, TemplateId templateId, bool performInitialize);
+    void FinalizeAllocate(Entity entity);
     /// Deallocate an entity instance. Use this with caution!
     void DeallocateInstance(MemDb::TableId table, MemDb::RowId instance);
     /// Deallocate an entity instance. Use this with caution!

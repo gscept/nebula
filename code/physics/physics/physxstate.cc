@@ -103,6 +103,7 @@ PhysxState::DisconnectPVD()
 // avoid warning about truncating the void
 #pragma warning(push)
 #pragma warning(disable: 4311)
+#pragma warning(disable: 4302)
 //------------------------------------------------------------------------------
 /**
 */
@@ -140,6 +141,58 @@ PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
         this->onSleepCallback(actorIds.Begin(), actorIds.Size());
     }
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs)
+{
+    PxRigidDynamic* baseDynamic = nullptr;
+    ActorId actor0;
+    if (!pairHeader.flags.isSet(PxContactPairHeaderFlag::eREMOVED_ACTOR_0))
+    {
+        actor0 = (Ids::Id32)(int64_t)pairHeader.actors[0]->userData;
+        baseDynamic = pairHeader.actors[0]->is<PxRigidDynamic>();
+    }
+    ActorId actor1;
+
+    if (!pairHeader.flags.isSet(PxContactPairHeaderFlag::eREMOVED_ACTOR_1))
+    {
+        actor1 = (Ids::Id32)(int64_t)pairHeader.actors[1]->userData;
+        baseDynamic = baseDynamic == nullptr ? pairHeader.actors[1]->is<PxRigidDynamic>() : baseDynamic;
+    }
+    // this cant happen i guess, but who knows
+    if (nbPairs > 0 && baseDynamic != nullptr && (actor0.id != Ids::InvalidId32 || actor1.id != Ids::InvalidId32))
+    {
+        const PxContactPair& contact = pairs[0];
+        // lets just look at the first one for now
+        if (!contact.flags.isSet(PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH))
+        {
+            return;
+        }
+        n_printf("first touch");
+        PxScene* pxScene = baseDynamic->getScene();
+        n_assert(pxScene != nullptr);
+        SizeT sceneIdx = (SizeT)(uint64_t)pxScene->userData;
+        n_assert(this->activeSceneIds.FindIndex(sceneIdx) != InvalidIndex && this->activeScenes.IsValidIndex(sceneIdx));
+        Scene& scene = this->activeScenes[sceneIdx];
+        Physics::ContactEvent& event = scene.eventBuffer.Emplace();
+        event.actor0 = actor0;
+        event.actor1 = actor1;
+
+        // extract first contact point for now
+
+        PxContactPairPoint point;
+        contact.extractContacts(&point, 1);
+        event.impulse = Px2NebVec(point.impulse);
+        event.normal = Px2NebVec(point.normal);
+        event.position = Px2NebPoint(point.position);
+        event.separation = point.separation;        
+    }
+}
+
+
 #pragma warning(pop)
 
 //------------------------------------------------------------------------------
@@ -202,17 +255,49 @@ PhysxState::DiscardActor(ActorId id)
 //------------------------------------------------------------------------------
 /**
 */
-static void CollectModified(Physics::Scene& scene, Util::Set<Ids::Id32>& modifiedActors)
+static void 
+CollectModified(Physics::Scene& scene)
 {
     uint32_t activeActorCount = 0;
     PxActor** activeActors = scene.scene->getActiveActors(activeActorCount);
+    scene.modifiedActors.Clear();
     for (uint32_t i = 0; i < activeActorCount; i++)
     {
         Ids::Id32 id = (Ids::Id32)(int64_t)activeActors[i]->userData;
-        modifiedActors.Add(id);
+        scene.modifiedActors.Add(id);
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+PreSceneUpdates(Physics::Scene& scene)
+{
+    scene.modifiedActors.Clear();
+    scene.eventBuffer.Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static void
+PostSceneUpdates(Physics::Scene& scene)
+{
+    if (scene.updateFunction != nullptr)
+    {
+        for (Ids::Id32 id : scene.modifiedActors.KeysAsArray())
+        {
+            Actor& actor = ActorContext::GetActor(id);
+            (*scene.updateFunction)(actor);
+        }
+    }
+    if (scene.eventCallback != nullptr)
+    {
+        (*scene.eventCallback)(scene.eventBuffer);
+    }
+
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -229,11 +314,12 @@ PhysxState::Update(Timing::Time delta)
     Util::Set<Ids::Id32> modifiedActors;
     for (IndexT Id : this->activeSceneIds)
     {
-        modifiedActors.Clear();
         Physics::Scene& scene = this->activeScenes[Id];
+        PreSceneUpdates(scene);
         scene.time -= delta;
         // we limit the simulation to 5 frames
         scene.time = Math::max(scene.time, -5.0 * PHYSICS_RATE);
+        scene.eventBuffer.Reset();
         while (scene.time < 0.0)
         {
             scene.scene->simulate(PHYSICS_RATE);
@@ -241,14 +327,10 @@ PhysxState::Update(Timing::Time delta)
             scene.time += PHYSICS_RATE;
             if (scene.updateFunction != nullptr)
             {
-                CollectModified(scene, modifiedActors);
+                CollectModified(scene);
             }
         }
-        for (Ids::Id32 id : modifiedActors.KeysAsArray())
-        {
-            Actor& actor = ActorContext::GetActor(id);
-            (*scene.updateFunction)(actor);
-        }
+        PostSceneUpdates(scene);
     }
     N_MARKER_END();
 }
@@ -275,6 +357,7 @@ PhysxState::BeginSimulating(Timing::Time delta, IndexT sceneId)
 
     if (scene.time < -PHYSICS_RATE)
     {
+        PreSceneUpdates(scene);
         scene.isSimulating = scene.scene->simulate(PHYSICS_RATE);
     }
     
@@ -299,10 +382,9 @@ PhysxState::EndSimulating(IndexT sceneId)
     scene.scene->fetchResults(true);
     scene.time += PHYSICS_RATE;
 
-    Util::Set<Ids::Id32> modifiedActors;
     if (scene.updateFunction != nullptr)
     {
-        CollectModified(scene, modifiedActors);
+        CollectModified(scene);
     }
 
     // we limit the simulation to 5 frames
@@ -312,18 +394,10 @@ PhysxState::EndSimulating(IndexT sceneId)
         // simulate synchronously until we are in sync again
         scene.scene->simulate(PHYSICS_RATE);
         scene.scene->fetchResults(true);
-        CollectModified(scene, modifiedActors);
+        CollectModified(scene);
         scene.time += PHYSICS_RATE;
     }
-
-    if (scene.updateFunction != nullptr)
-    {
-        for (Ids::Id32 id : modifiedActors.KeysAsArray())
-        {
-            Actor& actor = ActorContext::GetActor(id);
-            (*scene.updateFunction)(actor);
-        }
-    }
+    PostSceneUpdates(scene);    
     scene.isSimulating = false;
     N_MARKER_END();
 }

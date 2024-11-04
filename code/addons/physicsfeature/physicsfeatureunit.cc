@@ -94,6 +94,25 @@ PhysicsFeatureUnit::OnActivate()
             world->RemoveComponent<Game::Static>(entity);
         }
     });
+    Physics::SetEventCallback([](const Util::Array<Physics::ContactEvent>& buffer)
+    {
+        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+        for (auto const& contact : buffer)
+        {
+            if (Physics::ActorContext::IsValid(contact.actor0))
+            {
+                Physics::Actor& actor = Physics::ActorContext::GetActor(contact.actor0);
+                Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
+                if (world->IsValid(entity))
+                {
+                    PhysicsFeature::ContactEventMessage::Send(entity, contact);
+                }
+
+            }
+            
+        }
+    });
+
 }
 
 //------------------------------------------------------------------------------

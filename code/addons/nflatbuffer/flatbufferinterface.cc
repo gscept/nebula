@@ -140,6 +140,28 @@ bool FlatbufferInterface::LoadSchema(IO::URI const& file)
 //------------------------------------------------------------------------------
 /**
 */
+bool FlatbufferInterface::CompileSchema(IO::URI const& file)
+{
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    if (stream->Open())
+    {
+        void* buf = stream->Map();
+        IO::URI systemInclude = "tool:syswork/data/flatbuffer/";
+        const char* includes[2];
+        includes[0] = systemInclude.LocalPath().AsCharPtr();
+        includes[1] = nullptr;
+        flatbuffers::Parser* parser = new flatbuffers::Parser;
+        parser->Parse((const char*)buf, includes, file.LocalPath().AsCharPtr());
+        parser->Serialize();
+        auto blorf = parser->builder_.GetSize();
+        char* ff = reinterpret_cast<char*>(parser->builder_.GetBufferPointer());
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool FlatbufferInterface::HasSchema(Util::StringAtom ident)
 {
     return state.parsers.Contains(ident);
@@ -183,7 +205,9 @@ bool FlatbufferInterface::Compile(IO::URI const& source, IO::URI const& targetFo
             // FIXME could use own writer
             target += "/";
             if (IO::IoServer::Instance()->CreateDirectory(target))
+            {
                 result = flatbuffers::GenerateBinary(*parser, target.AsCharPtr(), filename.AsCharPtr());
+            }
         }
     }
     delete parser;

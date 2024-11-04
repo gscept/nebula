@@ -115,6 +115,11 @@ CreateScene()
     sceneDesc.cpuDispatcher = scene.dispatcher;
     sceneDesc.filterShader = Simulationfilter;
     sceneDesc.flags.raise(PxSceneFlag::eENABLE_ACTIVE_ACTORS);
+	// we probably want to make this configurable, lets enable it for now
+    sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
+    sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
+
+    sceneDesc.userData = (void*)(uintptr_t)idx;
     scene.scene = state.physics->createScene(sceneDesc);    
     scene.scene->setSimulationEventCallback(&state);    
     scene.controllerManager= PxCreateControllerManager(*scene.scene);       
@@ -124,6 +129,7 @@ CreateScene()
     scene.physics = state.physics;
     scene.foundation = state.foundation;
     scene.time = 0.0;
+    scene.eventBuffer.Reserve(256);
     return idx;
 }
 
@@ -173,9 +179,18 @@ GetScene(IndexT idx)
 //------------------------------------------------------------------------------
 /**
 */
-void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
+void SetEventCallback(EventCallbackType callback, IndexT sceneId)
 {
     Scene &scene = GetScene(sceneId);
+    scene.eventCallback = callback;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
+{
+    Scene& scene = GetScene(sceneId);
     scene.updateFunction = callback;
 }
 
@@ -341,7 +356,7 @@ FlushSimulation(IndexT scene)
 /**
 */
 ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::transform const & trans, Physics::ActorType type, uint64_t userData, IndexT scene)
 {
     return Physics::actorPool->CreateActorInstance(id, trans, type, userData, scene);
 }

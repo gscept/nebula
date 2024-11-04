@@ -14,7 +14,9 @@
 #include "util/arraystack.h"
 #include "util/stringatom.h"
 #include "math/mat4.h"
+#include "math/transform.h"
 #include "resources/resourceid.h"
+#include "flat/physics/material.h"
 
 #include <functional>
 #include "PxPhysicsAPI.h"
@@ -25,7 +27,9 @@ namespace Physics
 {
 
 RESOURCE_ID_TYPE(ActorResourceId);
-RESOURCE_ID_TYPE(ColliderId);
+RESOURCE_ID_TYPE(AggregateResourceId);
+RESOURCE_ID_TYPE(PhysicsResourceId);
+RESOURCE_ID_TYPE(ConstraintResourceId);
 
 enum ActorType
 {
@@ -45,8 +49,22 @@ struct Material
 struct ActorId
 {
     Ids::Id32 id;
-    ActorId() :id(Ids::InvalidId32) {}
+    ActorId() : id(Ids::InvalidId32) {}
     ActorId(uint32_t i) : id(i) {}
+};
+
+struct ConstraintId
+{
+    Ids::Id32 id;
+    ConstraintId() : id(Ids::InvalidId32) {}
+    ConstraintId(uint32_t i) : id(i) {}
+};
+
+struct AggregateId
+{
+    Ids::Id32 id;
+    AggregateId() : id(Ids::InvalidId32) {}
+    AggregateId(uint32_t i) : id(i) {}
 };
 
 struct Actor
@@ -60,7 +78,36 @@ struct Actor
 #endif
 };
 
+struct Constraint
+{
+    ConstraintId id;
+    Ids::Id32 res;
+    physx::PxJoint* joint;
+    uint64_t userData;
+};
+
+struct Aggregate
+{
+    AggregateId id;
+    AggregateResourceId res;
+    Util::Array<ActorId> actors;
+    Util::Array<ConstraintId> constraints;
+};
+
 using UpdateFunctionType = void (*) (const Actor&);
+
+struct ContactEvent
+{
+    ActorId actor0;
+    ActorId actor1;
+
+    Math::point position;
+    Math::vector normal;
+    Math::vector impulse;
+    float separation;
+};
+
+using EventCallbackType = void (*) (const Util::Array<ContactEvent>&);
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
 /// instead of static getters, might be removed later on
@@ -72,8 +119,11 @@ struct Scene
     physx::PxControllerManager *controllerManager;
     physx::PxDefaultCpuDispatcher *dispatcher;
     UpdateFunctionType updateFunction = nullptr;
+    EventCallbackType eventCallback = nullptr;
     Timing::Time time;
     bool isSimulating = false;
+    Util::Array<Physics::ContactEvent> eventBuffer;
+    Util::Set<Ids::Id32> modifiedActors;
 };
 
 /// initialize the physics subsystem and create a default scene
@@ -102,11 +152,12 @@ Physics::Scene& GetScene(IndexT idx = 0);
 
 ///
 void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId = 0);
+///
+void SetEventCallback(EventCallbackType callback, IndexT sceneId = 0);
+
 
 /// render a debug visualization of the level
 void RenderDebug();
-///
-void HandleCollisions();
 
 /// 
 void SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback);
@@ -123,7 +174,7 @@ IndexT LookupMaterial(Util::StringAtom name);
 SizeT GetNrMaterials();
 
 ///
-ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, ActorType type, uint64_t userData, IndexT scene = 0);
+ActorId CreateActorInstance(Physics::ActorResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene = 0);
 ///
 void DestroyActorInstance(Physics::ActorId id);
 }

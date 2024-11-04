@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "io/assignregistry.h"
 #include "toolkitapp.h"
+#include "system/nebulasettings.h"
 
 namespace ToolkitUtil
 {
@@ -37,6 +38,13 @@ ToolkitApp::Open()
     {
         // need to disable ZIP file system in tools!
         IoServer::Instance()->SetArchiveFileSystemEnabled(false);
+
+        if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
+        {
+            Util::String toolDir = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path");
+            Core::CoreServer::Instance()->SetToolDirectory(toolDir);
+            AssignRegistry::Instance()->SetAssign(Assign("tool", toolDir.AsCharPtr()));
+        }
 
         // add toolkit handler for structured logging
         this->handler = ToolkitUtil::ToolkitConsoleHandler::Create();

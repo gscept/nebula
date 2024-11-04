@@ -143,8 +143,11 @@ GraphicsManager::InitUpdateModelTransformProcessor()
         .Func(
             [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
             {
-                Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
+                if (model.graphicsEntityId != -1)
+                {
+                    Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+                    Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
+                }
             }
         )
         .Build();

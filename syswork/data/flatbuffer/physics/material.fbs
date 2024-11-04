@@ -10,9 +10,9 @@ namespace Physics;
 enum CollisionFeedback : byte
 {
     /// callbacks for begin, persist, and end collision
-    Full   = 0,
+    Full   = 1,
     /// only on first contact
-    Single         = 1
+    Single         = 2
 }
 enum MeshTopology :  byte
 {
