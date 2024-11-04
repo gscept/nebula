@@ -28,6 +28,9 @@ public:
     /// end input capturing to this event handler
     virtual void EndCapture();
 
+    /// reset key inputs
+    void OnBeginFrame() override;
+
 protected:
 
     /// called when an input event should be processed

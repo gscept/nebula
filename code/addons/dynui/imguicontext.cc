@@ -51,7 +51,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     int fb_height = (int)(viewport.height() * io.DisplayFramebufferScale.y);
     data->ScaleClipRects(io.DisplayFramebufferScale);
 
-    // get renderer 
+    // get renderer
     //const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
     //const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
     IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
@@ -203,7 +203,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.layer = tex.layer;
                 texInfo.mip = tex.mip;
                 texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
-                
+
                 CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
 
                 // setup primitive
@@ -324,7 +324,7 @@ ImguiContext::ImguiContext()
 */
 ImguiContext::~ImguiContext()
 {
-   
+
 }
 
 //------------------------------------------------------------------------------
@@ -435,7 +435,7 @@ ImguiContext::Create()
     {
         state.vertexPtrs[i] = (byte*)CoreGraphics::BufferMap(state.vbos[i]);
         state.indexPtrs[i] = (byte*)CoreGraphics::BufferMap(state.ibos[i]);
-    }    
+    }
 
     // get display mode, this will be our default size
     DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CurrentWindow);
@@ -451,7 +451,7 @@ ImguiContext::Create()
     //io.RenderDrawListsFn = ImguiDrawFunction;
 
     ImGuiStyle& style = ImGui::GetStyle();
-    
+
     style.FrameRounding = 2.0f;
     style.GrabRounding = 0.0f;
     style.ChildRounding = 0.0f;
@@ -465,7 +465,7 @@ ImguiContext::Create()
 
     style.WindowPadding = { 8.0f, 8.0f };
     // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
-    style.FramePadding = { 4, 3 };//{ 16, 3 }; 
+    style.FramePadding = { 4, 3 };//{ 16, 3 };
     style.ItemInnerSpacing = { 4, 2 };
     style.ItemSpacing = { 4, 5 };
     style.IndentSpacing = 8.0f;
@@ -538,7 +538,7 @@ ImguiContext::Create()
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.0f);
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
-    io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
+    io.KeyMap[ImGuiKey_Tab] = Key::Tab;
     io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
     io.KeyMap[ImGuiKey_RightArrow] = Key::Right;
     io.KeyMap[ImGuiKey_UpArrow] = Key::Up;
@@ -578,7 +578,7 @@ ImguiContext::Create()
     state.boldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", scaleFactor * 12, &config);
     state.itFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansItalic.ttf", scaleFactor * 12, &config);
 #endif
-    
+
     unsigned char* buffer;
     int width, height, bytesPerPixel;
     io.Fonts->GetTexDataAsRGBA32(&buffer, &width, &height, &bytesPerPixel);
@@ -639,6 +639,150 @@ ImguiContext::Discard()
     ImGui::DestroyContext();
 }
 
+
+const ImGuiKey NebulaToImguiKeyCodes[] =
+{
+    ImGuiKey_Backspace,      // Code::Back
+    ImGuiKey_Tab,            // Code::Tab
+    ImGuiKey_None,           // Code::Clear (No direct mapping)
+    ImGuiKey_Enter,          // Code::Return
+    ImGuiKey_LeftShift,      // Code::Shift (Assuming Left Shift)
+    ImGuiKey_LeftCtrl,       // Code::Control (Assuming Left Control)
+    ImGuiKey_Menu,           // Code::Menu
+    ImGuiKey_Pause,          // Code::Pause
+    ImGuiKey_CapsLock,       // Code::Capital
+    ImGuiKey_Escape,         // Code::Escape
+    ImGuiKey_None,           // Code::Convert (No direct mapping)
+    ImGuiKey_None,           // Code::NonConvert (No direct mapping)
+    ImGuiKey_None,           // Code::Accept (No direct mapping)
+    ImGuiKey_None,           // Code::ModeChange (No direct mapping)
+    ImGuiKey_Space,          // Code::Space
+    ImGuiKey_PageUp,         // Code::Prior
+    ImGuiKey_PageDown,       // Code::Next
+    ImGuiKey_End,            // Code::End
+    ImGuiKey_Home,           // Code::Home
+    ImGuiKey_LeftArrow,      // Code::Left
+    ImGuiKey_RightArrow,     // Code::Right
+    ImGuiKey_UpArrow,        // Code::Up
+    ImGuiKey_DownArrow,      // Code::Down
+    ImGuiKey_None,           // Code::Select (No direct mapping)
+    ImGuiKey_PrintScreen,    // Code::Print
+    ImGuiKey_None,           // Code::Execute (No direct mapping)
+    ImGuiKey_PrintScreen,    // Code::Snapshot
+    ImGuiKey_Insert,         // Code::Insert
+    ImGuiKey_Delete,         // Code::Delete
+    ImGuiKey_None,           // Code::Help (No direct mapping)
+    ImGuiKey_None,           // Code::LeftWindows (No direct mapping)
+    ImGuiKey_None,           // Code::RightWindows (No direct mapping)
+    ImGuiKey_None,           // Code::Apps (No direct mapping)
+    ImGuiKey_None,           // Code::Sleep (No direct mapping)
+    ImGuiKey_Keypad0,        // Code::NumPad0
+    ImGuiKey_Keypad1,        // Code::NumPad1
+    ImGuiKey_Keypad2,        // Code::NumPad2
+    ImGuiKey_Keypad3,        // Code::NumPad3
+    ImGuiKey_Keypad4,        // Code::NumPad4
+    ImGuiKey_Keypad5,        // Code::NumPad5
+    ImGuiKey_Keypad6,        // Code::NumPad6
+    ImGuiKey_Keypad7,        // Code::NumPad7
+    ImGuiKey_Keypad8,        // Code::NumPad8
+    ImGuiKey_Keypad9,        // Code::NumPad9
+    ImGuiKey_KeypadMultiply, // Code::Multiply
+    ImGuiKey_KeypadAdd,      // Code::Add
+    ImGuiKey_KeypadSubtract, // Code::Subtract
+    ImGuiKey_None,           // Code::Separator (No direct mapping)
+    ImGuiKey_KeypadDecimal,  // Code::Decimal
+    ImGuiKey_KeypadDivide,   // Code::Divide
+    ImGuiKey_F1,             // Code::F1
+    ImGuiKey_F2,             // Code::F2
+    ImGuiKey_F3,             // Code::F3
+    ImGuiKey_F4,             // Code::F4
+    ImGuiKey_F5,             // Code::F5
+    ImGuiKey_F6,             // Code::F6
+    ImGuiKey_F7,             // Code::F7
+    ImGuiKey_F8,             // Code::F8
+    ImGuiKey_F9,             // Code::F9
+    ImGuiKey_F10,            // Code::F10
+    ImGuiKey_F11,            // Code::F11
+    ImGuiKey_F12,            // Code::F12
+    ImGuiKey_NumLock,        // Code::NumLock
+    ImGuiKey_ScrollLock,     // Code::Scroll
+    ImGuiKey_Semicolon,      // Code::Semicolon
+    ImGuiKey_Slash,          // Code::Slash
+    ImGuiKey_GraveAccent,    // Code::Tilde
+    ImGuiKey_LeftBracket,    // Code::LeftBracket
+    ImGuiKey_RightBracket,   // Code::RightBracket
+    ImGuiKey_Backslash,      // Code::BackSlash
+    ImGuiKey_Apostrophe,     // Code::Quote
+    ImGuiKey_Comma,          // Code::Comma
+    ImGuiKey_None,           // Code::Underbar (No direct mapping)
+    ImGuiKey_Period,         // Code::Period
+    ImGuiKey_Equal,          // Code::Equality
+    ImGuiKey_LeftShift,      // Code::LeftShift
+    ImGuiKey_RightShift,     // Code::RightShift
+    ImGuiKey_LeftCtrl,       // Code::LeftControl
+    ImGuiKey_RightCtrl,      // Code::RightControl
+    ImGuiKey_LeftAlt,        // Code::LeftMenu (assuming this maps to Alt)
+    ImGuiKey_RightAlt,       // Code::RightMenu
+    ImGuiKey_None,           // Code::BrowserBack (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserForward (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserRefresh (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserStop (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserSearch (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserFavorites (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::BrowserHome (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::VolumeMute (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::VolumeDown (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::VolumeUp (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaNextTrack (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaPrevTrack (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaStop (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::MediaPlayPause (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchMail (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchMediaSelect (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchApp1 (No direct mapping in ImGuiKey)
+    ImGuiKey_None,           // Code::LaunchApp2 (No direct mapping in ImGuiKey)
+    ImGuiKey_0,              // Code::Key0
+    ImGuiKey_1,              // Code::Key1
+    ImGuiKey_2,              // Code::Key2
+    ImGuiKey_3,              // Code::Key3
+    ImGuiKey_4,              // Code::Key4
+    ImGuiKey_5,              // Code::Key5
+    ImGuiKey_6,              // Code::Key6
+    ImGuiKey_7,              // Code::Key7
+    ImGuiKey_8,              // Code::Key8
+    ImGuiKey_9,              // Code::Key9
+    ImGuiKey_A,              // Code::A
+    ImGuiKey_B,              // Code::B
+    ImGuiKey_C,              // Code::C
+    ImGuiKey_D,              // Code::D
+    ImGuiKey_E,              // Code::E
+    ImGuiKey_F,              // Code::F
+    ImGuiKey_G,              // Code::G
+    ImGuiKey_H,              // Code::H
+    ImGuiKey_I,              // Code::I
+    ImGuiKey_J,              // Code::J
+    ImGuiKey_K,              // Code::K
+    ImGuiKey_L,              // Code::L
+    ImGuiKey_M,              // Code::M
+    ImGuiKey_N,              // Code::N
+    ImGuiKey_O,              // Code::O
+    ImGuiKey_P,              // Code::P
+    ImGuiKey_Q,              // Code::Q
+    ImGuiKey_R,              // Code::R
+    ImGuiKey_S,              // Code::S
+    ImGuiKey_T,              // Code::T
+    ImGuiKey_U,              // Code::U
+    ImGuiKey_V,              // Code::V
+    ImGuiKey_W,              // Code::W
+    ImGuiKey_X,              // Code::X
+    ImGuiKey_Y,              // Code::Y
+    ImGuiKey_Z,              // Code::Z
+    ImGuiKey_None,           // Code::NumKeyCodes (No direct mapping, represents total count)
+    ImGuiKey_None            // Code::InvalidKey (No direct mapping)
+};
+
+static bool KeysToRelease[ImGuiKey_COUNT] = { false };
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -654,7 +798,7 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = true;
         return io.WantCaptureKeyboard;
     case InputEvent::KeyUp:
-        io.KeysDown[event.GetKey()] = false;
+        KeysToRelease[event.GetKey()] = true;
         if (event.GetKey() == Key::LeftControl || event.GetKey() == Key::RightControl) io.KeyCtrl = false;
         if (event.GetKey() == Key::LeftShift || event.GetKey() == Key::RightShift) io.KeyShift = false;
         return io.WantCaptureKeyboard;                                  // not a bug, this allows keys to be let go even if we are over the UI
@@ -687,8 +831,23 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
         return io.WantCaptureMouse;
     default: break;
     }
-    
+
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiContext::ResetKeyDownState()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    for (uint32_t i = 0; i < ImGuiKey_COUNT; ++i)
+    {
+        if (KeysToRelease[i])
+            io.KeysDown[i] = false;
+        KeysToRelease[i] = false;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -704,13 +863,15 @@ ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     ImGuiIO& io = ImGui::GetIO();
+
     io.DeltaTime = ctx.frameTime;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
     ImGui::NewFrame();
+
 }
 
 } // namespace Dynui

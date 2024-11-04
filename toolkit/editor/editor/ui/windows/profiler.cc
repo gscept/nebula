@@ -7,6 +7,9 @@
 #include "dynui/imguicontext.h"
 
 #include "coregraphics/texture.h"
+#include "input/inputserver.h"
+#include "input/keyboard.h"
+
 namespace Presentation
 {
 __ImplementClass(Presentation::Profiler, 'PrBw', Presentation::BaseWindow);
@@ -17,7 +20,9 @@ __ImplementClass(Presentation::Profiler, 'PrBw', Presentation::BaseWindow);
 Profiler::Profiler()
 {
     this->pauseProfiling = false;
-    this->additionalFlags = ImGuiWindowFlags_(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    this->fixedFps = 60.0f;
+    this->profileFixedFps = false;
+    this->additionalFlags = ImGuiWindowFlags_None;
 }
 
 //------------------------------------------------------------------------------
@@ -165,6 +170,12 @@ Profiler::Run(SaveMode save)
         }
     }
 
+    ImGui::Checkbox("Pause (F3)", &this->pauseProfiling);
+    if (ImGui::IsKeyPressed((ImGuiKey)Input::Key::F3))
+        this->pauseProfiling = !this->pauseProfiling;
+    if (!this->pauseProfiling)
+        this->ProfilingContexts = Profiling::ProfilingGetContexts();
+
     if (!this->frametimeHistory.IsEmpty())
     {
         ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
@@ -289,13 +300,13 @@ Profiler::Run(SaveMode save)
                 const char* name = budgetCounters.KeyAtIndex(i);
                 const Util::Pair<uint64, uint64>& val = budgetCounters.ValueAtIndex(i);
                 if (val.first >= 1_GB)
-                    ImGui::LabelText(name, "%.2f GB allocated, %.2f GB left", val.first / float(1_GB), (val.first - val.second) / float(1_GB));
+                    ImGui::LabelText(name, "%.2f GB allocated, %.2f GB left", val.second / float(1_GB), (val.first - val.second) / float(1_GB));
                 else if (val.first >= 1_MB)
-                    ImGui::LabelText(name, "%.2f MB allocated, %.2f MB left", val.first / float(1_MB), (val.first - val.second) / float(1_MB));
+                    ImGui::LabelText(name, "%.2f MB allocated, %.2f MB left", val.second / float(1_MB), (val.first - val.second) / float(1_MB));
                 else if (val.first >= 1_KB)
-                    ImGui::LabelText(name, "%.2f KB allocated, %.2f KB left", val.first / float(1_KB), (val.first - val.second) / float(1_KB));
+                    ImGui::LabelText(name, "%.2f KB allocated, %.2f KB left", val.second / float(1_KB), (val.first - val.second) / float(1_KB));
                 else
-                    ImGui::LabelText(name, "%lu B allocated, %lu B left", val.first, val.first - val.second);
+                    ImGui::LabelText(name, "%lu B allocated, %lu B left", val.second, val.first - val.second);
 
                 float weight = val.second / double(val.first);
                 Math::vec4 green(0, 1, 0, 1);
