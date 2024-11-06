@@ -107,9 +107,16 @@ PhysicsFeatureUnit::OnActivate()
                 {
                     PhysicsFeature::ContactEventMessage::Send(entity, contact);
                 }
-
             }
-            
+            if (Physics::ActorContext::IsValid(contact.actor1))
+            {
+                Physics::Actor& actor = Physics::ActorContext::GetActor(contact.actor1);
+                Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
+                if (world->IsValid(entity))
+                {
+                    PhysicsFeature::ContactEventMessage::Send(entity, contact);
+                }
+            }            
         }
     });
 
