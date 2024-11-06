@@ -586,7 +586,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
             AggregateInfo aggInfo;
             aggInfo.instanceCount = 0;
             const PhysicsResource::AggregateT* aggSetup = actor.data.AsAggregate();
-            aggInfo.bodies.Reserve(aggSetup->bodies.size());
+            aggInfo.bodies.Reserve((SizeT)aggSetup->bodies.size());
             for (auto const& bodySetup : aggSetup->bodies)
             {
                 Ids::Id32 actorId = this->actorAllocator.Alloc();

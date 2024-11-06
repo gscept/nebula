@@ -76,7 +76,7 @@
         struct\
         {\
             Ids::Id32 id24_0_name : 24;\
-            Ids::Id8 id8_0_name : 8;\
+            Ids::Id32 id8_0_name : 8;\
         };\
         Ids::Id32 combined0_name;\
     };\
@@ -85,7 +85,7 @@
         struct\
         {\
             Ids::Id32 id24_1_name : 24;\
-            Ids::Id8 id8_1_name : 8;\
+            Ids::Id32 id8_1_name : 8;\
         };\
         Ids::Id32 combined1_name;\
     };\
