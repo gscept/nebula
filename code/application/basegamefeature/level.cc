@@ -55,6 +55,7 @@ PackedLevel::Instantiate() const
 
             for (uint16_t rowIndex = partition->numRows; rowIndex < partition->numRows + numRows; rowIndex++)
             {
+                partition->validRows.SetBit(rowIndex);
                 Game::Entity entity = this->world->AllocateEntity();
 
                 Game::EntityMapping& mapping = this->world->entityMap[entity.index];
