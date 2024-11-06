@@ -194,7 +194,8 @@ GraphicsContext::InternalDefragment(ID_ALLOCATOR& allocator, Graphics::GraphicsC
     SizeT size = freeIds.Size();
     for (SizeT i = size - 1; i >= 0; --i)
     {
-        index = freeIds.Dequeue();
+        index = freeIds.Back();
+        freeIds.EraseBack();
         dataSize = (uint32_t)allocator.Size();
         if (index >= dataSize)
         {
@@ -213,7 +214,7 @@ GraphicsContext::InternalDefragment(ID_ALLOCATOR& allocator, Graphics::GraphicsC
         }
         else
         {
-            freeIds.Enqueue(index);
+            freeIds.Append(index);
             i++;
         }
     }

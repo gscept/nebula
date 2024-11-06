@@ -53,9 +53,7 @@ public:
     void Deallocate(Id32 id);
     /// check if valid
     bool IsValid(Id32 id) const;
-    /// Get free ids
-    Util::Queue<Id32>& FreeIds();
-
+    
 private:
     /// array containing generation value for every index
     Util::Array<generation_t> generations;
@@ -93,15 +91,6 @@ CreateId(const Id24 index, generation_t generation)
     id = (generation << ID_BITS) | index;
     n_assert2(index < (1 << ID_BITS), "index overflow");
     return id;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Util::Queue<Id32>& 
-IdGenerationPool::FreeIds()
-{
-    return this->freeIds;
 }
 
 } // namespace Ids
