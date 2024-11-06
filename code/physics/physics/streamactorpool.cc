@@ -491,7 +491,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
 
        
-    static auto parseBody = [&](const PhysicsResource::BodyT& body) 
+    static const auto parseBody = [](const PhysicsResource::BodyT& body, const ResourceLoadJob& job)
         {
             BodyInfo bodyInfo;
             bodyInfo.feedbackFlag = body.feedback;
@@ -572,7 +572,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
 
             const PhysicsResource::BodySetupT* bodySetup = actor.data.AsBodySetup();
             auto& body = actorInfo.body;
-            body = parseBody(*bodySetup->body);
+            body = parseBody(*bodySetup->body, job);
             actorInfo.name = bodySetup->name;
             actorInfo.transform = bodySetup->transform;
 
@@ -594,7 +594,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
 
                 ActorInfo actorInfo;
                 actorInfo.instanceCount = 0;                
-                actorInfo.body = parseBody(*bodySetup->body);
+                actorInfo.body = parseBody(*bodySetup->body, job);
                 actorInfo.name = bodySetup->name;
                 actorInfo.transform = bodySetup->transform;
                 actorAllocator.Set<Info>(actorId, actorInfo);
