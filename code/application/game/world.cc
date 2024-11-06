@@ -115,7 +115,8 @@ World::PreloadLevel(Util::String const& path)
     {
         Game::PackedLevel::EntityGroup entityGroup;
 
-        Util::FixedArray<ComponentId> components(table->components()->size());
+        size_t const numTableComponents = table->components()->size();
+        Util::FixedArray<ComponentId> components((SizeT)numTableComponents);
         componentIndex = 0;
         for (auto c : *table->components())
         {
@@ -128,15 +129,15 @@ World::PreloadLevel(Util::String const& path)
 
         n_assert(entityGroup.numRows > 0);
 
-        size_t bytesInColumn = 0;
+        size_t bytesInWholeTable = 0;
         for (auto column : *table->columns())
         {
-            bytesInColumn += column->bytes()->size();
+            bytesInWholeTable += column->bytes()->size();
         }
 
-        n_assert(bytesInColumn > 0);
+        n_assert(bytesInWholeTable > 0);
 
-        entityGroup.columns = new byte[bytesInColumn];
+        entityGroup.columns = new byte[bytesInWholeTable];
 
         size_t offset = 0;
         for (auto column : *table->columns())
@@ -147,13 +148,17 @@ World::PreloadLevel(Util::String const& path)
 
         // Patch strings
         offset = 0;
-        for (componentIndex = 0; componentIndex < components.Size(); componentIndex++)
+        size_t const numComponents = components.Size();
+        for (componentIndex = 0; componentIndex < numComponents; componentIndex++)
         {
             ComponentId const cid = components[componentIndex];
             Game::ComponentInterface const* cInterface =
                 static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
 
-            for (IndexT i = 0; i < cInterface->GetNumFields(); i++)
+            size_t const bytesInColumn = entityGroup.numRows * cInterface->typeSize;
+
+            size_t const numFields = cInterface->GetNumFields();
+            for (IndexT i = 0; i < numFields; i++)
             {
                 auto fieldTypename = cInterface->GetFieldTypenames()[i];
                 // Check for strings and unpack them
@@ -165,23 +170,21 @@ World::PreloadLevel(Util::String const& path)
                 {
                     ubyte* it = entityGroup.columns + offset;
                     it += cInterface->GetFieldByteOffsets()[i];
-                    while (it < entityGroup.columns + bytesInColumn)
+                    while (it < entityGroup.columns + offset + bytesInColumn)
                     {
                         static_assert(sizeof(Util::StringAtom) == sizeof(uint64_t));
-
+                        
                         Util::StringAtom* asStringAtom = reinterpret_cast<Util::StringAtom*>(it);
-                        uint64_t* asInt = reinterpret_cast<uint64_t*>(it);
+                        uint64_t asInt = *reinterpret_cast<uint64_t*>(it);
 
-                        *asStringAtom = strings[*asInt];
+                        *asStringAtom = strings[asInt];
 
                         it += cInterface->typeSize;
                     }
                 }
             }
-
             offset += (*table->columns())[componentIndex]->bytes()->size();
         }
-
         level->tables.Append(std::move(entityGroup));
     }
 

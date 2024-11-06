@@ -47,7 +47,7 @@ private:
     {
         MemDb::TableId dstTable;
         SizeT numRows;
-        byte* columns = nullptr;
+        ubyte* columns = nullptr;
     };
 
     Util::Array<EntityGroup> tables;

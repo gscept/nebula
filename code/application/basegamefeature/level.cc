@@ -33,21 +33,25 @@ PackedLevel::Instantiate() const
 
     
         // Create new partitions and fill them with data from table
-        SizeT byteOffset = 0;
+        SizeT rowsProcessed = 0;
         while (numRowsLeft > 0)
         {
             SizeT numRows = Math::min(numRowsLeft, (SizeT)MemDb::Table::Partition::CAPACITY - (SizeT)partition->numRows);
             numRowsLeft -= (SizeT)MemDb::Table::Partition::CAPACITY - partition->numRows;
 
             SizeT const numColumns = table.GetAttributes().Size();
+            SizeT byteOffset = 0;
             for (IndexT columnIndex = 0; columnIndex < numColumns; columnIndex++)
             {
                 // TODO: maybe store this in the EntityGroup upon preloading.
                 SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(table.GetAttributes()[columnIndex]);
                 SizeT const numBytes = numRows * typeSize;
+                ubyte* src = dataTable.columns + rowsProcessed + byteOffset;
                 Memory::Copy(dataTable.columns + byteOffset, (byte*)partition->columns[columnIndex] + (partition->numRows * typeSize), numBytes);
-                byteOffset += numBytes;
+                byteOffset += dataTable.numRows * typeSize;
             }
+
+            rowsProcessed += numRows;
 
             for (uint16_t rowIndex = partition->numRows; rowIndex < partition->numRows + numRows; rowIndex++)
             {
