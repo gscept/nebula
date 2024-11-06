@@ -166,7 +166,7 @@ EntityLoader::CommitEntity(Editor::Entity editorEntity)
     Editable& editable = Editor::state.editables[editorEntity.index];
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
     
-    Game::Entity gameEntity = gameWorld->CreateEntity();
+    Game::Entity gameEntity = gameWorld->AllocateEntity();
     
     editable.gameEntity = gameEntity;
     editable.version++;
