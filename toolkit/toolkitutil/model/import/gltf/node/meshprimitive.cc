@@ -70,7 +70,6 @@ AttributeToComponentIndex(Gltf::Primitive::Attribute attribute, bool normalized)
 
 //------------------------------------------------------------------------------
 /**
-    The "enable_if" template magic just enables a linting and compile error if we try to use an index buffer type other than an integral type
 */
 template <typename TYPE, int n>
 Math::vec4

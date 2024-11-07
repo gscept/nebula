@@ -59,7 +59,7 @@ csMain()
         vec4 material = vec4(0);//sample2DLod(SpecularBuffer, LinearState, UV, 0);
 
         vec3 F0 = vec3(0.04);
-        CalculateF0(albedo.rgb, material[0], F0);
+        F0 = CalculateF0(albedo.rgb, material[0], F0);
 
         vec3 F = FresnelSchlickGloss(F0, max(rayResult.b, 0.0), material[1]);
 
