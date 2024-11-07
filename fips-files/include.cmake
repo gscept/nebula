@@ -210,8 +210,9 @@ macro(compile_gpulang_intern)
         cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
         cmake_path(GET rel_path STEM basename)
 
-        set(binaryOutput ${EXPORT_DIR}/shaders/gpulang/${foldername}${basename}.gplb)
-        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}.h)
+        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.gplb)
+        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}${basename}.h)
+
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
@@ -767,8 +768,17 @@ macro(compile_gpulang)
     else()
         set_nebula_export_dir()
         foreach(shd ${ARGN})
-            compile_gpulang_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
+            add_shader_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
         endforeach()
+
+        # add configurations for the .vscode anyfx linter
+        SET(folders)
+        foreach(shd ${ARGN})
+            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} DIRECTORY)
+            list(APPEND folders ${foldername})
+        endforeach()
+        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${folders})
+
     endif()
 endmacro()
 
