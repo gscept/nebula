@@ -81,12 +81,12 @@ UnpackWeights(weights : f32x4) f32x4
 */
 CubicWeights(v : f32) f32x4
 {
-    n = f32x4(1, 2, 3, 4) - v;
-    s = n * n * n;
-    float x = s.x;
-    float y = s.y - 4 * s.x;
-    float z = s.z - 4 * s.y + 6 * s.x;
-    float w = 6 - x - y - z;
+    const n = f32x4(1, 2, 3, 4) - v;
+    const s = n * n * n;
+    const x : f32 = s.x;
+    const y : f32 = s.y - 4 * s.x;
+    const z : f32 = s.z - 4 * s.y + 6 * s.x;
+    const w : f32 = 6 - x - y - z;
     return f32x4(x, y, z, w) / 6.0f;
 }
 
@@ -96,24 +96,24 @@ CubicWeights(v : f32) f32x4
 */
 SampleCubic(tex : *texture2D, samp : *sampler, res : f32x4, pixel : f32x2, mip : u32) f32x3
 {
-    coords : f32x2 = pixel * res.xy - 0.5f;
-    fxy : f32x2 = fract(coords);
+    var coords : f32x2 = pixel * res.xy - 0.5f;
+    const fxy : f32x2 = fract(coords);
     coords -= fxy;
 
     xcubic : f32x4 = CubicWeights(fxy.x);
     ycubic : f32x4 = CubicWeights(fxy.y);
 
-    c : f32x4 = coords.xxyy + f32x2(-0.5f, 1.5f).xyxy;
-    s : f32x4 = f32x4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
-    offset : f32x4 = min(max(f32x4(0), c + f32x4(xcubic.yw, ycubic.yw) / s), res.xxyy);
+    const c : f32x4 = coords.xxyy + f32x2(-0.5f, 1.5f).xyxy;
+    const s : f32x4 = f32x4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+    var offset : f32x4 = min(max(f32x4(0), c + f32x4(xcubic.yw, ycubic.yw) / s), res.xxyy);
 
     offset *= res.zzww;
-    sample0 : f32x3 = textureSampleLod(tex, samp, offset.xz, mip).rgb;
-    sample1 : f32x3 = textureSampleLod(tex, samp, offset.yz, mip).rgb;
-    sample2 : f32x3 = textureSampleLod(tex, samp, offset.xw, mip).rgb;
-    sample3 : f32x3 = textureSampleLod(tex, samp, offset.yw, mip).rgb;
-    float sx = s.x / (s.x + s.y);
-    float sy = s.z / (s.z + s.w);
+    const sample0 : f32x3 = textureSampleLod(tex, samp, offset.xz, mip).rgb;
+    const sample1 : f32x3 = textureSampleLod(tex, samp, offset.yz, mip).rgb;
+    const sample2 : f32x3 = textureSampleLod(tex, samp, offset.xw, mip).rgb;
+    const sample3 : f32x3 = textureSampleLod(tex, samp, offset.yw, mip).rgb;
+    const sx : f32 = s.x / (s.x + s.y);
+    const sy : f32 = s.z / (s.z + s.w);
     return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
 }
 
@@ -193,10 +193,10 @@ XYZToRGB(xyz : f32x3) f32x3
 */
 RGBToXYY(rgb : f32x3) f32x3
 {
-    xyz : f32x3 = RGBToXYZ(rgb);
-    Y : f32 = xyz.y;
-    x : f32 = xyz.x / (xyz.x + xyz.y + xyz.z);
-    y : f32 = xyz.y / (xyz.x + xyz.y + xyz.z);
+    const xyz : f32x3 = RGBToXYZ(rgb);
+    const Y : f32 = xyz.y;
+    const x : f32 = xyz.x / (xyz.x + xyz.y + xyz.z);
+    const y : f32 = xyz.y / (xyz.x + xyz.y + xyz.z);
     return f32x3(x, y, Y);
 }
 
@@ -205,9 +205,9 @@ RGBToXYY(rgb : f32x3) f32x3
 */
 XYYToRGB(xyY : f32x3) f32x3
 {
-    y : f32 = xyY.z;
-    x : f32 = y * xyY.x / xyY.y;
-    z : f32 = y * (1.0f - xyY.x - xyY.y) / xyY.y;
+    const y : f32 = xyY.z;
+    const x : f32 = y * xyY.x / xyY.y;
+    const z : f32 = y * (1.0f - xyY.x - xyY.y) / xyY.y;
     return XYZToRGB(f32x3(x, y, z));
 }
 
@@ -283,7 +283,7 @@ log_conv(x0 : f32, x : f32, y0 : f32, y : f32) f32
 */
 GetPixelSize(tex : *texture2D) f32x2
 {
-    vec2 size = textureSize(tex, 0);
+    var size : f32x2 = textureSize(tex, 0);
     size = f32x2(1.0f) / size;
     return size;
 }
@@ -294,7 +294,7 @@ GetPixelSize(tex : *texture2D) f32x2
 */
 GetScaledUVs(uvs : f32x2, tex : *texture2D, dimensions : f32x2) f32x2
 {
-    vec2 texSize = textureSize(tex, 0);
+    const texSize : f32x2 = textureSize(tex, 0);
     uvs = uvs * (dimensions / texSize);
     return uvs;
 }
@@ -305,7 +305,7 @@ GetScaledUVs(uvs : f32x2, tex : *texture2D, dimensions : f32x2) f32x2
 */
 GetUV(pixel : i32x2, tex : *texture2D) f32x2
 {
-    f32x2 size = textureSize(tex, 0);
+    var size : f32x2 = textureSize(tex, 0);
     size = pixel / size;
     return size;
 }
@@ -316,7 +316,7 @@ GetUV(pixel : i32x2, tex : *texture2D) f32x2
 */
 GetPixel(uv : f32x2, tex : *texture2D) i32x2
 {
-    i32x2 size = textureSize(tex, 0);
+    var size : i32x2 = textureSize(tex, 0);
     size = i32x2(uv * size);
     return size;
 }
@@ -327,8 +327,8 @@ GetPixel(uv : f32x2, tex : *texture2D) i32x2
 */
 GetTextureRatio(tex : *texture2D, pixelSize : f32x2) f32x2
 {
-    i32x2 size = textureSize(tex, 0);
-    f32x2 currentTextureSize = f32x2(1.0f) / size;
+    const size : i32x2 = textureSize(tex, 0);
+    const currentTextureSize : f32x2 = f32x2(1.0f) / size;
     return size / currentTextureSize;
 }
 
@@ -346,20 +346,20 @@ FlipY(uv : f32x2) f32x2
 */
 PlaneTBN(normal : f32x3) f32x3x3
 {
-    f32x3 tangent = cross(normal.xyz, f32x3(0, 0, 1));
+    var tangent : f32x3 = cross(normal.xyz, f32x3(0, 0, 1));
     tangent = normalize(cross(normal.xyz, tangent));
-    f32x3 binormal = normalize(cross(normal.xyz, tangent));
+    const binormal : f32x3 = normalize(cross(normal.xyz, tangent));
     return f32x3x3(tangent, binormal, normal.xyz);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-TangentSpace(vec3 tangent, vec3 normal, float sign) f32x3x3
+TangentSpace(tangent : : f32x3, normal : : f32x3, sign : f32) f32x3x3
 {
-    f32x3 tan = normalize(tangent);
-    f32x3 norm = normalize(normal);
-    f32x3 bin = cross(norm, tan) * sign;
+    const tan : f32x3 = normalize(tangent);
+    const norm : f32x3 = normalize(normal);
+    const bin : f32x3 = cross(norm, tan) * sign;
     return f32x3x3(tan, bin, norm);
 }
 
@@ -423,8 +423,8 @@ PixelToProjection(screenCoord : f32x2, depth : f32) f32x4
 */
 PixelToView(screenCoord : f32x2, depth : f32, invProjection : f32x4x4) f32x4
 {
-    f32x4 projectionSpace = PixelToProjection(screenCoord, depth);
-    f32x4 viewSpace = invProjection * projectionSpace;
+    const projectionSpace : f32x4 = PixelToProjection(screenCoord, depth);
+    var viewSpace : f32x4 = invProjection * projectionSpace;
     viewSpace /= viewSpace.w;
     return viewSpace;
 }
@@ -435,7 +435,7 @@ PixelToView(screenCoord : f32x2, depth : f32, invProjection : f32x4x4) f32x4
 */
 PixelToWorld(screenCoord : f32x2, depth : f32, invView : f32x4x4, invProjection : f32x4x4) f32x4
 {
-    f32x4 viewSpace = PixelToView(screenCoord, depth, invProjection);
+    const viewSpace : f32x4 = PixelToView(screenCoord, depth, invProjection);
     return invView * viewSpace;
 }
 
@@ -463,9 +463,9 @@ GetPosition(transform : f32x4x4) f32x3
 */
 Unpack1DTo3D(index1D : u32, width : u32, height : u32) u32x3
 {
-    i : u32 = index1D % width;
-    j : u32 = index1D % (width * height) / width;
-    k : u32 = index1D / (width * height);
+    const i : u32 = index1D % width;
+    const j : u32 = index1D % (width * height) / width;
+    const k : u32 = index1D / (width * height);
 
     return u32x3(i, j, k);
 }
@@ -486,11 +486,11 @@ Pack3DTo1D(index3D : u32x3, width : u32, height : u32) u32
 MortonCurve8x8(idx : u32) u32x2
 {
     // yeah... don't ask
-    u32 x = bitfieldExtract(idx, 2, 3);
+    var x : u32 = bitfieldExtract(idx, 2, 3);
     x = bitfieldInsert(x, idx, 0, 1);
 
-    u32 y = bitfieldExtract(idx, 3, 3);
-    u32 a = bitfieldExtract(idx, 1, 2);
+    var y : u32 = bitfieldExtract(idx, 3, 3);
+    const a : u32 = bitfieldExtract(idx, 1, 2);
     y = bitfieldInsert(y, a, 0, 2);
 
     return u32x2(x, y);
@@ -506,9 +506,9 @@ struct IntersectionResult
 }
 IntersectLineWithPlane(lineStart : f32x3, lineEnd : f32x3, plane : f32x4) IntersectionResult
 {
-    IntersectionResult ret;
-    f32x3 ab = lineEnd - lineStart;
-    float t = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
+    var ret : IntersectionResult;
+    const ab : f32x3 = lineEnd - lineStart;
+    const t : f32 = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
     ret.intersects = (t >= 0.0f && t <= 1.0f);
     ret.point = f32x3(0, 0, 0);
     if (ret.intersects)
@@ -531,7 +531,7 @@ IntersectLineWithPlane(lineStart : f32x3, lineEnd : f32x3, plane : f32x4) Inters
 */
 hash11(p : f32) f32
 {
-    f32x3 p3 = fract(f32x3(p) * MOD3);
+    var p3 : f32x3 = fract(f32x3(p) * MOD3);
     p3 += dot(p3, p3.yzx + 19.19);
     return fract((p3.x + p3.y) * p3.z);
 }
@@ -541,7 +541,7 @@ hash11(p : f32) f32
 */
 hash12(p : f32x2) f32
 {
-    f32x3 p3 = fract(f32x3(p.xyx) * MOD3);
+    var p3 : f32x3 = fract(f32x3(p.xyx) * MOD3);
     p3 += dot(p3, p3.yzx + 19.19);
     return fract((p3.x + p3.y) * p3.z);
 }
@@ -551,7 +551,7 @@ hash12(p : f32x2) f32
 */
 hash32(f32x2 p) f32x3
 {
-    f32x3 p3 = fract(f32x3(p.xyx) * MOD3);
+    var p3 : f32x3 = fract(f32x3(p.xyx) * MOD3);
     p3 += dot(p3, p3.yxz + 19.19);
     return fract(f32x3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
 }
@@ -563,7 +563,7 @@ const m = 1540483477;
 */
 murmur(k : i32) f32
 {
-    h : i32 = k ^ 1;
+    var h : i32 = k ^ 1;
 
     k *= m;
     k ^= k >> 24;
@@ -581,8 +581,8 @@ murmur(k : i32) f32
 */
 random3(c : f32x3) f32x3 
 {
-    f32x3 r;
-    c1 : f32 = dot(c, f32x3(17.0f, 59.4f, 15.0f));
+    var r : f32x3;
+    const c1 : f32 = dot(c, f32x3(17.0f, 59.4f, 15.0f));
     r.x = fract(murmur(i32(c.x * c1)) / 512.0f);
     r.y = fract(murmur(i32(c.y * c1)) / 512.0f);
     r.z = fract(murmur(i32(c.z * c1)) / 512.0f);
@@ -605,13 +605,13 @@ simplex3D(p : f32x3) f32
     /* x, x1, x2, x3 - unskewed coordinates of p relative to each of T vertices*/
 
     /* calculate s and x */
-    f32x3 s = floor(p + dot(p, f32x3(F3)));
-    f32x3 x = p - s + dot(s, f32x3(G3));
+    const s : f32x3 = floor(p + dot(p, f32x3(F3)));
+    const x : f32x3 = p - s + dot(s, f32x3(G3));
 
     /* calculate i1 and i2 */
-    f32x3 e = step(f32x3(0.0f), x - x.yzx);
-    f32x3 i1 = e * (1.0f - e.zxy);
-    f32x3 i2 = 1.0f - e.zxy * (1.0f - e);
+    const e : f32x3 = step(f32x3(0.0f), x - x.yzx);
+    const i1 : f32x3 = e * (1.0f - e.zxy);
+    const i2 : f32x3 = 1.0f - e.zxy * (1.0f - e);
 
     /* x1, x2, x3 */
     f32x3 x1 = x - i1 + G3;
