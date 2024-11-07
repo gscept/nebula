@@ -8,22 +8,21 @@
 #include "lib/util.fxh"
 #include "lib/shared.fxh"
 
-texture2D ColorSource;
-texture2D PreviousLum;
+uniform ColorSource : *texture2D;
+uniform PreviousLum : *texture2D;
 
-constant AverageLumBlock
+
+struct AverageLumData
 {
     float TimeDiff;
 };
-
+uniform AverageLumBlock : *AverageLumData;
 
 sampler_state LuminanceSampler
 {
     //Samplers = { ColorSource, PreviousLum };
     Filter = Point;
 };
-
-
 
 render_state AverageLumState
 {
@@ -36,14 +35,14 @@ render_state AverageLumState
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsMain(
-    [slot=0] in vec3 position,
-    [slot=2] in vec2 uv,
-    out vec2 UV) 
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2
+) void 
 {
-    gl_Position = vec4(position, 1);
+    gplExportVertexCoordinates(f32x4(position, 1));
     UV = uv;
 }
 
@@ -51,21 +50,20 @@ vsMain(
 /**
     Performs a 2x2 kernel downscale, will only render 1 pixel
 */
-shader
-void
-psMain(in vec2 UV,
-    [color0] out float result)
+entry_point
+psMain(in UV : f32x2,
+) void
 {
-    vec4 sample1 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(1, 0), 0);
-    vec4 sample2 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(0, 1), 0);
-    vec4 sample3 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(1, 1), 0);
-    vec4 sample4 = texelFetch(sampler2D(ColorSource, LuminanceSampler), ivec2(0, 0), 0);
-    float currentLum = dot((sample1 + sample2 + sample3 + sample4).rgb * 0.25f, Luminance);
-    float lastLum = texelFetch(sampler2D(PreviousLum, LuminanceSampler), ivec2(0, 0), 0).r;
+    const sample1 : f32x4 = textureFetch(ColorSource, i32x2(1, 0), 0);
+    const sample2 : f32x4 = textureFetch(ColorSource, i32x2(0, 1), 0);
+    const sample3 : f32x4 = textureFetch(ColorSource, i32x2(1, 1), 0);
+    const sample4 : f32x4 = textureFetch(ColorSource, i32x2(0, 0), 0);
+    const currentLum : f32 = dot((sample1 + sample2 + sample3 + sample4).rgb * 0.25f, Luminance);
+    const lastLum : f32 = textureFetch(PreviousLum, i32x2(0, 0), 0).r;
 
-    float lum = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * TimeDiff));
+    var lum : f32 = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * TimeDiff));
     lum = max(0.25f, lum);
-    result = lum;
+    gplExportPixel(lum, 0);
 }
 
 //------------------------------------------------------------------------------
