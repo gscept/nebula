@@ -7,6 +7,12 @@ FIND_PROGRAM(SHADERC
        PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
        NO_DEFAULT_PATH
        )
+       
+FIND_PROGRAM(GPULANGC
+    NAMES gpulangcompiler.exe gpulangcompiler
+    PATHS ${FIPS_DEPLOY_DIR}/gpulang/gpulangcompiler-windows ${FIPS_DEPLOY_DIR}/gpulang/gpulangcompiler-linux
+    NO_DEFAULT_PATH
+)
 
 nebula_begin_module(render)
     add_nebula_shaders()
