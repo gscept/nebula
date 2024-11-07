@@ -182,14 +182,17 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
                 Math::vec4 data;
                 switch (vertexBufferAccessor.format)
                 {
+                    //clang-format off
                     case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(vb, j); break;
                     case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(vb, j); break;
                     case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(vb, j); break;
                     case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(vb, j); break;
                     case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(vb, j); break;
+                    case CoreGraphics::VertexComponent::Format::UByte4:   data = ReadVertexData<ubyte, 4>(vb, j); break;
                     default:
                         n_error("ERROR: Invalid vertex component type!");
                         break;
+                    //clang-format on
                 }
 
                 MeshBuilderVertex& vtx = meshBuilder->VertexAt(j);

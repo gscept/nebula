@@ -90,6 +90,7 @@ DirectXTexConversionJob::Convert()
             (attrs.GetPixelFormat() == TextureAttrs::BC5) ||
             (String::MatchPattern(this->srcPath, "*norm.*")) ||
             (String::MatchPattern(this->srcPath, "*normal.*")) ||
+            (String::MatchPattern(this->srcPath, "*Normal.*")) ||
             (String::MatchPattern(this->srcPath, "*bump.*")))
         {
             this->logger->Print("%s ", "Normal Map (BC5 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
