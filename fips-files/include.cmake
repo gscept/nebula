@@ -192,7 +192,7 @@ macro(add_shader_intern)
         endif()
 
         if (nebula_shader)
-            set(foldername system_shaders${CurDir})
+            set(foldername system_shaders/${CurDir})
             set(base_path ${NROOT}/syswork/shaders/vk)
         else()
             set(foldername ${CurDir})
@@ -214,7 +214,7 @@ macro(add_shader_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I  ${CMAKE_BINARY_DIR}/${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h -t shader)
+            execute_process(COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/syswork/shaders/vk -I  ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h -t shader)
         endif()
 
         # sadly this doesnt work for some reason
@@ -230,7 +230,7 @@ macro(add_shader_intern)
         endif()
 
         add_custom_command(OUTPUT ${binaryOutput}
-            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${CMAKE_BINARY_DIR}/${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
+            COMMAND ${SHADERC} -i ${shd} -I ${NROOT}/syswork/shaders/vk -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${SHADERC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
