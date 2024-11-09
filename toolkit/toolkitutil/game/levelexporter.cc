@@ -113,7 +113,7 @@ LevelExporter::ExportFile( const URI& file )
         this->Progress(5, file.AsString());
         this->logger->Print("Exporting: %s\n", file.GetHostAndLocalPath().ExtractFileName().AsCharPtr());
        
-        Game::World* world = new Game::World('TEMP');
+        Game::World* world = new Game::World(Game::WorldHash('TEMP'), 0);
         this->ExportLevel(jsonReader, world, file);
         delete world;
     }
