@@ -25,6 +25,8 @@
 #include "dynui/imguicontext.h"
 #include "io/filedialog.h"
 #include "window.h"
+#include "editor/tools/selectiontool.h"
+#include "editor/cmds.h"
 
 #include "frame/default.h"
 #include "frame/editorframe.h"
@@ -85,6 +87,18 @@ OnActivate()
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Shift+Z", "Edit");
+    windowServer->RegisterCommand([]()
+    {
+        auto selection = Tools::SelectionTool::Selection();
+        Edit::CommandManager::BeginMacro("Delete entities", false);
+        Util::Array<Editor::Entity> emptySelection;
+        Edit::SetSelection(emptySelection);
+        for (auto e : selection)
+        {
+            Edit::DeleteEntity(e);
+        }
+        Edit::CommandManager::EndMacro();
+    }, "Delete", "Delete", "Edit");
     windowServer->RegisterCommand([](){ 
         static Util::String localpath = IO::URI("export:levels").LocalPath();
         Util::String path;
