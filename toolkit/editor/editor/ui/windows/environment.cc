@@ -69,6 +69,12 @@ Environment::Run(SaveMode save)
     {
         LightContext::SetAmbient(globalLight, ambient);
     }
+
+    bool visible = Terrain::TerrainContext::GetVisible();
+    if (ImGui::Checkbox("Render terrain", &visible))
+    {
+        Terrain::TerrainContext::SetVisible(visible);
+    }
 }
 
 } // namespace Presentation

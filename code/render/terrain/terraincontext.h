@@ -242,6 +242,11 @@ public:
     /// clear the tile cache (use when we need to force update the terrain)
     static void ClearCache();
 
+    /// 
+    static void SetVisible(bool visible);
+    /// 
+    static bool GetVisible();
+
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
     static void OnRenderDebug(uint32_t flags);
