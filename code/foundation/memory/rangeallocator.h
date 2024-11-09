@@ -360,6 +360,7 @@ RangeAllocator::InsertNode(uint size, uint offset)
     newNode.offset = offset;
     newNode.binNext = headNodeIndex;
     newNode.binPrev = RangeAllocatorNode::END;
+    newNode.resident = false;
 
     this->freeStorage += size;
 
