@@ -2240,6 +2240,7 @@ UploadInternal(const CoreGraphics::BufferId buffer, const uint offset, const voi
 void
 FreeUploads(const Util::Array<Memory::RangeAllocation>& allocations)
 {
+    Threading::CriticalScope _0(&UploadLock);
     for (const auto& alloc : allocations)
     {
         state.uploadAllocator.Dealloc(alloc);
@@ -2363,12 +2364,14 @@ NewFrame()
     {
         state.queries[state.currentBufferedFrameIndex].queryFreeCount[i] = 0;
     }
-
-    for (const auto& alloc : state.uploadAllocationsToFree[state.currentBufferedFrameIndex])
     {
-        state.uploadAllocator.Dealloc(alloc);
+        Threading::CriticalScope _0(&UploadLock);
+        for (const auto& alloc : state.uploadAllocationsToFree[state.currentBufferedFrameIndex])
+        {
+            state.uploadAllocator.Dealloc(alloc);
+        }
+        state.uploadAllocationsToFree[state.currentBufferedFrameIndex].Clear();
     }
-    state.uploadAllocationsToFree[state.currentBufferedFrameIndex].Clear();
 
     // update constant buffer offsets
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
