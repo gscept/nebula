@@ -25,10 +25,12 @@ namespace Game
 {
 
 class World;
-#define WORLD_DEFAULT uint32_t('DWLD') // 0x44574C44
+#define WORLD_DEFAULT Game::WorldHash{'DWLD'} // 0x44574C44
 
 /// returns a world by hash
-World* GetWorld(uint32_t worldHash);
+World* GetWorld(WorldHash worldHash);
+/// returns a world by id
+World* GetWorld(WorldId worldId);
 
 /// Destroy a filter
 void DestroyFilter(Filter);

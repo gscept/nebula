@@ -108,7 +108,7 @@ ComponentDrawFuncT<Game::Entity>(ComponentId component, void* data, bool* commit
 	MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
 	Game::Entity* entity = (Game::Entity*)data;
-	Ids::Id32 id = (Ids::Id32)*entity;
+    Ids::Id64 id = (Ids::Id64)*entity;
 	ImGui::Text("%s: %u", desc->name.Value(), id);
 	ImGui::SameLine();
 	ImGui::TextDisabled("| gen: %i | index: %i", entity->generation, entity->index);

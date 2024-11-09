@@ -121,11 +121,11 @@ StopGame()
         {
             Editor::Entity const& editorEntity = entities[i];
             Editable& edit = state.editables[editorEntity.index];
-            // NOTE: assumes the game entity id will be the same as the editor entity id when we've just copied the world.
             edit.gameEntity = editorEntity;
+            edit.gameEntity.world = gameWorld->GetWorldId();
 
             Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(edit.gameEntity);
-            editorEntityComponent->id = (uint)editorEntity;
+            editorEntityComponent->id = (uint64_t)editorEntity;
         }
     }
 

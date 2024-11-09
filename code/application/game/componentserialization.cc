@@ -113,6 +113,6 @@ IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 template<> void
 IO::JsonWriter::Add<Game::Entity>(Game::Entity const& entity, Util::String const& key)
 {
-    this->Add<uint>((uint)entity, key);
+    this->Add<uint64_t>((uint64_t)entity, key);
 }
 

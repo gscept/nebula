@@ -166,7 +166,7 @@ EntityLoader::CommitEntity(Editor::Entity editorEntity)
     Editable& editable = Editor::state.editables[editorEntity.index];
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
     
-    Game::Entity gameEntity = gameWorld->AllocateEntity();
+    Game::Entity gameEntity = gameWorld->AllocateEntityId();
     
     editable.gameEntity = gameEntity;
     editable.version++;
@@ -191,7 +191,7 @@ EntityLoader::CommitEntity(Editor::Entity editorEntity)
     gameWorld->AllocateInstance(gameEntity, gameTableId, &entityData);
 
     Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(gameEntity);
-    editorEntityComponent->id = (uint)editorEntity;
+    editorEntityComponent->id = (uint64_t)editorEntity;
 }
 
 //------------------------------------------------------------------------------

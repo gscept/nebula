@@ -527,12 +527,16 @@ GameServer::CleanupWorld(World* world)
 /**
 */
 World*
-GameServer::CreateWorld(uint32_t hash)
+GameServer::CreateWorld(WorldHash hash)
 {
+    WorldId newWorldId = (WorldId)this->state.numWorlds;
     this->state.worldTable.Add(hash, this->state.numWorlds);
+
+    // The hardcoded max is actually 256 worlds (entity.world is 8 bit), so this could be upped a bit if needed.
     n_assert(this->state.numWorlds < 32);
+
     World*& world = this->state.worlds[this->state.numWorlds++];
-    world = new World(hash);
+    world = new World(hash, newWorldId);
     return world;
 }
 
@@ -540,20 +544,29 @@ GameServer::CreateWorld(uint32_t hash)
 /**
 */
 World*
-GameServer::GetWorld(uint32_t worldHash)
+GameServer::GetWorld(WorldHash worldHash)
 {
     return this->state.worlds[this->state.worldTable[worldHash]];
 }
 
 //------------------------------------------------------------------------------
 /**
+*/
+World*
+GameServer::GetWorld(WorldId worldId)
+{
+    return this->state.worlds[worldId];
+}
+
+//------------------------------------------------------------------------------
+/**
     @note   The world index does not get recycled.
-    @todo   The world index should be recycled.
+    @todo   The world index should probably be recycled.
 */
 void
-GameServer::DestroyWorld(uint32_t worldHash)
+GameServer::DestroyWorld(WorldHash worldHash)
 {
-    uint32_t index = this->state.worldTable[worldHash];
+    WorldId index = this->state.worldTable[worldHash];
     delete this->state.worlds[index];
     this->state.worlds[index] = nullptr;
     this->state.worldTable.Erase(worldHash);

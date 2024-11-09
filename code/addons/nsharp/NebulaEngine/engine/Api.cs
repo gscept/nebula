@@ -32,43 +32,43 @@ namespace Nebula
         public class NebulaApiV1 : INebulaApi
         {
             [DllImport("__Internal", EntryPoint = "EntityCreateFromTemplate")]
-            public static extern uint CreateEntity(uint worldId, string template);
+            public static extern UInt64 CreateEntity(uint worldId, string template);
 
             [DllImport("__Internal", EntryPoint = "EntityIsValid")]
-            public static extern bool IsValid(uint worldId, uint entityId);
+            public static extern bool IsValid(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntityDelete")]
-            public static extern void DeleteEntity(uint worldId, uint entityId);
+            public static extern void DeleteEntity(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntityGetPosition")]
-            public static extern Vector3 GetPosition(uint worldId, uint entityId);
+            public static extern Vector3 GetPosition(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntitySetPosition")]
-            public static extern void SetPosition(uint worldId, uint entityId, Vector3 position);
+            public static extern void SetPosition(UInt64 entityId, Vector3 position);
 
             [DllImport("__Internal", EntryPoint = "EntityGetOrientation")]
-            public static extern Quaternion GetOrientation(uint worldId, uint entityId);
+            public static extern Quaternion GetOrientation(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntitySetOrientation")]
-            public static extern void SetOrientation(uint worldId, uint entityId, Quaternion orientation);
+            public static extern void SetOrientation(UInt64 entityId, Quaternion orientation);
 
             [DllImport("__Internal", EntryPoint = "EntityGetScale")]
-            public static extern Vector3 GetScale(uint worldId, uint entityId);
+            public static extern Vector3 GetScale(UInt64 entityId);
 
             [DllImport("__Internal", EntryPoint = "EntitySetScale")]
-            public static extern void SetScale(uint worldId, uint entityId, Vector3 position);
+            public static extern void SetScale(UInt64 entityId, Vector3 position);
 
             [DllImport("__Internal", EntryPoint = "EntityHasComponent")]
-            public static extern bool HasComponent(uint worldId, uint entityId, uint componentId);
+            public static extern bool HasComponent(UInt64 entityId, uint componentId);
 
             [DllImport("__Internal", EntryPoint = "ComponentGetId")]
             public static extern uint GetComponentId(string name);
 
             [DllImport("__Internal", EntryPoint = "ComponentGetData")]
-            public static extern void GetComponentData(uint worldId, uint entityId, uint componentId, IntPtr data, int dataSize);
+            public static extern void GetComponentData(UInt64 entityId, uint componentId, IntPtr data, int dataSize);
             
             [DllImport("__Internal", EntryPoint = "ComponentSetData")]
-            public static extern void SetComponentData(uint worldId, uint entityId, uint componentId, IntPtr data, int dataSize);
+            public static extern void SetComponentData(UInt64 entityId, uint componentId, IntPtr data, int dataSize);
 
             [DllImport("__Internal", EntryPoint = "WorldGetDefaultWorldId")]
             public static extern uint GetDefaultWorldId();

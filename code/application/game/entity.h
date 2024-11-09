@@ -6,8 +6,8 @@
     An entity is essentially just an Id with some utility functions attached.
     What actually makes up the entities are their components.
 
-    The id is split into two parts: the upper 10 bits are used as a generation
-    counter, so that we can easily reuse the lower 22 bits as an index.
+    The id is split into two parts: The upper half is world id, the upper 10 bits of the lower half are used as a generation
+    counter, so that we can easily reuse the lowest 22 bits as an index.
     
     @see    Game::World::IsValid
     @see    api.h
@@ -24,6 +24,10 @@
 namespace Game
 {
 
+// TODO: move this to a separate file
+typedef uint32_t WorldId;
+ID_32_TYPE(WorldHash);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -31,17 +35,19 @@ struct Entity
 {
     uint32_t index : 22;      // 4M concurrent entities
     uint32_t generation : 10; // 1024 generations per index
+    uint32_t world : 8;       // world id (not to be confused with world hash)
+    uint32_t reserved : 24;   // not currently in use
 
     Entity() = default;
-    constexpr Entity(uint32_t id);
-    constexpr Entity(uint32_t generation, uint32_t index);
+    constexpr Entity(uint64_t id);
+    constexpr Entity(uint32_t world, uint32_t generation, uint32_t index);
 
-    static Entity FromId(Ids::Id32 id);
+    static constexpr Entity FromId(Ids::Id64 id);
 
-    explicit constexpr operator Ids::Id32() const;
+    explicit constexpr operator Ids::Id64() const;
     static constexpr Entity Invalid();
     constexpr uint32_t HashCode() const;
-    Entity& operator=(uint32_t rhs);
+    Entity& operator=(uint64_t rhs);
     const bool operator==(const Entity& rhs) const;
     const bool operator!=(const Entity& rhs) const;
     const bool operator<(const Entity& rhs) const;
@@ -64,7 +70,7 @@ struct Entity::Traits
         "id"
     };
     static constexpr const char* field_typenames[num_fields] = {
-        "uint"
+        "uint64"
     };
     static constexpr size_t field_byte_offsets[num_fields] = { 0 };
 
@@ -86,39 +92,43 @@ struct EntityMapping
 //------------------------------------------------------------------------------
 /**
 */
-inline constexpr Entity::Entity(uint32_t id)
+inline constexpr Entity::Entity(uint64_t id)
 {
-    this->index = id & 0x003FFFFF;
-    this->generation = (id & 0xFFC0000) >> 22;
+    this->index = id & 0x00000000003FFFFF;
+    this->generation = (id & 0x0000000FFC00000) >> 22;
+    this->world = (id & 0x000000FF00000000) >> 32;
+    this->reserved = 0x0;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline constexpr Entity::Entity(uint32_t generation, uint32_t index)
+inline constexpr Entity::Entity(uint32_t world, uint32_t generation, uint32_t index)
 {
     this->index = index;
     this->generation = generation;
+    this->world = world;
+    this->reserved = 0x0;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Entity
-Entity::FromId(Ids::Id32 id)
+inline constexpr Entity
+Entity::FromId(Ids::Id64 id)
 {
-    Entity ret;
-    ret.index = id & 0x003FFFFF;
-    ret.generation = (id & 0xFFC0000) >> 22;
+    Entity ret = Entity((uint64_t)id);
     return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline constexpr Game::Entity::operator Ids::Id32() const
+inline constexpr Game::Entity::operator Ids::Id64() const
 {
-    return ((generation << 22) & 0xFFC0000) + (index & 0x003FFFFF);
+    return (((uint64_t)world << 32) & 0x000000FF00000000)
+         + (((uint64_t)generation << 22) & 0x0000000FFC00000)
+         + ((uint64_t)index & 0x00000000003FFFFF);
 }
 
 //------------------------------------------------------------------------------
@@ -127,7 +137,7 @@ inline constexpr Game::Entity::operator Ids::Id32() const
 inline constexpr Entity
 Entity::Invalid()
 {
-    return {0xFFFFFFFF, 0xFFFFFFFF};
+    return 0xFFFFFFFFFFFFFFFF;
 }
 
 //------------------------------------------------------------------------------
@@ -143,10 +153,12 @@ Entity::HashCode() const
 /**
 */
 inline Entity&
-Entity::operator=(uint32_t id)
+Entity::operator=(uint64_t id)
 {
-    this->index = id & 0x003FFFFF;
-    this->generation = (id & 0xFFC0000) >> 22;
+    this->index = id & 0x00000000003FFFFF;
+    this->generation = (id & 0x0000000FFC00000) >> 22;
+    this->world = (id & 0x000000FF00000000) >> 32;
+    this->reserved = (id & 0xFFFFFF0000000000) >> 40;
     return *this;
 }
 
@@ -156,7 +168,7 @@ Entity::operator=(uint32_t id)
 inline const bool
 Entity::operator==(const Entity& rhs) const
 {
-    return Ids::Id32(*this) == Ids::Id32(rhs);
+    return Ids::Id64(*this) == Ids::Id64(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -165,7 +177,7 @@ Entity::operator==(const Entity& rhs) const
 inline const bool
 Entity::operator!=(const Entity& rhs) const
 {
-    return Ids::Id32(*this) != Ids::Id32(rhs);
+    return Ids::Id64(*this) != Ids::Id64(rhs);
 }
 
 //------------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 	"components": {
 		"EditorEntity": {
 			"id": {
-				"type": "uint",
+				"type": "uint64",
 				"default": -1,
 				"description": "The editor entitys id."
 			}

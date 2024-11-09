@@ -22,7 +22,7 @@ namespace Nebula
             
             public Entity CreateEntity(string template)
             {
-                uint id = Api.CreateEntity(this.id, template);
+                UInt64 id = Api.CreateEntity(this.id, template);
                 Entity entity = new Entity(this, id);
                 this.RegisterEntity(entity);
 

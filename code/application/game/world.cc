@@ -24,6 +24,7 @@
 #include "io/ioserver.h"
 #include "basegamefeature/level.h"
 #include "flat/game/level.h"
+#include "util/blob.h"
 
 namespace Game
 {
@@ -37,9 +38,10 @@ static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 //------------------------------------------------------------------------------
 /**
 */
-World::World(uint32_t hash)
+World::World(WorldHash hash, WorldId id)
     : numEntities(0),
       hash(hash),
+      worldId(id),
       pipeline(this)
 {
     this->db = MemDb::Database::Create();
@@ -371,13 +373,14 @@ World::ExportLevel(Util::String const& path)
 /**
 */
 Entity
-World::AllocateEntity()
+World::AllocateEntityId()
 {
     Entity entity;
     if (this->pool.Allocate(entity))
     {
         this->entityMap.Append({MemDb::InvalidTableId, MemDb::InvalidRow});
     }
+    entity.world = (uint32_t)this->worldId;
     this->numEntities++;
     return entity;
 }
@@ -386,7 +389,7 @@ World::AllocateEntity()
 /**
 */
 void
-World::DeallocateEntity(Entity entity)
+World::DeallocateEntityId(Entity entity)
 {
     n_assert(!this->HasInstance(entity));
     this->pool.Deallocate(entity);
@@ -497,7 +500,7 @@ World::ManageEntities()
             this->DeallocateInstance(table, row);
             this->entityMap[cmd.entity.index].table = MemDb::InvalidTableId;
             this->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
-            this->DeallocateEntity(cmd.entity);
+            this->DeallocateEntityId(cmd.entity);
         }
     }
 
@@ -544,7 +547,7 @@ World::GetDatabase()
 Game::Entity
 World::CreateEntity(bool immediate)
 {
-    Entity const entity = this->AllocateEntity();
+    Entity const entity = this->AllocateEntityId();
 
     World::AllocateInstanceCommand cmd;
     cmd.entity = entity;
@@ -577,7 +580,7 @@ World::CreateEntity(EntityCreateInfo const& info)
         n_warning("Trying to instantiate an invalid template!");
         return Game::Entity::Invalid();
     }
-    Entity const entity = this->AllocateEntity();
+    Entity const entity = this->AllocateEntityId();
     cmd.entity = entity;
 
     if (!info.immediate)
@@ -611,7 +614,7 @@ World::DeleteEntity(Game::Entity entity)
     else
     {
         // entity hasn't been instantiated, can just delete the id straight away.
-        this->DeallocateEntity(entity);
+        this->DeallocateEntityId(entity);
     }
 }
 
@@ -743,7 +746,7 @@ World::ClearDecayBuffers()
 bool
 World::IsValid(Entity e)
 {
-    return this->pool.IsValid(e);
+    return (uint32_t)this->worldId == e.world && this->pool.IsValid(e);
 }
 
 //------------------------------------------------------------------------------
@@ -762,6 +765,7 @@ World::HasInstance(Entity e)
 EntityMapping
 World::GetEntityMapping(Game::Entity entity)
 {
+    n_assert(this->IsValid(entity));
     n_assert(this->HasInstance(entity));
     return this->entityMap[entity.index];
 }
@@ -1082,7 +1086,7 @@ World::CreateEntityTable(EntityTableCreateInfo const& info)
 MemDb::RowId
 World::AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data)
 {
-    n_assert(this->pool.IsValid(entity));
+    n_assert(this->IsValid(entity));
     n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
 
     if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
@@ -1127,6 +1131,8 @@ World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::Row
     if (!this->componentInitializationEnabled)
         return;
 
+    n_assert(this->IsValid(entity));
+
     MemDb::Table& tbl = this->db->GetTable(tableId);
     auto const& attributes = tbl.GetAttributes();
     for (IndexT i = 4; i < attributes.Size(); i++) // skip first four, since they're always owner and TRS
@@ -1149,7 +1155,7 @@ World::InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::Row
 MemDb::RowId
 World::AllocateInstance(Entity entity, BlueprintId blueprint)
 {
-    n_assert(this->pool.IsValid(entity));
+    n_assert(this->IsValid(entity));
     n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
 
     if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
@@ -1185,7 +1191,7 @@ World::AllocateInstance(Entity entity, BlueprintId blueprint)
 MemDb::RowId
 World::AllocateInstance(Entity entity, TemplateId templateId, bool performInitialize)
 {
-    n_assert(this->pool.IsValid(entity));
+    n_assert(this->IsValid(entity));
     n_assert(this->entityMap[entity.index].instance == MemDb::InvalidRow);
 
     if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != MemDb::InvalidRow)
@@ -1210,9 +1216,13 @@ World::AllocateInstance(Entity entity, TemplateId templateId, bool performInitia
     return mapping.instance;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 World::FinalizeAllocate(Entity entity)
 {
+    n_assert(this->IsValid(entity));
     EntityMapping& mapping = this->entityMap[entity.index];
     InitializeAllComponents(entity, mapping.table, mapping.instance);
 }
@@ -1243,6 +1253,8 @@ World::DeallocateInstance(MemDb::TableId table, MemDb::RowId instance)
 void
 World::DeallocateInstance(Entity entity)
 {
+    n_assert(this->IsValid(entity));
+
     MemDb::TableId& table = this->entityMap[entity.index].table;
     MemDb::RowId& instance = this->entityMap[entity.index].instance;
 
@@ -1258,6 +1270,7 @@ World::DeallocateInstance(Entity entity)
 MemDb::RowId
 World::Migrate(Entity entity, MemDb::TableId newTableId)
 {
+    n_assert(this->IsValid(entity));
     n_assert(this->HasInstance(entity));
     EntityMapping mapping = this->GetEntityMapping(entity);
     MemDb::RowId newInstance = MemDb::Table::MigrateInstance(
@@ -1429,7 +1442,7 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
 void
 World::RenderDebug()
 {
-    ImGui::Text("World Hash: %s", Util::FourCC(this->hash).AsString().AsCharPtr());
+    ImGui::Text("World Hash: %s", Util::FourCC(this->hash.id).AsString().AsCharPtr());
     ImGui::Separator();
     static bool showProcessors = true;
     ImGui::Checkbox("Show Frame Pipeline", &showProcessors);
@@ -1633,11 +1646,12 @@ World::Override(World* src, World* dst)
         for (int v = 0; v < data.numViews; v++)
         {
             Game::Dataset::View const& view = data.views[v];
-            Game::Entity const* const entities = (Game::Entity*)view.buffers[0];
+            Game::Entity* entities = (Game::Entity*)view.buffers[0];
 
             for (uint16_t i = 0; i < view.numInstances; ++i)
             {
-                Game::Entity const& entity = entities[i];
+                Game::Entity& entity = entities[i];
+                entity.world = dst->worldId;
                 MemDb::RowId row = {
                     .partition = view.partitionId,
                     .index = i

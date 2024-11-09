@@ -38,7 +38,7 @@ InternalCreateEntity(Editor::Entity id, Util::StringAtom templateName)
     Game::Entity const entity = gameWorld->CreateEntity(createInfo);
 
     Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(entity);
-    editorEntityComponent->id = (uint)id;
+    editorEntityComponent->id = (uint64_t)id;
 
     if (Editor::state.editables.Size() >= id.index)
         Editor::state.editables.Append({});
@@ -67,7 +67,7 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     MemDb::TableSignature const& signature =
         Editor::state.editorWorld->GetDatabase()->GetTable(editorTable).GetSignature();
 
-    Game::Entity const entity = gameWorld->AllocateEntity();
+    Game::Entity const entity = gameWorld->AllocateEntityId();
     MemDb::TableId gameTable = gameWorld->GetDatabase()->FindTable(signature);
     n_assert(gameTable != MemDb::InvalidTableId);
     MemDb::RowId instance = gameWorld->AllocateInstance(entity, gameTable);
@@ -75,7 +75,7 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     gameWorld->SetComponent<Game::Entity>(entity, entity);
 
     Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(entity);
-    editorEntityComponent->id = (uint)editorEntity;
+    editorEntityComponent->id = (uint64_t)editorEntity;
 
     if (Editor::state.editorWorld->HasInstance(editorEntity))
     {
@@ -199,7 +199,7 @@ struct CMDCreateEntity : public Edit::Command
     ~CMDCreateEntity()
     {
         if (!executed)
-            Editor::state.editorWorld->DeallocateEntity(this->id);
+            Editor::state.editorWorld->DeallocateEntityId(this->id);
     };
     const char*
     Name() override
@@ -210,7 +210,7 @@ struct CMDCreateEntity : public Edit::Command
     Execute() override
     {
         if (this->id == Editor::Entity::Invalid())
-            this->id = Editor::state.editorWorld->AllocateEntity();
+            this->id = Editor::state.editorWorld->AllocateEntityId();
         if (Editor::state.editables.Size() >= this->id.index)
             Editor::state.editables.Append({});
         if (!initialized)
@@ -242,7 +242,7 @@ struct CMDDeleteEntity : public Edit::Command
     ~CMDDeleteEntity()
     {
         if (executed)
-            Editor::state.editorWorld->DeallocateEntity(this->id);
+            Editor::state.editorWorld->DeallocateEntityId(this->id);
     };
     const char*
     Name() override
@@ -458,7 +458,7 @@ Editor::Entity
 CreateEntity(Util::StringAtom templateName)
 {
     CMDCreateEntity* cmd = new CMDCreateEntity;
-    Editor::Entity const entity = Editor::state.editorWorld->AllocateEntity();
+    Editor::Entity const entity = Editor::state.editorWorld->AllocateEntityId();
     cmd->id = entity;
     cmd->templateName = templateName;
     CommandManager::Execute(cmd);

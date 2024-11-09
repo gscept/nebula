@@ -18,9 +18,10 @@
 #include "processor.h"
 #include "memory/arenaallocator.h"
 #include "frameevent.h"
-#include "util/blob.h"
+#include "util/fourcc.h"
 
 namespace MemDb { class Database; }
+namespace Util { class Blob; }
 
 namespace Game
 {
@@ -49,8 +50,11 @@ class World
 {
 public:
     // Generally, only the game server should create worlds
-    World(uint32_t hash);
+    World(WorldHash hash, WorldId id);
     ~World();
+
+    WorldHash GetWorldHash() const;
+    WorldId GetWorldId() const;
 
     /// Create a new empty entity
     Entity CreateEntity(bool immediate = true);
@@ -126,9 +130,9 @@ public:
     /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
     static void Override(World* src, World* dst);
     /// Allocate an entity id. Use this with caution!
-    Entity AllocateEntity();
+    Entity AllocateEntityId();
     /// Deallocate an entity id. Use this with caution!
-    void DeallocateEntity(Entity entity);
+    void DeallocateEntityId(Entity entity);
     /// Allocate an entity instance in a table. Use this with caution!
     MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data = nullptr);
     /// Allocate an entity instance from a blueprint. Use this with caution!
@@ -227,7 +231,9 @@ private:
     /// contains all entity instances
     Ptr<MemDb::Database> db;
     /// world hash
-    uint32_t hash;
+    WorldHash hash;
+    /// world id
+    WorldId worldId;
     /// maps from blueprint to a table that has the same signature
     Util::HashTable<BlueprintId, MemDb::TableId> blueprintToTableMap;
     ///
@@ -250,6 +256,24 @@ private:
 
     MemDb::TableId defaultTableId;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline WorldHash
+World::GetWorldHash() const
+{
+    return this->hash;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline WorldId
+World::GetWorldId() const
+{
+    return this->worldId;
+}
 
 //------------------------------------------------------------------------------
 /**
