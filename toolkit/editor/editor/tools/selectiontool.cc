@@ -322,6 +322,17 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
             Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
             Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
         }
+        if (defaultWorld->HasComponent<GraphicsFeature::PointLight>(gameEntity))
+        {
+            Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
+            const GraphicsFeature::PointLight& light = defaultWorld->GetComponent<GraphicsFeature::PointLight>(gameEntity);
+            const Math::bbox box = Math::bbox(location, Math::vector(0.5f, 0.5f, 0.5f));
+            Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, box, { 1.0f, 0.30f, 0.0f, 1.0f });
+            Math::mat4 sphere = Math::mat4::identity;
+            sphere.scale(Math::vec3(light.range, light.range, light.range));
+            sphere.translate(location);
+            Im3d::Im3dContext::DrawSphere(sphere, { 1.0f, 0.30f, 0.0f, 1.0f });
+        }
     }
 }
 
