@@ -106,18 +106,20 @@ CameraManager::InitUpdateCameraProcessor()
     // Setup processor that handles both worldtransform and camera (heirarchy)
     Game::ProcessorBuilder(world, "CameraManager.UpdateCameraWorldTransform")
         .Func(
-        [](Game::World*, Camera const& camera, Game::Position const& parentPosition, Game::Orientation const& parentOrientation)
-        {
-            if (IsViewHandleValid(camera.viewHandle))
+            [](Game::World*, Camera const& camera, Game::Position const& parentPosition, Game::Orientation const& parentOrientation)
             {
-                Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
-                Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
-                UpdateCameraSettings(gid, settings, camera);
-                Math::mat4 parentTransform = Math::translation(parentPosition) * Math::rotationquat(parentOrientation);
-                Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform);
+                if (IsViewHandleValid(camera.viewHandle))
+                {
+                    Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
+                    Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
+                    UpdateCameraSettings(gid, settings, camera);
+                    Math::mat4 parentTransform = Math::translation(parentPosition) * Math::rotationquat(parentOrientation);
+                    Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform);
+                }
             }
-        }
-    ).Build();
+        )
+        .RunInEditor()
+        .Build();
 }
 
 //------------------------------------------------------------------------------

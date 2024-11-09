@@ -7,6 +7,7 @@
 #include "world.h"
 #include "memdb/database.h"
 #include "jobs2/jobs2.h"
+#include "editorstate.h"
 
 namespace Game
 {
@@ -270,8 +271,15 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     for (IndexT i = 0; i < this->processors.Size(); i++)
     {
         Processor* processor = this->processors[i];
+
+#ifdef WITH_NEBULA_EDITOR
+        Game::EditorState* editor = Game::EditorState::Instance();
+        if (editor && editor->isRunning && !editor->isPlaying && !processor->runInEditor)
+            continue;
+#endif
         datasets[i] = world->Query(processor->filter, processor->cache);
         numJobs += datasets[i].numViews;
+
     }
 
     if (numJobs == 0)
@@ -309,6 +317,13 @@ FrameEvent::Batch::ExecuteSequential(World* world)
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
         Processor* processor = this->processors[i];
+
+#ifdef WITH_NEBULA_EDITOR
+        Game::EditorState* editor = Game::EditorState::Instance();
+        if (editor && editor->isRunning && !editor->isPlaying && !processor->runInEditor)
+            continue;
+#endif
+
         Dataset data = world->Query(processor->filter, processor->cache);
         for (int v = 0; v < data.numViews; v++)
         {

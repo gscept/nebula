@@ -16,6 +16,7 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "graphicsfeature/components/graphicsfeature.h"
+#include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
 
 namespace EditorFeature
@@ -67,12 +68,30 @@ EditorFeatureUnit::OnActivate()
 
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
         Game::ProcessorBuilder(world, "EditorGameManager.UpdateModelTransforms"_atm)
+            .On("OnEndFrame")
             .OnlyModified()
+            .RunInEditor()
             .Func(
                 [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
                 {
                     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                    Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
+                    if (Models::ModelContext::IsEntityRegistered(model.graphicsEntityId))
+                        Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
+                }
+            )
+            .Build();
+
+        Game::ProcessorBuilder(world, "EditorGameManager.UpdatePointLightPositions"_atm)
+            .On("OnEndFrame")
+            .OnlyModified()
+            .RunInEditor()
+            .Func(
+                [](Game::World* world,
+                   Game::Position const& pos,
+                   GraphicsFeature::PointLight const& light)
+                {
+                    if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
+                        Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
                 }
             )
             .Build();

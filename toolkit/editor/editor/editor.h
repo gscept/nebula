@@ -35,10 +35,8 @@ struct Editable
 
 };
 
-struct EditorState
+struct State
 {
-    /// is set to true if the game is currently playing
-    bool isPlayingGame = false;
     /// contains the world state for the editor
     Game::World* editorWorld;
     /// maps from editor entity index to editable
@@ -61,6 +59,6 @@ void PauseGame();
 void StopGame();
 
 /// global editor state
-extern EditorState state;
+extern State state;
 
 } // namespace Editor

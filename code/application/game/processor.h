@@ -35,6 +35,10 @@ public:
     Util::Array<MemDb::TableId> cache;
     /// set to false if the cache is invalid
     bool cacheValid = false;
+#ifdef WITH_NEBULA_EDITOR
+    /// set to true if you want this processor to always run in editor
+    bool runInEditor = false;
+#endif
 
 private:
     friend ProcessorBuilder;
@@ -159,6 +163,9 @@ public:
     /// Set the sorting order for the processor
     ProcessorBuilder& Order(int order);
 
+    /// Processor should always run, even in editor; when the game is paused.
+    ProcessorBuilder& RunInEditor();
+
     /// Build the processor and attach it to the world
     Processor* Build();
 
@@ -172,6 +179,9 @@ private:
     bool async = false;
     bool onlyModified = false;
     int order = 100;
+#ifdef WITH_NEBULA_EDITOR
+    bool runInEditor = false;
+#endif
 };
 
 //------------------------------------------------------------------------------

@@ -20,13 +20,15 @@
 #include "tools/pathconverter.h"
 #include "io/assignregistry.h"
 
+#include "game/editorstate.h"
+
 namespace Editor
 {
 
 //------------------------------------------------------------------------------
 /**
 */
-EditorState state;
+State state;
 
 //------------------------------------------------------------------------------
 /**
@@ -54,6 +56,9 @@ Create()
     // Create a command manager with a 20MB buffer
     Edit::CommandManager::Create(20_MB);
     CreatePathConverter({});
+
+    Game::EditorState::Singleton = new Game::EditorState();
+    Game::EditorState::Instance()->isRunning = true;    
 }
 
 //------------------------------------------------------------------------------
@@ -63,7 +68,7 @@ void
 Destroy()
 {
     Edit::CommandManager::Discard();
-    // empty
+    delete Game::EditorState::Singleton;
 }
 
 //------------------------------------------------------------------------------
@@ -72,6 +77,7 @@ Destroy()
 void
 PlayGame()
 {
+    Game::EditorState::Instance()->isPlaying = true;
     Game::TimeManager::SetGlobalTimeFactor(1.0f);
 }
 
@@ -81,19 +87,8 @@ PlayGame()
 void
 PauseGame()
 {
+    Game::EditorState::Instance()->isPlaying = false;
     Game::TimeManager::SetGlobalTimeFactor(0.0f);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetTimeScale(float timeScale)
-{
-    if (state.isPlayingGame)
-    {
-        Game::TimeManager::SetGlobalTimeFactor(timeScale);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -102,6 +97,8 @@ SetTimeScale(float timeScale)
 void
 StopGame()
 {
+    Game::EditorState::Instance()->isPlaying = false;
+
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
     Game::GameServer::Instance()->CleanupWorld(gameWorld);
     Game::GameServer::Instance()->SetupEmptyWorld(gameWorld);

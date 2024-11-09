@@ -203,6 +203,7 @@ AudioManager::Create()
         .Func(UpdateSpatialAudio)
         .On("OnFrame")
         .Order(53)
+        .RunInEditor()
         .Build();
 
     Game::ManagerAPI api;

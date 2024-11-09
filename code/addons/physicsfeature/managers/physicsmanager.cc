@@ -137,6 +137,7 @@ PhysicsManager::InitPollTransformProcessor()
     Game::ProcessorBuilder(world, "PhysicsManager.PassKinematicTransforms"_atm)
         .Excluding<Game::Static>()
         .On("OnFrame")
+        .RunInEditor()
         .Func(&PassKinematicTransforms)
         .Build();
 }
