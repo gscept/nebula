@@ -55,17 +55,17 @@ Environment::Run(SaveMode save)
     //const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows = false);
     Math::vec3 color = LightContext::GetColor(globalLight);
     float intensity = LightContext::GetIntensity(globalLight);
-    if (ImGui::InputFloat3("Global light Color", &color.x))
+    if (ImGui::ColorEdit3("Global light Color", &color.x))
     {
         LightContext::SetColor(globalLight, color);
     }
-    if (ImGui::InputFloat("Intensity", &intensity))
+    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1000.0f))
     {
         LightContext::SetIntensity(globalLight, intensity);
     }
 
     Math::vec3 ambient = LightContext::GetAmbient(globalLight);
-    if (ImGui::InputFloat3("Ambient", &ambient.x))
+    if (ImGui::ColorEdit3("Ambient", &ambient.x))
     {
         LightContext::SetAmbient(globalLight, ambient);
     }
