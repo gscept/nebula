@@ -12,6 +12,7 @@
 #include "windows/toolbar.h"
 #include "windows/scene.h"
 #include "windows/history.h"
+#include "windows/environment.h"
 #include "windows/inspector.h"
 #include "windows/assetbrowser.h"
 #include "windows/asseteditor/asseteditor.h"
@@ -64,6 +65,7 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::History", "History", "Editor");
     windowServer->RegisterWindow("Presentation::StyleEditor", "Style Editor", "Editor");
     windowServer->RegisterWindow("Presentation::Toolbar", "Toolbar");
+    windowServer->RegisterWindow("Presentation::Environment", "Environment");
     windowServer->RegisterWindow("Presentation::Scene", "Scene View");
     windowServer->RegisterWindow("Presentation::Inspector", "Inspector");
     windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");

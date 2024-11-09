@@ -351,6 +351,26 @@ LightContext::SetupGlobalLight(
 //------------------------------------------------------------------------------
 /**
 */
+Math::vec3
+LightContext::GetAmbient(const Graphics::GraphicsEntityId id)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    return directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id) = ambient;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, 
     const Math::vec3& color, 
@@ -376,7 +396,7 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
     pointLightAllocator.Get<PointLight_DynamicOffsets>(pli)[1] = 0;
     pointLightAllocator.Get<PointLight_ProjectionTexture>(pli) = projection;
 
-    if (castShadows)
+    if (0)//castShadows)
     {
         // Allocate shadow caster slices for each side
         for (IndexT i = 0; i < 6; i++)
@@ -547,6 +567,16 @@ LightContext::SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& co
 //------------------------------------------------------------------------------
 /**
 */
+Math::vec3
+LightContext::GetColor(const Graphics::GraphicsEntityId id)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    return genericLightAllocator.Get<Color>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 LightContext::SetRange(const Graphics::GraphicsEntityId id, const float range)
 {
@@ -562,6 +592,16 @@ LightContext::SetIntensity(const Graphics::GraphicsEntityId id, const float inte
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     genericLightAllocator.Get<Intensity>(cid.id) = intensity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+LightContext::GetIntensity(const Graphics::GraphicsEntityId id)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    return genericLightAllocator.Get<Intensity>(cid.id);
 }
 
 //------------------------------------------------------------------------------

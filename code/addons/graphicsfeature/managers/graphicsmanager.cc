@@ -128,6 +128,21 @@ GraphicsManager::OnDecay()
     {
         DeregisterModelEntity(data + i);
     }
+    Game::ComponentDecayBuffer const lightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<PointLight>());
+    PointLight* lightData = (PointLight*)lightDecayBuffer.buffer;
+    for (int i = 0; i < lightDecayBuffer.size; i++)
+    {
+        PointLight* light = lightData + i;
+        if ((Graphics::GraphicsEntityId)light->graphicsEntityId == Graphics::InvalidGraphicsEntityId)
+        {
+            continue;
+        }
+        if (Lighting::LightContext::IsEntityRegistered(light->graphicsEntityId))
+        {
+            Lighting::LightContext::DeregisterEntity(light->graphicsEntityId);
+        }
+        Graphics::DestroyEntity(light->graphicsEntityId);
+    }
 }
 
 //------------------------------------------------------------------------------

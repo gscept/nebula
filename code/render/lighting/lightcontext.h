@@ -87,10 +87,14 @@ public:
 
     /// set color of light
     static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);
+    ///
+    static Math::vec3 GetColor(const Graphics::GraphicsEntityId id);
     /// set range of light
     static void SetRange(const Graphics::GraphicsEntityId id, const float range);
     /// set intensity of light
     static void SetIntensity(const Graphics::GraphicsEntityId id, const float intensity);
+    ///
+    static float GetIntensity(const Graphics::GraphicsEntityId id);
     /// Set transform as angles
     static void SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith);
     /// get transform
@@ -110,6 +114,11 @@ public:
     static const void SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale);
     /// Get light scale
     static const Math::vec3 GetScale(const Graphics::GraphicsEntityId id);
+
+    /// 
+    static Math::vec3 GetAmbient(const Graphics::GraphicsEntityId id);
+    ///
+    static void SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient);
 
     /// get the light type
     static LightType GetType(const Graphics::GraphicsEntityId id);
