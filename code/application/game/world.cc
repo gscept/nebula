@@ -102,7 +102,13 @@ World::PreloadLevel(Util::String const& path)
         ComponentId cid = MemDb::AttributeRegistry::GetAttributeId(componentName);
         componentIds[componentIndex++] = cid;
 
-        // TODO: Validate all fields in debug and assert if incorrect!
+#ifndef PUBLIC_BUILD
+        Game::ComponentInterface const* cInterface =
+            static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
+
+        // TODO: Validate all fields types as well and assert if incorrect!
+        n_assert(cInterface->GetNumFields() == desc->fields()->size());
+#endif
     }
 
     Util::FixedArray<Util::StringAtom> strings(flatLevel->strings()->size());
@@ -154,6 +160,7 @@ World::PreloadLevel(Util::String const& path)
         for (componentIndex = 0; componentIndex < numComponents; componentIndex++)
         {
             ComponentId const cid = components[componentIndex];
+            auto component_description = (*flatLevel->component_descriptions())[(*table->components())[componentIndex]];
             Game::ComponentInterface const* cInterface =
                 static_cast<Game::ComponentInterface*>(MemDb::AttributeRegistry::GetAttribute(cid));
 
@@ -163,12 +170,10 @@ World::PreloadLevel(Util::String const& path)
             for (IndexT i = 0; i < numFields; i++)
             {
                 auto fieldTypename = cInterface->GetFieldTypenames()[i];
+                auto component_field = (*component_description->fields())[i];
+
                 // Check for strings and unpack them
-                // TODO: This could be improved and generalized so that we can
-                //       do the same for entity references and other reference types
-                if (Util::String::StrCmp(fieldTypename, "Resources::ResourceName") == 0 ||
-                    Util::String::StrCmp(fieldTypename, "string") == 0 ||
-                    Util::String::StrCmp(fieldTypename, "Util::StringAtom") == 0)
+                if (component_field->feature() == Game::Serialization::ComponentFieldFeature_StringAtom)
                 {
                     ubyte* it = entityGroup.columns + offset;
                     it += cInterface->GetFieldByteOffsets()[i];
@@ -251,16 +256,29 @@ World::ExportLevel(Util::String const& path)
                 {
                     std::vector<Offset<ComponentField>> fields;
 
+                    for (IndexT i = 0; i < cInterface->GetNumFields(); i++)
                     {
-                        for (IndexT i = 0; i < cInterface->GetNumFields(); i++)
+                        auto field_name = builder.CreateString(cInterface->GetFieldNames()[i]);
+                        // TODO: Add field type and size for validation
+
+                        ComponentFieldFeature feature = ComponentFieldFeature::ComponentFieldFeature_Undefined;
+
+                        const char* fieldTypename = cInterface->GetFieldTypenames()[i];
+                        if (Util::String::StrCmp(fieldTypename, "Resources::ResourceName") == 0 ||
+                            Util::String::StrCmp(fieldTypename, "string") == 0 ||
+                            Util::String::StrCmp(fieldTypename, "Util::StringAtom") == 0)
                         {
-                            auto field_name = builder.CreateString(cInterface->GetFieldNames()[i]);
-                            // TODO: Add field type and size for validation
-
-                            auto component_field = CreateComponentField(builder, field_name);
-
-                            fields.push_back(component_field);
+                            feature = ComponentFieldFeature::ComponentFieldFeature_StringAtom;
                         }
+                        else if (Util::String::StrCmp(fieldTypename, "Game::Entity") == 0 ||
+                                Util::String::StrCmp(fieldTypename, "entity") == 0)
+                        {
+                            feature = ComponentFieldFeature::ComponentFieldFeature_EntityId;
+                        }
+
+                        auto component_field = CreateComponentField(builder, field_name, feature);
+
+                        fields.push_back(component_field);
                     }
 
                     auto vector_fields = builder.CreateVector(fields);

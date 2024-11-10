@@ -31,6 +31,8 @@
 #include "frame/default.h"
 #include "frame/editorframe.h"
 
+#include "basegamefeature/level.h"
+
 namespace Editor
 {
 
@@ -87,6 +89,7 @@ OnActivate()
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Shift+Z", "Edit");
+    
     windowServer->RegisterCommand([]()
     {
         auto selection = Tools::SelectionTool::Selection();
@@ -99,14 +102,29 @@ OnActivate()
         }
         Edit::CommandManager::EndMacro();
     }, "Delete", "Delete", "Edit");
+    
+    // Import and export is temporary and should be removed later.
     windowServer->RegisterCommand([](){ 
         static Util::String localpath = IO::URI("export:levels").LocalPath();
         Util::String path;
         IO::IoServer::Instance()->CreateDirectory(localpath);
         if (IO::FileDialog::SaveFile("Select location of exported level file", localpath, {"*.nlvl"}, path))
             Editor::state.editorWorld->ExportLevel(path.AsCharPtr());
-    }, "Export", "Ctrl+Shift+E", "File");
+    }, "Export nlvl", "Ctrl+Shift+E", "File");
+    
+    windowServer->RegisterCommand([](){ 
+        static Util::String localpath = IO::URI("export:levels").LocalPath();
+        Util::String path;
+        if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, {"*.nlvl"}, path))
+        {
+            auto gameWorld = Game::GetWorld(WORLD_DEFAULT);
+            Game::PackedLevel* pLevel = gameWorld->PreloadLevel(path);
+            auto ents = pLevel->Instantiate();
+            gameWorld->UnloadLevel(pLevel);
+        }
+    }, "Import nlvl (game only)", "Ctrl+Shift+I", "File");
 
+    // 
     Graphics::GraphicsServer::Instance()->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
     {
         ImGui::DockSpaceOverViewport();
