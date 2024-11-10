@@ -12,9 +12,45 @@
         "type": "uint",
         "default": -1
       },
-      "color": "colour",
-      "intensity": "float",
-      "range": "float",
+      "color": {
+        "type": "colour",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      },
+      "intensity": {
+        "type": "float",
+        "default": 50.0 // candela
+      },
+      "range": {
+        "type": "float",
+        "default": 5.0
+      },
+      "castShadows": "bool"
+    },
+    "SpotLight": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1
+      },
+      "color": {
+        "type": "colour",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      },
+      "intensity": {
+        "type": "float",
+        "default": 50.0 // candela
+      },
+      "innerConeAngle": {
+        "type": "float",
+        "default": 15.0 // degrees
+      },
+      "outerConeAngle": {
+        "type": "float",
+        "default": 45.0 // degrees
+      },
+      "range": {
+        "type": "float",
+        "default": 8.0
+      },
       "castShadows": "bool"
     },
     "Model": {
@@ -28,12 +64,12 @@
       },
       "raytracing": "bool",
       "anim": {
-          "type": "resource",
-          "default": ""
+        "type": "resource",
+        "default": ""
       },
-      "skeleton":  {
-          "type": "resource",
-          "default": ""
+      "skeleton": {
+        "type": "resource",
+        "default": ""
       }
     },
     "Camera": {

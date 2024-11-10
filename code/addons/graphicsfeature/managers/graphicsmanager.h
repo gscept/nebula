@@ -32,8 +32,10 @@ public:
 
     /// called automatically when a model needs to be initialized
     static void InitModel(Game::World*, Game::Entity, Model*);
-    /// called automatically when a model needs to be initialized
+    /// called automatically when a point light needs to be initialized
     static void InitPointLight(Game::World* world, Game::Entity entity, PointLight* light);
+    /// called automatically when a spot light needs to be initialized
+    static void InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light);
 
 private:
     /// constructor
@@ -41,11 +43,8 @@ private:
     /// destructor
     ~GraphicsManager();
 
-
-    void InitCreatePointLightProcessor();
     void InitUpdateModelTransformProcessor();
     static void OnDecay();
-
     static void OnCleanup(Game::World* world);
 };
 

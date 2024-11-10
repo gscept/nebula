@@ -273,9 +273,12 @@ FrameEvent::Batch::ExecuteAsync(World* world)
         Processor* processor = this->processors[i];
 
 #ifdef WITH_NEBULA_EDITOR
-        Game::EditorState* editor = Game::EditorState::Instance();
-        if (editor && editor->isRunning && !editor->isPlaying && !processor->runInEditor)
-            continue;
+        if (Game::EditorState::HasInstance())
+        {
+            Game::EditorState* editor = Game::EditorState::Instance();
+            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
+                continue;
+        }
 #endif
         datasets[i] = world->Query(processor->filter, processor->cache);
         numJobs += datasets[i].numViews;
@@ -319,9 +322,12 @@ FrameEvent::Batch::ExecuteSequential(World* world)
         Processor* processor = this->processors[i];
 
 #ifdef WITH_NEBULA_EDITOR
-        Game::EditorState* editor = Game::EditorState::Instance();
-        if (editor && editor->isRunning && !editor->isPlaying && !processor->runInEditor)
-            continue;
+        if (Game::EditorState::HasInstance())
+        {
+            Game::EditorState* editor = Game::EditorState::Instance();
+            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
+                continue;
+        }
 #endif
 
         Dataset data = world->Query(processor->filter, processor->cache);

@@ -96,6 +96,25 @@ EditorFeatureUnit::OnActivate()
             )
             .Build();
 
+        Game::ProcessorBuilder(world, "EditorGameManager.UpdateSpotLightTransform"_atm)
+            .On("OnEndFrame")
+            .OnlyModified()
+            .RunInEditor()
+            .Func(
+                [](Game::World* world,
+                   Game::Position const& pos,
+                   Game::Orientation const& rot,
+                   GraphicsFeature::SpotLight const& light)
+                {
+                    if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
+                    {
+                        Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                        Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                    }
+                }
+            )
+            .Build();
+
         //if (!Editor::ConnectToBackend(...))
         //    Editor::SpawnLocalBackend();
     }

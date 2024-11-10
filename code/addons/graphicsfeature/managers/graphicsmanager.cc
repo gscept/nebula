@@ -118,30 +118,48 @@ DeregisterModelEntity(Model const* model)
 /**
 */
 void
+DeregisterLight(Graphics::GraphicsEntityId gfxId)
+{
+    if (gfxId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (Lighting::LightContext::IsEntityRegistered(gfxId))
+    {
+        Lighting::LightContext::DeregisterEntity(gfxId);
+    }
+    Graphics::DestroyEntity(gfxId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::OnDecay()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<Model>());
-    Model* data = (Model*)decayBuffer.buffer;
-    for (int i = 0; i < decayBuffer.size; i++)
+    // Decay models
+    Game::ComponentDecayBuffer const modelDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<Model>());
+    Model* data = (Model*)modelDecayBuffer.buffer;
+    for (int i = 0; i < modelDecayBuffer.size; i++)
     {
         DeregisterModelEntity(data + i);
     }
-    Game::ComponentDecayBuffer const lightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<PointLight>());
-    PointLight* lightData = (PointLight*)lightDecayBuffer.buffer;
-    for (int i = 0; i < lightDecayBuffer.size; i++)
+
+    Game::ComponentDecayBuffer const pointLightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<PointLight>());
+    PointLight* pointLightData = (PointLight*)pointLightDecayBuffer.buffer;
+    for (int i = 0; i < pointLightDecayBuffer.size; i++)
     {
-        PointLight* light = lightData + i;
-        if ((Graphics::GraphicsEntityId)light->graphicsEntityId == Graphics::InvalidGraphicsEntityId)
-        {
-            continue;
-        }
-        if (Lighting::LightContext::IsEntityRegistered(light->graphicsEntityId))
-        {
-            Lighting::LightContext::DeregisterEntity(light->graphicsEntityId);
-        }
-        Graphics::DestroyEntity(light->graphicsEntityId);
+        PointLight* light = pointLightData + i;
+        DeregisterLight(light->graphicsEntityId);
+    }
+
+    Game::ComponentDecayBuffer const spotLightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<SpotLight>());
+    SpotLight* spotLightData = (SpotLight*)spotLightDecayBuffer.buffer;
+    for (int i = 0; i < spotLightDecayBuffer.size; i++)
+    {
+        SpotLight* light = spotLightData + i;
+        DeregisterLight(light->graphicsEntityId);
     }
 }
 
@@ -207,8 +225,30 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     // TODO: This is not finished, and needs revisiting
     Game::Position pos = world->GetComponent<Game::Position>(entity);
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    // TODO: Cookie projection support
     Lighting::LightContext::SetupPointLight(light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->castShadows);
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light)
+{
+    light->graphicsEntityId = Graphics::CreateEntity().id;
+
+    // TODO: This is not finished, and needs revisiting
+    Game::Position pos = world->GetComponent<Game::Position>(entity);
+    Game::Orientation rot = world->GetComponent<Game::Orientation>(entity);
+
+    Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    // TODO: Cookie projection support
+    Lighting::LightContext::SetupSpotLight(
+        light->graphicsEntityId, light->color.vec, light->intensity, Math::deg2rad(light->innerConeAngle), Math::deg2rad(light->outerConeAngle), light->range, light->castShadows
+    );
+    Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+    Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
 }
 
 //------------------------------------------------------------------------------
@@ -235,21 +275,57 @@ GraphicsManager::OnCleanup(Game::World* world)
 {
     n_assert(GraphicsManager::HasInstance());
 
-    Game::Filter filter = Game::FilterBuilder().Including<Model>().Build();
-    Game::Dataset data = world->Query(filter);
+    { // Model cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<Model>().Build();
+        Game::Dataset data = world->Query(filter);
 
-    for (int v = 0; v < data.numViews; v++)
-    {
-        Game::Dataset::View const& view = data.views[v];
-        Model const* const modelData = (Model*)view.buffers[0];
-
-        for (IndexT i = 0; i < view.numInstances; ++i)
+        for (int v = 0; v < data.numViews; v++)
         {
-            DeregisterModelEntity(modelData + i);
-        }
-    }
+            Game::Dataset::View const& view = data.views[v];
+            Model const* const componentData = (Model*)view.buffers[0];
 
-    Game::DestroyFilter(filter);
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterModelEntity(componentData + i);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Pointlight cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<PointLight>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            PointLight const* const componentData = (PointLight*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Spotlight cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<SpotLight>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            SpotLight const* const componentData = (SpotLight*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
 }
 
 } // namespace GraphicsFeature
