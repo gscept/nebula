@@ -70,10 +70,8 @@ InternalCreateEntity(Editor::Entity editorEntity, MemDb::TableId editorTable, Ut
     Game::Entity const entity = gameWorld->AllocateEntityId();
     MemDb::TableId gameTable = gameWorld->GetDatabase()->FindTable(signature);
     n_assert(gameTable != MemDb::InvalidTableId);
-    MemDb::RowId instance = gameWorld->AllocateInstance(entity, gameTable);
-    gameWorld->GetDatabase()->GetTable(gameTable).DeserializeInstance(entityState, instance);
-    gameWorld->SetComponent<Game::Entity>(entity, entity);
-
+    MemDb::RowId instance = gameWorld->AllocateInstance(entity, gameTable, &entityState);
+    
     Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(entity);
     editorEntityComponent->id = (uint64_t)editorEntity;
 
