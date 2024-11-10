@@ -91,9 +91,12 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
                 GraphicsFeature::Model const& model = *((GraphicsFeature::Model*)view->buffers[1] + i);
                 Editor::EditorEntity const& editorEntity = *((Editor::EditorEntity*)view->buffers[2] + i);
 
-                Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(model.graphicsEntityId);
-                editorEntities.Append(editorEntity);
-                bboxes.Append(bbox);
+                if (Models::ModelContext::IsEntityRegistered(model.graphicsEntityId))
+                {
+                    Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(model.graphicsEntityId);
+                    editorEntities.Append(editorEntity);
+                    bboxes.Append(bbox);
+                }
             }
         }
 
@@ -316,18 +319,26 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
         Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
         if (defaultWorld->HasComponent<GraphicsFeature::Model>(gameEntity))
         {
-            // TODO: Fixme!
+            // TODO: Outline maybe?
             Graphics::GraphicsEntityId const gfxEntity = defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
-            Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
-            Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
-            Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
+            if (Models::ModelContext::IsEntityRegistered(gfxEntity))
+            {
+                Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
+                Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
+                Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
+            }
         }
+        else
+        {
+            Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
+            const Math::bbox box = Math::bbox(location, Math::vector(0.1f, 0.1f, 0.1f));
+            Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, box, {1.0f, 0.30f, 0.0f, 1.0f});
+        }
+
         if (defaultWorld->HasComponent<GraphicsFeature::PointLight>(gameEntity))
         {
             Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
             const GraphicsFeature::PointLight& light = defaultWorld->GetComponent<GraphicsFeature::PointLight>(gameEntity);
-            const Math::bbox box = Math::bbox(location, Math::vector(0.5f, 0.5f, 0.5f));
-            Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, box, { 1.0f, 0.30f, 0.0f, 1.0f });
             Math::mat4 sphere = Math::mat4::identity;
             sphere.scale(Math::vec3(light.range, light.range, light.range));
             sphere.translate(location);
@@ -373,20 +384,23 @@ SelectionTool::GetSelectedEntityUnderMouse(
     {
         Editor::Entity editorEntity = state.selection[i];
         Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
+        
+        Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
+        Math::bbox bbox = Math::bbox(location, Math::vector(0.5f, 0.5f, 0.5f));
+        
         if (defaultWorld->HasComponent<GraphicsFeature::Model>(gameEntity))
         {
-            Graphics::GraphicsEntityId const gfxEntity =
-                defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
-            Math::bbox const bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
-            
-            float dist;
-            if (bbox.intersects(ray, dist))
+            Graphics::GraphicsEntityId const gfxEntity = defaultWorld->GetComponent<GraphicsFeature::Model>(gameEntity).graphicsEntityId;
+            bbox = Models::ModelContext::ComputeBoundingBox(gfxEntity);
+        }
+        
+        float dist;
+        if (bbox.intersects(ray, dist))
+        {
+            if (dist < closestDistance)
             {
-                if (dist < closestDistance)
-                {
-                    closestDistance = dist;
-                    closestEntity = editorEntity;
-                }
+                closestDistance = dist;
+                closestEntity = editorEntity;
             }
         }
     }
