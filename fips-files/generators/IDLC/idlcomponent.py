@@ -122,6 +122,16 @@ def ContainsEntityTypes():
 #------------------------------------------------------------------------------
 ##
 #
+def ContainsColour():
+    for comp in components:
+        for var in comp.variables:
+            if var.type == "colour":
+                return True
+    return False
+
+#------------------------------------------------------------------------------
+##
+#
 def WriteComponentHeaderDeclarations(f, document):
     for c in components:
         f.WriteLine(c.AsCppTypeDefString())

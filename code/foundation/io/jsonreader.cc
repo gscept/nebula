@@ -929,6 +929,29 @@ template<> void JsonReader::Get<Math::vec4>(Math::vec4& ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Util::Colour>(Util::Colour& ret, const char* attr)
+{
+    const value_variant* node = this->GetChild(attr);
+    NEBULA_ALIGN16 float v[4];
+    for (int i = 0; i < 3; i++)
+    {
+        v[i] = node->get_value_at_index(i).as_float();
+    }
+    if (node->size() == 4)
+    {
+        v[3] = node->get_value_at_index(3).as_float();
+    }
+    else
+    {
+        v[3] = 0.0f;
+    }
+
+    ret.load(v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<Math::quat>(Math::quat& ret, const char* attr)
 {
 	const value_variant* node = this->GetChild(attr);

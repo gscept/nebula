@@ -281,4 +281,21 @@ ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
     ImGui::PopID();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ComponentDrawFuncT<Util::Colour>(ComponentId component, void* data, bool* commit)
+{
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+
+    ImGui::SameLine();
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    if (ImGui::ColorEdit4("##scl", (float*)data))
+        *commit = true;
+    ImGui::PopID();
+}
+
+
 } // namespace Game

@@ -12,7 +12,7 @@
         "type": "uint",
         "default": -1
       },
-      "color": "vec3",
+      "color": "colour",
       "intensity": "float",
       "range": "float",
       "castShadows": "bool"

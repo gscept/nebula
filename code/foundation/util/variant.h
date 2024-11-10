@@ -22,6 +22,7 @@
 #include "util/blob.h"
 #include "memory/memory.h"
 #include "core/refcounted.h"
+#include "util/colour.h"
 
 //------------------------------------------------------------------------------
 namespace Util

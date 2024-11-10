@@ -49,6 +49,8 @@ def GetCppTypeString(attrType):
         return "Resources::ResourceName"
     elif (T == "entity"):
         return "Game::Entity"
+    elif (T == "colour"):
+        return "Util::Colour"
     else:
         return attrType
 
@@ -154,6 +156,8 @@ def GetArgumentType(attrType):
         return "Util::String const&"
     elif (T == "resource"):
         return "Resources::ResourceName"
+    elif (T == "colour"):
+        return "Util::Colour"
     elif (T == "entity"):
         return "Game::Entity"
     else:
@@ -208,6 +212,8 @@ def DefaultValue(attrType):
         return "Resources::ResourceName()"
     elif (T == "entity"):
         return "Game::Entity::Invalid()"
+    elif (T == "colour"):
+        return "Math::vec4(0,0,0,0)"
     else:
         return None
 

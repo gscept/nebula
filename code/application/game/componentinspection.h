@@ -19,6 +19,7 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
+#include "util/colour.h"
 #include "imgui.h"
 
 namespace Game
@@ -92,5 +93,6 @@ template<> void ComponentDrawFuncT<Math::vec3>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Position>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Orientation>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Scale>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::Colour>(ComponentId, void*, bool*);
 
 } // namespace Game

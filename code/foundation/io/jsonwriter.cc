@@ -381,6 +381,32 @@ template<> void JsonWriter::Add(const Math::vec4 & value , const Util::String & 
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonWriter::Add(const Util::Colour& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(pjson::cJSONValueTypeArray);
+    {
+        alignas(16) float v[4];
+        value.store(v);
+        for (int i = 0; i < 4; i++)
+        {
+            pjson::value_variant valf(v[i]);
+            val.add_value(valf, alloc);
+        }
+    }
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonWriter::Add(const Math::quat& value, const Util::String& name)
 {
 	auto& alloc = this->document->get_allocator();
