@@ -16,7 +16,7 @@ const depthScale : f32 = 100.0f;
 */
 UnpackUV(packedUv : i32x2) f32x2
 {
-    return packedUv * (1.0f / 1000.0f);
+    return packedUv * 1.0f / 1000.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -100,18 +100,18 @@ SampleCubic(tex : *texture2D, samp : *sampler, res : f32x4, pixel : f32x2, mip :
     const fxy : f32x2 = fract(coords);
     coords -= fxy;
 
-    xcubic : f32x4 = CubicWeights(fxy.x);
-    ycubic : f32x4 = CubicWeights(fxy.y);
+    const xcubic : f32x4 = CubicWeights(fxy.x);
+    const ycubic : f32x4 = CubicWeights(fxy.y);
 
     const c : f32x4 = coords.xxyy + f32x2(-0.5f, 1.5f).xyxy;
     const s : f32x4 = f32x4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
-    var offset : f32x4 = min(max(f32x4(0), c + f32x4(xcubic.yw, ycubic.yw) / s), res.xxyy);
+    var offset : f32x4 = min(max(f32x4(0.0f), c + f32x4(xcubic.yw, ycubic.yw) / s), res.xxyy);
 
     offset *= res.zzww;
-    const sample0 : f32x3 = textureSampleLod(tex, samp, offset.xz, mip).rgb;
-    const sample1 : f32x3 = textureSampleLod(tex, samp, offset.yz, mip).rgb;
-    const sample2 : f32x3 = textureSampleLod(tex, samp, offset.xw, mip).rgb;
-    const sample3 : f32x3 = textureSampleLod(tex, samp, offset.yw, mip).rgb;
+    const sample0 : f32x3 = textureSampleLod(tex, samp, offset.xz, mip).xyz;
+    const sample1 : f32x3 = textureSampleLod(tex, samp, offset.yz, mip).xyz;
+    const sample2 : f32x3 = textureSampleLod(tex, samp, offset.xw, mip).xyz;
+    const sample3 : f32x3 = textureSampleLod(tex, samp, offset.yw, mip).xyz;
     const sx : f32 = s.x / (s.x + s.y);
     const sy : f32 = s.z / (s.z + s.w);
     return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
@@ -221,7 +221,7 @@ const Luminance = f32x3(0.2126f, 0.7152f, 0.0722f);
 */
 Greyscale(color : f32x4) f32
 {
-    return dot(color.rgb, f32x3(0.299, 0.587, 0.114));
+    return dot(color.xyz, f32x3(0.299, 0.587, 0.114));
 }
 
 //------------------------------------------------------------------------------
@@ -283,7 +283,7 @@ log_conv(x0 : f32, x : f32, y0 : f32, y : f32) f32
 */
 GetPixelSize(tex : *texture2D) f32x2
 {
-    var size : f32x2 = textureSize(tex, 0);
+    var size : f32x2 = textureGetSize(tex);
     size = f32x2(1.0f) / size;
     return size;
 }
@@ -294,7 +294,7 @@ GetPixelSize(tex : *texture2D) f32x2
 */
 GetScaledUVs(uvs : f32x2, tex : *texture2D, dimensions : f32x2) f32x2
 {
-    const texSize : f32x2 = textureSize(tex, 0);
+    const texSize : f32x2 = textureGetSize(tex);
     uvs = uvs * (dimensions / texSize);
     return uvs;
 }
@@ -305,7 +305,7 @@ GetScaledUVs(uvs : f32x2, tex : *texture2D, dimensions : f32x2) f32x2
 */
 GetUV(pixel : i32x2, tex : *texture2D) f32x2
 {
-    var size : f32x2 = textureSize(tex, 0);
+    var size : f32x2 = textureGetSize(tex);
     size = pixel / size;
     return size;
 }
@@ -316,7 +316,7 @@ GetUV(pixel : i32x2, tex : *texture2D) f32x2
 */
 GetPixel(uv : f32x2, tex : *texture2D) i32x2
 {
-    var size : i32x2 = textureSize(tex, 0);
+    var size : i32x2 = textureGetSize(tex);
     size = i32x2(uv * size);
     return size;
 }
@@ -327,7 +327,7 @@ GetPixel(uv : f32x2, tex : *texture2D) i32x2
 */
 GetTextureRatio(tex : *texture2D, pixelSize : f32x2) f32x2
 {
-    const size : i32x2 = textureSize(tex, 0);
+    const size : i32x2 = textureGetSize(tex);
     const currentTextureSize : f32x2 = f32x2(1.0f) / size;
     return size / currentTextureSize;
 }
@@ -355,7 +355,7 @@ PlaneTBN(normal : f32x3) f32x3x3
 //------------------------------------------------------------------------------
 /**
 */
-TangentSpace(tangent : : f32x3, normal : : f32x3, sign : f32) f32x3x3
+TangentSpace(tangent : f32x3, normal : f32x3, sign : f32) f32x3x3
 {
     const tan : f32x3 = normalize(tangent);
     const norm : f32x3 = normalize(normal);
@@ -368,7 +368,7 @@ TangentSpace(tangent : : f32x3, normal : : f32x3, sign : f32) f32x3x3
 */
 UnpackBC5Normal(normalMapComponents : f32x2) f32x3
 {
-    const normal = f32x3(0, 0, 0);
+    var normal = f32x3(0, 0, 0);
     normal.xy = (normalMapComponents * 2.0f) - 1.0f;
     normal.z = saturate(sqrt(1.0f - dot(normal.xy, normal.xy)));
     return normal;
@@ -486,12 +486,12 @@ Pack3DTo1D(index3D : u32x3, width : u32, height : u32) u32
 MortonCurve8x8(idx : u32) u32x2
 {
     // yeah... don't ask
-    var x : u32 = bitfieldExtract(idx, 2, 3);
-    x = bitfieldInsert(x, idx, 0, 1);
+    var x : u32 = bitExtract(idx, 2u, 3u);
+    x = bitInsert(x, idx, 0u, 1u);
 
-    var y : u32 = bitfieldExtract(idx, 3, 3);
-    const a : u32 = bitfieldExtract(idx, 1, 2);
-    y = bitfieldInsert(y, a, 0, 2);
+    var y : u32 = bitExtract(idx, 3u, 3u);
+    const a : u32 = bitExtract(idx, 1u, 2u);
+    y = bitInsert(y, a, 0u, 2u);
 
     return u32x2(x, y);
 }
@@ -503,7 +503,7 @@ struct IntersectionResult
 {
     intersects : b8;
     point : f32x3;
-}
+};
 IntersectLineWithPlane(lineStart : f32x3, lineEnd : f32x3, plane : f32x4) IntersectionResult
 {
     var ret : IntersectionResult;
@@ -549,7 +549,7 @@ hash12(p : f32x2) f32
 //------------------------------------------------------------------------------
 /**
 */
-hash32(f32x2 p) f32x3
+hash32(p : f32x2) f32x3
 {
     var p3 : f32x3 = fract(f32x3(p.xyx) * MOD3);
     p3 += dot(p3, p3.yxz + 19.19);
@@ -614,12 +614,12 @@ simplex3D(p : f32x3) f32
     const i2 : f32x3 = 1.0f - e.zxy * (1.0f - e);
 
     /* x1, x2, x3 */
-    f32x3 x1 = x - i1 + G3;
-    f32x3 x2 = x - i2 + 2.0f * G3;
-    f32x3 x3 = x - 1.0f + 3.0f * G3;
+    const x1 : f32x3 = x - i1 + G3;
+    const x2 : f32x3 = x - i2 + 2.0f * G3;
+    const x3 : f32x3 = x - 1.0f + 3.0f * G3;
 
     /* 2. find four surflets and store them in d */
-    f32x4 w, d;
+    var w, d : f32x4;
 
     /* calculate surflet weights */
     w.x = dot(x, x);
@@ -651,7 +651,7 @@ simplex3D(p : f32x3) f32
 const rot1 = f32x3x3(-0.37, 0.36, 0.85, -0.14, -0.93, 0.34, 0.92, 0.01, 0.4);
 const rot2 = f32x3x3(-0.55, -0.39, 0.74, 0.33, -0.91, -0.24, 0.77, 0.12, 0.63);
 const rot3 = f32x3x3(-0.71, 0.52, -0.47, -0.08, -0.72, -0.68, -0.7, -0.45, 0.56);
-simplex3D_fractal(f32x3 m) f32
+simplex3D_fractal(m : f32x3) f32
 {
     return  0.5333333f * simplex3D(m * rot1)
         + 0.2666667f * simplex3D(2.0f * m * rot2)
