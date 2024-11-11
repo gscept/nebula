@@ -418,6 +418,18 @@
                                         {
                                             "name": "SunShadowDepth",
                                             "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterLightIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterFogIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterDecalIndexLists",
+                                            "stage": "PixelShaderRead"
                                         }
                                     ],
 
@@ -464,6 +476,26 @@
                                     "_comment": "TODO: Move this to a separate pass later on",
                                     "subpass_dependencies": [ "Skypass" ],
                                     "attachments": [ "LightBuffer" ],
+
+                                    "resource_dependencies": [
+                                        {
+                                          "name": "SunShadowDepth",
+                                          "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterLightIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterFogIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterDecalIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        }
+                                    ],
+                                  
                                     "depth": "ZBuffer",
                                     "ops": [
                                         {
@@ -684,13 +716,15 @@
                     },
 
                     {
-                        "blit": {
+                        "copy": {
                             "name": "ColorBuffer Copy",
                             "from": {
-                                "tex": "ColorBuffer"
+                                "tex": "ColorBuffer",
+                                "bits": "ColorBits"
                             },
                             "to": {
-                                "tex": "SceneBuffer"
+                                "tex": "SceneBuffer",
+                                "bits": "ColorBits"
                             }
                         }
                     },

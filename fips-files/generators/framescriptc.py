@@ -24,6 +24,55 @@ def Warning(object, msg):
 def Assert(cond, object, msg):
     if not cond:
         Error(object, msg)
+        
+def DeclareResourceDependencies(list_name, parser, deps, file):
+    textures = set()
+    buffers = set()
+    for dep in deps:
+        if dep.buf:
+            buffers.add(dep)
+        elif dep.tex:
+            textures.add(dep)
+        else:
+            Error("Unknown resource {}".format(dep.name))
+        
+    if len(textures) > 0:
+        file.WriteLine("static const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> {}_TextureDependencies =".format(list_name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        counter = 0
+        for tex in textures:
+            if counter != 0:
+                file.Write(", ")
+            file.WriteLine("{{ TextureIndex::{}, CoreGraphics::PipelineStage::{} }}".format(tex.name, tex.stage))
+            counter += 1
+        file.DecreaseIndent()    
+        file.WriteLine("};")
+        
+    if len(buffers) > 0:
+        file.WriteLine("static const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> {}_BufferDependencies =".format(list_name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        counter = 0
+        for buf in buffers:
+            if counter != 0:
+                file.Write(", ")
+            file.WriteLine("{{ BufferIndex::{}, CoreGraphics::PipelineStage::{} }}".format(buf.name, buf.stage))
+            counter += 1
+        file.DecreaseIndent()
+        file.WriteLine("};")
+        
+def SyncResourceDependencies(list_name, deps, file):
+    texname = "nullptr"
+    bufname = "nullptr"
+    for dep in deps:
+        if dep.buf:
+            bufname = "{}_BufferDependencies".format(list_name)
+        elif dep.tex:
+            texname = "{}_TextureDependencies".format(list_name)
+            
+    file.WriteLine('Synchronize("{}_Sync", cmdBuf, {}, {});'.format(list_name, texname, bufname))
+
 
 class TextureImportDefinition:
     def __init__(self, parser, name):
@@ -79,7 +128,7 @@ class TextureExportDefinition:
         self.name = name.replace(" ", "")
         parser.externs.append(self)
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("Frame::TextureExport Export_{};".format(self.name))
 
     def FormatHeader(self, file):
@@ -237,10 +286,16 @@ class ResourceDependencyDefinition:
     def __init__(self, parser, node):
         self.name = node['name']
         self.stage = node['stage']
+        self.buf = False
+        self.tex = False
+        if self.name in parser.bufferLookup:
+            self.buf = True
+        if self.name in parser.textureLookup:
+            self.tex = True
 
     @classmethod
-    def raw(self, name, stage):
-        return self(None, dict(name = name, stage = stage))
+    def raw(self, name, stage, parser):
+        return self(parser, dict(name = name, stage = stage))
 
 class SubgraphDefinition:
     def __init__(self, parser, node, p, subp):
@@ -257,7 +312,7 @@ class SubgraphDefinition:
         if self.p is not None and self.subp is not None:
             parser.pipelines.append(self)
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("")
         if len(self.disabledBindings) > 0:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
@@ -363,7 +418,7 @@ class FullscreenEffectDefinition:
         file.WriteLine("RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);")
         file.WriteLine("CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());")
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("")
         file.WriteLine('#include "{}.h"'.format(self.shader))
         file.WriteLine("CoreGraphics::PipelineId FullScreenEffect_{}_Pipeline;".format(self.name))
@@ -418,30 +473,30 @@ class CopyDefinition:
 
         if not "from" in node:
             Error(self.name, "Must define a 'from' source")
-            source = node['from']
-            if not 'tex' in source:
-                Error(self.name, "Texture source must define a texture resource")
-            if not 'bits' in source:
-                Error(self.name, "Texture source must define image bits")
+        source = node['from']
+        if not 'tex' in source:
+            Error(self.name, "Texture source must define a texture resource")
+        if not 'bits' in source:
+            Error(self.name, "Texture source must define image bits")
 
-            self.sourceTex = source['tex']
-            self.sourceBits = source['bits']
+        self.sourceTex = source['tex']
+        self.sourceBits = source['bits']
 
         if not "to" in node:
             Error(self.name, "copy must define a 'to' source")
-            dest = node['to']
-            if not 'tex' in dest:
-                Error(self.name, "Texture destination must define a texture resource")
-            if not 'bits' in dest:
-                Error(self.name, "Texture source must define image bits")                
+        dest = node['to']
+        if not 'tex' in dest:
+            Error(self.name, "Texture destination must define a texture resource")
+        if not 'bits' in dest:
+            Error(self.name, "Texture source must define image bits")                
 
-            self.destTex = dest['tex']
-            self.destBits = dest['bits']                
+        self.destTex = dest['tex']
+        self.destBits = dest['bits']                
 
     def FormatHeader(self, file):
         file.WriteLine("void Copy_{}(const CoreGraphics::CmdBufferId cmdBuf);".format(self.name))
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
@@ -449,11 +504,11 @@ class CopyDefinition:
         file.WriteLine("Copy_{}(const CoreGraphics::CmdBufferId cmdBuf)".format(self.name))
         file.WriteLine("{")
         file.IncreaseIndent()
-        file.WriteLine("CoreGraphics::TextureDimensions fromDims = CoreGraphics::TextureGetDimensions(Textures[TextureIndex::{}]);".format(self.sourceTex))
-        file.WriteLine("CoreGraphics::TextureDimensions toDims = CoreGraphics::TextureGetDimensions(Textures[TextureIndex::{}]);".format(self.destTex))
+        file.WriteLine("CoreGraphics::TextureDimensions fromDims = CoreGraphics::TextureGetDimensions(Textures[(uint)TextureIndex::{}]);".format(self.sourceTex))
+        file.WriteLine("CoreGraphics::TextureDimensions toDims = CoreGraphics::TextureGetDimensions(Textures[(uint)TextureIndex::{}]);".format(self.destTex))
         file.WriteLine("CoreGraphics::TextureCopy from {{.region = {{0, 0, fromDims.width, fromDims.height}}, .mip = 0, .layer = 0, .bits = CoreGraphics::ImageBits::{}}};".format(self.sourceBits))
         file.WriteLine("CoreGraphics::TextureCopy to {{.region = {{0, 0, toDims.width, toDims.height}}, .mip = 0, .layer = 0, .bits = CoreGraphics::ImageBits::{}}};".format(self.destBits))
-        file.WriteLine("CoreGraphics::CmdCopy(cmdBuf, Textures[TextureIndex::{}], {{from}}, Textures[TextureIndex::{}], {{to}});".format(self.sourceTex, self.destTex))
+        file.WriteLine("CoreGraphics::CmdCopy(cmdBuf, Textures[(uint)TextureIndex::{}], {{from}}, Textures[(uint)TextureIndex::{}], {{to}});".format(self.sourceTex, self.destTex))
         file.DecreaseIndent()
         file.WriteLine("}")
     
@@ -499,33 +554,21 @@ class BlitDefinition:
             self.destBits = dest['bits']     
 
         self.resourceDependencies = [
-            ResourceDependencyDefinition.raw(name = self.sourceTex, stage = "TransferRead"), 
-            ResourceDependencyDefinition.raw(name = self.destTex, stage = "TransferWrite")
+            ResourceDependencyDefinition.raw(name = self.sourceTex, stage = "TransferRead", parser = parser), 
+            ResourceDependencyDefinition.raw(name = self.destTex, stage = "TransferWrite", parser = parser)
         ]          
 
     def FormatHeader(self, file):
         pass
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("")
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
         
-        if len(self.resourceDependencies) > 0:
-            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> Blit_{}_TextureDependencies;".format(self.name))
+        DeclareResourceDependencies("Blit_{}".format(self.name), parser, self.resourceDependencies, file)   
 
-        file.WriteLine("void")
-        file.WriteLine("Initialize_Blit_{}()".format(self.name))
-        file.WriteLine("{")
-        file.IncreaseIndent()
-        if len(self.resourceDependencies) > 0:
-            file.WriteLine("Blit_{}_TextureDependencies.Clear();".format(self.name))
-        for dep in self.resourceDependencies:
-            file.WriteLine('Blit_{}_TextureDependencies.Append({{ TextureIndex::{}, CoreGraphics::PipelineStage::{} }});'.format(self.name, dep.name, dep.stage))
-        file.DecreaseIndent()
-        file.WriteLine("}")
-        
         file.WriteLine("")
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
@@ -544,7 +587,7 @@ class BlitDefinition:
         file.WriteLine("}")
 
     def FormatSource(self, file):
-        file.WriteLine('Synchronize("Blit_{}_Sync", cmdBuf, Blit_{}_TextureDependencies, nullptr);'.format(self.name, self.name))
+        SyncResourceDependencies("Blit_{}".format(self.name), self.resourceDependencies, file)
         file.WriteLine("Blit_{}(cmdBuf);".format(self.name))
 
     def FormatSetup(self, file):
@@ -587,7 +630,7 @@ class ResolveDefinition:
     def FormatHeader(self, file):
         pass
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
 
         file.WriteLine("")
         file.WriteLine("//------------------------------------------------------------------------------")
@@ -615,37 +658,25 @@ class SwapDefinition:
         parser.externs.append(self)
 
         self.resourceDependencies = [
-            ResourceDependencyDefinition.raw(name = self.source, stage = "TransferRead"), 
+            ResourceDependencyDefinition.raw(name = self.source, stage = "TransferRead", parser = parser), 
         ]         
     
     def FormatHeader(self, file):
         pass 
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("")
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
         
-        if len(self.resourceDependencies) > 0:
-            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>> Swap_{}_TextureDependencies;".format(self.name))
-
-        file.WriteLine("void")
-        file.WriteLine("Initialize_Swap_{}()".format(self.name))
-        file.WriteLine("{")
-        file.IncreaseIndent()
-        if len(self.resourceDependencies) > 0:
-            file.WriteLine("Swap_{}_TextureDependencies.Clear();".format(self.name))
-        for dep in self.resourceDependencies:
-            file.WriteLine('Swap_{}_TextureDependencies.Append({{ TextureIndex::{}, CoreGraphics::PipelineStage::{} }});'.format(self.name, dep.name, dep.stage))
-        file.DecreaseIndent()
-        file.WriteLine("}")
+        DeclareResourceDependencies("Swap_{}".format(self.name), parser, self.resourceDependencies, file)   
 
     def FormatSource(self, file):
         file.WriteLine('CoreGraphics::QueueBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Swap");')
         file.WriteLine('CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);')
         file.WriteLine('CoreGraphics::SwapchainSwap(swapchain);')
-        file.WriteLine('Synchronize("Swap_{}_Sync", cmdBuf, Swap_{}_TextureDependencies, nullptr);'.format(self.name, self.name))
+        SyncResourceDependencies("Swap_{}".format(self.name), self.resourceDependencies, file)
         file.WriteLine('CoreGraphics::SwapchainCopy(swapchain, cmdBuf, Textures[(uint)TextureIndex::{}]);'.format(self.source))
         file.WriteLine('CoreGraphics::QueueEndMarker(CoreGraphics::GraphicsQueueType);')
 
@@ -800,7 +831,7 @@ class PassDefinition:
             attachment = AttachmentDefinition(parser, at)
             self.attachments.append(attachment)
             self.attachmentDict[attachment.name] = attachment
-            self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.name, stage = "DepthStencilWrite" if attachment.ref.HasDepthFormat() or attachment.ref.HasStencilFormat() else "ColorWrite"))
+            self.resourceDependencies.append(ResourceDependencyDefinition.raw(name = attachment.name, stage = "DepthStencilWrite" if attachment.ref.HasDepthFormat() or attachment.ref.HasStencilFormat() else "ColorWrite", parser = parser))
         
         self.subpasses = list()
         self.subpassDict = {}
@@ -809,15 +840,13 @@ class PassDefinition:
             self.subpasses.append(subpass)
             self.subpassDict[subpass.name] = subpass
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
 
         file.WriteLine("")
         file.WriteLine('CoreGraphics::PassId Pass_{} = CoreGraphics::InvalidPassId;'.format(self.name))
 
+        DeclareResourceDependencies("Pass_{}".format(self.name), parser, self.resourceDependencies, file)   
         
-        if len(self.resourceDependencies) > 0:
-            file.WriteLine("Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> Pass_{}_TextureDependencies;".format(self.name))
-
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
@@ -832,9 +861,6 @@ class PassDefinition:
         file.DecreaseIndent()
         file.WriteLine("}")
 
-        file.WriteLine("Pass_{}_TextureDependencies.Clear();".format(self.name))
-        for dependency in self.resourceDependencies:
-            file.WriteLine("Pass_{}_TextureDependencies.Append({{TextureIndex::{}, CoreGraphics::PipelineStage::{}}});".format(self.name, dependency.name, dependency.stage))
         file.WriteLine("CoreGraphics::PassCreateInfo info;")
         file.WriteLine('info.name = "Pass_{}";'.format(self.name))
         file.WriteLine("info.attachments.Resize({});".format(len(self.attachments)))
@@ -925,8 +951,7 @@ class PassDefinition:
 
     def FormatSource(self, file):
         file.WriteLine("")
-        if len(self.resourceDependencies) > 0:
-            file.WriteLine('Synchronize("Pass_{}_Sync", cmdBuf, Pass_{}_TextureDependencies, nullptr);'.format(self.name, self.name))
+        SyncResourceDependencies("Pass_{}".format(self.name), self.resourceDependencies, file)
         file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, "{}");'.format(self.name))
         file.IncreaseIndent()
 
@@ -1003,7 +1028,7 @@ class SubmissionDefinition:
             elif 'transition' in op:
                 self.ops.append(TransitionDefinition(parser, op['transition']))
 
-    def FormatExtern(self, file):
+    def FormatExtern(self, file, parser):
         file.WriteLine("CoreGraphics::CmdBufferPoolId CmdPool_{} = CoreGraphics::InvalidCmdBufferPoolId;\n".format(self.name))
 
     def FormatHeader(self, file):
@@ -1130,6 +1155,8 @@ class FrameScriptGenerator:
         self.importTextures = list()
         self.localTextures = list()
         self.localTextureDict = {}
+        self.bufferLookup = {}
+        self.textureLookup = {}
         self.exportTextures = list()
         self.dependencies = list()
         self.submissions = list()
@@ -1143,10 +1170,12 @@ class FrameScriptGenerator:
                     for imp in node:
                         tex = TextureImportDefinition(self, imp)
                         self.importTextures.append(tex)
+                        self.textureLookup[tex.name] = tex
                 elif name == "ImportBuffers":
                     for imp in node:
                         buf = BufferImportDefinition(self, imp)
                         self.importBuffers.append(buf)
+                        self.bufferLookup[buf.name] = buf
                 elif name == "Dependencies":
                     for imp in node:
                         dep = DependencyDefinition(self, imp)
@@ -1156,6 +1185,7 @@ class FrameScriptGenerator:
                         tex = LocalTextureDefinition(self, imp)
                         self.localTextures.append(tex)
                         self.localTextureDict[tex.name] = tex
+                        self.textureLookup[tex.name] = tex
                 elif name == "ExportTextures":
                     for exp in node:
                         tex = TextureExportDefinition(self, exp)
@@ -1303,7 +1333,7 @@ class FrameScriptGenerator:
 
         file.WriteLine("")
         for extern in self.externs:
-            extern.FormatExtern(file)
+            extern.FormatExtern(file, self)
 
         file.WriteLine("")
         file.WriteLine("//------------------------------------------------------------------------------")
