@@ -328,7 +328,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
                     n_printf("[Graphics Device] Mesh Shaders are disabled\n");
                 if (!CoreGraphics::VariableRateShadingSupported)
                     n_printf("[Graphics Device] Variable Rate Shading is disabled\n");
-                
+
                 state.numCaps[i] = newNumCaps;
 
                 if (validDevice)
@@ -406,7 +406,7 @@ GetCurrentPhysicalDevice()
 //------------------------------------------------------------------------------
 /**
 */
-VkPhysicalDeviceFeatures 
+VkPhysicalDeviceFeatures
 GetCurrentFeatures()
 {
     return state.deviceFeatures[state.currentDevice];
@@ -415,7 +415,7 @@ GetCurrentFeatures()
 //------------------------------------------------------------------------------
 /**
 */
-VkPipelineCache 
+VkPipelineCache
 GetPipelineCache()
 {
     return state.cache;
@@ -433,7 +433,7 @@ GetMemoryProperties()
 //------------------------------------------------------------------------------
 /**
 */
-VkSemaphore 
+VkSemaphore
 GetRenderingSemaphore()
 {
     return SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex]);
@@ -472,7 +472,7 @@ GetQueryPool(const CoreGraphics::QueryType query)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 WaitForPresent(VkSemaphore sem)
 {
     n_assert(state.waitForPresentSemaphore == VK_NULL_HANDLE);
@@ -482,7 +482,7 @@ WaitForPresent(VkSemaphore sem)
 //------------------------------------------------------------------------------
 /**
 */
-const VkQueue 
+const VkQueue
 GetQueue(const CoreGraphics::QueueType type, const IndexT index)
 {
     return state.queueHandler.queues[type][index];
@@ -491,7 +491,7 @@ GetQueue(const CoreGraphics::QueueType type, const IndexT index)
 //------------------------------------------------------------------------------
 /**
 */
-const VkQueue 
+const VkQueue
 GetCurrentQueue(const CoreGraphics::QueueType type)
 {
     return state.queueHandler.GetQueue(type);
@@ -518,7 +518,7 @@ GetOrCreatePipeline(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds)
 {
     CoreGraphics::SubmissionWaitEvent sparseWait;
@@ -1210,7 +1210,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     }
 
     BufferCreateInfo cboInfo;
-        
+
     state.globalConstantBufferMaxValue = info.globalConstantBufferMemorySize;
 
     cboInfo.name = "Global Constant Buffer";
@@ -1239,7 +1239,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         state.presentFences[i] = CreateFence({true});
         state.renderingFinishedSemaphores[i] = CreateSemaphore({
 #if NEBULA_GRAPHICS_DEBUG
-            .name = "Present", 
+            .name = "Present",
 #endif
             .type = SemaphoreType::Binary });
     }
@@ -1650,7 +1650,7 @@ PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 AddSubmissionEvent(const CoreGraphics::SubmissionWaitEvent& event)
 {
     state.waitEvents[state.currentBufferedFrameIndex].Append(event);
@@ -1695,13 +1695,13 @@ SubmitCommandBuffers(
     {
         if (CoreGraphics::CmdRecordsMarkers(cmdBuf))
         {
-            Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmdBuf);
+            Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdMoveProfilingMarkers(cmdBuf);
             state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(std::move(markers));
             state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmdBuf));
         }
     }
 #endif
-    
+
     return ret;
 }
 
@@ -1851,7 +1851,7 @@ GetConstantBuffer(IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 {
     state.database.Reload(pro);
@@ -1903,7 +1903,7 @@ FinishFrame(IndexT frameIndex)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 WaitForQueue(CoreGraphics::QueueType queue)
 {
     state.queueHandler.WaitIdle(queue);
@@ -1912,7 +1912,7 @@ WaitForQueue(CoreGraphics::QueueType queue)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 WaitAndClearPendingCommands()
 {
     state.queueHandler.WaitIdle(GraphicsQueueType);
@@ -2396,7 +2396,7 @@ SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& o
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ImageFileFormat::Code 
+CoreGraphics::ImageFileFormat::Code
 SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream, const Math::rectangle<int>& rect, int x, int y)
 {
     return CoreGraphics::ImageFileFormat::InvalidImageFileFormat;
@@ -2405,7 +2405,7 @@ SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& o
 //------------------------------------------------------------------------------
 /**
 */
-bool 
+bool
 GetVisualizeMipMaps()
 {
     return state.visualizeMipMaps;
@@ -2414,7 +2414,7 @@ GetVisualizeMipMaps()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SetVisualizeMipMaps(bool val)
 {
     state.visualizeMipMaps = val;
@@ -2432,7 +2432,7 @@ GetRenderWireframe()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SetRenderWireframe(bool b)
 {
     state.renderWireframe = b;
@@ -2451,7 +2451,7 @@ GetProfilingMarkers()
 //------------------------------------------------------------------------------
 /**
 */
-SizeT 
+SizeT
 GetNumDrawCalls()
 {
     return state.GraphicsDeviceNumDrawCalls->GetSample();
@@ -2504,7 +2504,7 @@ ObjectSetName(const CoreGraphics::TextureId id, const char* name)
     Util::String str = Util::String::Sprintf("%s - View", name);
     info.pObjectName = str.AsCharPtr();
     res = VkDebugObjectName(dev, &info);
-    n_assert(res == VK_SUCCESS);    
+    n_assert(res == VK_SUCCESS);
 }
 
 
@@ -2671,7 +2671,7 @@ ObjectSetName(const SemaphoreId id, const char* name)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
     VkQueue vkqueue = state.queueHandler.GetQueue(queue);
@@ -2690,7 +2690,7 @@ QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, c
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 QueueEndMarker(const CoreGraphics::QueueType queue)
 {
     VkQueue vkqueue = state.queueHandler.GetQueue(queue);
@@ -2700,7 +2700,7 @@ QueueEndMarker(const CoreGraphics::QueueType queue)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
     VkQueue vkqueue = state.queueHandler.GetQueue(queue);

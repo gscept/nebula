@@ -174,7 +174,10 @@ Profiler::Run(SaveMode save)
     if (ImGui::IsKeyPressed((ImGuiKey)Input::Key::F3))
         this->pauseProfiling = !this->pauseProfiling;
     if (!this->pauseProfiling)
+    {
         this->ProfilingContexts = Profiling::ProfilingGetContexts();
+        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+    }
 
     if (!this->frametimeHistory.IsEmpty())
     {
