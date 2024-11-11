@@ -40,12 +40,6 @@ Create()
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("work", "proj:work"));
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("assets", "work:assets"));
 
-    Scripting::ScriptServer::Instance()->AddModulePath("edscr:");
-    Scripting::ScriptServer::Instance()->EvalFile("edscr:bootstrap.py");
-
-    /// Import reload to be able to reload modules.
-    Scripting::ScriptServer::Instance()->Eval("from importlib import reload");
-
     Game::TimeSourceCreateInfo editorTimeSourceInfo;
     editorTimeSourceInfo.hash = TIMESOURCE_EDITOR;
     Game::TimeManager::CreateTimeSource(editorTimeSourceInfo);
@@ -63,7 +57,21 @@ Create()
     CreatePathConverter({});
 
     Game::EditorState::Singleton = new Game::EditorState();
-    Game::EditorState::Instance()->isRunning = true;    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Start()
+{
+    Scripting::ScriptServer::Instance()->AddModulePath("edscr:");
+    Scripting::ScriptServer::Instance()->EvalFile("edscr:bootstrap.py");
+
+    /// Import reload to be able to reload modules.
+    Scripting::ScriptServer::Instance()->Eval("from importlib import reload");
+
+    Game::EditorState::Instance()->isRunning = true;
 }
 
 //------------------------------------------------------------------------------

@@ -64,6 +64,8 @@ EditorFeatureUnit::OnActivate()
 
         this->AttachManager(Editor::UIManager::Create());
 
+        Editor::Start();
+
         // TODO: move this to a game manager that is created by the editor
 
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);

@@ -47,6 +47,9 @@ struct State
 /// Create the editor
 void Create();
 
+/// Start the editor
+void Start();
+
 /// Destroy the editor
 void Destroy();
 
