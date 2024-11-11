@@ -132,7 +132,7 @@ AssetBatcherApp::Run()
         float seconds = Math::fmod(totalTime.GetTime(), 60.0f);
         Util::String time = Util::String::FromInt(minutes) + "m " + Util::String::FromFloat(seconds) + "s\n";
         this->logger.Print(
-            ToolkitUtil::Text::Text(time).Color(ToolkitUtil::TextColor::Green).Style(ToolkitUtil::FontMode::Bold).AsCharPtr()
+            ToolkitUtil::Text(time).Color(ToolkitUtil::TextColor::Green).Style(ToolkitUtil::FontMode::Bold).AsCharPtr()
         );
     }
 }
