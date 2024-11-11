@@ -32,7 +32,7 @@ public:
     /// reset the object to its default settings
     void Reset();
     /// update the view matrix
-    void Update();
+    void Update(float deltaTime);
     /// get the current camera transform
     const Math::mat4& GetCameraTransform() const;
     /// get view distance

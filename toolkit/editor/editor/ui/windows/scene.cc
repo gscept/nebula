@@ -9,6 +9,9 @@
 #include "editor/ui/uimanager.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "editor/tools/selectiontool.h"
+#include "editor/ui/windowserver.h"
+
+#include "basegamefeature/components/position.h"
 
 using namespace Editor;
 
@@ -26,6 +29,10 @@ Scene::Scene()
     viewPort.SetFrameBuffer("ColorBufferNoGUI");
 
     this->SetWindowPadding({0, 0});
+
+    Util::Delegate<void()> focusDelegate = Util::Delegate<void()>::FromMethod<Scene, &Scene::FocusCamera>(this);
+
+    WindowServer::Instance()->RegisterCommand(focusDelegate, "Focus camera on current selection", "F", "Camera");
 
     this->additionalFlags = ImGuiWindowFlags_MenuBar;
 }
@@ -63,6 +70,28 @@ Scene::Run(SaveMode save)
             this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera
         );
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Scene::FocusCamera()
+{
+    auto selection = Tools::SelectionTool::Selection();
+
+    //TODO: Use bboxes to more accurately calculate the distance offset to the object after moving the camera
+
+    Math::vec3 centerPoint = Math::vec3(0);
+    for (auto const& entity : selection)
+    {
+        Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(entity);
+        centerPoint += pos;
+    }
+    
+    centerPoint = centerPoint * (1.0f / (float)selection.Size());
+
+    viewPort.camera.SetTargetPosition(centerPoint + Math::xyz(Math::inverse(viewPort.camera.GetViewTransform()).get_z() * 5.0f));
 }
 
 } // namespace Presentation

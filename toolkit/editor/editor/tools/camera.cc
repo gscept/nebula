@@ -14,6 +14,8 @@
 #include "input/mouse.h"
 
 #include "audio/audiodevice.h"
+#include "basegamefeature/managers/timemanager.h"
+#include "editor/editor.h"
 
 #include "imgui.h"
 
@@ -79,13 +81,15 @@ Camera::Update()
 {
     auto& io = ImGui::GetIO();
 
+    Game::TimeSource* timeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_EDITOR);
+
     this->mayaCameraUtil.SetOrbitButton(io.MouseDown[Input::MouseButton::LeftButton]);
     this->mayaCameraUtil.SetPanButton(io.MouseDown[Input::MouseButton::MiddleButton]);
     this->mayaCameraUtil.SetZoomButton(io.MouseDown[Input::MouseButton::RightButton]);
     this->mayaCameraUtil.SetZoomInButton(io.MouseWheel > 0);
     this->mayaCameraUtil.SetZoomOutButton(io.MouseWheel < 0);
     this->mayaCameraUtil.SetMouseMovement({ -io.MouseDelta.x, -io.MouseDelta.y });
-	this->mayaCameraUtil.Update();
+    this->mayaCameraUtil.Update(timeSource->frameTime);
 
 	this->freeCamUtil.SetForwardsKey(io.KeysDown[Input::Key::W]);
 	this->freeCamUtil.SetBackwardsKey(io.KeysDown[Input::Key::S]);
@@ -98,7 +102,7 @@ Camera::Update()
 	this->freeCamUtil.SetAccelerateButton(io.KeyShift);
 
 	this->freeCamUtil.SetRotateButton(io.MouseDown[Input::MouseButton::RightButton]);
-	this->freeCamUtil.Update();
+	this->freeCamUtil.Update(timeSource->frameTime);
 
 	switch (this->cameraMode)
 	{
@@ -123,8 +127,7 @@ Camera::Update()
 void
 Camera::Reset()
 {
-	this->freeCamUtil.Setup(this->defaultViewPoint, Math::normalize(this->defaultViewPoint));
-	this->freeCamUtil.Update();
+    this->freeCamUtil.Setup(this->defaultViewPoint, Math::normalize(this->defaultViewPoint));
 	this->mayaCameraUtil.Setup(Math::point(0.0f, 0.0f, 0.0f), this->defaultViewPoint, Math::vector(0.0f, 1.0f, 0.0f));
 }
 
@@ -196,6 +199,16 @@ void
 Camera::SetTransform(Math::mat4 const& val)
 {
     CameraContext::SetView(this->cameraEntityId, val);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Camera::SetTargetPosition(Math::vec3 const& point)
+{
+    this->freeCamUtil.SetTargetPosition(point);
+    //this->mayaCameraUtil.SetTargetPosition(point);
 }
 
 //------------------------------------------------------------------------------

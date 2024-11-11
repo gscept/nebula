@@ -26,9 +26,12 @@ public:
     /// resets free camera to default values
     void Reset();
     /// updates camera matrix
-    void Update();
+    void Update(float deltaTime);
     /// gets camera transform
     const Math::mat4& GetTransform() const;
+
+    /// sets the target position of the camera
+    void SetTargetPosition(Math::vec3 const& point);
 
     /// sets the state of the rotate button
     void SetRotateButton(bool state);
@@ -61,6 +64,7 @@ private:
 
     Math::polar viewAngles;
     Math::point position;
+    Math::point targetPosition;
     Math::mat4 cameraTransform;
 
     float rotationSpeed;
@@ -85,6 +89,15 @@ inline const Math::mat4&
 FreeCameraUtil::GetTransform() const
 {
     return this->cameraTransform;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+FreeCameraUtil::SetTargetPosition(Math::vec3 const& point)
+{
+    this->targetPosition = point;
 }
 
 //------------------------------------------------------------------------------

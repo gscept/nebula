@@ -17,6 +17,7 @@ namespace Editor
 {
 
 constexpr uint32_t WORLD_EDITOR = uint32_t('EWLD');
+constexpr uint32_t TIMESOURCE_EDITOR = uint32_t('TsEd');
 
 typedef Game::Entity Entity;
 

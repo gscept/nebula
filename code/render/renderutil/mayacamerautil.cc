@@ -57,14 +57,14 @@ MayaCameraUtil::Reset()
     this->viewAngles.set(normalize(viewVec));
     this->centerOfInterest = this->defaultCenterOfInterest;
     this->cameraTransform = mat4();
-    this->Update();
+    this->Update(0.01667f);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-MayaCameraUtil::Update()
+MayaCameraUtil::Update(float deltaTime)
 {
     const scalar defOrbitVelocity = 0.015f;
     const scalar defPanVelocity  = 0.01f; // before 0.008f

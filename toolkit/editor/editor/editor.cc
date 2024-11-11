@@ -46,7 +46,12 @@ Create()
     /// Import reload to be able to reload modules.
     Scripting::ScriptServer::Instance()->Eval("from importlib import reload");
 
-    Game::TimeManager::SetGlobalTimeFactor(0.0f);
+    Game::TimeSourceCreateInfo editorTimeSourceInfo;
+    editorTimeSourceInfo.hash = TIMESOURCE_EDITOR;
+    Game::TimeManager::CreateTimeSource(editorTimeSourceInfo);
+
+    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 0.0f;
 
     state.editorWorld = Game::GameServer::Instance()->CreateWorld(WORLD_EDITOR);
     state.editorWorld->componentInitializationEnabled = false;
@@ -78,7 +83,8 @@ void
 PlayGame()
 {
     Game::EditorState::Instance()->isPlaying = true;
-    Game::TimeManager::SetGlobalTimeFactor(1.0f);
+    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 1.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -88,7 +94,8 @@ void
 PauseGame()
 {
     Game::EditorState::Instance()->isPlaying = false;
-    Game::TimeManager::SetGlobalTimeFactor(0.0f);
+    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 0.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -128,7 +135,8 @@ StopGame()
 
     Game::DestroyFilter(filter);
 
-    Game::TimeManager::SetGlobalTimeFactor(0.0f);
+    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 0.0f;
 }
 
 } // namespace Editor

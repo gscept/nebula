@@ -2,7 +2,6 @@
 //  freecamerautil.cc
 //  (C) 2012-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include "renderutil/freecamerautil.h"
 
 namespace RenderUtil
@@ -40,8 +39,9 @@ FreeCameraUtil::Setup( const Math::point& defaultEyePos, const Math::vector& def
     this->defaultEyePos = defaultEyePos;
     this->defaultEyeVec = defaultEyeVec;
     this->position = this->defaultEyePos;
+    this->targetPosition = this->defaultEyePos;
     this->viewAngles.set(this->defaultEyeVec);
-    this->Update();
+    this->Update(0.01667f);
 }
 
 //------------------------------------------------------------------------------
@@ -52,14 +52,15 @@ FreeCameraUtil::Reset()
 {
     this->viewAngles.set(this->defaultEyeVec);
     this->position = this->defaultEyePos;
-    this->Update();
+    this->targetPosition = this->defaultEyePos;
+    this->Update(0.01667f);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-FreeCameraUtil::Update()
+FreeCameraUtil::Update(float deltaTime)
 {
     if (this->rotateButton)
     {
@@ -103,7 +104,9 @@ FreeCameraUtil::Update()
     }
 
     translation = this->cameraTransform * translation;
-    this->position += xyz(translation);
+    this->targetPosition += xyz(translation);
+
+    this->position = Math::lerp(this->position, this->targetPosition, deltaTime * 10.0f);
 
     this->cameraTransform.position = point(this->position);
 }

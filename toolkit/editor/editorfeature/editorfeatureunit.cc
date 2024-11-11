@@ -60,9 +60,9 @@ EditorFeatureUnit::OnActivate()
     FeatureUnit::OnActivate();
     if (this->args.GetBoolFlag("-editor"))
     {
-        this->AttachManager(Editor::UIManager::Create());
-        
         Editor::Create();
+
+        this->AttachManager(Editor::UIManager::Create());
 
         // TODO: move this to a game manager that is created by the editor
 

@@ -49,6 +49,8 @@ public:
 
     void SetTransform(Math::mat4 const& val);
 
+    void SetTargetPosition(Math::vec3 const& point);
+
     Math::mat4 GetViewTransform() const;
 
     Math::mat4 GetProjectionTransform() const;
