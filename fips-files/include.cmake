@@ -210,9 +210,8 @@ macro(compile_gpulang_intern)
         cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
         cmake_path(GET rel_path STEM basename)
 
-        set(binaryOutput ${EXPORT_DIR}/shaders/${foldername}${basename}.gplb)
-        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/${CurTargetName}/${foldername}${basename}.h)
-
+        set(binaryOutput ${EXPORT_DIR}/shaders/gpulang/${foldername}${basename}.gplb)
+        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}.h)
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
@@ -685,6 +684,38 @@ macro(add_shaders_recursive)
     endforeach()
 endmacro()
 
+macro(compile_gpulang_recursive)
+
+    set(base_path ${ARGV0})
+    set(full_path ${ARGV1})
+    set(system_shader ARGV3)
+    file(GLOB CHILDREN LIST_DIRECTORIES true ${full_path}/*)
+    file(GLOB GPUH ${full_path}/*.gpuh)
+    file(GLOB GPUL ${full_path}/*.gpul)
+    file(RELATIVE_PATH DIR ${base_path} ${full_path})
+    if (GPUH)
+        fips_files(${GPUH})
+        if (system_shader)    
+            SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\${DIR}" FILES ${GPUH})
+        endif()
+    endif()
+    set(CurDir ${DIR}/)
+    foreach(shd ${GPUL})
+        compile_gpulang_intern(${shd} ${system_shader})
+    endforeach()
+    set(CurDir "")
+
+    if (system_shader)
+        SOURCE_GROUP(TREE "${full_path}" PREFIX "res\\shaders\\${DIR}" FILES ${GPUL})
+    endif()
+    
+    foreach(CHILD ${CHILDREN})
+        if (IS_DIRECTORY ${CHILD})
+            compile_gpulang_recursive(${base_path} ${CHILD} ${system_shader})
+        endif()
+    endforeach()
+endmacro()
+
 macro(add_nebula_shaders)
     if(NOT SHADERC)
         MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
@@ -693,6 +724,8 @@ macro(add_nebula_shaders)
         
         add_shaders_recursive("${NROOT}/syswork/shaders/vk" "${NROOT}/syswork/shaders/vk" true)
         add_shaders_recursive("${workdir}/syswork/shaders/vk" "${workdir}/syswork/shaders/vk" false)
+        compile_gpulang_recursive("${NROOT}/syswork/shaders/vk" "${NROOT}/syswork/shaders/gpulang" true)
+        compile_gpulang_recursive("${workdir}/syswork/shaders/vk" "${workdir}/syswork/shaders/gpulang" false)
         
         # add configurations for the .vscode anyfx linter
         execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${NROOT}/syswork/shaders/vk)
@@ -734,17 +767,8 @@ macro(compile_gpulang)
     else()
         set_nebula_export_dir()
         foreach(shd ${ARGN})
-            add_shader_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
+            compile_gpulang_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
         endforeach()
-
-        # add configurations for the .vscode anyfx linter
-        SET(folders)
-        foreach(shd ${ARGN})
-            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} DIRECTORY)
-            list(APPEND folders ${foldername})
-        endforeach()
-        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${folders})
-
     endif()
 endmacro()
 

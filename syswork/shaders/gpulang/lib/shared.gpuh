@@ -57,7 +57,7 @@ sampler_state LinearSampler { Filter = Linear; AddressU = Clamp; AddressV = Clam
 #define fetch3D(handle, sampler, uvw, lod)					    textureFetch(Textures3D[handle], uvw, lod)
 #define fetchStencil(handle, sampler, uv, lod)				    (castToU32(textureFetch(Textures2D[handle], sampler, uv, lod).r))
 
-#define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
+#define query_lod2D(handle, sampler, uv)                        textureGetSampledMip(sampler2D(Textures2D[handle], sampler), uv)
 
 // these parameters are updated once per application tick
 struct PerTickParams
@@ -241,104 +241,107 @@ const MAX_LIGHTS_PER_CLUSTER = 128;
 
 struct SpotLight
 {
-    vec3 position;				// view space position of light
-    float range;
-    vec3 forward;				// forward vector of light (spotlight and arealights)
-    float angleFade;
+    position : f32x3;				// view space position of light
+    range : f32;
+    forward : f32x3;				// forward vector of light (spotlight and arealights)
+    angleFade : f32;
 
-    vec2 angleSinCos;			// angle cutoffs
-    int projectionExtension;	// projection extension index
-    int shadowExtension;		// projection extension index
+    angleSinCos : f32x2;			// angle cutoffs
+    projectionExtension : i32;	// projection extension index
+    shadowExtension : i32;		// projection extension index
 
-    vec3 color;					// light color
-    uint flags;					// feature flags (shadows, projection texture, etc)
+    color : f32x3;					// light color
+    flags : u32;					// feature flags (shadows, projection texture, etc)
 };
 
 struct SpotLightProjectionExtension
 {
-    mat4 projection;					// projection transform
-    textureHandle projectionTexture;	// projection texture
+    projection : f32x4x4;					// projection transform
+    projectionTexture : u32;	// projection texture
 };
 
 struct SpotLightShadowExtension
 {
-    mat4 projection;
-    float shadowIntensity;				// intensity of shadows
-    uint shadowSlice;
-    textureHandle shadowMap;			// shadow map
+    projection : f32x4x4;
+    shadowIntensity : f32;				// intensity of shadows
+    shadowSlice : u32;
+    shadowMap : u32;			// shadow map
 };
 
 struct PointLight
 {
-    vec3 position;				// view space position of light, w is range
-    float range;
+    position : f32x3;				// view space position of light, w is range
+    range : f32;
 
-    vec3 color;					// light color
-    uint flags;					// feature flags (shadows, projection texture, etc)
+    color : f32x3;					// light color
+    flags : u32;					// feature flags (shadows, projection texture, etc)
 };
 
 struct PointLightShadowExtension
 {
-    float shadowIntensity;		// intensity of shadows
-    uint shadowMap;				// shadow map
+    shadowIntensity : f32;		// intensity of shadows
+    shadowMap : u32;				// shadow map
 };
 
 struct AreaLight
 {
-    vec3 bboxMin;               // Bounding box min point
-    float range;
-    vec3 bboxMax;               // Bounding box max point
-    float radius;
+    bboxMin : f32x3;               // Bounding box min point
+    range : f32;
+    bboxMax : f32x3;               // Bounding box max point
+    radius : f32;
 
-    vec3 xAxis;
-    float width;
-    vec3 yAxis;
-    float height;
-    vec3 position;
-    uint flags;
+    xAxis : f32x3;
+    width : f32;
+    yAxis : f32x3;
+    height : f32;
+    position : f32x3;
+    flags : u32;
 
-    vec3 color;					// light color
-    int shadowExtension;		// projection extension index
+    color : f32x3;					// light color
+    shadowExtension : i32;		// projection extension index
 };
 
 struct AreaLightShadowExtension
 {
-    mat4 projection;
-    float shadowIntensity;				// intensity of shadows
-    uint shadowSlice;
-    textureHandle shadowMap;			// shadow map
+    projection : f32x4x4;
+    shadowIntensity : f32;				// intensity of shadows
+    shadowSlice : u32;
+    shadowMap : u32;			// shadow map
 };
 
-group(FRAME_GROUP) constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
+struct LightParams
 {
-    textureHandle SSAOBuffer;
-    uint NumPointLights;
-    uint NumSpotLights;
-    uint NumAreaLights;
-    uint NumLightClusters;
+    SSAOBuffer : u32;
+    NumPointLights : u32;
+    NumSpotLights : u32;
+    NumAreaLights : u32;
+    NumLightClusters : u32;
 };
+group(FRAME_GROUP) uniform LightUniforms : *LightParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RGS";]
+struct LightIndexData
 {
-    uint PointLightCountList[NUM_CLUSTER_ENTRIES];
-    uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
-    uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
-    uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
-    uint AreaLightCountList[NUM_CLUSTER_ENTRIES];
-    uint AreaLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+    PointLightCountList : [NUM_CLUSTER_ENTRIES] u32;
+    PointLightIndexList : [NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER] u32;
+    SpotLightCountList : [NUM_CLUSTER_ENTRIES] u32;
+    SpotLightIndexList : [NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER] u32;
+    AreaLightCountList : [NUM_CLUSTER_ENTRIES] u32;
+    AreaLightIndexList : [NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER] u32;
 };
+group(FRAME_GROUP) uniform LightIndexLists : *mutable LightIndexData;
 
-group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RGS";]
+struct LightListData
 {
-    SpotLight SpotLights[1024];
-    SpotLightProjectionExtension SpotLightProjection[256];
-    SpotLightShadowExtension SpotLightShadow[16];
-    PointLight PointLights[1024];
-    PointLightShadowExtension PointLightShadow[16];
-    AreaLight AreaLights[1024];
-    AreaLightShadowExtension AreaLightShadow[16];
+    SpotLights : [1024]SpotLight;
+    SpotLightProjection : [256]SpotLightProjectionExtension;
+    SpotLightShadow : [16]SpotLightShadowExtension;
+    PointLights : [1024]PointLight;
+    PointLightShadow : [16]PointLightShadowExtension;
+    AreaLights : [1024]AreaLight;
+    AreaLightShadow : [16]AreaLightShadowExtension;
 };
+group(FRAME_GROUP) uniform LightLists : *mutable LightListData;
 
 //------------------------------------------------------------------------------
 /**
@@ -350,50 +353,53 @@ group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RGS";]
 
 struct PBRDecal
 {
-    textureHandle albedo;
-    vec4 bboxMin;
-    vec4 bboxMax;
-    mat4 invModel;
-    vec3 direction;
-    textureHandle material;
-    vec3 tangent;
-    textureHandle normal;
+    albedo : u32;
+    bboxMin : f32x4;
+    bboxMax : f32x4;
+    invModel : f32x4x4;
+    direction : f32x3;
+    material : u32;
+    tangent : f32x3;
+    normal : u32;
 };
 
 struct EmissiveDecal
 {
-    vec4 bboxMin;
-    vec4 bboxMax;
-    mat4 invModel;
-    vec3 direction;
-    textureHandle emissive;
+    bboxMin : f32x4;
+    bboxMax : f32x4;
+    invModel : f32x4x4;
+    direction : f32x3;
+    emissive : u32;
 };
 
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) constant DecalUniforms [ string Visibility = "CS|PS"; ]
+struct DecalParams
 {
-    uint NumPBRDecals;
-    uint NumEmissiveDecals;
-    uint NumDecalClusters;
-    textureHandle NormalBufferCopy;
-    textureHandle StencilBuffer;
+    NumPBRDecals : u32;
+    NumEmissiveDecals : u32;
+    NumDecalClusters : u32;
+    NormalBufferCopy : u32;
+    StencilBuffer : u32;
 };
+group(FRAME_GROUP) uniform DecalUniforms : *DecalParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(FRAME_GROUP) rw_buffer DecalIndexLists [ string Visibility = "CS|PS"; ]
+struct DecalIndexData
 {
-    uint EmissiveDecalCountList[NUM_CLUSTER_ENTRIES];
-    uint EmissiveDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
-    uint PBRDecalCountList[NUM_CLUSTER_ENTRIES];
-    uint PBRDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
+    EmissiveDecalCountList : [NUM_CLUSTER_ENTRIES] u32;
+    EmissiveDecalIndexList : [NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER] u32;
+    PBRDecalCountList : [NUM_CLUSTER_ENTRIES] u32;
+    PBRDecalIndexList : [NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER] u32;
 };
+group(FRAME_GROUP) uniform DecalIndexLists : *mutable DecalIndexData;
 
-group(FRAME_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
+struct DecalListData
 {
-    EmissiveDecal EmissiveDecals[128];
-    PBRDecal PBRDecals[128];
+    EmissiveDecals : [128] EmissiveDecal;
+    PBRDecals : [128] PBRDecal;
 };
+group(FRAME_GROUP) uniform DecalLists : *mutable DecalListData;
 
 //------------------------------------------------------------------------------
 /**
@@ -404,80 +410,83 @@ group(FRAME_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
 
 struct FogSphere
 {
-    vec3 position;
-    float radius;
-    vec3 absorption;
-    float turbidity;
-    float falloff;
+    position : f32x3;
+    radius : f32;
+    absorption : f32x3;
+    turbidity : f32;
+    falloff : f32;
 };
 
 struct FogBox
 {
-    vec3 bboxMin;
-    float falloff;
-    vec3 bboxMax;
-    float turbidity;
-    vec3 absorption;
-    mat4 invTransform;
+    bboxMin : f32x3;
+    falloff : f32;
+    bboxMax : f32x3;
+    turbidity : f32;
+    absorption : f32x3;
+    invTransform : f32x4x4;
 };
 
 // increase if we need more decals in close proximity, for now, 128 is more than enough
 #define MAX_FOGS_PER_CLUSTER 128
 
-
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) constant VolumeFogUniforms [ string Visibility = "CS|VS|PS"; ]
+struct VolumeFogParams
 {
-    int DownscaleFog;
-    uint NumFogSpheres;
-    uint NumFogBoxes;
-    uint NumVolumeFogClusters;
-    vec3 GlobalAbsorption;
-    float GlobalTurbidity;
+    DownscaleFog : i32;
+    NumFogSpheres : u32;
+    NumFogBoxes : u32;
+    NumVolumeFogClusters : u32;
+    GlobalAbsorption : f32x3;
+    GlobalTurbidity : f32;
 };
+group(FRAME_GROUP) uniform VolumeFogUniforms : *VolumeFogParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(FRAME_GROUP) rw_buffer FogIndexLists [ string Visibility = "CS|VS|PS"; ]
+struct FogIndexListData
 {
-    uint FogSphereCountList[NUM_CLUSTER_ENTRIES];
-    uint FogSphereIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
-    uint FogBoxCountList[NUM_CLUSTER_ENTRIES];
-    uint FogBoxIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
+    FogSphereCountList : [NUM_CLUSTER_ENTRIES] u32;
+    FogSphereIndexList : [NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER] u32;
+    FogBoxCountList : [NUM_CLUSTER_ENTRIES] u32;
+    FogBoxIndexList : [NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER] u32;
 };
+group(FRAME_GROUP) uniform FogIndexLists : *mutable FogIndexListData;
 
-group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
+struct FogListData
 {
-    FogSphere FogSpheres[128];
-    FogBox FogBoxes[128];
+    FogSpheres : [128] FogSphere;
+    FogBoxes : [128] FogBox;
 };
+group(FRAME_GROUP) uniform FogLists : *mutable FogListData;
 
-group(PASS_GROUP) inputAttachment InputAttachment0;
-group(PASS_GROUP) inputAttachment InputAttachment1;
-group(PASS_GROUP) inputAttachment InputAttachment2;
-group(PASS_GROUP) inputAttachment InputAttachment3;
-group(PASS_GROUP) inputAttachment InputAttachment4;
-group(PASS_GROUP) inputAttachment InputAttachment5;
-group(PASS_GROUP) inputAttachment InputAttachment6;
-group(PASS_GROUP) inputAttachment InputAttachment7;
-group(PASS_GROUP) inputAttachment InputAttachment8;
-group(PASS_GROUP) inputAttachment InputAttachment9;
-group(PASS_GROUP) inputAttachment InputAttachment10;
-group(PASS_GROUP) inputAttachment InputAttachment11;
-group(PASS_GROUP) inputAttachment InputAttachment12;
-group(PASS_GROUP) inputAttachment InputAttachment13;
-group(PASS_GROUP) inputAttachment InputAttachment14;
-group(PASS_GROUP) inputAttachment InputAttachment15;
-group(PASS_GROUP) inputAttachment DepthAttachment;
+group(PASS_GROUP) InputAttachment0 : PixelCache;
+group(PASS_GROUP) InputAttachment1 : PixelCache;
+group(PASS_GROUP) InputAttachment2 : PixelCache;
+group(PASS_GROUP) InputAttachment3 : PixelCache;
+group(PASS_GROUP) InputAttachment4 : PixelCache;
+group(PASS_GROUP) InputAttachment5 : PixelCache;
+group(PASS_GROUP) InputAttachment6 : PixelCache;
+group(PASS_GROUP) InputAttachment7 : PixelCache;
+group(PASS_GROUP) InputAttachment8 : PixelCache;
+group(PASS_GROUP) InputAttachment9 : PixelCache;
+group(PASS_GROUP) InputAttachment10 : PixelCache;
+group(PASS_GROUP) InputAttachment11 : PixelCache;
+group(PASS_GROUP) InputAttachment12 : PixelCache;
+group(PASS_GROUP) InputAttachment13 : PixelCache;
+group(PASS_GROUP) InputAttachment14 : PixelCache;
+group(PASS_GROUP) InputAttachment15 : PixelCache;
+group(PASS_GROUP) DepthAttachment : PixelCache;
 
 struct RenderTargetParameters
 {
-    vec4 Dimensions;    // render target dimensions are size (xy) inversed size (zw)
-    vec2 Scale;         // dimensions / viewport
+    Dimensions : f32x4;    // render target dimensions are size (xy) inversed size (zw)
+    Scale : f32x2;         // dimensions / viewport
 };
 
-group(PASS_GROUP) constant PassBlock
+struct PassParams
 {
-    RenderTargetParameters RenderTargetParameter[16]; // render target dimensions are size (xy) inversed size (zw)
+    RenderTargetParameter : [16] RenderTargetParameters; // render target dimensions are size (xy) inversed size (zw)
 };
+group(PASS_GROUP) uniform PassBlock : *PassParams;
 
 #endif // SHARED_H

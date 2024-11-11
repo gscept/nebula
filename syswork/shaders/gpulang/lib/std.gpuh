@@ -16,12 +16,12 @@
 	SYSTEM_GROUP is a set of system-managed resources
 	DYNAMIC_OFFSET_GROUP is for buffers which support dynamic offsets
 */
-const TICK_GROUP : u32 = 0;
-const FRAME_GROUP : u32 = 1;
-const PASS_GROUP : u32 = 2;
-const BATCH_GROUP : u32 = 3;
-const INSTANCE_GROUP : u32 = 4;
-const SYSTEM_GROUP : u32 = 5;
-const DYNAMIC_OFFSET_GROUP : u32 = 6;
+const TICK_GROUP : u32 = 0u;
+const FRAME_GROUP : u32 = 1u;
+const PASS_GROUP : u32 = 2u;
+const BATCH_GROUP : u32 = 3u;
+const INSTANCE_GROUP : u32 = 4u;
+const SYSTEM_GROUP : u32 = 5u;
+const DYNAMIC_OFFSET_GROUP : u32 = 6u;
 
 #endif // STD_GPUH

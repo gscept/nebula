@@ -1,12 +1,12 @@
 //------------------------------------------------------------------------------
 //  averagelum.gpul
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/techniques.fxh"
-#include "lib/util.fxh"
-#include "lib/shared.fxh"
+#include <lib/std.gpuh>
+#include <lib/techniques.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
 
 uniform ColorSource : *texture2D;
 uniform PreviousLum : *texture2D;
@@ -14,13 +14,12 @@ uniform PreviousLum : *texture2D;
 
 struct AverageLumData
 {
-    float TimeDiff;
+    TimeDiff : f32;
 };
 uniform AverageLumBlock : *AverageLumData;
 
 sampler_state LuminanceSampler
 {
-    //Samplers = { ColorSource, PreviousLum };
     Filter = Point;
 };
 
@@ -51,7 +50,7 @@ vsMain(
     Performs a 2x2 kernel downscale, will only render 1 pixel
 */
 entry_point
-psMain(in UV : f32x2,
+psMain(in UV : f32x2
 ) void
 {
     const sample1 : f32x4 = textureFetch(ColorSource, i32x2(1, 0), 0);
@@ -69,4 +68,4 @@ psMain(in UV : f32x2,
 //------------------------------------------------------------------------------
 /**
 */
-PostEffect(vsMain(), psMain(), AverageLumState);
+PostEffect(vsMain, psMain, AverageLumState);
