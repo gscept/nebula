@@ -61,7 +61,7 @@ DistributedAppJob::RunJob()
     for (fileIndex = 0; fileIndex < this->fileList.Size(); fileIndex++)
     {
         writer->WriteString(this->fileList[fileIndex]);   
-        writer->WriteString("\r\n");
+        writer->WriteString("\n");
     }
     IndexT dirIndex;
     for (dirIndex = 0; dirIndex < this->dirList.Size(); dirIndex++)
@@ -72,7 +72,7 @@ DistributedAppJob::RunJob()
             String path;
             path.Format("%s/%s", this->dirList[dirIndex].AsCharPtr(), dirFiles[fileIndex].AsCharPtr());
             writer->WriteString(path);
-            writer->WriteString("\r\n");
+            writer->WriteString("\n");
         }
     }
 

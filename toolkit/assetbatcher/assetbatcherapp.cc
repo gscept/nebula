@@ -17,6 +17,7 @@
 #include "flat/physics/material.h"
 #include "jobs2/jobs2.h"
 #include "system/nebulasettings.h"
+#include "toolkit/toolkit-common/text.h"
 
 #ifdef WIN32
 #include "io/win32/win32consolehandler.h"
@@ -109,6 +110,31 @@ AssetBatcherApp::Close()
         this->modelDatabase = nullptr;
     }
     DistributedToolkitApp::Close();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AssetBatcherApp::Run()
+{
+    Timing::Timer totalTime;
+    totalTime.Start();
+
+    DistributedTools::DistributedToolkitApp::Run();
+
+    totalTime.Stop();
+    if (this->IsMaster() || !this->listfileArg.IsValid())
+    {
+        this->logger.Print("\n");
+        this->logger.Print("--- Batching took ");
+        int minutes = Math::floor(totalTime.GetTime() / 60.0f);
+        float seconds = Math::fmod(totalTime.GetTime(), 60.0f);
+        Util::String time = Util::String::FromInt(minutes) + "m " + Util::String::FromFloat(seconds) + "s\n";
+        this->logger.Print(
+            ToolkitUtil::Text::Text(time).Color(ToolkitUtil::TextColor::Green).Style(ToolkitUtil::FontMode::Bold).AsCharPtr()
+        );
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -225,6 +251,9 @@ AssetBatcherApp::DoWork()
     if (this->listfileArg.IsValid())
     {
         Array<String> fileList = CreateFileList();
+        IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", "proj:work"));
+        exporter->UpdateSource();
+        exporter->SetProgressMinMax(0, fileList.Size() * PRECISION);
         exporter->ExportList(fileList);
     }
     else
@@ -316,14 +345,17 @@ void
 AssetBatcherApp::ShowHelp()
 {
     n_printf("Nebula asset batcher.\n"
-        "(C) 2012-2020 Individual contributors, see AUTHORS file.\n");
-    n_printf("-help         --display this help\n"
-             "-force        --ignores time stamps\n"
-             "-asset        --asset name, implies source argument\n"
-             "-source       --select asset source from projectinfo, default all\n"
-             "-work         --batch a non-registered work folder into the project\n"
-             "-mode         --batch only a type of resource, can be: fbx, model, surface, texture, physics, gltf, audio\n"
-             "-project      --projectinfo override\n");
+        "(C) 2012-2024 Individual contributors, see AUTHORS file.\n");
+    n_printf("-force       -- ignores time stamps\n"
+             "-asset       -- asset name, implies source argument\n"
+             "-source      -- select asset source from projectinfo, default all\n"
+             "-work        -- batch a non-registered work folder into the project\n"
+             "-mode        -- batch only a type of resource, can be: fbx, model, surface, texture, physics, gltf, audio\n"
+             "-project     -- projectinfo override\n"
+    );
+
+    String additionalHelp = GetArgumentDescriptionString();
+    n_printf(additionalHelp.AsCharPtr());
 }
 
 //------------------------------------------------------------------------------
@@ -367,7 +399,14 @@ AssetBatcherApp::CreateFileList()
         for (int directoryIndex = 0; directoryIndex < directories.Size(); directoryIndex++)
         {
             String category = workDir + "/" + directories[directoryIndex];
-            res.Append(category);
+            
+            Array<String> filesInFolder = IoServer::Instance()->ListFiles(category, "*");
+            filesInFolder.AppendArray(IoServer::Instance()->ListDirectories(category, "*"));
+            for (auto& f : filesInFolder)
+            {
+                f = category + "/" + f;
+                res.Append(f);
+            }
         }
 
         // update progressbar in batchexporter
