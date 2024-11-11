@@ -1,0 +1,27 @@
+//------------------------------------------------------------------------------
+//  std.gpuh
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#ifndef STD_GPUH
+#define STD_GPUH
+
+/*
+	Groups are ordered based on frequency of change.
+	TICK_GROUP is updated once every update tick (for all cameras)
+	FRAME_GROUP is updated every camera frame
+	PASS_GROUP is updated once per frame by a pass
+	BATCH_GROUP is updated once per batch, which is either a material batch or the system
+	INSTANCE_GROUP is updated for every instance of a material
+	SYSTEM_GROUP is a set of system-managed resources
+	DYNAMIC_OFFSET_GROUP is for buffers which support dynamic offsets
+*/
+const TICK_GROUP : u32 = 0u;
+const FRAME_GROUP : u32 = 1u;
+const PASS_GROUP : u32 = 2u;
+const BATCH_GROUP : u32 = 3u;
+const INSTANCE_GROUP : u32 = 4u;
+const SYSTEM_GROUP : u32 = 5u;
+const DYNAMIC_OFFSET_GROUP : u32 = 6u;
+
+#endif // STD_GPUH
