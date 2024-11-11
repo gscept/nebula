@@ -189,6 +189,73 @@ macro(nebula_flatc root)
     endforeach()
 endmacro()
 
+macro(compile_gpulang_intern)
+    set(shd ${ARGV0})
+    set(nebula_shader ${ARGV1})
+    if(SHADERC)
+        if(N_NEBULA_DEBUG_SHADERS)
+            set(shader_debug "-debug")
+        endif()
+
+        if (nebula_shader)
+            set(foldername system_shaders/${CurDir})
+            set(base_path ${NROOT}/syswork/shaders/vk)
+        else()
+            set(foldername ${CurDir})
+            set(base_path ${CMAKE_CURRENT_SOURCE_DIR}/${CurDir})
+        endif()
+
+        cmake_path(SET shd_path ${shd})
+
+        cmake_path(RELATIVE_PATH shd_path BASE_DIRECTORY ${base_path} OUTPUT_VARIABLE rel_path)
+        cmake_path(GET rel_path STEM basename)
+
+        set(binaryOutput ${EXPORT_DIR}/shaders/gpulang/${foldername}${basename}.gplb)
+        set(headerOutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}.h)
+
+        # first calculate dependencies
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
+        set(depoutput ${CMAKE_BINARY_DIR}/${foldername}${basename}.dep)
+        # create it the first time by force, after that with dependencies
+        # since custom command does not want to play ball atm, we just generate it every time
+        if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
+            execute_process(COMMAND ${GPULANGC} -M -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h -t shader)
+        endif()
+
+        # sadly this doesnt work for some reason
+        #add_custom_command(OUTPUT ${depoutput}
+        #COMMAND ${SHADERC} -M -i ${shd} -I ${NROOT}/work/shaders -I ${foldername} -o ${CMAKE_BINARY_DIR} -t shader
+        #DEPENDS ${SHADERC} ${shd}
+        #WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+        #COMMENT ""
+        #VERBATIM
+        #)
+        if(EXISTS ${depoutput})
+            file(READ ${depoutput} deps)
+        endif()
+
+        add_custom_command(OUTPUT ${binaryOutput}
+            COMMAND ${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
+            MAIN_DEPENDENCY ${shd}
+            DEPENDS ${GPULANGC} ${deps}
+            WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+            COMMENT ""
+            VERBATIM
+            )
+
+        SET(tmp_dir ${CurDir})
+        SET(CurDir "")
+        fips_files(${shd})
+
+        SET(CurDir ${tmp_dir})
+
+        if(N_ENABLE_SHADER_COMMAND_GENERATION)
+            # create compile flags file for live shader compile
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}")
+        endif()
+    endif()
+endmacro()
+
 macro(add_shader_intern)
     set(shd ${ARGV0})
     set(nebula_shader ${ARGV1})
@@ -658,6 +725,17 @@ macro(nebula_add_blueprints)
     else()
         add_blueprint_intern("${NROOT}/syswork/data/tables/blueprints.json")
     endif()    
+endmacro()
+
+macro(compile_gpulang)
+    if(NOT GPULANGC)
+        MESSAGE(WARNING "Not compiling shaders, GPULang not found, did you run fips gpulang setup?")
+    else()
+        set_nebula_export_dir()
+        foreach(shd ${ARGN})
+            compile_gpulang_intern(${CMAKE_CURRENT_SOURCE_DIR}/${CurDir}${shd} false)
+        endforeach()
+    endif()
 endmacro()
 
 macro(add_shaders)
