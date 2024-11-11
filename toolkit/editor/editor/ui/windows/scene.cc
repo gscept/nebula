@@ -80,6 +80,9 @@ Scene::FocusCamera()
 {
     auto selection = Tools::SelectionTool::Selection();
 
+    if (selection.IsEmpty())
+        return;
+
     //TODO: Use bboxes to more accurately calculate the distance offset to the object after moving the camera
 
     Math::vec3 centerPoint = Math::vec3(0);
