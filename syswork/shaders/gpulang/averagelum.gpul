@@ -20,14 +20,14 @@ uniform AverageLumBlock : *AverageLumData;
 
 sampler_state LuminanceSampler
 {
-    Filter = Point;
+    Filter = FilterMode.Point;
 };
 
 render_state AverageLumState
 {
-    CullMode = Back;
-    DepthEnabled = false;
-    DepthWrite = false;
+    Cull = CullMode.Back;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
 };
 
 
@@ -57,12 +57,12 @@ psMain(in UV : f32x2
     const sample2 : f32x4 = textureFetch(ColorSource, i32x2(0, 1), 0);
     const sample3 : f32x4 = textureFetch(ColorSource, i32x2(1, 1), 0);
     const sample4 : f32x4 = textureFetch(ColorSource, i32x2(0, 0), 0);
-    const currentLum : f32 = dot((sample1 + sample2 + sample3 + sample4).rgb * 0.25f, Luminance);
-    const lastLum : f32 = textureFetch(PreviousLum, i32x2(0, 0), 0).r;
+    const currentLum : f32 = dot((sample1 + sample2 + sample3 + sample4).xyz * 0.25f, Luminance);
+    const lastLum : f32 = textureFetch(PreviousLum, i32x2(0, 0), 0).x;
 
-    var lum : f32 = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * TimeDiff));
+    var lum : f32 = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * AverageLumBlock.TimeDiff));
     lum = max(0.25f, lum);
-    gplExportPixel(lum, 0);
+    gplExportColor(lum, 0);
 }
 
 //------------------------------------------------------------------------------

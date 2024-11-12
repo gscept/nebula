@@ -26,8 +26,8 @@ group(TICK_GROUP) binding(0) uniform Textures3D : [MAX_TEXTURES]* texture3D;
 group(TICK_GROUP) binding(0) uniform TexturesCube : [MAX_TEXTURES]* textureCube;
 group(TICK_GROUP) binding(0) uniform TexturesCubeArray : [MAX_TEXTURES]* textureCubeArray;
 sampler_state Basic2DSampler{};
-sampler_state PointSampler { Filter = Point; AddressU = Clamp; AddressV = Clamp; };
-sampler_state LinearSampler { Filter = Linear; AddressU = Clamp; AddressV = Clamp; };
+sampler_state PointSampler { Filter = FilterMode.Nearest; AddressU = AddressMode.Clamp; AddressV = AddressMode.Clamp; };
+sampler_state LinearSampler { Filter = FilterMode.Nearest; AddressU = AddressMode.Clamp; AddressV = AddressMode.Clamp; };
  
 
 #define sample2D(handle, sampler, uv)						    textureSample(Textures2D[handle], sampler, uv)
@@ -60,7 +60,7 @@ sampler_state LinearSampler { Filter = Linear; AddressU = Clamp; AddressV = Clam
 #define query_lod2D(handle, sampler, uv)                        textureGetSampledMip(sampler2D(Textures2D[handle], sampler), uv)
 
 // these parameters are updated once per application tick
-struct PerTickParams
+struct TickParams
 {
     WindDirection : f32;
 
@@ -173,22 +173,22 @@ group(FRAME_GROUP) uniform ShadowViewConstants : *ShadowViewParams;
 
 sampler_state ShadowSampler
 {
-    Comparison = true;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    CompareEnabled = true;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
 };
 
 sampler_state PointLightTextureSampler
 {
-    Filter = MinMagLinearMipPoint;
+    Filter = FilterMode.MinMagLinearMipPoint;
 };
 
 sampler_state SpotlightTextureSampler
 {
-    Filter = MinMagLinearMipPoint;
-    AddressU = Border;
-    AddressV = Border;
-    BorderColor = Transparent;
+    Filter = FilterMode.MinMagLinearMipPoint;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+    BorderColor = BorderColor.Transparent;
 };
 
 //------------------------------------------------------------------------------
@@ -459,23 +459,23 @@ struct FogListData
 };
 group(FRAME_GROUP) uniform FogLists : *mutable FogListData;
 
-group(PASS_GROUP) InputAttachment0 : PixelCache;
-group(PASS_GROUP) InputAttachment1 : PixelCache;
-group(PASS_GROUP) InputAttachment2 : PixelCache;
-group(PASS_GROUP) InputAttachment3 : PixelCache;
-group(PASS_GROUP) InputAttachment4 : PixelCache;
-group(PASS_GROUP) InputAttachment5 : PixelCache;
-group(PASS_GROUP) InputAttachment6 : PixelCache;
-group(PASS_GROUP) InputAttachment7 : PixelCache;
-group(PASS_GROUP) InputAttachment8 : PixelCache;
-group(PASS_GROUP) InputAttachment9 : PixelCache;
-group(PASS_GROUP) InputAttachment10 : PixelCache;
-group(PASS_GROUP) InputAttachment11 : PixelCache;
-group(PASS_GROUP) InputAttachment12 : PixelCache;
-group(PASS_GROUP) InputAttachment13 : PixelCache;
-group(PASS_GROUP) InputAttachment14 : PixelCache;
-group(PASS_GROUP) InputAttachment15 : PixelCache;
-group(PASS_GROUP) DepthAttachment : PixelCache;
+group(PASS_GROUP) uniform InputAttachment0 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment1 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment2 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment3 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment4 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment5 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment6 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment7 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment8 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment9 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment10 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment11 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment12 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment13 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment14 : *pixelCache;
+group(PASS_GROUP) uniform InputAttachment15 : *pixelCache;
+group(PASS_GROUP) uniform DepthAttachment : *pixelCache;
 
 struct RenderTargetParameters
 {
