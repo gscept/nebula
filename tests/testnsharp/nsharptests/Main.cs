@@ -31,7 +31,7 @@ namespace NST
         public override void OnBeginFrame()
         {
             i++;
-            Console.WriteLine(String.Format("TestProperty OnBeginFrame() called {0} times", i));
+            Nebula.Debug.Log(String.Format("TestProperty OnBeginFrame() called {0} times\n", 0));
         }
 
         public override void OnMessage(in Msg msg)

@@ -100,12 +100,12 @@ namespace Nebula
 
             public virtual void OnFrame()
             {
-
+                PropertyManager.Instance.OnFrame();
             }
 
             public virtual void OnEndFrame()
             {
-
+                PropertyManager.Instance.OnEndFrame();
             }
         }
     }

@@ -103,6 +103,8 @@ def GetCsTypeString(attrType):
         return "ResourceDescriptor"
     elif (T == "entity"):
         return "EntityId"
+    elif (T == "colour"):
+        return "Mathf.Vector4" # XNA Mathf.Color is a packed uint, while Util::Colour is a vec4. We need to reflect the native type in C#
     else:
         return attrType
 
@@ -157,7 +159,7 @@ def GetArgumentType(attrType):
     elif (T == "resource"):
         return "Resources::ResourceName"
     elif (T == "colour"):
-        return "Util::Colour"
+        return "Util::Colour const&"
     elif (T == "entity"):
         return "Game::Entity"
     else:
