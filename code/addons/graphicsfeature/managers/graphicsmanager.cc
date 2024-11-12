@@ -23,7 +23,7 @@
 namespace GraphicsFeature
 {
 
-__ImplementSingleton(GraphicsManager)
+__ImplementClass(GraphicsFeature::GraphicsManager, 'GrMa', Game::Manager);
 
 //------------------------------------------------------------------------------
 /**
@@ -189,29 +189,20 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-GraphicsManager::Create()
+void
+GraphicsManager::OnActivate()
 {
-    n_assert(!GraphicsManager::HasInstance());
-    GraphicsManager::Singleton = new GraphicsManager;
-
-    Singleton->InitUpdateModelTransformProcessor();
-
-    Game::ManagerAPI api;
-    api.OnCleanup = &OnCleanup;
-    api.OnDeactivate = &Destroy;
-    api.OnDecay = &OnDecay;
-    return api;
+    Manager::OnActivate();
+    this->InitUpdateModelTransformProcessor();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-GraphicsManager::Destroy()
+GraphicsManager::OnDeactivate()
 {
-    delete GraphicsManager::Singleton;
-    GraphicsManager::Singleton = nullptr;
+    Manager::OnDeactivate();
 }
 
 //------------------------------------------------------------------------------
@@ -273,8 +264,6 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
 void
 GraphicsManager::OnCleanup(Game::World* world)
 {
-    n_assert(GraphicsManager::HasInstance());
-
     { // Model cleanup
         Game::Filter filter = Game::FilterBuilder().Including<Model>().Build();
         Game::Dataset data = world->Query(filter);

@@ -81,7 +81,7 @@ Camera::Update()
 {
     auto& io = ImGui::GetIO();
 
-    Game::TimeSource* timeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_EDITOR);
+    Game::TimeSource* timeSource = Game::Time::GetTimeSource(TIMESOURCE_EDITOR);
 
     this->mayaCameraUtil.SetOrbitButton(io.MouseDown[Input::MouseButton::LeftButton]);
     this->mayaCameraUtil.SetPanButton(io.MouseDown[Input::MouseButton::MiddleButton]);

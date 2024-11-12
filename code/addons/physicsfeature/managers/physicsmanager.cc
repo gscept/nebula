@@ -19,6 +19,7 @@
 namespace PhysicsFeature
 {
 
+__ImplementClass(PhysicsFeature::PhysicsManager, 'PhMa', Game::Manager);
 __ImplementSingleton(PhysicsManager)
 
 //------------------------------------------------------------------------------
@@ -26,7 +27,7 @@ __ImplementSingleton(PhysicsManager)
 */
 PhysicsManager::PhysicsManager()
 {
-    // empty
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +35,7 @@ PhysicsManager::PhysicsManager()
 */
 PhysicsManager::~PhysicsManager()
 {
-    // empty
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -145,29 +146,21 @@ PhysicsManager::InitPollTransformProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-PhysicsManager::Create()
+void
+PhysicsManager::OnActivate()
 {
-    n_assert(!PhysicsManager::HasInstance());
-    PhysicsManager::Singleton = new PhysicsManager;
+    Game::Manager::OnActivate();
 
-    Singleton->InitPollTransformProcessor();
-
-    Game::ManagerAPI api;
-    api.OnCleanup = &OnCleanup;
-    api.OnDeactivate = &Destroy;
-    api.OnDecay = &OnDecay;
-    return api;
+    this->InitPollTransformProcessor();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PhysicsManager::Destroy()
+PhysicsManager::OnDeactivate()
 {
-    delete PhysicsManager::Singleton;
-    PhysicsManager::Singleton = nullptr;
+    Game::Manager::OnActivate();
 }
 
 //------------------------------------------------------------------------------

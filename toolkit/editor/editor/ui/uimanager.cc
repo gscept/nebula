@@ -36,22 +36,28 @@
 namespace Editor
 {
 
+__ImplementClass(Editor::UIManager, 'UiMa', Game::Manager);
+
 static Ptr<Presentation::WindowServer> windowServer;
 
-namespace UIManager
+namespace UI
 {
 
 namespace Icons
 {
-    texturehandle_t play;
-    texturehandle_t pause;
-    texturehandle_t stop;
-    texturehandle_t game;
-    texturehandle_t environment;
-    texturehandle_t light;
+texturehandle_t play;
+texturehandle_t pause;
+texturehandle_t stop;
+texturehandle_t game;
+texturehandle_t environment;
+texturehandle_t light;
 }
 
-Icons::texturehandle_t NLoadIcon(const char* resource)
+}
+//------------------------------------------------------------------------------
+/**
+*/
+UI::Icons::texturehandle_t NLoadIcon(const char* resource)
 {
     return Resources::CreateResource(resource, "EditorIcons"_atm, nullptr, nullptr, true).HashCode64();
 }
@@ -59,9 +65,27 @@ Icons::texturehandle_t NLoadIcon(const char* resource)
 //------------------------------------------------------------------------------
 /**
 */
-void
-OnActivate()
+UIManager::UIManager()
+{ 
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UIManager::~UIManager()
 {
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+UIManager::OnActivate()
+{
+    Game::Manager::OnActivate();
+
     windowServer = Presentation::WindowServer::Create();
 
     windowServer->RegisterWindow("Presentation::Console", "Console", "Debug");
@@ -78,12 +102,12 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     windowServer->RegisterWindow("Presentation::Physics", "Physics");
     
-    Icons::play          = NLoadIcon("systex:icon_play.dds");
-    Icons::pause         = NLoadIcon("systex:icon_pause.dds");
-    Icons::stop          = NLoadIcon("systex:icon_stop.dds");
-    Icons::environment   = NLoadIcon("systex:icon_environment.dds");
-    Icons::game          = NLoadIcon("systex:icon_game.dds");
-    Icons::light         = NLoadIcon("systex:icon_light.dds");
+    UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
+    UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");
+    UI::Icons::stop          = NLoadIcon("systex:icon_stop.dds");
+    UI::Icons::environment   = NLoadIcon("systex:icon_environment.dds");
+    UI::Icons::game          = NLoadIcon("systex:icon_game.dds");
+    UI::Icons::light         = NLoadIcon("systex:icon_light.dds");
     
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive); }, "Save", "Ctrl+S", "Edit");
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
@@ -150,8 +174,9 @@ OnActivate()
 /**
 */
 void
-OnDeactivate()
+UIManager::OnDeactivate()
 {
+    Game::Manager::OnDeactivate();
     windowServer = nullptr;
 }
 
@@ -159,24 +184,9 @@ OnDeactivate()
 /**
 */
 void
-OnBeginFrame()
+UIManager::OnBeginFrame()
 {
     windowServer->Update();
 }
-
-//------------------------------------------------------------------------------
-/**
-*/
-Game::ManagerAPI
-Create()
-{
-    Game::ManagerAPI api;
-    api.OnActivate = &OnActivate;
-    api.OnDeactivate = &OnDeactivate;
-    api.OnBeginFrame = &OnBeginFrame;
-    return api;
-}
-
-} // namespace UIManager
 
 } // namespace Editor

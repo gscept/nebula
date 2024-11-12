@@ -3,16 +3,20 @@
 /**
     @struct Game::ManagerAPI
 
-    A Manager is just a bundle of function pointers to static or global functions
-    that is called by the Game::FeatureUnit it is attached to.
-    The managers context/state can be implemented as the developer sees fit, but
-    will most likely be some global or static singleton.
+    Managers are objects which care about some specific functionality
+    of a feature.
+    They should be subclassed by applications to implement aspects
+    of the application (mainly game play related functionality).
+    
+    Managers are created and triggered by game features. The frame trigger
+    functions are invoked when the gameserver triggers the game feature.
     
     @see NebulaApplicationGameManagers
 
     @copyright
-    (C) 2020 Individual contributors, see AUTHORS file
+    (C) 2020-2024 Individual contributors, see AUTHORS file
 */
+#include "core/refcounted.h"
 #include "ids/id.h"
 
 //------------------------------------------------------------------------------
@@ -24,38 +28,56 @@ class World;
 //------------------------------------------------------------------------------
 /**
 */
-ID_32_TYPE(ManagerHandle)
+class Manager : public Core::RefCounted
+{
+    __DeclareClass(Manager)
+public:
+    /// constructor
+    Manager();
+    /// destructor
+    virtual ~Manager();
+
+    /// return true if currently active
+    bool IsActive() const;
+
+    // TODO: RegisterTypes?
+
+    virtual void OnActivate();
+    /// called when removed from game server
+    virtual void OnDeactivate();
+    /// called before frame by the feature
+    virtual void OnBeginFrame() {}
+    /// Called between begin frame and before views
+    virtual void OnBeforeViews() {}
+    /// called per-frame by the feature
+    virtual void OnFrame() {}
+    /// called after frame by the feature
+    virtual void OnEndFrame() {}
+    /// called before cleaning up managed properties decay buffers
+    virtual void OnDecay() {}
+    /// called after loading game state
+    virtual void OnLoad(World*) {}
+    /// called before saving game state
+    virtual void OnSave(World*) {}
+    /// called before unloading game state
+    virtual void OnCleanup(World*) {}
+    /// called by Game::Server::Start()
+    virtual void OnStart(World*) {}
+    /// render a debug visualization
+    virtual void OnRenderDebug() {}
+
+private:
+    bool isActive = false;
+};
 
 //------------------------------------------------------------------------------
 /**
 */
-struct ManagerAPI
+inline bool
+Manager::IsActive() const
 {
-    /// called when attached to game server
-    void(*OnActivate)() = nullptr;
-    /// called when removed from game server
-    void(*OnDeactivate)() = nullptr;
-    /// called before frame by the game server
-    void(*OnBeginFrame)() = nullptr;
-    /// Called between begin frame and before views
-    void(*OnBeforeViews)() = nullptr;
-    /// called per-frame by the game server
-    void(*OnFrame)() = nullptr;
-    /// called after frame by the game server
-    void(*OnEndFrame)() = nullptr;
-    /// called before cleaning up managed properties decay buffers
-    void(*OnDecay)() = nullptr;
-    /// called after loading game state
-    void(*OnLoad)(World*) = nullptr;
-    /// called before saving game state
-    void(*OnSave)(World*) = nullptr;
-    /// called before unloading game state
-    void(*OnCleanup)(World*) = nullptr;
-    /// called by Game::Server::Start()
-    void(*OnStart)(World*) = nullptr;
-    /// render a debug visualization 
-    void(*OnRenderDebug)() = nullptr;
-};
+    return this->isActive;
+}
 
 }; // namespace Game
 //------------------------------------------------------------------------------

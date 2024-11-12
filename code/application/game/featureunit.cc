@@ -70,13 +70,12 @@ FeatureUnit::OnDeactivate()
     n_assert(this->IsActive());
 
     // remove all managers
-    while (this->managers.Size() > 0)
+    for (SizeT i = 0; i < this->managers.Size(); i++)
     {
-        if (this->managers.Get<1>(0).OnDeactivate != nullptr)
-            this->managers.Get<1>(0).OnDeactivate();
-        this->managers.EraseIndex(0);
+        this->managers[i]->OnDeactivate();
     }
 
+    this->managers.Free();
     this->active = false;
 }
 
@@ -93,8 +92,7 @@ FeatureUnit::OnLoad(World* world)
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
         // invoke OnLoad() on manager
-        if (this->managers.Get<1>(managerIndex).OnLoad != nullptr)
-            this->managers.Get<1>(managerIndex).OnLoad(world);
+        this->managers[managerIndex]->OnLoad(world);
     }
 }
 
@@ -111,8 +109,7 @@ FeatureUnit::OnStart(World* world)
     int num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnStart != nullptr)
-            this->managers.Get<1>(i).OnStart(world);
+        this->managers[i]->OnStart(world);
     }
 }
 
@@ -127,8 +124,7 @@ FeatureUnit::OnSave(World* world)
     int numManagers = this->managers.Size();
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
-        if (this->managers.Get<1>(managerIndex).OnSave != nullptr)
-            this->managers.Get<1>(managerIndex).OnSave(world);
+        this->managers[managerIndex]->OnSave(world);
     }
 }
 
@@ -146,8 +142,7 @@ FeatureUnit::OnBeginFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnBeginFrame != nullptr)
-            this->managers.Get<1>(i).OnBeginFrame();
+        this->managers[i]->OnBeginFrame();
     }
 }
 
@@ -165,8 +160,7 @@ FeatureUnit::OnBeforeViews()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnBeforeViews != nullptr)
-            this->managers.Get<1>(i).OnBeforeViews();
+        this->managers[i]->OnBeforeViews();
     }
 }
 
@@ -185,8 +179,7 @@ FeatureUnit::OnFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnFrame != nullptr)
-            this->managers.Get<1>(i).OnFrame();
+        this->managers[i]->OnFrame();
     }
 }
 
@@ -204,8 +197,7 @@ FeatureUnit::OnEndFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnEndFrame != nullptr)
-            this->managers.Get<1>(i).OnEndFrame();
+        this->managers[i]->OnEndFrame();
     }
 }
 
@@ -219,8 +211,7 @@ FeatureUnit::OnDecay()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnDecay != nullptr)
-            this->managers.Get<1>(i).OnDecay();
+        this->managers[i]->OnDecay();
     }
 }
 
@@ -238,8 +229,7 @@ FeatureUnit::OnRenderDebug()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        if (this->managers.Get<1>(i).OnRenderDebug != nullptr)
-            this->managers.Get<1>(i).OnRenderDebug();
+        this->managers[i]->OnRenderDebug();
     }
 }
 
@@ -249,20 +239,11 @@ FeatureUnit::OnRenderDebug()
     method will be called once right away, and then its OnFrame() method
     once per frame.
 */
-ManagerHandle
-FeatureUnit::AttachManager(ManagerAPI api)
+void
+FeatureUnit::AttachManager(Ptr<Manager> manager)
 {
-    if (api.OnActivate != nullptr)
-        api.OnActivate();
-
-    Ids::Id32 handle;
-    this->managerPool.Allocate(handle);
-
-    uint32_t index = this->managers.Alloc();
-    this->managers.Get<0>(index) = handle;
-    this->managers.Get<1>(index) = std::move(api);
-
-    return handle;
+    manager->OnActivate();
+    this->managers.Append(manager);
 }
 
 //------------------------------------------------------------------------------
@@ -271,21 +252,18 @@ FeatureUnit::AttachManager(ManagerAPI api)
     method will be called.
 */
 void
-FeatureUnit::RemoveManager(ManagerHandle handle)
+FeatureUnit::RemoveManager(Ptr<Manager> manager)
 {
-    n_assert(this->managerPool.IsValid(handle.id));
+    n_assert(manager.isvalid());
     for (IndexT i = 0; i < this->managers.Size(); ++i)
     {
-        if (this->managers.Get<0>(i) == handle)
+        if (this->managers[i] == manager)
         {
-            if (this->managers.Get<1>(i).OnDeactivate != nullptr)
-                this->managers.Get<1>(i).OnDeactivate();
-
+            this->managers[i]->OnDeactivate();
             this->managers.EraseIndex(i);
             break;
         }
     }
-    this->managerPool.Deallocate(handle.id);
 }
 
 //------------------------------------------------------------------------------
@@ -305,8 +283,7 @@ FeatureUnit::OnBeforeCleanup(World* world)
 {
     for (IndexT i = 0; i < this->managers.Size(); ++i)
     {
-        if (this->managers.Get<1>(i).OnCleanup != nullptr)
-            this->managers.Get<1>(i).OnCleanup(world);
+        this->managers[i]->OnCleanup(world);
     }
 }
 

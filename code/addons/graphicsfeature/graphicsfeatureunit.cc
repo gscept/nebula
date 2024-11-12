@@ -340,8 +340,11 @@ GraphicsFeatureUnit::OnActivate()
     this->gfxServer->SetupPostLogicViewCalls(postLogicViewCalls);
 
     // Attach managers
-    this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
-    this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
+    this->graphicsManager = GraphicsManager::Create();
+    this->cameraManager = CameraManager::Create();
+
+    this->AttachManager(this->graphicsManager);
+    this->AttachManager(this->cameraManager);
 
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();

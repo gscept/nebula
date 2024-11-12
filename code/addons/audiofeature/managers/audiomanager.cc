@@ -13,14 +13,15 @@
 namespace AudioFeature
 {
 
+__ImplementClass(AudioFeature::AudioManager, 'AuMa', Game::Manager);
 __ImplementSingleton(AudioManager)
 
-    //------------------------------------------------------------------------------
-    /**
+//------------------------------------------------------------------------------
+/**
 */
-    AudioManager::AudioManager()
+AudioManager::AudioManager()
 {
-    // empty
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -28,7 +29,7 @@ __ImplementSingleton(AudioManager)
 */
 AudioManager::~AudioManager()
 {
-    // empty
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -166,13 +167,11 @@ HandlePlaySpatialAudioEvent(
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-AudioManager::Create()
+void
+AudioManager::OnActivate()
 {
     using namespace Game;
     using namespace Audio;
-    n_assert(!AudioManager::HasInstance());
-    AudioManager::Singleton = new AudioManager;
 
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
@@ -205,22 +204,15 @@ AudioManager::Create()
         .Order(53)
         .RunInEditor()
         .Build();
-
-    Game::ManagerAPI api;
-    api.OnCleanup = &OnCleanup;
-    api.OnDeactivate = &Destroy;
-    api.OnDecay = &OnDecay;
-    return api;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-AudioManager::Destroy()
+AudioManager::OnDeactivate()
 {
-    delete AudioManager::Singleton;
-    AudioManager::Singleton = nullptr;
+    Game::Manager::OnDeactivate();
 }
 
 //------------------------------------------------------------------------------
@@ -230,6 +222,7 @@ void
 AudioManager::OnCleanup(Game::World* world)
 {
     n_assert(AudioManager::HasInstance());
+    // TODO: Implement me!
 }
 
 } // namespace AudioFeature

@@ -23,6 +23,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "core/singleton.h"
 #include "game/manager.h"
 #include "timing/time.h"
 
@@ -66,11 +67,8 @@ struct TimeSource
 //------------------------------------------------------------------------------
 /**
 */
-namespace TimeManager
+namespace Time
 {
-    /// create the singleton
-    Game::ManagerAPI Create();
-
     /// create a timesource. The global time manager handles the timesources.
     TimeSource* const CreateTimeSource(TimeSourceCreateInfo const& info);
 
@@ -82,6 +80,22 @@ namespace TimeManager
 
     /// get the global time scale
     float GetGlobalTimeFactor();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+class TimeManager : public Game::Manager
+{
+    __DeclareClass(TimeManager)
+    __DeclareSingleton(TimeManager)
+public:
+    TimeManager();
+    virtual ~TimeManager();
+
+    void OnActivate() override;
+    void OnDeactivate() override;
+    void OnBeginFrame() override;
 };
 
 } // namespace Game

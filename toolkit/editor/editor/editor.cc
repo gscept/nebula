@@ -42,9 +42,9 @@ Create()
 
     Game::TimeSourceCreateInfo editorTimeSourceInfo;
     editorTimeSourceInfo.hash = TIMESOURCE_EDITOR;
-    Game::TimeManager::CreateTimeSource(editorTimeSourceInfo);
+    Game::Time::CreateTimeSource(editorTimeSourceInfo);
 
-    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
     gameTimeSource->timeFactor = 0.0f;
 
     state.editorWorld = Game::GameServer::Instance()->CreateWorld(WORLD_EDITOR);
@@ -91,7 +91,7 @@ void
 PlayGame()
 {
     Game::EditorState::Instance()->isPlaying = true;
-    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
     gameTimeSource->timeFactor = 1.0f;
 }
 
@@ -102,7 +102,7 @@ void
 PauseGame()
 {
     Game::EditorState::Instance()->isPlaying = false;
-    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
     gameTimeSource->timeFactor = 0.0f;
 }
 
@@ -143,7 +143,7 @@ StopGame()
 
     Game::DestroyFilter(filter);
 
-    Game::TimeSource* gameTimeSource = Game::TimeManager::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
     gameTimeSource->timeFactor = 0.0f;
 }
 

@@ -16,7 +16,7 @@
 
 namespace Game
 {
-
+__ImplementClass(Game::BlueprintManager, 'BpMa', Game::Manager);
 __ImplementSingleton(BlueprintManager)
 
 Util::String BlueprintManager::blueprintFolder("data:tables/");
@@ -25,25 +25,34 @@ Util::String BlueprintManager::templatesFolder("data:tables/templates");
 //------------------------------------------------------------------------------
 /**
 */
-ManagerAPI
-BlueprintManager::Create()
+void
+BlueprintManager::OnActivate()
 {
-    n_assert(!BlueprintManager::HasInstance());
-    Singleton = new BlueprintManager;
+    Manager::OnActivate();
 
-    ManagerAPI api;
-    api.OnActivate = &BlueprintManager::OnActivate;
-    return api;
+    // first, setup an "empty" blueprint
+    Blueprint bluePrint;
+    bluePrint.name = "Empty";
+    BlueprintId const emptyId = this->blueprints.Size();
+    this->blueprints.Append(bluePrint);
+
+    // Setup all blueprint tables
+    this->SetupBlueprints();
+
+    // parse all templates from folders.
+    if (IO::IoServer::Instance()->DirectoryExists(this->templatesFolder))
+    {
+        this->LoadTemplateFolder(this->templatesFolder);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-BlueprintManager::Destroy()
+BlueprintManager::OnDeactivate()
 {
-    n_assert(BlueprintManager::HasInstance());
-    delete Singleton;
+    Manager::OnDeactivate();
 }
 
 //------------------------------------------------------------------------------
@@ -51,6 +60,8 @@ BlueprintManager::Destroy()
 */
 BlueprintManager::BlueprintManager()
 {
+    __ConstructSingleton
+
     Util::Array<Util::String> files = IO::IoServer::Instance()->ListFiles(this->blueprintFolder, "*.json", true);
     for (int i = 0; i < files.Size(); i++)
     {
@@ -67,29 +78,7 @@ BlueprintManager::BlueprintManager()
 */
 BlueprintManager::~BlueprintManager()
 {
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-BlueprintManager::OnActivate()
-{
-    // first, setup an "empty" blueprint
-    Blueprint bluePrint;
-    bluePrint.name = "Empty";
-    BlueprintId const emptyId = Singleton->blueprints.Size();
-    Singleton->blueprints.Append(bluePrint);
-    
-    // Setup all blueprint tables
-    Singleton->SetupBlueprints();
-    
-    // parse all templates from folders.
-    if (IO::IoServer::Instance()->DirectoryExists(Singleton->templatesFolder))
-    {
-        Singleton->LoadTemplateFolder(Singleton->templatesFolder);
-    }
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------

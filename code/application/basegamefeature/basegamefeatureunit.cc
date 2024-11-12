@@ -67,8 +67,12 @@ BaseGameFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    this->blueprintManager = this->AttachManager(BlueprintManager::Create());
-    this->timeManager = this->AttachManager(TimeManager::Create());
+    this->blueprintManager = BlueprintManager::Create();
+    this->timeManager = TimeManager::Create();
+
+    this->AttachManager(this->blueprintManager);
+    this->AttachManager(this->timeManager);
+
     this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "1", "Enable world debugging");
 }
 
@@ -80,6 +84,9 @@ BaseGameFeatureUnit::OnDeactivate()
 {
     this->RemoveManager(this->blueprintManager);
     this->RemoveManager(this->timeManager);
+
+    this->blueprintManager = nullptr;
+    this->timeManager = nullptr;
 
     FeatureUnit::OnDeactivate();
 }

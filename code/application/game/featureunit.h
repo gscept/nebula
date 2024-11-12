@@ -31,7 +31,7 @@ namespace Game
 
 class FeatureUnit : public Core::RefCounted
 {
-    __DeclareClass(FeatureUnit);
+    __DeclareClass(FeatureUnit)
 public:
     /// constructor
     FeatureUnit();
@@ -81,9 +81,9 @@ public:
     virtual void OnRenderDebug();
 
     /// attach a manager to the feature unit
-    virtual ManagerHandle AttachManager(ManagerAPI api);
+    virtual void AttachManager(Ptr<Manager> manager);
     /// remove a manager from the feature unit
-    virtual void RemoveManager(ManagerHandle handle);
+    virtual void RemoveManager(Ptr<Manager> manager);
 
     /// set command line args
     void SetCmdLineArgs(const Util::CommandLineArgs& a);
@@ -91,8 +91,7 @@ public:
     const Util::CommandLineArgs& GetCmdLineArgs() const;
 
 protected:
-    Util::ArrayAllocator<ManagerHandle, ManagerAPI> managers;
-    Ids::IdGenerationPool managerPool;
+    Util::Array<Ptr<Manager>> managers; 
     bool active;
 
     /// cmdline args for configuration from cmdline

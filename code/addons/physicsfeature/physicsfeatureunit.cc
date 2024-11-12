@@ -54,7 +54,7 @@ PhysicsFeatureUnit::OnActivate()
 
     Game::TimeSourceCreateInfo timeSourceInfo;
     timeSourceInfo.hash = TIMESOURCE_PHYSICS;
-    Game::TimeManager::CreateTimeSource(timeSourceInfo);
+    Game::Time::CreateTimeSource(timeSourceInfo);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
     this->AttachManager(PhysicsManager::Create());
@@ -158,7 +158,7 @@ void
 PhysicsFeatureUnit::OnBeginFrame()
 {
 #if USE_SYNC_UPDATE > 0
-    Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_PHYSICS);
+    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
     Physics::Update(time->frameTime);
 #else
     if (!simulating) return;
@@ -179,7 +179,7 @@ PhysicsFeatureUnit::OnDecay()
 {
     FeatureUnit::OnDecay();
 #if USE_SYNC_UPDATE == 0
-    Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_PHYSICS);
+    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
     for (auto const& scene : this->physicsWorlds)
     {
         Physics::BeginSimulating(time->frameTime, scene.Value());

@@ -86,11 +86,9 @@ private:
     Ptr<Graphics::GraphicsServer> gfxServer;
     Ptr<Input::InputServer> inputServer;
     CoreGraphics::WindowId wnd;
-    //FIXME
 
-
-    Game::ManagerHandle graphicsManagerHandle;
-    Game::ManagerHandle cameraManagerHandle;
+    Ptr<Game::Manager> graphicsManager;
+    Ptr<Game::Manager> cameraManager;
 
     struct TerrainInstance
     {

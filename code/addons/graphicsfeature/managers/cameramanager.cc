@@ -17,6 +17,7 @@
 namespace GraphicsFeature
 {
 
+__ImplementClass(GraphicsFeature::CameraManager, 'CaMa', Game::Manager);
 __ImplementSingleton(CameraManager)
 
 //------------------------------------------------------------------------------
@@ -24,7 +25,7 @@ __ImplementSingleton(CameraManager)
 */
 CameraManager::CameraManager()
 {
-    // empty
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -32,7 +33,7 @@ CameraManager::CameraManager()
 */
 CameraManager::~CameraManager()
 {
-    // empty
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -125,25 +126,20 @@ CameraManager::InitUpdateCameraProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-CameraManager::Create()
+void
+CameraManager::OnActivate()
 {
-    n_assert(!CameraManager::HasInstance());
-    CameraManager::Singleton = new CameraManager;
-   
-    Singleton->InitUpdateCameraProcessor();
-
-    Game::ManagerAPI api;
-    api.OnDeactivate = &Destroy;
-    return api;
+    Manager::OnActivate();
+    this->InitUpdateCameraProcessor();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-CameraManager::Destroy()
+CameraManager::OnDeactivate()
 {
+    Manager::OnDeactivate();
     n_assert(CameraManager::HasInstance());
     delete CameraManager::Singleton;
     CameraManager::Singleton = nullptr;

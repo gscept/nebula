@@ -8,4 +8,42 @@
 namespace Game
 {
 
+__ImplementClass(Game::Manager, 'GAMA', Core::RefCounted);
+
+//------------------------------------------------------------------------------
+/**
+*/
+Manager::Manager()
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Manager::~Manager()
+{
+    //empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Manager::OnActivate()
+{
+    n_assert(!this->isActive);
+    this->isActive = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Manager::OnDeactivate()
+{
+    n_assert(this->isActive);
+    this->isActive = false;
+}
+
 }; // namespace Game

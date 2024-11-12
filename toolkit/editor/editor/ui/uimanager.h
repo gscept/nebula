@@ -12,22 +12,33 @@
 namespace Editor
 {
 
-namespace UIManager
+class UIManager : public Game::Manager
 {
+    __DeclareClass(UIManager)
+public:
+    UIManager();
+    ~UIManager();
 
-Game::ManagerAPI Create();
+    void OnActivate() override;
+    void OnDeactivate() override;
+    void OnBeginFrame() override;
+};
 
+namespace UI
+{
 namespace Icons
 {
-    typedef uint64_t texturehandle_t;
-    extern texturehandle_t play;
-    extern texturehandle_t pause;
-    extern texturehandle_t stop;
-    extern texturehandle_t game;
-    extern texturehandle_t environment;
-    extern texturehandle_t light;
-}
 
+typedef uint64_t texturehandle_t;
+
+extern texturehandle_t play;
+extern texturehandle_t pause;
+extern texturehandle_t stop;
+extern texturehandle_t game;
+extern texturehandle_t environment;
+extern texturehandle_t light;
+
+}
 }
 
 } // namespace Editor

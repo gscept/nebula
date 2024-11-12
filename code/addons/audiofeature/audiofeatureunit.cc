@@ -54,7 +54,7 @@ AudioFeatureUnit::OnActivate()
 
     Game::TimeSourceCreateInfo timeSourceInfo;
     timeSourceInfo.hash = TIMESOURCE_AUDIO;
-    Game::TimeManager::CreateTimeSource(timeSourceInfo);
+    Game::Time::CreateTimeSource(timeSourceInfo);
 
     this->audioServer = Audio::AudioServer::Create();
     if (!this->audioServer->Open())
@@ -87,7 +87,7 @@ AudioFeatureUnit::OnDeactivate()
 void 
 AudioFeatureUnit::OnBeginFrame()
 {
-    Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_AUDIO);
+    Game::TimeSource* const time = Game::Time::GetTimeSource(TIMESOURCE_AUDIO);
     this->audioServer->OnFrame();
 }
 

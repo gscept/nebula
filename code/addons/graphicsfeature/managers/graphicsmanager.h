@@ -20,15 +20,18 @@
 namespace GraphicsFeature
 {
 
-class GraphicsManager
+class GraphicsManager : public Game::Manager
 {
-    __DeclareSingleton(GraphicsManager);
+    __DeclareClass(GraphicsManager)
 public:
-    /// retrieve the api
-    static Game::ManagerAPI Create();
+    
+    GraphicsManager();
+    virtual ~GraphicsManager();
 
-    /// destroy entity manager
-    static void Destroy();
+    void OnActivate() override;
+    void OnDeactivate() override;
+    void OnDecay() override;
+    void OnCleanup(Game::World* world) override;
 
     /// called automatically when a model needs to be initialized
     static void InitModel(Game::World*, Game::Entity, Model*);
@@ -38,14 +41,7 @@ public:
     static void InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light);
 
 private:
-    /// constructor
-    GraphicsManager();
-    /// destructor
-    ~GraphicsManager();
-
     void InitUpdateModelTransformProcessor();
-    static void OnDecay();
-    static void OnCleanup(Game::World* world);
 };
 
 } // namespace GraphicsFeature

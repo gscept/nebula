@@ -27,15 +27,16 @@ namespace GraphicsFeature
 
 typedef uint ViewHandle;
 
-class CameraManager
+class CameraManager : public Game::Manager
 {
-    __DeclareSingleton(CameraManager);
+    __DeclareClass(CameraManager)
+    __DeclareSingleton(CameraManager)
 public:
-    /// retrieve the api
-    static Game::ManagerAPI Create();
+    CameraManager();
+    virtual ~CameraManager();
 
-    /// destroy entity manager
-    static void Destroy();
+    void OnActivate() override;
+    void OnDeactivate() override;
 
     /// register a view
     static ViewHandle RegisterView(Ptr<Graphics::View> const& view);
@@ -49,11 +50,6 @@ public:
     static Math::mat4 GetLocalTransform(ViewHandle handle);
 
 private:
-    /// constructor
-    CameraManager();
-    /// destructor
-    ~CameraManager();
-
     void InitUpdateCameraProcessor();
 
     struct ViewData

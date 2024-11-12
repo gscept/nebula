@@ -27,9 +27,10 @@ namespace Game
 
 class World;
 
-class BlueprintManager
+class BlueprintManager : public Game::Manager
 {
-    __DeclareSingleton(BlueprintManager);
+    __DeclareClass(BlueprintManager)
+    __DeclareSingleton(BlueprintManager)
 public:
     struct Template
     {
@@ -38,10 +39,13 @@ public:
         Util::StringAtom name;
     };
 
-    /// Create the singleton
-    static ManagerAPI Create();
-    /// Destroy the singleton
-    static void Destroy();
+    /// constructor
+    BlueprintManager();
+    /// destructor
+    ~BlueprintManager();
+
+    void OnActivate() override;
+    void OnDeactivate() override;
     /// set a optional blueprints.xml, which is used instead of standard blueprint.xml
     static void SetBlueprintsFilename(const Util::String& name, const Util::String& folder);
     /// get a blueprint id
@@ -59,14 +63,6 @@ public:
     EntityMapping Instantiate(World* const world, TemplateId templateId);
 
 private:
-    /// constructor
-    BlueprintManager();
-    /// destructor
-    ~BlueprintManager();
-
-    /// called when attached to game server. Needs to be attached after categorymanager
-    static void OnActivate();
-
     /// parse entity blueprints file
     bool ParseBlueprint(Util::String const& blueprintsPath);
     /// load a template folder
