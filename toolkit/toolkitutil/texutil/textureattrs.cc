@@ -14,8 +14,8 @@ using namespace Util;
 /**
 */
 TextureAttrs::TextureAttrs() :
-    maxWidth(2048),
-    maxHeight(2048),
+    maxWidth(4096),
+    maxHeight(4096),
     genMipMaps(true),
     pixelFormat(BC7),
     mipMapFilter(Point),

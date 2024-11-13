@@ -91,6 +91,8 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetPixelFormat(TextureAttrs::BC5);
             attrs.SetFlipNormalY(true);
+            attrs.SetMaxHeight(8192);
+            attrs.SetMaxWidth(8192);
             
             int32_t imageIndex = gltfScene.textures[material.normalTexture.index].source;
             Gltf::Image const& image = gltfScene.images[imageIndex];
@@ -115,6 +117,8 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetMipMapFilter(TextureAttrs::Filter::Kaiser);
             attrs.SetScaleFilter(TextureAttrs::Filter::Kaiser);
+            attrs.SetMaxHeight(8192);
+            attrs.SetMaxWidth(8192);
             attrs.SetColorSpace(TextureAttrs::sRGB);
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
@@ -140,6 +144,8 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetScaleFilter(TextureAttrs::Kaiser);
             attrs.SetMipMapFilter(TextureAttrs::Kaiser);
+            attrs.SetMaxHeight(8192);
+            attrs.SetMaxWidth(8192);
 
             int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
             Gltf::Image const& image = gltfScene.images[imageIndex];
