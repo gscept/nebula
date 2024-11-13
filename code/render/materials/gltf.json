@@ -61,7 +61,7 @@
                 "variables": [
                     {
                         "name": "baseColorTexture",
-                        "defaultValue": "tex:system/placeholder.dds"
+                        "defaultValue": "tex:system/white.dds"
                     },
                     {
                         "name": "normalTexture",

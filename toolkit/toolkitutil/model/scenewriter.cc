@@ -149,8 +149,13 @@ SetupDefaultState(
     }
 
     // If the node has a material that is already a surface, use that instead of creating a default one
-    auto surfacePath = Util::String::Sprintf("sur:%s.sur", nodeMaterial.AsCharPtr());
-    if (IO::IoServer::Instance()->FileExists(surfacePath))
+    Util::String surfacePath = nodeMaterial;
+    IO::URI uri = surfacePath;
+    if (!surfacePath.EndsWithString(".sur"))
+    {
+        surfacePath = Util::String::Sprintf("sur:%s.sur", nodeMaterial.AsCharPtr());
+    }
+    if (IO::IoServer::Instance()->FileExists(surfacePath) || surfacePath.BeginsWithString("syssur:"))
     {
         state.material = surfacePath;
     }
@@ -158,11 +163,7 @@ SetupDefaultState(
     {
         state.material = skinned ? "syssur:placeholder_skinned.sur" : "syssur:placeholder.sur";
     }
-    else if (!state.material.EndsWithString(".sur")) // Temporary to fix all bad material assignments
-    {
-        state.material = Util::String::Sprintf("%s.sur", state.material.AsCharPtr());
-    }
-
+    
     // set state for attributes
     attributes->SetState(nodePath, state);
 }
@@ -268,7 +269,15 @@ SceneWriter::CreateModel(
             // add to constants
             constants->AddShapeNode(shapeNode);
 
-            SetupDefaultState(shapeNode.path, Util::String::Sprintf("%s/%s/%s", category.AsCharPtr(), file.AsCharPtr(), mesh->mesh.material.AsCharPtr()), attributes);
+            Util::String nodeMaterial = mesh->mesh.material;
+
+            // If the material is a .sur material, we pass it as is.
+            if ((nodeMaterial.Length() <= 4) || (!nodeMaterial.IsEmpty() && !nodeMaterial.EndsWithString(".sur")))
+            {
+                nodeMaterial = Util::String::Sprintf("%s/%s/%s", category.AsCharPtr(), file.AsCharPtr(), nodeMaterial.AsCharPtr());
+            }
+
+            SetupDefaultState(shapeNode.path, nodeMaterial, attributes);
         }
     }
 

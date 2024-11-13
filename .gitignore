@@ -37,3 +37,4 @@ export_old
 imgui.ini
 /syswork/export
 /tests/export
+/intermediate/*
