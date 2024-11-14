@@ -175,9 +175,10 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
 
         // Find how many vertices and triangle we need
         uint const vertCount = context->scene->accessors[primitive->attributes[Gltf::Primitive::Attribute::Position]].count;
-        uint const triCount = context->scene->accessors[primitive->indices].count / 3;
+        uint const triCount = primitive->indices == -1 ? vertCount / 3 : context->scene->accessors[primitive->indices].count / 3;
 
         meshBuilder->NewMesh(vertCount, triCount);
+
         for (uint j = 0; j < vertCount; j++)
         {
             meshBuilder->AddVertex(MeshBuilderVertex());
@@ -292,25 +293,44 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         node->base.boundingBox = meshBuilder->ComputeBoundingBox();
 
         // Setup triangles
-        Gltf::Accessor const& indexBufferAccessor = context->scene->accessors[primitive->indices];
-        Gltf::BufferView const& indexBufferView = context->scene->bufferViews[indexBufferAccessor.bufferView];
-        Gltf::Buffer const& buffer = context->scene->buffers[indexBufferView.buffer];
-        Util::Blob const& indexBuffer = buffer.data;
-        const uint bufferOffset = indexBufferAccessor.byteOffset + indexBufferView.byteOffset;
-
-        // TODO: sparse accessors
-        n_assert2(indexBufferAccessor.sparse.count == 0, "Sparse accessors not yet supported!");
-
-        switch (indexBufferAccessor.componentType)
+        if (primitive->indices == -1)
         {
-            case Gltf::Accessor::ComponentType::UnsignedByte: SetupIndexBuffer<uchar>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-            case Gltf::Accessor::ComponentType::UnsignedShort: SetupIndexBuffer<ushort>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-            case Gltf::Accessor::ComponentType::UnsignedInt: SetupIndexBuffer<uint>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
+            // TODO: Mesh builder needs to support meshes without indexbuffer.
+            for (size_t i = 0; i < triCount * 3; i += 3)
+            {
+                MeshBuilderTriangle triangle;
+                triangle.SetVertexIndices(i, i + 1, i + 2);
+                meshBuilder->AddTriangle(triangle);
+            }
+        }
+        else // Read indexbuffer from GLTF
+        {
+            Gltf::Accessor const& indexBufferAccessor = context->scene->accessors[primitive->indices];
+            Gltf::BufferView const& indexBufferView = context->scene->bufferViews[indexBufferAccessor.bufferView];
+            Gltf::Buffer const& buffer = context->scene->buffers[indexBufferView.buffer];
+            Util::Blob const& indexBuffer = buffer.data;
+            const uint bufferOffset = indexBufferAccessor.byteOffset + indexBufferView.byteOffset;
+
+            // TODO: sparse accessors
+            n_assert2(indexBufferAccessor.sparse.count == 0, "Sparse accessors not yet supported!");
+
+            switch (indexBufferAccessor.componentType)
+            {
+            case Gltf::Accessor::ComponentType::UnsignedByte:
+                SetupIndexBuffer<uchar>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0);
+                break;
+            case Gltf::Accessor::ComponentType::UnsignedShort:
+                SetupIndexBuffer<ushort>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0);
+                break;
+            case Gltf::Accessor::ComponentType::UnsignedInt:
+                SetupIndexBuffer<uint>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0);
+                break;
             default:
                 n_error("ERROR: Invalid vertex index type!");
                 break;
+            }
         }
-
+        
         if (!(attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Normal>() &&
               attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Tangent>()))
         {

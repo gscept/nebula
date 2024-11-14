@@ -163,6 +163,10 @@ SetupDefaultState(
     {
         state.material = skinned ? "syssur:placeholder_skinned.sur" : "syssur:placeholder.sur";
     }
+    else if (!state.material.EndsWithString(".sur")) // Temporary to fix all bad material assignments
+    {
+        state.material = Util::String::Sprintf("%s.sur", state.material.AsCharPtr());
+    }
     
     // set state for attributes
     attributes->SetState(nodePath, state);
