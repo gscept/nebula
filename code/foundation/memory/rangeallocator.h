@@ -1,28 +1,26 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Allocates memory using the TLSF method (http://www.gii.upv.es/tlsf/files/ecrts04_tlsf.pdf), 
-    with extended handling of padding to better suit GPUs.
-
-    Doesn't manage memory itself but is meant to be used with a memory allocation of 
-    maxSize. Fast O(1) insertion and deletion and with minimal fragmentation.
+    @file rangeallocator.h
 
     @copyright
-    (C) 2023 Individual contributors, see AUTHORS file
+    (C) 2023-2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/types.h"
 #include "util/bit.h"
 #include "util/array.h"
 #include <utility>
+
 namespace Memory
 {
 
-/// Get bucket from index
-uint BucketFromSize(uint size);
-/// Get bin from index
-uint BinFromSize(uint size, uint bucket);
-
+//------------------------------------------------------------------------------
+/**
+    @struct Memory::RangeAllocation
+    
+    @brief Describes a range allocated by the Memory::RangeAllocator
+*/
 struct RangeAllocation
 {
     uint offset;
@@ -32,28 +30,37 @@ struct RangeAllocation
     static constexpr uint OOM = 0xFFFFFFFF;
 };
 
-static constexpr uint NUM_BUCKETS = 0x20;
-static constexpr uint NUM_BINS_PER_BUCKET = 0x10;
+//------------------------------------------------------------------------------
+/**
+    @class Memory::RangeAllocator
 
+    @brief Allocates memory ranges using the TLSF method, 
+    with extended handling of padding to better suit GPUs.
+
+    @details Doesn't manage memory itself but is meant to be used with a memory allocation/buffer of 
+    maxSize. Fast O(1) insertion and deletion and with minimal fragmentation.
+
+    More details: http://www.gii.upv.es/tlsf/files/ecrts04_tlsf.pdf
+*/
 class RangeAllocator
 {
 public:
     /// Default constructor
     RangeAllocator();
-    /// Constructor
+    /// Construct with predetermined size and max allowed number of allocations
     RangeAllocator(uint size, SizeT maxNumAllocs);
     /// Destructor
     ~RangeAllocator();
 
-    /// Clear allocator
+    /// Clears the allocator
     void Clear();
 
-    /// Empty
+    /// Checks if the allocator is empty
     bool Empty();
 
-    /// Allocate memory
+    /// Allocate range
     RangeAllocation Alloc(uint size, uint alignment = 1);
-    /// Deallocate memory
+    /// Deallocate range
     void Dealloc(const RangeAllocation& allocation);
 
 private:
@@ -95,10 +102,17 @@ private:
 
     /// Get bin index from size
     static BinIndex IndexFromSize(uint size, bool round = false);
+    /// Get bucket from index
+    static uint BucketFromSize(uint size);
+    /// Get bin from index
+    static uint BinFromSize(uint size, uint bucket);
 
     uint size;
     uint freeStorage;
     uint freeNodeIterator;
+
+    static constexpr uint NUM_BUCKETS = 0x20;
+    static constexpr uint NUM_BINS_PER_BUCKET = 0x10;
 
     uint bucketUsageMask;
     uint binMasks[NUM_BUCKETS];
@@ -179,6 +193,11 @@ RangeAllocator::Empty()
 
 //------------------------------------------------------------------------------
 /**
+   @brief Returns a range using the TLSF method.
+
+   @note Note that this doesn't actually allocate any memory, but 
+   instead returns a partial range within [0 -> size] that you can use
+   with an external buffer to keep track of memory chunks
 */
 inline RangeAllocation 
 RangeAllocator::Alloc(uint size, uint alignment)
@@ -428,7 +447,7 @@ RangeAllocator::RemoveNode(uint nodeIndex)
 /**
 */
 inline uint
-BucketFromSize(uint size)
+RangeAllocator::BucketFromSize(uint size)
 {
 #if __WIN32__
     DWORD count = 0;
@@ -443,7 +462,7 @@ BucketFromSize(uint size)
 /**
 */
 inline uint 
-BinFromSize(uint size, uint bucket)
+RangeAllocator::BinFromSize(uint size, uint bucket)
 {
     uint mask = (size >> (bucket - 4)) & (NUM_BINS_PER_BUCKET - 1u);
     return mask;

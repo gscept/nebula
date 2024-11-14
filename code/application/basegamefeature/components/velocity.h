@@ -6,6 +6,14 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Velocity
+
+    @brief A component that stores the linear velocity of an entity.
+
+    @ingroup BaseGameComponents
+*/
 struct Velocity : public Math::vec3
 {
     using Math::vec3::vec3;// default constructor

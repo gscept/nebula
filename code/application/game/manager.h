@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @struct Game::ManagerAPI
+    @struct Game::Manager
 
     Managers are objects which care about some specific functionality
     of a feature.
@@ -11,7 +11,7 @@
     Managers are created and triggered by game features. The frame trigger
     functions are invoked when the gameserver triggers the game feature.
     
-    @see NebulaApplicationGameManagers
+    @see NebulaApplication GameManagers
 
     @copyright
     (C) 2020-2024 Individual contributors, see AUTHORS file

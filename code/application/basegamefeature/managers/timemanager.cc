@@ -17,8 +17,10 @@ namespace Time
 {
     //------------------------------------------------------------------------------
     /**
-        This struct needs to be structured exactly like the TimeSource struct, just
-        with different qualifiers.
+        \cond EXCLUDE_FROM_DOCS
+
+        IMPORTANT: This struct needs to be structured exactly like the
+        TimeSource struct, just with different qualifiers.
     */
     struct TimeSourceState
     {
@@ -32,7 +34,11 @@ namespace Time
     static_assert(sizeof(TimeSource) == sizeof(TimeSourceState));
     static_assert(alignof(TimeSource) == alignof(TimeSourceState));
 
-    /// timemanager singleton state
+    //------------------------------------------------------------------------------
+    /**
+        timemanager singleton state
+    */
+    
     struct State
     {
         /// global time factor
@@ -52,6 +58,8 @@ namespace Time
     };
 
     static State* state = nullptr;
+
+    /// \endcond
 }
 
 //------------------------------------------------------------------------------

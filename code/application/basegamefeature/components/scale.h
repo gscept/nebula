@@ -6,6 +6,14 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Scale
+    
+    @brief A component that stores the scale of an entity.
+
+    @ingroup BaseGameComponents
+*/
 struct Scale : public Math::vec3
 {
     Scale()

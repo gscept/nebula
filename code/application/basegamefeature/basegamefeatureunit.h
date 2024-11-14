@@ -5,7 +5,7 @@
     
     The BaseGameFeatureUnit creates everything to allow load and run a game level.
     Therefore it creates managers to allow creation and handling of
-    entities, properties and attributes. 
+    entities, components and processors. 
 
     @copyright
     (C) 2007 Radon Labs GmbH
@@ -13,6 +13,11 @@
 */
 #include "game/featureunit.h"
 #include "core/cvar.h"
+
+/**
+ *  @defgroup BaseGameComponents Base Game Components
+ *  Components that come as part of the base game feature.
+ */
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature

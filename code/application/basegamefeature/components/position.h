@@ -6,6 +6,15 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Position
+    
+    @brief A component that stores the position of an entity
+    in world space coordinates.
+
+    @ingroup BaseGameComponents
+*/
 struct Position : public Math::vec3
 {
     using Math::vec3::vec3; // default constructor

@@ -6,6 +6,14 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Orientation
+    
+    @brief A component that stores the orientation of an entity.
+
+    @ingroup BaseGameComponents
+*/
 struct Orientation : public Math::quat
 {
     using Math::quat::quat; // default constructor

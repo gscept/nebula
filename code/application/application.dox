@@ -111,5 +111,6 @@ The feature also creates a number of useful properties and managers that allow y
 @subpage GraphicsFeature \n
 @subpage PhysicsFeature \n
 @subpage MemDb \n
+@subpage BaseGameComponents \n
 
 */

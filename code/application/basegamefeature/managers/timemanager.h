@@ -1,23 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @namespace Game::TimeManager
-
-    Singleton object which manages the current game time. These are
-    the standard time source objects provided by Application layer:
-
-    TIMESOURCE_SYSTEM   - timing for low level Application layer subsystems
-    TIMESOURCE_GAMEPLAY - timing for the game logic
-    TIMESOURCE_INPUT    - extra time source for input handling
-    
-    Each time source tracks its own time independently from the other
-    time sources, they can also be paused and unpaused independentlty 
-    from each other, and they may also run faster or slower then
-    realtime. 
-
-    You can create custom time sources by using the create interface.
-
-    @todo Thread safety
+    @file timemanager.h
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
@@ -46,9 +30,22 @@ struct TimeSourceCreateInfo
 
 //------------------------------------------------------------------------------
 /**
-    A generic time source POD struct which is created and deleted by the TimeManager.
+    @struct Game::TimeSource
+
+    @brief An object that keeps track of running time and frame time (delta time).
     
-    You can get TimeSources by calling the Game::TimeManager::GetTimeSource function.
+    @details Each time source tracks its own time independently from the other
+    time sources, they can also be paused and unpaused independentlty 
+    from each other, and they may also run faster or slower then
+    realtime. 
+
+    @note You should never create TimeSources by using `new`.
+    Instead, use Game::Time::CreateTimeSource.
+
+    @todo These are currently not thread safe.
+
+    @see Game::Time::CreateTimeSource
+    @see Game::Time::GetTimeSource
 */
 struct TimeSource
 {
@@ -66,6 +63,13 @@ struct TimeSource
 
 //------------------------------------------------------------------------------
 /**
+    @namespace Time
+
+    These are the standard time source objects provided by Application layer:
+
+    @item TIMESOURCE_SYSTEM   - timing for low level Application layer subsystems
+    @item TIMESOURCE_GAMEPLAY - timing for the game logic
+    @item TIMESOURCE_INPUT    - extra time source for input handling
 */
 namespace Time
 {
@@ -84,6 +88,9 @@ namespace Time
 
 //------------------------------------------------------------------------------
 /**
+    @class Game::TimeManager
+
+    Singleton object which manages all Game::TimeSource objects.
 */
 class TimeManager : public Game::Manager
 {

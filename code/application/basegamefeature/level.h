@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Level
+    @file level.h
 
     @copyright
     (C) 2024 Individual contributors, see AUTHORS file
@@ -18,6 +18,21 @@ class World;
 
 //------------------------------------------------------------------------------
 /**
+    @class Game::PackedLevel
+
+    @brief Represents a level that can be instantiated into a world.
+
+    @details A packed level contains all information of a level
+    in memory-packed entity groups that correspont to a table in the 
+    game world. When instantiating, the entity groups are effectively
+    just mem-copied into the game world, and then initialized.
+
+    PackedLevels are loaded directly via a game world and should not
+    be created using `new`.
+
+    @see Game::World::PreloadLevel
+    @see Game::World::UnloadLevel
+    
 */
 class PackedLevel
 {
