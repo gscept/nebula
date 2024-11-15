@@ -28,10 +28,6 @@ namespace Game
 
 class PackedLevel;
 
-/// Register a component type
-template <typename COMPONENT_TYPE>
-ComponentId RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -42,6 +38,11 @@ struct EntityCreateInfo
     /// set if the entity should be instantiated immediately or deferred until end of frame.
     bool immediate = false;
 };
+
+/// returns a world by hash
+World* GetWorld(WorldHash worldHash);
+/// returns a world by id
+World* GetWorld(WorldId worldId);
 
 //------------------------------------------------------------------------------
 /**
@@ -255,6 +256,8 @@ private:
     FramePipeline pipeline;
 
     MemDb::TableId defaultTableId;
+
+    Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 };
 
 //------------------------------------------------------------------------------
@@ -273,28 +276,6 @@ inline WorldId
 World::GetWorldId() const
 {
     return this->worldId;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <typename COMPONENT_TYPE>
-ComponentId 
-RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
-{
-    uint32_t componentFlags = 0;
-    componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
-
-    ComponentInterface* cInterface = new ComponentInterface(
-        COMPONENT_TYPE::Traits::name,
-        COMPONENT_TYPE(),
-        componentFlags
-    );
-    cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
-    Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
-    Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
-    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);
-    return cid;
 }
 
 //------------------------------------------------------------------------------

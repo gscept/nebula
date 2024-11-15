@@ -49,14 +49,14 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnAttach()
 {
-    Game::RegisterType<Game::Entity>();
-    Game::RegisterType<Game::Position>();
-    Game::RegisterType<Game::Orientation>();
-    Game::RegisterType<Game::Scale>();
-    Game::RegisterType<Game::IsActive>();
-    Game::RegisterType<Game::Static>();
-    Game::RegisterType<Game::Velocity>();
-    Game::RegisterType<Game::AngularVelocity>();
+    this->RegisterComponentType<Game::Entity>();
+    this->RegisterComponentType<Game::Position>();
+    this->RegisterComponentType<Game::Orientation>();
+    this->RegisterComponentType<Game::Scale>();
+    this->RegisterComponentType<Game::IsActive>();
+    this->RegisterComponentType<Game::Static>();
+    this->RegisterComponentType<Game::Velocity>();
+    this->RegisterComponentType<Game::AngularVelocity>();
 }
 
 //------------------------------------------------------------------------------

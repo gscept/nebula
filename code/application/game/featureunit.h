@@ -24,6 +24,7 @@
 #include "io/jsonwriter.h"
 #include "ids/idgenerationpool.h"
 #include "util/arrayallocator.h"
+#include "game/component.h"
 
 //------------------------------------------------------------------------------
 namespace Game
@@ -37,6 +38,10 @@ public:
     FeatureUnit();
     /// destructor
     virtual ~FeatureUnit();
+
+    /// Register a component type
+    template <typename COMPONENT_TYPE>
+    ComponentId RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
 
     /// called from GameServer::AttachGameFeature()
     virtual void OnAttach();
@@ -97,6 +102,27 @@ protected:
     /// cmdline args for configuration from cmdline
     Util::CommandLineArgs args;
 };
+
+//------------------------------------------------------------------------------
+/**
+    @todo We should register the component ids to the feature unit and 
+    deregister them when the feature is detached or destroyed.
+*/
+template <typename COMPONENT_TYPE>
+ComponentId
+FeatureUnit::RegisterComponentType(ComponentRegisterInfo<COMPONENT_TYPE> info)
+{
+    uint32_t componentFlags = 0;
+    componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
+
+    ComponentInterface* cInterface = new ComponentInterface(COMPONENT_TYPE::Traits::name, COMPONENT_TYPE(), componentFlags);
+    cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
+    Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
+    Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
+    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);
+
+    return cid;
+}
 
 //------------------------------------------------------------------------------
 /**

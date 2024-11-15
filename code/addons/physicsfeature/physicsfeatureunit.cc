@@ -40,8 +40,8 @@ PhysicsFeatureUnit::~PhysicsFeatureUnit()
 void
 PhysicsFeatureUnit::OnAttach()
 {
-    Game::RegisterType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
-    Game::RegisterType<IsKinematic>();
+    this->RegisterComponentType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
+    this->RegisterComponentType<IsKinematic>();
 }
 
 //------------------------------------------------------------------------------

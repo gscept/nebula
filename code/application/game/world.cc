@@ -31,9 +31,21 @@ namespace Game
 
 //------------------------------------------------------------------------------
 /**
-    TODO: move into world
 */
-static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
+World*
+GetWorld(WorldHash hash)
+{
+    return GameServer::Instance()->GetWorld(hash);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+World*
+GetWorld(WorldId id)
+{
+    return GameServer::Instance()->GetWorld(id);
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -644,11 +656,11 @@ World::DecayComponent(Game::ComponentId component, MemDb::TableId tableId, MemDb
 {
     if (MemDb::AttributeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_DECAY)
     {
-        if (component.id >= componentDecayTable.Size())
-            componentDecayTable.Resize(
+        if (component.id >= this->componentDecayTable.Size())
+            this->componentDecayTable.Resize(
                 component.id + 16
             ); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
-        ComponentDecayBuffer& decayBuffer = componentDecayTable[component.id];
+        ComponentDecayBuffer& decayBuffer = this->componentDecayTable[component.id];
 
         uint64_t const typeSize = (uint64_t)MemDb::AttributeRegistry::TypeSize(component);
 
@@ -739,8 +751,8 @@ World::RemoveComponent(Entity entity, ComponentId component)
 ComponentDecayBuffer const
 World::GetDecayBuffer(Game::ComponentId component)
 {
-    if (component < componentDecayTable.Size())
-        return componentDecayTable[component.id];
+    if (component < this->componentDecayTable.Size())
+        return this->componentDecayTable[component.id];
     else
         return ComponentDecayBuffer();
 }
@@ -751,7 +763,7 @@ World::GetDecayBuffer(Game::ComponentId component)
 void
 World::ClearDecayBuffers()
 {
-    for (auto& cdb : componentDecayTable)
+    for (auto& cdb : this->componentDecayTable)
     {
         // TODO: shrink buffers if they're unreasonably big.
         cdb.size = 0;
@@ -1824,7 +1836,7 @@ World::SetComponent(Entity entity, Game::Position const& value)
     *(ptr + mapping.instance.index) = value;
 }
 
-//------------------------------------------------------------------------------§
+//------------------------------------------------------------------------------ï¿½
 /**
 */
 template <>

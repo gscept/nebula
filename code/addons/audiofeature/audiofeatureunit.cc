@@ -37,11 +37,11 @@ AudioFeatureUnit::~AudioFeatureUnit()
 void
 AudioFeatureUnit::OnAttach()
 {
-    Game::RegisterType<AudioEmitter>({ .decay = true, .OnInit = &AudioManager::InitAudioEmitter });
-    Game::RegisterType<SpatialAudioEmission>();
-    Game::RegisterType<AudioListener>();
-    Game::RegisterType<ClipInstance>();
-    Game::RegisterType<PlayAudioEvent>();
+    this->RegisterComponentType<AudioEmitter>({ .decay = true, .OnInit = &AudioManager::InitAudioEmitter });
+    this->RegisterComponentType<SpatialAudioEmission>();
+    this->RegisterComponentType<AudioListener>();
+    this->RegisterComponentType<ClipInstance>();
+    this->RegisterComponentType<PlayAudioEvent>();
 }
 
 //------------------------------------------------------------------------------

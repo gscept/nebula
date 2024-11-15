@@ -83,10 +83,10 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
-    Game::RegisterType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
-    Game::RegisterType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
-    Game::RegisterType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
-    Game::RegisterType<Camera>();
+    this->RegisterComponentType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
+    this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
+    this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
+    this->RegisterComponentType<Camera>();
     Scripting::RegisterDearguiModule();
 }
 
