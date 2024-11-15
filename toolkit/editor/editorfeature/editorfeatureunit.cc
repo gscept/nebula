@@ -47,7 +47,7 @@ EditorFeatureUnit::~EditorFeatureUnit()
 void
 EditorFeatureUnit::OnAttach()
 {
-    Game::RegisterType<Editor::EditorEntity>();
+    this->RegisterComponentType<Editor::EditorEntity>();
     Scripting::RegisterEditorBinds();
 }
 
