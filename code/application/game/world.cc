@@ -1444,7 +1444,7 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
 
     MemDb::ColumnIndex const columnIndex = this->db->GetTable(mapping.table).GetAttributeIndex(component);
 
-    // Decay the old component, this will allow systems to clean up any resources used before reinitializing
+    // Decay the old component, this will allow managers to clean up any resources used before reinitializing
     this->DecayComponent(component, mapping.table, columnIndex, mapping.instance);
 
     byte* const ptr = (byte*)this->GetInstanceBuffer(mapping.table, mapping.instance.partition, component);

@@ -4,7 +4,7 @@
     @file world.h
 
     @copyright
-    (C) 2021 Individual contributors, see AUTHORS file
+    (C) 2021-2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -46,6 +46,30 @@ World* GetWorld(WorldId worldId);
 
 //------------------------------------------------------------------------------
 /**
+    @class Game::World
+
+    @brief A container of entities, their components, and processors.
+    
+    @details Worlds can be identified by their hash, or their id. 
+    
+    A game world keeps track of: 
+    
+    @li Entities (Game::Entity)
+    @li Components
+    @li Processors (Game::Processor) 
+    @li A game frame pipeline (Game::FramePipeline)
+
+    Components are stored as columns in a database, while an entity maps to
+    a row of multiple component columns, in a table. The database splits 
+    entities based on their components, so all entities with the same
+    components are stored in the same table. "Adding or removing" a
+    component from an entity means moving it from one table to another.
+
+    Processors are functions that process entity components data. They loop
+    over all entities that fulfill some condition of having certain components
+    or not, and runs a user defined processing function over this data.
+
+    The game frame pipeline stores all the processor in order of execution.
 */
 class World
 {
