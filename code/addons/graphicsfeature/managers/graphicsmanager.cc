@@ -198,10 +198,70 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 /**
 */
 void
+GraphicsManager::InitUpdateLightTransformProcessor()
+{
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdatePointLightPositions"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, GraphicsFeature::PointLight const& light)
+            {
+                if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
+                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateSpotLightTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               GraphicsFeature::SpotLight const& light)
+            {
+                if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
+                {
+                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                    Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                }
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateAreaLightTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               Game::Scale const& scale,
+               GraphicsFeature::AreaLight const& light)
+            {
+                if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
+                {
+                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                    Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                    Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
+                }
+            }
+        )
+        .Build();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::OnActivate()
 {
     Manager::OnActivate();
     this->InitUpdateModelTransformProcessor();
+    this->InitUpdateLightTransformProcessor();
 }
 
 //------------------------------------------------------------------------------
@@ -270,7 +330,8 @@ GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLigh
         light->intensity,
         light->range,
         light->twoSided,
-        light->castShadows
+        light->castShadows,
+        light->renderMesh
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);

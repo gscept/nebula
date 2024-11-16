@@ -22,6 +22,7 @@ public:
     void OnActivate() override;
     void OnDeactivate() override;
     void OnBeginFrame() override;
+    void OnFrame() override;
 };
 
 namespace UI

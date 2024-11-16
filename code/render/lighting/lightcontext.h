@@ -83,6 +83,7 @@ public:
         , const float range
         , bool twoSided = false
         , bool castShadows = false
+        , bool renderMesh = false
     );
 
     /// set color of light
@@ -233,7 +234,8 @@ private:
         AreaLight_ShadowConstantBufferSet,
         AreaLight_DynamicOffsets,
         AreaLight_TwoSided,
-        AreaLight_Observer
+        AreaLight_Observer,
+        AreaLight_RenderMesh,
     };
 
     typedef Ids::IdAllocator<
@@ -243,7 +245,8 @@ private:
         ConstantBufferSet,          // constant buffer binding for shadows
         Util::FixedArray<uint>,     // dynamic offsets
         bool,                       // two sides
-        Graphics::GraphicsEntityId  // graphics entity used for observer stuff
+        Graphics::GraphicsEntityId, // graphics entity used for observer stuff
+        bool                        // render mesh as well
     > AreaLightAllocator;
     static AreaLightAllocator areaLightAllocator;
 
@@ -257,6 +260,7 @@ private:
         DirectionalLight_ViewProjTransform,
         DirectionalLight_CascadeObservers
     };
+
     typedef Ids::IdAllocator<
         Math::vector,                               // direction
         Math::vec3,                                 // backlight color
@@ -273,9 +277,11 @@ private:
     {
         ShadowCaster_Transform
     };
+
     typedef Ids::IdAllocator<
         Math::mat4
     > ShadowCasterAllocator;
+    
     static ShadowCasterAllocator shadowCasterAllocator;
     static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterSliceMap;
 

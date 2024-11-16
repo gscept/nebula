@@ -44,6 +44,7 @@ public:
 
 private:
     void InitUpdateModelTransformProcessor();
+    void InitUpdateLightTransformProcessor();
 };
 
 } // namespace GraphicsFeature

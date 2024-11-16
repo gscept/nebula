@@ -80,7 +80,8 @@
         "default": 8.0
       },
       "twoSided": "bool",
-      "castShadows": "bool"
+      "castShadows": "bool",
+      "renderMesh": "bool"
     },
     "Model": {
       "resource": {

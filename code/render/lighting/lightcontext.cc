@@ -479,6 +479,7 @@ LightContext::SetupAreaLight(
     , const float range
     , bool twoSided
     , bool castShadows
+    , bool renderMesh
 )
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
@@ -499,6 +500,7 @@ LightContext::SetupAreaLight(
     areaLightAllocator.Set<AreaLight_Observer>(ali, id);
     areaLightAllocator.Set<AreaLight_Shape>(ali, shape);
     areaLightAllocator.Set<AreaLight_TwoSided>(ali, twoSided || shape == AreaLightShape::Tube);
+    areaLightAllocator.Set<AreaLight_RenderMesh>(ali, renderMesh);
     //areaLightAllocator.Set<AreaLight_Projection>(ali, proj);
 
     if (castShadows)
@@ -539,19 +541,22 @@ LightContext::SetupAreaLight(
             break;
     }
 
-    Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
-    Math::bbox box;
-    Models::ModelContext::Setup(
-        id
-        , Math::mat4()
-        , box
-        , material
-        , mesh
-        , 0
-    );
-    Models::ModelContext::SetTransform(id, Math::mat4());
+    if (renderMesh)
+    {
+            Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
+            Math::bbox box;
+            Models::ModelContext::Setup(
+                id
+                , Math::mat4()
+                , box
+                , material
+                , mesh
+                , 0
+            );
+            Models::ModelContext::SetTransform(id, Math::mat4());
 
-    Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
+            Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -681,7 +686,8 @@ LightContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::point
             break;
         case LightType::AreaLightType:
             areaLightAllocator.Get<AreaLight_Transform>(lid).setposition(position);
-            Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
+            if (areaLightAllocator.Get<AreaLight_RenderMesh>(lid))
+                Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
             break;
         default: n_error("unhandled enum"); break;
     }
@@ -729,7 +735,8 @@ LightContext::SetRotation(const Graphics::GraphicsEntityId id, const Math::quat&
             break;
         case LightType::AreaLightType:
             areaLightAllocator.Get<AreaLight_Transform>(lid).setrotate(rotation);
-            Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
+            if (areaLightAllocator.Get<AreaLight_RenderMesh>(lid))
+                Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
             break;
         default: n_error("unhandled enum"); break;
     }
@@ -785,7 +792,8 @@ LightContext::SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& sc
                 adjustedScale.z = 1.0f;
             }
             areaLightAllocator.Get<AreaLight_Transform>(lid).setscale(adjustedScale);
-            Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
+            if (areaLightAllocator.Get<AreaLight_RenderMesh>(lid))
+                Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
         } break;
         default: n_error("unhandled enum"); break;
     }

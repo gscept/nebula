@@ -117,6 +117,27 @@ EditorFeatureUnit::OnActivate()
             )
             .Build();
 
+        Game::ProcessorBuilder(world, "EditorGameManager.UpdateAreaLightTransform"_atm)
+            .On("OnEndFrame")
+            .OnlyModified()
+            .RunInEditor()
+            .Func(
+                [](Game::World* world,
+                   Game::Position const& pos,
+                   Game::Orientation const& rot,
+                   Game::Scale const& scale,
+                   GraphicsFeature::AreaLight const& light)
+                {
+                    if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
+                    {
+                        Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                        Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                        Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
+                    }
+                }
+            )
+            .Build();
+
         //if (!Editor::ConnectToBackend(...))
         //    Editor::SpawnLocalBackend();
     }
