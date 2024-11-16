@@ -98,7 +98,7 @@ nebula_begin_module(foundation)
             blob.cc
             blob.h
             bvh.h
-            colour.h
+            color.h
             commandlineargs.cc
             commandlineargs.h
             crc.cc
