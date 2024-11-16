@@ -85,6 +85,7 @@ GraphicsFeatureUnit::OnAttach()
 {
     this->RegisterComponentType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
     this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
+    this->RegisterComponentType<AreaLight>({.decay = true, .OnInit = &GraphicsManager::InitAreaLight });
     this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     this->RegisterComponentType<Camera>();
     Scripting::RegisterDearguiModule();

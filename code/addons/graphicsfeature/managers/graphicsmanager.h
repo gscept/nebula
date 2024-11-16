@@ -39,6 +39,8 @@ public:
     static void InitPointLight(Game::World* world, Game::Entity entity, PointLight* light);
     /// called automatically when a spot light needs to be initialized
     static void InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light);
+    /// called automatically when an area light needs to be initialized
+    static void InitAreaLight(Game::World* world, Game::Entity entity, AreaLight* light);
 
 private:
     void InitUpdateModelTransformProcessor();

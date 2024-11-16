@@ -3,7 +3,12 @@
   "enums": {
     "ProjectionMode": {
       "Perspective": 0,
-      "Orthographic": 1,
+      "Orthographic": 1
+    },
+    "AreaLightShape": {
+      "Disk": 0,
+      "Rectangle": 1,
+      "Tube": 2
     }
   },
   "components": {
@@ -13,7 +18,7 @@
         "default": -1
       },
       "color": {
-        "type": "colour",
+        "type": "color",
         "default": [ 1.0, 1.0, 1.0, 1.0 ]
       },
       "intensity": {
@@ -32,7 +37,7 @@
         "default": -1
       },
       "color": {
-        "type": "colour",
+        "type": "color",
         "default": [ 1.0, 1.0, 1.0, 1.0 ]
       },
       "intensity": {
@@ -51,6 +56,30 @@
         "type": "float",
         "default": 8.0
       },
+      "castShadows": "bool"
+    },
+    "AreaLight": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1
+      },
+      "shape": {
+        "type": "GraphicsFeature::AreaLightShape",
+        "default": 0
+      },
+      "color": {
+        "type": "color",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      },
+      "intensity": {
+        "type": "float",
+        "default": 50.0 // candela
+      },
+      "range": {
+        "type": "float",
+        "default": 8.0
+      },
+      "twoSided": "bool",
       "castShadows": "bool"
     },
     "Model": {

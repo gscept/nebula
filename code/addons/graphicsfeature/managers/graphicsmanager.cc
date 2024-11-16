@@ -161,6 +161,14 @@ GraphicsManager::OnDecay()
         SpotLight* light = spotLightData + i;
         DeregisterLight(light->graphicsEntityId);
     }
+
+    Game::ComponentDecayBuffer const areaLightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<AreaLight>());
+    AreaLight* areaLightData = (AreaLight*)areaLightDecayBuffer.buffer;
+    for (int i = 0; i < areaLightDecayBuffer.size; i++)
+    {
+        AreaLight* light = areaLightData + i;
+        DeregisterLight(light->graphicsEntityId);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -246,6 +254,33 @@ GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLigh
 /**
 */
 void
+GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLight* light)
+{
+    light->graphicsEntityId = Graphics::CreateEntity().id;
+
+    Game::Position pos = world->GetComponent<Game::Position>(entity);
+    Game::Orientation rot = world->GetComponent<Game::Orientation>(entity);
+    Game::Scale scale = world->GetComponent<Game::Scale>(entity);
+
+    Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    Lighting::LightContext::SetupAreaLight(
+        light->graphicsEntityId,
+        (Lighting::LightContext::AreaLightShape)light->shape,
+        light->color.vec,
+        light->intensity,
+        light->range,
+        light->twoSided,
+        light->castShadows
+    );
+    Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+    Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
+    Lighting::LightContext::SetScale(light->graphicsEntityId, scale);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model)
 {
     auto res = model->resource;
@@ -306,6 +341,23 @@ GraphicsManager::OnCleanup(Game::World* world)
         {
             Game::Dataset::View const& view = data.views[v];
             SpotLight const* const componentData = (SpotLight*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // AreaLight cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<AreaLight>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            AreaLight const* const componentData = (AreaLight*)view.buffers[0];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
