@@ -47,17 +47,21 @@ private:
 };
 
 template<typename TYPE>
-void
+inline void
 ComponentDrawFuncT(ComponentId component, void* data, bool* commit);
 
 template<typename TYPE, std::size_t i = 0>
-void InspectorDrawField(ComponentId component, void* data, bool* commit)
+inline void
+InspectorDrawField(ComponentId component, void* data, bool* commit)
 {
     if constexpr (i < TYPE::Traits::num_fields)
     {
         using field_tuple = typename TYPE::Traits::field_types;
         using field_type = typename std::tuple_element<i, field_tuple>::type;
-        ImGui::Text(TYPE::Traits::field_names[i]);
+        Util::String fieldName = TYPE::Traits::field_names[i];
+        fieldName.CamelCaseToWords();
+        fieldName.Capitalize();
+        ImGui::Text(fieldName.AsCharPtr());
         ImGui::SameLine();
         ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
         InspectorDrawField<TYPE, i + 1>(component, data, commit);
@@ -68,7 +72,7 @@ void InspectorDrawField(ComponentId component, void* data, bool* commit)
 /**
 */
 template<typename TYPE>
-void
+inline void
 ComponentDrawFuncT(ComponentId component, void* data, bool* commit)
 {
     if constexpr (requires { &TYPE::Traits::num_fields; })

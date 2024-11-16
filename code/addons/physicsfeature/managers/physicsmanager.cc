@@ -68,7 +68,7 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
         Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id64(entity));
     actor->actorId = actorid.id;
 
-    if (actor->actorType == Physics::Kinematic)
+    if ((int)actor->actorType == Physics::Kinematic)
     {
         world->AddComponent<PhysicsFeature::IsKinematic>(entity);
     }

@@ -938,10 +938,31 @@ String::ToUpper()
 /**
 */
 void
-String::FirstCharToUpper()
+String::Capitalize()
 {
     char* str = const_cast<char*>(this->AsCharPtr());    
     *str = (char) toupper(*str);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+String::CamelCaseToWords()
+{
+    const char* str = this->AsCharPtr();
+    Util::String newString;
+    newString.AppendChar(str[0]);
+    // always skip first letter
+    for (IndexT i = 1; i < this->strLen; i++)
+    {
+        if (IsUpper(str[i]) && !IsUpper(str[i - 1]))
+        {
+            newString.AppendChar(' ');
+        }
+        newString.AppendChar(str[i]);
+    }
+    *this = newString;
 }
 
 //------------------------------------------------------------------------------

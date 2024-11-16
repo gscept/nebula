@@ -111,7 +111,10 @@ Inspector::Run(SaveMode save)
             continue;
         }
         ImGui::PushID(0xA3FC + (int)component.id); // offset the ids with some magic number
-        ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
+        Util::String componentName = MemDb::AttributeRegistry::GetAttribute(component)->name.AsString();
+        componentName.CamelCaseToWords();
+        componentName.Capitalize();
+        ImGui::Text(componentName.AsCharPtr());
         ImGui::SameLine();
 
         if (component != Game::GetComponentId<Game::Position>() &&

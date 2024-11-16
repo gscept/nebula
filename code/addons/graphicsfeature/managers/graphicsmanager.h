@@ -16,6 +16,7 @@
 #include "game/category.h"
 #include "graphics/graphicsentity.h"
 #include "graphicsfeature/components/graphicsfeature.h"
+#include "game/componentinspection.h"
 
 namespace GraphicsFeature
 {
@@ -48,3 +49,9 @@ private:
 };
 
 } // namespace GraphicsFeature
+
+namespace Game
+{
+template <>
+void ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(ComponentId, void*, bool*);
+}

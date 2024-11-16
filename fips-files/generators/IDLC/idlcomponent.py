@@ -216,7 +216,7 @@ def WriteEnumJsonSerializers(f, document):
         f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=enumName))
         f.WriteLine('{')
         f.IncreaseIndent()
-        f.WriteLine('this->Add<int>(value, attr);')
+        f.WriteLine('this->Add<int>((int)value, attr);')
         f.DecreaseIndent()
         f.WriteLine("}")
         f.WriteLine("")
@@ -264,7 +264,7 @@ def WriteEnumeratedCppTypes(f, document):
     if "enums" in document:
         for enumName, enum in document["enums"].items():
             # Declare Enums
-            f.WriteLine("enum {}".format(enumName))
+            f.WriteLine("enum class {}".format(enumName))
             f.WriteLine("{")
             f.IncreaseIndent()
             numValues = 0

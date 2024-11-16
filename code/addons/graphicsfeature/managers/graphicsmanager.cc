@@ -19,6 +19,7 @@
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 #include "lighting/lightcontext.h"
+#include "game/componentinspection.h"
 
 namespace GraphicsFeature
 {
@@ -41,18 +42,17 @@ GraphicsManager::~GraphicsManager()
     // empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
 void
 RegisterModelEntity(
-    Graphics::GraphicsEntityId const gid
-    , Resources::ResourceName const res
-    , Resources::ResourceName const anim
-    , Resources::ResourceName const skeleton
-    , bool const raytracing
-    , Math::mat4 const& t
+    Graphics::GraphicsEntityId const gid,
+    Resources::ResourceName const res,
+    Resources::ResourceName const anim,
+    Resources::ResourceName const skeleton,
+    bool const raytracing,
+    Math::mat4 const& t
 )
 {
     Models::ModelContext::RegisterEntity(gid);
@@ -182,7 +182,11 @@ GraphicsManager::InitUpdateModelTransformProcessor()
         .Excluding<Game::Static>()
         // .Async(true) // TODO: Should be able to be async, since two entities should not share transforms in model context
         .Func(
-            [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& orient,
+               Game::Scale const& scale,
+               GraphicsFeature::Model const& model)
             {
                 if (model.graphicsEntityId != -1)
                 {
@@ -285,7 +289,9 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     Game::Position pos = world->GetComponent<Game::Position>(entity);
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     // TODO: Cookie projection support
-    Lighting::LightContext::SetupPointLight(light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->castShadows);
+    Lighting::LightContext::SetupPointLight(
+        light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->castShadows
+    );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
 }
 
@@ -304,7 +310,13 @@ GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLigh
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
     // TODO: Cookie projection support
     Lighting::LightContext::SetupSpotLight(
-        light->graphicsEntityId, light->color.vec, light->intensity, Math::deg2rad(light->innerConeAngle), Math::deg2rad(light->outerConeAngle), light->range, light->castShadows
+        light->graphicsEntityId,
+        light->color.vec,
+        light->intensity,
+        Math::deg2rad(light->innerConeAngle),
+        Math::deg2rad(light->outerConeAngle),
+        light->range,
+        light->castShadows
     );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
@@ -350,7 +362,9 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
     Game::Orientation orient = world->GetComponent<Game::Orientation>(entity);
     Game::Scale scale = world->GetComponent<Game::Scale>(entity);
     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-    RegisterModelEntity(model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform);
+    RegisterModelEntity(
+        model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform
+    );
 }
 
 //------------------------------------------------------------------------------
@@ -446,4 +460,24 @@ IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const
 {
     // Write nothing
     return;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+Game::ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(Game::ComponentId component, void* data, bool* commit)
+{
+    ImGui::SameLine();
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+
+    static const char* items[] {"Disk", "Rectangle", "Tube"};
+    static_assert(sizeof(items) / sizeof(const char*) == (int)GraphicsFeature::AreaLightShape::NumAreaLightShape);
+    GraphicsFeature::AreaLightShape* selectedItem = (GraphicsFeature::AreaLightShape*)data;
+    if (ImGui::Combo("##AreaShape", (int*)selectedItem, items, IM_ARRAYSIZE(items)))
+    {
+        *commit = true;
+    }
+    ImGui::PopID();
 }
