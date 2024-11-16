@@ -122,10 +122,10 @@ def ContainsEntityTypes():
 #------------------------------------------------------------------------------
 ##
 #
-def ContainsColour():
+def ContainsColor():
     for comp in components:
         for var in comp.variables:
-            if var.type == "colour":
+            if var.type == "color":
                 return True
     return False
 
