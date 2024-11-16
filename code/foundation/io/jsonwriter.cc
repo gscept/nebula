@@ -381,7 +381,7 @@ template<> void JsonWriter::Add(const Math::vec4 & value , const Util::String & 
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::Colour& value, const Util::String& name)
+template<> void JsonWriter::Add(const Util::Color& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);

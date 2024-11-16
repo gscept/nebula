@@ -286,7 +286,7 @@ ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<Util::Colour>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Util::Color>(ComponentId component, void* data, bool* commit)
 {
     MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 

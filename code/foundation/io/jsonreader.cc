@@ -929,7 +929,7 @@ template<> void JsonReader::Get<Math::vec4>(Math::vec4& ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonReader::Get<Util::Colour>(Util::Colour& ret, const char* attr)
+template<> void JsonReader::Get<Util::Color>(Util::Color& ret, const char* attr)
 {
     const value_variant* node = this->GetChild(attr);
     NEBULA_ALIGN16 float v[4];

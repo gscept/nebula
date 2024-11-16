@@ -22,7 +22,7 @@
 #include "util/blob.h"
 #include "memory/memory.h"
 #include "core/refcounted.h"
-#include "util/colour.h"
+#include "util/color.h"
 
 //------------------------------------------------------------------------------
 namespace Util
@@ -3472,7 +3472,7 @@ Variant::TypeToString(Type t)
         case Float:         return "float";
         case Double:        return "double";
         case Bool:          return "bool";
-        case Vec2:      return "vec2";
+        case Vec2:          return "vec2";
         case Vec4:          return "vec4";
         case Quaternion:    return "quaternion";
         case String:        return "string";
@@ -3485,7 +3485,7 @@ Variant::TypeToString(Type t)
         case IntArray:      return "intarray";
         case FloatArray:    return "floatarray";
         case BoolArray:     return "boolarray";
-        case Vec2Array: return "vec2array";
+        case Vec2Array:     return "vec2array";
         case Vec4Array:     return "vec4array";
         case Mat4Array:     return "mat4array";
         case StringArray:   return "stringarray";
