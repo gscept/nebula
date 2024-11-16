@@ -1,8 +1,7 @@
 //------------------------------------------------------------------------------
 //  @file entitypool.cc
-//  @copyright (C) 2021 Individual contributors, see AUTHORS file
+//  @copyright (C) 2021-2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include "world.h"
 #include "gameserver.h"
 #include "api.h"
@@ -63,13 +62,8 @@ World::World(WorldHash hash, WorldId id)
         Game::GetComponentId<Game::Entity>(),
         Game::GetComponentId<Game::Position>(),
         Game::GetComponentId<Game::Orientation>(),
-        Game::GetComponentId<Game::Scale>()
-    };
-    MemDb::TableCreateInfo info = {
-        .name = "Empty",
-        .attributeIds = attributes,
-        .numAttributes = 4
-    };
+        Game::GetComponentId<Game::Scale>()};
+    MemDb::TableCreateInfo info = {.name = "Empty", .attributeIds = attributes, .numAttributes = 4};
     this->defaultTableId = this->db->CreateTable(info);
 
     // clang-format off
@@ -143,7 +137,7 @@ World::PreloadLevel(Util::String const& path)
             ComponentId cid = componentIds[c];
             components[componentIndex++] = cid;
         }
-        MemDb::TableId const tableId = this->CreateEntityTable({.name="", .components=components});
+        MemDb::TableId const tableId = this->CreateEntityTable({.name = "", .components = components});
         entityGroup.dstTable = tableId;
         entityGroup.numRows = table->num_rows();
 
@@ -192,7 +186,7 @@ World::PreloadLevel(Util::String const& path)
                     while (it < entityGroup.columns + offset + bytesInColumn)
                     {
                         static_assert(sizeof(Util::StringAtom) == sizeof(uint64_t));
-                        
+
                         Util::StringAtom* asStringAtom = reinterpret_cast<Util::StringAtom*>(it);
                         uint64_t asInt = *reinterpret_cast<uint64_t*>(it);
 
@@ -282,8 +276,7 @@ World::ExportLevel(Util::String const& path)
                         {
                             feature = ComponentFieldFeature::ComponentFieldFeature_StringAtom;
                         }
-                        else if (Util::String::StrCmp(fieldTypename, "Game::Entity") == 0 ||
-                                Util::String::StrCmp(fieldTypename, "entity") == 0)
+                        else if (Util::String::StrCmp(fieldTypename, "Game::Entity") == 0 || Util::String::StrCmp(fieldTypename, "entity") == 0)
                         {
                             feature = ComponentFieldFeature::ComponentFieldFeature_EntityId;
                         }
@@ -331,8 +324,7 @@ World::ExportLevel(Util::String const& path)
                     //       do the same for entity references and other reference types
                     if (Util::String::StrCmp(fieldTypename, "Resources::ResourceName") == 0 ||
                         Util::String::StrCmp(fieldTypename, "string") == 0 ||
-                        Util::String::StrCmp(fieldTypename, "Util::StringAtom") == 0 
-                        )
+                        Util::String::StrCmp(fieldTypename, "Util::StringAtom") == 0)
                     {
                         // This is a stringatom field, so we to serialize the
                         // string into the string table, and replace the
@@ -434,7 +426,6 @@ World::Start()
 {
     // "Prefilter" the processors with the new table (insert the table in the cache that accepts it)
     this->pipeline.CacheTable(this->defaultTableId, this->db->GetTable(this->defaultTableId).GetSignature());
-
     this->pipeline.Begin();
 }
 
@@ -505,15 +496,6 @@ World::PrefilterProcessors()
 //------------------------------------------------------------------------------
 /**
 */
-bool
-World::Prefiltered() const
-{
-    return this->cacheValid;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 World::ManageEntities()
 {
@@ -548,7 +530,12 @@ World::ManageEntities()
 
     if (db.isvalid())
     {
-        db->ForEachTable([this](MemDb::TableId tid) { this->Defragment(tid); });
+        db->ForEachTable(
+            [this](MemDb::TableId tid)
+            {
+                this->Defragment(tid);
+            }
+        );
     }
 }
 
@@ -774,7 +761,7 @@ World::ClearDecayBuffers()
 /**
 */
 bool
-World::IsValid(Entity e)
+World::IsValid(Entity e) const
 {
     return (uint32_t)this->worldId == e.world && this->pool.IsValid(e);
 }
@@ -783,7 +770,7 @@ World::IsValid(Entity e)
 /**
 */
 bool
-World::HasInstance(Entity e)
+World::HasInstance(Entity e) const
 {
     n_assert(this->IsValid(e));
     return this->entityMap[e.index].instance != MemDb::InvalidRow;
@@ -793,7 +780,7 @@ World::HasInstance(Entity e)
 /**
 */
 EntityMapping
-World::GetEntityMapping(Game::Entity entity)
+World::GetEntityMapping(Game::Entity entity) const
 {
     n_assert(this->IsValid(entity));
     n_assert(this->HasInstance(entity));
@@ -805,7 +792,7 @@ World::GetEntityMapping(Game::Entity entity)
    TODO: This is not thread safe!
 */
 bool
-World::HasComponent(Game::Entity const entity, ComponentId const component)
+World::HasComponent(Game::Entity const entity, ComponentId const component) const
 {
     EntityMapping mapping = this->GetEntityMapping(entity);
     return this->db->GetTable(mapping.table).HasAttribute(component);
@@ -921,7 +908,7 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
             MemDb::Table const& tbl = this->db->GetTable(mapping.table);
             Util::Array<Game::ComponentId> const& cols = tbl.GetAttributes();
             info.components.SetSize(cols.Size() + numCmds);
-            
+
             for (i = 0; i < cols.Size(); ++i)
             {
                 info.components[i] = cols[i];
@@ -931,7 +918,7 @@ World::AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmd
         {
             info.components.SetSize(numCmds);
         }
-        
+
         SizeT end = i + numCmds;
         IndexT cmdIndex = 0;
         for (; i < end; ++i, ++cmdIndex)
@@ -1046,7 +1033,7 @@ World::GetColumnData(MemDb::TableId const tid, uint16_t partitionId, MemDb::Colu
 /**
 */
 MemDb::RowId
-World::GetInstance(Entity entity)
+World::GetInstance(Entity entity) const
 {
     return this->GetEntityMapping(entity).instance;
 }
@@ -1075,8 +1062,7 @@ World::CreateEntityTable(EntityTableCreateInfo const& info)
     if (info.components[Game::Entity::Traits::fixed_column_index] != GetComponentId<Game::Entity>() &&
         info.components[Game::Position::Traits::fixed_column_index] != GetComponentId<Game::Position>() &&
         info.components[Game::Orientation::Traits::fixed_column_index] != GetComponentId<Game::Orientation>() &&
-        info.components[Game::Scale::Traits::fixed_column_index] != GetComponentId<Game::Scale>()
-        )
+        info.components[Game::Scale::Traits::fixed_column_index] != GetComponentId<Game::Scale>())
     {
         // always have owner and transform as first columns
         components[Game::Entity::Traits::fixed_column_index] = GetComponentId<Entity>();
@@ -1106,7 +1092,7 @@ World::CreateEntityTable(EntityTableCreateInfo const& info)
 
     // "Prefilter" the processors with the new table (insert the table in the cache that accepts it)
     this->pipeline.CacheTable(categoryId, this->db->GetTable(categoryId).GetSignature());
-    
+
     return categoryId;
 }
 
@@ -1199,10 +1185,22 @@ World::AllocateInstance(Entity entity, BlueprintId blueprint)
 
 #if _DEBUG
     // make sure the first column in always owner
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) == Game::Entity::Traits::fixed_column_index);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) == Game::Position::Traits::fixed_column_index);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) == Game::Orientation::Traits::fixed_column_index);
-    n_assert(this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) == Game::Scale::Traits::fixed_column_index);
+    n_assert(
+        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Entity>()) ==
+        Game::Entity::Traits::fixed_column_index
+    );
+    n_assert(
+        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Position>()) ==
+        Game::Position::Traits::fixed_column_index
+    );
+    n_assert(
+        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Orientation>()) ==
+        Game::Orientation::Traits::fixed_column_index
+    );
+    n_assert(
+        this->db->GetTable(mapping.table).GetAttributeIndex(Game::GetComponentId<Game::Scale>()) ==
+        Game::Scale::Traits::fixed_column_index
+    );
 #endif
 
     // Set the owner of this instance
@@ -1249,7 +1247,7 @@ World::AllocateInstance(Entity entity, TemplateId templateId, bool performInitia
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 World::FinalizeAllocate(Entity entity)
 {
     n_assert(this->IsValid(entity));
@@ -1303,9 +1301,8 @@ World::Migrate(Entity entity, MemDb::TableId newTableId)
     n_assert(this->IsValid(entity));
     n_assert(this->HasInstance(entity));
     EntityMapping mapping = this->GetEntityMapping(entity);
-    MemDb::RowId newInstance = MemDb::Table::MigrateInstance(
-        this->db->GetTable(mapping.table), mapping.instance, this->db->GetTable(newTableId), false
-    );
+    MemDb::RowId newInstance =
+        MemDb::Table::MigrateInstance(this->db->GetTable(mapping.table), mapping.instance, this->db->GetTable(newTableId), false);
 
     this->entityMap[entity.index] = {newTableId, newInstance};
     return newInstance;
@@ -1361,8 +1358,8 @@ World::Migrate(
 void
 World::MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
 {
-    Game::Entity fromEntity = ((Game::Entity*)partition->columns[0])[from.index];
-    Game::Entity toEntity = ((Game::Entity*)partition->columns[0])[to.index];
+    Game::Entity fromEntity = ((Game::Entity*)partition->columns[Game::Entity::Traits::fixed_column_index])[from.index];
+    Game::Entity toEntity = ((Game::Entity*)partition->columns[Game::Entity::Traits::fixed_column_index])[to.index];
     if (!this->IsValid(fromEntity))
     {
         // we need to add these instances new index to the to the freeids list, since it's been deleted.
@@ -1401,7 +1398,8 @@ World::Defragment(MemDb::TableId tableId)
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.
     // The move callback is signaled BEFORE the swap has happened.
-    UNUSED(SizeT) numErased = this->db->GetTable(tableId).Defragment(
+    UNUSED(SizeT)
+    numErased = this->db->GetTable(tableId).Defragment(
         [this](MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to)
         {
             this->MoveInstance(partition, from, to);
@@ -1465,7 +1463,6 @@ World::ReinitializeComponent(Game::Entity entity, Game::ComponentId component, v
     }
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -1482,7 +1479,8 @@ World::RenderDebug()
         if (ImGui::IsItemHovered())
         {
             //ImGui::SetTooltip("Processors are executed _after_ feature units for each event.");
-            ImGui::SetTooltip("The pipeline that makes up the frame.\nThis consists of multiple frame events, possibly bundled in frame batches.");
+            ImGui::SetTooltip("The pipeline that makes up the frame.\nThis consists of multiple frame events, possibly bundled "
+                              "in frame batches.");
         }
 
         auto const events = this->pipeline.GetFrameEvents();
@@ -1512,14 +1510,14 @@ World::RenderDebug()
                     ImGui::SameLine();
                     ImGui::Text(" | Async: %s", processor->async ? "true" : "false");
                     ImGui::SameLine();
-                    ImGui::TextColored({0.5,0.5,0.9f,1.0f}, " | Filter : %i", processor->filter);
+                    ImGui::TextColored({0.5, 0.5, 0.9f, 1.0f}, " | Filter : %i", processor->filter);
                     if (ImGui::IsItemHovered())
                     {
                         ImGui::Indent();
                         auto const compsInc = Game::ComponentsInFilter(processor->filter);
                         if (compsInc.Size() > 0)
                         {
-                            ImGui::TextColored({0.1f, 0.8f, 0.1f, 1.0f},"Includes entities with components:");
+                            ImGui::TextColored({0.1f, 0.8f, 0.1f, 1.0f}, "Includes entities with components:");
                             ImGui::BeginChild(1, ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * compsInc.Size()));
                             {
                                 for (auto c : compsInc)
@@ -1606,7 +1604,13 @@ World::RenderDebug()
             ImGui::BeginGroup();
             ImGui::Text("[%i] ", entityIndex);
             ImGui::SameLine();
-            ImGui::TextColored({1, 0.3f, 0, 1}, "tid:%i, partition: %i, index: %i", entity.table, entity.instance.partition, entity.instance.index);
+            ImGui::TextColored(
+                {1, 0.3f, 0, 1},
+                "tid:%i, partition: %i, index: %i",
+                entity.table,
+                entity.instance.partition,
+                entity.instance.index
+            );
             if (entity.table != MemDb::TableId::Invalid())
             {
                 ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());
@@ -1682,10 +1686,7 @@ World::Override(World* src, World* dst)
             {
                 Game::Entity& entity = entities[i];
                 entity.world = dst->worldId;
-                MemDb::RowId row = {
-                    .partition = view.partitionId,
-                    .index = i
-                };
+                MemDb::RowId row = {.partition = view.partitionId, .index = i};
                 dst->InitializeAllComponents(entity, view.tableId, row);
             }
         }
