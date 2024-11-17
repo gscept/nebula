@@ -1625,8 +1625,9 @@ World::RenderDebug()
                     auto const& components = this->db->GetTable(table).GetAttributes();
                     for (auto component : components)
                     {
-                        SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
-                        if (typeSize == 0)
+                        Game::ComponentInterface* cInterface =
+                            (Game::ComponentInterface*)MemDb::AttributeRegistry::GetAttribute(component);
+                        if (cInterface->GetNumFields() == 0)
                         {
                             // Type is flag type, just print the name, and then continue
                             ImGui::Text("_flag_: %s", MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
@@ -1637,10 +1638,28 @@ World::RenderDebug()
                         {
                             ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
                         }
+                        SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                         void* data = this->GetInstanceBuffer(table, row.partition, component);
                         data = (byte*)data + (row.index * typeSize);
-                        bool commitChange = false;
-                        Game::ComponentInspection::DrawInspector(component, data, &commitChange);
+
+                        const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders |
+                                                      ImGuiTableFlags_RowBg | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                        ImGui::PushID(row.index + 0xF23);
+                        if (ImGui::BeginTable(MemDb::AttributeRegistry::GetAttribute(component)->name.Value(), 2, flags))
+                        {
+                            ImGui::TableSetupColumn("FieldName", ImGuiTableColumnFlags_WidthFixed);
+                            ImGui::TableSetupColumn("FieldValue", ImGuiTableColumnFlags_WidthStretch);
+
+                            ImGui::TableNextRow();
+                            bool commitChange = false;
+                            Game::ComponentInspection::DrawInspector(component, data, &commitChange);
+                            ImGui::EndTable();
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+                            ImGui::Spacing();
+                        }
+                        ImGui::PopID();
+
                         ImGui::Separator();
                     }
                     ImGui::EndTooltip();
