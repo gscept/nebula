@@ -1622,6 +1622,8 @@ World::RenderDebug()
                     MemDb::TableId const table = entity.table;
                     MemDb::RowId const row = entity.instance;
 
+                    bool prevDebugState = Game::ComponentInspection::Instance()->debug;
+                    Game::ComponentInspection::Instance()->debug = true;
                     auto const& components = this->db->GetTable(table).GetAttributes();
                     for (auto component : components)
                     {
@@ -1662,6 +1664,7 @@ World::RenderDebug()
 
                         ImGui::Separator();
                     }
+                    Game::ComponentInspection::Instance()->debug = prevDebugState;
                     ImGui::EndTooltip();
                 }
             }

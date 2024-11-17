@@ -37,6 +37,9 @@ public:
 
     static void DrawInspector(ComponentId component, void* data, bool* commit);
 
+    // set to true if you want full information to be displayed in the inspector
+    bool debug = false;
+
 private:
     ComponentInspection();
     ~ComponentInspection();
@@ -56,7 +59,7 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
 {
     if constexpr (i < TYPE::Traits::num_fields)
     {
-        if constexpr (TYPE::Traits::field_hide_in_inspector[i])
+        if (TYPE::Traits::field_hide_in_inspector[i] && !ComponentInspection::Instance()->debug)
         {
             // Just move to the next field
             InspectorDrawField<TYPE, i + 1>(component, data, commit);
