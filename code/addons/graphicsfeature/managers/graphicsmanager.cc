@@ -469,9 +469,7 @@ template <>
 void
 Game::ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(Game::ComponentId component, void* data, bool* commit)
 {
-    ImGui::SameLine();
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-
     static const char* items[] {"Disk", "Rectangle", "Tube"};
     static_assert(sizeof(items) / sizeof(const char*) == (int)GraphicsFeature::AreaLightShape::NumAreaLightShape);
     GraphicsFeature::AreaLightShape* selectedItem = (GraphicsFeature::AreaLightShape*)data;

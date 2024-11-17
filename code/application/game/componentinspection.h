@@ -61,10 +61,16 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
         Util::String fieldName = TYPE::Traits::field_names[i];
         fieldName.CamelCaseToWords();
         fieldName.Capitalize();
+        ImGui::TableSetColumnIndex(0);
         ImGui::Text(fieldName.AsCharPtr());
-        ImGui::SameLine();
+        ImGui::TableSetColumnIndex(1);
         ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
-        InspectorDrawField<TYPE, i + 1>(component, data, commit);
+        
+        if constexpr (i < TYPE::Traits::num_fields - 1)
+        {
+            ImGui::TableNextRow();
+            InspectorDrawField<TYPE, i + 1>(component, data, commit);
+        }
     }
 }
 
@@ -79,7 +85,6 @@ ComponentDrawFuncT(ComponentId component, void* data, bool* commit)
     {
         if constexpr (TYPE::Traits::num_fields > 0 && !std::is_enum<TYPE>())
         {
-            //UnrollTypesAndInspect<TYPE>(std::make_index_sequence<TYPE::Traits::num_fields>(), component, data, commit);
             InspectorDrawField<TYPE>(component, data, commit);
         }
     }
@@ -89,11 +94,15 @@ ComponentDrawFuncT(ComponentId component, void* data, bool* commit)
 template<> void ComponentDrawFuncT<Game::Entity>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<bool>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<int>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int64>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<uint>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint64>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<float>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::StringAtom>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::mat4>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::vec3>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::vec4>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::quat>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Position>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Orientation>(ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Game::Scale>(ComponentId, void*, bool*);
