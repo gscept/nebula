@@ -13,56 +13,57 @@
       "clipResource": {
         "type": "resource",
         "default": "audio:system/placeholder.wav",
-        "desc": "The audio clip to load upon activation"
+        "description": "The audio clip to load upon activation"
       },
       "clipId": {
         "type": "uint",
         "default": -1,
-        "desc": "The Audio::ClipId for this emitter."
+        "description": "The Audio::ClipId for this emitter.",
+        "hideInInspector": true
       },
       "volume": {
         "type": "float",
         "default": 1.0,
-        "desc": "Max volume"
+        "description": "Max volume"
       },
       "autoplay": {
         "type": "bool",
-        "desc": "Set to true if the emitter should start immediately upon creation"
+        "description": "Set to true if the emitter should start immediately upon creation"
       },
       "pan": {
         "type": "float",
         "default": 0.0,
-        "desc": "2D pan for non spatialized sounds. (L = -1.0, R = 1.0)"
+        "description": "2D pan for non spatialized sounds. (L = -1.0, R = 1.0)"
       },
       "loop": {
         "type": "bool",
-        "desc": "Set to true if the emitter should loop after reaching the end of the clip"
+        "description": "Set to true if the emitter should loop after reaching the end of the clip"
       },
       "clock": {
         "type": "float",
         "default": 0.0,
-        "desc": "Set this to > 0 if you need to delay the start of sounds so that rapidly launched sounds don't all get clumped to the start of the next outgoing sound buffer."
+        "description": "Set this to > 0 if you need to delay the start of sounds so that rapidly launched sounds don't all get clumped to the start of the next outgoing sound buffer."
       }
     },
     "SpatialAudioEmission": {
       "minDistance": {
         "type": "float",
         "default": 0.0,
-        "desc": "Minimum audible distance of the sound"
+        "description": "Minimum audible distance of the sound"
       },
       "maxDistance": {
         "type": "float",
         "default": 10000.0,
-        "desc": "Maximum audible distance of the sound"
+        "description": "Maximum audible distance of the sound"
       },
       "attenuation": {
         "type": "AudioFeature::AttenuationModel",
         "default": 1,
-        "desc": "The attenuation model to use"
+        "description": "The attenuation model to use"
       }
     },
     "ClipInstance": {
-      "id": "uint"
+      "id": "uint",
     },
     "PlayAudioEvent": {},
     "AudioListener": {},

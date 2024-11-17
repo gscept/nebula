@@ -200,7 +200,14 @@ void
 ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    ImGui::Text(((Util::StringAtom*)data)->Value());
+    if (((Util::StringAtom*)data)->IsValid())
+    {
+        ImGui::Text(((Util::StringAtom*)data)->Value());
+    }
+    else
+    {
+        ImGui::Text("None");
+    }
     if (ImGui::BeginDragDropTarget())
     {
         auto payload = ImGui::AcceptDragDropPayload("resource");

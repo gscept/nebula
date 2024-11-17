@@ -9,12 +9,19 @@ components = list()
 ##
 #
 class VariableDefinition:
-    def __init__(self, T, name, defVal):
+    def __init__(self, T, name: str, defVal, hideInInspector: bool, description: str):
         if not isinstance(T, str) and T is not None:
             util.fmtError('"type" value is not a string value!')
         self.type = T
         if not isinstance(name, str):
             util.fmtError('"name" value is not a string value!')
+        if not isinstance(hideInInspector, bool):
+            util.fmtError('"hideInInspector" value is not a bool value!')
+        if not isinstance(description, str):
+            util.fmtError('"description" value is not a string value!')
+
+        self.description = description
+        self.hideInInspector = hideInInspector
         self.name = name
         self.defaultValue = defVal
 
@@ -81,15 +88,23 @@ def GetVariableFromEntry(name, var):
             util.fmtError('{} : {}'.format(name, var.__repr__()))
         
         default = None
+        hideInInspector = False
+        description = ""
         
         if "default" in var:
             default = IDLTypes.GetCppTypeString(var["type"]) + "(" + IDLTypes.DefaultToString(var["default"]) + ")"
         else:
             default = IDLTypes.DefaultValue(var["type"])
 
-        return VariableDefinition(var["type"], name, default)
+        if "hideInInspector" in var:
+            hideInInspector = var["hideInInspector"]
+
+        if "description" in var:
+            description = var["description"]
+        
+        return VariableDefinition(var["type"], name, default, hideInInspector, description)
     else:
-        return VariableDefinition(var, name, IDLTypes.DefaultValue(var))
+        return VariableDefinition(var, name, IDLTypes.DefaultValue(var), False, "")
 
 #------------------------------------------------------------------------------
 ##
@@ -173,10 +188,32 @@ def WriteComponentHeaderDeclarations(f, document):
             for v in c.variables:
                 f.WriteLine('    offsetof({}, {}),'.format(c.componentName, v.name))
             f.WriteLine('};')
+            f.WriteLine('static constexpr const char* field_descriptions[num_fields] = {')
+            for i, v in enumerate(c.variables):
+                if not v.description:
+                    f.Write('    nullptr')
+                else:
+                    f.Write('    "{}"'.format(v.description))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('};')
+            f.WriteLine('static constexpr bool field_hide_in_inspector[num_fields] = {')
+            for i, v in enumerate(c.variables):
+                f.Write('    {}'.format("true" if v.hideInInspector else "false"))
+                if i < (len(c.variables) - 1):
+                    f.WriteLine(",")
+                else:
+                    f.WriteLine("")
+            f.WriteLine('};')
         else:
             f.WriteLine('static constexpr const char** field_names = nullptr;')
             f.WriteLine('static constexpr const char** field_typenames = nullptr;')
             f.WriteLine('static constexpr size_t* field_byte_offsets = nullptr;')
+            f.WriteLine('static constexpr const char** field_descriptions = nullptr;')
+            f.WriteLine('static constexpr bool* field_hide_in_inspector = nullptr;')
+
 
 
         

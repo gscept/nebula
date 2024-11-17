@@ -46,11 +46,21 @@ struct Position::Traits
         "float",
         "float"
     };
+    static constexpr const char* field_descriptions[num_fields] = {
+        nullptr,
+        nullptr,
+        nullptr
+    };
     using field_types = std::tuple<float, float, float>;
     static constexpr size_t field_byte_offsets[num_fields] = {
         offsetof(Position, x),
         offsetof(Position, y),
         offsetof(Position, z)
+    };
+    static constexpr bool field_hide_in_inspector[num_fields] = {
+        false,
+        false,
+        false
     };
     /// This is the column that the entity position will reside in, in every table.
     /// NOTE: This can never be changed, due to assumptions that have been made.

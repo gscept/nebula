@@ -49,11 +49,21 @@ struct Scale::Traits
         "float",
         "float"
     };
+    static constexpr const char* field_descriptions[num_fields] = {
+        nullptr,
+        nullptr,
+        nullptr
+    };
     using field_types = std::tuple<float, float, float>;
     static constexpr size_t field_byte_offsets[num_fields] = {
         offsetof(Scale, x),
         offsetof(Scale, y),
         offsetof(Scale, z)
+    };
+    static constexpr bool field_hide_in_inspector[num_fields] = {
+        false,
+        false,
+        false
     };
     /// This is the column that the entity scale will reside in, in every table.
     /// NOTE: This can never be changed, due to assumptions that have been made.

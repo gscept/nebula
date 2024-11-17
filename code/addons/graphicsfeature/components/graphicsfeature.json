@@ -15,7 +15,8 @@
     "PointLight": {
       "graphicsEntityId": {
         "type": "uint",
-        "default": -1
+        "default": -1,
+        "hideInInspector": true
       },
       "color": {
         "type": "color",
@@ -34,7 +35,8 @@
     "SpotLight": {
       "graphicsEntityId": {
         "type": "uint",
-        "default": -1
+        "default": -1,
+        "hideInInspector": true
       },
       "color": {
         "type": "color",
@@ -61,7 +63,8 @@
     "AreaLight": {
       "graphicsEntityId": {
         "type": "uint",
-        "default": -1
+        "default": -1,
+        "hideInInspector": true
       },
       "shape": {
         "type": "GraphicsFeature::AreaLightShape",
@@ -90,7 +93,8 @@
       },
       "graphicsEntityId": {
         "type": "uint",
-        "default": -1
+        "default": -1,
+        "hideInInspector": true
       },
       "raytracing": "bool",
       "anim": {
@@ -105,10 +109,12 @@
     "Camera": {
       "viewHandle": {
         "type": "uint",
-        "default": -1
+        "default": -1,
+        "hideInInspector": true
       },
       "localTransform": {
-        "type": "mat4"
+        "type": "mat4",
+        "hideInInspector": true
       },
       "fieldOfView": {
         "type": "float",

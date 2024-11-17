@@ -56,28 +56,44 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
 {
     if constexpr (i < TYPE::Traits::num_fields)
     {
-        using field_tuple = typename TYPE::Traits::field_types;
-        using field_type = typename std::tuple_element<i, field_tuple>::type;
-        Util::String fieldName = TYPE::Traits::field_names[i];
-        fieldName.CamelCaseToWords();
-        fieldName.Capitalize();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text(fieldName.AsCharPtr());
-        ImGui::TableSetColumnIndex(1);
-        ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
-
-        ImGui::SameLine();
-        ImGuiStyle const& style = ImGui::GetStyle();
-        float widthNeeded = ImGui::CalcTextSize(TYPE::Traits::field_typenames[i]).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
-        ImGui::AlignTextToFramePadding();
-        ImGui::TextDisabled(TYPE::Traits::field_typenames[i]);
-
-        if constexpr (i < TYPE::Traits::num_fields - 1)
+        if constexpr (TYPE::Traits::field_hide_in_inspector[i])
         {
-            ImGui::TableNextRow();
+            // Just move to the next field
             InspectorDrawField<TYPE, i + 1>(component, data, commit);
+        }
+        else
+        {
+            using field_tuple = typename TYPE::Traits::field_types;
+            using field_type = typename std::tuple_element<i, field_tuple>::type;
+            Util::String fieldName = TYPE::Traits::field_names[i];
+            fieldName.CamelCaseToWords();
+            fieldName.Capitalize();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text(fieldName.AsCharPtr());
+            if (TYPE::Traits::field_descriptions[i] != nullptr)
+            {
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+                {
+                    ImGui::SetTooltip(TYPE::Traits::field_descriptions[i]);
+                }
+            }
+            ImGui::TableSetColumnIndex(1);
+            ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
+
+            ImGui::SameLine();
+            ImGuiStyle const& style = ImGui::GetStyle();
+            float widthNeeded =
+                ImGui::CalcTextSize(TYPE::Traits::field_typenames[i]).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextDisabled(TYPE::Traits::field_typenames[i]);
+
+            if constexpr (i < TYPE::Traits::num_fields - 1)
+            {
+                ImGui::TableNextRow();
+                InspectorDrawField<TYPE, i + 1>(component, data, commit);
+            }
         }
     }
 }
