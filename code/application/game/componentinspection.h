@@ -62,10 +62,18 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
         fieldName.CamelCaseToWords();
         fieldName.Capitalize();
         ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
         ImGui::Text(fieldName.AsCharPtr());
         ImGui::TableSetColumnIndex(1);
         ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
-        
+
+        ImGui::SameLine();
+        ImGuiStyle const& style = ImGui::GetStyle();
+        float widthNeeded = ImGui::CalcTextSize(TYPE::Traits::field_typenames[i]).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextDisabled(TYPE::Traits::field_typenames[i]);
+
         if constexpr (i < TYPE::Traits::num_fields - 1)
         {
             ImGui::TableNextRow();
