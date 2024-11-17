@@ -240,10 +240,10 @@ Inspector::ShowAddComponentMenu()
         ImGui::PushStyleColor(ImGuiCol_ChildBg, style.Colors[ImGuiCol_Button]);
 
         // filter
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        if (pressed)
+            ImGui::SetKeyboardFocusHere();
         static ImGuiTextFilter filter;
         filter.Draw("Filter", window->Size.x - 100);
-        ImGui::PopStyleVar();
         ImGui::Separator();
 
         Util::Array<const char*> cStrArray;

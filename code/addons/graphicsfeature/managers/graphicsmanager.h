@@ -15,8 +15,11 @@
 #include "game/manager.h"
 #include "game/category.h"
 #include "graphics/graphicsentity.h"
-#include "graphicsfeature/components/graphicsfeature.h"
 #include "game/componentinspection.h"
+#include "components/camera.h"
+#include "components/decal.h"
+#include "components/lighting.h"
+#include "components/model.h"
 
 namespace GraphicsFeature
 {
@@ -42,10 +45,13 @@ public:
     static void InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light);
     /// called automatically when an area light needs to be initialized
     static void InitAreaLight(Game::World* world, Game::Entity entity, AreaLight* light);
+    /// called automatically when a decal needs to be initialized
+    static void InitDecal(Game::World* world, Game::Entity entity, Decal* decal);
 
 private:
     void InitUpdateModelTransformProcessor();
     void InitUpdateLightTransformProcessor();
+    void InitUpdateDecalTransformProcessor();
 };
 
 } // namespace GraphicsFeature

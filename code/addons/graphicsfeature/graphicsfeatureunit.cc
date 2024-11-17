@@ -37,7 +37,10 @@
 #include "flat/graphicsfeature/terrainschema.h"
 #include "flat/graphicsfeature/vegetationschema.h"
 #include "nflatbuffer/flatbufferinterface.h"
-#include "components/graphicsfeature.h"
+#include "components/camera.h"
+#include "components/decal.h"
+#include "components/lighting.h"
+#include "components/model.h"
 
 #include "scripting/deargui.h"
 
@@ -87,6 +90,7 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
     this->RegisterComponentType<AreaLight>({.decay = true, .OnInit = &GraphicsManager::InitAreaLight });
     this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
+    this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
     this->RegisterComponentType<Camera>();
     Scripting::RegisterDearguiModule();
 }

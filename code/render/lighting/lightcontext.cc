@@ -365,6 +365,9 @@ void
 LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id) = ambient;
 }
 
@@ -615,10 +618,13 @@ LightContext::GetIntensity(const Graphics::GraphicsEntityId id)
 void
 LightContext::SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith)
 {
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     Math::point position(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
     Math::mat4 mat = lookatrh(Math::point(0.0f), position, Math::vector::upvec());
 
-    const Graphics::ContextEntityId cid = GetContextId(id);
     LightType type = genericLightAllocator.Get<Type>(cid.id);
 
     switch (type)
@@ -673,6 +679,9 @@ const void
 LightContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::point& position)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
@@ -722,6 +731,9 @@ const void
 LightContext::SetRotation(const Graphics::GraphicsEntityId id, const Math::quat& rotation)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
@@ -771,6 +783,9 @@ const void
 LightContext::SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
@@ -852,6 +867,9 @@ void
 LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     n_assert(type == LightType::SpotLightType);
     Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);

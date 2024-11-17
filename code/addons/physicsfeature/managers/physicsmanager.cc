@@ -15,6 +15,7 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
+#include "graphicsfeature/components/model.h"
 
 namespace PhysicsFeature
 {

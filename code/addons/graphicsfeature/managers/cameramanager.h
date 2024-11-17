@@ -15,7 +15,7 @@
 #include "ids/idgenerationpool.h"
 #include "graphics/graphicsentity.h"
 #include "math/vec3.h"
-#include "graphicsfeature/components/graphicsfeature.h"
+#include "graphicsfeature/components/camera.h"
 
 namespace Graphics
 {

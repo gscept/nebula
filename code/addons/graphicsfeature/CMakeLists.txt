@@ -16,7 +16,10 @@ fips_dir(managers)
 	)
 fips_dir(components)
 	nebula_idl_compile(
-		graphicsfeature.json
+		camera.json
+		decal.json
+		lighting.json
+		model.json
 	)
 nebula_end_module()
 

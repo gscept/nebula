@@ -1,0 +1,25 @@
+{
+  "namespace": "GraphicsFeature",
+  "components": {
+    "Model": {
+      "resource": {
+        "type": "resource",
+        "default": "mdl:system/placeholder.n3"
+      },
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1,
+        "hideInInspector": true
+      },
+      "raytracing": "bool",
+      "anim": {
+        "type": "resource",
+        "default": ""
+      },
+      "skeleton": {
+        "type": "resource",
+        "default": ""
+      }
+    }
+  }
+}

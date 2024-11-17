@@ -1,10 +1,6 @@
 {
   "namespace": "GraphicsFeature",
   "enums": {
-    "ProjectionMode": {
-      "Perspective": 0,
-      "Orthographic": 1
-    },
     "AreaLightShape": {
       "Disk": 0,
       "Rectangle": 1,
@@ -85,60 +81,6 @@
       "twoSided": "bool",
       "castShadows": "bool",
       "renderMesh": "bool"
-    },
-    "Model": {
-      "resource": {
-        "type": "resource",
-        "default": "mdl:system/placeholder.n3"
-      },
-      "graphicsEntityId": {
-        "type": "uint",
-        "default": -1,
-        "hideInInspector": true
-      },
-      "raytracing": "bool",
-      "anim": {
-        "type": "resource",
-        "default": ""
-      },
-      "skeleton": {
-        "type": "resource",
-        "default": ""
-      }
-    },
-    "Camera": {
-      "viewHandle": {
-        "type": "uint",
-        "default": -1,
-        "hideInInspector": true
-      },
-      "localTransform": {
-        "type": "mat4",
-        "hideInInspector": true
-      },
-      "fieldOfView": {
-        "type": "float",
-        "default": 70.0
-      },
-      "aspectRatio": {
-        "type": "float"
-      },
-      "zNear": {
-        "type": "float",
-        "default": 0.01
-      },
-      "zFar": {
-        "type": "float",
-        "default": 1000.0
-      },
-      "orthographicWidth": {
-        "type": "float",
-        "default": 1.0
-      },
-      "projectionMode": {
-        "type": "GraphicsFeature::ProjectionMode",
-        "default": 0
-      }
     }
   }
 }

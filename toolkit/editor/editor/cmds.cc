@@ -9,7 +9,6 @@
 #include "editor/tools/selectiontool.h"
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "basegamefeature/components/basegamefeature.h"
-#include "graphicsfeature/components/graphicsfeature.h"
 #include "editor/components/editorcomponents.h"
 
 namespace Edit

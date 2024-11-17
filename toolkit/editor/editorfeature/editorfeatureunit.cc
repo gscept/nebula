@@ -8,16 +8,19 @@
 #include "editor/ui/uimanager.h"
 #include "editor/components/editorcomponents.h"
 #include "editor/bindings/editorbindings.h"
-#include "graphicsfeature/components/graphicsfeature.h"
+
+#include "graphicsfeature/components/model.h"
+#include "graphicsfeature/components/decal.h"
+#include "graphicsfeature/components/lighting.h"
 
 // TEMP: Move this to editor game manager
 #include "game/world.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
-#include "graphicsfeature/components/graphicsfeature.h"
 #include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
+#include "decals/decalcontext.h"
 
 namespace EditorFeature
 {
@@ -77,8 +80,7 @@ EditorFeatureUnit::OnActivate()
                 [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
                 {
                     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                    if (Models::ModelContext::IsEntityRegistered(model.graphicsEntityId))
-                        Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
+                    Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
                 }
             )
             .Build();
@@ -92,8 +94,7 @@ EditorFeatureUnit::OnActivate()
                    Game::Position const& pos,
                    GraphicsFeature::PointLight const& light)
                 {
-                    if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
-                        Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
                 }
             )
             .Build();
@@ -108,11 +109,8 @@ EditorFeatureUnit::OnActivate()
                    Game::Orientation const& rot,
                    GraphicsFeature::SpotLight const& light)
                 {
-                    if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
-                    {
-                        Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
-                        Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
-                    }
+                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                    Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
                 }
             )
             .Build();
@@ -128,12 +126,26 @@ EditorFeatureUnit::OnActivate()
                    Game::Scale const& scale,
                    GraphicsFeature::AreaLight const& light)
                 {
-                    if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
-                    {
-                        Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
-                        Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
-                        Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
-                    }
+                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                    Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                    Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
+                }
+            )
+            .Build();
+
+        Game::ProcessorBuilder(world, "EditorGameManager.UpdateDecalTransform"_atm)
+            .On("OnEndFrame")
+            .OnlyModified()
+            .RunInEditor()
+            .Func(
+                [](Game::World* world,
+                   Game::Position const& pos,
+                   Game::Orientation const& rot,
+                   Game::Scale const& scale,
+                   GraphicsFeature::Decal const& decal)
+                {
+                    Math::mat4 transform = Math::trs(pos, rot, scale);
+                    Decals::DecalContext::SetTransform(decal.graphicsEntityId, transform);
                 }
             )
             .Build();

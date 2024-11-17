@@ -11,7 +11,6 @@
 #include "raytracing/raytracingcontext.h"
 #include "characters/charactercontext.h"
 #include "game/gameserver.h"
-#include "graphicsfeature/components/graphicsfeature.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
@@ -20,6 +19,7 @@
 #include "io/jsonwriter.h"
 #include "lighting/lightcontext.h"
 #include "game/componentinspection.h"
+#include "decals/decalcontext.h"
 
 namespace GraphicsFeature
 {
@@ -134,6 +134,22 @@ DeregisterLight(Graphics::GraphicsEntityId gfxId)
 /**
 */
 void
+DeregisterDecal(Graphics::GraphicsEntityId gfxId)
+{
+    if (gfxId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (Decals::DecalContext::IsEntityRegistered(gfxId))
+    {
+        Decals::DecalContext::DeregisterEntity(gfxId);
+    }
+    Graphics::DestroyEntity(gfxId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::OnDecay()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
@@ -169,6 +185,14 @@ GraphicsManager::OnDecay()
         AreaLight* light = areaLightData + i;
         DeregisterLight(light->graphicsEntityId);
     }
+
+    Game::ComponentDecayBuffer const decalDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<Decal>());
+    Decal* decalData = (Decal*)decalDecayBuffer.buffer;
+    for (int i = 0; i < decalDecayBuffer.size; i++)
+    {
+        Decal* decal = decalData + i;
+        DeregisterDecal(decal->graphicsEntityId);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -188,11 +212,8 @@ GraphicsManager::InitUpdateModelTransformProcessor()
                Game::Scale const& scale,
                GraphicsFeature::Model const& model)
             {
-                if (model.graphicsEntityId != -1)
-                {
-                    Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                    Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
-                }
+                Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+                Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
             }
         )
         .Build();
@@ -212,8 +233,7 @@ GraphicsManager::InitUpdateLightTransformProcessor()
         .Func(
             [](Game::World* world, Game::Position const& pos, GraphicsFeature::PointLight const& light)
             {
-                if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
-                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
             }
         )
         .Build();
@@ -227,11 +247,8 @@ GraphicsManager::InitUpdateLightTransformProcessor()
                Game::Orientation const& rot,
                GraphicsFeature::SpotLight const& light)
             {
-                if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
-                {
-                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
-                    Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
-                }
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
             }
         )
         .Build();
@@ -246,12 +263,34 @@ GraphicsManager::InitUpdateLightTransformProcessor()
                Game::Scale const& scale,
                GraphicsFeature::AreaLight const& light)
             {
-                if (Lighting::LightContext::IsEntityRegistered(light.graphicsEntityId))
-                {
-                    Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
-                    Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
-                    Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
-                }
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
+            }
+        )
+        .Build();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitUpdateDecalTransformProcessor()
+{
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateDecalTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               Game::Scale const& scale,
+               GraphicsFeature::Decal const& decal)
+            {
+                Math::mat4 transform = Math::trs(pos, rot, scale);
+                Decals::DecalContext::SetTransform(decal.graphicsEntityId, transform);
             }
         )
         .Build();
@@ -266,6 +305,7 @@ GraphicsManager::OnActivate()
     Manager::OnActivate();
     this->InitUpdateModelTransformProcessor();
     this->InitUpdateLightTransformProcessor();
+    this->InitUpdateDecalTransformProcessor();
 }
 
 //------------------------------------------------------------------------------
@@ -348,6 +388,27 @@ GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLigh
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
     Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
     Lighting::LightContext::SetScale(light->graphicsEntityId, scale);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitDecal(Game::World* world, Game::Entity entity, Decal* decal)
+{
+    //decal->graphicsEntityId = Graphics::CreateEntity().id;
+    //Game::Position pos = world->GetComponent<Game::Position>(entity);
+    //Game::Orientation rot = world->GetComponent<Game::Orientation>(entity);
+    //Game::Scale scale = world->GetComponent<Game::Scale>(entity);
+    //Decals::DecalContext::RegisterEntity(decal->graphicsEntityId);
+    //Decals::DecalContext::SetupDecalPBR(
+    //    decal->graphicsEntityId,
+    //    transform,
+    //    decal->resource, // TODO: load resource
+    //    
+    //);
+    //Math::mat4 transform = Math::trs(pos, rot, scale);
+    //Decals::DecalContext::SetTransform(decal->graphicsEntityId, transform);
 }
 
 //------------------------------------------------------------------------------
@@ -437,6 +498,23 @@ GraphicsManager::OnCleanup(Game::World* world)
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
                 DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Decal cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<Decal>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            Decal const* const componentData = (Decal*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterDecal((componentData + i)->graphicsEntityId);
             }
         }
 

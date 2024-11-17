@@ -12,7 +12,6 @@
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "basegamefeature/components/basegamefeature.h"
-#include "graphicsfeature/components/graphicsfeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
