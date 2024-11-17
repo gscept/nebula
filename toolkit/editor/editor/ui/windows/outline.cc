@@ -9,6 +9,7 @@
 #include "editor/ui/uimanager.h"
 #include "editor/tools/selectiontool.h"
 #include "editor/cmds.h"
+#include "core/cvar.h"
 
 using namespace Editor;
 
@@ -46,6 +47,8 @@ Outline::Run(SaveMode save)
     static ImGuiTextFilter tagFilter;
     static ImGuiTextFilter blueprintFilter;
     static float filterDistance = 0.0f;
+
+    static Core::CVar* cl_debug_worlds = Core::CVarGet("cl_debug_worlds");
 
     if (ImGui::Button("Filter"))
     {
@@ -142,6 +145,7 @@ Outline::Run(SaveMode save)
                     );
                     ImGui::SameLine();
                     ImGui::SetCursorPosX(xPos);
+                    ImGui::AlignTextToFramePadding();
                     ImGui::TextDisabled("|-");
                     ImGui::SameLine();
                     
@@ -150,11 +154,18 @@ Outline::Run(SaveMode save)
                     ImGui::Text(" "); // hack: this just replaces the image until that works again
 
                     ImGui::SameLine();
-                    ImGui::SetCursorPosY(yPos + 3);
+                    ImGui::AlignTextToFramePadding();
                     ImGui::Text(edit.name.AsCharPtr());
-                    ImGui::SameLine();
-                    ImGui::TextColored({0,0.4f,0.1f,0.3f}, edit.guid.AsString().AsCharPtr());
-                    ImGui::SetCursorPosY(yPos);
+                    
+                    if (Core::CVarReadInt(cl_debug_worlds) > 0)
+                    {
+                        ImGui::SameLine();
+                        ImGuiStyle const& style = ImGui::GetStyle();
+                        float widthNeeded = ImGui::CalcTextSize(edit.guid.AsString().AsCharPtr()).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::max(ImGui::GetContentRegionAvail().x - widthNeeded, 0.0f));
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::TextColored({0.1,0.2f,0.1f,0.5f}, edit.guid.AsString().AsCharPtr());
+                    }
                     ImGui::PopID();
                     ImGui::EndGroup();
 

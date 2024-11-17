@@ -173,8 +173,8 @@ Inspector::Run(SaveMode save)
 
         bool commitChange = false;
 
-        const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders |
-                                      ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+        const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable |
+                                      ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
         if (ImGui::BeginTable("table1", 2, flags))
         {
             ImGui::TableSetupColumn("FieldName", ImGuiTableColumnFlags_WidthFixed);

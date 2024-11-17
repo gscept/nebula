@@ -135,7 +135,7 @@ void
 ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputInt("##input_data", (int*)data))
+    if (ImGui::DragInt("##input_data", (int*)data))
         *commit = true;
     ImGui::PopID();
 }
@@ -148,7 +148,7 @@ void
 ComponentDrawFuncT<int64>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputInt("##input_data", (int*)data))
+    if (ImGui::DragInt("##input_data", (int*)data))
         *commit = true;
     ImGui::PopID();
 }
@@ -161,7 +161,7 @@ void
 ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputInt("##input_data", (int*)data))
+    if (ImGui::DragInt("##input_data", (int*)data), 1.0f, 0, 0xFFFFFFFF)
         *commit = true;
     ImGui::PopID();
 }
@@ -174,7 +174,7 @@ void
 ComponentDrawFuncT<uint64>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputInt("##input_data", (int*)data))
+    if (ImGui::DragInt("##input_data", (int*)data, 1.0f, 0, 0xFFFFFFFF))
         *commit = true;
     ImGui::PopID();
 }
@@ -187,7 +187,7 @@ void
 ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputFloat("##float_input", (float*)data))
+    if (ImGui::DragFloat("##float_input", (float*)data))
         *commit = true;
     ImGui::PopID();
 }
@@ -292,7 +292,7 @@ ComponentDrawFuncT<Game::Position>(ComponentId component, void* data, bool* comm
     ImGui::Text("Position");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputFloat3("##pos", (float*)data))
+    if (ImGui::DragFloat3("##pos", (float*)data, 0.01f))
         *commit = true;
     ImGui::PopID();
 }
@@ -309,7 +309,7 @@ ComponentDrawFuncT<Game::Orientation>(ComponentId component, void* data, bool* c
     ImGui::Text("Orientation");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputFloat4("##orient", (float*)data))
+    if (ImGui::DragFloat4("##orient", (float*)data, 0.01f))
         *commit = true;
     ImGui::PopID();
 }
@@ -326,8 +326,26 @@ ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
     ImGui::Text("Scale");
     ImGui::TableSetColumnIndex(1);
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::InputFloat3("##scl", (float*)data))
+
+    static bool uniformScaling = true;
+    if (uniformScaling)
+    {
+        float* f = (float*)data;
+        if (ImGui::DragFloat("##scl", f, 0.01f))
+        {
+            f[1] = f[0];
+            f[2] = f[0];
+            *commit = true;
+        }
+    }
+    else if (ImGui::DragFloat3("##scl", (float*)data, 0.01f))
+    {
         *commit = true;
+    }
+
+    ImGui::SameLine();
+    ImGui::Checkbox("Uniform scale", &uniformScaling);
+
     ImGui::PopID();
 }
 

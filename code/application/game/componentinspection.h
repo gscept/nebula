@@ -75,19 +75,16 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
             {
                 if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 {
-                    ImGui::SetTooltip(TYPE::Traits::field_descriptions[i]);
+                    if (ImGui::BeginTooltip())
+                    {
+                        ImGui::TextDisabled(TYPE::Traits::field_typenames[i]);
+                        ImGui::Text(TYPE::Traits::field_descriptions[i]);
+                        ImGui::EndTooltip();
+                    }
                 }
             }
             ImGui::TableSetColumnIndex(1);
             ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
-
-            ImGui::SameLine();
-            ImGuiStyle const& style = ImGui::GetStyle();
-            float widthNeeded =
-                ImGui::CalcTextSize(TYPE::Traits::field_typenames[i]).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextDisabled(TYPE::Traits::field_typenames[i]);
 
             if constexpr (i < TYPE::Traits::num_fields - 1)
             {
