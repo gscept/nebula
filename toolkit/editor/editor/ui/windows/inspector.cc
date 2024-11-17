@@ -128,7 +128,7 @@ Inspector::Run(SaveMode save)
             
             ImGuiStyle const& style = ImGui::GetStyle();
             float widthNeeded = ImGui::CalcTextSize("Remove").x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - widthNeeded);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::max(ImGui::GetContentRegionAvail().x - widthNeeded, 0.0f));
             if (ImGui::Button("Remove"))
             {
                 Edit::RemoveComponent(entity, component);
