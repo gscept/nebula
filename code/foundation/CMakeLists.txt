@@ -312,6 +312,7 @@ nebula_begin_module(foundation)
         fips_files(
             arenaallocator.h
             heap.h
+            memory.cc
             memory.h
             memorypool.h
             poolarrayallocator.cc
