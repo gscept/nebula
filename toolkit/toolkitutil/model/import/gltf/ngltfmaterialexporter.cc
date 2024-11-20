@@ -174,7 +174,7 @@ NglTFMaterialExtractor::ExtractMaterial(SurfaceBuilder& builder, Gltf::Material 
     }
     else
     {
-        builder.AddParam("emissiveTexture", "systex:white");
+        builder.AddParam("emissiveTexture", "systex:black");
     }
 
     if (material.occlusionTexture.index != -1)
