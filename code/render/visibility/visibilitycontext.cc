@@ -40,7 +40,12 @@ Util::Array<VisibilitySystem*> ObserverContext::systems;
 
 static Util::Queue<Threading::Event*> waitEvents;
 
-__ImplementContext(ObserverContext, ObserverContext::observerAllocator);
+__ImplementContext(ObserverContext, ObserverContext::observerAllocator)
+
+struct ObservableGlobalState
+{
+    ObserverContext::VisibilityResultArray visibilityResults;
+} ObservableState;
 
 //------------------------------------------------------------------------------
 /**
@@ -52,12 +57,13 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
     observerAllocator.Set<Observer_EntityType>(cid.id, entityType);
     observerAllocator.Set<Observer_EntityId>(cid.id, id);
     observerAllocator.Set<Observer_IsOrtho>(cid.id, isOrtho);
+    observerAllocator.Set<Observer_ResultArray>(cid.id, ObservableState.visibilityResults);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ObserverContext::MakeDependency(const Graphics::GraphicsEntityId a, const Graphics::GraphicsEntityId b, const DependencyMode mode)
 {
     const Graphics::ContextEntityId cid = GetContextId(b);
@@ -68,7 +74,7 @@ ObserverContext::MakeDependency(const Graphics::GraphicsEntityId a, const Graphi
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(RunVisibilityTests, Visibility);
@@ -165,7 +171,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     nodeData[offset++] = j;
             }
         }, ids.Size(), 1024, {}, &idCounter, nullptr);
-        
+
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
@@ -291,7 +297,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             const uint32 numPackets = visibleCounter;
             drawList->drawPackets.Reserve(numPackets);
 
-            // Allocate single command which we can 
+            // Allocate single command which we can
             ObserverContext::VisibilityBatchCommand* cmd = nullptr;
             CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
             Materials::MaterialId mat = Materials::InvalidMaterialId;
@@ -395,7 +401,7 @@ ObserverContext::Create()
     __CreateContext();
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ObserverContext::OnRenderDebug;
-#endif 
+#endif
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
     __CreateContext();
@@ -404,7 +410,7 @@ ObserverContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ObserverContext::Discard()
 {
     for (int i = 0; i < ObserverContext::systems.Size(); i++)
@@ -467,7 +473,7 @@ ObserverContext::CreateQuadtreeSystem(const QuadtreeSystemLoadInfo & info)
 //------------------------------------------------------------------------------
 /**
 */
-VisibilitySystem* 
+VisibilitySystem*
 ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 {
     BruteforceSystem* system = new BruteforceSystem;
@@ -494,7 +500,7 @@ ObserverContext::WaitForVisibility(const Graphics::FrameContext& ctx)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ObserverContext::OnRenderDebug(uint32_t flags)
 {
     while (waitEvents.Size() > 0)
@@ -539,7 +545,7 @@ ObserverContext::OnRenderDebug(uint32_t flags)
                 Util::RandomNumberTable::Rand(a->nodeInstanceHash + 1),
                 Util::RandomNumberTable::Rand(a->nodeInstanceHash + 2),
 #endif
-                1 
+                1
             };
             shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), color, a->boundingBox.to_mat4());
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
@@ -580,7 +586,7 @@ ObserverContext::OnRenderDebug(uint32_t flags)
         {
             ImGui::Text("Entities visible for observer %d: %d (inside [%d], clipped [%d])", i, totalCounters[i], insideCounters[i], clippedCounters[i]);
         }
-    }   
+    }
     ImGui::End();
 }
 #endif
@@ -594,7 +600,7 @@ ObserverContext::GetVisibilityDrawList(const Graphics::GraphicsEntityId id)
     const Graphics::ContextEntityId cid = ObserverContext::GetContextId(id);
     if (cid == Graphics::InvalidContextEntityId)
         return nullptr;
-    else 
+    else
         return &observerAllocator.Get<Observer_DrawList>(cid.id);
 }
 
@@ -629,7 +635,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 {
     const Graphics::ContextEntityId cid = ObservableContext::GetContextId(id);
     observableAllocator.Set<Observable_EntityId>(cid.id, id);
-    
+
     if (entityType == Model || entityType == Particle)
     {
         // Get node instance ranges
@@ -639,15 +645,17 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
         SizeT numNodes = nodeInstanceRange.end - nodeInstanceRange.begin;
         observableAllocator.Set<Observable_NumNodes>(cid.id, numNodes);
 
-        // All we need is to have as many clip statuses as we have nodes,
-        // the ids and how they relate to a visibility value is resolved at runtime
+        // Update global registry of observables
+        ObservableState.visibilityResults.Reserve(numNodes);
+        for (IndexT i = 0; i < numNodes; i++)
+            ObservableState.visibilityResults.Append(Math::ClipStatus::Outside);
+
+        // Then update observers
         const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
         for (IndexT i = 0; i < visAllocators.Size(); i++)
         {
             ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
-            alloc.Reserve(numNodes);
-            for (IndexT j = 0; j < numNodes; j++)
-                alloc.Append(Math::ClipStatus::Outside);
+            alloc = ObservableState.visibilityResults;
         }
     }
 }
@@ -655,7 +663,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ObservableContext::Create()
 {
     __CreateContext();
@@ -665,7 +673,7 @@ ObservableContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-Graphics::ContextEntityId 
+Graphics::ContextEntityId
 ObservableContext::Alloc()
 {
     Ids::Id32 id = observableAllocator.Alloc();
@@ -676,17 +684,18 @@ ObservableContext::Alloc()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ObservableContext::Dealloc(Graphics::ContextEntityId id)
 {
     uint32 numNodes = observableAllocator.Get<Observable_NumNodes>(id.id);
 
+    ObservableState.visibilityResults.EraseRange(0, numNodes);
     // add as many atoms to each visibility result allocator
     const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
     for (IndexT i = 0; i < visAllocators.Size(); i++)
     {
         ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
-        alloc.EraseRange(0, numNodes);
+        alloc = ObservableState.visibilityResults;
     }
     observableAllocator.Dealloc(id.id);
 }
