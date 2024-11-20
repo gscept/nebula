@@ -3,7 +3,7 @@
 /**
     @file   memdb/table.h
 
-    Contains declarations for tables.
+    Contains declarations for tables and table partitions.
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
@@ -39,6 +39,26 @@ struct TableCreateInfo
 
 //------------------------------------------------------------------------------
 /**
+    @class MemDb::Table
+
+    @brief A table of columns (attributes) and rows. 
+    
+    @details A Table in MemDb is a collection of rows with attributes (columns)
+    Tables are organized into Partitions, which help manage memory and improve performance.
+    Each Partition has a fixed capacity and contains column buffers for storing attribute data.
+    The Table maintains a list of all partitions, including free partitions for recycling,
+    and keeps track of active partitions that contain valid rows.
+
+    Attributes in a Table are defined by an array of AttributeIds. Each attribute is associated
+    with a specific index in the columns array of each Partition, which is managed by a hash table
+    mapping AttributeId to column index.
+
+    The TableSignature of a Table contains a bitfield where each bit represents the presence or absence
+    of an attribute. This allows for quick checks if a table contains a specific set of attributes.
+
+    Partitions are linked together in a chain, starting from the first active partition, which helps in
+    efficiently iterating over all partitions that contain entities. Each Partition maintains its own list
+    of free indices for row reuse, as well as bitfields for tracking modified and valid rows.
 */
 class Table
 {
@@ -164,6 +184,22 @@ private:
 
 //------------------------------------------------------------------------------
 /**
+    @class MemDb::Table::Partition
+
+    @brief Represents a partition within a Table in MemDb.
+    
+    @details A Partition is a segment of a Table that contains a fixed number of rows and manages
+    memory for attribute data through column buffers.
+    Each Partition has a unique partition ID and maintains metadata about its contents, such as the
+    number of rows it currently holds.
+
+    Partitions are linked together in a chain within a Table, starting from the first active partition,
+    which allows efficient iteration over all partitions that contain valid rows. Each Partition keeps track
+    of free indices using an array, enabling reuse of memory for deleted rows.
+
+    Column buffers in a Partition store data for each attribute defined in the Table. The columns array
+    contains these buffers, and a bitfield tracks whether each row is valid (i.e., not deleted) or modified.
+    This information is used for operations like defragmentation and garbage collection within the partition.
 */
 class Table::Partition
 {
