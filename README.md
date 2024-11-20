@@ -16,6 +16,7 @@ Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
         2. Installed for all users
         3. Added to PATH
         4. Installed with debugging symbols and binaries
+        5. You need the py7zr package (e.g. via pip) to be able install ultralight
 
 ## Setup
 
@@ -40,7 +41,7 @@ In your project directory:
   
   1. `fips physx build vc17 debug` (if you are running VS 2022, use `vc16` or `vc15` for vs 2019/2017 instead)
   2. `fips anyfx setup`
-  3. `fips ultralight`
+  3. `fips ultralight` will install the ultralight ui toolkit. 
   4. `fips gen` to generate the required build system files, e.g. a visual studio solution
   5. `fips build` to directly compile the project
      or
