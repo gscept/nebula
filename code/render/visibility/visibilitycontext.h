@@ -147,7 +147,7 @@ public:
 private:
 
     friend class ObservableContext;
-
+    friend struct ObservableGlobalState;
     typedef Util::Array<Math::ClipStatus::Type> VisibilityResultArray;
 
     typedef Ids::IdAllocator<
