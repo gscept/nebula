@@ -532,7 +532,7 @@ SimpleViewerApplication::UpdateCamera()
     this->mayaCameraUtil.SetOrbiting(orbiting);
     this->mayaCameraUtil.SetZoomIn(zoomIn);
     this->mayaCameraUtil.SetZoomOut(zoomOut);
-    this->mayaCameraUtil.Update();
+    this->mayaCameraUtil.Update(0.01667f);
     
     this->freeCamUtil.SetForwardsKey(keyboard->KeyPressed(Input::Key::W));
     this->freeCamUtil.SetBackwardsKey(keyboard->KeyPressed(Input::Key::S));
@@ -545,7 +545,7 @@ SimpleViewerApplication::UpdateCamera()
     this->freeCamUtil.SetAccelerateButton(keyboard->KeyPressed(Input::Key::LeftShift));
 
     this->freeCamUtil.SetRotateButton(mouse->ButtonPressed(Input::MouseButton::LeftButton));
-    this->freeCamUtil.Update();
+    this->freeCamUtil.Update(0.01667f);
     
     switch (this->cameraMode)
     {
@@ -567,7 +567,7 @@ void
 SimpleViewerApplication::ResetCamera()
 {
     this->freeCamUtil.Setup(this->defaultViewPoint, Math::normalize(this->defaultViewPoint));
-    this->freeCamUtil.Update();
+    this->freeCamUtil.Update(0.01667f);
     this->mayaCameraUtil.Setup(Math::vec3(0.0f, 0.0f, 0.0f), this->defaultViewPoint, Math::vec3(0.0f, 1.0f, 0.0f));
 }
 

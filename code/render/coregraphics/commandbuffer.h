@@ -412,7 +412,7 @@ void CmdFinishQueries(const CmdBufferId id);
 /// Returns true if command buffer uses markers
 bool CmdRecordsMarkers(const CmdBufferId id);
 /// This is not a command buffer command, but is used to get the markers in the buffer
-Util::Array<CoreGraphics::FrameProfilingMarker> CmdCopyProfilingMarkers(const CmdBufferId id);
+Util::Array<CoreGraphics::FrameProfilingMarker>&& CmdMoveProfilingMarkers(const CmdBufferId id);
 /// Get the offset to the first query
 uint CmdGetMarkerOffset(const CmdBufferId id);
 #endif

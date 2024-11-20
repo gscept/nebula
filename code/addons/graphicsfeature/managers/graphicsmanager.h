@@ -15,38 +15,49 @@
 #include "game/manager.h"
 #include "game/category.h"
 #include "graphics/graphicsentity.h"
-#include "graphicsfeature/components/graphicsfeature.h"
+#include "game/componentinspection.h"
+#include "components/camera.h"
+#include "components/decal.h"
+#include "components/lighting.h"
+#include "components/model.h"
 
 namespace GraphicsFeature
 {
 
-class GraphicsManager
+class GraphicsManager : public Game::Manager
 {
-    __DeclareSingleton(GraphicsManager);
+    __DeclareClass(GraphicsManager)
 public:
-    /// retrieve the api
-    static Game::ManagerAPI Create();
+    
+    GraphicsManager();
+    virtual ~GraphicsManager();
 
-    /// destroy entity manager
-    static void Destroy();
+    void OnActivate() override;
+    void OnDeactivate() override;
+    void OnDecay() override;
+    void OnCleanup(Game::World* world) override;
 
     /// called automatically when a model needs to be initialized
     static void InitModel(Game::World*, Game::Entity, Model*);
-    /// called automatically when a model needs to be initialized
+    /// called automatically when a point light needs to be initialized
     static void InitPointLight(Game::World* world, Game::Entity entity, PointLight* light);
+    /// called automatically when a spot light needs to be initialized
+    static void InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light);
+    /// called automatically when an area light needs to be initialized
+    static void InitAreaLight(Game::World* world, Game::Entity entity, AreaLight* light);
+    /// called automatically when a decal needs to be initialized
+    static void InitDecal(Game::World* world, Game::Entity entity, Decal* decal);
 
 private:
-    /// constructor
-    GraphicsManager();
-    /// destructor
-    ~GraphicsManager();
-
-
-    void InitCreatePointLightProcessor();
     void InitUpdateModelTransformProcessor();
-    static void OnDecay();
-
-    static void OnCleanup(Game::World* world);
+    void InitUpdateLightTransformProcessor();
+    void InitUpdateDecalTransformProcessor();
 };
 
 } // namespace GraphicsFeature
+
+namespace Game
+{
+template <>
+void ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(ComponentId, void*, bool*);
+}

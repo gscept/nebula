@@ -1,0 +1,16 @@
+{
+  "namespace": "GraphicsFeature",
+  "components": {
+    "Decal": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1,
+        "hideInInspector": true
+      },
+      "texture": {
+        "type": "resource",
+        "description": "The texture that should be projected"
+      }
+    }
+  }
+}

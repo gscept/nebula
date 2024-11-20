@@ -83,14 +83,19 @@ public:
         , const float range
         , bool twoSided = false
         , bool castShadows = false
+        , bool renderMesh = false
     );
 
     /// set color of light
     static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);
+    ///
+    static Math::vec3 GetColor(const Graphics::GraphicsEntityId id);
     /// set range of light
     static void SetRange(const Graphics::GraphicsEntityId id, const float range);
     /// set intensity of light
     static void SetIntensity(const Graphics::GraphicsEntityId id, const float intensity);
+    ///
+    static float GetIntensity(const Graphics::GraphicsEntityId id);
     /// Set transform as angles
     static void SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith);
     /// get transform
@@ -110,6 +115,11 @@ public:
     static const void SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale);
     /// Get light scale
     static const Math::vec3 GetScale(const Graphics::GraphicsEntityId id);
+
+    /// 
+    static Math::vec3 GetAmbient(const Graphics::GraphicsEntityId id);
+    ///
+    static void SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient);
 
     /// get the light type
     static LightType GetType(const Graphics::GraphicsEntityId id);
@@ -224,7 +234,8 @@ private:
         AreaLight_ShadowConstantBufferSet,
         AreaLight_DynamicOffsets,
         AreaLight_TwoSided,
-        AreaLight_Observer
+        AreaLight_Observer,
+        AreaLight_RenderMesh,
     };
 
     typedef Ids::IdAllocator<
@@ -234,7 +245,8 @@ private:
         ConstantBufferSet,          // constant buffer binding for shadows
         Util::FixedArray<uint>,     // dynamic offsets
         bool,                       // two sides
-        Graphics::GraphicsEntityId  // graphics entity used for observer stuff
+        Graphics::GraphicsEntityId, // graphics entity used for observer stuff
+        bool                        // render mesh as well
     > AreaLightAllocator;
     static AreaLightAllocator areaLightAllocator;
 
@@ -248,6 +260,7 @@ private:
         DirectionalLight_ViewProjTransform,
         DirectionalLight_CascadeObservers
     };
+
     typedef Ids::IdAllocator<
         Math::vector,                               // direction
         Math::vec3,                                 // backlight color
@@ -264,9 +277,11 @@ private:
     {
         ShadowCaster_Transform
     };
+
     typedef Ids::IdAllocator<
         Math::mat4
     > ShadowCasterAllocator;
+    
     static ShadowCasterAllocator shadowCasterAllocator;
     static Util::HashTable<Graphics::GraphicsEntityId, uint, 16, 1> shadowCasterSliceMap;
 

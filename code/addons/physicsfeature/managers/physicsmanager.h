@@ -23,29 +23,23 @@
 namespace PhysicsFeature
 {
 
-class PhysicsManager
+class PhysicsManager : public Game::Manager
 {
-    __DeclareSingleton(PhysicsManager);
+    __DeclareClass(PhysicsManager)
+    __DeclareSingleton(PhysicsManager)
 public:
-    /// retrieve the api
-    static Game::ManagerAPI Create();
+    PhysicsManager();
+    virtual ~PhysicsManager();
 
-    /// destroy entity manager
-    static void Destroy();
+    void OnActivate() override;
+    void OnDeactivate() override;
+    void OnDecay() override;
+    void OnCleanup(Game::World* world) override;
 
     static void InitPhysicsActor(Game::World*, Game::Entity, PhysicsFeature::PhysicsActor*);
 
 private:
-    /// constructor
-    PhysicsManager();
-    /// destructor
-    ~PhysicsManager();
-
     void InitPollTransformProcessor();
-
-    static void OnDecay();
-
-    static void OnCleanup(Game::World* world);
 };
 
 } // namespace PhysicsFeature

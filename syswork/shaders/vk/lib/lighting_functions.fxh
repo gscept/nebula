@@ -24,14 +24,13 @@ const uint AREA_LIGHT_TWOSIDED = 0x20;
 
 //------------------------------------------------------------------------------
 /**
+    GLTF recommended inverse square falloff
+    https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
 */
 float 
-InvSquareFalloff(float radius, vec3 lightDir)
+InvSquareFalloff(float maxRange, float currentDistance, vec3 lightDir)
 {
-    float dist2 = dot(lightDir, lightDir);
-    float factor = dist2 / sqr(radius);
-    float falloff = saturate(1.0f - sqr(factor));
-    return sqr(falloff) / max(dist2, 0.0001f);
+    return max(min(1.0f - pow(currentDistance / maxRange, 4.0f), 1.0f), 0.0f) / pow(currentDistance, 2);
 }
 
 //------------------------------------------------------------------------------
@@ -186,7 +185,7 @@ CalculateSpotLight(
     vec3 lightDir = (light.position - pos);
     float lightDirLen = length(lightDir);
 
-    float att = InvSquareFalloff(light.range, lightDir);
+    float att = InvSquareFalloff(light.range, lightDirLen, lightDir);
 
     float oneDivLightDirLen = 1.0f / lightDirLen;
     lightDir = lightDir * oneDivLightDirLen;
@@ -602,7 +601,7 @@ CalculateSpotLightAmbientTransmission(
 {
     vec3 lightDir = (light.position.xyz - viewPos);
     float lightDirLen = length(lightDir);
-    float att = InvSquareFalloff(light.range, lightDir);
+    float att = InvSquareFalloff(light.range, lightDirLen, lightDir);
     lightDir = lightDir / lightDirLen;
 
     float theta = dot(light.forward.xyz, lightDir);

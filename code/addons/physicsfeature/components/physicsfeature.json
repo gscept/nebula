@@ -15,7 +15,8 @@
 		"PhysicsActor": {
 			"actorId": {
 				"type": "uint",
-				"default": -1
+				"default": -1,
+				"hideInInspector": true
 			},
 			"resource": {
 				"type": "resource",

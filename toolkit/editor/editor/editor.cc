@@ -20,13 +20,15 @@
 #include "tools/pathconverter.h"
 #include "io/assignregistry.h"
 
+#include "game/editorstate.h"
+
 namespace Editor
 {
 
 //------------------------------------------------------------------------------
 /**
 */
-EditorState state;
+State state;
 
 //------------------------------------------------------------------------------
 /**
@@ -38,13 +40,12 @@ Create()
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("work", "proj:work"));
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("assets", "work:assets"));
 
-    Scripting::ScriptServer::Instance()->AddModulePath("edscr:");
-    Scripting::ScriptServer::Instance()->EvalFile("edscr:bootstrap.py");
+    Game::TimeSourceCreateInfo editorTimeSourceInfo;
+    editorTimeSourceInfo.hash = TIMESOURCE_EDITOR;
+    Game::Time::CreateTimeSource(editorTimeSourceInfo);
 
-    /// Import reload to be able to reload modules.
-    Scripting::ScriptServer::Instance()->Eval("from importlib import reload");
-
-    Game::TimeManager::SetGlobalTimeFactor(0.0f);
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 0.0f;
 
     state.editorWorld = Game::GameServer::Instance()->CreateWorld(WORLD_EDITOR);
     state.editorWorld->componentInitializationEnabled = false;
@@ -54,6 +55,23 @@ Create()
     // Create a command manager with a 20MB buffer
     Edit::CommandManager::Create(20_MB);
     CreatePathConverter({});
+
+    Game::EditorState::Singleton = new Game::EditorState();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Start()
+{
+    Scripting::ScriptServer::Instance()->AddModulePath("edscr:");
+    Scripting::ScriptServer::Instance()->EvalFile("edscr:bootstrap.py");
+
+    /// Import reload to be able to reload modules.
+    Scripting::ScriptServer::Instance()->Eval("from importlib import reload");
+
+    Game::EditorState::Instance()->isRunning = true;
 }
 
 //------------------------------------------------------------------------------
@@ -63,7 +81,7 @@ void
 Destroy()
 {
     Edit::CommandManager::Discard();
-    // empty
+    delete Game::EditorState::Singleton;
 }
 
 //------------------------------------------------------------------------------
@@ -72,7 +90,9 @@ Destroy()
 void
 PlayGame()
 {
-    Game::TimeManager::SetGlobalTimeFactor(1.0f);
+    Game::EditorState::Instance()->isPlaying = true;
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 1.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -81,19 +101,9 @@ PlayGame()
 void
 PauseGame()
 {
-    Game::TimeManager::SetGlobalTimeFactor(0.0f);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetTimeScale(float timeScale)
-{
-    if (state.isPlayingGame)
-    {
-        Game::TimeManager::SetGlobalTimeFactor(timeScale);
-    }
+    Game::EditorState::Instance()->isPlaying = false;
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 0.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -102,6 +112,8 @@ SetTimeScale(float timeScale)
 void
 StopGame()
 {
+    Game::EditorState::Instance()->isPlaying = false;
+
     Game::World* gameWorld = Game::GetWorld(WORLD_DEFAULT);
     Game::GameServer::Instance()->CleanupWorld(gameWorld);
     Game::GameServer::Instance()->SetupEmptyWorld(gameWorld);
@@ -121,17 +133,18 @@ StopGame()
         {
             Editor::Entity const& editorEntity = entities[i];
             Editable& edit = state.editables[editorEntity.index];
-            // NOTE: assumes the game entity id will be the same as the editor entity id when we've just copied the world.
             edit.gameEntity = editorEntity;
+            edit.gameEntity.world = gameWorld->GetWorldId();
 
             Editor::EditorEntity* editorEntityComponent = gameWorld->AddComponent<Editor::EditorEntity>(edit.gameEntity);
-            editorEntityComponent->id = (uint)editorEntity;
+            editorEntityComponent->id = (uint64_t)editorEntity;
         }
     }
 
     Game::DestroyFilter(filter);
 
-    Game::TimeManager::SetGlobalTimeFactor(0.0f);
+    Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
+    gameTimeSource->timeFactor = 0.0f;
 }
 
 } // namespace Editor

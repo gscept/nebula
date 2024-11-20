@@ -126,8 +126,21 @@ ShaderServerBase::Open()
                     // close reader
                     reader->Close();
 
-                    // reload shader
-                    this->pendingShaderReloads.Enqueue(Util::String::Sprintf("shd:%s.fxb", out.AsCharPtr()));
+                    // Get exported file name, this is what we need to reload.
+                    IndexT oIndex = cmd.FindStringIndex("-o");
+                    if (oIndex != InvalidIndex)
+                    {
+                        Util::String exportedFilePath;
+                        char const* c = cmd.AsCharPtr() + oIndex + 3; // skip "-o "
+                        while (*c != ' ')
+                        {
+                            exportedFilePath.AppendChar(*c);
+                            c += 1;
+                        }
+
+                        // reload shader
+                        this->pendingShaderReloads.Enqueue(exportedFilePath);
+                    }
                 }
             }
         }
@@ -143,7 +156,7 @@ ShaderServerBase::Open()
     if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
     {
         IO::URI shaderPath = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path");
-        shaderPath.AppendLocalPath("work/shaders/vk");
+        shaderPath.AppendLocalPath("syswork/shaders/vk");
         if (IO::IoServer::Instance()->DirectoryExists(shaderPath))
         {
             FileWatcher::Instance()->Watch(shaderPath.AsString(), true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);

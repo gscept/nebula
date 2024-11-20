@@ -80,6 +80,8 @@ fips_dir(editor)
             fips_files(
                 assetbrowser.cc
                 assetbrowser.h
+                environment.cc
+                environment.h
                 console.cc
                 console.h
                 scriptedwindow.cc

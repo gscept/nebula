@@ -11,7 +11,6 @@
 #include "raytracing/raytracingcontext.h"
 #include "characters/charactercontext.h"
 #include "game/gameserver.h"
-#include "graphicsfeature/components/graphicsfeature.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
@@ -19,11 +18,13 @@
 #include "io/jsonreader.h"
 #include "io/jsonwriter.h"
 #include "lighting/lightcontext.h"
+#include "game/componentinspection.h"
+#include "decals/decalcontext.h"
 
 namespace GraphicsFeature
 {
 
-__ImplementSingleton(GraphicsManager)
+__ImplementClass(GraphicsFeature::GraphicsManager, 'GrMa', Game::Manager);
 
 //------------------------------------------------------------------------------
 /**
@@ -41,18 +42,17 @@ GraphicsManager::~GraphicsManager()
     // empty
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
 void
 RegisterModelEntity(
-    Graphics::GraphicsEntityId const gid
-    , Resources::ResourceName const res
-    , Resources::ResourceName const anim
-    , Resources::ResourceName const skeleton
-    , bool const raytracing
-    , Math::mat4 const& t
+    Graphics::GraphicsEntityId const gid,
+    Resources::ResourceName const res,
+    Resources::ResourceName const anim,
+    Resources::ResourceName const skeleton,
+    bool const raytracing,
+    Math::mat4 const& t
 )
 {
     Models::ModelContext::RegisterEntity(gid);
@@ -118,15 +118,80 @@ DeregisterModelEntity(Model const* model)
 /**
 */
 void
+DeregisterLight(Graphics::GraphicsEntityId gfxId)
+{
+    if (gfxId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (Lighting::LightContext::IsEntityRegistered(gfxId))
+    {
+        Lighting::LightContext::DeregisterEntity(gfxId);
+    }
+    Graphics::DestroyEntity(gfxId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeregisterDecal(Graphics::GraphicsEntityId gfxId)
+{
+    if (gfxId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (Decals::DecalContext::IsEntityRegistered(gfxId))
+    {
+        Decals::DecalContext::DeregisterEntity(gfxId);
+    }
+    Graphics::DestroyEntity(gfxId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::OnDecay()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<Model>());
-    Model* data = (Model*)decayBuffer.buffer;
-    for (int i = 0; i < decayBuffer.size; i++)
+    // Decay models
+    Game::ComponentDecayBuffer const modelDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<Model>());
+    Model* data = (Model*)modelDecayBuffer.buffer;
+    for (int i = 0; i < modelDecayBuffer.size; i++)
     {
         DeregisterModelEntity(data + i);
+    }
+
+    Game::ComponentDecayBuffer const pointLightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<PointLight>());
+    PointLight* pointLightData = (PointLight*)pointLightDecayBuffer.buffer;
+    for (int i = 0; i < pointLightDecayBuffer.size; i++)
+    {
+        PointLight* light = pointLightData + i;
+        DeregisterLight(light->graphicsEntityId);
+    }
+
+    Game::ComponentDecayBuffer const spotLightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<SpotLight>());
+    SpotLight* spotLightData = (SpotLight*)spotLightDecayBuffer.buffer;
+    for (int i = 0; i < spotLightDecayBuffer.size; i++)
+    {
+        SpotLight* light = spotLightData + i;
+        DeregisterLight(light->graphicsEntityId);
+    }
+
+    Game::ComponentDecayBuffer const areaLightDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<AreaLight>());
+    AreaLight* areaLightData = (AreaLight*)areaLightDecayBuffer.buffer;
+    for (int i = 0; i < areaLightDecayBuffer.size; i++)
+    {
+        AreaLight* light = areaLightData + i;
+        DeregisterLight(light->graphicsEntityId);
+    }
+
+    Game::ComponentDecayBuffer const decalDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<Decal>());
+    Decal* decalData = (Decal*)decalDecayBuffer.buffer;
+    for (int i = 0; i < decalDecayBuffer.size; i++)
+    {
+        Decal* decal = decalData + i;
+        DeregisterDecal(decal->graphicsEntityId);
     }
 }
 
@@ -141,13 +206,14 @@ GraphicsManager::InitUpdateModelTransformProcessor()
         .Excluding<Game::Static>()
         // .Async(true) // TODO: Should be able to be async, since two entities should not share transforms in model context
         .Func(
-            [](Game::World* world, Game::Position const& pos, Game::Orientation const& orient, Game::Scale const& scale, GraphicsFeature::Model const& model)
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& orient,
+               Game::Scale const& scale,
+               GraphicsFeature::Model const& model)
             {
-                if (model.graphicsEntityId != -1)
-                {
-                    Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-                    Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
-                }
+                Math::mat4 worldTransform = Math::trs(pos, orient, scale);
+                Models::ModelContext::SetTransform(model.graphicsEntityId, worldTransform);
             }
         )
         .Build();
@@ -156,29 +222,99 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-GraphicsManager::Create()
+void
+GraphicsManager::InitUpdateLightTransformProcessor()
 {
-    n_assert(!GraphicsManager::HasInstance());
-    GraphicsManager::Singleton = new GraphicsManager;
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    Singleton->InitUpdateModelTransformProcessor();
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdatePointLightPositions"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world, Game::Position const& pos, GraphicsFeature::PointLight const& light)
+            {
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+            }
+        )
+        .Build();
 
-    Game::ManagerAPI api;
-    api.OnCleanup = &OnCleanup;
-    api.OnDeactivate = &Destroy;
-    api.OnDecay = &OnDecay;
-    return api;
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateSpotLightTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               GraphicsFeature::SpotLight const& light)
+            {
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+            }
+        )
+        .Build();
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateAreaLightTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               Game::Scale const& scale,
+               GraphicsFeature::AreaLight const& light)
+            {
+                Lighting::LightContext::SetPosition(light.graphicsEntityId, pos);
+                Lighting::LightContext::SetRotation(light.graphicsEntityId, rot);
+                Lighting::LightContext::SetScale(light.graphicsEntityId, scale);
+            }
+        )
+        .Build();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-GraphicsManager::Destroy()
+GraphicsManager::InitUpdateDecalTransformProcessor()
 {
-    delete GraphicsManager::Singleton;
-    GraphicsManager::Singleton = nullptr;
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateDecalTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               Game::Scale const& scale,
+               GraphicsFeature::Decal const& decal)
+            {
+                Math::mat4 transform = Math::trs(pos, rot, scale);
+                Decals::DecalContext::SetTransform(decal.graphicsEntityId, transform);
+            }
+        )
+        .Build();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::OnActivate()
+{
+    Manager::OnActivate();
+    this->InitUpdateModelTransformProcessor();
+    this->InitUpdateLightTransformProcessor();
+    this->InitUpdateDecalTransformProcessor();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::OnDeactivate()
+{
+    Manager::OnDeactivate();
 }
 
 //------------------------------------------------------------------------------
@@ -192,8 +328,87 @@ GraphicsManager::InitPointLight(Game::World* world, Game::Entity entity, PointLi
     // TODO: This is not finished, and needs revisiting
     Game::Position pos = world->GetComponent<Game::Position>(entity);
     Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
-    Lighting::LightContext::SetupPointLight(light->graphicsEntityId, light->color, light->intensity, light->range, light->castShadows);
+    // TODO: Cookie projection support
+    Lighting::LightContext::SetupPointLight(
+        light->graphicsEntityId, light->color.vec, light->intensity, light->range, light->castShadows
+    );
     Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitSpotLight(Game::World* world, Game::Entity entity, SpotLight* light)
+{
+    light->graphicsEntityId = Graphics::CreateEntity().id;
+
+    // TODO: This is not finished, and needs revisiting
+    Game::Position pos = world->GetComponent<Game::Position>(entity);
+    Game::Orientation rot = world->GetComponent<Game::Orientation>(entity);
+
+    Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    // TODO: Cookie projection support
+    Lighting::LightContext::SetupSpotLight(
+        light->graphicsEntityId,
+        light->color.vec,
+        light->intensity,
+        Math::deg2rad(light->innerConeAngle),
+        Math::deg2rad(light->outerConeAngle),
+        light->range,
+        light->castShadows
+    );
+    Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+    Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitAreaLight(Game::World* world, Game::Entity entity, AreaLight* light)
+{
+    light->graphicsEntityId = Graphics::CreateEntity().id;
+
+    Game::Position pos = world->GetComponent<Game::Position>(entity);
+    Game::Orientation rot = world->GetComponent<Game::Orientation>(entity);
+    Game::Scale scale = world->GetComponent<Game::Scale>(entity);
+
+    Lighting::LightContext::RegisterEntity(light->graphicsEntityId);
+    Lighting::LightContext::SetupAreaLight(
+        light->graphicsEntityId,
+        (Lighting::LightContext::AreaLightShape)light->shape,
+        light->color.vec,
+        light->intensity,
+        light->range,
+        light->twoSided,
+        light->castShadows,
+        light->renderMesh
+    );
+    Lighting::LightContext::SetPosition(light->graphicsEntityId, pos);
+    Lighting::LightContext::SetRotation(light->graphicsEntityId, rot);
+    Lighting::LightContext::SetScale(light->graphicsEntityId, scale);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitDecal(Game::World* world, Game::Entity entity, Decal* decal)
+{
+    //decal->graphicsEntityId = Graphics::CreateEntity().id;
+    //Game::Position pos = world->GetComponent<Game::Position>(entity);
+    //Game::Orientation rot = world->GetComponent<Game::Orientation>(entity);
+    //Game::Scale scale = world->GetComponent<Game::Scale>(entity);
+    //Decals::DecalContext::RegisterEntity(decal->graphicsEntityId);
+    //Decals::DecalContext::SetupDecalPBR(
+    //    decal->graphicsEntityId,
+    //    transform,
+    //    decal->resource, // TODO: load resource
+    //    
+    //);
+    //Math::mat4 transform = Math::trs(pos, rot, scale);
+    //Decals::DecalContext::SetTransform(decal->graphicsEntityId, transform);
 }
 
 //------------------------------------------------------------------------------
@@ -208,7 +423,9 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
     Game::Orientation orient = world->GetComponent<Game::Orientation>(entity);
     Game::Scale scale = world->GetComponent<Game::Scale>(entity);
     Math::mat4 worldTransform = Math::trs(pos, orient, scale);
-    RegisterModelEntity(model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform);
+    RegisterModelEntity(
+        model->graphicsEntityId, model->resource, model->anim, model->skeleton, model->raytracing, worldTransform
+    );
 }
 
 //------------------------------------------------------------------------------
@@ -218,23 +435,91 @@ GraphicsManager::InitModel(Game::World* world, Game::Entity entity, Model* model
 void
 GraphicsManager::OnCleanup(Game::World* world)
 {
-    n_assert(GraphicsManager::HasInstance());
+    { // Model cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<Model>().Build();
+        Game::Dataset data = world->Query(filter);
 
-    Game::Filter filter = Game::FilterBuilder().Including<Model>().Build();
-    Game::Dataset data = world->Query(filter);
-
-    for (int v = 0; v < data.numViews; v++)
-    {
-        Game::Dataset::View const& view = data.views[v];
-        Model const* const modelData = (Model*)view.buffers[0];
-
-        for (IndexT i = 0; i < view.numInstances; ++i)
+        for (int v = 0; v < data.numViews; v++)
         {
-            DeregisterModelEntity(modelData + i);
-        }
-    }
+            Game::Dataset::View const& view = data.views[v];
+            Model const* const componentData = (Model*)view.buffers[0];
 
-    Game::DestroyFilter(filter);
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterModelEntity(componentData + i);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Pointlight cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<PointLight>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            PointLight const* const componentData = (PointLight*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Spotlight cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<SpotLight>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            SpotLight const* const componentData = (SpotLight*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // AreaLight cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<AreaLight>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            AreaLight const* const componentData = (AreaLight*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterLight((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // Decal cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<Decal>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            Decal const* const componentData = (Decal*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterDecal((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
 }
 
 } // namespace GraphicsFeature
@@ -253,4 +538,22 @@ IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const
 {
     // Write nothing
     return;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+Game::ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(Game::ComponentId component, void* data, bool* commit)
+{
+    ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
+    static const char* items[] {"Disk", "Rectangle", "Tube"};
+    static_assert(sizeof(items) / sizeof(const char*) == (int)GraphicsFeature::AreaLightShape::NumAreaLightShape);
+    GraphicsFeature::AreaLightShape* selectedItem = (GraphicsFeature::AreaLightShape*)data;
+    if (ImGui::Combo("##AreaShape", (int*)selectedItem, items, IM_ARRAYSIZE(items)))
+    {
+        *commit = true;
+    }
+    ImGui::PopID();
 }

@@ -209,7 +209,6 @@ EntitySystemTest::Run()
 
     // Test managed properties
     {
-        Game::RegisterType<DecayTestComponent>({.decay=true});
         ComponentId decayComponentId = Game::GetComponentId<DecayTestComponent>();
         
         Game::EntityCreateInfo enemyInfo = {enemyBlueprint, true};

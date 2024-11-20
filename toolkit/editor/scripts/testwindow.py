@@ -4,7 +4,7 @@ import deargui as dg
 category = "Scripting tests"
 
 check = False
-def draw2():
+def draw():
     global check
     check = dg.checkbox("check me!", check)[1]
     if check :

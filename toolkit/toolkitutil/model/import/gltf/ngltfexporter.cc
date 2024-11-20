@@ -91,13 +91,16 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetPixelFormat(TextureAttrs::BC5);
             attrs.SetFlipNormalY(true);
+            attrs.SetMaxHeight(8192);
+            attrs.SetMaxWidth(8192);
             
-            Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.normalTexture.index].source];
+            int32_t imageIndex = gltfScene.textures[material.normalTexture.index].source;
+            Gltf::Image const& image = gltfScene.images[imageIndex];
             if (image.embedded)
             {
                 hasEmbedded = true;
                 Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), material.normalTexture.index, format.AsCharPtr());
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), imageIndex, format.AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -114,14 +117,17 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetMipMapFilter(TextureAttrs::Filter::Kaiser);
             attrs.SetScaleFilter(TextureAttrs::Filter::Kaiser);
+            attrs.SetMaxHeight(8192);
+            attrs.SetMaxWidth(8192);
             attrs.SetColorSpace(TextureAttrs::sRGB);
 
-            Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.pbrMetallicRoughness.baseColorTexture.index].source];
+            int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
+            Gltf::Image const& image = gltfScene.images[imageIndex];
             if (image.embedded)
             {
                 hasEmbedded = true;
                 Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), material.pbrMetallicRoughness.baseColorTexture.index, format.AsCharPtr());
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), imageIndex, format.AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else
@@ -138,13 +144,16 @@ NglTFExporter::ParseScene()
             TextureAttrs attrs;
             attrs.SetScaleFilter(TextureAttrs::Kaiser);
             attrs.SetMipMapFilter(TextureAttrs::Kaiser);
+            attrs.SetMaxHeight(8192);
+            attrs.SetMaxWidth(8192);
 
-            Gltf::Image const& image = gltfScene.images[gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source];
+            int32_t imageIndex = gltfScene.textures[material.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
+            Gltf::Image const& image = gltfScene.images[imageIndex];
             if (image.embedded)
             {
                 hasEmbedded = true;
                 Util::String format = (image.type == Gltf::Image::Type::Jpg) ? "jpg" : "png";
-                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), material.pbrMetallicRoughness.metallicRoughnessTexture.index, format.AsCharPtr());
+                Util::String intermediateFile = Util::String::Sprintf("%s/%d.%s", intermediateDir.AsCharPtr(), imageIndex, format.AsCharPtr());
                 this->texConverter->AddAttributeEntry(intermediateFile, attrs);
             }
             else

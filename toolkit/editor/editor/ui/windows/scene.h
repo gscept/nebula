@@ -24,6 +24,8 @@ public:
     void Update();
     void Run(SaveMode save) override;
 
+    void FocusCamera();
+
     Modules::Viewport viewPort;
 };
 __RegisterClass(Scene)

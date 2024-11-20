@@ -6,6 +6,14 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Orientation
+    
+    @brief A component that stores the orientation of an entity.
+
+    @ingroup BaseGameComponents
+*/
 struct Orientation : public Math::quat
 {
     using Math::quat::quat; // default constructor
@@ -39,12 +47,24 @@ struct Orientation::Traits
         "float",
         "float"
     };
+    static constexpr const char* field_descriptions[num_fields] = {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
     using field_types = std::tuple<float, float, float, float>;
     static constexpr size_t field_byte_offsets[num_fields] = {
         offsetof(Orientation, x),
         offsetof(Orientation, y),
         offsetof(Orientation, z),
         offsetof(Orientation, w),
+    };
+    static constexpr bool field_hide_in_inspector[num_fields] = {
+        false,
+        false,
+        false,
+        false
     };
     /// This is the column that the entity orientation will reside in, in every table.
     /// NOTE: This can never be changed, due to assumptions that have been made.

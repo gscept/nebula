@@ -118,7 +118,9 @@ public:
     /// convert string to upper case
     void ToUpper();
     /// convert first char of string to upper case
-    void FirstCharToUpper();
+    void Capitalize();
+    /// insert spaces before each capital letter in the string.
+    void CamelCaseToWords();
     /// tokenize string into a provided String array (faster if tokens array can be reused)
     SizeT Tokenize(const String& whiteSpace, Array<String>& outTokens) const;
     /// tokenize string into a provided String array, SLOW since new array will be constructed

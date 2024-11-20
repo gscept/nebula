@@ -351,6 +351,29 @@ LightContext::SetupGlobalLight(
 //------------------------------------------------------------------------------
 /**
 */
+Math::vec3
+LightContext::GetAmbient(const Graphics::GraphicsEntityId id)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    return directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
+    directionalLightAllocator.Get<DirectionalLight_Ambient>(cid.id) = ambient;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, 
     const Math::vec3& color, 
@@ -376,7 +399,7 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
     pointLightAllocator.Get<PointLight_DynamicOffsets>(pli)[1] = 0;
     pointLightAllocator.Get<PointLight_ProjectionTexture>(pli) = projection;
 
-    if (castShadows)
+    if (0)//castShadows)
     {
         // Allocate shadow caster slices for each side
         for (IndexT i = 0; i < 6; i++)
@@ -459,6 +482,7 @@ LightContext::SetupAreaLight(
     , const float range
     , bool twoSided
     , bool castShadows
+    , bool renderMesh
 )
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
@@ -479,6 +503,7 @@ LightContext::SetupAreaLight(
     areaLightAllocator.Set<AreaLight_Observer>(ali, id);
     areaLightAllocator.Set<AreaLight_Shape>(ali, shape);
     areaLightAllocator.Set<AreaLight_TwoSided>(ali, twoSided || shape == AreaLightShape::Tube);
+    areaLightAllocator.Set<AreaLight_RenderMesh>(ali, renderMesh);
     //areaLightAllocator.Set<AreaLight_Projection>(ali, proj);
 
     if (castShadows)
@@ -519,19 +544,22 @@ LightContext::SetupAreaLight(
             break;
     }
 
-    Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
-    Math::bbox box;
-    Models::ModelContext::Setup(
-        id
-        , Math::mat4()
-        , box
-        , material
-        , mesh
-        , 0
-    );
-    Models::ModelContext::SetTransform(id, Math::mat4());
+    if (renderMesh)
+    {
+            Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
+            Math::bbox box;
+            Models::ModelContext::Setup(
+                id
+                , Math::mat4()
+                , box
+                , material
+                , mesh
+                , 0
+            );
+            Models::ModelContext::SetTransform(id, Math::mat4());
 
-    Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
+            Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -542,6 +570,16 @@ LightContext::SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& co
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     genericLightAllocator.Get<Color>(cid.id) = color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec3
+LightContext::GetColor(const Graphics::GraphicsEntityId id)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    return genericLightAllocator.Get<Color>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -567,13 +605,26 @@ LightContext::SetIntensity(const Graphics::GraphicsEntityId id, const float inte
 //------------------------------------------------------------------------------
 /**
 */
+float
+LightContext::GetIntensity(const Graphics::GraphicsEntityId id)
+{
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    return genericLightAllocator.Get<Intensity>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 LightContext::SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith)
 {
+    const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     Math::point position(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
     Math::mat4 mat = lookatrh(Math::point(0.0f), position, Math::vector::upvec());
 
-    const Graphics::ContextEntityId cid = GetContextId(id);
     LightType type = genericLightAllocator.Get<Type>(cid.id);
 
     switch (type)
@@ -628,6 +679,9 @@ const void
 LightContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::point& position)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
@@ -641,7 +695,8 @@ LightContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::point
             break;
         case LightType::AreaLightType:
             areaLightAllocator.Get<AreaLight_Transform>(lid).setposition(position);
-            Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
+            if (areaLightAllocator.Get<AreaLight_RenderMesh>(lid))
+                Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
             break;
         default: n_error("unhandled enum"); break;
     }
@@ -676,6 +731,9 @@ const void
 LightContext::SetRotation(const Graphics::GraphicsEntityId id, const Math::quat& rotation)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
@@ -689,7 +747,8 @@ LightContext::SetRotation(const Graphics::GraphicsEntityId id, const Math::quat&
             break;
         case LightType::AreaLightType:
             areaLightAllocator.Get<AreaLight_Transform>(lid).setrotate(rotation);
-            Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
+            if (areaLightAllocator.Get<AreaLight_RenderMesh>(lid))
+                Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
             break;
         default: n_error("unhandled enum"); break;
     }
@@ -724,6 +783,9 @@ const void
 LightContext::SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);
 
@@ -745,7 +807,8 @@ LightContext::SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& sc
                 adjustedScale.z = 1.0f;
             }
             areaLightAllocator.Get<AreaLight_Transform>(lid).setscale(adjustedScale);
-            Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
+            if (areaLightAllocator.Get<AreaLight_RenderMesh>(lid))
+                Models::ModelContext::SetTransform(id, areaLightAllocator.Get<AreaLight_Transform>(lid).getmatrix());
         } break;
         default: n_error("unhandled enum"); break;
     }
@@ -804,6 +867,9 @@ void
 LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+            return;
+
     LightType type = genericLightAllocator.Get<Type>(cid.id);
     n_assert(type == LightType::SpotLightType);
     Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);

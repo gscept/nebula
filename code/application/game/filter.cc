@@ -21,6 +21,11 @@ static Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, 
 void
 DestroyFilter(Filter filter)
 {
+    filterAllocator.Get<0>(filter) = {};
+    filterAllocator.Get<1>(filter) = {};
+    filterAllocator.Get<2>(filter) = {};
+    filterAllocator.Get<3>(filter) = {};
+    filterAllocator.Get<4>(filter) = {};
     filterAllocator.Dealloc(filter);
 }
 

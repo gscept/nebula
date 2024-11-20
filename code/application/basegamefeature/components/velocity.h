@@ -6,6 +6,14 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Velocity
+
+    @brief A component that stores the linear velocity of an entity.
+
+    @ingroup BaseGameComponents
+*/
 struct Velocity : public Math::vec3
 {
     using Math::vec3::vec3;// default constructor
@@ -48,11 +56,21 @@ struct Velocity::Traits
         "float",
         "float"
     };
+    static constexpr const char* field_descriptions[num_fields] = {
+        nullptr,
+        nullptr,
+        nullptr
+    };
     using field_types = std::tuple<float, float, float>;
     static constexpr size_t field_byte_offsets[num_fields] = {
         offsetof(Velocity, x),
         offsetof(Velocity, y),
         offsetof(Velocity, z)
+    };
+    static constexpr bool field_hide_in_inspector[num_fields] = {
+        false,
+        false,
+        false
     };
 };
 
@@ -76,11 +94,21 @@ struct AngularVelocity::Traits
         "float",
         "float"
     };
+    static constexpr const char* field_descriptions[num_fields] = {
+        nullptr,
+        nullptr,
+        nullptr
+    };
     using field_types = std::tuple<float, float, float>;
     static constexpr size_t field_byte_offsets[num_fields] = {
         offsetof(AngularVelocity, x),
         offsetof(AngularVelocity, y),
         offsetof(AngularVelocity, z)
+    };
+    static constexpr bool field_hide_in_inspector[num_fields] = {
+        false,
+        false,
+        false
     };
 };
 

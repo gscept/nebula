@@ -15,10 +15,12 @@
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
+#include "graphicsfeature/components/model.h"
 
 namespace PhysicsFeature
 {
 
+__ImplementClass(PhysicsFeature::PhysicsManager, 'PhMa', Game::Manager);
 __ImplementSingleton(PhysicsManager)
 
 //------------------------------------------------------------------------------
@@ -26,7 +28,7 @@ __ImplementSingleton(PhysicsManager)
 */
 PhysicsManager::PhysicsManager()
 {
-    // empty
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +36,7 @@ PhysicsManager::PhysicsManager()
 */
 PhysicsManager::~PhysicsManager()
 {
-    // empty
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -64,10 +66,10 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
 
     Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
     Physics::ActorId actorid =
-        Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id32(entity));
+        Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id64(entity));
     actor->actorId = actorid.id;
 
-    if (actor->actorType == Physics::Kinematic)
+    if ((int)actor->actorType == Physics::Kinematic)
     {
         world->AddComponent<PhysicsFeature::IsKinematic>(entity);
     }
@@ -137,6 +139,7 @@ PhysicsManager::InitPollTransformProcessor()
     Game::ProcessorBuilder(world, "PhysicsManager.PassKinematicTransforms"_atm)
         .Excluding<Game::Static>()
         .On("OnFrame")
+        .RunInEditor()
         .Func(&PassKinematicTransforms)
         .Build();
 }
@@ -144,29 +147,21 @@ PhysicsManager::InitPollTransformProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-PhysicsManager::Create()
+void
+PhysicsManager::OnActivate()
 {
-    n_assert(!PhysicsManager::HasInstance());
-    PhysicsManager::Singleton = new PhysicsManager;
+    Game::Manager::OnActivate();
 
-    Singleton->InitPollTransformProcessor();
-
-    Game::ManagerAPI api;
-    api.OnCleanup = &OnCleanup;
-    api.OnDeactivate = &Destroy;
-    api.OnDecay = &OnDecay;
-    return api;
+    this->InitPollTransformProcessor();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PhysicsManager::Destroy()
+PhysicsManager::OnDeactivate()
 {
-    delete PhysicsManager::Singleton;
-    PhysicsManager::Singleton = nullptr;
+    Game::Manager::OnActivate();
 }
 
 //------------------------------------------------------------------------------

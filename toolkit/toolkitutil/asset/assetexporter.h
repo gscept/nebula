@@ -63,12 +63,15 @@ public:
 
     /// trigger refresh of any resource databases due to source change
     void UpdateSource();
+    
+    /// exports a single file
+    void ExportFile(const IO::URI& file) override;
     /// exports a single category
-    void ExportDir(const Util::String& category);
+    void ExportDir(const Util::String& category) override;
+    /// exports all files
+    void ExportAll() override;
     /// export a single folder with absolute path
     void ExportFolder(const Util::String& folder, const Util::String& category);
-    /// exports all files
-    void ExportAll();
 
     /// exports list of files, used for parallel jobs
     void ExportList(const Util::Array<Util::String>& files);

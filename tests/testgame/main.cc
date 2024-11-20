@@ -42,21 +42,24 @@ private:
     /// setup game features
     void SetupGameFeatures()
     {
-        Game::RegisterType<TestResource>({
+        gameFeature = BaseGameFeature::BaseGameFeatureUnit::Instance();
+
+        gameFeature->RegisterComponentType<TestResource>({
             .decay = true,
             .OnInit = &InitializeTestResource
         });
 
-        Game::RegisterType<TestVec4>({
+        gameFeature->RegisterComponentType<TestVec4>({
             .decay = true,
             .OnInit = &InitializeTestVec4
         });
         
-        Game::RegisterType<TestStruct>();
-        Game::RegisterType<TestHealth>();
-        Game::RegisterType<MyFlag>();
-        Game::RegisterType<TestEmptyStruct>();
-        Game::RegisterType<TestAsyncComponent>();
+        gameFeature->RegisterComponentType<TestStruct>();
+        gameFeature->RegisterComponentType<TestHealth>();
+        gameFeature->RegisterComponentType<MyFlag>();
+        gameFeature->RegisterComponentType<TestEmptyStruct>();
+        gameFeature->RegisterComponentType<TestAsyncComponent>();
+        gameFeature->RegisterComponentType<DecayTestComponent>({.decay = true});
     }
 
     /// cleanup game features

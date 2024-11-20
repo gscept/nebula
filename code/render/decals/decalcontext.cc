@@ -195,6 +195,9 @@ void
 DecalContext::SetAlbedoTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId albedo)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == PBRDecal);
     Ids::Id32 decal = genericDecalAllocator.Get<Decal_TypedId>(cid.id);
     pbrDecalAllocator.Set<DecalPBR_Albedo>(decal, albedo);
@@ -207,6 +210,9 @@ void
 DecalContext::SetNormalTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId normal)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == PBRDecal);
     Ids::Id32 decal = genericDecalAllocator.Get<Decal_TypedId>(cid.id);
     pbrDecalAllocator.Set<DecalPBR_Normal>(decal, normal);
@@ -219,6 +225,9 @@ void
 DecalContext::SetMaterialTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId material)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == PBRDecal);
     Ids::Id32 decal = genericDecalAllocator.Get<Decal_TypedId>(cid.id);
     pbrDecalAllocator.Set<DecalPBR_Material>(decal, material);
@@ -231,6 +240,9 @@ void
 DecalContext::SetEmissiveTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId emissive)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
+    if (cid == Graphics::ContextEntityId::Invalid())
+        return;
+
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == EmissiveDecal);
     Ids::Id32 decal = genericDecalAllocator.Get<Decal_TypedId>(cid.id);
     emissiveDecalAllocator.Set<DecalEmissive_Emissive>(decal, emissive);
@@ -243,6 +255,9 @@ void
 DecalContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4 transform)
 {
     Graphics::ContextEntityId ctxId = GetContextId(id);
+    if (ctxId == Graphics::ContextEntityId::Invalid())
+        return;
+
     genericDecalAllocator.Set<Decal_Transform>(ctxId.id, transform);
 }
 

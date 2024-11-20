@@ -18,14 +18,7 @@ namespace Game
 
 static Memory::ArenaAllocator<sizeof(Dataset::View) * 256> viewAllocator;
 
-//------------------------------------------------------------------------------
-/**
-*/
-World*
-GetWorld(uint32_t hash)
-{
-    return GameServer::Instance()->GetWorld(hash);
-}
+
 
 //------------------------------------------------------------------------------
 /**

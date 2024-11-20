@@ -6,9 +6,17 @@
 
 namespace Game.Serialization;
 
+enum ComponentFieldFeature : byte 
+{ 
+    Undefined = 0, // This just means: treat it as nothing special
+    EntityId = 1,
+    StringAtom
+}
+
 table ComponentField
 {
-    name : string;
+    name : string; 
+    feature : ComponentFieldFeature;
     // TODO: Add field type and size for validation
 }
 

@@ -719,6 +719,9 @@ ResourceLoader::ReloadResource(const Resources::ResourceName& res, std::function
         this->loads[ret.loaderInstanceId] = pending;
         this->states[ret.loaderInstanceId] = Resource::Pending;
         this->callbacks[ret.loaderInstanceId].Append({ success, failed });
+    }
+    else
+    {
         n_warning("Resource '%s' has to be loaded before it can be reloaded\n", res.AsString().AsCharPtr());
     }
 }

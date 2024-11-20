@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # assetbatcher
 #-------------------------------------------------------------------------------
-fips_begin_app(assetbatcher cmdline)
+nebula_begin_app(assetbatcher cmdline)
     
     target_include_directories(assetbatcher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/foundation ${CODE_ROOT}/toolkit/toolkitutil)
     target_precompile_headers(assetbatcher REUSE_FROM toolkitutil)
@@ -11,4 +11,4 @@ fips_begin_app(assetbatcher cmdline)
             assetbatcherapp.cc
             assetbatcherapp.h
         )
-fips_end_app()
+nebula_end_app()

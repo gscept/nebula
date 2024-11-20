@@ -49,14 +49,14 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnAttach()
 {
-    Game::RegisterType<Game::Entity>();
-    Game::RegisterType<Game::Position>();
-    Game::RegisterType<Game::Orientation>();
-    Game::RegisterType<Game::Scale>();
-    Game::RegisterType<Game::IsActive>();
-    Game::RegisterType<Game::Static>();
-    Game::RegisterType<Game::Velocity>();
-    Game::RegisterType<Game::AngularVelocity>();
+    this->RegisterComponentType<Game::Entity>();
+    this->RegisterComponentType<Game::Position>();
+    this->RegisterComponentType<Game::Orientation>();
+    this->RegisterComponentType<Game::Scale>();
+    this->RegisterComponentType<Game::IsActive>();
+    this->RegisterComponentType<Game::Static>();
+    this->RegisterComponentType<Game::Velocity>();
+    this->RegisterComponentType<Game::AngularVelocity>();
 }
 
 //------------------------------------------------------------------------------
@@ -67,8 +67,12 @@ BaseGameFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    this->blueprintManager = this->AttachManager(BlueprintManager::Create());
-    this->timeManager = this->AttachManager(TimeManager::Create());
+    this->blueprintManager = BlueprintManager::Create();
+    this->timeManager = TimeManager::Create();
+
+    this->AttachManager(this->blueprintManager);
+    this->AttachManager(this->timeManager);
+
     this->cl_debug_worlds = Core::CVarCreate(Core::CVar_Int, "cl_debug_worlds", "1", "Enable world debugging");
 }
 
@@ -80,6 +84,9 @@ BaseGameFeatureUnit::OnDeactivate()
 {
     this->RemoveManager(this->blueprintManager);
     this->RemoveManager(this->timeManager);
+
+    this->blueprintManager = nullptr;
+    this->timeManager = nullptr;
 
     FeatureUnit::OnDeactivate();
 }

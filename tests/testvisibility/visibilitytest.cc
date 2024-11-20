@@ -245,7 +245,7 @@ VisibilityTest::Run()
 
         mayaCamera.SetZoomIn(0.0f);
         mayaCamera.SetZoomOut(0.0f);
-        mayaCamera.Update();
+        mayaCamera.Update(0.01667f);
 
         inputServer->EndFrame();
         frameIndex++;

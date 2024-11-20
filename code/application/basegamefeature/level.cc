@@ -46,8 +46,8 @@ PackedLevel::Instantiate() const
                 // TODO: maybe store this in the EntityGroup upon preloading.
                 SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(table.GetAttributes()[columnIndex]);
                 SizeT const numBytes = numRows * typeSize;
-                ubyte* src = dataTable.columns + rowsProcessed + byteOffset;
-                Memory::Copy(dataTable.columns + byteOffset, (byte*)partition->columns[columnIndex] + (partition->numRows * typeSize), numBytes);
+                ubyte* src = dataTable.columns + byteOffset + (rowsProcessed * typeSize);
+                Memory::Copy(src, (byte*)partition->columns[columnIndex] + (partition->numRows * typeSize), numBytes);
                 byteOffset += dataTable.numRows * typeSize;
             }
 
@@ -56,7 +56,7 @@ PackedLevel::Instantiate() const
             for (uint16_t rowIndex = partition->numRows; rowIndex < partition->numRows + numRows; rowIndex++)
             {
                 partition->validRows.SetBit(rowIndex);
-                Game::Entity entity = this->world->AllocateEntity();
+                Game::Entity entity = this->world->AllocateEntityId();
 
                 Game::EntityMapping& mapping = this->world->entityMap[entity.index];
                 mapping.table = dataTable.dstTable;

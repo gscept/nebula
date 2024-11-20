@@ -38,8 +38,8 @@ GetTexConvFormat(TextureAttrs const& attrs)
     {
     case TextureAttrs::DXT1C:
     case TextureAttrs::DXT1A:  return "DXT1";
-    case TextureAttrs::DXT3:   return "DXT3";
-    case TextureAttrs::DXT5:   return "DXT5";
+    case TextureAttrs::DXT3:   return attrs.GetColorSpace() == TextureAttrs::sRGB ? "BC2_UNORM_SRGB" : "BC2_UNORM";
+    case TextureAttrs::DXT5:   return attrs.GetColorSpace() == TextureAttrs::sRGB ? "BC3_UNORM_SRGB" : "BC3_UNORM";
     case TextureAttrs::DXT5NM: return "BC5_UNORM";
     case TextureAttrs::U1555:  return "B5G5R5A1_UNORM";
     case TextureAttrs::U4444: return "B4G4R4A4_UNORM";
@@ -49,7 +49,7 @@ GetTexConvFormat(TextureAttrs const& attrs)
     case TextureAttrs::BC4: return "BC4_UNORM";
     case TextureAttrs::BC5: "BC5_UNORM";
     case TextureAttrs::BC6H: return "BC6H_UF16";
-    case TextureAttrs::BC7: return "BC7_UNORM";
+    case TextureAttrs::BC7: return attrs.GetColorSpace() == TextureAttrs::sRGB ? "BC7_UNORM_SRGB" : "BC7_UNORM";
     case TextureAttrs::R8: return "R8_UNORM";
     case TextureAttrs::R16F: return "R16_FLOAT";
     case TextureAttrs::R16G16F: return "R16G16_FLOAT";
@@ -90,13 +90,14 @@ DirectXTexConversionJob::Convert()
             (attrs.GetPixelFormat() == TextureAttrs::BC5) ||
             (String::MatchPattern(this->srcPath, "*norm.*")) ||
             (String::MatchPattern(this->srcPath, "*normal.*")) ||
+            (String::MatchPattern(this->srcPath, "*Normal.*")) ||
             (String::MatchPattern(this->srcPath, "*bump.*")))
         {
             this->logger->Print("%s ", "Normal Map (BC5 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
             type = TextureDataType::NormalMap;
         }
 
-        if (String::MatchPattern(this->srcPath, "*height.*"))
+        else if (String::MatchPattern(this->srcPath, "*height.*"))
         {
             this->logger->Print("%s ", "Height Map (R16 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
             type = TextureDataType::HeightMap;

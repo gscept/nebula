@@ -7,6 +7,7 @@
 #include "world.h"
 #include "memdb/database.h"
 #include "jobs2/jobs2.h"
+#include "editorstate.h"
 
 namespace Game
 {
@@ -194,8 +195,8 @@ FrameEvent::Batch::TryInsert(Processor* processor)
                 }
             }
         }
-    }   
-    
+    }
+
     this->processors.Append(processor);
     return true;
 }
@@ -270,8 +271,18 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     for (IndexT i = 0; i < this->processors.Size(); i++)
     {
         Processor* processor = this->processors[i];
+
+#ifdef WITH_NEBULA_EDITOR
+        if (Game::EditorState::HasInstance())
+        {
+            Game::EditorState* editor = Game::EditorState::Instance();
+            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
+                continue;
+        }
+#endif
         datasets[i] = world->Query(processor->filter, processor->cache);
         numJobs += datasets[i].numViews;
+
     }
 
     if (numJobs == 0)
@@ -296,8 +307,6 @@ FrameEvent::Batch::ExecuteAsync(World* world)
     event.Wait();
 
     delete[] context.inputs;
-
-    Jobs2::JobNewFrame();
 }
 
 //------------------------------------------------------------------------------
@@ -309,6 +318,16 @@ FrameEvent::Batch::ExecuteSequential(World* world)
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
         Processor* processor = this->processors[i];
+
+#ifdef WITH_NEBULA_EDITOR
+        if (Game::EditorState::HasInstance())
+        {
+            Game::EditorState* editor = Game::EditorState::Instance();
+            if (editor->isRunning && !editor->isPlaying && !processor->runInEditor)
+                continue;
+        }
+#endif
+
         Dataset data = world->Query(processor->filter, processor->cache);
         for (int v = 0; v < data.numViews; v++)
         {
@@ -429,7 +448,7 @@ FramePipeline::RunThru(Util::StringAtom name)
         {
             break;
         }
-    } 
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -443,7 +462,7 @@ FramePipeline::RunRemaining()
     {
         frameEvent = this->frameEvents[currentIndex++];
         frameEvent->Run(this->world);
-    } 
+    }
 }
 
 //------------------------------------------------------------------------------

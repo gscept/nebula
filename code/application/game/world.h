@@ -4,7 +4,7 @@
     @file world.h
 
     @copyright
-    (C) 2021 Individual contributors, see AUTHORS file
+    (C) 2021-2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -18,18 +18,21 @@
 #include "processor.h"
 #include "memory/arenaallocator.h"
 #include "frameevent.h"
-#include "util/blob.h"
+#include "util/fourcc.h"
 
-namespace MemDb { class Database; }
+namespace MemDb
+{
+class Database;
+}
+namespace Util
+{
+class Blob;
+}
 
 namespace Game
 {
 
 class PackedLevel;
-
-/// Register a component type
-template <typename COMPONENT_TYPE>
-ComponentId RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info = {});
 
 //------------------------------------------------------------------------------
 /**
@@ -42,15 +45,49 @@ struct EntityCreateInfo
     bool immediate = false;
 };
 
+/// returns a world by hash
+World* GetWorld(WorldHash worldHash);
+/// returns a world by id
+World* GetWorld(WorldId worldId);
+
 //------------------------------------------------------------------------------
 /**
+    @class Game::World
+
+    @brief A container of entities, their components, and processors.
+    
+    @details Worlds can be identified by their hash, or their id. 
+    
+    A game world keeps track of: 
+    
+    @li Entities (Game::Entity)
+    @li Components
+    @li Processors (Game::Processor) 
+    @li A game frame pipeline (Game::FramePipeline)
+
+    Components are stored as columns in a database, while an entity maps to
+    a row of multiple component columns, in a table. The database splits 
+    entities based on their components, so all entities with the same
+    components are stored in the same table. "Adding or removing" a
+    component from an entity means moving it from one table to another.
+
+    Processors are functions that process entity components data. They loop
+    over all entities that fulfill some condition of having certain components
+    or not, and runs a user defined processing function over this data.
+
+    The game frame pipeline stores all the processor in order of execution.
 */
 class World
 {
 public:
     // Generally, only the game server should create worlds
-    World(uint32_t hash);
+    World(WorldHash hash, WorldId id);
     ~World();
+
+    /// Returns the world hash for this world.
+    WorldHash GetWorldHash() const;
+    /// Returns the world ID for this world. This corresponds to Game::Entity::world.
+    WorldId GetWorldId() const;
 
     /// Create a new empty entity
     Entity CreateEntity(bool immediate = true);
@@ -58,77 +95,81 @@ public:
     Entity CreateEntity(EntityCreateInfo const& info);
     /// Delete entity
     void DeleteEntity(Entity entity);
+
     /// Check if an entity ID is still valid.
-    bool IsValid(Entity entity);
+    bool IsValid(Entity entity) const;
     /// Check if an entity has an instance. It might be valid, but not have received an instance just after it has been created.
-    bool HasInstance(Entity entity);
+    bool HasInstance(Entity entity) const;
+
     /// Returns the entity mapping of an entity
-    EntityMapping GetEntityMapping(Entity entity);
-    /// Check if entity has a specific component. (SLOW!)
-    bool HasComponent(Entity entity, ComponentId component);
+    EntityMapping GetEntityMapping(Entity entity) const;
+
+    /// Create a component. This queues the component in a command buffer to be added later
+    template <typename TYPE>
+    TYPE* AddComponent(Entity entity);
+    /// Queues a component to be added to the entity in a command buffer.
+    void* AddComponent(Entity entity, ComponentId component);
+
     /// Check if entity has a specific component.
     template <typename TYPE>
-    bool HasComponent(Entity entity);
-    /// Get instance of entity
-    MemDb::RowId GetInstance(Entity entity);
+    bool HasComponent(Entity entity) const;
+    /// Check if entity has a specific component. (SLOW!)
+    bool HasComponent(Entity entity, ComponentId component) const;
+    
     /// Remove a component from an entity
     template <typename TYPE>
     void RemoveComponent(Entity entity);
     /// Remove a component from an entity
     void RemoveComponent(Entity entity, ComponentId component);
+
     /// Set the value of an entitys component
     template <typename TYPE>
     void SetComponent(Entity entity, TYPE const& value);
     /// Get an entitys component
     template <typename TYPE>
     TYPE GetComponent(Entity entity);
-    /// Create a component. This queues the component in a command buffer to be added later
-    template <typename TYPE>
-    TYPE* AddComponent(Entity entity);
-    /// Add a component to an entity. This queues the component in a command buffer to be added later.
-    void* AddComponent(Entity entity, ComponentId component);
-    /// Get a decay buffer for the given component
-    ComponentDecayBuffer const GetDecayBuffer(ComponentId component);
 
-    /// Set the value of a component by providing a pointer and type size
-    void SetComponentValue(Entity entity, ComponentId component, void* value, uint64_t size);
-    
-    /// Set the value of a component by providing a pointer and type size, then reinitialize the component
-    void ReinitializeComponent(Entity entity, ComponentId component, void* value, uint64_t size);
-    
+    /// Mark an entity as modified in its table.
+    void MarkAsModified(Game::Entity entity);
+
     /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
     Dataset Query(Filter filter);
     /// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables.
     /// This does NOT wait for resources to be available.
     Dataset Query(Filter filter, Util::Array<MemDb::TableId>& tids);
 
-    /// Get the entity database. Be careful when directly modifying the database, as some information is only kept track of via the World.
-    Ptr<MemDb::Database> GetDatabase();
-    /// Create a table in the entity database that has a specific set of components
-    MemDb::TableId CreateEntityTable(EntityTableCreateInfo const& info);
-
-    /// Get the frame pipeline
-    FramePipeline& GetFramePipeline();
-
-    /// Mark an entity as modified in its table.
-    void MarkAsModified(Game::Entity entity);
+    /// Get a decay buffer for the given component
+    ComponentDecayBuffer const GetDecayBuffer(ComponentId component);
 
     /// preload a level that can be instantiated
     PackedLevel* PreloadLevel(Util::String const& path);
     /// unload a preloaded level
     void UnloadLevel(PackedLevel* level);
-
     /// Export the world as a level
     void ExportLevel(Util::String const& path);
 
+    /// Get the frame pipeline
+    FramePipeline& GetFramePipeline();
+
+    /// Get the entity database. Be careful when directly modifying the database, as some information is only kept track of via the World.
+    Ptr<MemDb::Database> GetDatabase();
+
     // -- Internal methods -- Use with caution! --
 
+    /// Get instance of entity
+    MemDb::RowId GetInstance(Entity entity) const;
+    /// Set the value of a component by providing a pointer and type size
+    void SetComponentValue(Entity entity, ComponentId component, void* value, uint64_t size);
+    /// Set the value of a component by providing a pointer and type size, then reinitialize the component
+    void ReinitializeComponent(Entity entity, ComponentId component, void* value, uint64_t size);
+    /// Create a table in the entity database that has a specific set of components
+    MemDb::TableId CreateEntityTable(EntityTableCreateInfo const& info);
     /// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
     static void Override(World* src, World* dst);
     /// Allocate an entity id. Use this with caution!
-    Entity AllocateEntity();
+    Entity AllocateEntityId();
     /// Deallocate an entity id. Use this with caution!
-    void DeallocateEntity(Entity entity);
+    void DeallocateEntityId(Entity entity);
     /// Allocate an entity instance in a table. Use this with caution!
     MemDb::RowId AllocateInstance(Entity entity, MemDb::TableId table, Util::Blob const* const data = nullptr);
     /// Allocate an entity instance from a blueprint. Use this with caution!
@@ -157,27 +198,30 @@ private:
     friend class GameServer;
     friend class BlueprintManager;
     friend class PackedLevel;
-    
+
     struct AllocateInstanceCommand
     {
-        Game::Entity entity;
-        TemplateId tid;
+        Game::Entity entity = Game::Entity::Invalid();
+        TemplateId tid = TemplateId::Invalid();
     };
+
     struct DeallocInstanceCommand
     {
-        Game::Entity entity;
+        Game::Entity entity = Game::Entity::Invalid();
     };
+
     struct AddStagedComponentCommand
     {
-        Game::Entity entity;
-        ComponentId componentId;
-        SizeT dataSize;
-        void* data;
+        Game::Entity entity = Game::Entity::Invalid();
+        ComponentId componentId = ComponentId::Invalid();
+        SizeT dataSize = 0;
+        void* data = nullptr;
     };
+
     struct RemoveComponentCommand
     {
-        Entity entity;
-        ComponentId componentId;
+        Entity entity = Game::Entity::Invalid();
+        ComponentId componentId = ComponentId::Invalid();
     };
 
     // These functions are called from game server
@@ -190,20 +234,17 @@ private:
     void ManageEntities();
     void Reset();
     void PrefilterProcessors();
-    /// Check if the database is fully prefiltered.
-    bool Prefiltered() const;
     /// Clears all decay buffers. This is called by the game server automatically.
     void ClearDecayBuffers();
 
     void ExecuteRemoveComponentCommands();
 
-    void AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds);
-    void RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, SizeT numCmds);
-
     /// Get total number of instances in an entity table
     SizeT GetNumInstances(MemDb::TableId tid);
-    
+
+    /// Migrate an entity from it's current table to a different table
     MemDb::RowId Migrate(Entity entity, MemDb::TableId newTable);
+    /// Migrate an array of entities within the same table to a different table
     void Migrate(
         Util::Array<Entity> const& entities,
         MemDb::TableId fromTable,
@@ -211,12 +252,19 @@ private:
         Util::FixedArray<MemDb::RowId>& newInstances
     );
 
+    /// Copies the component to the decay table
     void DecayComponent(ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::RowId instance);
 
+    ///  Move a instance/row within a partition
     void MoveInstance(MemDb::Table::Partition* partition, MemDb::RowId from, MemDb::RowId to);
 
     /// Run OnInit on all components. Use with caution, since they can only be initialized once and the function doesn't check for this.
     void InitializeAllComponents(Entity entity, MemDb::TableId tableId, MemDb::RowId row);
+
+    /// Adds all components in cmds to entity 
+    void AddStagedComponentsToEntity(Entity entity, AddStagedComponentCommand* cmds, SizeT numCmds);
+    /// Removes all components in cmds from entity
+    void RemoveComponentsFromEntity(Entity entity, RemoveComponentCommand* cmds, SizeT numCmds);
 
     /// used to allocate entity ids for this world
     EntityPool pool;
@@ -227,50 +275,47 @@ private:
     /// contains all entity instances
     Ptr<MemDb::Database> db;
     /// world hash
-    uint32_t hash;
+    WorldHash hash;
+    /// world id
+    WorldId worldId;
     /// maps from blueprint to a table that has the same signature
     Util::HashTable<BlueprintId, MemDb::TableId> blueprintToTableMap;
-    ///
+    /// Stores all deferred allocation commands
     Util::Queue<AllocateInstanceCommand> allocQueue;
-    ///
+    /// Stores all deferred deallocation commands
     Util::Queue<DeallocInstanceCommand> deallocQueue;
-    ///
+    /// Stores all deferred add staged component commands
     Util::Array<AddStagedComponentCommand> addStagedQueue;
-    ///
+    /// Stores all deferred remove component commands
     Util::Array<RemoveComponentCommand> removeComponentQueue;
-
-    /// allocator for staged components
+    /// Allocator for staged components
     Memory::ArenaAllocator<4096_KB> componentStageAllocator;
-    
-    /// set to true if the caches for the frame pipeline is valid
+    /// Set to true if the caches for the frame pipeline are valid
     bool cacheValid = false;
-
-    /// the frame pipeline for this world
+    /// The frame pipeline for this world
     FramePipeline pipeline;
-
+    /// The default table that empty entities are instantiated into
     MemDb::TableId defaultTableId;
+    /// Contains all the component decay buffers. Lookup directly via ComponentId
+    Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-template <typename COMPONENT_TYPE>
-ComponentId 
-RegisterType(ComponentRegisterInfo<COMPONENT_TYPE> info)
+inline WorldHash
+World::GetWorldHash() const
 {
-    uint32_t componentFlags = 0;
-    componentFlags |= (uint32_t)COMPONENTFLAG_DECAY * (uint32_t)info.decay;
+    return this->hash;
+}
 
-    ComponentInterface* cInterface = new ComponentInterface(
-        COMPONENT_TYPE::Traits::name,
-        COMPONENT_TYPE(),
-        componentFlags
-    );
-    cInterface->Init = reinterpret_cast<ComponentInterface::ComponentInitFunc>(info.OnInit);
-    Game::ComponentId const cid = MemDb::AttributeRegistry::Register<COMPONENT_TYPE>(cInterface);
-    Game::ComponentSerialization::Register<COMPONENT_TYPE>(cid);
-    Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<COMPONENT_TYPE>);
-    return cid;
+//------------------------------------------------------------------------------
+/**
+*/
+inline WorldId
+World::GetWorldId() const
+{
+    return this->worldId;
 }
 
 //------------------------------------------------------------------------------
@@ -307,7 +352,8 @@ World::GetComponent(Entity entity)
 {
 #if NEBULA_DEBUG
     n_assert2(
-        !this->pipeline.IsRunningAsync(), "Getting components from entities while executing an async processor is currently not supported!"
+        !this->pipeline.IsRunningAsync(),
+        "Getting components from entities while executing an async processor is currently not supported!"
     );
 #endif
 
@@ -347,7 +393,7 @@ World::RemoveComponent(Entity entity)
 */
 template <typename TYPE>
 inline bool
-World::HasComponent(Game::Entity entity)
+World::HasComponent(Game::Entity entity) const
 {
     return this->HasComponent(entity, Game::GetComponentId<TYPE>());
 }
@@ -366,7 +412,9 @@ World::AddComponent(Entity entity)
         just introducing a simple mutex.
     */
 #if NEBULA_DEBUG
-    n_assert2(!this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!");
+    n_assert2(
+        !this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!"
+    );
 #endif
     Game::ComponentId id = Game::GetComponentId<TYPE>();
 #if NEBULA_DEBUG
@@ -398,13 +446,18 @@ World::AddComponent(Entity entity)
     return data;
 }
 
-template<> Game::Position World::GetComponent(Entity entity);
-template<> Game::Orientation World::GetComponent(Entity entity);
-template<> Game::Scale World::GetComponent(Entity entity);
+template <>
+Game::Position World::GetComponent(Entity entity);
+template <>
+Game::Orientation World::GetComponent(Entity entity);
+template <>
+Game::Scale World::GetComponent(Entity entity);
 
-template<> void World::SetComponent(Entity entity, Game::Position const&);
-template<> void World::SetComponent(Entity entity, Game::Orientation const&);
-template<> void World::SetComponent(Entity entity, Game::Scale const&);
-
+template <>
+void World::SetComponent(Entity entity, Game::Position const&);
+template <>
+void World::SetComponent(Entity entity, Game::Orientation const&);
+template <>
+void World::SetComponent(Entity entity, Game::Scale const&);
 
 } // namespace Game

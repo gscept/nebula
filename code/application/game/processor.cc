@@ -80,6 +80,18 @@ ProcessorBuilder::Order(int order)
 //------------------------------------------------------------------------------
 /**
 */
+ProcessorBuilder&
+ProcessorBuilder::RunInEditor()
+{
+#ifdef WITH_NEBULA_EDITOR
+    this->runInEditor = true;
+#endif
+    return *this;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Processor*
 ProcessorBuilder::Build()
 {
@@ -89,12 +101,17 @@ ProcessorBuilder::Build()
     processor->order = this->order;
     processor->filter = this->filterBuilder.Build();
 
+#ifdef WITH_NEBULA_EDITOR
+    processor->runInEditor = this->runInEditor;
+#endif
+
     if (this->onlyModified)
         processor->callback = this->funcModified;
     else
         processor->callback = this->func;
 
     FrameEvent* frameEvent = world->GetFramePipeline().GetFrameEvent(this->onEvent);
+    n_assert(frameEvent != nullptr);
     frameEvent->AddProcessor(processor);
     return processor;
 }

@@ -61,7 +61,7 @@ ClusterContext::~ClusterContext()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId window)
 {
 #ifndef PUBLIC_BUILD
@@ -115,6 +115,17 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     {
         CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram);
 
+        state.clusterDimensions[0] = Math::divandroundup(viewport.width(), ClusterSubdivsX);
+        state.clusterDimensions[1] = Math::divandroundup(viewport.height(), ClusterSubdivsY);
+        state.clusterDimensions[2] = ClusterSubdivsZ;
+
+        state.xResolution = viewport.width();
+        state.yResolution = viewport.height();
+        state.invXResolution = 1.0f / state.xResolution;
+        state.invYResolution = 1.0f / state.yResolution;
+        state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
+        state.zInvBias = -(float(state.clusterDimensions[2]) * Math::log2(state.zNear) / Math::log2(state.zDistribution));
+
         // Run the job as series of 1024 clusters at a time
         CmdDispatch(cmdBuf, Math::ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1);
     }, {
@@ -125,7 +136,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT 
+const SizeT
 ClusterContext::GetNumClusters()
 {
     return state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
@@ -134,7 +145,7 @@ ClusterContext::GetNumClusters()
 //------------------------------------------------------------------------------
 /**
 */
-const std::array<SizeT, 3> 
+const std::array<SizeT, 3>
 ClusterContext::GetClusterDimensions()
 {
     return std::array<SizeT, 3> { state.clusterDimensions[0], state.clusterDimensions[1], state.clusterDimensions[2] };
@@ -143,7 +154,7 @@ ClusterContext::GetClusterDimensions()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 {
     using namespace CoreGraphics;
@@ -169,7 +180,7 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ClusterContext::OnRenderDebug(uint32_t flags)
 {
 }

@@ -383,6 +383,9 @@ void
 ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform)
 {
     const ContextEntityId cid = GetContextId(id);
+    if (cid == ContextEntityId::Invalid())
+        return;
+
     Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
     bool& hasPending = modelContextAllocator.Get<Model_Dirty>(cid.id);
     pending = transform;

@@ -17,6 +17,7 @@
 namespace GraphicsFeature
 {
 
+__ImplementClass(GraphicsFeature::CameraManager, 'CaMa', Game::Manager);
 __ImplementSingleton(CameraManager)
 
 //------------------------------------------------------------------------------
@@ -24,7 +25,7 @@ __ImplementSingleton(CameraManager)
 */
 CameraManager::CameraManager()
 {
-    // empty
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -32,7 +33,7 @@ CameraManager::CameraManager()
 */
 CameraManager::~CameraManager()
 {
-    // empty
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +60,7 @@ CameraManager::RegisterView(Ptr<Graphics::View> const& view)
 
     Graphics::CameraContext::RegisterEntity(data.gid);
     Graphics::CameraContext::SetLODCamera(data.gid);
-    Graphics::CameraContext::SetupProjectionFov(data.gid, displayMode.GetAspectRatio(), Math::deg2rad(60.f), 0.1f, 10000.0f);
+    Graphics::CameraContext::SetupProjectionFov(data.gid, displayMode.GetAspectRatio(), Math::deg2rad(60.f), 0.01f, 1000.0f);
     Visibility::ObserverContext::RegisterEntity(data.gid);
     Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera);
     view->SetCamera(data.gid);
@@ -106,42 +107,39 @@ CameraManager::InitUpdateCameraProcessor()
     // Setup processor that handles both worldtransform and camera (heirarchy)
     Game::ProcessorBuilder(world, "CameraManager.UpdateCameraWorldTransform")
         .Func(
-        [](Game::World*, Camera const& camera, Game::Position const& parentPosition, Game::Orientation const& parentOrientation)
-        {
-            if (IsViewHandleValid(camera.viewHandle))
+            [](Game::World*, Camera const& camera, Game::Position const& parentPosition, Game::Orientation const& parentOrientation)
             {
-                Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
-                Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
-                UpdateCameraSettings(gid, settings, camera);
-                Math::mat4 parentTransform = Math::translation(parentPosition) * Math::rotationquat(parentOrientation);
-                Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform);
+                if (IsViewHandleValid(camera.viewHandle))
+                {
+                    Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
+                    Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
+                    UpdateCameraSettings(gid, settings, camera);
+                    Math::mat4 parentTransform = Math::translation(parentPosition) * Math::rotationquat(parentOrientation);
+                    Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform);
+                }
             }
-        }
-    ).Build();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Game::ManagerAPI
-CameraManager::Create()
-{
-    n_assert(!CameraManager::HasInstance());
-    CameraManager::Singleton = new CameraManager;
-   
-    Singleton->InitUpdateCameraProcessor();
-
-    Game::ManagerAPI api;
-    api.OnDeactivate = &Destroy;
-    return api;
+        )
+        .RunInEditor()
+        .Build();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-CameraManager::Destroy()
+CameraManager::OnActivate()
 {
+    Manager::OnActivate();
+    this->InitUpdateCameraProcessor();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CameraManager::OnDeactivate()
+{
+    Manager::OnDeactivate();
     n_assert(CameraManager::HasInstance());
     delete CameraManager::Singleton;
     CameraManager::Singleton = nullptr;

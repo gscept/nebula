@@ -47,6 +47,8 @@ nebula_begin_module(application)
             componentinspection.cc
             world.h
             world.cc
+            editorstate.h
+            editorstate.cc
         )
     fips_dir(game/messaging)
         fips_files(

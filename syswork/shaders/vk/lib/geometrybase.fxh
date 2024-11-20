@@ -202,8 +202,8 @@ subroutine (CalculateEnvironment) vec3 IBL(
     vec3 kD = vec3(1.0f) - F;
     kD *= 1.0f - material[MAT_METALLIC];
 
-    vec3 ambientTerm = (irradiance * kD * albedo.rgb);
-    return (ambientTerm + reflection * F) * material[MAT_CAVITY];
+    vec3 ambientTerm = (irradiance * kD * albedo.rgb) * material[MAT_CAVITY];
+    return (ambientTerm + reflection * F);
 }
 
 subroutine (CalculateEnvironment) vec3 ReflectionOnly(

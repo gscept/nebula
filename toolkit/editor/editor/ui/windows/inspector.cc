@@ -110,20 +110,32 @@ Inspector::Run(SaveMode save)
         {
             continue;
         }
-        ImGui::PushID(0xA3FC + (int)component.id); // offset the ids with some magic number
-        ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
-        ImGui::SameLine();
 
-        if (component != Game::GetComponentId<Game::Position>() &&
-            component != Game::GetComponentId<Game::Orientation>() &&
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        ImGui::PushID(0xA3FC + (int)component.id); // offset the ids with some magic number
+        if (component != Game::GetComponentId<Game::Position>() && component != Game::GetComponentId<Game::Orientation>() &&
             component != Game::GetComponentId<Game::Scale>())
         {
+            Util::String componentName = MemDb::AttributeRegistry::GetAttribute(component)->name.AsString();
+            componentName.CamelCaseToWords();
+            componentName.Capitalize();
+            
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text(componentName.AsCharPtr());
+            ImGui::SameLine();
+            
+            ImGuiStyle const& style = ImGui::GetStyle();
+            float widthNeeded = ImGui::CalcTextSize("Remove").x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::max(ImGui::GetContentRegionAvail().x - widthNeeded, 0.0f));
             if (ImGui::Button("Remove"))
             {
                 Edit::RemoveComponent(entity, component);
                 ImGui::PopID();
                 return; // return, otherwise we're reading stale data.
             }
+            ImGui::Spacing();
         }
 
         auto& tempComponent = this->tempComponents[i];
@@ -160,7 +172,22 @@ Inspector::Run(SaveMode save)
         }
 
         bool commitChange = false;
-        Game::ComponentInspection::DrawInspector(component, tempComponent.buffer, &commitChange);
+
+        const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable |
+                                      ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+        if (ImGui::BeginTable("table1", 2, flags))
+        {
+            ImGui::TableSetupColumn("FieldName", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("FieldValue", ImGuiTableColumnFlags_WidthStretch);
+
+            //ImGui::TableHeadersRow();
+            ImGui::TableNextRow();
+            Game::ComponentInspection::DrawInspector(component, tempComponent.buffer, &commitChange);
+            ImGui::EndTable();
+            ImGui::Spacing();
+            ImGui::Spacing();
+            ImGui::Spacing();
+        }
 
         if (commitChange)
         {
@@ -213,10 +240,10 @@ Inspector::ShowAddComponentMenu()
         ImGui::PushStyleColor(ImGuiCol_ChildBg, style.Colors[ImGuiCol_Button]);
 
         // filter
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+        if (pressed)
+            ImGui::SetKeyboardFocusHere();
         static ImGuiTextFilter filter;
         filter.Draw("Filter", window->Size.x - 100);
-        ImGui::PopStyleVar();
         ImGui::Separator();
 
         Util::Array<const char*> cStrArray;
@@ -229,8 +256,7 @@ Inspector::ShowAddComponentMenu()
             Game::Position::Traits::name,
             Game::Orientation::Traits::name,
             Game::Scale::Traits::name,
-            Game::IsActive::Traits::name
-        };
+            Game::IsActive::Traits::name};
 
         for (SizeT i = 0; i < numComponents; i++)
         {

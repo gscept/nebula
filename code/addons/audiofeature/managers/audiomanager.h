@@ -16,26 +16,20 @@
 namespace AudioFeature
 {
 
-class AudioManager
+class AudioManager : public Game::Manager
 {
-    __DeclareSingleton(AudioManager);
+    __DeclareClass(AudioManager)
+    __DeclareSingleton(AudioManager)
 public:
-    /// retrieve the api
-    static Game::ManagerAPI Create();
+    AudioManager();
+    virtual ~AudioManager();
 
-    /// destroy entity manager
-    static void Destroy();
+    void OnActivate() override;
+    void OnDeactivate() override;
+    void OnDecay() override;
+    void OnCleanup(Game::World* world) override;
 
     static void InitAudioEmitter(Game::World*, Game::Entity, AudioEmitter*);
-
-private:
-    /// constructor
-    AudioManager();
-    /// destructor
-    ~AudioManager();
-
-    static void OnDecay();
-    static void OnCleanup(Game::World* world);
 };
 
 } // namespace AudioFeature

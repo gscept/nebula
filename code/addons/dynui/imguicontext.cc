@@ -452,28 +452,28 @@ ImguiContext::Create()
 
     ImGuiStyle& style = ImGui::GetStyle();
 
-    style.FrameRounding = 2.0f;
+    style.FrameRounding = 0.0f;
     style.GrabRounding = 0.0f;
     style.ChildRounding = 0.0f;
-    style.WindowRounding = 2.0f;
+    style.WindowRounding = 0.0f;
     style.PopupRounding = 0.0f;
-    style.ScrollbarRounding = 2.0f;
-    style.TabRounding = 3.0f;
+    style.ScrollbarRounding = 0.0f;
+    style.TabRounding = 0.0f;
     style.TabMinWidthForCloseButton = FLT_MAX;
-    style.WindowTitleAlign = { 0.5f, 0.38f };
+    style.WindowTitleAlign = { 0.0f, 0.52f };
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
-    style.WindowPadding = { 8.0f, 8.0f };
+    style.WindowPadding = { 10.0f, 10.0f };
     // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
-    style.FramePadding = { 4, 3 };//{ 16, 3 };
-    style.ItemInnerSpacing = { 4, 2 };
-    style.ItemSpacing = { 4, 5 };
-    style.IndentSpacing = 8.0f;
+    style.FramePadding = { 8, 3 };//{ 16, 3 };
+    style.ItemInnerSpacing = { 2, 2 };
+    style.ItemSpacing = { 2, 2 };
+    style.IndentSpacing = 10.0f;
     style.GrabMinSize = 8.0f;
 
-    style.FrameBorderSize = 0.0f;
+    style.FrameBorderSize = 1.0f;
     style.WindowBorderSize = 1.0f;
-    style.PopupBorderSize = 0.0f;
+    style.PopupBorderSize = 1.0f;
     style.ChildBorderSize = 0.0f;
 
     style.ScaleAllSizes(scaleFactor);
@@ -526,10 +526,10 @@ ImguiContext::Create()
     colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
     colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
     colors[ImGuiCol_TableHeaderBg] = ImVec4(0.19f, 0.19f, 0.20f, 1.00f);
-    colors[ImGuiCol_TableBorderStrong] = ImVec4(0.31f, 0.31f, 0.35f, 1.00f);
-    colors[ImGuiCol_TableBorderLight] = ImVec4(0.23f, 0.23f, 0.25f, 1.00f);
+    colors[ImGuiCol_TableBorderStrong] = ImVec4(0.039f, 0.039f, 0.039f, 1.00f);
+    colors[ImGuiCol_TableBorderLight] = ImVec4(0.174f, 0.174f, 0.174f, 1.00f);
     colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
+    colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.022f);
     colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
     colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);

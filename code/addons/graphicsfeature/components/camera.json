@@ -3,46 +3,19 @@
   "enums": {
     "ProjectionMode": {
       "Perspective": 0,
-      "Orthographic": 1,
+      "Orthographic": 1
     }
   },
   "components": {
-    "PointLight": {
-      "graphicsEntityId": {
-        "type": "uint",
-        "default": -1
-      },
-      "color": "vec3",
-      "intensity": "float",
-      "range": "float",
-      "castShadows": "bool"
-    },
-    "Model": {
-      "resource": {
-        "type": "resource",
-        "default": "mdl:system/placeholder.n3"
-      },
-      "graphicsEntityId": {
-        "type": "uint",
-        "default": -1
-      },
-      "raytracing": "bool",
-      "anim": {
-          "type": "resource",
-          "default": ""
-      },
-      "skeleton":  {
-          "type": "resource",
-          "default": ""
-      }
-    },
     "Camera": {
       "viewHandle": {
         "type": "uint",
-        "default": -1
+        "default": -1,
+        "hideInInspector": true
       },
       "localTransform": {
-        "type": "mat4"
+        "type": "mat4",
+        "hideInInspector": true
       },
       "fieldOfView": {
         "type": "float",

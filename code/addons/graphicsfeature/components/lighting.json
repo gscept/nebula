@@ -1,0 +1,86 @@
+{
+  "namespace": "GraphicsFeature",
+  "enums": {
+    "AreaLightShape": {
+      "Disk": 0,
+      "Rectangle": 1,
+      "Tube": 2
+    }
+  },
+  "components": {
+    "PointLight": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1,
+        "hideInInspector": true
+      },
+      "color": {
+        "type": "color",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      },
+      "intensity": {
+        "type": "float",
+        "default": 50.0 // candela
+      },
+      "range": {
+        "type": "float",
+        "default": 5.0
+      },
+      "castShadows": "bool"
+    },
+    "SpotLight": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1,
+        "hideInInspector": true
+      },
+      "color": {
+        "type": "color",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      },
+      "intensity": {
+        "type": "float",
+        "default": 50.0 // candela
+      },
+      "innerConeAngle": {
+        "type": "float",
+        "default": 15.0 // degrees
+      },
+      "outerConeAngle": {
+        "type": "float",
+        "default": 45.0 // degrees
+      },
+      "range": {
+        "type": "float",
+        "default": 8.0
+      },
+      "castShadows": "bool"
+    },
+    "AreaLight": {
+      "graphicsEntityId": {
+        "type": "uint",
+        "default": -1,
+        "hideInInspector": true
+      },
+      "shape": {
+        "type": "GraphicsFeature::AreaLightShape",
+        "default": 0
+      },
+      "color": {
+        "type": "color",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      },
+      "intensity": {
+        "type": "float",
+        "default": 50.0 // candela
+      },
+      "range": {
+        "type": "float",
+        "default": 8.0
+      },
+      "twoSided": "bool",
+      "castShadows": "bool",
+      "renderMesh": "bool"
+    }
+  }
+}

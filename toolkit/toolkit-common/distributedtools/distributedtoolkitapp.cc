@@ -455,7 +455,7 @@ DistributedToolkitApp::CreateAndProcessJobs()
         argString.Append(this->GetAdditionalArguments());
         
         job->SetArguments(argString);
-        job->SetSVNPath(this->projectInfo.GetPathAttr("SVNToolPath"));
+        //job->SetSVNPath(this->projectInfo.GetPathAttr("SVNToolPath"));
         job->SetProjectDirectory(this->projectdirArg);
        // job->SetRequiredRevision(revision);
         job->SetIdentifier(String::FromInt(jobIndex));

@@ -146,7 +146,8 @@ LocalLightsFog(
             PointLight li = PointLights[lidx];
             
             vec3 lightDir = (li.position.xyz - viewPos);
-            float att = InvSquareFalloff(li.range, lightDir);
+            float lightDirLength = length(lightDir);
+            float att = InvSquareFalloff(li.range, lightDirLength, lightDir);
             light += li.color * att;
         }
     }
@@ -165,7 +166,7 @@ LocalLightsFog(
             // calculate attentuation and angle falloff, and just multiply by color
             vec3 lightDir = (li.position.xyz - viewPos);
             float lightDirLen = length(lightDir);
-            float att = InvSquareFalloff(li.range, lightDir);
+            float att = InvSquareFalloff(li.range, lightDirLen, lightDir);
             lightDir = lightDir * (1 / lightDirLen);
 
             float theta = dot(li.forward.xyz, lightDir);

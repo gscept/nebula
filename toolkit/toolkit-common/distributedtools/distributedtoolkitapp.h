@@ -53,6 +53,8 @@ public:
     bool IsDistributed();
     /// determine if application is running in slave mode
     bool IsSlave();
+    /// determine if application is running in master mode
+    bool IsMaster();
 
 protected:
     /// split task of this application into jobs and process them
@@ -126,6 +128,16 @@ bool
 DistributedToolkitApp::IsSlave()
 {
     return this->slaveArg;
+}
+
+//------------------------------------------------------------------------------
+/**
+    determine if application is in master mode   
+*/
+inline bool
+DistributedToolkitApp::IsMaster()
+{
+    return this->masterMode;
 }
 
 //------------------------------------------------------------------------------

@@ -1,12 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @file   api.h
+    @file api.h
 
     The main programming interface for the Game Subsystem.
 
     @copyright
-    (C) 2020 Individual contributors, see AUTHORS file
+    (C) 2020-2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/ptr.h"
@@ -25,10 +25,7 @@ namespace Game
 {
 
 class World;
-#define WORLD_DEFAULT uint32_t('DWLD') // 0x44574C44
-
-/// returns a world by hash
-World* GetWorld(uint32_t worldHash);
+#define WORLD_DEFAULT Game::WorldHash{'DWLD'} // 0x44574C44
 
 /// Destroy a filter
 void DestroyFilter(Filter);

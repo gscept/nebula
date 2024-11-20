@@ -33,7 +33,7 @@ Threading::CriticalSection commandBufferCritSect;
 //------------------------------------------------------------------------------
 /**
 */
-const VkCommandPool 
+const VkCommandPool
 CmdBufferPoolGetVk(const CoreGraphics::CmdBufferPoolId id)
 {
     return commandBufferPools.Get<CommandBufferPool_VkCommandPool>(id.id);
@@ -42,7 +42,7 @@ CmdBufferPoolGetVk(const CoreGraphics::CmdBufferPoolId id)
 //------------------------------------------------------------------------------
 /**
 */
-const VkDevice 
+const VkDevice
 CmdBufferPoolGetVkDevice(const CoreGraphics::CmdBufferPoolId id)
 {
     return commandBufferPools.Get<CommandBufferPool_VkDevice>(id.id);
@@ -100,7 +100,7 @@ _IMPL_ACQUIRE_RELEASE(CmdBufferId, commandBuffers);
 //------------------------------------------------------------------------------
 /**
 */
-const CmdBufferPoolId 
+const CmdBufferPoolId
 CreateCmdBufferPool(const CmdBufferPoolCreateInfo& info)
 {
     Ids::Id32 id = commandBufferPools.Alloc();
@@ -130,7 +130,7 @@ CreateCmdBufferPool(const CmdBufferPoolCreateInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 DestroyCmdBufferPool(const CmdBufferPoolId pool)
 {
     vkDestroyCommandPool(commandBufferPools.Get<CommandBufferPool_VkDevice>(pool.id), commandBufferPools.Get<CommandBufferPool_VkCommandPool>(pool.id), nullptr);
@@ -359,7 +359,7 @@ CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics:
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
     VkDeviceSize offset = bufferOffset;
     vkCmdBindVertexBuffers(cmdBuf, streamIndex, 1, &buf, &offset);
-}   
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -1021,7 +1021,7 @@ CmdBeginPass(const CmdBufferId id, const PassId pass)
     pipelineBundle.pipelineInfo.subpass = 0;
     pipelineBundle.pipelineInfo.renderPass = framebufferInfo.renderPass;
     pipelineBundle.pipelineInfo.pViewportState = framebufferInfo.pViewportState;
-    vkCmdBeginRenderPass(cmdBuf, &info, VK_SUBPASS_CONTENTS_INLINE);    
+    vkCmdBeginRenderPass(cmdBuf, &info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 //------------------------------------------------------------------------------
@@ -1141,7 +1141,7 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     resolve.dstSubresource.baseArrayLayer = 0;
     resolve.dstSubresource.layerCount = 1;
     resolve.dstSubresource.mipLevel = 0;
-    
+
     vkCmdResolveImage(cmdBuf, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &resolve);
 }
 
@@ -1696,7 +1696,7 @@ CmdFinishQueries(const CmdBufferId id)
     QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id);
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
     {
-        // Grab all chunk offsets and counts 
+        // Grab all chunk offsets and counts
         const Util::Array<QueryBundle::QueryChunk>& chunks = queryBundle.chunks[i];
         if (!chunks.IsEmpty())
         {
@@ -1728,11 +1728,11 @@ CmdRecordsMarkers(const CmdBufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-Util::Array<CoreGraphics::FrameProfilingMarker>
-CmdCopyProfilingMarkers(const CmdBufferId id)
+Util::Array<CoreGraphics::FrameProfilingMarker>&&
+CmdMoveProfilingMarkers(const CmdBufferId id)
 {
-    CoreGraphics::CmdBufferMarkerBundle markers = commandBuffers.ConstGet<CmdBuffer_ProfilingMarkers>(id.id);
-    return markers.finishedMarkers;
+    CoreGraphics::CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id);
+    return std::move(markers.finishedMarkers);
 }
 
 //------------------------------------------------------------------------------

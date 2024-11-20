@@ -32,6 +32,8 @@ public:
     /// close the application
     void Close();
     /// runs the application
+    void Run() override;
+    /// runs the application
     void DoWork();
 protected:
     /// creates file list for job-driven exporting

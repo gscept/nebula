@@ -13,12 +13,14 @@ using namespace Core;
 namespace Game
 {
 
-namespace TimeManager
+namespace Time
 {
     //------------------------------------------------------------------------------
     /**
-        This struct needs to be structured exactly like the TimeSource struct, just
-        with different qualifiers.
+        \cond EXCLUDE_FROM_DOCS
+
+        IMPORTANT: This struct needs to be structured exactly like the
+        TimeSource struct, just with different qualifiers.
     */
     struct TimeSourceState
     {
@@ -32,7 +34,11 @@ namespace TimeManager
     static_assert(sizeof(TimeSource) == sizeof(TimeSourceState));
     static_assert(alignof(TimeSource) == alignof(TimeSourceState));
 
-    /// timemanager singleton state
+    //------------------------------------------------------------------------------
+    /**
+        timemanager singleton state
+    */
+    
     struct State
     {
         /// global time factor
@@ -53,35 +59,14 @@ namespace TimeManager
 
     static State* state = nullptr;
 
-    /// Destroy the singleton
-    void Destroy();
-    /// called after create
-    void OnActivate();
-    /// called at beginning of each frame
-    void OnBeginFrame();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Game::ManagerAPI
-TimeManager::Create()
-{
-    n_assert(state == nullptr);
-    state = new State;
-
-    Game::ManagerAPI api;
-    api.OnActivate = &OnActivate;
-    api.OnDeactivate = &Destroy;
-    api.OnBeginFrame = &OnBeginFrame;
-    return api;
+    /// \endcond
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 TimeSource* const
-TimeManager::CreateTimeSource(TimeSourceCreateInfo const& info)
+Time::CreateTimeSource(TimeSourceCreateInfo const& info)
 {
     state->timeSourceTable.Add(info.hash, state->numTimeSources);
     n_assert(state->numTimeSources + 1 < 32);
@@ -94,7 +79,7 @@ TimeManager::CreateTimeSource(TimeSourceCreateInfo const& info)
 /**
 */
 TimeSource* const
-TimeManager::GetTimeSource(uint32_t TIMESOURCE_HASH)
+Time::GetTimeSource(uint32_t TIMESOURCE_HASH)
 {
     return reinterpret_cast<TimeSource*>(&state->timeSources[state->timeSourceTable[TIMESOURCE_HASH]]);
 }
@@ -103,7 +88,7 @@ TimeManager::GetTimeSource(uint32_t TIMESOURCE_HASH)
 /**
 */
 void
-TimeManager::SetGlobalTimeFactor(float factor)
+Time::SetGlobalTimeFactor(float factor)
 {
     state->timeFactor = factor;
 }
@@ -112,20 +97,28 @@ TimeManager::SetGlobalTimeFactor(float factor)
 /**
 */
 float
-TimeManager::GetGlobalTimeFactor()
+Time::GetGlobalTimeFactor()
 {
     return state->timeFactor;
+}
+
+__ImplementClass(Game::TimeManager, 'TiMa', Game::Manager);
+__ImplementSingleton(Game::TimeManager)
+
+//------------------------------------------------------------------------------
+/**
+*/
+TimeManager::TimeManager()
+{
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-TimeManager::Destroy()
+TimeManager::~TimeManager()
 {
-    n_assert(state != nullptr);
-    delete state;
-    state = nullptr;
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -134,32 +127,46 @@ TimeManager::Destroy()
 void
 TimeManager::OnActivate()
 {
+    Manager::OnActivate();
+
+    n_assert(Time::state == nullptr);
+    Time::state = new Time::State;
+
 	if (!FrameSync::FrameSyncTimer::HasInstance())
 	{
-		state->frameSyncTimer = FrameSync::FrameSyncTimer::Create();
-		state->frameSyncTimerOwner = true;
-		state->frameSyncTimer->StartTime();
+		Time::state->frameSyncTimer = FrameSync::FrameSyncTimer::Create();
+		Time::state->frameSyncTimerOwner = true;
+		Time::state->frameSyncTimer->StartTime();
 	}
 	else
 	{
-		state->frameSyncTimer = FrameSync::FrameSyncTimer::Instance();
+		Time::state->frameSyncTimer = FrameSync::FrameSyncTimer::Instance();
 	}
-
-    //state->time = FrameSync::FrameSyncTimer::Instance()->GetTicks();
 
     // register default time sources
 
     TimeSourceCreateInfo systemTimeInfo;
     systemTimeInfo.hash = TIMESOURCE_SYSTEM;
-    CreateTimeSource(systemTimeInfo);
+    Time::CreateTimeSource(systemTimeInfo);
 
     TimeSourceCreateInfo gameTimeInfo;
     gameTimeInfo.hash = TIMESOURCE_GAMEPLAY;
-    CreateTimeSource(gameTimeInfo);
+    Time::CreateTimeSource(gameTimeInfo);
 
     TimeSourceCreateInfo inputTimeInfo;
     inputTimeInfo.hash = TIMESOURCE_INPUT;
-    CreateTimeSource(inputTimeInfo);
+    Time::CreateTimeSource(inputTimeInfo);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TimeManager::OnDeactivate()
+{
+    n_assert(Time::state != nullptr);
+    delete Time::state;
+    Time::state = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -168,6 +175,8 @@ TimeManager::OnActivate()
 void
 TimeManager::OnBeginFrame()
 {
+    using namespace Time;
+
 	if (state->frameSyncTimerOwner)
 		state->frameSyncTimer->UpdateTimePolling();
 

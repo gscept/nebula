@@ -103,11 +103,13 @@ public:
     virtual void CleanupWorld(World*);
     
     /// create a world. The game server handles all worlds
-    World* CreateWorld(uint32_t hash);
+    World* CreateWorld(WorldHash hash);
     /// get a world by hash
-    World* GetWorld(uint32_t worldHash);
+    World* GetWorld(WorldHash worldHash);
+    /// get a world by WorldId
+    World* GetWorld(WorldId id);
     /// destroy a world
-    void DestroyWorld(uint32_t worldHash);
+    void DestroyWorld(WorldHash worldHash);
     
     /// contains internal state and world management
     struct State
@@ -115,7 +117,7 @@ public:
         World* worlds[32];
         uint numWorlds = 0;
 
-        Util::HashTable<uint32_t, uint32_t, 32, 1> worldTable;
+        Util::HashTable<WorldHash, WorldId, 32, 1> worldTable;
 
         /// Contains all templates
         Ptr<MemDb::Database> templateDatabase;

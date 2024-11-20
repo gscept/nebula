@@ -15,7 +15,7 @@ namespace Nebula
         [StructLayout(LayoutKind.Sequential)]
         public struct EntityId
         {
-            public uint id;
+            public UInt64 id;
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace Nebula
         public class Entity
         {
             private World world = null;
-            private uint id = 0xFFFFFFFF;
+            private UInt64 id = 0xFFFFFFFFFFFFFFFF;
             private List<Property> properties;
             private MsgDispatcher dispatcher = new MsgDispatcher();
 
@@ -37,12 +37,12 @@ namespace Nebula
             /// <summary>
             /// Unique identifier for the entity
             /// </summary>
-            public uint Id { get { return this.id; } }
+            public UInt64 Id { get { return this.id; } }
 
             /// <remarks>
             /// Do not create new entities using this constructor, instead create them via World.CreateEntity.
             /// </remarks>
-            internal Entity(World world, uint entityId)
+            internal Entity(World world, UInt64 entityId)
             {
                 this.world = world;
                 this.id = entityId;
@@ -52,7 +52,7 @@ namespace Nebula
             /// <summary>
             /// Check if entity is valid (not destroyed)
             /// </summary>
-            public bool IsValid() { return Api.IsValid(this.world.Id, this.id); }
+            public bool IsValid() { return Api.IsValid(this.id); }
 
             /// <summary>
             /// Check if entity has some unmanaged component
@@ -60,7 +60,7 @@ namespace Nebula
             public bool HasComponent<T>() where T : struct, NativeComponent
             {
                 uint componentId = ComponentManager.Instance.GetComponentId<T>();
-                return Api.HasComponent(this.world.Id, this.id, componentId);
+                return Api.HasComponent(this.id, componentId);
             }
 
             /// <summary>
@@ -76,7 +76,7 @@ namespace Nebula
                 // HACK: there might be more efficient ways to avoid GC problems, if there are any...
                 IntPtr ptr = Marshal.AllocHGlobal(size);
                 Marshal.StructureToPtr(component, ptr, false);
-                Api.SetComponentData(this.world.Id, this.id, componentId, ptr, size);
+                Api.SetComponentData(this.id, componentId, ptr, size);
                 Marshal.FreeHGlobal(ptr);
             }
 
@@ -91,7 +91,7 @@ namespace Nebula
                 uint componentId = ComponentManager.Instance.GetComponentId<T>();
                 int size = Marshal.SizeOf<T>();
                 IntPtr ptr = Marshal.AllocHGlobal(size);
-                Api.GetComponentData(this.world.Id, this.id, componentId, ptr, size);
+                Api.GetComponentData(this.id, componentId, ptr, size);
                 T component = Marshal.PtrToStructure<T>(ptr);
                 Marshal.FreeHGlobal(ptr);
                 return component;
@@ -156,7 +156,7 @@ namespace Nebula
             /// </summary>
             public Vector3 GetPosition()
             {
-                return Api.GetPosition(this.world.Id, this.id);
+                return Api.GetPosition(this.id);
             }
 
             /// <summary>
@@ -164,7 +164,7 @@ namespace Nebula
             /// </summary>
             public void SetPosition(Vector3 position)
             {
-                Api.SetPosition(this.world.Id, this.id, position);
+                Api.SetPosition(this.id, position);
             }
 
             /// <summary>
@@ -172,7 +172,7 @@ namespace Nebula
             /// </summary>
             public Quaternion GetOrientation()
             {
-                return Api.GetOrientation(this.world.Id, this.id);
+                return Api.GetOrientation(this.id);
             }
 
             /// <summary>
@@ -180,7 +180,7 @@ namespace Nebula
             /// </summary>
             public void SetOrientation(Quaternion orientation)
             {
-                Api.SetOrientation(this.world.Id, this.id, orientation);
+                Api.SetOrientation(this.id, orientation);
             }
 
             /// <summary>
@@ -188,7 +188,7 @@ namespace Nebula
             /// </summary>
             public Vector3 GetScale()
             {
-                return Api.GetScale(this.world.Id, this.id);
+                return Api.GetScale(this.id);
             }
 
             /// <summary>
@@ -196,7 +196,7 @@ namespace Nebula
             /// </summary>
             public void SetScale(Vector3 scale)
             {
-                Api.SetScale(this.world.Id, this.id, scale);
+                Api.SetScale(this.id, scale);
             }
 
             /// <summary>
@@ -214,11 +214,11 @@ namespace Nebula
             /// </summary>
             public static void Destroy(Entity entity)
             {
-                if (entity.id == 0xFFFFFFFF)
+                if (entity.id == 0xFFFFFFFFFFFFFFFF)
                     return; // Already destroyed
 
-                Api.DeleteEntity(entity.world.Id, entity.id);
-                entity.id = 0xFFFFFFFF;
+                Api.DeleteEntity(entity.id);
+                entity.id = 0xFFFFFFFFFFFFFFFF;
 
                 for (int i = 0; i < entity.properties.Count; i++)
                 {

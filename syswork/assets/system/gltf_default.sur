@@ -1,0 +1,8 @@
+<!--
+	Default Surface material for GLTF models that don't define any specific material
+-->
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula>
+	<Surface template="DefaultGLTF">
+	</Surface>
+</Nebula>

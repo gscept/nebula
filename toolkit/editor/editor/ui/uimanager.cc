@@ -12,6 +12,7 @@
 #include "windows/toolbar.h"
 #include "windows/scene.h"
 #include "windows/history.h"
+#include "windows/environment.h"
 #include "windows/inspector.h"
 #include "windows/assetbrowser.h"
 #include "windows/asseteditor/asseteditor.h"
@@ -24,29 +25,39 @@
 #include "dynui/imguicontext.h"
 #include "io/filedialog.h"
 #include "window.h"
+#include "editor/tools/selectiontool.h"
+#include "editor/cmds.h"
 
 #include "frame/default.h"
 #include "frame/editorframe.h"
 
+#include "basegamefeature/level.h"
+
 namespace Editor
 {
 
+__ImplementClass(Editor::UIManager, 'UiMa', Game::Manager);
+
 static Ptr<Presentation::WindowServer> windowServer;
 
-namespace UIManager
+namespace UI
 {
 
 namespace Icons
 {
-    texturehandle_t play;
-    texturehandle_t pause;
-    texturehandle_t stop;
-    texturehandle_t game;
-    texturehandle_t environment;
-    texturehandle_t light;
+texturehandle_t play;
+texturehandle_t pause;
+texturehandle_t stop;
+texturehandle_t game;
+texturehandle_t environment;
+texturehandle_t light;
 }
 
-Icons::texturehandle_t NLoadIcon(const char* resource)
+}
+//------------------------------------------------------------------------------
+/**
+*/
+UI::Icons::texturehandle_t NLoadIcon(const char* resource)
 {
     return Resources::CreateResource(resource, "EditorIcons"_atm, nullptr, nullptr, true).HashCode64();
 }
@@ -54,9 +65,27 @@ Icons::texturehandle_t NLoadIcon(const char* resource)
 //------------------------------------------------------------------------------
 /**
 */
-void
-OnActivate()
+UIManager::UIManager()
+{ 
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UIManager::~UIManager()
 {
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+UIManager::OnActivate()
+{
+    Game::Manager::OnActivate();
+
     windowServer = Presentation::WindowServer::Create();
 
     windowServer->RegisterWindow("Presentation::Console", "Console", "Debug");
@@ -64,6 +93,7 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::History", "History", "Editor");
     windowServer->RegisterWindow("Presentation::StyleEditor", "Style Editor", "Editor");
     windowServer->RegisterWindow("Presentation::Toolbar", "Toolbar");
+    windowServer->RegisterWindow("Presentation::Environment", "Environment");
     windowServer->RegisterWindow("Presentation::Scene", "Scene View");
     windowServer->RegisterWindow("Presentation::Inspector", "Inspector");
     windowServer->RegisterWindow("Presentation::AssetBrowser", "Asset Browser");
@@ -72,29 +102,55 @@ OnActivate()
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     windowServer->RegisterWindow("Presentation::Physics", "Physics");
     
-    Icons::play          = NLoadIcon("systex:icon_play.dds");
-    Icons::pause         = NLoadIcon("systex:icon_pause.dds");
-    Icons::stop          = NLoadIcon("systex:icon_stop.dds");
-    Icons::environment   = NLoadIcon("systex:icon_environment.dds");
-    Icons::game          = NLoadIcon("systex:icon_game.dds");
-    Icons::light         = NLoadIcon("systex:icon_light.dds");
+    UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
+    UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");
+    UI::Icons::stop          = NLoadIcon("systex:icon_stop.dds");
+    UI::Icons::environment   = NLoadIcon("systex:icon_environment.dds");
+    UI::Icons::game          = NLoadIcon("systex:icon_game.dds");
+    UI::Icons::light         = NLoadIcon("systex:icon_light.dds");
     
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveActive); }, "Save", "Ctrl+S", "Edit");
     windowServer->RegisterCommand([](){ Presentation::WindowServer::Instance()->BroadcastSave(Presentation::BaseWindow::SaveMode::SaveAll); }, "Save All", "Ctrl+Shift+S", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Undo(); }, "Undo", "Ctrl+Z", "Edit");
     windowServer->RegisterCommand([](){ Edit::CommandManager::Redo(); }, "Redo", "Ctrl+Shift+Z", "Edit");
+    
+    windowServer->RegisterCommand([]()
+    {
+        auto selection = Tools::SelectionTool::Selection();
+        Edit::CommandManager::BeginMacro("Delete entities", false);
+        Util::Array<Editor::Entity> emptySelection;
+        Edit::SetSelection(emptySelection);
+        for (auto e : selection)
+        {
+            Edit::DeleteEntity(e);
+        }
+        Edit::CommandManager::EndMacro();
+    }, "Delete", "Delete", "Edit");
+    
+    // Import and export is temporary and should be removed later.
     windowServer->RegisterCommand([](){ 
         static Util::String localpath = IO::URI("export:levels").LocalPath();
         Util::String path;
         IO::IoServer::Instance()->CreateDirectory(localpath);
         if (IO::FileDialog::SaveFile("Select location of exported level file", localpath, {"*.nlvl"}, path))
             Editor::state.editorWorld->ExportLevel(path.AsCharPtr());
-    }, "Export", "Ctrl+Shift+E", "File");
+    }, "Export nlvl", "Ctrl+Shift+E", "File");
+    
+    windowServer->RegisterCommand([](){ 
+        static Util::String localpath = IO::URI("export:levels").LocalPath();
+        Util::String path;
+        if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, {"*.nlvl"}, path))
+        {
+            auto gameWorld = Game::GetWorld(WORLD_DEFAULT);
+            Game::PackedLevel* pLevel = gameWorld->PreloadLevel(path);
+            auto ents = pLevel->Instantiate();
+            gameWorld->UnloadLevel(pLevel);
+        }
+    }, "Import nlvl (game only)", "Ctrl+Shift+I", "File");
 
+    //
     Graphics::GraphicsServer::Instance()->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
     {
-        ImGui::DockSpaceOverViewport();
-        windowServer->RunAll();
         FrameScript_editorframe::Bind_Scene(FrameScript_default::Submission_Scene);
         FrameScript_editorframe::Bind_SceneBuffer(Frame::TextureImport::FromExport(FrameScript_default::Export_ColorBuffer));
         CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(CoreGraphics::CurrentWindow);
@@ -116,8 +172,9 @@ OnActivate()
 /**
 */
 void
-OnDeactivate()
+UIManager::OnDeactivate()
 {
+    Game::Manager::OnDeactivate();
     windowServer = nullptr;
 }
 
@@ -125,24 +182,20 @@ OnDeactivate()
 /**
 */
 void
-OnBeginFrame()
+UIManager::OnBeginFrame()
 {
     windowServer->Update();
+    ImGui::DockSpaceOverViewport();
+    windowServer->RunAll();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Game::ManagerAPI
-Create()
+void
+UIManager::OnFrame()
 {
-    Game::ManagerAPI api;
-    api.OnActivate = &OnActivate;
-    api.OnDeactivate = &OnDeactivate;
-    api.OnBeginFrame = &OnBeginFrame;
-    return api;
-}
 
-} // namespace UIManager
+}
 
 } // namespace Editor

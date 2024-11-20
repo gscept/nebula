@@ -2405,6 +2405,25 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         terrainState.updateShadowMap = true;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+TerrainContext::GetVisible()
+{
+    return terrainState.renderToggle;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainContext::SetVisible(bool visible)
+{
+    terrainState.renderToggle = visible;
+}
+
 //------------------------------------------------------------------------------
 /**
 */

@@ -2,7 +2,7 @@
 # Toolkit-common
 #-------------------------------------------------------------------------------
 
-fips_begin_lib(toolkit-common)
+nebula_begin_lib(toolkit-common)
     target_include_directories(toolkit-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     
     target_precompile_headers(toolkit-common PRIVATE <foundation/stdneb.h>)
@@ -85,4 +85,4 @@ fips_begin_lib(toolkit-common)
                     distributedjob.cc
                     distributedjob.h
                 )
-fips_end_lib()
+nebula_end_lib()

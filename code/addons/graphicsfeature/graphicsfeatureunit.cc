@@ -37,7 +37,10 @@
 #include "flat/graphicsfeature/terrainschema.h"
 #include "flat/graphicsfeature/vegetationschema.h"
 #include "nflatbuffer/flatbufferinterface.h"
-#include "components/graphicsfeature.h"
+#include "components/camera.h"
+#include "components/decal.h"
+#include "components/lighting.h"
+#include "components/model.h"
 
 #include "scripting/deargui.h"
 
@@ -83,9 +86,12 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnAttach()
 {
-    Game::RegisterType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
-    Game::RegisterType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
-    Game::RegisterType<Camera>();
+    this->RegisterComponentType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
+    this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
+    this->RegisterComponentType<AreaLight>({.decay = true, .OnInit = &GraphicsManager::InitAreaLight });
+    this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
+    this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
+    this->RegisterComponentType<Camera>();
     Scripting::RegisterDearguiModule();
 }
 
@@ -339,8 +345,11 @@ GraphicsFeatureUnit::OnActivate()
     this->gfxServer->SetupPostLogicViewCalls(postLogicViewCalls);
 
     // Attach managers
-    this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
-    this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
+    this->graphicsManager = GraphicsManager::Create();
+    this->cameraManager = CameraManager::Create();
+
+    this->AttachManager(this->graphicsManager);
+    this->AttachManager(this->cameraManager);
 
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();

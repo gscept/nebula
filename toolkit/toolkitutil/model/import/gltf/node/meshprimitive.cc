@@ -70,11 +70,10 @@ AttributeToComponentIndex(Gltf::Primitive::Attribute attribute, bool normalized)
 
 //------------------------------------------------------------------------------
 /**
-    The "enable_if" template magic just enables a linting and compile error if we try to use an index buffer type other than an integral type
 */
 template <typename TYPE, int n>
 Math::vec4
-ReadVertexData(void const* buffer, const uint i)
+ReadVertexData(void const* const buffer, const uint i)
 {
     static_assert(n >= 1 && n <= 4, "You're doing it wrong!");
     TYPE const* const v = (TYPE*)(buffer);
@@ -104,6 +103,30 @@ ReadVertexData(void const* buffer, const uint i)
 //------------------------------------------------------------------------------
 /**
 */
+Math::vec4
+ReadVertexData(CoreGraphics::VertexComponent::Format format, void const* const buffer, uint32_t index)
+{
+    Math::vec4 data;
+    switch (format)
+    {
+        //clang-format off
+        case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(buffer, index); break;
+        case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(buffer, index); break;
+        case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(buffer, index); break;
+        case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(buffer, index); break;
+        case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(buffer, index); break;
+        case CoreGraphics::VertexComponent::Format::UByte4:   data = ReadVertexData<ubyte, 4>(buffer, index); break;
+        default:
+            n_error("ERROR: Invalid vertex component type!");
+            break;
+        //clang-format on
+    }
+    return data;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
 {
@@ -119,14 +142,22 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         const Gltf::Primitive* primitive = context->primitives[index];
         SceneNode* node = context->outSceneNodes[index];
 
-        Gltf::Material& material = context->scene->materials[primitive->material];
-        if (!material.name.IsEmpty())
+
+        if (primitive->material == -1)
         {
-            node->mesh.material = material.name;
+            node->mesh.material = "syssur:gltf_default.sur";
         }
         else
         {
-            node->mesh.material.Format("unnamed_%d", primitive->material);
+            Gltf::Material& material = context->scene->materials[primitive->material];
+            if (!material.name.IsEmpty())
+            {
+                node->mesh.material = material.name;
+            }
+            else
+            {
+                node->mesh.material.Format("unnamed_%d", primitive->material);
+            }
         }
 
         n_assert2(primitive->nebulaMode == CoreGraphics::PrimitiveTopology::Code::TriangleList, "Only triangle lists are supported currently!");
@@ -144,9 +175,10 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
 
         // Find how many vertices and triangle we need
         uint const vertCount = context->scene->accessors[primitive->attributes[Gltf::Primitive::Attribute::Position]].count;
-        uint const triCount = context->scene->accessors[primitive->indices].count / 3;
+        uint const triCount = primitive->indices == -1 ? vertCount / 3 : context->scene->accessors[primitive->indices].count / 3;
 
         meshBuilder->NewMesh(vertCount, triCount);
+
         for (uint j = 0; j < vertCount; j++)
         {
             meshBuilder->AddVertex(MeshBuilderVertex());
@@ -165,9 +197,6 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
             Gltf::Buffer const& buffer = context->scene->buffers[vertexBufferView.buffer];
             const uint bufferOffset = vertexBufferAccessor.byteOffset + vertexBufferView.byteOffset;
 
-            // TODO: sparse accessors
-            n_assert(vertexBufferAccessor.sparse.count == 0);
-
             MeshBuilderVertex::Components component = AttributeToComponentIndex(attribute.Key(), vertexBufferAccessor.normalized);
 
             // If component is invalid, skip it
@@ -179,19 +208,8 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
 
             for (uint j = 0; j < count; j++)
             {
-                Math::vec4 data;
-                switch (vertexBufferAccessor.format)
-                {
-                    case CoreGraphics::VertexComponent::Format::Float:    data = ReadVertexData<float, 1>(vb, j); break;
-                    case CoreGraphics::VertexComponent::Format::Float2:   data = ReadVertexData<float, 2>(vb, j); break;
-                    case CoreGraphics::VertexComponent::Format::Float3:   data = ReadVertexData<float, 3>(vb, j); break;
-                    case CoreGraphics::VertexComponent::Format::Float4:   data = ReadVertexData<float, 4>(vb, j); break;
-                    case CoreGraphics::VertexComponent::Format::UShort4:  data = ReadVertexData<ushort, 4>(vb, j); break;
-                    default:
-                        n_error("ERROR: Invalid vertex component type!");
-                        break;
-                }
-
+                Math::vec4 data = ReadVertexData(vertexBufferAccessor.format, vb, j);
+                
                 MeshBuilderVertex& vtx = meshBuilder->VertexAt(j);
                 switch (component)
                 {
@@ -223,6 +241,49 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
                 }
             }
 
+            if (vertexBufferAccessor.sparse.count > 0)
+            {
+                // substitute the vertex data from the sparse buffer
+
+                Gltf::BufferView const& sparseIndexBufferView =
+                    context->scene->bufferViews[vertexBufferAccessor.sparse.indices.bufferView];
+                Util::Blob const& sparseIndices = context->scene->buffers[sparseIndexBufferView.buffer].data;
+                int const sparseIndexBufferOffset = vertexBufferAccessor.sparse.indices.byteOffset + sparseIndexBufferView.byteOffset;
+
+                byte const* const ibuf = (byte*)sparseIndices.GetPtr() + sparseIndexBufferOffset;
+                const uint count = vertexBufferAccessor.sparse.count;
+
+                Gltf::BufferView const& sparseVertexBufferView =
+                    context->scene->bufferViews[vertexBufferAccessor.sparse.values.bufferView];
+                Util::Blob const& sparseVertices = context->scene->buffers[sparseVertexBufferView.buffer].data;
+                int const sparseVertexBufferOffset =
+                    vertexBufferAccessor.sparse.values.byteOffset + sparseVertexBufferView.byteOffset;
+
+                void const* const vbuf = (void*)((byte*)sparseIndices.GetPtr() + sparseVertexBufferOffset);
+                
+                uint64_t indexByteStride;
+                uint32_t indexMask;
+
+                switch (vertexBufferAccessor.sparse.indices.componentType)
+                {
+                    case Gltf::Accessor::ComponentType::UnsignedByte:   indexByteStride = 1; indexMask = 0x000000FF; break;
+                    case Gltf::Accessor::ComponentType::UnsignedShort:  indexByteStride = 2; indexMask = 0x0000FFFF; break;
+                    case Gltf::Accessor::ComponentType::UnsignedInt:    indexByteStride = 4; indexMask = 0xFFFFFFFF; break;
+                    default:
+                        n_error("ERROR: Invalid index type!");
+                        break;
+                }
+
+                for (size_t j = 0; j < count; j++)
+                {
+                    Math::vec4 data = ReadVertexData(vertexBufferAccessor.format, vbuf, j);
+                    uint32_t idx = *((uint32_t*)(ibuf + (j * indexByteStride)));
+                    idx &= indexMask;
+                    MeshBuilderVertex& vtx = meshBuilder->VertexAt(idx);
+                    vtx.SetPosition(data);
+                }
+            }
+
         }
 
         // Set components on the mesh
@@ -232,25 +293,44 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
         node->base.boundingBox = meshBuilder->ComputeBoundingBox();
 
         // Setup triangles
-        Gltf::Accessor const& indexBufferAccessor = context->scene->accessors[primitive->indices];
-        Gltf::BufferView const& indexBufferView = context->scene->bufferViews[indexBufferAccessor.bufferView];
-        Gltf::Buffer const& buffer = context->scene->buffers[indexBufferView.buffer];
-        Util::Blob const& indexBuffer = buffer.data;
-        const uint bufferOffset = indexBufferAccessor.byteOffset + indexBufferView.byteOffset;
-
-        // TODO: sparse accessors
-        n_assert2(indexBufferAccessor.sparse.count == 0, "Sparse accessors not yet supported!");
-
-        switch (indexBufferAccessor.componentType)
+        if (primitive->indices == -1)
         {
-            case Gltf::Accessor::ComponentType::UnsignedShort: SetupIndexBuffer<ushort>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-            case Gltf::Accessor::ComponentType::UnsignedInt: SetupIndexBuffer<uint>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
-            case Gltf::Accessor::ComponentType::UnsignedByte: SetupIndexBuffer<uchar>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0); break;
+            // TODO: Mesh builder needs to support meshes without indexbuffer.
+            for (size_t i = 0; i < triCount * 3; i += 3)
+            {
+                MeshBuilderTriangle triangle;
+                triangle.SetVertexIndices(i, i + 1, i + 2);
+                meshBuilder->AddTriangle(triangle);
+            }
+        }
+        else // Read indexbuffer from GLTF
+        {
+            Gltf::Accessor const& indexBufferAccessor = context->scene->accessors[primitive->indices];
+            Gltf::BufferView const& indexBufferView = context->scene->bufferViews[indexBufferAccessor.bufferView];
+            Gltf::Buffer const& buffer = context->scene->buffers[indexBufferView.buffer];
+            Util::Blob const& indexBuffer = buffer.data;
+            const uint bufferOffset = indexBufferAccessor.byteOffset + indexBufferView.byteOffset;
+
+            // TODO: sparse accessors
+            n_assert2(indexBufferAccessor.sparse.count == 0, "Sparse accessors not yet supported!");
+
+            switch (indexBufferAccessor.componentType)
+            {
+            case Gltf::Accessor::ComponentType::UnsignedByte:
+                SetupIndexBuffer<uchar>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0);
+                break;
+            case Gltf::Accessor::ComponentType::UnsignedShort:
+                SetupIndexBuffer<ushort>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0);
+                break;
+            case Gltf::Accessor::ComponentType::UnsignedInt:
+                SetupIndexBuffer<uint>(*meshBuilder, indexBuffer, bufferOffset, indexBufferAccessor, 0);
+                break;
             default:
                 n_error("ERROR: Invalid vertex index type!");
                 break;
+            }
         }
-
+        
         if (!(attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Normal>() &&
               attributeFlags.IsSet<(IndexT)Gltf::Primitive::Attribute::Tangent>()))
         {

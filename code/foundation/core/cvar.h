@@ -16,6 +16,7 @@
         `ui_` - UI specific
         `cl_` - General client/application
         `sv_` - Server only (networking)
+        `ed_` - Editor
     
     @copyright
     (C) 2021 Individual contributors, see AUTHORS file

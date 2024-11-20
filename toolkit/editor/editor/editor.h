@@ -17,6 +17,7 @@ namespace Editor
 {
 
 constexpr uint32_t WORLD_EDITOR = uint32_t('EWLD');
+constexpr uint32_t TIMESOURCE_EDITOR = uint32_t('TsEd');
 
 typedef Game::Entity Entity;
 
@@ -35,10 +36,8 @@ struct Editable
 
 };
 
-struct EditorState
+struct State
 {
-    /// is set to true if the game is currently playing
-    bool isPlayingGame = false;
     /// contains the world state for the editor
     Game::World* editorWorld;
     /// maps from editor entity index to editable
@@ -47,6 +46,9 @@ struct EditorState
 
 /// Create the editor
 void Create();
+
+/// Start the editor
+void Start();
 
 /// Destroy the editor
 void Destroy();
@@ -61,6 +63,6 @@ void PauseGame();
 void StopGame();
 
 /// global editor state
-extern EditorState state;
+extern State state;
 
 } // namespace Editor

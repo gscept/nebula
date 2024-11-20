@@ -42,9 +42,8 @@ vsGLTFStatic(
         [slot = 1] in vec3 normal,
         [slot = 2] in ivec2 uv,
         [slot = 3] in vec4 tangent,
-        out vec3 Tangent,
+        out vec4 Tangent,
         out vec3 Normal,
-        out flat float Sign,
         out vec2 UV,
         out vec3 WorldSpacePos
 )
@@ -53,9 +52,8 @@ vsGLTFStatic(
     gl_Position = ViewProjection * modelSpace;
     UV = UnpackUV(uv);
 
-    Tangent     = (Model * vec4(tangent.xyz, 0)).xyz;
+    Tangent     = vec4((Model * vec4(tangent.xyz, 0)).xyz, tangent.w);
     Normal      = (Model * vec4(normal, 0)).xyz;
-    Sign        = tangent.w;
     WorldSpacePos = modelSpace.xyz;
 }
 
@@ -66,9 +64,8 @@ vsGLTFStatic(
 shader
 void
 psGLTF(
-    in vec3 Tangent,
+    in vec4 Tangent,
     in vec3 Normal,
-    in flat float Sign,
     in vec2 UV,
     in vec3 WorldSpacePos,
     [color0] out vec4 OutColor,
@@ -83,9 +80,9 @@ psGLTF(
     vec4 material;
     material[MAT_METALLIC] = metallicRoughness.b;
     material[MAT_ROUGHNESS] = metallicRoughness.g;
-    material[MAT_CAVITY] = Greyscale(occlusion);
-    material[MAT_EMISSIVE] = 0.0f;
-    vec3 N = normalize(calcBump(Tangent, Normal, Sign, normals));
+    material[MAT_CAVITY] = occlusion.r;
+    material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
+    vec3 N = normalize(calcBump(Tangent.xyz, Normal, Tangent.w, normals));
     
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
     vec3 F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], vec3(0.04));
