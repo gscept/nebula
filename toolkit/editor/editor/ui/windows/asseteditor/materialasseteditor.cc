@@ -317,14 +317,14 @@ MaterialSetup(AssetEditorItem* item)
             itemData->images[i].res = res;
             itemData->images[i].texture.layer = 0;
             itemData->images[i].texture.mip = 0;
-            itemData->images[i].texture.nebulaHandle.resourceId = res.resourceId;
+            itemData->images[i].texture.nebulaHandle = res.resource;
             memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
         });
 
         itemData->images[i].res = res;
         itemData->images[i].texture.layer = 0;
         itemData->images[i].texture.mip = 0;
-        itemData->images[i].texture.nebulaHandle.resourceId = res.resourceId;
+        itemData->images[i].texture.nebulaHandle = res.resource;
         memcpy(&itemData->originalImages[i], &itemData->images[i], sizeof(ImageHolder));
     }
 }
