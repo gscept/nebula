@@ -44,7 +44,7 @@ TextureGetVkImageView(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-const VkImageView 
+const VkImageView
 TextureGetVkStencilImageView(const CoreGraphics::TextureId id)
 {
     Ids::Id32 stencil = textureAllocator.ConstGet<Texture_LoadInfo>(id.id).stencilExtension;
@@ -55,7 +55,7 @@ TextureGetVkStencilImageView(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-const VkDevice 
+const VkDevice
 TextureGetVkDevice(const CoreGraphics::TextureId id)
 {
     return textureAllocator.ConstGet<Texture_LoadInfo>(id.id).dev;
@@ -116,7 +116,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
         table.bindCounts[i].Resize(sparseMemoryRequirement.imageMipTailFirstLod);
     }
 
-    // create sparse bindings, 
+    // create sparse bindings,
     for (uint32_t layer = 0; layer < info.layers; layer++)
     {
         for (SizeT mip = 0; mip < (SizeT)sparseMemoryRequirement.imageMipTailFirstLod; mip++)
@@ -666,6 +666,8 @@ CreateTexture(const TextureCreateInfo& info)
     ObjectSetName(ret, loadInfo.name.Value());
 #endif
 
+    TextureIdRelease(ret);
+
     return ret;
 }
 
@@ -1006,7 +1008,7 @@ TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, I
 
     const TextureSparsePageTable& table = textureSparseExtensionAllocator.ConstGet<TextureExtension_SparsePageTable>(sparseExtension);
     Util::Array<VkSparseImageMemoryBind>& pageBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparsePendingBinds>(sparseExtension);
-    
+
     // get page and allocate memory
     CoreGraphics::TextureSparsePage& page = table.pages[layer][mip][pageIndex];
     n_assert(page.alloc.mem != VK_NULL_HANDLE);
@@ -1173,7 +1175,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
     if (opaqueBinds.IsEmpty() && pageBinds.IsEmpty())
         return;
 
-    /* unused?    
+    /* unused?
     // setup bind structs
     VkSparseImageMemoryBindInfo imageMemoryBindInfo =
     {
@@ -1197,7 +1199,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
         pageBinds.IsEmpty() ? 0u : 1u, &imageMemoryBindInfo,
         0, nullptr
     };
-*/    
+*/
 
     // execute sparse bind, the bind call
     Vulkan::SparseTextureBind(img, opaqueBinds, pageBinds);

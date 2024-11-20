@@ -119,7 +119,7 @@ LightContext::~LightContext()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::Create()
 {
     __CreateContext();
@@ -291,7 +291,7 @@ LightContext::Discard()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetupGlobalLight(
         const Graphics::GraphicsEntityId id,
         const Math::vec3& color,
@@ -317,13 +317,13 @@ LightContext::SetupGlobalLight(
 
     Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
-    
+
     SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
     directionalLightAllocator.Get<DirectionalLight_Backlight>(lid) = backlight;
     directionalLightAllocator.Get<DirectionalLight_Ambient>(lid) = ambient;
     directionalLightAllocator.Get<DirectionalLight_BacklightOffset>(lid) = backlightFactor;
 
-    if (castShadows)
+    if (castShadows && shadowCasterAllocator.Size() < 16)
     {
         // create new graphics entity for each view
         for (IndexT i = 0; i < Shared::NUM_CASCADES; i++)
@@ -361,7 +361,7 @@ LightContext::GetAmbient(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambient)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -374,12 +374,12 @@ LightContext::SetAmbient(const Graphics::GraphicsEntityId id, Math::vec3& ambien
 //------------------------------------------------------------------------------
 /**
 */
-void 
-LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, 
-    const Math::vec3& color, 
-    const float intensity, 
-    const float range, 
-    bool castShadows, 
+void
+LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
+    const Math::vec3& color,
+    const float intensity,
+    const float range,
+    bool castShadows,
     const CoreGraphics::TextureId projection)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
@@ -416,15 +416,15 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetupSpotLight(
-    const Graphics::GraphicsEntityId id, 
+    const Graphics::GraphicsEntityId id,
     const Math::vec3& color,
-    const float intensity, 
+    const float intensity,
     const float innerConeAngle,
     const float outerConeAngle,
     const float range,
-    bool castShadows, 
+    bool castShadows,
     const CoreGraphics::TextureId projection)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
@@ -459,7 +459,7 @@ LightContext::SetupSpotLight(
     spotLightAllocator.Set<SpotLight_Observer>(sli, id);
     spotLightAllocator.Set<SpotLight_ProjectionTransform>(sli, proj);
 
-    if (castShadows)
+    if (castShadows && shadowCasterAllocator.Size() < 16)
     {
         // allocate shadow caster slice
         Ids::Id32 casterId = shadowCasterAllocator.Alloc();
@@ -565,7 +565,7 @@ LightContext::SetupAreaLight(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -595,7 +595,7 @@ LightContext::SetRange(const Graphics::GraphicsEntityId id, const float range)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetIntensity(const Graphics::GraphicsEntityId id, const float intensity)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -849,7 +849,7 @@ LightContext::GetType(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::GetInnerOuterAngle(const Graphics::GraphicsEntityId id, float& inner, float& outer)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -863,7 +863,7 @@ LightContext::GetInnerOuterAngle(const Graphics::GraphicsEntityId id, float& inn
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inner, float outer)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -882,7 +882,7 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
@@ -902,7 +902,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
             // do reverse lookup to find shadow caster
             Ids::Id32 ctxId = shadowCasterSliceMap[observers[i]];
             Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
-            
+
             shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId) = cascadeProj;
             cascadeProj.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[ctxId]);
         }
@@ -997,7 +997,7 @@ LightContext::SetupTerrainShadows(const CoreGraphics::TextureId terrainShadowMap
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::BufferId 
+const CoreGraphics::BufferId
 LightContext::GetLightIndexBuffer()
 {
     return clusterState.clusterLightIndexLists;
@@ -1015,7 +1015,7 @@ LightContext::GetLightsBuffer()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction)
 {
     auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
@@ -1026,7 +1026,7 @@ LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
 {
     auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
@@ -1036,7 +1036,7 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(UpdateLightResources, Lighting);
@@ -1074,7 +1074,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         flags |= LightsCluster::USE_SHADOW_BITFLAG;
     }
     params.GlobalLightFlags = flags;
-    params.GlobalLightShadowBias = 0.0001f;																			 
+    params.GlobalLightShadowBias = 0.0001f;
     params.GlobalLightShadowIntensity = 1.0f;
     auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.globalLightShadowMap);
     params.GlobalLightShadowMapSize[0] = 1.0f / shadowDims.width;
@@ -1181,7 +1181,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 trans.position.store3(spotLight.position);
                 forward.store3(spotLight.forward);
                 (color[i] * intensity[i]).store(spotLight.color);
-                
+
                 // calculate sine and cosine
                 spotLight.angleSinCos[0] = Math::sin(angles[1]);
                 spotLight.angleSinCos[1] = Math::cos(angles[1]);
@@ -1197,7 +1197,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 Math::transform44 trans = areaLightAllocator.Get<AreaLight_Transform>(typeIds[i]);
                 bool twoSided = areaLightAllocator.Get<AreaLight_TwoSided>(typeIds[i]);
                 auto shape = areaLightAllocator.Get<AreaLight_Shape>(typeIds[i]);
-                
+
                 auto& areaLight = clusterState.lightList.AreaLights[numAreaLights];
                 areaLight.shadowExtension = -1;
 
@@ -1219,7 +1219,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 trans.setposition(trans.getposition() + Math::vector(0, 0, twoSided ? 0 : -range[i] / 2));
                 Math::mat4 viewSpace = viewTransform * trans.getmatrix();
                 Math::bbox bbox(viewSpace);
-                
+
                 bbox.pmin.store3(areaLight.bboxMin);
                 areaLight.range = range[i];
                 bbox.pmax.store3(areaLight.bboxMax);
@@ -1374,7 +1374,7 @@ void
 LightContext::OnRenderDebug(uint32_t flags)
 {
     using namespace CoreGraphics;
-    auto const& types = genericLightAllocator.GetArray<Type>();    
+    auto const& types = genericLightAllocator.GetArray<Type>();
     auto const& colors = genericLightAllocator.GetArray<Color>();
     auto const& ranges = genericLightAllocator.GetArray<Range>();
     auto const& ids = genericLightAllocator.GetArray<TypedLightId>();
@@ -1426,13 +1426,13 @@ LightContext::OnRenderDebug(uint32_t flags)
 
                 // we want the points to first get projected, then transformed v * Projection * Transform;
                 Math::mat4 frustum = unscaledTransform * proj;
-            
+
                 Math::vec4 col = Math::vec4(colors[i], 1.0f);
 
                 RenderShape shape;
                 shape.SetupSimpleShape(
-                    RenderShape::Box, 
-                    RenderShape::RenderFlag(RenderShape::CheckDepth | RenderShape::Wireframe), 
+                    RenderShape::Box,
+                    RenderShape::RenderFlag(RenderShape::CheckDepth | RenderShape::Wireframe),
                     col,
                     frustum);
                 shapeRenderer->AddShape(shape);

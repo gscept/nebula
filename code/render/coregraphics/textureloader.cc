@@ -120,8 +120,8 @@ quit_loop:
 void
 FinishMips(CoreGraphics::CmdBufferId transferCommands, CoreGraphics::CmdBufferId handoverCommands, TextureStreamData* streamData, uint mipBits, const CoreGraphics::TextureId texture, const char* name)
 {
-    // Finish the mips by handing them over 
-    Util::FixedArray<TextureBarrierInfo> barriers(Util::PopCnt(mipBits) * streamData->numLayers);
+    // Finish the mips by handing them over
+    Util::FixedArray<TextureBarrierInfo, true> barriers(Util::PopCnt(mipBits) * streamData->numLayers);
 
     uint mipIndexToLoad = Util::FirstOne(mipBits);
     uint barrierCounter = 0;
@@ -261,10 +261,8 @@ TextureLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stre
                 }
             }
         }
-            
-        CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
 
-        TextureIdRelease(texture);
+        CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
         ret.id = texture;
         return ret;
     }

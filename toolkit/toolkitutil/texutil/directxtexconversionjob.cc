@@ -79,7 +79,9 @@ DirectXTexConversionJob::Convert()
         {
             None,
             NormalMap,
-            HeightMap
+            MaterialMap,
+            HeightMap,
+            
         };
         TextureDataType type = TextureDataType::None;
 
@@ -96,7 +98,15 @@ DirectXTexConversionJob::Convert()
             this->logger->Print("%s ", "Normal Map (BC5 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
             type = TextureDataType::NormalMap;
         }
-
+        else if (String::MatchPattern(this->srcPath, "*material.*") ||
+            String::MatchPattern(this->srcPath, "*orm.*") ||
+            String::MatchPattern(this->srcPath, "*ORM.*") ||
+            String::MatchPattern(this->srcPath, "*MetallicRoughness.*") ||
+            String::MatchPattern(this->srcPath, "*Occlusion.*"))
+        {
+            this->logger->Print("%s ", "Material/Occlusion Data Map (BC7 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
+            type = TextureDataType::MaterialMap;
+        }
         else if (String::MatchPattern(this->srcPath, "*height.*"))
         {
             this->logger->Print("%s ", "Height Map (R16 UNORM)"_text.Color(TextColor::Yellow).AsCharPtr());
@@ -144,6 +154,9 @@ DirectXTexConversionJob::Convert()
                 break;
             case HeightMap:
                 args.Append(" -f R16_UNORM ");
+                break;
+            case MaterialMap:
+                args.Append(" -f BC7_UNORM ");
                 break;
         }
 

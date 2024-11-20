@@ -11,6 +11,33 @@
 */
 #include "core/config.h"
 
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint64_t
+operator"" _KB(const unsigned long long val)
+{
+    return val * 1024;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint64_t
+operator"" _MB(const unsigned long long val)
+{
+    return val * 1024 * 1024;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint64_t
+operator"" _GB(const unsigned long long val)
+{
+    return val * 1024 * 1024 * 1024;
+}
+
 #if (__WIN32__)
 #include "memory/win32/win32memory.h"
 #elif ( __OSX__ || __APPLE__ || __linux__ )
@@ -18,6 +45,9 @@
 #else
 #error "UNKNOWN PLATFORM"
 #endif
+
+extern thread_local char ThreadLocalMiniHeap[];
+extern thread_local size_t ThreadLocalMiniHeapIterator;
 
 //------------------------------------------------------------------------------
 /**
@@ -44,7 +74,8 @@ template<typename TYPE>
 TYPE*
 ArrayAllocStack(size_t size)
 {
-    TYPE* buffer = (TYPE*)StackAlloc(size * sizeof(TYPE));
+    TYPE* buffer = (TYPE*)(ThreadLocalMiniHeap + ThreadLocalMiniHeapIterator);
+    ThreadLocalMiniHeapIterator += size * sizeof(TYPE);
     if constexpr (!std::is_trivially_constructible<TYPE>::value)
     {
         for (size_t i = 0; i < size; ++i)
@@ -79,6 +110,8 @@ template<typename TYPE>
 void
 ArrayFreeStack(size_t size, TYPE* buffer)
 {
+    char* topPtr = (ThreadLocalMiniHeap + ThreadLocalMiniHeapIterator - size * sizeof(TYPE));
+    n_assert(buffer == (TYPE*)topPtr);
     if constexpr (!std::is_trivially_destructible<TYPE>::value)
     {
         for (size_t i = 0; i < size; ++i)
@@ -86,5 +119,5 @@ ArrayFreeStack(size_t size, TYPE* buffer)
             buffer[i].~TYPE();
         }
     }
-    StackFree((void*)buffer);
+    ThreadLocalMiniHeapIterator -= size * sizeof(TYPE);
 }
