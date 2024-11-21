@@ -113,8 +113,9 @@ ShaderSetup(
     uint32_t numPerStageStorageImages[NumShaders] = {0};
     uint32_t numPerStageAccelerationStructures[NumShaders] = {0};
     uint32_t numInputAttachments = 0;
-    for (i = 0; i < varblocks.size(); i++) 
-    { 
+    bool bindingTable[128] = { false };
+    for (i = 0; i < varblocks.size(); i++)
+    {
         AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[i]);
         VkDescriptorSetLayoutBinding& binding = block->bindingLayout;
         ResourceTableLayoutConstantBuffer cbo;
@@ -123,15 +124,24 @@ ShaderSetup(
         cbo.visibility = AllVisibility;
         uint32_t slotsUsed = 0;
 
-        if (block->HasAnnotation("Visibility"))
+        if (binding.binding != 0xFFFFFFFF)
         {
-            cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
-            UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
-        }
-        else
-        {
-            for (IndexT i = 0; i < NumShaders; i++)
-                numPerStageUniformBuffers[i]++;
+            bool occupiesNewBinding = !bindingTable[binding.binding];
+            bindingTable[binding.binding] = true;
+
+            if (occupiesNewBinding)
+            {
+                if (block->HasAnnotation("Visibility"))
+                {
+                    cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
+                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
+                }
+                else
+                {
+                    for (IndexT i = 0; i < NumShaders; i++)
+                        numPerStageUniformBuffers[i]++;
+                }
+            }
         }
 
         if (block->variables.empty()) continue;
@@ -187,6 +197,7 @@ ShaderSetup(
     // do the same for storage buffers
     uint32_t numStorageDyn = 0;
     uint32_t numStorage = 0;
+    memset(bindingTable, 0x0, sizeof(bindingTable));
     for (i = 0; i < varbuffers.size(); i++)
     {
         AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[i]);
@@ -202,15 +213,21 @@ ShaderSetup(
         ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(buffer->set);
         numsets = Math::max(numsets, buffer->set + 1);
 
-        if (buffer->HasAnnotation("Visibility"))
+        bool occupiesNewBinding = !bindingTable[binding.binding];
+        bindingTable[binding.binding] = true;
+
+        if (occupiesNewBinding)
         {
-            rwbo.visibility = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
-            UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
-        }
-        else
-        {
-            for (IndexT i = 0; i < NumShaders; i++)
-                numPerStageStorageBuffers[i]++;
+            if (buffer->HasAnnotation("Visibility"))
+            {
+                rwbo.visibility = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
+                UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
+            }
+            else
+            {
+                for (IndexT i = 0; i < NumShaders; i++)
+                    numPerStageStorageBuffers[i]++;
+            }
         }
 
         if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP)
@@ -223,7 +240,6 @@ ShaderSetup(
         }
 
         rinfo.rwBuffers.Append(rwbo);
-        n_assert(buffer->alignedSize < CoreGraphics::MaxConstantBufferSize);
     }
     n_assert(CoreGraphics::MaxResourceTableDynamicOffsetReadWriteBuffers >= numStorageDyn);
     n_assert(CoreGraphics::MaxResourceTableReadWriteBuffers >= numStorage);
@@ -240,7 +256,7 @@ ShaderSetup(
     {
         AnyFX::VkSampler* sampler = static_cast<AnyFX::VkSampler*>(samplers[i]);
         if (!sampler->textureVariables.empty())
-        {       
+        {
             // okay, a bit ugly since we actually just need a Vulkan sampler...
             const VkSamplerCreateInfo& inf = sampler->samplerInfo;
             SamplerCreateInfo info = ToNebulaSamplerCreateInfo(inf);
@@ -332,7 +348,7 @@ ShaderSetup(
             tex.visibility = AllVisibility;
 
             bool storageImage = variable->bindingLayout.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            
+
             if (variable->HasAnnotation("Visibility"))
             {
                 tex.visibility = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
