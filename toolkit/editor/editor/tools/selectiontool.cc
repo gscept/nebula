@@ -56,7 +56,9 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
 
     bool performPicking = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && state.picking.pauseCounter == 0;
-    SelectionMode mode = keyboard->KeyPressed(Input::Key::LeftControl) ? SelectionMode::Append : SelectionMode::Replace;
+    SelectionMode mode = (keyboard->KeyPressed(Input::Key::LeftControl) || keyboard->KeyPressed(Input::Key::RightControl))
+                             ? SelectionMode::Append
+                             : SelectionMode::Replace;
 
     if (performPicking)
     {
@@ -131,7 +133,17 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
             }
             
             if (closestEntity != Editor::Entity::Invalid())
-                newSelection.Append(closestEntity);
+            {
+                IndexT existsAtIndex = newSelection.FindIndex(closestEntity);
+                if (existsAtIndex == InvalidIndex)
+                {
+                    newSelection.Append(closestEntity);
+                }
+                else
+                {
+                    newSelection.EraseIndex(existsAtIndex);
+                }
+            }
             
             if (!newSelection.IsEmpty() || !state.selection.IsEmpty())
             {
