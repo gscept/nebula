@@ -175,12 +175,12 @@
                     },
                     {
                         "batch": "FlatGeometryDepth",
-                        "shader": "system_shaders/static",
+                        "shader": "system_shaders/skinned",
                         "variation": "Skinned|Depth"
                     },
                     {
                         "batch": "FlatGeometryLit",
-                        "shader": "system_shaders/gltf",
+                        "shader": "system_shaders/skinned",
                         "variation": "Skinned"
                     }
                 ]

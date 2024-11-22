@@ -156,13 +156,27 @@ NglTFScene::Setup(Gltf::Document* scene
     for (size_t i = 0; i < scene->skins.Size(); i++)
     {
         Gltf::Skin const& skin = scene->skins[i];
+        n_assert2(skin.inverseBindMatrices != -1, "Support for gltfs without inverse bind matrices not yet implemented!\n");
+
+        // An accessor referenced by inverseBindMatrices MUST have floating-point components of
+        // "MAT4" type.The number of elements of the accessor referenced by inverseBindMatrices MUST greater than or
+        // equal to the number of joints elements. The fourth row of each matrix MUST be set to[0.0, 0.0, 0.0, 1.0].
+        Gltf::Accessor const& bindAccessor = scene->accessors[skin.inverseBindMatrices];
+        Gltf::BufferView const& bindBufferView = scene->bufferViews[bindAccessor.bufferView];
+        Gltf::Buffer const& bindBuffer = scene->buffers[bindBufferView.buffer];
+        Math::mat4 const* const buf = (Math::mat4*)((byte*)bindBuffer.data.GetPtr() + bindBufferView.byteOffset + bindAccessor.byteOffset);
+
+        uint64_t matIndex = 0;
         for (auto jointNodeIndex : skin.joints)
         {
+            Math::mat4 const& inverseBindMatrix = buf[matIndex];
             Gltf::Node* gltfJointNode = &scene->nodes[jointNodeIndex];
             SceneNode* node = nodeLookup[gltfJointNode];
             node->type = SceneNode::NodeType::Joint;
             node->skeleton.isSkeletonRoot = node->base.parent == nullptr || skin.skeleton == jointNodeIndex;
             node->anim.animIndex = 0; // default to anim 0
+            node->skeleton.bindMatrix = inverseBindMatrix;
+            matIndex++;
         }
     }
 
@@ -276,8 +290,6 @@ NglTFScene::Setup(Gltf::Document* scene
                 else if (curve.curveType == CoreAnimation::CurveType::Code::Rotation)
                 {
                     // quaternion
-                    // TODO: Doublecheck that our quaternions and GLTFs are defined the same way
-                    //       otherwise we'll have to swizzle the real scalar
                     n_assert(curveAccessor.type == Gltf::Accessor::Type::Vec4);
                 }
                 else if (curve.curveType == CoreAnimation::CurveType::Code::Scale)
@@ -312,7 +324,7 @@ NglTFScene::Setup(Gltf::Document* scene
                 int const timestampBufferOffset = timestampAccessor.byteOffset + timestampBufferView.byteOffset;
                 byte const* const timeBuf = (byte*)timestampData.GetPtr() + timestampBufferOffset;
 
-                // current assumption is that there are as many timestamps as keyframes. if this assert fails, we've might have made the wrong assumption
+                // current assumption is that there are as many timestamps as keyframes. if this assert fails, we might have made the wrong assumption
                 n_assert(curveAccessor.count == timestampAccessor.count);
                 n_assert(timestampAccessor.type == Gltf::Accessor::Type::Scalar);
 
