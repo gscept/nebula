@@ -102,9 +102,21 @@ ID_24_8_TYPE(CmdBufferPoolId);
 
 struct CmdBufferPoolCreateInfo
 {
+#if NEBULA_GRAPHICS_DEBUG
+    const char* name;
+#endif
     CoreGraphics::QueueType queue;
     bool resetable : 1;     // Allow buffers created from this pool to be resetable
     bool shortlived : 1;    // Hint if the buffers allocated from this pool will be short lived
+    
+    CmdBufferPoolCreateInfo()
+        : queue(CoreGraphics::InvalidQueueType)
+        , resetable(false)
+        , shortlived(false)
+#if NEBULA_GRAPHICS_DEBUG
+        , name(nullptr)
+#endif
+    {};
 };
 
 /// create new command buffer pool
