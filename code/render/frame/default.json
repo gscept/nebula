@@ -690,7 +690,33 @@
                             ]
                         }
                     },
-
+                    {
+                        "pass": {
+                            "name": "ImGui",
+                            "attachments": [
+                                {
+                                    "name": "ColorBuffer",
+                                    "flags": "Load|Store"
+                                }
+                            ],
+                            "subpasses": [
+                                {
+                                    "name": "ImGui Pass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [
+                                        "ColorBuffer"
+                                    ],
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "ImGUI"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
                     {
                         "copy": {
                             "name": "ColorBuffer Copy",

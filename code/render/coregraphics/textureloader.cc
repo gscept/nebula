@@ -166,13 +166,17 @@ TextureLoader::TextureLoader()
     this->streamerThreadName = "Texture Streamer Thread";
 
     CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
+    cmdPoolInfo.name = "Async Transfer Commandbuffer Pool";
     cmdPoolInfo.queue = CoreGraphics::QueueType::TransferQueueType;
     cmdPoolInfo.resetable = false;
     cmdPoolInfo.shortlived = true;
     this->asyncTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    cmdPoolInfo.name = "Immediate Transfer Commandbuffer Pool";
     this->immediateTransferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
     cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
+    cmdPoolInfo.name = "Async Handover Commandbuffer Pool";
     this->asyncHandoverPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    cmdPoolInfo.name = "Immediate Handover Commandbuffer Pool";
     this->immediateHandoverPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
 }
 
@@ -329,18 +333,15 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
 
             CoreGraphics::CmdEndMarker(handoverCommands);
             CoreGraphics::CmdEndRecord(handoverCommands);
-            CoreGraphics::CmdBufferIdRelease(handoverCommands);
 
             CoreGraphics::CmdEndMarker(uploadCommands);
             CoreGraphics::CmdEndRecord(uploadCommands);
-            CoreGraphics::CmdBufferIdRelease(uploadCommands);
 
             if (job.immediate)
             {
                 CoreGraphics::FlushUploads(rangesToFlush);
                 CoreGraphics::SubmissionWaitEvent transferWait = CoreGraphics::SubmitCommandBuffers({ uploadCommands }, CoreGraphics::TransferQueueType, nullptr, "Texture mip upload");
                 CoreGraphics::SubmissionWaitEvent graphicsWait = CoreGraphics::SubmitCommandBuffers({ handoverCommands }, CoreGraphics::GraphicsQueueType, { transferWait }, "Receive texture");
-                CoreGraphics::DeferredDestroyCmdBuffer(uploadCommands);
 
                 IndexT index = this->mipHandovers.FindIndex(job.id);
                 if (index == InvalidIndex)
@@ -353,13 +354,15 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
                 // If job is async, add to submit queue
                 this->mipLoadsToSubmit.Enqueue(MipLoadMainThread{ .id = job.id, .bits = mask, .rangesToFlush = rangesToFlush, .transferCmdBuf = uploadCommands, .graphicsCmdBuf = handoverCommands });
             }
+            CoreGraphics::CmdBufferIdRelease(handoverCommands);
+            CoreGraphics::CmdBufferIdRelease(uploadCommands);
         }
         else
         {
             CoreGraphics::CmdEndMarker(uploadCommands);
             CoreGraphics::CmdEndRecord(uploadCommands);
             CoreGraphics::CmdBufferIdRelease(uploadCommands);
-            CoreGraphics::DestroyCmdBuffer(uploadCommands);
+            CoreGraphics::DeferredDestroyCmdBuffer(uploadCommands);
         }
     }
     if (job.loadState.pendingBits != 0x0)
@@ -377,8 +380,8 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
                 {
                     // First, delete the initial buffer
                     CoreGraphics::FreeUploads(handover.rangesToFree);
-                    CoreGraphics::DestroyCmdBuffer(handover.uploadBuffer);
-                    CoreGraphics::DestroyCmdBuffer(handover.receiveBuffer);
+                    CoreGraphics::DeferredDestroyCmdBuffer(handover.uploadBuffer);
+                    CoreGraphics::DeferredDestroyCmdBuffer(handover.receiveBuffer);
 
                     loadedBits |= handover.bits;
                     pendingBits &= ~handover.bits;
