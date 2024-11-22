@@ -71,4 +71,4 @@ TBUIFeatureUnit::OnDeactivate()
 {
     FeatureUnit::OnDeactivate();
 }
-} // namespace Demo
+} // namespace Tests
