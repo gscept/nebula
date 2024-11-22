@@ -491,7 +491,12 @@ class CopyDefinition:
             Error(self.name, "Texture source must define image bits")                
 
         self.destTex = dest['tex']
-        self.destBits = dest['bits']                
+        self.destBits = dest['bits']       
+        
+        self.resourceDependencies = [
+            ResourceDependencyDefinition.raw(name = self.sourceTex, stage = "TransferRead", parser = parser), 
+            ResourceDependencyDefinition.raw(name = self.destTex, stage = "TransferWrite", parser = parser)
+        ]                
 
     def FormatHeader(self, file):
         file.WriteLine("void Copy_{}(const CoreGraphics::CmdBufferId cmdBuf);".format(self.name))
@@ -500,6 +505,8 @@ class CopyDefinition:
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
+        DeclareResourceDependencies("Copy_{}".format(self.name), parser, self.resourceDependencies, file)   
+        file.WriteLine("")
         file.WriteLine("void")
         file.WriteLine("Copy_{}(const CoreGraphics::CmdBufferId cmdBuf)".format(self.name))
         file.WriteLine("{")
@@ -513,6 +520,7 @@ class CopyDefinition:
         file.WriteLine("}")
     
     def FormatSource(self, file):
+        SyncResourceDependencies("Copy_{}".format(self.name), self.resourceDependencies, file)
         file.WriteLine("Copy_{}(cmdBuf);".format(self.name))
 
     def FormatSetup(self, file):
@@ -566,13 +574,8 @@ class BlitDefinition:
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.WriteLine("*/")
-        
         DeclareResourceDependencies("Blit_{}".format(self.name), parser, self.resourceDependencies, file)   
-
         file.WriteLine("")
-        file.WriteLine("//------------------------------------------------------------------------------")
-        file.WriteLine("/**")
-        file.WriteLine("*/")
         file.WriteLine("void")
         file.WriteLine("Blit_{}(const CoreGraphics::CmdBufferId cmdBuf)".format(self.name))
         file.WriteLine("{")
@@ -670,7 +673,7 @@ class SwapDefinition:
         file.WriteLine("/**")
         file.WriteLine("*/")
         
-        DeclareResourceDependencies("Swap_{}".format(self.name), parser, self.resourceDependencies, file)   
+        DeclareResourceDependencies("Swap_{}".format(self.name), parser, self.resourceDependencies, file)    
 
     def FormatSource(self, file):
         file.WriteLine('CoreGraphics::QueueBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Swap");')
