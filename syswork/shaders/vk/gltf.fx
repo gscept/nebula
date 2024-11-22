@@ -60,6 +60,37 @@ vsGLTFStatic(
 //------------------------------------------------------------------------------
 /**
 */
+shader
+void
+vsGLTFSkinned(
+    [slot=0] in vec3 position,
+    [slot=2] in ivec2 uv,
+    [slot=1] in vec3 normal,
+    [slot=3] in vec4 tangent,
+    [slot=7] in vec4 weights,
+    [slot=8] in uvec4 indices,
+    out vec4 Tangent,
+    out vec3 Normal,    
+    out vec2 UV,
+    out vec3 WorldSpacePos
+)
+{
+    vec4 skinnedPos      = SkinnedPosition(position, weights, indices);
+    vec4 skinnedNormal   = SkinnedNormal(normal, weights, indices);
+    vec4 skinnedTangent  = SkinnedNormal(tangent.xyz, weights, indices);
+
+    vec4 modelSpace = Model * skinnedPos;
+    gl_Position = ViewProjection * modelSpace;
+    
+    UV            = UnpackUV(uv);
+    Tangent 	  = vec4(normalize((Model * skinnedTangent).xyz), tangent.w);
+    Normal 		  = normalize((Model * skinnedNormal).xyz);
+    WorldSpacePos = modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 [early_depth]
 shader
 void
@@ -111,6 +142,18 @@ SimpleTechnique(
     GLTFStatic,
     "Static",
     vsGLTFStatic(),
+    psGLTF(
+        calcColor = SimpleColor,
+        calcBump = GLTFNormalMapFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+
+SimpleTechnique(
+    GLTFSkinned,
+    "Skinned",
+    vsGLTFSkinned(),
     psGLTF(
         calcColor = SimpleColor,
         calcBump = GLTFNormalMapFunctor,

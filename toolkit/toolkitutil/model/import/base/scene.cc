@@ -60,7 +60,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
             if (node.mesh.material != "physics")
                 nodesByComponents.Emplace(this->meshes[node.mesh.meshIndex].GetComponents()).Append(&node);
         }
-        else if (node.type == SceneNode::NodeType::Joint && node.base.parent == nullptr)
+        else if (node.type == SceneNode::NodeType::Joint && (node.base.parent == nullptr || node.skeleton.isSkeletonRoot))
         {
             outCharacterNodes.Append(&node);
         }

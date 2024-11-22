@@ -147,6 +147,45 @@
                 ]
             },
             {
+                "name": "GLTFSkinned",
+                "inherits": "DefaultGLTF",
+                "vertexType": "VertexLayoutType::Skin",
+                "desc": "Standard material for skinned GLTF models",
+                "group": "Standard",
+                "passes": [
+                    {
+                        "batch": "Picking",
+                        "shader": "system_shaders/picking",
+                        "variation": "Skinned"
+                    },
+                    {
+                        "batch": "SpotLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Skinned|Spot"
+                    },
+                    {
+                        "batch": "PointLightShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Skinned|Point"
+                    },
+                    {
+                        "batch": "GlobalShadow",
+                        "shader": "system_shaders/shadow",
+                        "variation": "Skinned|Global"
+                    },
+                    {
+                        "batch": "FlatGeometryDepth",
+                        "shader": "system_shaders/static",
+                        "variation": "Skinned|Depth"
+                    },
+                    {
+                        "batch": "FlatGeometryLit",
+                        "shader": "system_shaders/gltf",
+                        "variation": "Skinned"
+                    }
+                ]
+            },
+            {
                 "name": "GLTFDoubleSided",
                 "inherits": "DefaultGLTF",
                 "vertexType": "VertexLayoutType::Normal",
