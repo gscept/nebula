@@ -418,18 +418,6 @@
                                         {
                                             "name": "SunShadowDepth",
                                             "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ClusterLightIndexLists",
-                                            "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ClusterFogIndexLists",
-                                            "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ClusterDecalIndexLists",
-                                            "stage": "PixelShaderRead"
                                         }
                                     ],
 
@@ -481,18 +469,6 @@
                                         {
                                           "name": "SunShadowDepth",
                                           "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ClusterLightIndexLists",
-                                            "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ClusterFogIndexLists",
-                                            "stage": "PixelShaderRead"
-                                        },
-                                        {
-                                            "name": "ClusterDecalIndexLists",
-                                            "stage": "PixelShaderRead"
                                         }
                                     ],
                                   
@@ -714,7 +690,33 @@
                             ]
                         }
                     },
-
+                    {
+                        "pass": {
+                            "name": "ImGui",
+                            "attachments": [
+                                {
+                                    "name": "ColorBuffer",
+                                    "flags": "Load|Store"
+                                }
+                            ],
+                            "subpasses": [
+                                {
+                                    "name": "ImGui Pass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [
+                                        "ColorBuffer"
+                                    ],
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "ImGUI"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
                     {
                         "copy": {
                             "name": "ColorBuffer Copy",

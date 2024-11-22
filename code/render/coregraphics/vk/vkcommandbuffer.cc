@@ -119,11 +119,21 @@ CreateCmdBufferPool(const CmdBufferPoolCreateInfo& info)
         queueFamily
     };
     VkDevice dev = Vulkan::GetCurrentDevice();
-    VkResult res = vkCreateCommandPool(dev, &cmdPoolInfo, nullptr, &commandBufferPools.Get<CommandBufferPool_VkCommandPool>(id));
+    VkCommandPool commandPool;
+    VkResult res = vkCreateCommandPool(dev, &cmdPoolInfo, nullptr, &commandPool);
     commandBufferPools.Set<CommandBufferPool_VkDevice>(id, dev);
     n_assert(res == VK_SUCCESS);
 
+    commandBufferPools.Set<CommandBufferPool_VkCommandPool>(id, commandPool);
+
     CmdBufferPoolId ret = id;
+
+
+#if NEBULA_GRAPHICS_DEBUG
+    ObjectSetName(ret, info.name);
+#endif
+
+
     return ret;
 }
 

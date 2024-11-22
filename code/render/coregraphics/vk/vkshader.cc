@@ -123,6 +123,10 @@ ShaderSetup(
         cbo.num = binding.descriptorCount;
         cbo.visibility = AllVisibility;
         uint32_t slotsUsed = 0;
+        if (block->HasAnnotation("Visibility"))
+        {
+            cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
+        }
 
         if (binding.binding != 0xFFFFFFFF)
         {
@@ -131,16 +135,7 @@ ShaderSetup(
 
             if (occupiesNewBinding)
             {
-                if (block->HasAnnotation("Visibility"))
-                {
-                    cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
-                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
-                }
-                else
-                {
-                    for (IndexT i = 0; i < NumShaders; i++)
-                        numPerStageUniformBuffers[i]++;
-                }
+                UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
             }
         }
 
@@ -213,21 +208,17 @@ ShaderSetup(
         ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(buffer->set);
         numsets = Math::max(numsets, buffer->set + 1);
 
+        if (buffer->HasAnnotation("Visibility"))
+        {
+            rwbo.visibility = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
+        }
+
         bool occupiesNewBinding = !bindingTable[binding.binding];
         bindingTable[binding.binding] = true;
 
         if (occupiesNewBinding)
         {
-            if (buffer->HasAnnotation("Visibility"))
-            {
-                rwbo.visibility = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
-                UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
-            }
-            else
-            {
-                for (IndexT i = 0; i < NumShaders; i++)
-                    numPerStageStorageBuffers[i]++;
-            }
+            UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
         }
 
         if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP)
