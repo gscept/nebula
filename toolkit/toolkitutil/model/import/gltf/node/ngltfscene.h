@@ -30,6 +30,16 @@ public:
 
     /// sets up the scene
     void Setup(Gltf::Document* scene, const ToolkitUtil::ExportFlags& exportFlags, float scale);
+
+private:
+    /// Parse GLTF node hierarchy
+    void ParseNodeHierarchy(
+        Gltf::Document* scene,
+        Gltf::Node* fbxNode,
+        SceneNode* parent,
+        Util::Dictionary<Gltf::Node*, SceneNode*>& lookup,
+        Util::Array<SceneNode>& nodes
+    );
 };
 
 } // namespace ToolkitUtil

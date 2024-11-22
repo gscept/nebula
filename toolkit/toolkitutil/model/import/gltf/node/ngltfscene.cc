@@ -11,11 +11,67 @@
 #include "model/import/base/uniquestring.h"
 #include <array>
 #include <functional>
+#include "math/scalar.h"
 
 using namespace Util;
 using namespace ToolkitUtil;
 namespace ToolkitUtil
 {
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreAnimation::CurveType::Code
+GltfPathToCurveType(Util::String const& path)
+{
+    if (path == "translation")
+    {
+        return CoreAnimation::CurveType::Translation;
+    }
+    else if (path == "rotation")
+    {
+        return CoreAnimation::CurveType::Rotation;
+    }
+    else if (path == "scale")
+    {
+        return CoreAnimation::CurveType::Scale;
+    }
+    else if (path == "weights")
+    {
+        n_error("Morph targets are currently not supported!\n");
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    returns value, increments bytesRead by the amount of bytes read
+*/
+float
+ReadCurveValue(byte const* const data, Gltf::Accessor::ComponentType componentType, uint64_t& bytesRead)
+{
+    switch (componentType)
+    {
+    case Gltf::Accessor::ComponentType::Float:
+        bytesRead += sizeof(float);
+        return *((float*)data);
+    case Gltf::Accessor::ComponentType::Byte:
+        bytesRead += sizeof(int8_t);
+        return Math::normtofloat(*((int8_t*)data));
+    case Gltf::Accessor::ComponentType::UnsignedByte:
+        bytesRead += sizeof(uint8_t);
+        return Math::normtofloat(*((uint8_t*)data));
+    case Gltf::Accessor::ComponentType::Short:
+        bytesRead += sizeof(int16_t);
+        return Math::normtofloat(*((int16_t*)data));
+    case Gltf::Accessor::ComponentType::UnsignedShort:
+        bytesRead += sizeof(uint16_t);
+        return Math::normtofloat(*((uint16_t*)data));
+    case Gltf::Accessor::ComponentType::UnsignedInt: // this isn't supported by gltf animations
+    default:
+        n_error("ERROR: Invalid GLTF!");
+        return 0.0f;
+    }
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -53,100 +109,20 @@ NglTFScene::Setup(Gltf::Document* scene
     SceneScale = scale;
     AdjustedScale = 1.0f / scale;
 
-    Util::Dictionary<int, IndexT> jointNodeToIndex;
+    size_t nodeCount = scene->nodes.Size();
+    this->nodes.Reserve((SizeT)nodeCount);
 
-    Timing::Timer timer;
-
-    // Extract all skeletons to the scene list
-    if (!scene->skins.IsEmpty())
-    {
-        timer.Start();
-        for (auto const& skin : scene->skins)
-        {
-            // Build skeleton
-            SkeletonBuilder& skel = this->skeletons.Emplace();
-
-            // First, create all joint that we know we'll need.
-            skel.joints.Resize(skin.joints.Size());
-
-            IndexT index = 0;
-            for (auto const jointNode : skin.joints)
-            {
-                auto const& node = scene->nodes[jointNode];
-                
-                // Create joint map
-                jointNodeToIndex.Add(jointNode, index);
-
-                Math::mat4 bind;
-
-                if (node.hasTRS)
-                {
-                    bind = Math::affine(node.scale, Math::vec3(0), node.rotation, node.translation);
-                }
-                else
-                {
-                    bind = node.matrix;
-                }
-
-                ToolkitUtil::Joint& joint = skel.joints[index];
-                joint.index = index;
-                joint.name = node.name;
-                joint.bind = bind;
-                
-                index++;
-            }
-
-            // update parents for each joint
-            for (auto const jointNode : skin.joints)
-            {
-                auto const& node = scene->nodes[jointNode];
-                IndexT parent = jointNodeToIndex[jointNode];
-                for (auto const child : node.children)
-                {
-                    IndexT childIndex = jointNodeToIndex[child];
-                    skel.joints[childIndex].parent = parent;
-                }
-            }
-        }
-        timer.Stop();
-        n_printf("    [glTF - Skeletons read (%d, %d ms)]\n", scene->skins.Size(), timer.GetTime() * 1000);
-    }
-
-    // We need to load our animations and add them to the scene animation list
-    if (!scene->animations.IsEmpty())
-    {
-        timer.Reset();
-        timer.Start();
-        AnimBuilder animBuilder;
-        for (auto const& animation : scene->animations)
-        {
-            AnimBuilderClip clip;
-            clip.SetName(animation.name);
-            
-            for (auto const& channel : animation.channels)
-            {
-                AnimBuilderCurve curve;
-                Gltf::Animation::Sampler const& sampler = animation.samplers[channel.sampler];
-                
-                int jointNode = channel.target.node;
-                
-                //this->scene->accessors[sampler.output].count
-            }
-        }
-        timer.Stop();
-        n_printf("    [glTF - Animations read (%d, %d ms)]\n", scene->animations.Size(), timer.GetTime() * 1000);
-    }
-
-    // Traverse node hierarchies and count how many SceneNodes we will need
+    // Go through all nodes and add them to our lookup
+    Util::Dictionary<Gltf::Node*, SceneNode*> nodeLookup;
     const int numRootNodes = scene->scenes[scene->scene].nodes.Size();
-    int numNodes = numRootNodes;
-    int nodeCounter = 0;
+    
+    // Traverse node hierarchies and count how many SceneNodes we will need
     int meshCounter = 0;
     for (int i = 0; i < numRootNodes; i++)
     {
         Gltf::Node* node = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
 
-        std::function<void(Gltf::Node*, int& count)> counter = [&](Gltf::Node* node, int& count)
+        std::function<void(Gltf::Node*)> counter = [&](Gltf::Node* node)
         {
             if (node->mesh != -1)
             {
@@ -154,90 +130,272 @@ NglTFScene::Setup(Gltf::Document* scene
                 // due to the fact they may vary in vertex layouts
                 Gltf::Mesh* mesh = &scene->meshes[node->mesh];
                 meshCounter += mesh->primitives.Size();
-                count += mesh->primitives.Size() + 1;
             }
-            else
-                count++;
 
             for (int i = 0; i < node->children.Size(); i++)
             {
-                counter(&scene->nodes[node->children[i]], count);
+                counter(&scene->nodes[node->children[i]]);
             }
         };
 
-        counter(node, nodeCounter);
+        counter(node);
     }
-    this->nodes.Reserve(nodeCounter);
     this->meshes.Resize(meshCounter);
+    // IMPORTANT: We need to preallocate all the nodes needed so that the parent/child references (pointers) don't get invalidated if the array grows.
+    this->nodes.Reserve(meshCounter + scene->nodes.Size());
+
+    for (size_t i = 0; i < numRootNodes; i++)
+    {
+        Gltf::Node* rootNode = &(scene->nodes[scene->scenes[scene->scene].nodes[i]]);
+        ParseNodeHierarchy(scene, rootNode, nullptr, nodeLookup, this->nodes);
+    }
+    
+    // Joint nodes are currently transform nodes since GLTF doesn't tag them as joints.
+    // We need to convert them to joint nodes before continuing.
+
+    for (size_t i = 0; i < scene->skins.Size(); i++)
+    {
+        Gltf::Skin const& skin = scene->skins[i];
+        for (auto jointNodeIndex : skin.joints)
+        {
+            Gltf::Node* gltfJointNode = &scene->nodes[jointNodeIndex];
+            SceneNode* node = nodeLookup[gltfJointNode];
+            node->type = SceneNode::NodeType::Joint;
+            node->skeleton.isSkeletonRoot = node->base.parent == nullptr || skin.skeleton == jointNodeIndex;
+            node->anim.animIndex = 0; // default to anim 0
+        }
+    }
+
+    // Setup skeleton hierarchy
+    this->SetupSkeletons(); 
+
+    this->ExtractSkeletons();
+
+    Timing::Timer timer;
+
+    // Extract meshes and primitives
 
     // Create a mapping between meshes and primitives
-    Util::Dictionary<IndexT, Util::Array<SceneNode*>> meshToNodeMapping;
-
     IndexT basePrimitiveIndex = 0;
-    std::function<void(Gltf::Node*, SceneNode*)> nodeSetup = [&](Gltf::Node* gltfNode, SceneNode* parent)
-    {
-        // If we encounter a mesh, we need to emit one SceneNode per mesh primitive
-        SceneNode* node = nullptr;
-        if (gltfNode->mesh != -1)
+    std::function<void(Gltf::Node*, SceneNode*, IndexT)> nodeSetup =
+        [&](Gltf::Node* gltfNode, SceneNode* parent, IndexT nodeIndex)
         {
-            // Create one transform node to only extract transforms
-            node = &this->nodes.Emplace();
-            node->Setup(SceneNode::NodeType::Transform);
-            NglTFNode::Setup(gltfNode, node, parent);
-            node->base.name = gltfNode->name;
-            if (node->base.name.IsEmpty())
+            if (!nodeLookup.Contains(gltfNode))
+                return;
+            // If we encounter a mesh, we need to emit one SceneNode per mesh primitive
+            SceneNode* node = nodeLookup[gltfNode];
+            if (gltfNode->mesh != -1)
             {
-                node->base.name = UniqueString::New("unnamed");
+                Util::Array<SceneNode*> primitiveNodes;
+                const Gltf::Mesh& mesh = scene->meshes[gltfNode->mesh];
+                primitiveNodes.Reserve(mesh.primitives.Size());
+
+                // Create one mesh node per primitive node, and parent them to the transform node above
+                for (IndexT i = 0; i < mesh.primitives.Size(); i++)
+                {
+                    SceneNode* primitiveNode = &this->nodes.Emplace();
+                    primitiveNode->Setup(SceneNode::NodeType::Mesh);
+                    NglTFNode::Setup(gltfNode, primitiveNode, node);
+                    primitiveNode->base.name = Util::String::Sprintf("%s:%d", node->base.name.AsCharPtr(), i);
+
+                    // Kill transforms on primitive as it's owned by the parent transform
+                    primitiveNode->base.rotation = Math::quat();
+                    primitiveNode->base.scale = Math::vec3(1);
+                    primitiveNode->base.translation = Math::vec3(0);
+                    
+                    primitiveNodes.Append(primitiveNode);
+
+                    if (gltfNode->skin != -1)
+                    {
+                        primitiveNode->mesh.meshFlags = (MeshFlags)(primitiveNode->mesh.meshFlags | MeshFlags::HasSkin);
+                        primitiveNode->base.isSkin = true;
+                        primitiveNode->skeleton.skeletonIndex = gltfNode->skin; // TODO: is this right?
+                    }
+                }
+                NglTFMesh::Setup(
+                    this->meshes,
+                    &scene->meshes[gltfNode->mesh],
+                    scene,
+                    flags,
+                    basePrimitiveIndex,
+                    gltfNode->mesh,
+                    primitiveNodes.Begin()
+                );
+                basePrimitiveIndex += mesh.primitives.Size();
             }
-
-            Util::Array<SceneNode*> primitiveNodes;
-            const Gltf::Mesh& mesh = scene->meshes[gltfNode->mesh];
-            primitiveNodes.Reserve(mesh.primitives.Size());
-
-            // Create one mesh node per primitive node, and parent them to the transform node above
-            for (IndexT i = 0; i < mesh.primitives.Size(); i++)
+            
+            // Recurse down to children
+            for (int i = 0; i < gltfNode->children.Size(); i++)
             {
-                SceneNode* primitiveNode = &this->nodes.Emplace();
-                primitiveNode->Setup(SceneNode::NodeType::Mesh);
-                NglTFNode::Setup(gltfNode, primitiveNode, node);
-                primitiveNode->base.name = Util::String::Sprintf("%s:%d", node->base.name.AsCharPtr(), i);
-
-                // Kill transforms on primitive as it's owned by the parent transform
-                primitiveNode->base.rotation = Math::quat();
-                primitiveNode->base.scale = Math::vec3(1);
-                primitiveNode->base.translation = Math::vec3(0);
-                primitiveNodes.Append(primitiveNode);
-
-                if (gltfNode->skin != -1)
-                    primitiveNode->skeleton.skeletonIndex = gltfNode->skin;
+                nodeSetup(&scene->nodes[gltfNode->children[i]], node, gltfNode->children[i]);
             }
-            NglTFMesh::Setup(this->meshes, &scene->meshes[gltfNode->mesh], scene, flags, basePrimitiveIndex, gltfNode->mesh, primitiveNodes.Begin());
-            basePrimitiveIndex += mesh.primitives.Size();
-        }
-        else
-        {
-            // If just a transform, the glTF node maps to SceneNodes 1:1
-            node = &this->nodes.Emplace();
-            node->Setup(SceneNode::NodeType::Transform);
-            NglTFNode::Setup(gltfNode, node, parent);
-            node->base.name = gltfNode->name;
-        }
+        };
 
-        // TODO: Add support for the rest of the nodes we might want, like LOD
-
-
-        // Recurse down to children
-        for (int i = 0; i < gltfNode->children.Size(); i++)
-        {
-            nodeSetup(&scene->nodes[gltfNode->children[i]], node);
-        }
-    };
-
-    // Iterate over nodes again and setup exporter nodes
+    // Iterate over nodes again and setup mesh and primitive nodes
     for (int i = 0; i < numRootNodes; i++)
     {
         Gltf::Node* gltfNode = &scene->nodes[scene->scenes[scene->scene].nodes[i]];
-        nodeSetup(gltfNode, nullptr);
+        nodeSetup(gltfNode, nullptr, scene->scenes[scene->scene].nodes[i]);
+    }
+
+    // load animations and add them to the scene animation list
+    // TODO: Move to separate function
+    if (!scene->animations.IsEmpty())
+    {
+        timer.Reset();
+        timer.Start();
+        AnimBuilder& animBuilder = this->animations.Emplace();
+        for (auto const& animation : scene->animations)
+        {
+            if (animation.channels.IsEmpty())
+                continue;
+
+            AnimBuilderClip& clip = animBuilder.clips.Emplace();
+            clip.SetName(animation.name);
+
+            clip.firstCurveOffset = animBuilder.curves.Size();
+            clip.numCurves = animation.channels.Size();
+
+            for (auto const& channel : animation.channels)
+            {
+                AnimBuilderCurve& curve = animBuilder.curves.Emplace();
+                Gltf::Animation::Sampler const& sampler = animation.samplers[channel.sampler];
+                Gltf::Accessor const& curveAccessor = scene->accessors[sampler.output];
+                Gltf::Accessor const& timestampAccessor = scene->accessors[sampler.input];
+
+                int jointNode = channel.target.node;
+
+                curve.curveType = GltfPathToCurveType(channel.target.path);
+                curve.firstKeyOffset = animBuilder.keys.size();
+                curve.firstTimeOffset = animBuilder.keyTimes.size();
+
+                if (curve.curveType == CoreAnimation::CurveType::Code::Translation)
+                {
+                    n_assert(curveAccessor.type == Gltf::Accessor::Type::Vec3);
+                }
+                else if (curve.curveType == CoreAnimation::CurveType::Code::Rotation)
+                {
+                    // quaternion
+                    // TODO: Doublecheck that our quaternions and GLTFs are defined the same way
+                    //       otherwise we'll have to swizzle the real scalar
+                    n_assert(curveAccessor.type == Gltf::Accessor::Type::Vec4);
+                }
+                else if (curve.curveType == CoreAnimation::CurveType::Code::Scale)
+                {
+                    n_assert(curveAccessor.type == Gltf::Accessor::Type::Vec3);
+                }
+                else if (curve.curveType == CoreAnimation::CurveType::Code::Float4)
+                {
+                    n_assert(curveAccessor.type == Gltf::Accessor::Type::Vec4);
+                }
+                else
+                {
+                    n_error("Unsupported curve type!");
+                    return;
+                }
+
+                // fill the keys and keytimes
+
+                // GLTF doesn't define looping logic.
+                curve.preInfinityType = CoreAnimation::InfinityType::Code::Constant;
+                curve.postInfinityType = CoreAnimation::InfinityType::Code::Constant;
+
+                curve.numKeys = curveAccessor.count;
+
+                Gltf::BufferView const& curveBufferView = scene->bufferViews[curveAccessor.bufferView];
+                Util::Blob const& curveData = scene->buffers[curveBufferView.buffer].data;
+                int const curveBufferOffset = curveAccessor.byteOffset + curveBufferView.byteOffset;
+                byte const* const curveBuf = (byte*)curveData.GetPtr() + curveBufferOffset;
+
+                Gltf::BufferView const& timestampBufferView = scene->bufferViews[timestampAccessor.bufferView];
+                Util::Blob const& timestampData = scene->buffers[timestampBufferView.buffer].data;
+                int const timestampBufferOffset = timestampAccessor.byteOffset + timestampBufferView.byteOffset;
+                byte const* const timeBuf = (byte*)timestampData.GetPtr() + timestampBufferOffset;
+
+                // current assumption is that there are as many timestamps as keyframes. if this assert fails, we've might have made the wrong assumption
+                n_assert(curveAccessor.count == timestampAccessor.count);
+                n_assert(timestampAccessor.type == Gltf::Accessor::Type::Scalar);
+
+                uint64_t curveBufByteOffset = 0;
+                uint64_t timestampBufByteOffset = 0;
+                for (SizeT i = 0; i < curveAccessor.count; i++)
+                {
+                    byte const* const keyPtr = curveBuf + curveBufByteOffset;
+                    byte const* const timePtr = timeBuf + timestampBufByteOffset;
+
+                    animBuilder.keyTimes.Append(
+                        ReadCurveValue(timePtr, timestampAccessor.componentType, timestampBufByteOffset) * 1000.0f
+                    );
+
+                    switch (curveAccessor.type)
+                    {
+                    case Gltf::Accessor::Type::Scalar:
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        break;
+                    case Gltf::Accessor::Type::Vec2:
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        break;
+                    case Gltf::Accessor::Type::Vec3:
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        break;
+                    case Gltf::Accessor::Type::Vec4:
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                // TODO: Double check that this is right.
+                clip.duration = animBuilder.keyTimes.Back() - animBuilder.keyTimes[curve.firstTimeOffset];
+            }
+        }
+        timer.Stop();
+        n_printf("    [glTF - Animations read (%d, %d ms)]\n", scene->animations.Size(), timer.GetTime() * 1000);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+NglTFScene::ParseNodeHierarchy(
+    Gltf::Document* scene,
+    Gltf::Node* gltfNode,
+    SceneNode* parent,
+    Util::Dictionary<Gltf::Node*, SceneNode*>& lookup,
+    Util::Array<SceneNode>& nodes
+)
+{
+    SceneNode& node = nodes.Emplace();
+    n_assert(!lookup.Contains(gltfNode));
+    lookup.Add(gltfNode, &node);
+    
+    // Temporarily set all nodes to be transforms.
+    // We will later convert some of them to joints as we can't
+    // do it here since GLTF doesn't readily keep track of it.
+    // We will also generate additional nodes that will act as meshes, since GLTF
+    // has support for different vertex layouts for primitives within the same
+    // mesh, and we don't. Each GLTF primitive becomes a Nebula mesh.
+    node.Setup(SceneNode::NodeType::Transform);
+    NglTFNode::Setup(gltfNode, &node, parent);
+
+    node.base.name = gltfNode->name;
+    if (node.base.name.IsEmpty())
+    {
+        node.base.name = UniqueString::New("unnamed");
+    }
+
+    size_t numChildren = gltfNode->children.Size();
+    for (size_t i = 0; i < numChildren; i++)
+    {
+        Gltf::Node* child = &scene->nodes[gltfNode->children[i]];
+        ParseNodeHierarchy(scene, child, &node, lookup, nodes);
     }
 }
 
