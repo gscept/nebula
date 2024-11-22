@@ -810,6 +810,47 @@ pointerhash(void* ptr)
     return (uint32_t) (((uintptr_t)(void *)ptr) % 4294967291u);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+    convert normalized uint16_t to float
+*/
+inline float
+normtofloat(uint16_t value)
+{
+    return (float)value / 65535.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    convert normalized int16_t to float
+*/
+inline float
+normtofloat(int16_t value)
+{
+    return Math::max((float)value / 32767.0f, -1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+    convert normalized uint8_t to float
+*/
+inline float
+normtofloat(uint8_t value)
+{
+    return (float)value / 255.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    convert normalized int8_t to float
+*/
+inline float
+normtofloat(int8_t value)
+{
+    return Math::max((float)value / 127.0f, -1.0f);
+}
+
 } // namespace Math
 
 //------------------------------------------------------------------------------
@@ -849,4 +890,5 @@ operator"" _deg(unsigned long long deg)
 {
     return Math::rad2deg(deg);
 }
+
 //------------------------------------------------------------------------------
