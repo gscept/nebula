@@ -312,7 +312,7 @@ VkTypes::AsVkSampleFlags(const SizeT samples)
 //------------------------------------------------------------------------------
 /**
 */
-VkImageType 
+VkImageType
 VkTypes::AsVkImageType(CoreGraphics::TextureType type)
 {
     switch (type)
@@ -340,7 +340,7 @@ VkTypes::AsVkImageType(CoreGraphics::TextureType type)
 //------------------------------------------------------------------------------
 /**
 */
-VkImageViewType 
+VkImageViewType
 VkTypes::AsVkImageViewType(CoreGraphics::TextureType type)
 {
     switch (type)
@@ -371,7 +371,7 @@ VkTypes::AsVkImageViewType(CoreGraphics::TextureType type)
 CoreGraphics::PixelFormat::Code
 VkTypes::AsNebulaPixelFormat(VkFormat f)
 {
-    
+
     switch (f)
     {
     case VK_FORMAT_R8G8B8A8_UINT:                   return PixelFormat::R8G8B8A8;
@@ -469,6 +469,8 @@ VkShaderStageFlags
 VkTypes::AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis)
 {
     VkShaderStageFlags ret = 0;
+    if (vis == AllVisibility)                                           return VK_SHADER_STAGE_ALL;
+    else if (vis == AllGraphicsVisibility)                              return VK_SHADER_STAGE_ALL_GRAPHICS;
     if (AllBits(vis, VertexShaderVisibility))               ret |= VK_SHADER_STAGE_VERTEX_BIT;
     if (AllBits(vis, HullShaderVisibility))                 ret |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
     if (AllBits(vis, DomainShaderVisibility))               ret |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;

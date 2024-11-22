@@ -82,12 +82,11 @@ ModelContext::Create()
 void
 ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback)
 {
-    const ContextEntityId cid = GetContextId(gfxId);
-    
-    auto successCallback = [cid, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [gfxId, finishedCallback](Resources::ResourceId mid)
     {
         // Go through model nodes and setup instance data
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
+        const ContextEntityId cid = GetContextId(gfxId);
 
         // Run through nodes and collect transform and renderable nodes
         NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
@@ -124,7 +123,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             NodeInstances.transformable.origTransforms.Extend(transformRange.end);
             NodeInstances.transformable.nodeTransforms.Extend(transformRange.end);
         }
-        
+
         for (SizeT i = 0; i < transformNodes.Size(); i++)
         {
             const uint index = transformRange.allocation.offset + i;
@@ -348,7 +347,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
     {
         modelContextAllocator.Get<Model_Id>(cid.id) = mid;
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
-        
+
         if (finishedCallback != nullptr)
             setupCompleteQueue.Enqueue(finishedCallback);
     };
@@ -360,7 +359,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 //------------------------------------------------------------------------------
 /**
 */
-const Models::ModelId 
+const Models::ModelId
 ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
@@ -370,7 +369,7 @@ ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Models::ModelId 
+const Models::ModelId
 ModelContext::GetModel(const Graphics::ContextEntityId id)
 {
     return modelContextAllocator.Get<Model_Id>(id.id);
@@ -518,7 +517,7 @@ ModelContext::SetAlwaysVisible(const Graphics::GraphicsEntityId id)
     for (IndexT i = nodes.begin; i < nodes.end; i++)
     {
         NodeInstances.renderable.nodeFlags[i] = SetBits(NodeInstances.renderable.nodeFlags[i], NodeInstanceFlags::NodeInstance_AlwaysVisible);
-    }    
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -807,7 +806,7 @@ ModelContext::WaitForWork(const Graphics::FrameContext& ctx)
 void
 ModelContext::OnRenderDebug(uint32_t flags)
 {
-    //const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();    
+    //const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
     //Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelCache::InstanceBoundingBox>();
     //const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelCache::InstanceTransform>();
     //const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Model_Id>();
