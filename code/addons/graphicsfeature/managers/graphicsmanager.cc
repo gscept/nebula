@@ -60,10 +60,6 @@ RegisterModelEntity(
     {
         Raytracing::RaytracingContext::RegisterEntity(gid);
     }
-    if (anim.IsValid() && skeleton.IsValid())
-    {
-        Characters::CharacterContext::RegisterEntity(gid);
-    }
     Models::ModelContext::Setup(
         gid,
         res,
@@ -74,16 +70,17 @@ RegisterModelEntity(
                 return;
             Visibility::ObservableContext::RegisterEntity(gid);
             Models::ModelContext::SetTransform(gid, t);
+            Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
             if (raytracing && CoreGraphics::RayTracingSupported)
             {
                 Raytracing::RaytracingContext::SetupModel(gid, CoreGraphics::BlasInstanceFlags::NoFlags, 0xFF);
             }
             if (anim.IsValid() && skeleton.IsValid())
             {
+                Characters::CharacterContext::RegisterEntity(gid);
                 Characters::CharacterContext::Setup(gid, skeleton, 0, anim, 0, "NONE");
                 Characters::CharacterContext::PlayClip(gid, nullptr, 0, 0, Characters::EnqueueMode::Replace);
             }
-            Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
         }
     );
 }
@@ -101,6 +98,10 @@ DeregisterModelEntity(Model const* model)
         Raytracing::RaytracingContext::IsEntityRegistered(model->graphicsEntityId))
     {
         Raytracing::RaytracingContext::DeregisterEntity(model->graphicsEntityId);
+    }
+    if (Characters::CharacterContext::IsEntityRegistered(model->graphicsEntityId))
+    {
+        Characters::CharacterContext::DeregisterEntity(model->graphicsEntityId);
     }
     if (Visibility::ObservableContext::IsEntityRegistered(model->graphicsEntityId))
     {
