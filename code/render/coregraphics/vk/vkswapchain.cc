@@ -232,6 +232,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
     CoreGraphics::UnlockGraphicsSetupCommandBuffer(cmdBuf);
 
     CoreGraphics::CmdBufferPoolCreateInfo poolInfo;
+    poolInfo.name = "Swap Commandbuffer Pool";
     poolInfo.shortlived = true;
     poolInfo.queue = queueType;
     poolInfo.resetable = false;
@@ -327,7 +328,7 @@ SwapchainCopy(const SwapchainId id, const CoreGraphics::CmdBufferId cmdBuf, cons
     const Util::Array<VkImage>& images = swapchainAllocator.Get<Swapchain_Images>(id.id);
     const DisplayMode& displayMode = swapchainAllocator.Get<Swapchain_DisplayMode>(id.id);
     VkImageCopy copy;
-    
+
     copy.srcOffset = { 0, 0, 0 };
     copy.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
     copy.dstOffset = { 0, 0, 0 };

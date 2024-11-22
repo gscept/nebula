@@ -1045,7 +1045,14 @@ class SubmissionDefinition:
         file.WriteLine("CoreGraphics::DestroyCmdBufferPool(CmdPool_{});".format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
-        file.WriteLine("CmdPool_{} = CoreGraphics::CreateCmdBufferPool({{ .queue = CoreGraphics::QueueType::{}QueueType, .resetable = false, .shortlived = true }});".format(self.name, self.queue))
+        file.WriteLine("CoreGraphics::CmdBufferPoolCreateInfo CmdPoolInfo_{};".format(self.name))
+        file.WriteLine("CmdPoolInfo_{}.queue = CoreGraphics::QueueType::{}QueueType;".format(self.name, self.queue))
+        file.WriteLine("CmdPoolInfo_{}.resetable = false;".format(self.name))
+        file.WriteLine("CmdPoolInfo_{}.shortlived = true;".format(self.name))
+        file.WriteLine("#if NEBULA_GRAPHICS_DEBUG")
+        file.WriteLine('CmdPoolInfo_{}.name = "{}";'.format(self.name, self.name))
+        file.WriteLine("#endif // NEBULA_GRAPHICS_DEBUG")
+        file.WriteLine("CmdPool_{} = CoreGraphics::CreateCmdBufferPool(CmdPoolInfo_{});".format(self.name, self.name))
         for op in self.ops:
             op.FormatSetup(file)
 

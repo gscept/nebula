@@ -26,6 +26,12 @@
 #include "coregraphics/graphicsdevice.h"
 #include "profiling/profiling.h"
 
+
+#ifdef __WIN32__
+
+#include "debug/win32/win32stacktrace.h"
+#endif
+
 #include "threading/criticalsection.h"
 
 namespace Vulkan
@@ -333,7 +339,7 @@ SetupAdapter(CoreGraphics::GraphicsDeviceCreateInfo::Features features)
 
                 if (validDevice)
                 {
-                    n_printf("[Graphics Device] Using '%s' as primary graphics adapter", state.deviceProps[i].properties.deviceName);
+                    n_printf("[Graphics Device] Using '%s' as primary graphics adapter\n", state.deviceProps[i].properties.deviceName);
                     state.currentDevice = i;
                     CoreGraphics::ReadWriteBufferAlignment = state.deviceProps[i].properties.limits.minStorageBufferOffsetAlignment;
                     CoreGraphics::ConstantBufferAlignment = state.deviceProps[i].properties.limits.minUniformBufferOffsetAlignment;
@@ -548,6 +554,7 @@ SparseBufferBind(const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& bind
 void
 ClearPending()
 {
+    Threading::CriticalScope scope(&delayedDeleteSection);
     GraphicsDeviceState::PendingDeletes& pendingDeletes = state.pendingDeletes[state.currentBufferedFrameIndex];
 
     // Clear up any pending deletes
@@ -707,6 +714,17 @@ NebulaVulkanErrorDebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
     void* userData)
 {
+#if __WIN32__
+    Util::Array<Util::String> stacktrace = Win32::Win32StackTrace::GenerateStackTrace();
+    Util::String format;
+    // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup
+    for (int i = 6; i < Math::min(17,stacktrace.Size() - 6); i++)
+    {
+        format.Append(stacktrace[i]);
+        //format.Append("\n");
+    }
+#endif
+
     n_warning("%s\n", callbackData->pMessage);
     return VK_FALSE;
 }
@@ -2607,6 +2625,27 @@ ObjectSetName(const CoreGraphics::CmdBufferId id, const char* name)
     VkResult res = VkDebugObjectName(dev, &info);
     n_assert(res == VK_SUCCESS);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::CmdBufferPoolId id, const char* name)
+{
+    VkDebugUtilsObjectNameInfoEXT info =
+    {
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        nullptr,
+        VK_OBJECT_TYPE_COMMAND_POOL,
+        (uint64_t)Vulkan::CmdBufferPoolGetVk(id),
+        name
+    };
+    VkDevice dev = GetCurrentDevice();
+    VkResult res = VkDebugObjectName(dev, &info);
+    n_assert(res == VK_SUCCESS);
+}
+
 
 //------------------------------------------------------------------------------
 /**
