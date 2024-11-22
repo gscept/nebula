@@ -225,7 +225,6 @@ TBUIContext::Render(
 
     //CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
     CoreGraphics::CmdSetVertexLayout(cmdBuf, vertexLayout);
-    CoreGraphics::CmdSetResourceTable(cmdBuf, resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
     CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
     CoreGraphics::CmdSetViewport(cmdBuf, viewport, 0);
     CoreGraphics::CmdSetScissorRect(cmdBuf, viewport, 0);
@@ -247,6 +246,7 @@ TBUIContext::Render(
         vboInfo.dataSize = sizeof(TBUIVertex) * batch.vertices.Size();
         CoreGraphics::BufferId vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
 
+        CoreGraphics::CmdSetResourceTable(cmdBuf, resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
         CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, vertexBuffer, 0);
         CoreGraphics::CmdSetScissorRect(cmdBuf, batch.clipRect, 0);
 
