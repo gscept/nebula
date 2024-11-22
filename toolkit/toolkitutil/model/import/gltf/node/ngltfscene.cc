@@ -166,22 +166,49 @@ NglTFScene::Setup(Gltf::Document* scene
         Gltf::Buffer const& bindBuffer = scene->buffers[bindBufferView.buffer];
         Math::mat4 const* const buf = (Math::mat4*)((byte*)bindBuffer.data.GetPtr() + bindBufferView.byteOffset + bindAccessor.byteOffset);
 
-        uint64_t matIndex = 0;
-        for (auto jointNodeIndex : skin.joints)
+        
+        for (uint64_t jointIndex = 0; jointIndex < skin.joints.Size(); jointIndex++)
         {
-            Math::mat4 const& inverseBindMatrix = buf[matIndex];
-            Gltf::Node* gltfJointNode = &scene->nodes[jointNodeIndex];
+            Math::mat4 const& inverseBindMatrix = buf[jointIndex];
+            Gltf::Node* gltfJointNode = &scene->nodes[skin.joints[jointIndex]];
             SceneNode* node = nodeLookup[gltfJointNode];
             node->type = SceneNode::NodeType::Joint;
-            node->skeleton.isSkeletonRoot = node->base.parent == nullptr || skin.skeleton == jointNodeIndex;
             node->anim.animIndex = 0; // default to anim 0
             node->skeleton.bindMatrix = inverseBindMatrix;
-            matIndex++;
+            node->skeleton.jointIndex = jointIndex;
+        }
+    }
+
+    // Find the root joints. Need to do this here, since we sometimes need to check if the parent is a joint or not
+    // which we can't do in the above loop because all joints haven't been marked as joints yet.
+    for (size_t i = 0; i < scene->skins.Size(); i++)
+    {
+        Gltf::Skin const& skin = scene->skins[i];
+        for (auto jointNodeIndex : skin.joints)
+        {
+            Gltf::Node* gltfJointNode = &scene->nodes[jointNodeIndex];
+            SceneNode* node = nodeLookup[gltfJointNode];
+            node->skeleton.isSkeletonRoot = node->base.parent == nullptr || skin.skeleton == jointNodeIndex ||
+                                            node->base.parent->type != SceneNode::NodeType::Joint;
         }
     }
 
     // Setup skeleton hierarchy
-    this->SetupSkeletons(); 
+    for (IndexT i = 0; i < this->nodes.Size(); i++)
+    {
+        if (this->nodes[i].skeleton.isSkeletonRoot)
+        {
+            std::function<void(SceneNode*)> convertFunc = [&](SceneNode* node)
+            {
+                if (node->base.parent != nullptr)
+                    node->skeleton.parentIndex = node->base.parent->skeleton.jointIndex;
+
+                for (auto& child : node->base.children)
+                    convertFunc(child);
+            };
+            convertFunc(&this->nodes[i]);
+        }
+    }
 
     this->ExtractSkeletons();
 
@@ -309,8 +336,8 @@ NglTFScene::Setup(Gltf::Document* scene
                 // fill the keys and keytimes
 
                 // GLTF doesn't define looping logic.
-                curve.preInfinityType = CoreAnimation::InfinityType::Code::Constant;
-                curve.postInfinityType = CoreAnimation::InfinityType::Code::Constant;
+                curve.preInfinityType = CoreAnimation::InfinityType::Code::Cycle;
+                curve.postInfinityType = CoreAnimation::InfinityType::Code::Cycle;
 
                 curve.numKeys = curveAccessor.count;
 
@@ -332,32 +359,29 @@ NglTFScene::Setup(Gltf::Document* scene
                 uint64_t timestampBufByteOffset = 0;
                 for (SizeT i = 0; i < curveAccessor.count; i++)
                 {
-                    byte const* const keyPtr = curveBuf + curveBufByteOffset;
-                    byte const* const timePtr = timeBuf + timestampBufByteOffset;
-
                     animBuilder.keyTimes.Append(
-                        ReadCurveValue(timePtr, timestampAccessor.componentType, timestampBufByteOffset) * 1000.0f
+                        ReadCurveValue(timeBuf + timestampBufByteOffset, timestampAccessor.componentType, timestampBufByteOffset) * 1000.0f
                     );
 
                     switch (curveAccessor.type)
                     {
                     case Gltf::Accessor::Type::Scalar:
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
                         break;
                     case Gltf::Accessor::Type::Vec2:
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
                         break;
                     case Gltf::Accessor::Type::Vec3:
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
                         break;
                     case Gltf::Accessor::Type::Vec4:
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
-                        animBuilder.keys.Append(ReadCurveValue(keyPtr, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
+                        animBuilder.keys.Append(ReadCurveValue(curveBuf + curveBufByteOffset, curveAccessor.componentType, curveBufByteOffset));
                         break;
                     default:
                         break;

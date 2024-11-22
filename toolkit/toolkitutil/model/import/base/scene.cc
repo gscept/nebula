@@ -317,7 +317,6 @@ Scene::GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::Strin
 void 
 Scene::SetupSkeletons()
 {
-    Util::Array<SceneNode*> skeletonRoots;
     for (IndexT i = 0; i < this->nodes.Size(); i++)
     {
         if (this->nodes[i].skeleton.isSkeletonRoot)
