@@ -361,6 +361,16 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 /**
 */
 void
+RaytracingContext::Discard()
+{
+    state.raytracingTestTables.Discard();
+    state.lightGridResourceTables.Discard();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask)
 {
     if (!CoreGraphics::RayTracingSupported)

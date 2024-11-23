@@ -124,6 +124,8 @@ ResourceServer::DeregisterStreamLoader(const Util::StringAtom& ext, const Core::
     this->loaders[loaderIdx] = nullptr;
     this->extensionMap.Erase(ext);
     this->typeMap.Erase(&loaderClass);
+    
+    loader->ClearPendingUnloads();
     for (auto& kvp : loader->ids)
     {
         const auto resource = loader->resources[kvp.Value()];

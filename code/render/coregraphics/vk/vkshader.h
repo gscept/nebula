@@ -30,7 +30,7 @@ void ShaderSetup(
     const Util::StringAtom& name,
     AnyFX::ShaderEffect* effect,
     Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
-    Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
     Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
     Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
     CoreGraphics::ResourcePipelineId& pipelineLayout,
@@ -40,7 +40,7 @@ void ShaderSetup(
 /// cleanup shader
 void ShaderCleanup(
     VkDevice dev,
-    Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
     Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
     Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& buffers,
     CoreGraphics::ResourcePipelineId& pipelineLayout
@@ -87,7 +87,7 @@ struct VkShaderSetupInfo
 
     CoreGraphics::ResourcePipelineId pipelineLayout;
     Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange> constantRangeLayout;
-    Util::Array<CoreGraphics::SamplerId> immutableSamplers;
+    Util::Set<CoreGraphics::SamplerId> immutableSamplers;
     Util::Dictionary<Util::StringAtom, uint32_t> resourceIndexMap;
     Util::Dictionary<Util::StringAtom, IndexT> constantBindings;
     Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;

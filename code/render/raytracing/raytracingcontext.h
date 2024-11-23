@@ -47,6 +47,8 @@ public:
 
     /// Setup ray tracing context
     static void Create(const RaytracingSetupSettings& settings);
+    ///
+    static void Discard();
 
     /// Setup a model entity for ray tracing, assumes model context registration
     static void SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics::BlasInstanceFlags flags, uchar mask);
