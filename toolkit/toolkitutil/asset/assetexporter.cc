@@ -224,6 +224,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     IndexT fileIndex;
     ToolLog log(category);
     Ptr<ToolkitUtil::ToolkitConsoleHandler> console = ToolkitUtil::ToolkitConsoleHandler::Instance();
+    this->category = category;
 
     if (this->mode & ExportModes::GLTF)
     {
@@ -376,6 +377,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         }
     }
     this->messages.Append(log);
+    this->category = "";
 }
 
 //------------------------------------------------------------------------------
