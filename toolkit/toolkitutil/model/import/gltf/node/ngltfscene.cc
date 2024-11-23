@@ -176,6 +176,7 @@ NglTFScene::Setup(Gltf::Document* scene
             node->anim.animIndex = 0; // default to anim 0
             node->skeleton.bindMatrix = inverseBindMatrix;
             node->skeleton.jointIndex = jointIndex;
+            node->skeleton.skeletonIndex = i;
         }
     }
 
@@ -193,7 +194,7 @@ NglTFScene::Setup(Gltf::Document* scene
         }
     }
 
-    // Setup skeleton hierarchy
+    // Setup joints parent index
     for (IndexT i = 0; i < this->nodes.Size(); i++)
     {
         if (this->nodes[i].skeleton.isSkeletonRoot)
