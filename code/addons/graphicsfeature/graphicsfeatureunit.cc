@@ -369,6 +369,7 @@ GraphicsFeatureUnit::OnDeactivate()
     this->RemoveManager(this->graphicsManager);
     this->cameraManager = nullptr;
     this->graphicsManager = nullptr;
+    Raytracing::RaytracingContext::Discard();
     Im3d::Im3dContext::Discard();
     Dynui::ImguiContext::Discard();
     StaticUI::StaticUIContext::Discard();

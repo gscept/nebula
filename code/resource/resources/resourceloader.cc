@@ -179,29 +179,10 @@ DispatchJob(ResourceLoader* loader, const ResourceLoader::ResourceLoadJob& job)
 /**
 */
 void
-ResourceLoader::Update(IndexT frameIndex)
+ResourceLoader::ClearPendingUnloads()
 {
-    // Update the state of round trip resources
-    this->UpdateLoaderSyncState();
-
-    // Iterate through async outputs and update loader state
-    Util::Array<ResourceLoadOutput, 128> asyncOutputs;
-    this->loadOutputs.DequeueAll(asyncOutputs);
-    for (auto output : asyncOutputs)
-    {
-        ApplyLoadOutput(this, output);
-    }
-
-    // Make a copy since ImmediateJob might add jobs to the dependentJobs list
-    Util::FixedArray<ResourceLoadJob, true> dependencyJobs = this->dependentJobs;
-    this->dependentJobs.Clear();
-    for (const auto& job : dependencyJobs)
-    {
-        DispatchJob(this, job);
-    }
-
     // go through pending unloads
-    for (IndexT  i = this->pendingUnloads.Size() - 1; i >= 0; i--)
+    for (IndexT i = this->pendingUnloads.Size() - 1; i >= 0; i--)
     {
         const _PendingResourceUnload& unload = this->pendingUnloads[i];
         if (this->states[unload.resourceId.loaderInstanceId] == Resource::Loaded)
@@ -224,6 +205,34 @@ ResourceLoader::Update(IndexT frameIndex)
             this->pendingUnloads.EraseIndex(i);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceLoader::Update(IndexT frameIndex)
+{
+    // Update the state of round trip resources
+    this->UpdateLoaderSyncState();
+
+    // Iterate through async outputs and update loader state
+    Util::Array<ResourceLoadOutput, 128> asyncOutputs;
+    this->loadOutputs.DequeueAll(asyncOutputs);
+    for (auto output : asyncOutputs)
+    {
+        ApplyLoadOutput(this, output);
+    }
+
+    // Make a copy since ImmediateJob might add jobs to the dependentJobs list
+    Util::FixedArray<ResourceLoadJob, true> dependencyJobs = this->dependentJobs;
+    this->dependentJobs.Clear();
+    for (const auto& job : dependencyJobs)
+    {
+        DispatchJob(this, job);
+    }
+
+    ClearPendingUnloads();
 
     for (IndexT i = 0; i < this->pendingLoads.Size(); i++)
     {

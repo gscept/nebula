@@ -254,6 +254,7 @@ GraphicsServer::Close()
     this->timer->StopTime();
     this->timer = nullptr;
 
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);

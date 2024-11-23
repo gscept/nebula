@@ -74,7 +74,7 @@ ShaderSetup(
     const Util::StringAtom& name,
     AnyFX::ShaderEffect* effect,
     Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
-    Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
     Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
     Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
     CoreGraphics::ResourcePipelineId& pipelineLayout,
@@ -186,7 +186,7 @@ ShaderSetup(
     }
     n_assert(CoreGraphics::MaxResourceTableDynamicOffsetConstantBuffers >= numUniformDyn);
     n_assert(CoreGraphics::MaxResourceTableConstantBuffers >= numUniform);
-    for (uint i = 0; i < NumShaders; i++)
+        for (uint i = 0; i < NumShaders; i++)
         n_assert(CoreGraphics::MaxPerStageConstantBuffers >= numPerStageUniformBuffers[i]);
 
     // do the same for storage buffers
@@ -254,7 +254,7 @@ ShaderSetup(
             SamplerId samp = CreateSampler(info);
 
             // add to list so we can remove it later
-            immutableSamplers.Append(samp);
+            immutableSamplers.Add(samp);
 
             uint j;
             for (j = 0; j < sampler->textureVariables.size(); j++)
@@ -276,7 +276,7 @@ ShaderSetup(
             smla.visibility = AllVisibility;
 
             // add to list so we can remove it later
-            immutableSamplers.Append(samp);
+            immutableSamplers.Add(samp);
 
             if (sampler->HasAnnotation("Visibility"))
             {
@@ -319,7 +319,7 @@ ShaderSetup(
         false
     };
     SamplerId placeholderSampler = CreateSampler(placeholderSamplerInfo);
-    immutableSamplers.Append(placeholderSampler);
+    immutableSamplers.Add(placeholderSampler);
 
     // setup variables
     for (i = 0; i < variables.size(); i++)
@@ -459,7 +459,7 @@ ShaderSetup(
 void
 ShaderCleanup(
     VkDevice dev,
-    Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
+    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
     Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
     Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& buffers,
     CoreGraphics::ResourcePipelineId& pipelineLayout
@@ -468,7 +468,7 @@ ShaderCleanup(
     IndexT i;
     for (i = 0; i < immutableSamplers.Size(); i++)
     {
-        CoreGraphics::DestroySampler(immutableSamplers[i]);
+        CoreGraphics::DestroySampler(immutableSamplers.KeyAtIndex(i));
     }
     immutableSamplers.Clear();
 
