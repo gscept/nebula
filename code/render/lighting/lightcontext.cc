@@ -720,7 +720,7 @@ LightContext::GetPosition(const Graphics::GraphicsEntityId id)
         case LightType::AreaLightType:
             return areaLightAllocator.Get<AreaLight_Transform>(lid).getposition();
         default:
-            return directionalLightAllocator.Get<DirectionalLight_Transform>(lid).position;
+            return directionalLightAllocator.Get<DirectionalLight_Direction>(lid).vec;
     }
 }
 
