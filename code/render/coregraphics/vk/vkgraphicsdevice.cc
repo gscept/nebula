@@ -1470,7 +1470,10 @@ DestroyGraphicsDevice()
     }
 
 #if NEBULA_VULKAN_DEBUG
-    VkDestroyDebugMessenger(state.instance, VkErrorDebugMessageHandle, nullptr);
+    if (state.enableValidation)
+    {
+        VkDestroyDebugMessenger(state.instance, VkErrorDebugMessageHandle, nullptr);
+    }
 #endif
 
     vkDestroyDevice(state.devices[state.currentDevice], nullptr);
