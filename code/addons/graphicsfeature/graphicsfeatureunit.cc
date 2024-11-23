@@ -365,6 +365,10 @@ GraphicsFeatureUnit::OnActivate()
 void
 GraphicsFeatureUnit::OnDeactivate()
 {
+    this->RemoveManager(this->cameraManager);
+    this->RemoveManager(this->graphicsManager);
+    this->cameraManager = nullptr;
+    this->graphicsManager = nullptr;
     Im3d::Im3dContext::Discard();
     Dynui::ImguiContext::Discard();
     StaticUI::StaticUIContext::Discard();
