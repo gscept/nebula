@@ -254,6 +254,13 @@ GraphicsServer::Close()
     this->timer->StopTime();
     this->timer = nullptr;
 
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("dds", CoreGraphics::TextureLoader::RTTI);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nax", CoreAnimation::AnimationLoader::RTTI);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nsk", Characters::SkeletonLoader::RTTI);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("nvx", CoreGraphics::MeshLoader::RTTI);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
+    Resources::ResourceServer::Instance()->DeregisterStreamLoader("n3", Models::ModelLoader::RTTI);
+
     if (this->graphicsDevice) 
         CoreGraphics::DestroyGraphicsDevice();
 }

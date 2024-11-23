@@ -75,6 +75,8 @@ public:
 
     /// register a stream pool, which takes an extension and the RTTI of the resource type to create
     void RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
+    /// deregisters a stream pool
+    void DeregisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamLoader() const;
 
