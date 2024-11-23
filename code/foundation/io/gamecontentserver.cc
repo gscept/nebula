@@ -8,7 +8,7 @@
 
 namespace IO
 {
-#if (__WIN32__ || __OSX__ || __linux__)
+#if (__WIN32__ || __APPLE__ || __linux__)
 __ImplementClass(IO::GameContentServer, 'IGCS', Base::GameContentServerBase);
 #else
 #error "IO::GameContentServer not implemented on this platform!"

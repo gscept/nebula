@@ -36,7 +36,10 @@ def run(fips_dir, proj_dir, args) :
     log.info("[BOOTSTRAP]: " + log.BLUE + "-- Python Deps --" + log.DEF)
     log.info(log.YELLOW + "Installing required python dependencies..." + log.DEF)
 
-    subprocess.call("pip install py7zr", stdout=subprocess.DEVNULL)
+    if sys.platform == "win32":
+        subprocess.call("pip install py7zr", stdout=subprocess.DEVNULL)
+    elif sys.platform == "darwin":
+        subprocess.call("brew install p7zip",  shell=True)
     
     # TODO: we should build the assetbatcher as well, without support for fbx unless we have the SDK installed.
 

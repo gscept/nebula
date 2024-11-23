@@ -124,19 +124,6 @@ ProfilingRegisterThread()
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<ProfilingScope>&
-ProfilingGetScopes(Threading::ThreadId thread)
-{
-#if NEBULA_DEBUG
-    n_assert(profilingContexts[thread].topLevelScopes.IsEmpty());
-#endif
-    Threading::CriticalScope lock(&categoryLock);
-    return profilingContexts[thread].topLevelScopes;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const Util::Array<ProfilingContext>
 ProfilingGetContexts()
 {

@@ -21,7 +21,7 @@
 #include <functional>
 #if __WIN32__
 #include "io/win32/win32filewatcher.h"
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "io/posix/linuxfilewatcher.h"
 #else
 #error "not implemented"

@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-22.04]
+        name: [windows-latest, ubuntu-22.04, macos-latest]
         include:
           - name: windows-latest
             os: windows-latest
@@ -34,6 +34,12 @@ jobs:
             physx: linux
             physxkey: linux
             anyfx: anyfxcompiler-linux
+          - name: macos-latest
+            os: macos-latest
+            config: darwin-ninja-debug
+            physx: linux
+            physxkey: linux
+            anyfx: anyfxcompiler-macos
           
       # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

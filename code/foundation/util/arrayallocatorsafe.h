@@ -27,6 +27,7 @@
 #include "threading/readwritelock.h"
 #include "threading/spinlock.h"
 #include <tuple>
+#include "threading/interlocked.h"
 #include "tupleutility.h"
 #include "ids/id.h"
 
