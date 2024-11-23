@@ -39,6 +39,8 @@ public:
 
     static void SnapToGridIncrements(bool value);
     static bool SnapToGridIncrements();
+    static void UseIm3DGizmo(bool value);
+    static bool UseIm3DGizmo();
 
 private:
     friend Edit::CMDSetSelection;
@@ -72,6 +74,11 @@ private:
             Editor::Entity originEntity = Editor::Entity::Invalid();
             /// prolongs picking pause for one frame after entity has been dragged
             bool pickingPaused = false;
+
+            /// switch between gizmo and drag control
+            bool useGizmo = true;
+            ///
+            bool gizmoTransforming = false;
         } translation;
 
         struct
