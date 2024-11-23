@@ -76,7 +76,7 @@ private:
     friend void MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
     NodeType type;
-    struct
+    struct Base
     {
         Util::String                    name;
 
@@ -100,14 +100,14 @@ private:
     } base;
 
     
-    struct
+    struct Anim
     {
         ToolkitUtil::AnimBuilderCurve translationCurve, rotationCurve, scaleCurve;
         IndexT animIndex = InvalidIndex;
     } anim;
 
 
-    struct
+    struct Skeleton
     {
         Math::mat4                  bindMatrix;
         bool                        isSkeletonRoot = false;
@@ -116,18 +116,18 @@ private:
         IndexT                      skeletonIndex = InvalidIndex;
     } skeleton;
 
-    struct
+    struct Skin
     {
         Util::Array<IndexT> skinFragments;
         Util::Array<Util::Set<IndexT>> jointLookup;
     } skin;
 
-    struct
+    struct Light
     {
         LightType                   lightType;
     } light;
 
-    struct
+    struct Mesh
     {
         float                                           minLodDistance;
         float                                           maxLodDistance;
@@ -140,7 +140,7 @@ private:
         //ToolkitUtil::MeshBuilder                        mesh;
     } mesh;
 
-    struct
+    struct Fbx
     {
         ufbx_node* node;
         Util::Set<double> translationKeyTimes, rotationKeyTimes, scaleKeyTimes;
