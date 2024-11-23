@@ -12,6 +12,7 @@
 #include "graphicsfeature/components/model.h"
 #include "graphicsfeature/components/decal.h"
 #include "graphicsfeature/components/lighting.h"
+#include "dynui/im3d/im3dcontext.h"
 
 // TEMP: Move this to editor game manager
 #include "game/world.h"
@@ -66,6 +67,10 @@ EditorFeatureUnit::OnActivate()
         Editor::Create();
 
         this->AttachManager(Editor::UIManager::Create());
+
+        Im3d::Im3dContext::SetGridStatus(true);
+        Im3d::Im3dContext::SetGridSize(1.0f, 25);
+        Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
         Editor::Start();
 

@@ -316,7 +316,7 @@ vec3 aseuler(const mat4& m)
         x = z;
         z = t;
     }
-    return vec3(x, y, z);
+    return vec3(Math::rad2deg(x), Math::rad2deg(y), Math::rad2deg(z));
 }
 
 

@@ -172,6 +172,7 @@ AudioManager::OnActivate()
 {
     using namespace Game;
     using namespace Audio;
+    Game::Manager::OnActivate();
 
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 

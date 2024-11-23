@@ -161,7 +161,7 @@ PhysicsManager::OnActivate()
 void
 PhysicsManager::OnDeactivate()
 {
-    Game::Manager::OnActivate();
+    Game::Manager::OnDeactivate();
 }
 
 //------------------------------------------------------------------------------
