@@ -55,6 +55,17 @@ Environment::Run(SaveMode save)
     //const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows = false);
     Math::vec3 color = LightContext::GetColor(globalLight);
     float intensity = LightContext::GetIntensity(globalLight);
+    Math::point direction = LightContext::GetPosition(globalLight);
+    // mildly hacky
+    float zenithrad = Math::acos(direction.y);
+    float zenith = Math::rad2deg(zenithrad);
+    float azimuth = Math::nearequal(zenithrad, 0.0f, TINY) ? 0.0f : Math::rad2deg(Math::asin(direction.z / Math::sin(zenithrad)));
+    bool changed = ImGui::SliderFloat("Azimut", &azimuth, 0.0f, 360.0f);
+    changed |= ImGui::SliderFloat("Zenith", &zenith, 0.0f, 90.0f);
+    if (changed)
+    {
+        LightContext::SetTransform(globalLight, Math::deg2rad(azimuth ), Math::deg2rad(zenith));
+    }
     if (ImGui::ColorEdit3("Global light Color", &color.x))
     {
         LightContext::SetColor(globalLight, color);
