@@ -98,6 +98,8 @@ fips_dir(editor)
                 profiler.h
                 resourcebrowser.cc
                 resourcebrowser.h
+                settings.cc
+                settings.h
                 styleeditor.cc
                 styleeditor.h
                 toolbar.cc

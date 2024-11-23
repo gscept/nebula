@@ -18,6 +18,7 @@
 #include "windows/asseteditor/asseteditor.h"
 #include "windows/resourcebrowser.h"
 #include "windows/physics.h"
+#include "windows/settings.h"
 #include "windows/profiler.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
@@ -101,6 +102,7 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser");
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     windowServer->RegisterWindow("Presentation::Physics", "Physics");
+    windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     
     UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
     UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");

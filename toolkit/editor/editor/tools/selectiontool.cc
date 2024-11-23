@@ -25,7 +25,7 @@
 #include "camera.h"
 
 Tools::SelectionTool::State Tools::SelectionTool::state = {};
-
+static Im3d::Mat4 gizmoTransform;
 namespace Tools
 {
 
@@ -176,151 +176,210 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
         return;
 
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
-
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
+    Im3d::Im3dContext::SetViewportRect(viewPortPosition, viewPortSize);
 
-    if (mouse->ButtonDown(Input::MouseButton::Code::LeftButton))
-    {
-        state.translation.mousePosOnStart = mouse->GetScreenPosition();
-    }
-
-    if (!state.translation.dragTimer.Running() && state.translation.pickingPaused)
-    {
-        state.translation.pickingPaused = false;
-        state.picking.pauseCounter--;
-    }
-
-    // Only start translating if the mouse has moved more that a small distance
-    if (!state.translation.dragTimer.Running())
-    {
-        float mouseDistance = (mouse->GetScreenPosition() - state.translation.mousePosOnStart).length();
-        if (mouseDistance > 0.0015f && mouse->ButtonPressed(Input::MouseButton::Code::LeftButton))
+    if (state.translation.useGizmo)
+    {   
+        if (!state.translation.isDirty)
         {
-            state.translation.dragTimer.Reset();
-            state.translation.dragTimer.Start();
-            state.picking.pauseCounter++;
-            state.translation.pickingPaused = true;
+            Game::Entity const gameEntity = state.selection.Back();
+            auto pos = Editor::state.editorWorld->GetComponent<Game::Position>(gameEntity);
+            auto orientation = Editor::state.editorWorld->GetComponent<Game::Orientation>(gameEntity);
+            auto scale = Editor::state.editorWorld->GetComponent<Game::Scale>(gameEntity);
+
+            gizmoTransform = Math::trs(pos, orientation, scale);
         }
-    }
-    
-    Math::vec2 mousePos = mouse->GetScreenPosition();
-    mousePos -= viewPortPosition;
-    mousePos = {mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y};
-
-    Math::mat4 const camTransform = Math::inverse(camera->GetViewTransform());
-    Math::mat4 const invProj = Math::inverse(camera->GetProjectionTransform());
-
-    Math::line ray = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
-
-    if (state.translation.dragTimer.Running() && !state.translation.isDirty)
-    {
-        state.translation.originEntity = GetSelectedEntityUnderMouse(viewPortPosition, viewPortSize, camera);
-        if (state.translation.originEntity == Editor::Entity::Invalid())
+        state.translation.gizmoTransforming = Im3d::Gizmo("GizmoEntity", gizmoTransform);
+        Math::vec3 pos;
+        Math::quat rot;
+        Math::vec3 scale;
+        Math::decompose(gizmoTransform, scale, rot, pos);
+        if (state.translation.gizmoTransforming)
         {
-            // failed to find entity. Cancel translation attempt
-            state.translation.dragTimer.Stop();
-        }
-        else
-        {
-            Game::Position entityPos = Editor::state.editorWorld->GetComponent<Game::Position>(state.translation.originEntity);
-            state.translation.plane = Math::plane(entityPos, Math::vector(0, 1, 0));
-            Math::point startPos;
-            if (state.translation.plane.intersect(ray, startPos))
+            Game::Entity const gameEntity = Editor::state.editables[state.selection.Back().index].gameEntity;
+            if (!state.translation.isDirty)
             {
-                state.translation.startPos = startPos.vec;
-                state.translation.isDirty = true;
+                state.picking.pauseCounter++;
+                state.translation.pickingPaused = true;
+                state.translation.startPos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection.Back());
+            }
+            state.translation.isDirty = true;
+            
+            state.translation.delta = pos - state.translation.startPos;
+            if (state.translation.useGridIncrements)
+            {
+                state.translation.delta.x = Math::round(state.translation.delta.x / state.grid.size) * state.grid.size;
+                state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
+                state.translation.delta.z = Math::round(state.translation.delta.z / state.grid.size) * state.grid.size;
+
+            }
+            defaultWorld->SetComponent<Game::Position>(gameEntity, { state.translation.startPos + state.translation.delta });
+            defaultWorld->SetComponent<Game::Orientation>(gameEntity, { rot });
+            defaultWorld->SetComponent<Game::Scale>(gameEntity, { scale });
+            defaultWorld->MarkAsModified(gameEntity);
+        }
+        else if (state.translation.isDirty)
+        {
+            // User has release gizmo, we can set real transform and add to undo queue
+            Edit::CommandManager::BeginMacro("Modify transform", false);
+            Edit::SetComponent(state.selection.Back(), Game::GetComponentId<Game::Position>(), &pos);
+            Edit::SetComponent(state.selection.Back(), Game::GetComponentId<Game::Orientation>(), &rot);
+            Edit::SetComponent(state.selection.Back(), Game::GetComponentId<Game::Scale>(), &scale);
+            Edit::CommandManager::EndMacro();
+            state.translation.gizmoTransforming = false;
+            state.translation.isDirty = false;
+            state.translation.pickingPaused = false;
+            state.picking.pauseCounter--;
+        }
+    }
+    else
+    {
+        
+        Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
+
+        if (mouse->ButtonDown(Input::MouseButton::Code::LeftButton))
+        {
+            state.translation.mousePosOnStart = mouse->GetScreenPosition();
+        }
+
+        if (!state.translation.dragTimer.Running() && state.translation.pickingPaused)
+        {
+            state.translation.pickingPaused = false;
+            state.picking.pauseCounter--;
+        }
+
+        // Only start translating if the mouse has moved more that a small distance
+        if (!state.translation.dragTimer.Running())
+        {
+            float mouseDistance = (mouse->GetScreenPosition() - state.translation.mousePosOnStart).length();
+            if (mouseDistance > 0.0015f && mouse->ButtonPressed(Input::MouseButton::Code::LeftButton))
+            {
+                state.translation.dragTimer.Reset();
+                state.translation.dragTimer.Start();
+                state.picking.pauseCounter++;
+                state.translation.pickingPaused = true;
+            }
+        }
+
+        Math::vec2 mousePos = mouse->GetScreenPosition();
+        mousePos -= viewPortPosition;
+        mousePos = { mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y };
+
+        Math::mat4 const camTransform = Math::inverse(camera->GetViewTransform());
+        Math::mat4 const invProj = Math::inverse(camera->GetProjectionTransform());
+
+        Math::line ray = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
+
+        if (state.translation.dragTimer.Running() && !state.translation.isDirty)
+        {
+            state.translation.originEntity = GetSelectedEntityUnderMouse(viewPortPosition, viewPortSize, camera);
+            if (state.translation.originEntity == Editor::Entity::Invalid())
+            {
+                // failed to find entity. Cancel translation attempt
+                state.translation.dragTimer.Stop();
             }
             else
             {
-                // failed to find plane. Cancel translation attempt
-                state.translation.dragTimer.Stop();
-            }
-        }
-    }
-
-    bool const applyTransform = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && state.translation.dragTimer.Running();
-    if (applyTransform)
-    {
-        state.translation.dragTimer.Stop();
-    }
-
-    if (state.translation.dragTimer.Running())
-    {
-        bool xzAxis = !keyboard->KeyPressed(Input::Key::LeftMenu);
-        
-        if (xzAxis)
-        {
-            Math::point mousePosOnWorldPlane;
-            if (state.translation.plane.intersect(ray, mousePosOnWorldPlane))
-            {
-                state.translation.delta = mousePosOnWorldPlane.vec - state.translation.startPos;
-                if (state.translation.useGridIncrements)
+                Game::Position entityPos = Editor::state.editorWorld->GetComponent<Game::Position>(state.translation.originEntity);
+                state.translation.plane = Math::plane(entityPos, Math::vector(0, 1, 0));
+                Math::point startPos;
+                if (state.translation.plane.intersect(ray, startPos))
                 {
-                    state.translation.delta.x = Math::round(state.translation.delta.x / state.grid.size) * state.grid.size;
-                    state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
-                    state.translation.delta.z = Math::round(state.translation.delta.z / state.grid.size) * state.grid.size;
+                    state.translation.startPos = startPos.vec;
+                    state.translation.isDirty = true;
+                }
+                else
+                {
+                    // failed to find plane. Cancel translation attempt
+                    state.translation.dragTimer.Stop();
                 }
             }
         }
-        else // y axis translation
-        {
-            // find a good plane
-            Game::Position gameEntityPos = defaultWorld->GetComponent<Game::Position>(Editor::state.editables[state.translation.originEntity.index].gameEntity);
 
-            Math::vector planeNormal = Math::cross(Math::normalize(ray.m), Math::vector(0,1,0));
-            planeNormal = Math::cross(planeNormal, Math::vector(0, 1, 0));
-            
-            Math::plane plane = Math::plane(gameEntityPos, planeNormal);
-            Math::point mousePosOnWorldPlane;
-            if (plane.intersect(ray, mousePosOnWorldPlane))
+        bool const applyTransform = mouse->ButtonUp(Input::MouseButton::Code::LeftButton) && state.translation.dragTimer.Running();
+        if (applyTransform)
+        {
+            state.translation.dragTimer.Stop();
+        }
+
+        if (state.translation.dragTimer.Running())
+        {
+            bool xzAxis = !keyboard->KeyPressed(Input::Key::LeftMenu);
+
+            if (xzAxis)
             {
-                state.translation.delta.y = (mousePosOnWorldPlane.vec - state.translation.startPos).y;
-                if (state.translation.useGridIncrements)
+                Math::point mousePosOnWorldPlane;
+                if (state.translation.plane.intersect(ray, mousePosOnWorldPlane))
                 {
-                    state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
+                    state.translation.delta = mousePosOnWorldPlane.vec - state.translation.startPos;
+                    if (state.translation.useGridIncrements)
+                    {
+                        state.translation.delta.x = Math::round(state.translation.delta.x / state.grid.size) * state.grid.size;
+                        state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
+                        state.translation.delta.z = Math::round(state.translation.delta.z / state.grid.size) * state.grid.size;
+                    }
                 }
-                state.translation.plane = Math::plane(state.translation.startPos + state.translation.delta, Math::vector(0, 1, 0));
             }
-        }
+            else // y axis translation
+            {
+                // find a good plane
+                Game::Position gameEntityPos = defaultWorld->GetComponent<Game::Position>(Editor::state.editables[state.translation.originEntity.index].gameEntity);
 
-        for (IndexT i = 0; i < state.selection.Size(); i++)
-        {
-            Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection[i]);
-            pos += state.translation.delta;
+                Math::vector planeNormal = Math::cross(Math::normalize(ray.m), Math::vector(0, 1, 0));
+                planeNormal = Math::cross(planeNormal, Math::vector(0, 1, 0));
 
-            Game::Entity const gameEntity = Editor::state.editables[state.selection[i].index].gameEntity;
-            defaultWorld->SetComponent<Game::Position>(gameEntity, pos);
-            defaultWorld->MarkAsModified(gameEntity);
-        }
-    }
-    else if (state.translation.isDirty)
-    {
-        // Only apply the translation if the translation has happened for more than some threshold duration
-        constexpr float minDragTime = 0.1f;
-        if (state.translation.delta != Math::vec3(0) && state.translation.dragTimer.GetTime() > minDragTime)
-        {
-            // User has release gizmo, we can set real transform and add to undo queue
-            Edit::CommandManager::BeginMacro("Translate entities", false);
+                Math::plane plane = Math::plane(gameEntityPos, planeNormal);
+                Math::point mousePosOnWorldPlane;
+                if (plane.intersect(ray, mousePosOnWorldPlane))
+                {
+                    state.translation.delta.y = (mousePosOnWorldPlane.vec - state.translation.startPos).y;
+                    if (state.translation.useGridIncrements)
+                    {
+                        state.translation.delta.y = Math::round(state.translation.delta.y / state.grid.size) * state.grid.size;
+                    }
+                    state.translation.plane = Math::plane(state.translation.startPos + state.translation.delta, Math::vector(0, 1, 0));
+                }
+            }
+
             for (IndexT i = 0; i < state.selection.Size(); i++)
             {
                 Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection[i]);
                 pos += state.translation.delta;
-                Edit::SetComponent(state.selection[i], Game::GetComponentId<Game::Position>(), &pos);
-            }
-            Edit::CommandManager::EndMacro();
-            state.translation.isDirty = false;
-            state.translation.delta = Math::vec3(0);
-        }
-        else
-        {
-            // Reset game entity position to be same as editors
-            for (IndexT i = 0; i < state.selection.Size(); i++)
-            {
-                Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection[i]);
+
                 Game::Entity const gameEntity = Editor::state.editables[state.selection[i].index].gameEntity;
                 defaultWorld->SetComponent<Game::Position>(gameEntity, pos);
                 defaultWorld->MarkAsModified(gameEntity);
+            }
+        }
+        else if (state.translation.isDirty)
+        {
+            // Only apply the translation if the translation has happened for more than some threshold duration
+            constexpr float minDragTime = 0.1f;
+            if (state.translation.delta != Math::vec3(0) && state.translation.dragTimer.GetTime() > minDragTime)
+            {
+                // User has release gizmo, we can set real transform and add to undo queue
+                Edit::CommandManager::BeginMacro("Translate entities", false);
+                for (IndexT i = 0; i < state.selection.Size(); i++)
+                {
+                    Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection[i]);
+                    pos += state.translation.delta;
+                    Edit::SetComponent(state.selection[i], Game::GetComponentId<Game::Position>(), &pos);
+                }
+                Edit::CommandManager::EndMacro();
+                state.translation.isDirty = false;
+                state.translation.delta = Math::vec3(0);
+            }
+            else
+            {
+                // Reset game entity position to be same as editors
+                for (IndexT i = 0; i < state.selection.Size(); i++)
+                {
+                    Game::Position pos = Editor::state.editorWorld->GetComponent<Game::Position>(state.selection[i]);
+                    Game::Entity const gameEntity = Editor::state.editables[state.selection[i].index].gameEntity;
+                    defaultWorld->SetComponent<Game::Position>(gameEntity, pos);
+                    defaultWorld->MarkAsModified(gameEntity);
+                }
             }
         }
     }
@@ -435,6 +494,24 @@ bool
 SelectionTool::SnapToGridIncrements()
 {
     return state.translation.useGridIncrements;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SelectionTool::UseIm3DGizmo(bool value)
+{
+    state.translation.useGizmo = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+SelectionTool::UseIm3DGizmo()
+{
+    return state.translation.useGizmo;
 }
 
 } // namespace Tools

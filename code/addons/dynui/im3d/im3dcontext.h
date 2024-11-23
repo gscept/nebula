@@ -70,13 +70,26 @@ public:
     ///
     static void SetGridStatus(bool enable);
     ///
+    static bool GetGridStatus();
+    ///
     static void SetGridSize(float cellSize, int cellCount);
+    ///
+    static void GetGridSize(float& cellSize, int& cellCount);
     ///
     static void SetGridColor(Math::vec4 const& color);
     ///
+    static const Math::vec4& GetGridColor();
+    ///
     static void SetGridOffset(Math::vec2 const& offset);
+    ///
+    static Math::vec2 const& GetGridOffset();
     /// configure size and thickness of gizmos
     static void SetGizmoSize(int size, int width);
+
+    /// configure size and thickness of gizmos
+    static void GetGizmoSize(int& size, int& width);
+    ///
+    static void SetViewportRect(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize);
 };
 
 
