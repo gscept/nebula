@@ -391,7 +391,7 @@ ImguiContext::Create()
                 ImguiContext::RecoverImGuiContextErrors();
 #endif
                 ImGui::Render();
-                ImguiDrawFunction(cmdBuf, viewport, true);
+                ImguiDrawFunction(cmdBuf, viewport);
             });
     }
 #endif
