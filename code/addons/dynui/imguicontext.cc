@@ -39,11 +39,7 @@ static Core::CVar* ui_opacity;
     Imgui rendering function
 */
 void
-ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport
-#if WITH_NEBULA_EDITOR
-                  , bool editor = false
-#endif
-)
+ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport)
 {
     ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
@@ -108,7 +104,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
 
     // setup device
 #if WITH_NEBULA_EDITOR
-    if (editor)
+    if (App::GameApplication::IsEditorEnabled())
     {
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.editorPipeline);
     }
