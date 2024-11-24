@@ -147,7 +147,10 @@ GraphicsFeatureUnit::OnActivate()
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
+    if (App::GameApplication::IsEditorEnabled())
+    {
+        FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
+    }
 #endif
     this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
@@ -269,8 +272,11 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_default::Initialize(windowWidth, windowHeight);
         FrameScript_default::SetupPipelines();
 #if WITH_NEBULA_EDITOR
-        FrameScript_editorframe::Initialize(windowWidth, windowHeight);
-        FrameScript_editorframe::SetupPipelines();
+        if (App::GameApplication::IsEditorEnabled())
+        {
+            FrameScript_editorframe::Initialize(windowWidth, windowHeight);
+            FrameScript_editorframe::SetupPipelines();
+        }
 #endif
     });
 
@@ -354,7 +360,10 @@ GraphicsFeatureUnit::OnActivate()
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::SetupPipelines();
+    if (App::GameApplication::IsEditorEnabled())
+    {
+        FrameScript_editorframe::SetupPipelines();
+    }
 #endif
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
 }
