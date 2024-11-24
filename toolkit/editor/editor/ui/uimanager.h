@@ -23,6 +23,11 @@ public:
     void OnDeactivate() override;
     void OnBeginFrame() override;
     void OnFrame() override;
+    static const Util::String GetEditorUIIniPath();
+private:
+    /// fugly
+    bool delayedImguiLoad = true;
+    static const char* editorUIPath;
 };
 
 namespace UI
