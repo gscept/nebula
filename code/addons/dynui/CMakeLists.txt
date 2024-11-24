@@ -4,7 +4,7 @@
 
 nebula_begin_module(dynui)
 fips_ide_group(addons)
-fips_deps(render imgui scripting)
+fips_deps(render imgui scripting application)
 #add_definitions(-DIMGUI_DISABLE_OBSOLETE_KEYIO)
 target_include_directories(dynui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation ${Python_INCLUDE_DIRS})
 
