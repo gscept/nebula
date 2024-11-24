@@ -16,6 +16,7 @@
 #include "io/ioserver.h"
 #include "frame/framesubgraph.h"
 #include "core/cvar.h"
+#include "appgame/gameapplication.h"
 
 #include "frame/default.h"
 #if WITH_NEBULA_EDITOR
@@ -378,22 +379,25 @@ ImguiContext::Create()
     */
 
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    if (App::GameApplication::IsEditorEnabled())
     {
-        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
-        if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
-        state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
-    });
+        FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+            {
+                CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+                if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
+                    CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
+                state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+            });
 
-    FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
+        FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+            {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
-        ImguiContext::RecoverImGuiContextErrors();
+                ImguiContext::RecoverImGuiContextErrors();
 #endif
-        ImGui::Render();
-        ImguiDrawFunction(cmdBuf, viewport, true);
-    });
+                ImGui::Render();
+                ImguiDrawFunction(cmdBuf, viewport, true);
+            });
+    }
 #endif
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
@@ -604,13 +608,16 @@ ImguiContext::Create()
     io.Fonts->TexID = &state.fontTexture;
     io.Fonts->ClearTexData();
 
-    // load settings from disk. If we don't do this here we need to
-    // run an entire frame before being able to create or load settings
-    if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+    if (!App::GameApplication::IsEditorEnabled())
     {
-        ImGui::SaveIniSettingsToDisk("imgui.ini");
+        // load settings from disk. If we don't do this here we need to
+        // run an entire frame before being able to create or load settings
+        if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+        {
+            ImGui::SaveIniSettingsToDisk("imgui.ini");
+        }
+        ImGui::LoadIniSettingsFromDisk("imgui.ini");
     }
-    ImGui::LoadIniSettingsFromDisk("imgui.ini");
 }
 
 //------------------------------------------------------------------------------

@@ -46,6 +46,8 @@ public:
     virtual void StepFrame();
 
     static IndexT FrameIndex;
+    ///
+    static bool IsEditorEnabled();
 
 protected:
     /// setup game features
@@ -61,6 +63,8 @@ protected:
     Ptr<IO::IoServer> ioServer;
     Ptr<IO::IoInterface> ioInterface;  
     Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
+
+    static bool editorEnabled;
 
     
 #if __NEBULA_HTTP__
@@ -96,6 +100,15 @@ protected:
 
     GameAppExitHandler exitHandler;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+bool GameApplication::IsEditorEnabled()
+{
+    return editorEnabled;
+}
 
 } // namespace App
 //------------------------------------------------------------------------------

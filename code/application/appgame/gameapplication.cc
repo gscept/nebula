@@ -24,6 +24,8 @@ namespace App
 {
 __ImplementSingleton(App::GameApplication);
 IndexT GameApplication::FrameIndex = -1;
+bool GameApplication::editorEnabled = false;
+
 
 using namespace Util;
 using namespace Core;
@@ -87,9 +89,6 @@ GameApplication::Open()
             this->coreServer->SetToolDirectory(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path"));
         }
 #endif
-                
-        //n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
-
         this->coreServer->SetRootDirectory(root);
         this->coreServer->Open();        
 
@@ -195,7 +194,7 @@ GameApplication::Close()
     this->gameContentServer = nullptr;
 
     this->resourceServer->Close();
-    this->resourceServer = nullptr;
+    this->resourceServer = nullptr;    
 
 #if __NEBULA_HTTP__
     this->debugInterface->Close();
@@ -311,6 +310,7 @@ GameApplication::SetupAppFromCmdLineArgs()
     {
         this->SetAppTitle(args.GetString("-appname"));
     }
+    editorEnabled = args.GetBoolFlag("-editor");
 }
 
 } // namespace App
