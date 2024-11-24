@@ -174,7 +174,7 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    if (terrainSettings.config->use)
+    if (terrainSettings.config && terrainSettings.config->use)
     {
         Terrain::TerrainSetupSettings settings {
             terrainSettings.config->min_height,
@@ -333,7 +333,7 @@ GraphicsFeatureUnit::OnActivate()
     {
     };
     
-    if (terrainSettings.config->use)
+    if (terrainSettings.config && terrainSettings.config->use)
     {
         preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
         preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);
