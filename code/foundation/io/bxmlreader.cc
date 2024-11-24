@@ -133,7 +133,7 @@ BXmlReader::SetToNode(const String& path)
     ushort nodeIndex = this->loaderUtil.FindNodeIndex(path.AsCharPtr());
     if (BXmlLoaderUtil::InvalidNodeIndex == nodeIndex)
     {
-        n_error("BXmlReader::SetToNode(): node not found '%s'!\n", path.AsCharPtr());
+        //n_error("BXmlReader::SetToNode(): node not found '%s'!\n", path.AsCharPtr());
     }
     else
     {
