@@ -3,3 +3,9 @@
 *.fxh linguist-language=GLSL
 *.nidl linguist-language=jsonc
 *.snippet linguist-language=xml
+# configure xml and json files to use correct line endings
+*.attributes text eol=lf
+*.constants text eol=lf
+*.physics text eol=lf
+*.actor text eol=lf
+*.sur text eol=lf
