@@ -211,6 +211,13 @@ NglTFScene::Setup(Gltf::Document* scene
         }
     }
 
+    // calculate node global transforms for all nodes that are not joints
+    for (auto& node : this->nodes)
+    {
+        if (node.base.parent == nullptr && node.type != SceneNode::NodeType::Joint)
+            node.CalculateGlobalTransforms();
+    }
+
     this->ExtractSkeletons();
 
     Timing::Timer timer;
@@ -252,6 +259,13 @@ NglTFScene::Setup(Gltf::Document* scene
                         primitiveNode->mesh.meshFlags = (MeshFlags)(primitiveNode->mesh.meshFlags | MeshFlags::HasSkin);
                         primitiveNode->base.isSkin = true;
                         primitiveNode->skeleton.skeletonIndex = gltfNode->skin; // TODO: is this right?
+
+                        // Mark mesh material as skinned if necessary
+                        Util::String& materialExtras = scene->materials[scene->meshes[gltfNode->mesh].primitives[i].material].extras;
+                        // Assuming this to be empty for now. If not, we need to probably read it as a json and append our extra metadata as such.
+                        // The skinned information is used in the ngltfmaterialextractor
+                        n_assert(materialExtras.IsEmpty());
+                        materialExtras = "n_skinned";
                     }
                 }
                 NglTFMesh::Setup(

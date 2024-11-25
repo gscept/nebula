@@ -137,6 +137,8 @@ psGLTF(
 //------------------------------------------------------------------------------
 SimpleTechnique(GLTFStaticDepthAlphaMask, "Static|Depth|AlphaMask", vsDepthStaticAlphaMask(), psGLTFDepthOnlyAlphaMask(), DepthState);
 SimpleTechnique(GLTFStaticDepthAlphaMaskDoubleSided, "Static|Depth|AlphaMask|DoubleSided", vsDepthStaticAlphaMask(), psGLTFDepthOnlyAlphaMask(), DepthStateDoubleSided);
+SimpleTechnique(GLTFSkinnedDepthAlphaMask, "Skinned|Depth|AlphaMask", vsDepthSkinnedAlphaMask(), psGLTFDepthOnlyAlphaMask(), DepthState);
+SimpleTechnique(GLTFSkinnedDepthAlphaMaskDoubleSided, "Skinned|Depth|AlphaMask|DoubleSided", vsDepthSkinnedAlphaMask(), psGLTFDepthOnlyAlphaMask(), DepthStateDoubleSided);
 
 SimpleTechnique(
     GLTFStatic,
@@ -175,9 +177,33 @@ SimpleTechnique(
     DoubleSidedState);
 
 SimpleTechnique(
+    GLTFSkinnedDoubleSided,
+    "Skinned|DoubleSided",
+    vsGLTFSkinned(),
+    psGLTF(
+        calcColor = SimpleColor,
+        calcBump = GLTFNormalMapFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DoubleSidedState);
+
+SimpleTechnique(
     GLTFStaticAlphaMask,
     "Static|AlphaMask",
     vsGLTFStatic(),
+    psGLTF(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = GLTFNormalMapFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+
+SimpleTechnique(
+    GLTFSkinnedAlphaMask,
+    "Skinned|AlphaMask",
+    vsGLTFSkinned(),
     psGLTF(
         calcColor = AlphaMaskSimpleColor,
         calcBump = GLTFNormalMapFunctor,
@@ -199,6 +225,18 @@ SimpleTechnique(
     DoubleSidedState);
 
 SimpleTechnique(
+    GLTFSkinnedAlphaMaskDoubleSided,
+    "Skinned|AlphaMask|DoubleSided",
+    vsGLTFSkinned(),
+    psGLTF(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = GLTFNormalMapFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DoubleSidedState);
+
+SimpleTechnique(
     GLTFStaticAlphaBlend,
     "Static|AlphaBlend",
     vsGLTFStatic(),
@@ -211,9 +249,33 @@ SimpleTechnique(
     AlphaState);
 
 SimpleTechnique(
+    GLTFSkinnedAlphaBlend,
+    "Skinned|AlphaBlend",
+    vsGLTFSkinned(),
+    psGLTF(
+        calcColor = AlphaMaskAlphaColor,
+        calcBump = GLTFNormalMapFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeAlpha
+    ),
+    AlphaState);
+
+SimpleTechnique(
     GLTFStaticAlphaBlendDoubleSided,
     "Static|AlphaBlend|DoubleSided",
     vsGLTFStatic(),
+    psGLTF(
+        calcColor = AlphaMaskAlphaColor,
+        calcBump = GLTFNormalMapFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeAlpha
+    ),
+    AlphaDoubleSidedState);
+
+SimpleTechnique(
+    GLTFSkinnedAlphaBlendDoubleSided,
+    "Skinned|AlphaBlend|DoubleSided",
+    vsGLTFSkinned(),
     psGLTF(
         calcColor = AlphaMaskAlphaColor,
         calcBump = GLTFNormalMapFunctor,
