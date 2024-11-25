@@ -57,28 +57,58 @@ NglTFMaterialExtractor::ExportAll()
             builder.SetLogger(this->logger);
             builder.SetDstDir(surfaceExportPath);
 
+            struct MatTemplateNames
+            {
+                const char* standardOpaque;
+                const char* alphaBlend;
+                const char* alphaMask;
+            };
+
+            constexpr MatTemplateNames staticNames = {
+                .standardOpaque = "GLTF",
+                .alphaBlend = "GLTFAlphaBlend",
+                .alphaMask = "GLTFAlphaMask",
+            };
+            constexpr MatTemplateNames doubleSidedNames = {
+                .standardOpaque = "GLTFDoubleSided",
+                .alphaBlend = "GLTFAlphaBlendDoubleSided",
+                .alphaMask = "GLTFAlphaMaskDoubleSided",
+            };
+            constexpr MatTemplateNames skinnedNames = {
+                .standardOpaque = "GLTFSkinned",
+                .alphaBlend = "GLTFSkinnedAlphaBlend",
+                .alphaMask = "GLTFSkinnedAlphaMask",
+            };
+            constexpr MatTemplateNames skinnedDoubleSidedNames = {
+                .standardOpaque = "GLTFSkinnedDoubleSided",
+                .alphaBlend = "GLTFSkinnedAlphaBlendDoubleSided",
+                .alphaMask = "GLTFSkinnedAlphaMaskDoubleSided",
+            };
+
+            bool const isSkinned = (material.extras == "n_skinned");
+
+            // Categorize into either using face culling or being doublesided, and choose based on if it's skinned or not
+            MatTemplateNames const* const cullingCategory[2] = { 
+                isSkinned ? &skinnedNames : &staticNames,
+                isSkinned ? &skinnedDoubleSidedNames : &doubleSidedNames
+            };
+
+            // choose between doublesided or not
+            MatTemplateNames const* const names = !material.doubleSided ? cullingCategory[0] : cullingCategory[1];
+
             Util::String templateName;
+            // choose between opaque, blend or masked materials
             if (material.alphaMode == Gltf::Material::AlphaMode::Opaque)
             {
-                if (!material.doubleSided)
-                    templateName = "GLTF";
-                else
-                    templateName = "GLTFDoubleSided";
+                templateName = names->standardOpaque;
             }
             else if (material.alphaMode == Gltf::Material::AlphaMode::Blend)
             {
-                if (!material.doubleSided)
-                    templateName = "GLTFAlphaBlend";
-                else
-                    templateName = "GLTFAlphaBlendDoubleSided";
+                templateName = names->alphaBlend;
             }
             else
             {
-                if (!material.doubleSided)
-                    templateName = "GLTFAlphaMask";
-                else
-                    templateName = "GLTFAlphaMaskDoubleSided";
-
+                templateName = names->alphaMask;
                 builder.AddParam("alphaCutoff", Util::String::FromFloat(material.alphaCutoff));
             }
 

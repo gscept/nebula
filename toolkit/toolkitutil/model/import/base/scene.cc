@@ -348,11 +348,20 @@ Scene::ExtractSkeletons()
         {
             this->nodes[i].skeleton.skeletonIndex = this->skeletons.Size();
             SkeletonBuilder& builder = this->skeletons.Emplace();
+
+            Math::mat4 rootTransform = Math::mat4();
+            if (this->nodes[i].base.parent != nullptr)
+            {
+                // Bake it with parent transform as base
+                rootTransform = Math::inverse(this->nodes[i].base.parent->base.globalTransform);
+            }
+
             std::function<void(SceneNode*, SkeletonBuilder&)> convertFunc = [&](SceneNode* node, SkeletonBuilder& builder)
             {
                 Joint joint;
                 joint.name = node->base.name;
-                joint.bind = node->skeleton.bindMatrix;
+                // bake skeleton root's parent into the bind matrices
+                joint.bind = node->skeleton.bindMatrix * rootTransform;
                 joint.translation = node->base.translation;
                 joint.rotation = node->base.rotation;
                 joint.scale = node->base.scale;

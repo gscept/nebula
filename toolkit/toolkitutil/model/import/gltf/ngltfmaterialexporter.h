@@ -5,7 +5,7 @@
 
     Extracts and exports a GLTF file material into a Nebula surface binary file
 
-    (C) 2020 Individual contributors, see AUTHORS file
+    (C) 2020-2024 Individual contributors, see AUTHORS file
 */
 #include "gltfdata.h"
 #include "surface/surfacebuilder.h"

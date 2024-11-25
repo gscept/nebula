@@ -104,10 +104,11 @@ ModelExporter::ExportFile(const IO::URI& file)
     timer.Reset();
     timer.Start();
 
+    // calculate node global transforms for all nodes
     for (auto& node : this->scene->nodes)
     {
         if (node.base.parent == nullptr)
-            node.CalculateGlobalTransforms();
+            node.CalculateGlobalTransforms();        
     }
 
     // Merge meshes based on vertex component and material
