@@ -28,6 +28,7 @@
 #include "frame/editorframe.h"
 #endif
 
+#include "app/application.h"
 #include "coregraphics/swapchain.h"
 
 namespace Graphics
@@ -81,6 +82,8 @@ GraphicsServer::Open()
     this->displayDevice = CoreGraphics::DisplayDevice::Create();
     this->displayDevice->Open();
 
+    const Util::CommandLineArgs& args = App::Application::Instance()->GetCmdLineArgs();
+
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo {
         .globalConstantBufferMemorySize = 16_MB,
         .globalVertexBufferMemorySize = 64_MB,
@@ -96,13 +99,13 @@ GraphicsServer::Open()
         .maxTimestampQueries = 0x400,
         .maxStatisticsQueries = 0x100,
         .numBufferedFrames = 3,
-        .enableValidation = false,
+        .enableValidation = args.GetBoolFlag("-gfxvalidation"),
         .features = {
-            .enableRayTracing = true,
-            .enableMeshShaders = true,
-            .enableVariableRateShading = true,
+            .enableRayTracing = !args.GetBoolFlag("-disableraytracing"),
+            .enableMeshShaders = !args.GetBoolFlag("-disablemeshshaders"),
+            .enableVariableRateShading = !args.GetBoolFlag("-disablevariablerateshading"),
 #if NEBULA_GRAPHICS_DEBUG
-            .enableGPUCrashAnalytics = true
+            .enableGPUCrashAnalytics = !args.GetBoolFlag("-disablegpucrashanalytics")
 #endif
         }
     };
@@ -209,7 +212,7 @@ GraphicsServer::Open()
 
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
-        
+
         this->textRenderer = CoreGraphics::TextRenderer::Create();
         this->textRenderer->Open();
 
@@ -233,7 +236,7 @@ void
 GraphicsServer::Close()
 {
     n_assert(this->isOpen);
-    
+
     this->isOpen = false;
 
     // Make sure to flush the graphics commands before shutting down
@@ -262,7 +265,7 @@ GraphicsServer::Close()
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("sur", Materials::MaterialLoader::RTTI);
     Resources::ResourceServer::Instance()->DeregisterStreamLoader("n3", Models::ModelLoader::RTTI);
 
-    if (this->graphicsDevice) 
+    if (this->graphicsDevice)
         CoreGraphics::DestroyGraphicsDevice();
 }
 
@@ -388,7 +391,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name, void(*render)(const Mat
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Graphics::View> 
+Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& name)
 {
     Ptr<View> view = View::Create();
@@ -414,7 +417,7 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
     IndexT idx = this->views.FindIndex(view);
     n_assert(idx != InvalidIndex);
     this->views.EraseIndex(idx);
-    // invoke all interested contexts    
+    // invoke all interested contexts
     for (IndexT i = 0; i < this->contexts.Size(); i++)
     {
         if (this->contexts[i]->OnDiscardView != nullptr)
@@ -436,7 +439,7 @@ GraphicsServer::SetCurrentView(const Ptr<View>& view)
 */
 void
 GraphicsServer::RenderDebug(uint32_t flags)
-{    
+{
     IndexT i;
     for (i = 0; i < this->contexts.Size(); i++)
     {
