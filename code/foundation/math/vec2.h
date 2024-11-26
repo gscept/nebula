@@ -65,6 +65,8 @@ struct vec2
     bool all() const;
     /// component wise multiplication
     static vec2 multiply(const vec2& v0, const vec2& v1);
+    /// component wise division
+    static vec2 divide(const vec2& v0, const vec2& v1);
     /// return vector made up of largest components of 2 vectors
     static vec2 maximize(const vec2& v0, const vec2& v1);
     /// return vector made up of smallest components of 2 vectors
@@ -339,6 +341,15 @@ inline vec2
 vec2::multiply( const vec2& v0, const vec2& v1 )
 {
     return vec2(v0.x * v1.x, v0.y * v1.y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline vec2
+vec2::divide(const vec2& v0, const vec2& v1)
+{
+    return vec2(v0.x / v1.x, v0.y / v1.y);
 }
 
 //------------------------------------------------------------------------------

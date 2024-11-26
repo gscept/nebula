@@ -383,6 +383,9 @@ struct ResourceTableSet
     /// Destructor
     ~ResourceTableSet();
 
+    ///
+    void Discard();
+
     /// Run a for each function per table
     void ForEach(std::function<void(const ResourceTableId, const IndexT)> func);
 

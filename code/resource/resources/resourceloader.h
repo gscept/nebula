@@ -74,6 +74,9 @@ public:
     /// load placeholder and error resources
     virtual void LoadFallbackResources();
 
+    /// clear pending unloads
+    void ClearPendingUnloads();
+
     /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
     Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate, bool stream);
     /// discard container

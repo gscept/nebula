@@ -60,7 +60,11 @@ ResourceServer::Close()
     Core::SysFunc::DebugOut("\n\n******** NEBULA RESOURCE MANAGER ********\n Beginning of resource leak report:");
     for (IndexT i = 0; i < this->loaders.Size(); i++)
     {
-        ResourceLoader* pool = this->loaders[i];
+        Ptr<ResourceLoader> pool = this->loaders[i];
+        if (!pool.isvalid())
+        {
+            continue;
+        }
         for (auto & kvp : pool->ids)
         {
             const auto resource = pool->resources[kvp.Value()];
@@ -101,6 +105,38 @@ ResourceServer::RegisterStreamLoader(const Util::StringAtom& ext, const Core::Rt
     this->loaders.Append(loader);
     this->extensionMap.Add(ext, this->loaders.Size() - 1);
     this->typeMap.Add(&loaderClass, this->loaders.Size() - 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceServer::DeregisterStreamLoader(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
+{
+    n_assert(this->open);
+    n_assert(loaderClass.IsDerivedFrom(ResourceLoader::RTTI));
+    n_assert(this->extensionMap.Contains(ext));
+    n_assert(this->typeMap.Contains(&loaderClass));
+
+    IndexT loaderIdx = this->extensionMap[ext];
+    n_assert(this->typeMap[&loaderClass] == loaderIdx);
+    Ptr<ResourceLoader> loader = this->loaders[loaderIdx];
+    this->loaders[loaderIdx] = nullptr;
+    this->extensionMap.Erase(ext);
+    this->typeMap.Erase(&loaderClass);
+    
+    loader->ClearPendingUnloads();
+    for (auto& kvp : loader->ids)
+    {
+        const auto resource = loader->resources[kvp.Value()];
+        if (loader->GetUsage(kvp.Value()) != 0)
+        {
+            const Resources::ResourceName& name = kvp.Key();
+            Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), resource.resourceId, loader->uniqueId, loader->GetUsage(kvp.Value()));
+            Core::SysFunc::DebugOut(msg.AsCharPtr());
+        }
+    }
+    loader = nullptr;
 }
 
 //------------------------------------------------------------------------------

@@ -141,8 +141,6 @@ CameraManager::OnDeactivate()
 {
     Manager::OnDeactivate();
     n_assert(CameraManager::HasInstance());
-    delete CameraManager::Singleton;
-    CameraManager::Singleton = nullptr;
 }
 
 //------------------------------------------------------------------------------

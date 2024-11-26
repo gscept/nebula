@@ -108,6 +108,8 @@ struct Im3dState
     Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;
+    Math::vec2 viewPortPosition{ 0.0f, 0.0f };
+    Math::vec2 viewPortSize{ 1.0f, 1.0f };
 };
 static Im3dState imState;
 
@@ -139,7 +141,7 @@ Im3dContext::Create()
     imState.inputHandler = Im3dInputHandler::Create();
     //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
-    // allocate imgui shader
+    // allocate im3d shader
     imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.fxb");
     imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Lines"));
     imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Lines"));
@@ -378,7 +380,6 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     const Math::rectangle<int>& viewport = view->GetViewport();
 
     ad.m_deltaTime = ctx.frameTime;
-    SetGizmoSize(128, 4);
     ad.m_viewportSize = Vec2((float)viewport.width(), (float)viewport.height());
     
     Graphics::GraphicsEntityId cam = view->GetCamera();
@@ -395,7 +396,8 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
-    Math::vec2 mousePos = mouse->GetScreenPosition();
+    Math::vec2 mousePos = Math::vec2::divide(mouse->GetScreenPosition() - imState.viewPortPosition, imState.viewPortSize);
+    
     mousePos *= 2.0f;
     mousePos -= Math::vec2(1.0f, 1.0f);
     mousePos.y = -mousePos.y;
@@ -559,11 +561,30 @@ Im3dContext::SetGridStatus(bool enable)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+Im3dContext::GetGridStatus()
+{
+    return imState.renderGrid;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Im3dContext::SetGridSize(float cellSize, int cellCount)
 {
     imState.cellSize = cellSize;
     imState.gridSize = cellCount;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::GetGridSize(float& cellSize, int& cellCount)
+{
+    cellSize = imState.cellSize;
+    cellCount = imState.gridSize;
 }
 
 //------------------------------------------------------------------------------
@@ -578,10 +599,28 @@ Im3dContext::SetGridColor(Math::vec4 const & color)
 //------------------------------------------------------------------------------
 /**
 */
+Math::vec4 const&
+Im3dContext::GetGridColor()
+{
+    return imState.gridColor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Im3dContext::SetGridOffset(Math::vec2 const& offset)
 {
     imState.gridOffset = offset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec2 const&
+Im3dContext::GetGridOffset()
+{
+    return imState.gridOffset;
 }
 
 //------------------------------------------------------------------------------
@@ -594,6 +633,28 @@ Im3dContext::SetGizmoSize(int size, int width)
 
     ctx.m_gizmoHeightPixels = size;
     ctx.m_gizmoSizePixels = width;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::GetGizmoSize(int& size, int& width)
+{
+    auto& ctx = GetContext();
+
+    size = ctx.m_gizmoHeightPixels;
+    width = ctx.m_gizmoSizePixels;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetViewportRect(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize)
+{
+    imState.viewPortPosition = viewPortPosition;
+    imState.viewPortSize = viewPortSize;
 }
 
 } // namespace Im3d

@@ -278,12 +278,17 @@ CreateSampler(const SamplerCreateInfo& info)
 void
 DestroySampler(const SamplerId& id)
 {
-    UniqueSamplerHashes.Erase(samplerAllocator.Get<2>(id.id));
-    VkDevice& dev = samplerAllocator.Get<0>(id.id);
-    VkSampler& sampler = samplerAllocator.Get<1>(id.id);
-    vkDestroySampler(dev, sampler, nullptr);
+    uint32_t samplerHash = samplerAllocator.Get<2>(id.id);
+    //FIXME probably should have a counter to not kill the sampler for early, but this only happens during shutdown right now
+    if (UniqueSamplerHashes.Contains(samplerHash))
+    {
+        UniqueSamplerHashes.Erase(samplerHash);
+        VkDevice& dev = samplerAllocator.Get<0>(id.id);
+        VkSampler& sampler = samplerAllocator.Get<1>(id.id);
+        vkDestroySampler(dev, sampler, nullptr);
 
-    samplerAllocator.Dealloc(id.id);
+        samplerAllocator.Dealloc(id.id);
+    }
 }
 
 //------------------------------------------------------------------------------

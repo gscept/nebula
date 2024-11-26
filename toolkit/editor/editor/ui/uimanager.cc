@@ -18,12 +18,14 @@
 #include "windows/asseteditor/asseteditor.h"
 #include "windows/resourcebrowser.h"
 #include "windows/physics.h"
+#include "windows/settings.h"
 #include "windows/profiler.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
 #include "dynui/imguicontext.h"
 #include "io/filedialog.h"
+#include "io/filestream.h"
 #include "window.h"
 #include "editor/tools/selectiontool.h"
 #include "editor/cmds.h"
@@ -39,6 +41,7 @@ namespace Editor
 __ImplementClass(Editor::UIManager, 'UiMa', Game::Manager);
 
 static Ptr<Presentation::WindowServer> windowServer;
+const char* UIManager::editorUIPath = "user:nebula/editor/editorui.ini";
 
 namespace UI
 {
@@ -101,6 +104,7 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser");
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     windowServer->RegisterWindow("Presentation::Physics", "Physics");
+    windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     
     UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
     UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");
@@ -166,6 +170,24 @@ UIManager::OnActivate()
         swapInfo.swapSource = FrameScript_editorframe::Export_EditorBuffer.tex;
         Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo);
     });
+    IO::URI userEditorIni = IO::URI(editorUIPath);
+    Util::String path = userEditorIni.LocalPath();
+    if (!IO::IoServer::Instance()->FileExists(userEditorIni))
+    {
+        const Util::String defaultIni = "tool:syswork/data/editor/defaultui.ini";
+        IO::IoServer::Instance()->CreateDirectory("user:nebula/editor/");
+        if (IO::IoServer::Instance()->FileExists(defaultIni))
+        {
+            IO::IoServer::Instance()->CopyFile(defaultIni, userEditorIni);
+        }
+        else
+        {
+            // Fallback
+
+            ImGui::SaveIniSettingsToDisk(path.c_str());
+        }
+    }
+   
 }
 
 //------------------------------------------------------------------------------
@@ -195,7 +217,25 @@ UIManager::OnBeginFrame()
 void
 UIManager::OnFrame()
 {
+    if (this->delayedImguiLoad)
+    {
+        this->delayedImguiLoad = false;
+        IO::URI userEditorIni = IO::URI(editorUIPath);
+        Util::String path = userEditorIni.LocalPath();
+        if (IO::IoServer::Instance()->FileExists(userEditorIni))
+        {
+            ImGui::LoadIniSettingsFromDisk(path.c_str());
+        }
+    }
 
+}
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::String 
+UIManager::GetEditorUIIniPath()
+{
+    return editorUIPath;
 }
 
 } // namespace Editor

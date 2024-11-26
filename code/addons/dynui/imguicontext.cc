@@ -16,6 +16,7 @@
 #include "io/ioserver.h"
 #include "frame/framesubgraph.h"
 #include "core/cvar.h"
+#include "appgame/gameapplication.h"
 
 #include "frame/default.h"
 #if WITH_NEBULA_EDITOR
@@ -38,11 +39,7 @@ static Core::CVar* ui_opacity;
     Imgui rendering function
 */
 void
-ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport
-#if WITH_NEBULA_EDITOR
-                  , bool editor = false
-#endif
-)
+ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport)
 {
     ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
@@ -107,17 +104,15 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
 
     // setup device
 #if WITH_NEBULA_EDITOR
-    if (editor)
+    if (App::GameApplication::IsEditorEnabled())
     {
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.editorPipeline);
     }
     else
+#endif
     {
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.pipeline);
     }
-#else
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, ImguiContext::state.pipeline);
-#endif
 
     // setup input buffers
     CoreGraphics::CmdSetVertexLayout(cmdBuf, ImguiContext::state.vlo);
@@ -358,43 +353,46 @@ ImguiContext::Create()
     components.Append(VertexComponent(1, VertexComponent::Float2, 0));
     components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ .name = "ImGui"_atm, .comps = components });
-
-    /*
-    FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
-    {
-        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
-        if (state.pipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
-        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
-    });
-    FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
-#ifdef NEBULA_NO_DYNUI_ASSERTS
-        ImguiContext::RecoverImGuiContextErrors();
-#endif
-        ImGui::Render();
-        ImguiDrawFunction(cmdBuf, viewport);
-    });
-    */
-
+    
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    if (App::GameApplication::IsEditorEnabled())
     {
-        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
-        if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
-        state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
-    });
+        FrameScript_editorframe::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+            {
+                CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+                if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
+                    CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
+                state.editorPipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+            });
 
-    FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
+        FrameScript_editorframe::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+            {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
-        ImguiContext::RecoverImGuiContextErrors();
+                ImguiContext::RecoverImGuiContextErrors();
 #endif
-        ImGui::Render();
-        ImguiDrawFunction(cmdBuf, viewport, true);
-    });
+                ImGui::Render();
+                ImguiDrawFunction(cmdBuf, viewport);
+            });
+    }
+    else
 #endif
+    {
+        FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+            {
+                CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+                if (state.pipeline != CoreGraphics::InvalidPipelineId)
+                    CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
+                state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+            });
+        FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+            {
+#ifdef NEBULA_NO_DYNUI_ASSERTS
+                ImguiContext::RecoverImGuiContextErrors();
+#endif
+                ImGui::Render();
+                ImguiDrawFunction(cmdBuf, viewport);
+            });
+    }
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
@@ -604,13 +602,16 @@ ImguiContext::Create()
     io.Fonts->TexID = &state.fontTexture;
     io.Fonts->ClearTexData();
 
-    // load settings from disk. If we don't do this here we need to
-    // run an entire frame before being able to create or load settings
-    if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+    if (!App::GameApplication::IsEditorEnabled())
     {
-        ImGui::SaveIniSettingsToDisk("imgui.ini");
+        // load settings from disk. If we don't do this here we need to
+        // run an entire frame before being able to create or load settings
+        if (!IO::IoServer::Instance()->FileExists("imgui.ini"))
+        {
+            ImGui::SaveIniSettingsToDisk("imgui.ini");
+        }
+        ImGui::LoadIniSettingsFromDisk("imgui.ini");
     }
-    ImGui::LoadIniSettingsFromDisk("imgui.ini");
 }
 
 //------------------------------------------------------------------------------

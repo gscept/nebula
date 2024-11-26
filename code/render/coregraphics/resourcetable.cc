@@ -34,6 +34,15 @@ ResourceTableSet::ResourceTableSet(ResourceTableSet&& rhs)
 */
 ResourceTableSet::~ResourceTableSet()
 {
+    this->Discard();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceTableSet::Discard()
+{
     for (IndexT i = 0; i < this->tables.Size(); i++)
     {
         DestroyResourceTable(this->tables[i]);

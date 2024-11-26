@@ -362,7 +362,7 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
             CoreGraphics::CmdEndMarker(uploadCommands);
             CoreGraphics::CmdEndRecord(uploadCommands);
             CoreGraphics::CmdBufferIdRelease(uploadCommands);
-            CoreGraphics::DeferredDestroyCmdBuffer(uploadCommands);
+            CoreGraphics::DestroyCmdBuffer(uploadCommands);
         }
     }
     if (job.loadState.pendingBits != 0x0)
@@ -380,8 +380,8 @@ TextureLoader::StreamResource(const ResourceLoadJob& job)
                 {
                     // First, delete the initial buffer
                     CoreGraphics::FreeUploads(handover.rangesToFree);
-                    CoreGraphics::DeferredDestroyCmdBuffer(handover.uploadBuffer);
-                    CoreGraphics::DeferredDestroyCmdBuffer(handover.receiveBuffer);
+                    CoreGraphics::DestroyCmdBuffer(handover.uploadBuffer);
+                    CoreGraphics::DestroyCmdBuffer(handover.receiveBuffer);
 
                     loadedBits |= handover.bits;
                     pendingBits &= ~handover.bits;

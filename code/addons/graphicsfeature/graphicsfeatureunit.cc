@@ -147,7 +147,10 @@ GraphicsFeatureUnit::OnActivate()
     FrameScript_shadows::Initialize(1024, 1024);
     FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
+    if (App::GameApplication::IsEditorEnabled())
+    {
+        FrameScript_editorframe::Initialize(mode.GetWidth(), mode.GetHeight());
+    }
 #endif
     this->defaultView = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
@@ -171,7 +174,7 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    if (terrainSettings.config->use)
+    if (terrainSettings.config && terrainSettings.config->use)
     {
         Terrain::TerrainSetupSettings settings {
             terrainSettings.config->min_height,
@@ -269,8 +272,11 @@ GraphicsFeatureUnit::OnActivate()
         FrameScript_default::Initialize(windowWidth, windowHeight);
         FrameScript_default::SetupPipelines();
 #if WITH_NEBULA_EDITOR
-        FrameScript_editorframe::Initialize(windowWidth, windowHeight);
-        FrameScript_editorframe::SetupPipelines();
+        if (App::GameApplication::IsEditorEnabled())
+        {
+            FrameScript_editorframe::Initialize(windowWidth, windowHeight);
+            FrameScript_editorframe::SetupPipelines();
+        }
 #endif
     });
 
@@ -327,7 +333,7 @@ GraphicsFeatureUnit::OnActivate()
     {
     };
     
-    if (terrainSettings.config->use)
+    if (terrainSettings.config && terrainSettings.config->use)
     {
         preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
         preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);
@@ -354,7 +360,10 @@ GraphicsFeatureUnit::OnActivate()
     FrameScript_default::SetupPipelines();
     FrameScript_shadows::SetupPipelines();
 #if WITH_NEBULA_EDITOR
-    FrameScript_editorframe::SetupPipelines();
+    if (App::GameApplication::IsEditorEnabled())
+    {
+        FrameScript_editorframe::SetupPipelines();
+    }
 #endif
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
 }
@@ -365,6 +374,11 @@ GraphicsFeatureUnit::OnActivate()
 void
 GraphicsFeatureUnit::OnDeactivate()
 {
+    this->RemoveManager(this->cameraManager);
+    this->RemoveManager(this->graphicsManager);
+    this->cameraManager = nullptr;
+    this->graphicsManager = nullptr;
+    Raytracing::RaytracingContext::Discard();
     Im3d::Im3dContext::Discard();
     Dynui::ImguiContext::Discard();
     StaticUI::StaticUIContext::Discard();
