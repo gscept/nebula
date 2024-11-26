@@ -43,7 +43,7 @@ VkPipelineDatabase::Setup(const VkDevice dev, const VkPipelineCache cache)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkPipelineDatabase::Discard()
 {
     IndexT i;
@@ -207,6 +207,7 @@ VkPipelineDatabase::CreatePipeline(const CoreGraphics::PassId pass, const uint32
     VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
     VkRenderPassBeginInfo renderPassInfo = PassGetVkRenderPassBeginInfo(pass);
     colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(pass, subpass);
+    passInfo.pViewportState = &PassGetVkViewportInfo(pass, subpass);
 
     VkPipelineVertexInputStateCreateInfo dummyVertexInput{};
     dummyVertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -268,7 +269,7 @@ VkPipelineDatabase::Reset()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkPipelineDatabase::Reload(const CoreGraphics::ShaderProgramId id)
 {
     /*
@@ -283,7 +284,7 @@ VkPipelineDatabase::Reload(const CoreGraphics::ShaderProgramId id)
     {
         Tier1Node* t1 = this->tier1.ValueAtIndex(i);
         const CoreGraphics::PassId pass = this->tier1.KeyAtIndex(i);
-        
+
         IndexT j;
         for (j = 0; j < t1->children.Size(); j++)
         {
