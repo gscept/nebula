@@ -23,7 +23,7 @@ VkPassAllocator passAllocator(0x00FFFFFF);
 /**
 */
 const VkRenderPassBeginInfo&
-PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
+PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkRenderPassBeginInfo>(id.id);
 }
@@ -32,7 +32,7 @@ PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 /**
 */
 const VkGraphicsPipelineCreateInfo&
-PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
+PassGetVkFramebufferInfo(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkRuntimeInfo>(id.id).framebufferPipelineInfo;
 }
@@ -40,8 +40,8 @@ PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT 
-PassGetVkNumAttachments(const CoreGraphics::PassId& id)
+const SizeT
+PassGetVkNumAttachments(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).attachments.Size();
 }
@@ -50,7 +50,7 @@ PassGetVkNumAttachments(const CoreGraphics::PassId& id)
 /**
 */
 const VkDevice
-PassGetVkDevice(const CoreGraphics::PassId& id)
+PassGetVkDevice(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).dev;
 }
@@ -59,7 +59,7 @@ PassGetVkDevice(const CoreGraphics::PassId& id)
 /**
 */
 const VkFramebuffer
-PassGetVkFramebuffer(const CoreGraphics::PassId& id)
+PassGetVkFramebuffer(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).framebuffer;
 }
@@ -68,9 +68,18 @@ PassGetVkFramebuffer(const CoreGraphics::PassId& id)
 /**
 */
 const VkRenderPass
-PassGetVkRenderPass(const CoreGraphics::PassId& id)
+PassGetVkRenderPass(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).pass;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkPipelineViewportStateCreateInfo&
+PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32 subpass)
+{
+    return passAllocator.Get<Pass_VkRuntimeInfo>(id.id).subpassPipelineInfo[subpass];
 }
 
 } // namespace Vulkan
@@ -200,7 +209,7 @@ GetSubpassInfo(
             VkAttachmentReference& ds = subpassInfo.depthReference;
             ds.layout = VK_IMAGE_LAYOUT_UNDEFINED;
             ds.attachment = VK_ATTACHMENT_UNUSED;
-            
+
         }
 
         // Add color attachments
@@ -659,11 +668,11 @@ CreatePass(const PassCreateInfo& info)
     loadInfo.rects.Resize(numImages);
     loadInfo.viewports.Resize(numImages);
     loadInfo.name = info.name;
-    
+
     loadInfo.subpasses = info.subpasses;
     loadInfo.attachmentFlags = info.attachmentFlags;
     loadInfo.attachmentIsDepthStencil = info.attachmentDepthStencil;
-    
+
     IndexT i;
     for (i = 0; i < info.attachments.Size(); i++)
     {
@@ -771,7 +780,7 @@ PassGetResourceTable(const CoreGraphics::PassId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::StringAtom 
+const Util::StringAtom
 PassGetName(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id).name;

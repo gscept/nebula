@@ -73,18 +73,20 @@ typedef Ids::IdAllocator<
 extern VkPassAllocator passAllocator;
 
 /// get vk render pass
-const VkRenderPassBeginInfo& PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id);
+const VkRenderPassBeginInfo& PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId id);
 /// get vk framebuffer info
-const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics::PassId& id);
+const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics::PassId id);
+/// get vk viewport info for subpass
+const VkPipelineViewportStateCreateInfo& PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32 subpass);
 /// get number of pass attachments
-const SizeT PassGetVkNumAttachments(const CoreGraphics::PassId& id);
+const SizeT PassGetVkNumAttachments(const CoreGraphics::PassId id);
 
 /// Get device creating this pass
-const VkDevice PassGetVkDevice(const CoreGraphics::PassId& id);
+const VkDevice PassGetVkDevice(const CoreGraphics::PassId id);
 /// Get framebuffer
-const VkFramebuffer PassGetVkFramebuffer(const CoreGraphics::PassId& id);
+const VkFramebuffer PassGetVkFramebuffer(const CoreGraphics::PassId id);
 /// Get pass
-const VkRenderPass PassGetVkRenderPass(const CoreGraphics::PassId& id);
+const VkRenderPass PassGetVkRenderPass(const CoreGraphics::PassId id);
 
 
 } // namespace Vulkan
