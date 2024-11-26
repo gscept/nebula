@@ -265,8 +265,7 @@ DestroyCmdBuffer(const CmdBufferId id)
     vkFreeCommandBuffers(dev, pool, 1, &buf);
 
 #if NEBULA_GRAPHICS_DEBUG
-    // This array should have been moved away
-    n_assert(commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).IsEmpty())
+    commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id).Clear();
 #endif
 
     commandBuffers.Dealloc(id.id);
@@ -1653,7 +1652,7 @@ CmdEndMarker(const CmdBufferId id)
     VkCmdDebugMarkerEnd(cmdBuf);
 
 #if NEBULA_GRAPHICS_DEBUG
-Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
+    Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
