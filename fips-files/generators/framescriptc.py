@@ -37,7 +37,7 @@ def DeclareResourceDependencies(list_name, parser, deps, file):
             Error("Unknown resource {}".format(dep.name))
         
     if len(textures) > 0:
-        file.WriteLine("static const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> {}_TextureDependencies =".format(list_name))
+        file.WriteLine("const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> {}_TextureDependencies =".format(list_name))
         file.WriteLine("{")
         file.IncreaseIndent()
         counter = 0
@@ -742,6 +742,7 @@ class SubpassDefinition:
         self.name = node['name'].replace(" ", "")
         self.dependencies = list()
         self.index = idx
+        parser.externs.append(self)
         if 'resource_dependencies' in node:
             for dependency in node['resource_dependencies']:
                 dep = ResourceDependencyDefinition(parser = parser, node = dependency)
@@ -807,9 +808,13 @@ class SubpassDefinition:
 
     def FormatHeader(self, file):
         numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
-        file.WriteLine('static Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
+        file.WriteLine('extern Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports;'.format(self.name, numAttachments))
         for op in self.ops:
             op.FormatHeader(file)
+            
+    def FormatExtern(self, file, parser):
+        numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
+        file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
 
     def FormatSource(self, file):
         file.IncreaseIndent()
@@ -847,7 +852,7 @@ class PassDefinition:
 
         file.WriteLine("")
         file.WriteLine('CoreGraphics::PassId Pass_{} = CoreGraphics::InvalidPassId;'.format(self.name))
-
+        file.WriteLine('Util::FixedArray<Shared::RenderTargetParameters> Pass_{}_RenderTargetDimensions({});'.format(self.name, len(self.attachments)))
         DeclareResourceDependencies("Pass_{}".format(self.name), parser, self.resourceDependencies, file)   
         
         file.WriteLine("//------------------------------------------------------------------------------")
@@ -945,7 +950,7 @@ class PassDefinition:
         file.WriteLine("}")
 
     def FormatHeader(self, file):
-        file.WriteLine('static Util::FixedArray<Shared::RenderTargetParameters> Pass_{}_RenderTargetDimensions({});'.format(self.name, len(self.attachments)))
+        file.WriteLine('extern Util::FixedArray<Shared::RenderTargetParameters> Pass_{}_RenderTargetDimensions;'.format(self.name, len(self.attachments)))
 
         for idx, attachment in enumerate(self.attachments):
             file.WriteLine("static const int Pass_{}_Attachment_{} = {};".format(self.name, attachment.name, idx))
@@ -1319,7 +1324,6 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "frame/framesubpassbatch.h"')
         file.WriteLine('#include "graphics/view.h"')
-        file.WriteLine('#include "coregraphics/swapchain.h"')
         file.WriteLine('#include "coregraphics/barrier.h"')
         file.WriteLine('#include "renderutil/drawfullscreenquad.h"')
 
