@@ -9,7 +9,6 @@
 #include "graphics/cameracontext.h"
 #include "visibility/visibilitycontext.h"
 #include "dynui/imguicontext.h"
-#include "staticui/staticuicontext.h"
 #include "characters/charactercontext.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "appgame/gameapplication.h"
@@ -381,7 +380,6 @@ GraphicsFeatureUnit::OnDeactivate()
     Raytracing::RaytracingContext::Discard();
     Im3d::Im3dContext::Discard();
     Dynui::ImguiContext::Discard();
-    StaticUI::StaticUIContext::Discard();
     FeatureUnit::OnDeactivate();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->defaultStage);
