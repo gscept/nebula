@@ -9,9 +9,9 @@
 #include <lib/mie-rayleigh.fxh>
 #include "ddgi.fxh"
 
-group(BATCH_GROUP) write rgba8 image2D RadianceOutput;
+group(BATCH_GROUP) write rgb10_a2 image2D RadianceOutput;
 group(BATCH_GROUP) write rgba8 image2D NormalOutput;
-group(BATCH_GROUP) write r32f image2D DepthOutput;
+group(BATCH_GROUP) write rg32f image2D DepthOutput;
 
 struct Probe
 {

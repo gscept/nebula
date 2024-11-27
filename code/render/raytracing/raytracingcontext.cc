@@ -91,7 +91,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 {
     if (!CoreGraphics::RayTracingSupported)
         return;
-    
+
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = RaytracingContext::OnRenderDebug;
 #endif
@@ -181,7 +181,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
         ResourceTableCommitChanges(state.lightGridResourceTables.tables[i]);
     }
 
-    
+
     // Create buffers for updating blas instances
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.name = "BLAS Instance Buffer";
@@ -353,7 +353,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 
 
     state.maxAllowedInstances = settings.maxNumAllowedInstances;
-
+    state.topLevelNeedsReconstruction = true;
     state.blasInstanceAllocator = Memory::RangeAllocator(0xFFFFF, settings.maxNumAllowedInstances);
 }
 
@@ -799,7 +799,7 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
         }
         state.blasInstances[i] = CoreGraphics::InvalidBlasInstanceId;
     }
-    
+
     raytracingContextAllocator.Dealloc(id.id);
     state.topLevelNeedsReconstruction = true;
 }
