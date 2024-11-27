@@ -42,8 +42,9 @@ imports:
         cond: "FIPS_WINDOWS"
     fips-compressonator:
         git: https://github.com/gscept/fips-compressonator.git
-    fips-ultralight:
-        git: https://github.com/gscept/fips-ultralight.git
+    #fixme, make this configurable or put it into its own fips module entirely
+    #fips-ultralight:
+    #    git: https://github.com/gscept/fips-ultralight.git
 exports:
     header-dirs :
         - .

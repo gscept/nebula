@@ -51,7 +51,7 @@ jobs:
       
       - name: Clone dependencies
         run: |
-          pip install py7zr
+          #pip install py7zr
           python fips fetch
           python fips set config ${{ matrix.config }}
           
@@ -122,7 +122,7 @@ jobs:
         run: |
           python fips nebula set work tests
           python fips nebula set toolkit .
-          python fips ultralight
+          #python fips ultralight
           python fips gen
 
       - name: Compile 
