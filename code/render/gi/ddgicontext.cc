@@ -69,14 +69,14 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numPixelsPerProbe = setup.numPixelsPerProbe;
 
     CoreGraphics::TextureCreateInfo radianceCreateInfo;
-    radianceCreateInfo.width = setup.numProbesY * setup.numProbesZ * setup.numPixelsPerProbe;
+    radianceCreateInfo.width = setup.numProbesY * setup.numProbesZ * Probeupdate::NumColorSamples;
     radianceCreateInfo.height = setup.numProbesX * setup.numPixelsPerProbe;
     radianceCreateInfo.format = CoreGraphics::PixelFormat::R10G10B10A2;
     radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.radiance = CoreGraphics::CreateTexture(radianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo depthCreateInfo;
-    depthCreateInfo.width = setup.numProbesY * setup.numProbesZ * setup.numPixelsPerProbe;
+    depthCreateInfo.width = setup.numProbesY * setup.numProbesZ * Probeupdate::NumDepthSamples;
     depthCreateInfo.height = setup.numProbesX * setup.numPixelsPerProbe;
     depthCreateInfo.format = CoreGraphics::PixelFormat::R32G32F;
     depthCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
@@ -87,12 +87,12 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     probeBufferCreateInfo.size = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
     probeBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
     probeBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    volume.probeBuffer = CoreGraphics::CreateBuffer(probeBufferCreateInfo);
+    volume.probeBuffer = CoreGraphics::BufferWithStaging(probeBufferCreateInfo);
 
     volume.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.probeUpdateShader, NEBULA_BATCH_GROUP, 1);
     CoreGraphics::ResourceTableSetRWTexture(volume.resourceTable, CoreGraphics::ResourceTableTexture(volume.radiance, Probeupdate::Table_Batch::RadianceOutput_SLOT));
     CoreGraphics::ResourceTableSetRWTexture(volume.resourceTable, CoreGraphics::ResourceTableTexture(volume.depth, Probeupdate::Table_Batch::DepthOutput_SLOT));
-    CoreGraphics::ResourceTableSetRWBuffer(volume.resourceTable, CoreGraphics::ResourceTableBuffer(volume.probeBuffer, Probeupdate::Table_Batch::ProbeBuffer_SLOT));
+    CoreGraphics::ResourceTableSetRWBuffer(volume.resourceTable, CoreGraphics::ResourceTableBuffer(volume.probeBuffer.DeviceBuffer(), Probeupdate::Table_Batch::ProbeBuffer_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.resourceTable);
 }
 

@@ -13,6 +13,9 @@ group(BATCH_GROUP) write rgb10_a2 image2D RadianceOutput;
 group(BATCH_GROUP) write rgba8 image2D NormalOutput;
 group(BATCH_GROUP) write rg32f image2D DepthOutput;
 
+const uint NumColorSamples = 16;
+const uint NumDepthSamples = 8;
+
 struct Probe
 {
     vec3 position;
@@ -44,8 +47,6 @@ RayGen(
     vec3 direction = Directions[gl_LaunchIDEXT.y] * probe.rotation;
 
     const float MaxDistance = 10000.0f;
-    const uint NumColorSamples = 16;
-    const uint NumDepthSamples = 8;
 
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probe.position.xyz, 0.01f, direction, MaxDistance, 0);
     vec3 WorldSpacePos = probe.position.xyz + direction.xyz * payload.depth;

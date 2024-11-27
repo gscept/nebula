@@ -45,7 +45,8 @@ private:
         Math::vec3 size;
         Math::vec3 position;
         CoreGraphics::TextureId radiance, normals, depth;
-        CoreGraphics::BufferId constants, probeBuffer;
+        CoreGraphics::BufferWithStaging probeBuffer;
+        CoreGraphics::BufferId constants;
         CoreGraphics::ResourceTableId resourceTable;
     };
     
