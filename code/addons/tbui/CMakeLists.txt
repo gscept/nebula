@@ -6,7 +6,7 @@ nebula_begin_module(tbui)
 fips_ide_group(addons)
 fips_deps(render scripting)
 target_include_directories(tbui 
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} 
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} 
     ${CMAKE_CURRENT_SOURCE_DIR}/backend 
     ${CMAKE_CURRENT_SOURCE_DIR}/tb 
     ${CODE_ROOT}/resource 

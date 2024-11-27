@@ -32,9 +32,13 @@ public:
     /// Discard context
     static void Discard();
 
-    static TBUIView* CreateView();
+    void FrameUpdate(const Graphics::FrameContext& ctx);
+
+    static TBUIView* CreateView(int32_t width, int32_t height);
 
     static void DestroyView(const TBUIView* view);
+
+    //static void LoadViewResource();
 
 private:
     static void Render(
@@ -55,6 +59,8 @@ private:
     static CoreGraphics::PipelineId pipeline;
     static IndexT textProjectionConstant;
     static IndexT textureConstant;
+
+    static Util::Array<CoreGraphics::BufferId> usedVertexBuffers;
 };
 
 } // namespace TBUI

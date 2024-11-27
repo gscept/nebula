@@ -11,7 +11,6 @@ namespace TBUI
 struct TBUIBatch
 {
     CoreGraphics::TextureId texture;
-    //CoreGraphics::BufferId vertexBuffer;
     Util::Array<TBUIVertex> vertices;
     Math::intRectangle clipRect;
 };
