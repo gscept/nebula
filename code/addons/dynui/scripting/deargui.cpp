@@ -7,7 +7,6 @@
 #include "imgui.h"
 #include "scripting/scriptserver.h"
 
-#pragma optimize ("",off)
 struct ImGuiContext;
 namespace py = nanobind;
 
@@ -2707,4 +2706,3 @@ void RegisterDearguiModule()
         });
 }
 };
-#pragma optimize ("",on)
