@@ -164,7 +164,7 @@ UIManager::OnActivate()
         Graphics::GraphicsServer::SwapInfo swapInfo;
         swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
     {
-            FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+            FrameScript_editorframe::Synchronize("Present_Sync", cmdBuf, CoreGraphics::GraphicsQueueType, { { (FrameScript_editorframe::TextureIndex)FrameScript_editorframe::Export_EditorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
         };
         swapInfo.submission = FrameScript_editorframe::Submission_EditorUI;
         swapInfo.swapSource = FrameScript_editorframe::Export_EditorBuffer.tex;
