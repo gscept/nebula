@@ -418,6 +418,18 @@
                                         {
                                             "name": "SunShadowDepth",
                                             "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterLightIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterFogIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterDecalIndexLists",
+                                            "stage": "PixelShaderRead"
                                         }
                                     ],
 
@@ -469,6 +481,18 @@
                                         {
                                           "name": "SunShadowDepth",
                                           "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterLightIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterFogIndexLists",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "ClusterDecalIndexLists",
+                                            "stage": "PixelShaderRead"
                                         }
                                     ],
                                   
