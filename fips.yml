@@ -46,6 +46,7 @@ imports:
     gpulang:
         git: https://github.com/gscept/GPULang.git
         group: gpulang
+        
 exports:
     header-dirs :
         - .
