@@ -249,12 +249,12 @@ void OpenScene()
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
 
                     uint materialIndex = i + (j + NumModels) * (NumModels * 2);
-                    entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, MaterialTemplates::BatchGroup::FlatGeometryLit);
+                    //entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, MaterialTemplates::BatchGroup::FlatGeometryLit);
 
-                    Graphics::RegisterEntity<Characters::CharacterContext, ObservableContext>(ent);
+                    Graphics::RegisterEntity<ObservableContext>(ent);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
-                    Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], 0, animationRes[modelIndex], 0, "Viewer");
-                    Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
+                    //Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], 0, animationRes[modelIndex], 0, "Viewer");
+                    //Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
                 });
             
             modelIndex = (modelIndex + 1) % 4;

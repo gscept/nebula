@@ -126,7 +126,11 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
-        Ptr<View> view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, width, height));
+        CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(this->wnd);
+        FrameScript_shadows::Initialize(1024, 1024);
+        FrameScript_default::Initialize(mode.GetWidth(), mode.GetHeight());
+
+        this->view = gfxServer->CreateView("mainview", FrameScript_default::Run, Math::rectangle<int>(0, 0, mode.GetWidth(), mode.GetHeight()));
         gfxServer->SetCurrentView(this->view);
         this->stage = gfxServer->CreateStage("stage1", true);
 
@@ -186,6 +190,30 @@ SimpleViewerApplication::Open()
         Im3d::Im3dContext::SetGridStatus(this->showGrid);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
+
+        this->gfxServer->AddPreViewCall([](IndexT frameIndex, IndexT bufferIndex)
+        {
+            static auto lastFrameSubmission = FrameScript_default::Submission_Scene;
+            FrameScript_shadows::Run(Math::rectangle<int>(0, 0, 1024, 1024), frameIndex, bufferIndex);
+            FrameScript_default::Bind_Shadows(FrameScript_shadows::Submission_Shadows);
+            FrameScript_default::Bind_SunShadowDepth(Frame::TextureImport::FromExport(FrameScript_shadows::Export_SunShadowDepth));
+        });
+        this->gfxServer->AddPostViewCall([](IndexT frameIndex, IndexT bufferIndex)
+        {
+            Graphics::GraphicsServer::SwapInfo swapInfo;
+             swapInfo.syncFunc = [](CoreGraphics::CmdBufferId cmdBuf)
+             {
+                 FrameScript_default::Synchronize("Present_Sync", cmdBuf, { { (FrameScript_default::TextureIndex)FrameScript_default::Export_ColorBuffer.index, CoreGraphics::PipelineStage::TransferRead } }, nullptr);
+             };
+             swapInfo.submission = FrameScript_default::Submission_Scene;
+             swapInfo.swapSource = FrameScript_default::Export_ColorBuffer.tex;
+             Graphics::GraphicsServer::Instance()->SetSwapInfo(swapInfo); 
+        });
+        this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight)
+        {
+            FrameScript_default::Initialize(windowWidth, windowHeight);
+            FrameScript_default::SetupPipelines();
+        });
 
         this->globalLight = Graphics::CreateEntity();
         Lighting::LightContext::RegisterEntity(this->globalLight);
@@ -278,6 +306,9 @@ SimpleViewerApplication::Open()
         this->console->Setup();
         this->consoleHandler->Setup();
         this->profiler = Dynui::ImguiProfiler::Create();
+
+        FrameScript_default::SetupPipelines();
+        FrameScript_shadows::SetupPipelines();
 
         return true;
     }
