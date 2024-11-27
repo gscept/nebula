@@ -44,6 +44,7 @@ InputManager::~InputManager()
 void
 InputManager::OnActivate()
 {
+    Game::Manager::OnActivate();
 }
 
 //------------------------------------------------------------------------------

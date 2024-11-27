@@ -3,6 +3,7 @@
 #include "Math/rectangle.h"
 #include "tb/renderers/tb_renderer_batcher.h"
 #include "tbuibatch.h"
+#include "tbui/tbuiview.h"
 
 namespace TBUI
 {
@@ -17,13 +18,9 @@ public:
   void SetCmdBufferId(const CoreGraphics::CmdBufferId& cmdBufferId);
   const CoreGraphics::CmdBufferId& GetCmdBufferId() const;
 
-  void BeginBatch();
-  const Util::Array<TBUIBatch>& EndBatch();
-
+  Util::Array<TBUIBatch> RenderView(TBUIView* view, int32_t width, int32_t height);
 
 private:
-  friend class TBUIView;
-
   Math::intRectangle clipRect;
   Util::Array<TBUIBatch> batches;
 

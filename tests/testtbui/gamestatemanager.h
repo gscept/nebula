@@ -21,6 +21,7 @@
 #include "dynui/im3d/im3d.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "timing/timer.h"
+#include "tbui/tbuiview.h"
 
 namespace Tests
 {
@@ -37,6 +38,9 @@ public:
     void OnDeactivate() override;
     void OnBeginFrame() override;
     void OnFrame() override;
+
+    private:
+    TBUI::TBUIView* view = nullptr;
 };
 
 } // namespace Demo

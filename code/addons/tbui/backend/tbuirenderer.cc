@@ -61,15 +61,17 @@ TBUIRenderer::GetCmdBufferId() const
     return cmdBufferId;
 }
 
-void
-TBUIRenderer::BeginBatch()
+Util::Array<TBUIBatch>
+TBUIRenderer::RenderView(TBUIView* view, int32_t width, int32_t height)
 {
     batches.Clear();
-}
 
-const Util::Array<TBUIBatch>&
-TBUIRenderer::EndBatch()
-{
+    clipRect = {0, 0, (int32_t)width, (int32_t)height};
+
+    BeginPaint(width, height);
+    view->InvokePaint(tb::TBWidget::PaintProps());
+    EndPaint();
+
     return batches;
 }
 } // namespace TBUI

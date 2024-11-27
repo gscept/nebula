@@ -34,6 +34,7 @@
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "game/gameserver.h"
 #include "game/api.h"
+#include "tbui/tbuicontext.h"
 
 #ifdef __WIN32__
 #include <shellapi.h>
@@ -70,6 +71,8 @@ void
 GameStateManager::OnActivate()
 {
     Game::Manager::OnActivate();
+
+    view = TBUI::TBUIContext::CreateView(2560, 1480);
 }
 
 //------------------------------------------------------------------------------
@@ -78,6 +81,8 @@ GameStateManager::OnActivate()
 void
 GameStateManager::OnDeactivate()
 {
+    TBUI::TBUIContext::DestroyView(view);
+
     Game::Manager::OnDeactivate();
 }
 

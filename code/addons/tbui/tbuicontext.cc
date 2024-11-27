@@ -13,6 +13,9 @@
 #include "tb/tb_language.h"
 #include "tb/tb_font_renderer.h"
 #include "tb/animation/tb_widget_animation.h"
+#include "tb/tb_window.h"
+#include "tb/tb_node_tree.h"
+#include "tb/tb_widgets_reader.h"
 #include "frame/default.h"
 #include "io/assignregistry.h"
 
@@ -28,7 +31,6 @@ CoreGraphics::ResourceTableId TBUIContext::resourceTable;
 CoreGraphics::PipelineId TBUIContext::pipeline;
 IndexT TBUIContext::textProjectionConstant;
 IndexT TBUIContext::textureConstant;
-
 
 __ImplementPluginContext(TBUIContext)
     //------------------------------------------------------------------------------
@@ -130,17 +132,15 @@ TBUIContext::Create()
             font->RenderGlyphs(" !\"#$%&'()*+,-./"
                                "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~•·åäöÅÄÖ");
 
-        
-
-            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
-                [](const CoreGraphics::PassId pass, uint subpass)
-                {
-                    CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
-                    if (pipeline != CoreGraphics::InvalidPipelineId)
-                        CoreGraphics::DestroyGraphicsPipeline(pipeline);
-                    pipeline = CoreGraphics::CreateGraphicsPipeline({shaderProgram, pass, subpass, inputAssembly});
-                }
-            );
+        FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
+            [](const CoreGraphics::PassId pass, uint subpass)
+            {
+                CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
+                if (pipeline != CoreGraphics::InvalidPipelineId)
+                    CoreGraphics::DestroyGraphicsPipeline(pipeline);
+                pipeline = CoreGraphics::CreateGraphicsPipeline({shaderProgram, pass, subpass, inputAssembly});
+            }
+        );
 
         FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
             [](const CoreGraphics::CmdBufferId cmdBuf,
@@ -151,6 +151,8 @@ TBUIContext::Create()
                 TBUIContext::Render(cmdBuf, viewport, frame, bufferIndex);
             }
         );
+
+        tb::TBWidgetsAnimationManager::Init();
     }
 }
 
@@ -165,6 +167,8 @@ TBUIContext::Discard()
         tb::TBWidgetsAnimationManager::Shutdown();
         tb::tb_core_shutdown();
 
+        IO::AssignRegistry::Instance()->ClearAssign("tb");
+
         Input::InputServer::Instance()->RemoveInputHandler(inputHandler.upcast<Input::InputHandler>());
         inputHandler = nullptr;
 
@@ -173,18 +177,87 @@ TBUIContext::Discard()
 }
 
 void
+TBUIContext::FrameUpdate(const Graphics::FrameContext& ctx)
+{
+    tb::TBMessageHandler::ProcessMessages();
+    tb::TBAnimationManager::Update();
+
+    for (auto& view : views)
+    {
+        view->InvokeProcessStates();
+        view->InvokeProcess();
+    }
+}
+
+void
 TBUIContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
     for (auto& view : views)
     {
-        view->SetSize(width, height);
+        //view->SetSize(width, height);
     }
 }
 
 TBUIView*
-TBUIContext::CreateView()
+TBUIContext::CreateView(int32_t width, int32_t height)
 {
     TBUIView* view = new TBUIView();
+    {
+        view->Invalidate();
+        view->SetSize(width, height);
+        view->InvalidateLayout(tb::TBWidget::INVALIDATE_LAYOUT_RECURSIVE);
+
+        // Set gravity all so we resize correctly
+        view->SetGravity(tb::WIDGET_GRAVITY_ALL);
+
+        {
+            // Demo stuff for testing
+
+            auto mainWindow = new tb::TBWindow();
+            mainWindow->Invalidate();
+            mainWindow->InvalidateLayout(tb::TBWidget::INVALIDATE_LAYOUT_RECURSIVE);
+            view->AddChild(mainWindow);
+
+            tb::TBNode node;
+            if (node.ReadFile("tb:demo/ui_resources/test_ui.tb.txt"))
+            {
+                tb::g_widgets_reader->LoadNodeTree(mainWindow, &node);
+
+                // Get title from the WindowInfo section (or use "" if not specified)
+                mainWindow->SetText(node.GetValueString("WindowInfo>title", ""));
+
+                const tb::TBRect parent_rect(0, 0, width, height);
+                const tb::TBDimensionConverter* dc = tb::g_tb_skin->GetDimensionConverter();
+                tb::TBRect window_rect = mainWindow->GetResizeToFitContentRect();
+
+                // Use specified size or adapt to the preferred content size.
+                tb::TBNode* tmp = node.GetNode("WindowInfo>size");
+                if (tmp && tmp->GetValue().GetArrayLength() == 2)
+                {
+                    window_rect.w = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(0)->GetString(), window_rect.w);
+                    window_rect.h = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(1)->GetString(), window_rect.h);
+                }
+
+                // Use the specified position or center in parent.
+                tmp = node.GetNode("WindowInfo>position");
+                if (tmp && tmp->GetValue().GetArrayLength() == 2)
+                {
+                    window_rect.x = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(0)->GetString(), window_rect.x);
+                    window_rect.y = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(1)->GetString(), window_rect.y);
+                }
+                else
+                    window_rect = window_rect.CenterIn(parent_rect);
+
+                // Make sure the window is inside the parent, and not larger.
+                window_rect = window_rect.MoveIn(parent_rect).Clip(parent_rect);
+
+                mainWindow->SetRect(window_rect);
+
+                mainWindow->SetOpacity(0.97f);
+            }
+        }
+        view->SetFocus(tb::WIDGET_FOCUS_REASON_UNKNOWN);
+    }
     views.Append(view);
     return view;
 }
@@ -193,10 +266,13 @@ void
 TBUIContext::DestroyView(const TBUIView* view)
 {
     if (auto it = views.Find(const_cast<TBUIView*>(view)))
+    {
         views.Erase(it);
-
-    delete view;
+        (*it)->Die();
+    }
 }
+
+Util::Array<CoreGraphics::BufferId> TBUIContext::usedVertexBuffers;
 
 void
 TBUIContext::Render(
@@ -210,18 +286,29 @@ TBUIContext::Render(
     Math::mat4 proj = Math::orthooffcenterrh(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
 #endif
 
+    Math::mat4 transform = Math::mat4::identity;
+
+    proj = proj * transform;
+
+    {
+        // Destroy previously used vertex buffers
+        // todo: use pool instead of creating and destroying each render call
+
+        for (const auto& vertexBuffer : usedVertexBuffers)
+        {
+            CoreGraphics::DestroyBuffer(vertexBuffer);
+        }
+        usedVertexBuffers.Clear();
+    }
+
+    Util::Array<TBUIBatch> batches;
+
     // todo: Maybe render only the top view?
     renderer->SetCmdBufferId(cmdBuf);
-    renderer->BeginBatch();
-    for (auto& view : views)
+    for (const auto& view : views)
     {
-        tb::TBRect clipRect = view->GetRect();
-        //renderer->SetClipRect(clipRect);
-        renderer->BeginPaint(clipRect.w, clipRect.h);
-        view->InvokePaint(tb::TBWidget::PaintProps());
-        renderer->EndPaint();
+        batches = renderer->RenderView(view, viewport.width(), viewport.height());
     }
-    const Util::Array<TBUIBatch>& batches = renderer->EndBatch();
 
     //CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
     CoreGraphics::CmdSetVertexLayout(cmdBuf, vertexLayout);
@@ -235,7 +322,6 @@ TBUIContext::Render(
     for (auto& batch : batches)
     {
         // todo: user buffer pool
-        // todo: prepare buffer during batch creation instead of creating here
         CoreGraphics::BufferCreateInfo vboInfo;
         vboInfo.name = "TBUI VBO"_atm;
         vboInfo.size = batch.vertices.Size();
@@ -252,12 +338,7 @@ TBUIContext::Render(
 
         IndexT textureId = CoreGraphics::TextureGetBindlessHandle(batch.texture);
 
-        CoreGraphics::CmdPushConstants(
-            cmdBuf,
-            CoreGraphics::GraphicsPipeline,
-            textureConstant,
-            sizeof(IndexT), &textureId
-        );
+        CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, textureConstant, sizeof(IndexT), &textureId);
 
         // setup primitive
         CoreGraphics::PrimitiveGroup primitive;
@@ -270,6 +351,8 @@ TBUIContext::Render(
         CoreGraphics::CmdDraw(cmdBuf, primitive);
 
         CoreGraphics::BufferFlush(vertexBuffer);
+
+        usedVertexBuffers.Append(vertexBuffer);
     }
 }
 
