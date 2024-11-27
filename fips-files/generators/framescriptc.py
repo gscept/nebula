@@ -94,6 +94,7 @@ class TextureImportDefinition:
         file.WriteLine("TextureCurrentStage[(uint)TextureIndex::{}] = imp.stage;".format(self.name))
         file.WriteLine("TextureOriginalStage[(uint)TextureIndex::{}] = imp.stage;".format(self.name))
         file.WriteLine("TextureImageBits[(uint)TextureIndex::{}] = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(imp.tex));".format(self.name))
+        file.WriteLine("TextureCurrentQueues[(uint)TextureIndex::{}] = CoreGraphics::QueueType::InvalidQueueType;".format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
 
@@ -117,6 +118,7 @@ class BufferImportDefinition:
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("Buffers[(uint)BufferIndex::{}] = id;".format(self.name))
+        file.WriteLine("BufferCurrentQueues[(uint)BufferIndex::{}] = CoreGraphics::QueueType::InvalidQueueType;".format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
 
@@ -807,8 +809,7 @@ class SubpassDefinition:
 
 
     def FormatHeader(self, file):
-        numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
-        file.WriteLine('extern Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports;'.format(self.name, numAttachments))
+        file.WriteLine('extern Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports;'.format(self.name))
         for op in self.ops:
             op.FormatHeader(file)
             
@@ -816,9 +817,14 @@ class SubpassDefinition:
         numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
         file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
 
+    def FormatExtern(self, file, parser):
+        numAttachments =  len(self.attachments) + (1 if self.depth != None else 0)
+        file.WriteLine('Util::FixedArray<Math::rectangle<int>> Subpass_{}_Viewports({});'.format(self.name, numAttachments))
+        
     def FormatSource(self, file):
         file.IncreaseIndent()
         file.WriteLine("// Subpass {}".format(self.name))
+        
         for op in self.ops:
             op.FormatSource(file)
         file.DecreaseIndent()
@@ -853,6 +859,7 @@ class PassDefinition:
         file.WriteLine("")
         file.WriteLine('CoreGraphics::PassId Pass_{} = CoreGraphics::InvalidPassId;'.format(self.name))
         file.WriteLine('Util::FixedArray<Shared::RenderTargetParameters> Pass_{}_RenderTargetDimensions({});'.format(self.name, len(self.attachments)))
+
         DeclareResourceDependencies("Pass_{}".format(self.name), parser, self.resourceDependencies, file)   
         
         file.WriteLine("//------------------------------------------------------------------------------")
@@ -1339,11 +1346,13 @@ class FrameScriptGenerator:
             file.WriteLine("CoreGraphics::PipelineStage TextureCurrentStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::PipelineStage TextureOriginalStage[(uint)TextureIndex::Num] = {};")
             file.WriteLine("CoreGraphics::TextureId Textures[(uint)TextureIndex::Num] = {};")
+            file.WriteLine("CoreGraphics::QueueType TextureCurrentQueues[(uint)TextureIndex::Num] = {};")
             file.WriteLine("Util::Pair<float, float> TextureRelativeScale[(uint)TextureIndex::Num] = {};")
             file.WriteLine("Util::Pair<float, float> TextureRelativeSize[(uint)TextureIndex::Num] = {};")
         if len(self.importBuffers) > 0:
             file.WriteLine("CoreGraphics::PipelineStage BufferCurrentStage[(uint)BufferIndex::Num] = {};")
             file.WriteLine("CoreGraphics::BufferId Buffers[(uint)BufferIndex::Num] = {};")
+            file.WriteLine("CoreGraphics::QueueType BufferCurrentQueues[(uint)BufferIndex::Num] = {};")
 
         file.WriteLine("")
         for extern in self.externs:
