@@ -46,7 +46,7 @@ TBUIRenderer::RenderBatch(Batch* tbBatch)
 void
 TBUIRenderer::SetClipRect(const tb::TBRect& rect)
 {
-    clipRect = Math::intRectangle(rect.x, rect.y, rect.w, rect.h);
+    clipRect = Math::intRectangle(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
 }
 
 void
