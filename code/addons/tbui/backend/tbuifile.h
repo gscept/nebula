@@ -19,7 +19,7 @@ public:
     inline bool
     IsOpen() const
     {
-        return fileStream->IsOpen();
+        return fileStream && fileStream->IsOpen();
     }
 
 private:

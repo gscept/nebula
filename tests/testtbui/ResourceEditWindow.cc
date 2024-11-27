@@ -10,6 +10,8 @@
 
 // == ResourceItem ====================================================================================
 
+using namespace Tests;
+
 ResourceItem::ResourceItem(TBWidget *widget, const char *str)
 	: TBGenericStringItem(str)
 	, m_widget(widget)
@@ -27,7 +29,7 @@ ResourceEditWindow::ResourceEditWindow()
 	// Register as global listener to intercept events in the build container
 	TBWidgetListener::AddGlobalListener(this);
 
-	g_widgets_reader->LoadFile(this, "Demo/demo01/ui_resources/resource_edit_window.tb.txt");
+	g_widgets_reader->LoadFile(this, "tb:demo/ui_resources/resource_edit_window.tb.txt");
 
 	m_scroll_container = GetWidgetByIDAndType<TBScrollContainer>(TBIDC("scroll_container"));
 	m_build_container = m_scroll_container->GetContentRoot();

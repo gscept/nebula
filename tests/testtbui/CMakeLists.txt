@@ -8,6 +8,10 @@ fips_files(
     tbuifeatureunit.cc
     gamestatemanager.h
     gamestatemanager.cc
+    ListWindow.cc
+    ListWindow.h
+    ResourceEditWindow.cc
+    ResourceEditWindow.h
 )
 
 fips_dir(managers)

@@ -111,6 +111,9 @@ TBUIContext::Create()
 #endif
 #ifdef TB_FONT_RENDERER_TBBF
         tb::g_font_manager->AddFontInfo("tb:resources/default_font/segoe_white_with_shadow.tb.txt", "Segoe");
+        tb::g_font_manager->AddFontInfo("tb:demo/fonts/neon.tb.txt", "Neon");
+        tb::g_font_manager->AddFontInfo("tb:demo/fonts/orangutang.tb.txt", "Orangutang");
+        tb::g_font_manager->AddFontInfo("tb:demo/fonts/orange.tb.txt", "Orange");
 #endif
 
         // Set the default font description for widgets to one of the fonts we just added
@@ -210,52 +213,6 @@ TBUIContext::CreateView(int32_t width, int32_t height)
         // Set gravity all so we resize correctly
         view->SetGravity(tb::WIDGET_GRAVITY_ALL);
 
-        {
-            // Demo stuff for testing
-
-            auto mainWindow = new tb::TBWindow();
-            mainWindow->Invalidate();
-            mainWindow->InvalidateLayout(tb::TBWidget::INVALIDATE_LAYOUT_RECURSIVE);
-            view->AddChild(mainWindow);
-
-            tb::TBNode node;
-            if (node.ReadFile("tb:demo/ui_resources/test_ui.tb.txt"))
-            {
-                tb::g_widgets_reader->LoadNodeTree(mainWindow, &node);
-
-                // Get title from the WindowInfo section (or use "" if not specified)
-                mainWindow->SetText(node.GetValueString("WindowInfo>title", ""));
-
-                const tb::TBRect parent_rect(0, 0, width, height);
-                const tb::TBDimensionConverter* dc = tb::g_tb_skin->GetDimensionConverter();
-                tb::TBRect window_rect = mainWindow->GetResizeToFitContentRect();
-
-                // Use specified size or adapt to the preferred content size.
-                tb::TBNode* tmp = node.GetNode("WindowInfo>size");
-                if (tmp && tmp->GetValue().GetArrayLength() == 2)
-                {
-                    window_rect.w = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(0)->GetString(), window_rect.w);
-                    window_rect.h = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(1)->GetString(), window_rect.h);
-                }
-
-                // Use the specified position or center in parent.
-                tmp = node.GetNode("WindowInfo>position");
-                if (tmp && tmp->GetValue().GetArrayLength() == 2)
-                {
-                    window_rect.x = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(0)->GetString(), window_rect.x);
-                    window_rect.y = dc->GetPxFromString(tmp->GetValue().GetArray()->GetValue(1)->GetString(), window_rect.y);
-                }
-                else
-                    window_rect = window_rect.CenterIn(parent_rect);
-
-                // Make sure the window is inside the parent, and not larger.
-                window_rect = window_rect.MoveIn(parent_rect).Clip(parent_rect);
-
-                mainWindow->SetRect(window_rect);
-
-                mainWindow->SetOpacity(0.97f);
-            }
-        }
         view->SetFocus(tb::WIDGET_FOCUS_REASON_UNKNOWN);
     }
     views.Append(view);

@@ -1,4 +1,7 @@
 #include "ListWindow.h"
+#include "tb_widgets_reader.h"
+
+using namespace Tests;
 
 // == AdvancedItemWidget ======================================================
 
@@ -13,7 +16,7 @@ AdvancedItemWidget::AdvancedItemWidget(AdvancedItem *item, AdvancedItemSource *s
 	SetLayoutDistributionPosition(LAYOUT_DISTRIBUTION_POSITION_LEFT_TOP);
 	SetPaintOverflowFadeout(false);
 
-	g_widgets_reader->LoadFile(GetContentRoot(), "Demo/demo01/ui_resources/test_list_item.tb.txt");
+	tb::g_widgets_reader->LoadFile(GetContentRoot(), "tb:demo/ui_resources/test_list_item.tb.txt");
 	TBCheckBox *checkbox = GetWidgetByIDAndType<TBCheckBox>(TBIDC("check"));
 	TBTextField *name = GetWidgetByIDAndType<TBTextField>(TBIDC("name"));
 	TBTextField *info = GetWidgetByIDAndType<TBTextField>(TBIDC("info"));
@@ -64,7 +67,7 @@ TBWidget *AdvancedItemSource::CreateItemWidget(int index, TBSelectItemViewer *vi
 
 ListWindow::ListWindow(TBWidget *root, TBSelectItemSource *source) : DemoWindow(root)
 {
-	LoadResourceFile("Demo/demo01/ui_resources/test_select.tb.txt");
+	LoadResourceFile("tb:demo/ui_resources/test_select.tb.txt");
 	if (TBSelectList *select = GetWidgetByIDAndType<TBSelectList>("list"))
 	{
 		select->SetSource(source);
@@ -89,7 +92,7 @@ AdvancedListWindow::AdvancedListWindow(TBWidget *root, AdvancedItemSource *sourc
 	: DemoWindow(root)
 	, m_source(source)
 {
-	LoadResourceFile("Demo/demo01/ui_resources/test_select_advanced.tb.txt");
+	LoadResourceFile("tb:demo/ui_resources/test_select_advanced.tb.txt");
 	if (TBSelectList *select = GetWidgetByIDAndType<TBSelectList>("list"))
 	{
 		select->SetSource(source);
