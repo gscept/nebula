@@ -32,7 +32,7 @@ public:
     /// Discard context
     static void Discard();
 
-    void FrameUpdate(const Graphics::FrameContext& ctx);
+    static void FrameUpdate(const Graphics::FrameContext& ctx);
 
     static TBUIView* CreateView(int32_t width, int32_t height);
 

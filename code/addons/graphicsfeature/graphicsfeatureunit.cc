@@ -292,6 +292,7 @@ GraphicsFeatureUnit::OnActivate()
     Util::Array<Graphics::ViewIndependentCall> preLogicCalls =
     {
         Dynui::ImguiContext::NewFrame,
+        TBUI::TBUIContext::FrameUpdate,
         CameraContext::UpdateCameras,
         ModelContext::UpdateTransforms,
         Characters::CharacterContext::UpdateAnimations,
