@@ -62,7 +62,7 @@ def DeclareResourceDependencies(list_name, parser, deps, file):
         file.DecreaseIndent()
         file.WriteLine("};")
         
-def SyncResourceDependencies(list_name, deps, file):
+def SyncResourceDependencies(list_name, deps, queue, file):
     texname = "nullptr"
     bufname = "nullptr"
     for dep in deps:
@@ -71,7 +71,7 @@ def SyncResourceDependencies(list_name, deps, file):
         elif dep.tex:
             texname = "{}_TextureDependencies".format(list_name)
             
-    file.WriteLine('Synchronize("{}_Sync", cmdBuf, {}, {});'.format(list_name, texname, bufname))
+    file.WriteLine('Synchronize("{}_Sync", cmdBuf, CoreGraphics::{}QueueType, {}, {});'.format(list_name, queue, texname, bufname))
 
 
 class TextureImportDefinition:
@@ -305,6 +305,7 @@ class SubgraphDefinition:
         self.disabledBindings = list()
         self.p = p
         self.subp = subp
+        self.queue = parser.queue
         if "disabled" in node:
             for binding in node['disabled']:
                 self.disabledBindings.append(dict(name = binding['name'], value = binding['value']))
@@ -374,7 +375,7 @@ class SubgraphDefinition:
         file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "{}");'.format(self.name))
         file.IncreaseIndent()
         if self.subp == None:
-            file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(self.name, self.name, self.name))
+            file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(self.name, self.queue, self.name, self.name))
         file.WriteLine('Subgraph_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine('CoreGraphics::CmdEndMarker(cmdBuf);')
@@ -471,6 +472,7 @@ class CopyDefinition:
         self.sourceBits = ""
         self.destTex = ""
         self.destBits = ""
+        self.queue = parser.queue
         parser.externs.append(self)
 
         if not "from" in node:
@@ -522,7 +524,7 @@ class CopyDefinition:
         file.WriteLine("}")
     
     def FormatSource(self, file):
-        SyncResourceDependencies("Copy_{}".format(self.name), self.resourceDependencies, file)
+        SyncResourceDependencies("Copy_{}".format(self.name), self.resourceDependencies, self.queue, file)
         file.WriteLine("Copy_{}(cmdBuf);".format(self.name))
 
     def FormatSetup(self, file):
@@ -535,6 +537,7 @@ class BlitDefinition:
         self.sourceBits = ""
         self.destTex = ""
         self.destBits = ""
+        self.queue = parser.queue
 
         parser.externs.append(self)
         if not "from" in node:
@@ -592,7 +595,7 @@ class BlitDefinition:
         file.WriteLine("}")
 
     def FormatSource(self, file):
-        SyncResourceDependencies("Blit_{}".format(self.name), self.resourceDependencies, file)
+        SyncResourceDependencies("Blit_{}".format(self.name), self.resourceDependencies, self.queue, file)
         file.WriteLine("Blit_{}(cmdBuf);".format(self.name))
 
     def FormatSetup(self, file):
@@ -660,6 +663,7 @@ class SwapDefinition:
     def __init__(self, parser, node):
         self.name = node['name'].replace(" ", "")
         self.source = node['from']
+        self.queue = parser.queue
         parser.externs.append(self)
 
         self.resourceDependencies = [
@@ -681,7 +685,7 @@ class SwapDefinition:
         file.WriteLine('CoreGraphics::QueueBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Swap");')
         file.WriteLine('CoreGraphics::SwapchainId swapchain = WindowGetSwapchain(CoreGraphics::CurrentWindow);')
         file.WriteLine('CoreGraphics::SwapchainSwap(swapchain);')
-        SyncResourceDependencies("Swap_{}".format(self.name), self.resourceDependencies, file)
+        SyncResourceDependencies("Swap_{}".format(self.name), self.resourceDependencies, self.queue, file)
         file.WriteLine('CoreGraphics::SwapchainCopy(swapchain, cmdBuf, Textures[(uint)TextureIndex::{}]);'.format(self.source))
         file.WriteLine('CoreGraphics::QueueEndMarker(CoreGraphics::GraphicsQueueType);')
 
@@ -692,6 +696,7 @@ class TransitionDefinition:
     def __init__(self, parser, node):
         self.name = node['name']
         self.stage = node['stage']
+        self.queue = parser.queue
 
     def FormatHeader(self, file):
         pass
@@ -700,7 +705,7 @@ class TransitionDefinition:
         pass
 
     def FormatSource(self, file):
-        file.WriteLine('Synchronize("Transition_{}", cmdBuf, {{ {{ TextureIndex::{}, CoreGraphics::PipelineStage::{} }} }}, nullptr);'.format(self.name, self.name, self.stage))
+        file.WriteLine('Synchronize("Transition_{}", cmdBuf, CoreGraphics::{}QueueType, {{ {{ TextureIndex::{}, CoreGraphics::PipelineStage::{} }} }}, nullptr);'.format(self.name, self.queue, self.name, self.stage))
 
 
 class AttachmentDefinition:
@@ -839,8 +844,10 @@ class PassDefinition:
         self.attachments = list()
         self.attachmentDict = {}
         self.resourceDependencies = list()
+        self.queue = parser.queue
         parser.externs.append(self)
         parser.passes.append(self)
+
         for at in node["attachments"]:
             attachment = AttachmentDefinition(parser, at)
             self.attachments.append(attachment)
@@ -966,14 +973,14 @@ class PassDefinition:
 
     def FormatSource(self, file):
         file.WriteLine("")
-        SyncResourceDependencies("Pass_{}".format(self.name), self.resourceDependencies, file)
+        SyncResourceDependencies("Pass_{}".format(self.name), self.resourceDependencies, self.queue, file)
         file.WriteLine('CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, "{}");'.format(self.name))
         file.IncreaseIndent()
 
         for subpass in self.subpasses:
             for op in subpass.ops:
                 if type(op) == SubgraphDefinition:
-                    file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, op.name, op.name))
+                    file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, self.queue, op.name, op.name))
 
         for attachment in self.attachments: 
             file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / float(viewport.width()) * {}f, 1 / float(viewport.height()) * {}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))
@@ -1003,12 +1010,11 @@ class PassDefinition:
         for sub in self.subpasses:
             sub.FormatSetup(file)
 
-       
-
 class SubmissionDefinition:
     def __init__(self, parser, node):
         self.name = node['name'].replace(" ", "")
         self.queue = node['queue']
+        parser.queue = self.queue
         self.lastSubmit = False
         if 'last_submit' in node:
             self.lastSubmit = node['last_submit']
@@ -1106,7 +1112,7 @@ class SubmissionDefinition:
             file.WriteLine("EndOfFrameSyncs.Clear();")
             for imp in imports:
                 file.WriteLine("EndOfFrameSyncs.Append({{ TextureIndex::{}, TextureOriginalStage[(uint)TextureIndex::{}] }});".format(imp.name, imp.name))
-            file.WriteLine('Synchronize("End Of Frame Sync", cmdBuf, EndOfFrameSyncs, nullptr);')
+            file.WriteLine('Synchronize("End Of Frame Sync", cmdBuf, CoreGraphics::{}QueueType, EndOfFrameSyncs, nullptr);'.format(self.queue))
 
         file.DecreaseIndent()
         file.WriteLine("CoreGraphics::CmdEndMarker(cmdBuf);")
@@ -1183,6 +1189,7 @@ class FrameScriptGenerator:
         self.dependencies = list()
         self.submissions = list()
         self.externs = list()
+        self.queue = "Invalid"
         self.passes = list()
         self.pipelines = list()
         if "Nebula" in self.document:
@@ -1261,9 +1268,8 @@ class FrameScriptGenerator:
         file.WriteLine("Num")
         file.DecreaseIndent()
         file.WriteLine("};")        
-        file.WriteLine("void Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8>& bufferDeps);")
+        file.WriteLine("void Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8>& bufferDeps);")
 
-    
         for importBuffer in self.importBuffers:
             importBuffer.FormatHeader(file)
 
@@ -1363,7 +1369,7 @@ class FrameScriptGenerator:
         file.WriteLine("/**")
         file.WriteLine("*/")
         file.WriteLine("inline void")
-        file.WriteLine("Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8>& bufferDeps)")
+        file.WriteLine("Synchronize(const char* name, const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue, const Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8>& textureDeps, const Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8>& bufferDeps)")
         file.WriteLine("{")
         file.IncreaseIndent()
         file.WriteLine("static CoreGraphics::BarrierScope scope; scope.Init(name, buf);")
@@ -1372,7 +1378,7 @@ class FrameScriptGenerator:
             file.WriteLine("for (const auto [index, stage] : textureDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
-            file.WriteLine("CoreGraphics::PipelineStage lastStage = TextureCurrentStage[(uint)index];")
+            file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(TextureCurrentStage[(uint)index], queue);")
             file.WriteLine("if ((stage != lastStage) && Textures[(uint)index] != CoreGraphics::InvalidTextureId)")
             file.WriteLine("{")
             file.IncreaseIndent()
@@ -1388,7 +1394,7 @@ class FrameScriptGenerator:
             file.WriteLine("for (const auto [index, stage] : bufferDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
-            file.WriteLine("CoreGraphics::PipelineStage lastStage = BufferCurrentStage[(uint)index];")
+            file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(BufferCurrentStage[(uint)index], queue);")
             file.WriteLine("if ((stage != lastStage) && Buffers[(uint)index] != CoreGraphics::InvalidBufferId)")
             file.WriteLine("{")
             file.IncreaseIndent()

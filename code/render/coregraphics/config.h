@@ -311,7 +311,68 @@ PipelineStageWrites(const PipelineStage stage)
 
 //------------------------------------------------------------------------------
 /**
+    Demotes an input source stage to a QueueType
 */
+inline PipelineStage
+ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics::QueueType queue)
+{
+    bool isGraphics = false;
+    switch (sourceStage)
+    {
+    case PipelineStage::ColorWrite:
+    case PipelineStage::DepthStencilWrite:
+    case PipelineStage::UniformGraphics:
+    case PipelineStage::VertexShaderWrite:
+    case PipelineStage::HullShaderWrite:
+    case PipelineStage::DomainShaderWrite:
+    case PipelineStage::GeometryShaderWrite:
+    case PipelineStage::TaskShaderWrite:
+    case PipelineStage::PixelShaderWrite:
+    case PipelineStage::MeshShaderWrite:
+        switch (queue)
+        {
+            case CoreGraphics::QueueType::GraphicsQueueType:
+                return sourceStage;
+            case CoreGraphics::QueueType::ComputeQueueType:
+                return PipelineStage::ComputeShaderRead;
+            case CoreGraphics::QueueType::TransferQueueType:
+            case CoreGraphics::QueueType::SparseQueueType:
+                return PipelineStage::TransferRead;
+        }
+    case PipelineStage::ColorRead:
+    case PipelineStage::DepthStencilRead:
+    case PipelineStage::VertexShaderRead:
+    case PipelineStage::HullShaderRead:
+    case PipelineStage::DomainShaderRead:
+    case PipelineStage::GeometryShaderRead:
+    case PipelineStage::PixelShaderRead:
+    case PipelineStage::TaskShaderRead:
+    case PipelineStage::MeshShaderRead:
+        switch (queue)
+        {
+            case CoreGraphics::QueueType::GraphicsQueueType:
+                return sourceStage;
+            case CoreGraphics::QueueType::ComputeQueueType:
+                return PipelineStage::ComputeShaderRead;
+            case CoreGraphics::QueueType::TransferQueueType:
+            case CoreGraphics::QueueType::SparseQueueType:
+                return PipelineStage::TransferRead;
+        }
+    case PipelineStage::AccelerationStructureRead:
+    case PipelineStage::AccelerationStructureWrite:
+        switch (queue)
+        {
+            case CoreGraphics::QueueType::GraphicsQueueType:
+            case CoreGraphics::QueueType::ComputeQueueType:
+                return sourceStage;
+            case CoreGraphics::QueueType::TransferQueueType:
+            case CoreGraphics::QueueType::SparseQueueType:
+                return PipelineStage::TransferRead;
+        }
+    }
+
+    return sourceStage;
+}
 
 } // namespace CoreGraphics
 
