@@ -27,6 +27,7 @@
 #include "physicsinterface.h"
 
 #include "frame/default.h"
+#include "frame/shadows.h"
 
 using namespace Timing;
 using namespace Graphics;
