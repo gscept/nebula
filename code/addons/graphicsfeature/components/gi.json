@@ -1,0 +1,28 @@
+{
+    "namespace": "GraphicsFeature",
+    "components": {
+        "DDGIVolume": {
+            "graphicsEntityId": {
+                "type": "uint",
+                "default": -1,
+                "hideInInspector": true
+            },
+            "numProbesX": {
+                "type": "uint",
+                "default": 8
+            },
+            "numProbesY": {
+                "type": "uint",
+                "default": 8
+            },
+            "numProbesZ": {
+                "type": "uint",
+                "default": 8
+            },
+            "numRaysPerProbe": {
+                "type": "uint",
+                "default": 188
+            }
+        }
+    }
+}

@@ -20,6 +20,7 @@
 #include "lighting/lightcontext.h"
 #include "game/componentinspection.h"
 #include "decals/decalcontext.h"
+#include "gi/ddgicontext.h"
 
 namespace GraphicsFeature
 {
@@ -151,6 +152,22 @@ DeregisterDecal(Graphics::GraphicsEntityId gfxId)
 /**
 */
 void
+DeregisterDDGIVolume(Graphics::GraphicsEntityId gfxId)
+{
+    if (gfxId == Graphics::InvalidGraphicsEntityId)
+        return;
+
+    if (GI::DDGIContext::IsEntityRegistered(gfxId))
+    {
+        GI::DDGIContext::DeregisterEntity(gfxId);
+    }
+    Graphics::DestroyEntity(gfxId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::OnDecay()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
@@ -193,6 +210,14 @@ GraphicsManager::OnDecay()
     {
         Decal* decal = decalData + i;
         DeregisterDecal(decal->graphicsEntityId);
+    }
+
+    Game::ComponentDecayBuffer const ddgiVolumeDecayBuffer = world->GetDecayBuffer(Game::GetComponentId<DDGIVolume>());
+    DDGIVolume* ddgiVolumeData = (DDGIVolume*)ddgiVolumeDecayBuffer.buffer;
+    for (int i = 0; i < ddgiVolumeDecayBuffer.size; i++)
+    {
+        DDGIVolume* volume = ddgiVolumeData + i;
+        DeregisterDDGIVolume(volume->graphicsEntityId);
     }
 }
 
@@ -301,12 +326,39 @@ GraphicsManager::InitUpdateDecalTransformProcessor()
 /**
 */
 void
+GraphicsManager::InitUpdateDDGIVolumeTransformProcessor()
+{
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+
+    Game::ProcessorBuilder(world, "GraphicsManager.UpdateDDGIVolumeTransform"_atm)
+        .On("OnEndFrame")
+        .Excluding<Game::Static>()
+        .Func(
+            [](Game::World* world,
+               Game::Position const& pos,
+               Game::Orientation const& rot,
+               Game::Scale const& scale,
+               GraphicsFeature::DDGIVolume const& volume)
+            {
+                Math::mat4 transform = Math::trs(pos, rot, scale);
+                GI::DDGIContext::SetPosition(volume.graphicsEntityId, pos);
+                GI::DDGIContext::SetSize(volume.graphicsEntityId, scale);
+            }
+        )
+        .Build();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 GraphicsManager::OnActivate()
 {
     Manager::OnActivate();
     this->InitUpdateModelTransformProcessor();
     this->InitUpdateLightTransformProcessor();
     this->InitUpdateDecalTransformProcessor();
+    this->InitUpdateDDGIVolumeTransformProcessor();
 }
 
 //------------------------------------------------------------------------------
@@ -406,10 +458,28 @@ GraphicsManager::InitDecal(Game::World* world, Game::Entity entity, Decal* decal
     //    decal->graphicsEntityId,
     //    transform,
     //    decal->resource, // TODO: load resource
-    //    
+    //
     //);
     //Math::mat4 transform = Math::trs(pos, rot, scale);
     //Decals::DecalContext::SetTransform(decal->graphicsEntityId, transform);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVolume* volume)
+{
+    volume->graphicsEntityId = Graphics::CreateEntity().id;
+    GI::DDGIContext::RegisterEntity(volume->graphicsEntityId);
+    GI::DDGIContext::VolumeSetup setup;
+    setup.numProbesX = volume->numProbesX;
+    setup.numProbesY = volume->numProbesY;
+    setup.numProbesZ = volume->numProbesZ;
+    setup.numRaysPerProbe = volume->numRaysPerProbe;
+    setup.position = world->GetComponent<Game::Position>(entity);
+    setup.size = world->GetComponent<Game::Scale>(entity);
+    GI::DDGIContext::SetupVolume(volume->graphicsEntityId, setup);
 }
 
 //------------------------------------------------------------------------------
@@ -516,6 +586,23 @@ GraphicsManager::OnCleanup(Game::World* world)
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
                 DeregisterDecal((componentData + i)->graphicsEntityId);
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+    { // DDGIVolume cleanup
+        Game::Filter filter = Game::FilterBuilder().Including<DDGIVolume>().Build();
+        Game::Dataset data = world->Query(filter);
+
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::View const& view = data.views[v];
+            DDGIVolume const* const componentData = (DDGIVolume*)view.buffers[0];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                DeregisterDDGIVolume((componentData + i)->graphicsEntityId);
             }
         }
 

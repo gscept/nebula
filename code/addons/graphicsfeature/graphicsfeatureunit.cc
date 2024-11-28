@@ -48,6 +48,7 @@
 
 #include "frame/default.h"
 #include "frame/shadows.h"
+#include "gi/ddgicontext.h"
 #if WITH_NEBULA_EDITOR
 #include "frame/editorframe.h"
 #endif
@@ -89,6 +90,7 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
     this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
     this->RegisterComponentType<AreaLight>({.decay = true, .OnInit = &GraphicsManager::InitAreaLight });
+    this->RegisterComponentType<DDGIVolume>({.decay = true, .OnInit = &GraphicsManager::InitDDGIVolume});
     this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
     this->RegisterComponentType<Camera>();
@@ -251,6 +253,7 @@ GraphicsFeatureUnit::OnActivate()
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
     Fog::VolumetricFogContext::Create();
+    GI::DDGIContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
@@ -314,6 +317,7 @@ GraphicsFeatureUnit::OnActivate()
         Fog::VolumetricFogContext::UpdateViewDependentResources,
         Lighting::LightContext::UpdateViewDependentResources,
         Raytracing::RaytracingContext::UpdateViewResources,
+        GI::DDGIContext::UpdateActiveVolumes,
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =

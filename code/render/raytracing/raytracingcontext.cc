@@ -753,6 +753,33 @@ RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 //------------------------------------------------------------------------------
 /**
 */
+CoreGraphics::ResourceTableId
+RaytracingContext::GetLightGridResourceTable()
+{
+    return state.lightGridResourceTables.tables[CoreGraphics::GetBufferedFrameIndex()];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::TlasId
+RaytracingContext::GetTLAS()
+{
+    return state.toplevelAccelerationStructure;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::BufferId
+RaytracingContext::GetObjectBindingBuffer()
+{
+    return state.objectBindingBuffer.DeviceBuffer();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 RaytracingContext::OnRenderDebug(uint32_t flags)
 {
