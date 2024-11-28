@@ -33,8 +33,8 @@ Key::ToString(Code code)
     case Accept:        return "Accept";
     case ModeChange:    return "ModeChange";
     case Space:         return "Space";
-    case Prior:         return "Prior";
-    case Next:          return "Next";
+    case PageUp:        return "PageUp";
+    case PageDown:      return "PageDown";
     case End:           return "End";
     case Home:          return "Home";
     case Left:          return "Left";
@@ -414,8 +414,8 @@ Key::ToRocket(Code key)
 
     case Escape:        return 81;
 
-    case Prior:         return 86;
-    case Next:          return 87;
+    case PageUp:         return 86;
+    case PageDown:          return 87;
     case End:           return 88;
     case Home:          return 89;
     case Left:          return 90;
@@ -568,8 +568,8 @@ Key::Code Key::FromRocket(uint key)
     case 73: return Pause;
     case 74: return Capital;
     case 81: return Escape;
-    case 86: return Prior;
-    case 87: return Next;
+    case 86: return PageUp;
+    case 87: return PageDown;
     case 88: return End;
     case 89: return Home;
     case 90: return Left;
@@ -779,8 +779,8 @@ Key::KeyCodesByGroup(Key::Group group)
         }
         break;
     case Key::HomeBlock:
-        keys.Append(Key::Prior);
-        keys.Append(Key::Next);
+        keys.Append(Key::PageUp);
+        keys.Append(Key::PageDown);
         keys.Append(Key::Home);
         keys.Append(Key::End);
         keys.Append(Key::Insert);
@@ -830,8 +830,8 @@ Key::SetupDict()
     dict.Add("Accept", Accept);
     dict.Add("ModeChange", ModeChange);
     dict.Add("Space", Space);
-    dict.Add("Prior", Prior);
-    dict.Add("Next", Next);
+    dict.Add("PageUp", PageUp);
+    dict.Add("PageDown", PageDown);
     dict.Add("End", End);
     dict.Add("Home", Home);
     dict.Add("Left", Left);
