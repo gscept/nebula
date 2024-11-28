@@ -10,6 +10,7 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/shader.h"
+#include "coregraphics/pipeline.h"
 #include "tbuiinputhandler.h"
 #include "threading/spinlock.h"
 
@@ -43,6 +44,23 @@ public:
 
     //static void LoadViewResource();
 
+public:
+    struct TBUIState
+    {
+        CoreGraphics::ShaderId shader;
+        CoreGraphics::ShaderProgramId shaderProgram;
+        CoreGraphics::PipelineId pipeline;
+        Util::FixedArray<CoreGraphics::BufferId> vbos;
+        CoreGraphics::VertexLayoutId vertexLayout;
+
+        IndexT textProjectionConstant;
+        IndexT textureConstant;
+        CoreGraphics::ResourceTableId resourceTable;
+        Util::FixedArray<byte*> vertexPtrs;
+
+        Ptr<TBUIInputHandler> inputHandler;
+    };
+
 private:
     static void Render(
         const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex
@@ -53,17 +71,8 @@ private:
 
 private:
     static TBUIRenderer* renderer;
-    static Ptr<TBUIInputHandler> inputHandler;
     static Util::Array<TBUIView*> views;
-    static CoreGraphics::VertexLayoutId vertexLayout;
-    static CoreGraphics::ShaderId shader;
-    static CoreGraphics::ShaderProgramId shaderProgram;
-    static CoreGraphics::ResourceTableId resourceTable;
-    static CoreGraphics::PipelineId pipeline;
-    static IndexT textProjectionConstant;
-    static IndexT textureConstant;
-
-    static Util::Array<CoreGraphics::BufferId> usedVertexBuffers;
+    static TBUIState state;
 };
 
 } // namespace TBUI

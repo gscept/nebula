@@ -28,35 +28,96 @@ tb::MODIFIER_KEYS
 GetModifierKeys()
 {
     tb::MODIFIER_KEYS modifiers = tb::TB_MODIFIER_NONE;
-
-    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::Shift))
+    auto& kb = Input::InputServer::Instance()->GetDefaultKeyboard();
+    if (kb->KeyDown(Input::Key::Shift))
         modifiers |= tb::MODIFIER_KEYS::TB_SHIFT;
-    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::Control))
+    if (kb->KeyDown(Input::Key::Control))
         modifiers |= tb::MODIFIER_KEYS::TB_CTRL;
-    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::Menu))
+    if (kb->KeyDown(Input::Key::Menu))
         modifiers |= tb::MODIFIER_KEYS::TB_ALT;
-    //if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::))
-    //    modifiers |= tb::MODIFIER_KEYS::TB_SUPER;
+    if (kb->KeyDown(Input::Key::LeftWindows) || kb->KeyDown(Input::Key::RightWindows))
+        modifiers |= tb::MODIFIER_KEYS::TB_SUPER;
 
     return modifiers;
 }
 
 tb::SPECIAL_KEY
-GetSpecialKey()
+GetSpecialKey(Input::Key::Code code)
 {
+    tb::SPECIAL_KEY key = tb::SPECIAL_KEY::TB_KEY_UNDEFINED;
+
+    switch (code)
+    {
+    case Input::Key::Code::InvalidKey:
+        return tb::TB_KEY_UNDEFINED;
+    case Input::Key::Code::Up:
+        return tb::TB_KEY_UP;
+    case Input::Key::Code::Down:
+        return tb::TB_KEY_DOWN;
+    case Input::Key::Code::Left:
+        return tb::TB_KEY_LEFT;
+    case Input::Key::Code::Right:
+        return tb::TB_KEY_RIGHT;
+    //case Input::Key::Code::PageUp:
+    //    return tb::TB_KEY_PAGE_UP;
+    //case Input::Key::Code::PageDown:
+    //    return tb::TB_KEY_PAGE_DOWN;
+    case Input::Key::Code::Home:
+        return tb::TB_KEY_HOME;
+    case Input::Key::Code::End:
+        return tb::TB_KEY_END;
+    case Input::Key::Code::Tab:
+        return tb::TB_KEY_TAB;
+    case Input::Key::Code::Back:
+        return tb::TB_KEY_BACKSPACE;
+    case Input::Key::Code::Insert:
+        return tb::TB_KEY_INSERT;
+    case Input::Key::Code::Delete:
+        return tb::TB_KEY_DELETE;
+    case Input::Key::Code::Return:
+        return tb::TB_KEY_ENTER;
+    case Input::Key::Code::Escape:
+        return tb::TB_KEY_ESC;
+    case Input::Key::Code::F1:
+        return tb::TB_KEY_F1;
+    case Input::Key::Code::F2:
+        return tb::TB_KEY_F2;
+    case Input::Key::Code::F3:
+        return tb::TB_KEY_F3;
+    case Input::Key::Code::F4:
+        return tb::TB_KEY_F4;
+    case Input::Key::Code::F5:
+        return tb::TB_KEY_F5;
+    case Input::Key::Code::F6:
+        return tb::TB_KEY_F6;
+    case Input::Key::Code::F7:
+        return tb::TB_KEY_F7;
+    case Input::Key::Code::F8:
+        return tb::TB_KEY_F8;
+    case Input::Key::Code::F9:
+        return tb::TB_KEY_F9;
+    case Input::Key::Code::F10:
+        return tb::TB_KEY_F10;
+    case Input::Key::Code::F11:
+        return tb::TB_KEY_F11;
+    case Input::Key::Code::F12:
+        return tb::TB_KEY_F12;
+    }
+
+    return key;
+}
+
+int32_t
+GetTBKey(const Input::InputEvent& inputEvent)
+{
+    return (int32_t)inputEvent.GetChar();
 }
 } // namespace
 
 TBUIRenderer* TBUIContext::renderer = nullptr;
-Ptr<TBUIInputHandler> TBUIContext::inputHandler;
 Util::Array<TBUIView*> TBUIContext::views;
-CoreGraphics::VertexLayoutId TBUIContext::vertexLayout;
-CoreGraphics::ShaderId TBUIContext::shader;
-CoreGraphics::ShaderProgramId TBUIContext::shaderProgram;
-CoreGraphics::ResourceTableId TBUIContext::resourceTable;
-CoreGraphics::PipelineId TBUIContext::pipeline;
-IndexT TBUIContext::textProjectionConstant;
-IndexT TBUIContext::textureConstant;
+TBUIContext::TBUIState TBUIContext::state;
+static constexpr size_t TBUI_VERTEX_MAX_SIZE = VERTEX_BATCH_SIZE * sizeof(TBUIVertex);
 
 __ImplementPluginContext(TBUIContext)
     //------------------------------------------------------------------------------
@@ -89,26 +150,7 @@ TBUIContext::Create()
             delete renderer;
             return;
         }
-
         IO::AssignRegistry::Instance()->SetAssign(IO::Assign("tb", "root:work/turbobadger"));
-
-        // allocate shader
-        shader = CoreGraphics::ShaderGet("shd:tbui.fxb");
-        shaderProgram = CoreGraphics::ShaderGetProgram(shader, CoreGraphics::ShaderFeatureMask("Static"));
-        resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_BATCH_GROUP);
-
-        textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(shader, "TextProjectionModel");
-        textureConstant = CoreGraphics::ShaderGetConstantBinding(shader, "Texture");
-
-        // create vertex buffer
-        Util::Array<CoreGraphics::VertexComponent> components;
-        components.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0));
-        components.Append(CoreGraphics::VertexComponent(1, CoreGraphics::VertexComponent::Float2, 0));
-        components.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::UByte4N, 0));
-        vertexLayout = CoreGraphics::CreateVertexLayout({.name = "TBUI Vertex Layout", .comps = components});
-
-        inputHandler = TBUIInputHandler::Create();
-        Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::Gui, inputHandler.upcast<Input::InputHandler>());
 
         // Load language file
         tb::g_tb_lng->Load("tb:resources/language/lng_en.tb.txt");
@@ -161,27 +203,76 @@ TBUIContext::Create()
             font->RenderGlyphs(" !\"#$%&'()*+,-./"
                                "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ï∑Â‰ˆ≈ƒ÷");
 
-        FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
-            [](const CoreGraphics::PassId pass, uint subpass)
-            {
-                CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
-                if (pipeline != CoreGraphics::InvalidPipelineId)
-                    CoreGraphics::DestroyGraphicsPipeline(pipeline);
-                pipeline = CoreGraphics::CreateGraphicsPipeline({shaderProgram, pass, subpass, inputAssembly});
-            }
-        );
-
-        FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
-            [](const CoreGraphics::CmdBufferId cmdBuf,
-               const Math::rectangle<int>& viewport,
-               const IndexT frame,
-               const IndexT bufferIndex)
-            {
-                TBUIContext::Render(cmdBuf, viewport, frame, bufferIndex);
-            }
-        );
-
         tb::TBWidgetsAnimationManager::Init();
+
+        // setup state
+        {
+            // allocate shader
+            state.shader = CoreGraphics::ShaderGet("shd:tbui.fxb");
+            state.shaderProgram = CoreGraphics::ShaderGetProgram(state.shader, CoreGraphics::ShaderFeatureMask("Static"));
+
+            state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.shader, NEBULA_BATCH_GROUP);
+
+            state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.shader, "TextProjectionModel");
+            state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.shader, "Texture");
+
+            // create vertex buffer
+            Util::Array<CoreGraphics::VertexComponent> components;
+            components.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0));
+            components.Append(CoreGraphics::VertexComponent(1, CoreGraphics::VertexComponent::Float2, 0));
+            components.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::UByte4N, 0));
+            state.vertexLayout = CoreGraphics::CreateVertexLayout({.name = "TBUI Vertex Layout", .comps = components});
+
+            FrameScript_default::RegisterSubgraphPipelines_StaticUIToBackbuffer_Pass(
+                [](const CoreGraphics::PassId pass, uint subpass)
+                {
+                    CoreGraphics::InputAssemblyKey inputAssembly {CoreGraphics::PrimitiveTopology::TriangleList, false};
+                    if (state.pipeline != CoreGraphics::InvalidPipelineId)
+                        CoreGraphics::DestroyGraphicsPipeline(state.pipeline);
+                    state.pipeline = CoreGraphics::CreateGraphicsPipeline({state.shaderProgram, pass, subpass, inputAssembly});
+                }
+            );
+
+            FrameScript_default::RegisterSubgraph_StaticUIToBackbuffer_Pass(
+                [](const CoreGraphics::CmdBufferId cmdBuf,
+                   const Math::rectangle<int>& viewport,
+                   const IndexT frame,
+                   const IndexT bufferIndex)
+                {
+                    //TBUI::TBUIContext::FrameUpdate({});
+                    TBUIContext::Render(cmdBuf, viewport, frame, bufferIndex);
+                }
+            );
+
+            SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
+
+            CoreGraphics::BufferCreateInfo vboInfo;
+            vboInfo.name = "TBUI VBO"_atm;
+            vboInfo.size = 1;
+            vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vertexLayout);
+            vboInfo.mode = CoreGraphics::HostCached;
+            vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+            vboInfo.data = nullptr;
+            vboInfo.dataSize = 0;
+            state.vbos.Resize(numBuffers);
+            IndexT i;
+            for (i = 0; i < numBuffers; i++)
+            {
+                state.vbos[i] = CoreGraphics::CreateBuffer(vboInfo);
+            }
+
+            // map buffer
+            state.vertexPtrs.Resize(numBuffers);
+            for (i = 0; i < numBuffers; i++)
+            {
+                state.vertexPtrs[i] = (byte*)CoreGraphics::BufferMap(state.vbos[i]);
+            }
+
+            state.inputHandler = TBUIInputHandler::Create();
+            Input::InputServer::Instance()->AttachInputHandler(
+                Input::InputPriority::Gui, state.inputHandler.upcast<Input::InputHandler>()
+            );
+        }
     }
 }
 
@@ -196,12 +287,22 @@ TBUIContext::Discard()
         tb::TBWidgetsAnimationManager::Shutdown();
         tb::tb_core_shutdown();
 
-        IO::AssignRegistry::Instance()->ClearAssign("tb");
+        Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<Input::InputHandler>());
+        state.inputHandler = nullptr;
 
-        Input::InputServer::Instance()->RemoveInputHandler(inputHandler.upcast<Input::InputHandler>());
-        inputHandler = nullptr;
+        IndexT i;
+        for (i = 0; i < state.vbos.Size(); i++)
+        {
+            CoreGraphics::BufferUnmap(state.vbos[i]);
+
+            CoreGraphics::DestroyBuffer(state.vbos[i]);
+
+            state.vertexPtrs[i] = nullptr;
+        }
 
         delete renderer;
+
+        IO::AssignRegistry::Instance()->ClearAssign("tb");
     }
 }
 
@@ -264,6 +365,15 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 
     switch (inputEvent.GetType())
     {
+    case Input::InputEvent::KeyUp:
+    {
+        view->InvokeKey(GetTBKey(inputEvent), GetSpecialKey(inputEvent.GetKey()), GetModifierKeys(), false);
+    }
+    break;
+    case Input::InputEvent::KeyDown: {
+    }
+    break;
+
     case Input::InputEvent::MouseButtonDown: {
         inputEvent.GetMouseButton();
         Math::vec2 pos = inputEvent.GetAbsMousePos();
@@ -279,8 +389,7 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
         view->InvokePointerMove(pos.x, pos.y, GetModifierKeys(), false);
     }
     break;
-    case Input::InputEvent::MouseWheelForward:
-    {
+    case Input::InputEvent::MouseWheelForward: {
         Math::vec2 pos = inputEvent.GetAbsMousePos();
         view->InvokeWheel(pos.x, pos.y, 0, 1, GetModifierKeys());
     }
@@ -299,13 +408,26 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
     return false;
 }
 
-Util::Array<CoreGraphics::BufferId> TBUIContext::usedVertexBuffers;
-
 void
 TBUIContext::Render(
     const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex
 )
 {
+    Util::Array<TBUIBatch> batches;
+
+    // todo: Maybe render only the top view?
+    renderer->SetCmdBufferId(cmdBuf);
+
+    for (const auto& view : views)
+    {
+        batches = renderer->RenderView(view, viewport.width(), viewport.height());
+    }
+
+    IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
+    CoreGraphics::BufferId vbo = TBUIContext::state.vbos[currentBuffer];
+
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "TBUI");
+
     // create orthogonal matrix
 #if __VULKAN__
     Math::mat4 proj = Math::orthooffcenterrh(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
@@ -317,70 +439,85 @@ TBUIContext::Render(
 
     proj = proj * transform;
 
-    {
-        // Destroy previously used vertex buffers
-        // todo: use pool instead of creating and destroying each render call
+    size_t requiredVertexBufferSize = 0;
 
-        for (const auto& vertexBuffer : usedVertexBuffers)
-        {
-            CoreGraphics::DestroyBuffer(vertexBuffer);
-        }
-        usedVertexBuffers.Clear();
+    for (const auto& batch : batches)
+    {
+        requiredVertexBufferSize += sizeof(TBUIVertex) * batch.vertices.Size();
     }
 
-    Util::Array<TBUIBatch> batches;
-
-    // todo: Maybe render only the top view?
-    renderer->SetCmdBufferId(cmdBuf);
-    for (const auto& view : views)
+    // if buffers are too small, create new buffers
+    if (requiredVertexBufferSize > CoreGraphics::BufferGetByteSize(TBUIContext::state.vbos[currentBuffer]))
     {
-        batches = renderer->RenderView(view, viewport.width(), viewport.height());
+        CoreGraphics::BufferUnmap(TBUIContext::state.vbos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(TBUIContext::state.vbos[currentBuffer]);
+
+        CoreGraphics::BufferCreateInfo vboInfo;
+        vboInfo.name = "TBUI VBO"_atm;
+        vboInfo.size = 0;
+        vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(TBUIContext::state.vertexLayout);
+        vboInfo.byteSize = requiredVertexBufferSize;
+        vboInfo.mode = CoreGraphics::HostCached;
+        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.data = nullptr;
+        vboInfo.dataSize = 0;
+        TBUIContext::state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
+        TBUIContext::state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(TBUIContext::state.vbos[currentBuffer]);
     }
 
-    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
-    CoreGraphics::CmdSetVertexLayout(cmdBuf, vertexLayout);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, state.pipeline);
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, state.vertexLayout);
+    CoreGraphics::CmdSetResourceTable(cmdBuf, state.resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, TBUIContext::state.vbos[currentBuffer], 0);
     CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
     CoreGraphics::CmdSetViewport(cmdBuf, viewport, 0);
     CoreGraphics::CmdSetScissorRect(cmdBuf, viewport, 0);
 
     // set projection
-    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, textProjectionConstant, sizeof(proj), (byte*)&proj);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
 
-    for (auto& batch : batches)
+    IndexT vertexOffset = 0;
+    IndexT vertexBufferOffset = 0;
+
+    for (IndexT i = 0; i < batches.Size(); i++)
     {
-        // todo: user buffer pool
-        CoreGraphics::BufferCreateInfo vboInfo;
-        vboInfo.name = "TBUI VBO"_atm;
-        vboInfo.size = batch.vertices.Size();
-        vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(vertexLayout);
-        vboInfo.mode = CoreGraphics::HostCached;
-        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
-        vboInfo.data = &batch.vertices.Front();
-        vboInfo.dataSize = sizeof(TBUIVertex) * batch.vertices.Size();
-        CoreGraphics::BufferId vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
+        const auto& batch = batches[i];
+        const unsigned char* vertexBuffer = (unsigned char*)&batch.vertices.Front();
+        const SizeT vertexBufferSize =
+            batch.vertices.Size() * sizeof(TBUIVertex); // 2 for position, 2 for uvs, 1 int for color
 
-        CoreGraphics::CmdSetResourceTable(cmdBuf, resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-        CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, vertexBuffer, 0);
+        // if we render too many vertices, we will simply assert, but should never happen really
+        n_assert(
+            vertexBufferOffset + (IndexT)batch.vertices.Size() <
+            CoreGraphics::BufferGetByteSize(TBUIContext::state.vbos[currentBuffer])
+        );
+
+        // wait for previous draws to finish...
+        Memory::Copy(vertexBuffer, TBUIContext::state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
+
         CoreGraphics::CmdSetScissorRect(cmdBuf, batch.clipRect, 0);
 
         IndexT textureId = CoreGraphics::TextureGetBindlessHandle(batch.texture);
 
-        CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, textureConstant, sizeof(IndexT), &textureId);
+        CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.textureConstant, sizeof(IndexT), &textureId);
 
         // setup primitive
         CoreGraphics::PrimitiveGroup primitive;
         primitive.SetNumIndices(0);
         primitive.SetBaseIndex(0);
-        primitive.SetBaseVertex(0);
+        primitive.SetBaseVertex(vertexOffset);
         primitive.SetNumVertices(batch.vertices.Size());
 
         // prepare render device and draw
         CoreGraphics::CmdDraw(cmdBuf, primitive);
 
-        CoreGraphics::BufferFlush(vertexBuffer);
+        // bump vertices
+        vertexOffset += batch.vertices.Size();
 
-        usedVertexBuffers.Append(vertexBuffer);
+        // lock buffers
+        vertexBufferOffset += vertexBufferSize;
     }
+    CoreGraphics::BufferFlush(TBUIContext::state.vbos[currentBuffer]);
 }
 
 } // namespace TBUI
