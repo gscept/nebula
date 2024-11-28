@@ -401,7 +401,8 @@ SelectionTool::RenderGizmo(Math::vec2 const& viewPortPosition, Math::vec2 const&
         else
         {
             Math::vec3 location = defaultWorld->GetComponent<Game::Position>(gameEntity);
-            const Math::bbox box = Math::bbox(location, Math::vector(0.1f, 0.1f, 0.1f));
+            Math::vec3 scale = defaultWorld->GetComponent<Game::Scale>(gameEntity);
+            const Math::bbox box = Math::bbox(location, scale * 0.5f);
             Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, box, {1.0f, 0.30f, 0.0f, 1.0f});
         }
 

@@ -161,7 +161,7 @@ void
 ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
-    if (ImGui::DragInt("##input_data", (int*)data), 1.0f, 0, 0xFFFFFFFF)
+    if (ImGui::DragInt("##input_data", (int*)data, 1.0f, 0, 0xFFFFFFFF))
         *commit = true;
     ImGui::PopID();
 }
