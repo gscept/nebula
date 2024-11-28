@@ -58,10 +58,10 @@ GetSpecialKey(Input::Key::Code code)
         return tb::TB_KEY_LEFT;
     case Input::Key::Code::Right:
         return tb::TB_KEY_RIGHT;
-    //case Input::Key::Code::PageUp:
-    //    return tb::TB_KEY_PAGE_UP;
-    //case Input::Key::Code::PageDown:
-    //    return tb::TB_KEY_PAGE_DOWN;
+    case Input::Key::Code::Prior:
+        return tb::TB_KEY_PAGE_UP;
+    case Input::Key::Code::Next:
+        return tb::TB_KEY_PAGE_DOWN;
     case Input::Key::Code::Home:
         return tb::TB_KEY_HOME;
     case Input::Key::Code::End:
@@ -110,7 +110,7 @@ GetSpecialKey(Input::Key::Code code)
 int32_t
 GetTBKey(const Input::InputEvent& inputEvent)
 {
-    return (int32_t)inputEvent.GetChar();
+    return (int32_t)Input::Key::ToChar(inputEvent.GetKey());
 }
 } // namespace
 
@@ -367,10 +367,11 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
     {
     case Input::InputEvent::KeyUp:
     {
-        view->InvokeKey(GetTBKey(inputEvent), GetSpecialKey(inputEvent.GetKey()), GetModifierKeys(), false);
+        return view->InvokeKey(GetTBKey(inputEvent), GetSpecialKey(inputEvent.GetKey()), GetModifierKeys(), false);
     }
     break;
     case Input::InputEvent::KeyDown: {
+        return view->InvokeKey(GetTBKey(inputEvent), GetSpecialKey(inputEvent.GetKey()), GetModifierKeys(), true);
     }
     break;
 
