@@ -148,6 +148,8 @@ BufferWithStaging::Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes)
 */
 BufferWithStaging::~BufferWithStaging()
 {
+    if (this->deviceBuffer != InvalidBufferId)
+        DestroyBuffer(this->deviceBuffer);
 }
 
 } // namespace CoreGraphics

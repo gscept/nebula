@@ -243,6 +243,11 @@ DDGIContext::Alloc()
 void
 DDGIContext::Dealloc(Graphics::ContextEntityId id)
 {
+    Volume& volume = ddgiVolumeAllocator.Get<0>(id.id);
+    CoreGraphics::DestroyTexture(volume.radiance);
+    CoreGraphics::DestroyTexture(volume.depth);
+    CoreGraphics::DestroyResourceTable(volume.resourceTable);
+    volume.probeBuffer = CoreGraphics::BufferWithStaging();
     ddgiVolumeAllocator.Dealloc(id.id);
 }
 
