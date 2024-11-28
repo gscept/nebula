@@ -91,11 +91,15 @@ GLFWInputDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 
         case DisplayEvent::MouseWheelForward:
             inputEvent.SetType(InputEvent::MouseWheelForward);
+            inputEvent.SetAbsMousePos(displayEvent.GetAbsMousePos());
+            inputEvent.SetNormMousePos(displayEvent.GetNormMousePos());
             inputServer->PutEvent(inputEvent);
             return true;
 
         case DisplayEvent::MouseWheelBackward:
             inputEvent.SetType(InputEvent::MouseWheelBackward);
+            inputEvent.SetAbsMousePos(displayEvent.GetAbsMousePos());
+            inputEvent.SetNormMousePos(displayEvent.GetNormMousePos());
             inputServer->PutEvent(inputEvent);
             return true;
         default: break;

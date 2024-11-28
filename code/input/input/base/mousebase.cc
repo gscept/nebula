@@ -174,10 +174,12 @@ MouseBase::OnEvent(const InputEvent& inputEvent)
 
         case InputEvent::MouseWheelForward:
             this->wheelForward = true;
+            this->UpdateMousePositions(inputEvent.GetAbsMousePos(), inputEvent.GetNormMousePos());
             return true;
 
         case InputEvent::MouseWheelBackward:
             this->wheelBackward = true;
+            this->UpdateMousePositions(inputEvent.GetAbsMousePos(), inputEvent.GetNormMousePos());
             return true;
 
         case InputEvent::AppLoseFocus:
