@@ -100,6 +100,11 @@ DDGIContext::Create()
             }
         }
     });
+
+    FrameScript_default::RegisterSubgraph_DDGIDebug_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -140,17 +145,34 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     depthCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.depth = CoreGraphics::CreateTexture(depthCreateInfo);
 
+    Util::FixedArray<Probeupdate::Probe> probeInitialData(setup.numProbesX * setup.numProbesY * setup.numProbesZ);
+    for (uint z = 0; z < setup.numProbesZ; z++)
+    {
+        for (uint y = 0; y < setup.numProbesY; y++)
+        {
+            for (uint x = 0; x < setup.numProbesX; x++)
+            {
+                Probeupdate::Probe probe;
+                probe.position[0] = x;
+                probe.position[1] = y;
+                probe.position[2] = z;
+                probeInitialData[x + (setup.numProbesX * (y + setup.numProbesY * z))] = probe;
+            }
+        }
+    }
     CoreGraphics::BufferCreateInfo probeBufferCreateInfo;
     probeBufferCreateInfo.elementSize = sizeof(Probeupdate::Probe);
     probeBufferCreateInfo.size = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
     probeBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
     probeBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    volume.probeBuffer = CoreGraphics::BufferWithStaging(probeBufferCreateInfo);
+    probeBufferCreateInfo.data = probeInitialData.Begin();
+    probeBufferCreateInfo.dataSize = probeInitialData.ByteSize();
+    volume.probeBuffer = CoreGraphics::CreateBuffer(probeBufferCreateInfo);
 
     volume.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.probeUpdateShader, NEBULA_SYSTEM_GROUP, 1);
     CoreGraphics::ResourceTableSetRWTexture(volume.resourceTable, CoreGraphics::ResourceTableTexture(volume.radiance, Probeupdate::Table_System::RadianceOutput_SLOT));
     CoreGraphics::ResourceTableSetRWTexture(volume.resourceTable, CoreGraphics::ResourceTableTexture(volume.depth, Probeupdate::Table_System::DepthOutput_SLOT));
-    CoreGraphics::ResourceTableSetRWBuffer(volume.resourceTable, CoreGraphics::ResourceTableBuffer(volume.probeBuffer.DeviceBuffer(), Probeupdate::Table_System::ProbeBuffer_SLOT));
+    CoreGraphics::ResourceTableSetRWBuffer(volume.resourceTable, CoreGraphics::ResourceTableBuffer(volume.probeBuffer, Probeupdate::Table_System::ProbeBuffer_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.resourceTable);
 }
 
@@ -247,7 +269,7 @@ DDGIContext::Dealloc(Graphics::ContextEntityId id)
     CoreGraphics::DestroyTexture(volume.radiance);
     CoreGraphics::DestroyTexture(volume.depth);
     CoreGraphics::DestroyResourceTable(volume.resourceTable);
-    volume.probeBuffer = CoreGraphics::BufferWithStaging();
+    CoreGraphics::DestroyBuffer(volume.probeBuffer);
     ddgiVolumeAllocator.Dealloc(id.id);
 }
 
