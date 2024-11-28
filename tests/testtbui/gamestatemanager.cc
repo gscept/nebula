@@ -876,7 +876,7 @@ GameStateManager::OnActivate()
             msg_win->Show("Testing results", text);
         }
     }
-    view->SetSkinBg(TBIDC("background"));
+    //view->SetSkinBg(TBIDC("background"));
 }
 
 //------------------------------------------------------------------------------

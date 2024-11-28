@@ -315,7 +315,7 @@ TBUIContext::Render(
         batches = renderer->RenderView(view, viewport.width(), viewport.height());
     }
 
-    //CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, pipeline);
     CoreGraphics::CmdSetVertexLayout(cmdBuf, vertexLayout);
     CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
     CoreGraphics::CmdSetViewport(cmdBuf, viewport, 0);
