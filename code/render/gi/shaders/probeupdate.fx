@@ -9,7 +9,7 @@
 #include <lib/mie-rayleigh.fxh>
 #include "ddgi.fxh"
 
-group(SYSTEM_GROUP) write rgb10_a2 image2D RadianceOutput;
+group(SYSTEM_GROUP) write rgb10a2 image2D RadianceOutput;
 group(SYSTEM_GROUP) write rgba8 image2D NormalOutput;
 group(SYSTEM_GROUP) write rg32f image2D DepthOutput;
 
@@ -24,6 +24,8 @@ struct Probe
 
 group(SYSTEM_GROUP) rw_buffer ProbeBuffer
 {
+    vec3 scale;
+    vec3 offset;
     Probe Probes[];
 };
 
@@ -31,6 +33,17 @@ group(SYSTEM_GROUP) constant SampleDirections
 {
     vec3 Directions[24];
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+ivec2
+GetOutputPixel(uvec2 rayIndex, uint numSamples)
+{
+    uint row = rayIndex.y / numSamples;
+    uint column = (rayIndex.y % numSamples) * numSamples + rayIndex.x;
+    return ivec2(row, column); 
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -49,23 +62,29 @@ RayGen(
     const float MaxDistance = 10000.0f;
 
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probe.position.xyz, 0.01f, direction, MaxDistance, 0);
-    vec3 WorldSpacePos = probe.position.xyz + direction.xyz * payload.depth;
-
-    // If launch ID is below 16, it's a color sample
-    if (gl_LaunchIDEXT.y < NumColorSamples)
+    if (payload.miss == 0)
     {
-        uint row = gl_LaunchIDEXT.y / NumColorSamples;
-        uint column = (gl_LaunchIDEXT.y % NumColorSamples) * NumColorSamples + gl_LaunchIDEXT.x;
-
-        vec3 light = CalculateLightRT(WorldSpacePos, payload.depth / 10000.0f, payload.albedo.rgb, payload.material, payload.normal);
-        imageStore(RadianceOutput, ivec2(row, column), vec4(light, 0));
-        imageStore(NormalOutput, ivec2(row, column), vec4(payload.normal, 0));
+        // If launch ID is below 16, it's a color sample
+        if (gl_LaunchIDEXT.y < NumColorSamples)
+        {
+            vec3 WorldSpacePos = probe.position.xyz + direction.xyz * payload.depth;
+            ivec2 pixel = GetOutputPixel(gl_LaunchIDEXT.xy, NumColorSamples);
+            vec3 light = CalculateLightRT(WorldSpacePos, payload.depth / 10000.0f, payload.albedo.rgb, payload.material, payload.normal);
+            imageStore(RadianceOutput, pixel, vec4(light, 0));
+        }
+        else
+        {
+            ivec2 pixel = GetOutputPixel(gl_LaunchIDEXT.xy, NumDepthSamples);
+            imageStore(DepthOutput, pixel, vec4(payload.depth / MaxDistance));
+        }
     }
     else
     {
-        uint row = gl_LaunchIDEXT.y / NumDepthSamples;
-        uint column = (gl_LaunchIDEXT.y % NumDepthSamples) * NumDepthSamples + gl_LaunchIDEXT.x;
-        imageStore(DepthOutput, ivec2(row, column), vec4(payload.depth / MaxDistance));
+        vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
+        vec3 dir = normalize(direction);
+        vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+        ivec2 pixel = GetOutputPixel(gl_LaunchIDEXT.xy, NumColorSamples);
+        imageStore(RadianceOutput, pixel, vec4(atmo, 0));
     }
 
     // TODO use octahedral mapping to output the probe pixels here
@@ -79,13 +98,9 @@ Miss(
     [ray_payload] in HitResult payload
 )
 {
-    vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
-    vec3 dir = normalize(gl_WorldRayDirectionEXT);
-    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
-
-    //payload.radiance = atmo;
-    //payload.normal = -gl_WorldRayDirectionEXT;
+    payload.miss = 1;
 }
+
 
 //------------------------------------------------------------------------------
 /**

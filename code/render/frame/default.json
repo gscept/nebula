@@ -459,6 +459,11 @@
                                             "batch": {
                                                 "name": "LightMeshes"
                                             }
+                                        },
+                                        {
+                                            "subgraph": {
+                                                "name": "DDGI Debug"
+                                            }
                                         }
                                     ]
                                 },
