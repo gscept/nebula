@@ -21,6 +21,22 @@
 
 namespace TBUI
 {
+namespace
+{
+tb::MODIFIER_KEYS
+GetModifierKeys(const Input::InputEvent& inputEvent)
+{
+    tb::MODIFIER_KEYS modifiers = tb::TB_MODIFIER_NONE;
+
+    return modifiers;
+}
+
+tb::SPECIAL_KEY
+GetSpecialKey()
+{
+}
+} // namespace
+
 TBUIRenderer* TBUIContext::renderer = nullptr;
 Ptr<TBUIInputHandler> TBUIContext::inputHandler;
 Util::Array<TBUIView*> TBUIContext::views;
@@ -227,6 +243,38 @@ TBUIContext::DestroyView(const TBUIView* view)
         views.Erase(it);
         (*it)->Die();
     }
+}
+
+bool
+TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
+{
+    TBUIView* view = views.Back();
+    if (!view)
+        return false;
+
+    switch (inputEvent.GetType())
+    {
+    case Input::InputEvent::MouseButtonDown: {
+        inputEvent.GetMouseButton();
+        Math::vec2 pos = inputEvent.GetAbsMousePos();
+        return view->InvokePointerDown(pos.x, pos.y, 1, GetModifierKeys(inputEvent), false);
+    }
+    case Input::InputEvent::MouseButtonUp: {
+        inputEvent.GetMouseButton();
+        Math::vec2 pos = inputEvent.GetAbsMousePos();
+        return view->InvokePointerUp(pos.x, pos.y, GetModifierKeys(inputEvent), false);
+    }
+    case Input::InputEvent::MouseMove: {
+        Math::vec2 pos = inputEvent.GetAbsMousePos();
+        view->InvokePointerMove(pos.x, pos.y, GetModifierKeys(inputEvent), false);
+    }
+    default:
+        break;
+        {
+        }
+    }
+
+    return false;
 }
 
 Util::Array<CoreGraphics::BufferId> TBUIContext::usedVertexBuffers;
