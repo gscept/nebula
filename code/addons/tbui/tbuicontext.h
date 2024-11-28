@@ -38,6 +38,8 @@ public:
 
     static void DestroyView(const TBUIView* view);
 
+    static bool ProcessInput(const Input::InputEvent& inputEvent);
+
     //static void LoadViewResource();
 
 private:

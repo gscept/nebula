@@ -72,8 +72,7 @@ TBUIInputHandler::OnEvent(const Input::InputEvent& inputEvent)
         break;
 
     default:
-        //return TBUIContext::HandleInput(inputEvent);
-        return false;
+        return TBUIContext::ProcessInput(inputEvent);
     }
     return false;
 }
