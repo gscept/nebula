@@ -12,6 +12,8 @@ TBUIBitmap::TBUIBitmap(TBUIRenderer* renderer)
 TBUIBitmap::~TBUIBitmap()
 {
     renderer->FlushBitmap(this);
+    CoreGraphics::DestroyTexture(texture);
+    texture = CoreGraphics::InvalidTextureId;
 }
 
 bool
@@ -25,9 +27,9 @@ TBUIBitmap::Init(int width, int height, unsigned int* data)
     texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
     texInfo.tag = "tbui"_atm;
     texInfo.data = data;
-    texInfo.dataSize = width * height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::R8G8B8A8);
+    texInfo.dataSize = width * height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::SRGBA8);
     texInfo.type = CoreGraphics::TextureType::Texture2D;
-    texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
+    texInfo.format = CoreGraphics::PixelFormat::SRGBA8;
     texInfo.width = width;
     texInfo.height = height;
 
@@ -52,7 +54,7 @@ TBUIBitmap::Height()
 void
 TBUIBitmap::SetData(unsigned int* data)
 {
-    SizeT dataSize = width * height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::R8G8B8A8);
+    SizeT dataSize = width * height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::SRGBA8);
     CoreGraphics::TextureUpdate(renderer->GetCmdBufferId(), texture, width, height, 0, 0, data, dataSize);
 }
 } // namespace TBUI

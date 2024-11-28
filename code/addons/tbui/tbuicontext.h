@@ -11,6 +11,7 @@
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/shader.h"
 #include "tbuiinputhandler.h"
+#include "threading/spinlock.h"
 
 namespace TBUI
 {

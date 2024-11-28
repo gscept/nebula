@@ -18,15 +18,25 @@
 #include "tb/tb_widgets_reader.h"
 #include "frame/default.h"
 #include "io/assignregistry.h"
+#include "input/keyboard.h"
 
 namespace TBUI
 {
 namespace
 {
 tb::MODIFIER_KEYS
-GetModifierKeys(const Input::InputEvent& inputEvent)
+GetModifierKeys()
 {
     tb::MODIFIER_KEYS modifiers = tb::TB_MODIFIER_NONE;
+
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::Shift))
+        modifiers |= tb::MODIFIER_KEYS::TB_SHIFT;
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::Control))
+        modifiers |= tb::MODIFIER_KEYS::TB_CTRL;
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::Menu))
+        modifiers |= tb::MODIFIER_KEYS::TB_ALT;
+    //if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::))
+    //    modifiers |= tb::MODIFIER_KEYS::TB_SUPER;
 
     return modifiers;
 }
@@ -257,17 +267,29 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
     case Input::InputEvent::MouseButtonDown: {
         inputEvent.GetMouseButton();
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        return view->InvokePointerDown(pos.x, pos.y, 1, GetModifierKeys(inputEvent), false);
+        return view->InvokePointerDown(pos.x, pos.y, 1, GetModifierKeys(), false);
     }
     case Input::InputEvent::MouseButtonUp: {
         inputEvent.GetMouseButton();
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        return view->InvokePointerUp(pos.x, pos.y, GetModifierKeys(inputEvent), false);
+        return view->InvokePointerUp(pos.x, pos.y, GetModifierKeys(), false);
     }
     case Input::InputEvent::MouseMove: {
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        view->InvokePointerMove(pos.x, pos.y, GetModifierKeys(inputEvent), false);
+        view->InvokePointerMove(pos.x, pos.y, GetModifierKeys(), false);
     }
+    break;
+    case Input::InputEvent::MouseWheelForward:
+    {
+        Math::vec2 pos = inputEvent.GetAbsMousePos();
+        view->InvokeWheel(pos.x, pos.y, 0, 1, GetModifierKeys());
+    }
+    break;
+    case Input::InputEvent::MouseWheelBackward: {
+        Math::vec2 pos = inputEvent.GetAbsMousePos();
+        view->InvokeWheel(pos.x, pos.y, 0, -1, GetModifierKeys());
+    }
+    break;
     default:
         break;
         {
