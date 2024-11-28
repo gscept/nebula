@@ -21,29 +21,42 @@ public:
     /// Destructor
     ~DDGIContext();
 
+    /// setup light context
+    static void Create();
+    /// discard light context
+    static void Discard();
+
     struct VolumeSetup
     {
         uint numProbesX, numProbesY, numProbesZ;
-        uint numPixelsPerProbe;
+        uint numRaysPerProbe;
         Math::vec3 size;
         Math::vec3 position;
     };
 
     /// Create volume
-    void SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup& setup);
+    static void SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup& setup);
     /// Set volume position
-    void SetPosition(const Graphics::GraphicsEntityId id, const Math::vec3& position);
+    static void SetPosition(const Graphics::GraphicsEntityId id, const Math::vec3& position);
     /// Set volume scale
-    void SetScale(const Graphics::GraphicsEntityId id, const Math::vec3& scale);
+    static void SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size);
+
+    /// prepare light lists
+    static void UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+
+#ifndef PUBLIC_BUILD
+    static void OnRenderDebug(uint32_t flags);
+#endif
 
 private:
 
     struct Volume
     {
         uint numProbesX, numProbesY, numProbesZ;
-        uint numPixelsPerProbe;
+        uint numRaysPerProbe;
         Math::vec3 size;
         Math::vec3 position;
+        Math::bbox boundingBox;
         CoreGraphics::TextureId radiance, normals, depth;
         CoreGraphics::BufferWithStaging probeBuffer;
         CoreGraphics::BufferId constants;

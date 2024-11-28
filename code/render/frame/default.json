@@ -242,6 +242,11 @@
                         "subgraph": {
                             "name": "Terrain Raytracing Mesh Generate"
                         }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "DDGI Probe Update"
+                        } 
                     }
                 ]
             },

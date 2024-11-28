@@ -9,9 +9,9 @@
 #include <lib/mie-rayleigh.fxh>
 #include "ddgi.fxh"
 
-group(BATCH_GROUP) write rgb10_a2 image2D RadianceOutput;
-group(BATCH_GROUP) write rgba8 image2D NormalOutput;
-group(BATCH_GROUP) write rg32f image2D DepthOutput;
+group(SYSTEM_GROUP) write rgb10_a2 image2D RadianceOutput;
+group(SYSTEM_GROUP) write rgba8 image2D NormalOutput;
+group(SYSTEM_GROUP) write rg32f image2D DepthOutput;
 
 const uint NumColorSamples = 16;
 const uint NumDepthSamples = 8;
@@ -22,12 +22,12 @@ struct Probe
     mat3 rotation;
 };
 
-group(BATCH_GROUP) rw_buffer ProbeBuffer
+group(SYSTEM_GROUP) rw_buffer ProbeBuffer
 {
     Probe Probes[];
 };
 
-group(BATCH_GROUP) constant SampleDirections
+group(SYSTEM_GROUP) constant SampleDirections
 {
     vec3 Directions[24];
 };

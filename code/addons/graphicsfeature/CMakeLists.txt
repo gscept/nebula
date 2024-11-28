@@ -20,6 +20,7 @@ fips_dir(components)
 		decal.json
 		lighting.json
 		model.json
+		gi.json
 	)
 nebula_end_module()
 
