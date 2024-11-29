@@ -78,10 +78,10 @@ Viewport::SetFrameBuffer(Util::String const& name)
 void
 Viewport::Update()
 {
-    if (this->hovered && !Tools::SelectionTool::IsTransforming())
+    if (this->focused && !Tools::SelectionTool::IsTransforming())
     {
         camera.Update();
-        this->hovered = false;
+        this->focused = false;
     }
 }
 
@@ -218,9 +218,9 @@ Viewport::Render()
 
     auto view = Graphics::GraphicsServer::Instance()->GetView("mainview");
     view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
-    this->hovered = ImGui::IsItemHovered();
+    this->focused = ImGui::IsWindowFocused();
 
-    if (this->hovered)
+    if (this->focused)
     {
         ImGui::GetIO().WantCaptureKeyboard = false;
         ImGui::GetIO().WantCaptureMouse = false;
@@ -236,7 +236,7 @@ Viewport::Render()
 //------------------------------------------------------------------------------
 /**
 */
- const Ptr<Graphics::View>
+const Ptr<Graphics::View>
 Viewport::GetView() const
 {
      n_assert(this->view.isvalid());

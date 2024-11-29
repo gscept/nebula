@@ -51,7 +51,7 @@ private:
 
         struct
         {
-            float size = 0.5f;
+            float size = 1.0f;
         } grid;
 
         struct

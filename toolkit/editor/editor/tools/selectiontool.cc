@@ -59,6 +59,12 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
     SelectionMode mode = (keyboard->KeyPressed(Input::Key::LeftControl) || keyboard->KeyPressed(Input::Key::RightControl))
                              ? SelectionMode::Append
                              : SelectionMode::Replace;
+    
+    // Deselect if we press escape
+    if (keyboard->KeyDown(Input::Key::Escape) && !state.selection.IsEmpty())
+    {
+        Edit::SetSelection({});
+    }
 
     if (performPicking)
     {
