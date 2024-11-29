@@ -11,6 +11,8 @@
 
 #undef PostMessage
 
+#include <tb_config.h>
+
 #include "tbuicontext.h"
 #include "tbuiview.h"
 #include "backend/tbuibatch.h"
