@@ -4,21 +4,21 @@
 
 nebula_begin_module(tbui)
 fips_ide_group(addons)
-target_include_directories(tbui 
-    PUBLIC 
-    ${CMAKE_CURRENT_SOURCE_DIR} 
-    ${CMAKE_CURRENT_SOURCE_DIR}/backend
-    ${CODE_ROOT}/resource 
-    ${CODE_ROOT}/render
-    ${CODE_ROOT}/foundation 
-    ${Python_INCLUDE_DIRS}
-    BEFORE
-)
-fips_deps(render turbobadger scripting)
+#target_include_directories(tbui 
+#    PUBLIC 
+#    ${CMAKE_CURRENT_SOURCE_DIR} 
+#    ${CMAKE_CURRENT_SOURCE_DIR}/backend
+#    ${CODE_ROOT}/resource 
+#    ${CODE_ROOT}/render
+#    ${CODE_ROOT}/foundation 
+#    ${Python_INCLUDE_DIRS}
+#    BEFORE
+#)
+fips_deps(render scripting turbobadger)
 target_precompile_headers(tbui PRIVATE <render/stdneb.h>)
 
 fips_files(
-    tb_config.h
+#    tb_config.h
     tbuicontext.cc
     tbuicontext.h
     tbuiinputhandler.cc
@@ -221,3 +221,4 @@ nebula_end_module()
 
 target_compile_options(tbui PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
 target_link_options(tbui PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/WHOLEARCHIVE:tbui>)
+#target_include_directories(tbui BEFORE PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
