@@ -45,6 +45,8 @@ imports:
     #fixme, make this configurable or put it into its own fips module entirely
     #fips-ultralight:
     #    git: https://github.com/gscept/fips-ultralight.git
+    fips-turbobadger:
+        git: https://github.com/gscept/fips-turbobadger.git
 exports:
     header-dirs :
         - .

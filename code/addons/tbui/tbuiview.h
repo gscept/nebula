@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tb/tb_widgets.h"
+#include "tb_widgets.h"
 
 namespace TBUI
 {

@@ -1,6 +1,6 @@
 #include "core/sysfunc.h"
 #include "timing/calendartime.h"
-#include "tb/tb_system.h"
+#include "tb_system.h"
 
 #ifdef TB_RUNTIME_DEBUG_INFO
 

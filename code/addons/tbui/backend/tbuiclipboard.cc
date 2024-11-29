@@ -1,4 +1,4 @@
-#include "tb/tb_system.h"
+#include "tb_system.h"
 
 namespace tb
 {
