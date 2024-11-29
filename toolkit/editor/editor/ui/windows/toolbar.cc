@@ -103,7 +103,10 @@ Toolbar::Run(SaveMode save)
     {
         if (selected != nullptr)
         {
-            Edit::CreateEntity(selected);
+            Edit::CommandManager::BeginMacro("Create entity", true);
+            Editor::Entity newEntity = Edit::CreateEntity(selected);
+            Edit::SetSelection({newEntity});
+            Edit::CommandManager::EndMacro();
         }
     }
     
