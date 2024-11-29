@@ -34,11 +34,12 @@
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "game/gameserver.h"
 #include "game/api.h"
+
 #include "tbui/tbuicontext.h"
 #include "ListWindow.h"
 #include "ResourceEditWindow.h"
-#include "tbui/tb/animation/tb_animation.h"
-#include "tbui/tb/tests/tb_test.h"
+#include "animation/tb_animation.h"
+#include "tests/tb_test.h"
 #include "tb_system.h"
 #include "tb_language.h"
 #include "tb_inline_select.h"
@@ -492,7 +493,7 @@ MainWindow::OnMessageReceived(TBMessage* msg)
     else if (msg->message == TBIDC("busy"))
     {
         // Keep the message queue busy by posting another "busy" message.
-        PostMessage(TBIDC("busy"), nullptr);
+        this->PostMessage(TBIDC("busy"), nullptr);
     }
     else if (msg->message == TBIDC("delayedmsg"))
     {
@@ -519,7 +520,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
         }
         if (ev.target->GetID() == TBIDC("msg"))
         {
-            PostMessage(TBIDC("instantmsg"), nullptr);
+            this->PostMessage(TBIDC("instantmsg"), nullptr);
             return true;
         }
         else if (ev.target->GetID() == TBIDC("busymsg"))
@@ -530,7 +531,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
                 assert(!GetMessageByID(TBIDC("busy")));
                 if (!GetMessageByID(TBIDC("busy")))
                 {
-                    PostMessage(TBIDC("busy"), nullptr);
+                    this->PostMessage(TBIDC("busy"), nullptr);
                     TBMessageWindow* msg_win = new TBMessageWindow(this, TBIDC("test_dialog"));
                     msg_win->Show(
                         "Message window",

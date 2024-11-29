@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Math/rectangle.h"
-#include "tb/renderers/tb_renderer_batcher.h"
+#include "renderers/tb_renderer_batcher.h"
 #include "tbuibatch.h"
 #include "tbui/tbuiview.h"
 

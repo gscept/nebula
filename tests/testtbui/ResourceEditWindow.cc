@@ -92,7 +92,7 @@ void ResourceEditWindow::UpdateWidgetList(bool immediately)
 	{
 		TBID id = TBIDC("update_widget_list");
 		if (!GetMessageByID(id))
-			PostMessage(id, nullptr);
+			this->PostMessage(id, nullptr);
 	}
 	else
 	{

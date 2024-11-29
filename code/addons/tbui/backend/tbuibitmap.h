@@ -1,7 +1,7 @@
 #pragma once
 
 #include "coregraphics/texture.h"
-#include "tb/tb_renderer.h"
+#include "tb_renderer.h"
 
 namespace TBUI
 {

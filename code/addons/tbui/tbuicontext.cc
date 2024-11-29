@@ -9,13 +9,13 @@
 #include "tbuiview.h"
 #include "backend/tbuibatch.h"
 #include "backend/tbuirenderer.h"
-#include "tb/tb_core.h"
-#include "tb/tb_language.h"
-#include "tb/tb_font_renderer.h"
-#include "tb/animation/tb_widget_animation.h"
-#include "tb/tb_window.h"
-#include "tb/tb_node_tree.h"
-#include "tb/tb_widgets_reader.h"
+#include "tb_core.h"
+#include "tb_language.h"
+#include "tb_font_renderer.h"
+#include "animation/tb_widget_animation.h"
+#include "tb_window.h"
+#include "tb_node_tree.h"
+#include "tb_widgets_reader.h"
 #include "frame/default.h"
 #include "io/assignregistry.h"
 #include "input/keyboard.h"
@@ -58,9 +58,9 @@ GetSpecialKey(Input::Key::Code code)
         return tb::TB_KEY_LEFT;
     case Input::Key::Code::Right:
         return tb::TB_KEY_RIGHT;
-    case Input::Key::Code::Prior:
+    case Input::Key::Code::PageUp:
         return tb::TB_KEY_PAGE_UP;
-    case Input::Key::Code::Next:
+    case Input::Key::Code::PageDown:
         return tb::TB_KEY_PAGE_DOWN;
     case Input::Key::Code::Home:
         return tb::TB_KEY_HOME;
@@ -363,41 +363,49 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
     if (!view)
         return false;
 
+    tb::MODIFIER_KEYS modifiers = GetModifierKeys();
+
     switch (inputEvent.GetType())
     {
     case Input::InputEvent::KeyUp:
     {
-        return view->InvokeKey(GetTBKey(inputEvent), GetSpecialKey(inputEvent.GetKey()), GetModifierKeys(), false);
+        return view->InvokeKey(/*GetTBKey(inputEvent)*/0, GetSpecialKey(inputEvent.GetKey()), modifiers, false);
     }
     break;
     case Input::InputEvent::KeyDown: {
-        return view->InvokeKey(GetTBKey(inputEvent), GetSpecialKey(inputEvent.GetKey()), GetModifierKeys(), true);
+        return view->InvokeKey(/*GetTBKey(inputEvent)*/0, GetSpecialKey(inputEvent.GetKey()), modifiers, true);
+    }
+    case Input::InputEvent::Character: {
+        int c = (int)inputEvent.GetChar();
+        tb::SPECIAL_KEY key = GetSpecialKey(inputEvent.GetKey());
+        view->InvokeKey(c, key, modifiers, false);
+        return view->InvokeKey(c, key, modifiers, true);
     }
     break;
 
     case Input::InputEvent::MouseButtonDown: {
         inputEvent.GetMouseButton();
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        return view->InvokePointerDown(pos.x, pos.y, 1, GetModifierKeys(), false);
+        return view->InvokePointerDown(pos.x, pos.y, 1, modifiers, false);
     }
     case Input::InputEvent::MouseButtonUp: {
         inputEvent.GetMouseButton();
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        return view->InvokePointerUp(pos.x, pos.y, GetModifierKeys(), false);
+        return view->InvokePointerUp(pos.x, pos.y, modifiers, false);
     }
     case Input::InputEvent::MouseMove: {
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        view->InvokePointerMove(pos.x, pos.y, GetModifierKeys(), false);
+        view->InvokePointerMove(pos.x, pos.y, modifiers, false);
     }
     break;
     case Input::InputEvent::MouseWheelForward: {
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        view->InvokeWheel(pos.x, pos.y, 0, 1, GetModifierKeys());
+        view->InvokeWheel(pos.x, pos.y, 0, 1, modifiers);
     }
     break;
     case Input::InputEvent::MouseWheelBackward: {
         Math::vec2 pos = inputEvent.GetAbsMousePos();
-        view->InvokeWheel(pos.x, pos.y, 0, -1, GetModifierKeys());
+        view->InvokeWheel(pos.x, pos.y, 0, -1, modifiers);
     }
     break;
     default:
