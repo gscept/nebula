@@ -4,15 +4,17 @@
 
 nebula_begin_module(tbui)
 fips_ide_group(addons)
-fips_deps(render turbobadger scripting)
 target_include_directories(tbui 
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} 
+    PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR} 
     ${CMAKE_CURRENT_SOURCE_DIR}/backend
     ${CODE_ROOT}/resource 
     ${CODE_ROOT}/render
     ${CODE_ROOT}/foundation 
     ${Python_INCLUDE_DIRS}
+    BEFORE
 )
+fips_deps(render turbobadger scripting)
 target_precompile_headers(tbui PRIVATE <render/stdneb.h>)
 
 fips_files(
