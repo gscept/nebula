@@ -1,5 +1,7 @@
 #pragma once
 
+#undef PostMessage
+
 #include "tb_widgets.h"
 
 namespace TBUI

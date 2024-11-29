@@ -1,6 +1,8 @@
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "tbuifile.h"
+
+#undef PostMessage
 #include "tb_system.h"
 
 namespace tb

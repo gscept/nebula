@@ -1,3 +1,6 @@
+#undef PostMessage
+#include <stdio.h>
+
 #include "ResourceEditWindow.h"
 #include "tb_widgets_reader.h"
 #include "tb_message_window.h"
@@ -6,7 +9,6 @@
 #include "tb_editfield.h"
 #include "tb_tempbuffer.h"
 #include "tb_scroll_container.h"
-#include <stdio.h>
 
 // == ResourceItem ====================================================================================
 

@@ -2,6 +2,7 @@
 //  gamestatemanager.cc
 //  (C) 2020-2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+
 #include "application/stdneb.h"
 #include "gamestatemanager.h"
 #include "models/modelcontext.h"
@@ -35,6 +36,14 @@
 #include "game/gameserver.h"
 #include "game/api.h"
 
+#ifdef __WIN32__
+#include <shellapi.h>
+#elif __LINUX__
+
+#endif
+
+#undef PostMessage
+
 #include "tbui/tbuicontext.h"
 #include "ListWindow.h"
 #include "ResourceEditWindow.h"
@@ -52,12 +61,6 @@
 #include "tb_node_tree.h"
 #include "tb_tempbuffer.h"
 #include "tb_font_renderer.h"
-
-#ifdef __WIN32__
-#include <shellapi.h>
-#elif __LINUX__
-
-#endif
 
 namespace Tests
 {
