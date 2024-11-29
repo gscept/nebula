@@ -64,7 +64,7 @@ Scene::Run(SaveMode save)
     Tools::SelectionTool::RenderGizmo(
         this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera
     );
-    if (viewPort.IsHovered())
+    if (viewPort.IsFocused())
     {
         Tools::SelectionTool::Update(
             this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera

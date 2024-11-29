@@ -43,14 +43,9 @@ public:
 
     void Update();
 
-    void SetHovered(bool val)
+    bool IsFocused() const
     {
-        this->hovered = val;
-    }
-
-    bool IsHovered() const
-    {
-        return this->hovered;
+        return this->focused;
     }
 
     const Ptr<Graphics::View> GetView() const;
@@ -69,7 +64,7 @@ private:
 
     Resources::ResourceId resourceId;
 
-    bool hovered = false;
+    bool focused = false;
 
     Util::String frameBuffer;
 };
