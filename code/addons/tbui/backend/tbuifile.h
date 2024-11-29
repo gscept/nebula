@@ -2,6 +2,8 @@
 
 #include "io/filestream.h"
 #include "util/String.h"
+
+#undef PostMessage
 #include "tb_system.h"
 
 namespace TBUI

@@ -1,5 +1,7 @@
 #include "core/sysfunc.h"
 #include "timing/calendartime.h"
+
+#undef PostMessage
 #include "tb_system.h"
 
 #ifdef TB_RUNTIME_DEBUG_INFO

@@ -5,6 +5,12 @@
 #include "foundation/stdneb.h"
 #include "math/mat4.h"
 #include "input/inputserver.h"
+#include "frame/default.h"
+#include "io/assignregistry.h"
+#include "input/keyboard.h"
+
+#undef PostMessage
+
 #include "tbuicontext.h"
 #include "tbuiview.h"
 #include "backend/tbuibatch.h"
@@ -16,9 +22,6 @@
 #include "tb_window.h"
 #include "tb_node_tree.h"
 #include "tb_widgets_reader.h"
-#include "frame/default.h"
-#include "io/assignregistry.h"
-#include "input/keyboard.h"
 
 namespace TBUI
 {

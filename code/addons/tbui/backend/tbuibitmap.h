@@ -1,6 +1,8 @@
 #pragma once
 
 #include "coregraphics/texture.h"
+
+#undef PostMessage
 #include "tb_renderer.h"
 
 namespace TBUI

@@ -1,4 +1,6 @@
 #include "coregraphics/texture.h"
+
+#undef PostMessage
 #include "tbuirenderer.h"
 #include "tbuibitmap.h"
 
