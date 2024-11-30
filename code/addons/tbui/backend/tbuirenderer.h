@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Math/rectangle.h"
+#include "math/rectangle.h"
 #include "renderers/tb_renderer_batcher.h"
 #include "tbuibatch.h"
 #include "tbui/tbuiview.h"
