@@ -5,7 +5,7 @@
 nebula_begin_module(tbui)
 fips_ide_group(addons)
 
-fips_deps(render scripting turbobadger)
+fips_deps(render turbobadger)
 target_precompile_headers(tbui PRIVATE <render/stdneb.h>)
 target_include_directories(tbui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

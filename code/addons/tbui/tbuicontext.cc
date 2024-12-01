@@ -22,6 +22,16 @@
 #include "tb_node_tree.h"
 #include "tb_widgets_reader.h"
 
+#ifdef TB_FONT_RENDERER_TBBF
+void register_tbbf_font_renderer();
+#endif
+#ifdef TB_FONT_RENDERER_STB
+void register_stb_font_renderer();
+#endif
+#ifdef TB_FONT_RENDERER_FREETYPE
+void register_freetype_font_renderer();
+#endif
+
 namespace TBUI
 {
 namespace
@@ -181,16 +191,13 @@ TBUIContext::Create()
 
         // Register font renderers.
 #ifdef TB_FONT_RENDERER_TBBF
-        void register_tbbf_font_renderer();
         register_tbbf_font_renderer();
 #endif
 
 #ifdef TB_FONT_RENDERER_STB
-        void register_stb_font_renderer();
         register_stb_font_renderer();
 #endif
 #ifdef TB_FONT_RENDERER_FREETYPE
-        void register_freetype_font_renderer();
         register_freetype_font_renderer();
 #endif
 
