@@ -7,3 +7,4 @@ defines:
     N_USE_VULKAN: ON
     FIPS_RTTI: ON
     FIPS_EXCEPTIONS: ON
+    TB_ENABLE_RTTI: ON
