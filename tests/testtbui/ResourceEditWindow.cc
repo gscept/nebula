@@ -3,7 +3,6 @@
 #include "ResourceEditWindow.h"
 #include "tb_widgets_reader.h"
 #include "tb_message_window.h"
-#include "tb_system.h"
 #include "tb_select.h"
 #include "tb_editfield.h"
 #include "tb_tempbuffer.h"
@@ -93,7 +92,7 @@ void ResourceEditWindow::UpdateWidgetList(bool immediately)
 	{
 		TBID id = TBIDC("update_widget_list");
 		if (!GetMessageByID(id))
-			this->PostMessage(id, nullptr);
+			this->PublishMessage(id, nullptr);
 	}
 	else
 	{
