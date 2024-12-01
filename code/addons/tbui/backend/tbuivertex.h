@@ -1,4 +1,12 @@
 #pragma once
+//------------------------------------------------------------------------------
+/**
+    Turbobadger UI Vertex
+
+    @copyright
+    (C) 2024 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
 
 #include "math/scalar.h"
 

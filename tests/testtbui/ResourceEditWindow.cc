@@ -1,4 +1,3 @@
-#undef PostMessage
 #include <stdio.h>
 
 #include "ResourceEditWindow.h"

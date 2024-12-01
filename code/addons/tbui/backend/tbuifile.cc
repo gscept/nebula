@@ -1,13 +1,18 @@
+//------------------------------------------------------------------------------
+//  backend/tbuifile.cc
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "render/stdneb.h"
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "tbuifile.h"
-
-#undef PostMessage
 #include "tb_system.h"
 
 namespace tb
 {
-// static
+//------------------------------------------------------------------------------
+/**
+*/
 TBFile*
 tb::TBFile::Open(const char* filename, TBFileMode mode)
 {
@@ -26,32 +31,46 @@ tb::TBFile::Open(const char* filename, TBFileMode mode)
 
 namespace TBUI
 {
+//------------------------------------------------------------------------------
+/**
+*/
 TBUIFile::TBUIFile(const Util::String& filePath, IO::Stream::AccessMode accessMode)
     : fileStream(nullptr)
 {
-    fileStream = IO::IoServer::Instance()->CreateStream(filePath).downcast<IO::FileStream>();
-    fileStream->SetAccessMode(accessMode);
-    if (!fileStream->Open())
+    this->fileStream = IO::IoServer::Instance()->CreateStream(filePath).downcast<IO::FileStream>();
+    this->fileStream->SetAccessMode(accessMode);
+    if (!this->fileStream->Open())
     {
-        fileStream = nullptr;
+        this->fileStream = nullptr;
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 TBUIFile::~TBUIFile()
 {
-    if (fileStream->IsOpen())
-        fileStream->Close();
+    if (this->fileStream->IsOpen())
+    {
+        this->fileStream->Close();
+    }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 long
 TBUIFile::Size()
 {
-    return fileStream->GetSize();
+    return this->fileStream->GetSize();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 size_t
 TBUIFile::Read(void* buf, size_t elemSize, size_t count)
 {
-    return fileStream->Read(buf, count);
+    return this->fileStream->Read(buf, count);
 }
 } // namespace TBUI

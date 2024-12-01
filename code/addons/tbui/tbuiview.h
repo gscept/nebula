@@ -1,7 +1,11 @@
 #pragma once
+//------------------------------------------------------------------------------
+/**
+    TBUI::TBUIView
 
-#undef PostMessage
-
+    (C) 2024 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
 #include "tb_widgets.h"
 
 namespace TBUI

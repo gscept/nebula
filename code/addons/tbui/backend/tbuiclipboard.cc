@@ -1,5 +1,8 @@
-#undef PostMessage
-
+//------------------------------------------------------------------------------
+//  backend/tbuiclipboard.cc
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "render/stdneb.h"
 #include "tb_system.h"
 
 namespace tb

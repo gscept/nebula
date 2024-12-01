@@ -1,21 +1,37 @@
+//------------------------------------------------------------------------------
+//  backend/tbuibitmap.cc
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "render/stdneb.h"
 #include "tbuibitmap.h"
 #include "tbuirenderer.h"
 
+
 namespace TBUI
 {
+
+//------------------------------------------------------------------------------
+/*
+*/
 TBUIBitmap::TBUIBitmap(TBUIRenderer* renderer)
     : renderer(renderer),
       texture(CoreGraphics::InvalidTextureId)
 {
 }
 
+//------------------------------------------------------------------------------
+/*
+*/
 TBUIBitmap::~TBUIBitmap()
 {
-    renderer->FlushBitmap(this);
-    CoreGraphics::DestroyTexture(texture);
-    texture = CoreGraphics::InvalidTextureId;
+    this->renderer->FlushBitmap(this);
+    CoreGraphics::DestroyTexture(this->texture);
+    this->texture = CoreGraphics::InvalidTextureId;
 }
 
+//------------------------------------------------------------------------------
+/*
+*/
 bool
 TBUIBitmap::Init(int width, int height, unsigned int* data)
 {
@@ -33,28 +49,37 @@ TBUIBitmap::Init(int width, int height, unsigned int* data)
     texInfo.width = width;
     texInfo.height = height;
 
-    texture = CoreGraphics::CreateTexture(texInfo);
+    this->texture = CoreGraphics::CreateTexture(texInfo);
 
     //SetData(data);
     return true;
 }
 
+//------------------------------------------------------------------------------
+/*
+*/
 int
 TBUIBitmap::Width()
 {
-    return width;
+    return this->width;
 }
 
+//------------------------------------------------------------------------------
+/*
+*/
 int
 TBUIBitmap::Height()
 {
-    return height;
+    return this->height;
 }
 
+//------------------------------------------------------------------------------
+/*
+*/
 void
 TBUIBitmap::SetData(unsigned int* data)
 {
-    SizeT dataSize = width * height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::SRGBA8);
-    CoreGraphics::TextureUpdate(renderer->GetCmdBufferId(), texture, width, height, 0, 0, data, dataSize);
+    const SizeT dataSize = this->width * this->height * CoreGraphics::PixelFormat::ToSize(CoreGraphics::PixelFormat::SRGBA8);
+    CoreGraphics::TextureUpdate(this->renderer->GetCmdBufferId(), this->texture, this->width, this->height, 0, 0, data, dataSize);
 }
 } // namespace TBUI

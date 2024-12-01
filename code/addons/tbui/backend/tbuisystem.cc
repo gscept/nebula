@@ -1,11 +1,18 @@
+//------------------------------------------------------------------------------
+//  backend/tbuisystem.cc
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "render/stdneb.h"
 #include "core/sysfunc.h"
 #include "timing/calendartime.h"
-
-#undef PostMessage
+#include "tbuicontext.h"
 #include "tb_system.h"
 
 #ifdef TB_RUNTIME_DEBUG_INFO
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBDebugOut(const char* str)
 {
@@ -18,10 +25,14 @@ namespace tb
 {
 namespace
 {
+
+// hopefully we dont need this, leaving it for now
+#if 0
+//------------------------------------------------------------------------------
+/**
+*/
 static double
-GetMillisecondsSinceEpoch(
-    Timing::CalendarTime calendarTime
-)
+GetMillisecondsSinceEpoch(Timing::CalendarTime calendarTime)
 {
     int year = calendarTime.GetYear();
     int month = calendarTime.GetMonth();
@@ -59,53 +70,70 @@ GetMillisecondsSinceEpoch(
     // Convert to milliseconds as double
     return static_cast<double>(time_since_epoch) * 1000.0 + static_cast<double>(millisecond);
 }
+#endif
 }
 
-/** Get the system time in milliseconds since some undefined epoch. */
+//------------------------------------------------------------------------------
+/** 
+    Get the system time in milliseconds since some undefined epoch.
+*/
 double
 TBSystem::GetTimeMS()
 {
-    // todo: This is just grabbing the millisecond component of the current time
-    Timing::CalendarTime calendarTime = Timing::CalendarTime::GetSystemTime();
-
-    // hack function to work around above
-    // Maybe devs will add a native method in the engine to grab this
-    return GetMillisecondsSinceEpoch(calendarTime);
+    n_assert(TBUI::TBUIContext::state.timer.isvalid());
+    return TBUI::TBUIContext::state.timer->GetTime();
 }
 
-/** Called when the need to call TBMessageHandler::ProcessMessages has changed due to changes in the
-  message queue. fire_time is the new time is needs to be called.
-  It may be 0 which means that ProcessMessages should be called asap (but NOT from this call!)
-  It may also be TB_NOT_SOON which means that ProcessMessages doesn't need to be called. */
+//------------------------------------------------------------------------------
+/** 
+    Called when the need to call TBMessageHandler::ProcessMessages has changed 
+    due to changes in the message queue. fire_time is the new time is needs to be 
+    called.
+    It may be 0 which means that ProcessMessages should be called asap (but NOT 
+    from this call!) It may also be TB_NOT_SOON which means that ProcessMessages 
+    doesn't need to be called. 
+*/
 void
 TBSystem::RescheduleTimer(double fire_time)
 {
 }
 
-/** Get how many milliseconds it should take after a touch down event should generate a long click
-  event. */
+//------------------------------------------------------------------------------
+/** 
+    Get how many milliseconds it should take after a touch down event should 
+    generate a long click event. 
+*/
 int
 TBSystem::GetLongClickDelayMS()
 {
     return 500;
 }
 
-/** Get how many pixels of dragging should start panning scrollable widgets. */
+//------------------------------------------------------------------------------
+/** 
+    Get how many pixels of dragging should start panning scrollable widgets. 
+*/
 int
 TBSystem::GetPanThreshold()
 {
     return 40;
 }
 
-/** Get how many pixels a typical line is: The length that should be scrolled when turning a mouse
-  wheel one notch. */
+//------------------------------------------------------------------------------
+/** 
+    Get how many pixels a typical line is: The length that should be scrolled 
+    when turning a mouse wheel one notch. 
+*/
 int
 TBSystem::GetPixelsPerLine()
 {
     return 40;
 }
 
-/** Get Dots Per Inch for the main screen. */
+//------------------------------------------------------------------------------
+/** 
+    Get Dots Per Inch for the main screen. 
+*/
 int
 TBSystem::GetDPI()
 {

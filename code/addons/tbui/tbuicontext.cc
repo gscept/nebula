@@ -2,17 +2,14 @@
 //  @file tbuicontext.cc
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
+#include "render/stdneb.h"
 #include "math/mat4.h"
 #include "input/inputserver.h"
 #include "frame/default.h"
 #include "io/assignregistry.h"
 #include "input/keyboard.h"
 
-#undef PostMessage
-
 #include <tb_config.h>
-
 #include "tbuicontext.h"
 #include "tbuiview.h"
 #include "backend/tbuibatch.h"
@@ -29,23 +26,38 @@ namespace TBUI
 {
 namespace
 {
+
+//------------------------------------------------------------------------------
+/**
+*/
 tb::MODIFIER_KEYS
 GetModifierKeys()
 {
     tb::MODIFIER_KEYS modifiers = tb::TB_MODIFIER_NONE;
     auto& kb = Input::InputServer::Instance()->GetDefaultKeyboard();
     if (kb->KeyDown(Input::Key::Shift))
+    {
         modifiers |= tb::MODIFIER_KEYS::TB_SHIFT;
+    }
     if (kb->KeyDown(Input::Key::Control))
+    {
         modifiers |= tb::MODIFIER_KEYS::TB_CTRL;
+    }
     if (kb->KeyDown(Input::Key::Menu))
+    {
         modifiers |= tb::MODIFIER_KEYS::TB_ALT;
+    }
     if (kb->KeyDown(Input::Key::LeftWindows) || kb->KeyDown(Input::Key::RightWindows))
+    {
         modifiers |= tb::MODIFIER_KEYS::TB_SUPER;
+    }
 
     return modifiers;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 tb::SPECIAL_KEY
 GetSpecialKey(Input::Key::Code code)
 {
@@ -112,7 +124,10 @@ GetSpecialKey(Input::Key::Code code)
     return key;
 }
 
-int32_t
+//------------------------------------------------------------------------------
+/**
+*/
+static int32_t
 GetTBKey(const Input::InputEvent& inputEvent)
 {
     return (int32_t)Input::Key::ToChar(inputEvent.GetKey());
@@ -145,6 +160,7 @@ TBUIContext::~TBUIContext()
 void
 TBUIContext::Create()
 {
+    n_assert(FrameSync::FrameSyncTimer::HasInstance());
     __bundle.OnWindowResized = TBUIContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
     if (!tb::tb_core_is_initialized())
@@ -277,6 +293,8 @@ TBUIContext::Create()
             Input::InputServer::Instance()->AttachInputHandler(
                 Input::InputPriority::Gui, state.inputHandler.upcast<Input::InputHandler>()
             );
+
+            state.timer = FrameSync::FrameSyncTimer::Instance();
         }
     }
 }
@@ -311,6 +329,9 @@ TBUIContext::Discard()
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBUIContext::FrameUpdate(const Graphics::FrameContext& ctx)
 {
@@ -324,6 +345,9 @@ TBUIContext::FrameUpdate(const Graphics::FrameContext& ctx)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBUIContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
 {
@@ -333,6 +357,9 @@ TBUIContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width,
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 TBUIView*
 TBUIContext::CreateView(int32_t width, int32_t height)
 {
@@ -351,6 +378,9 @@ TBUIContext::CreateView(int32_t width, int32_t height)
     return view;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBUIContext::DestroyView(const TBUIView* view)
 {
@@ -361,6 +391,9 @@ TBUIContext::DestroyView(const TBUIView* view)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 {
@@ -422,10 +455,11 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
     return false;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
-TBUIContext::Render(
-    const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex
-)
+TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
 {
     Util::Array<TBUIBatch> batches;
 

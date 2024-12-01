@@ -42,8 +42,6 @@
 
 #endif
 
-#undef PostMessage
-
 #include "tbui/tbuicontext.h"
 #include "ListWindow.h"
 #include "ResourceEditWindow.h"

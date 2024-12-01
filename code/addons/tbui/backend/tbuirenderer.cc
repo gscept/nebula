@@ -1,11 +1,18 @@
+//------------------------------------------------------------------------------
+//  backend/tbuirenderer.cc
+//  (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "render/stdneb.h"
 #include "coregraphics/texture.h"
-
-#undef PostMessage
 #include "tbuirenderer.h"
 #include "tbuibitmap.h"
 
 namespace TBUI
 {
+
+//------------------------------------------------------------------------------
+/**
+*/
 tb::TBBitmap*
 TBUIRenderer::CreateBitmap(int width, int height, uint32* data)
 {
@@ -19,6 +26,9 @@ TBUIRenderer::CreateBitmap(int width, int height, uint32* data)
     return bitmap;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBUIRenderer::RenderBatch(Batch* tbBatch)
 {
@@ -28,7 +38,7 @@ TBUIRenderer::RenderBatch(Batch* tbBatch)
         texture = bitmap->GetTexture();
 
     TBUIBatch batch(texture);
-    batch.clipRect = clipRect;
+    batch.clipRect = this->clipRect;
 
     for (int i = 0; i < tbBatch->vertex_count; i++)
     {
@@ -42,38 +52,50 @@ TBUIRenderer::RenderBatch(Batch* tbBatch)
         batch.vertices.Append(vertex);
     }
 
-    batches.Append(batch);
+    this->batches.Append(batch);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBUIRenderer::SetClipRect(const tb::TBRect& rect)
 {
-    clipRect = Math::intRectangle(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
+    this->clipRect = Math::intRectangle(rect.x, rect.y, rect.x + rect.w, rect.y + rect.h);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 TBUIRenderer::SetCmdBufferId(const CoreGraphics::CmdBufferId& cmdBufferId)
 {
     this->cmdBufferId = cmdBufferId;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphics::CmdBufferId&
 TBUIRenderer::GetCmdBufferId() const
 {
-    return cmdBufferId;
+    return this->cmdBufferId;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 Util::Array<TBUIBatch>
 TBUIRenderer::RenderView(TBUIView* view, int32_t width, int32_t height)
 {
-    batches.Clear();
+    this->batches.Clear();
 
-    clipRect = {0, 0, (int32_t)width, (int32_t)height};
+    this->clipRect = {0, 0, (int32_t)width, (int32_t)height};
 
     BeginPaint(width, height);
     view->InvokePaint(tb::TBWidget::PaintProps());
     EndPaint();
 
-    return batches;
+    return this->batches;
 }
 } // namespace TBUI
