@@ -18,6 +18,10 @@
 namespace TBUI
 {
 class TBUIRenderer;
+class TBUIFileInterface;
+class TBUISystemInterface;
+class TBUIClipboardInterface;
+class TBUISTBFontRenderer;
 class TBUIView;
 
 class TBUIContext : public Graphics::GraphicsContext
@@ -72,6 +76,10 @@ private:
     static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
 
     static TBUIRenderer* renderer;
+    static TBUIFileInterface fileInterface;
+    static TBUISystemInterface systemInterface;
+    static TBUIClipboardInterface clipboardInterface;
+    static TBUISTBFontRenderer* stbFontRenderer;
     static Util::Array<TBUIView*> views;
 };
 

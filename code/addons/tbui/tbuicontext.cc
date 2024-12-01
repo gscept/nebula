@@ -14,6 +14,10 @@
 #include "tbuiview.h"
 #include "backend/tbuibatch.h"
 #include "backend/tbuirenderer.h"
+#include "backend/tbuifileinterface.h"
+#include "backend/tbuisysteminterface.h"
+#include "backend/tbuiclipboardinterface.h"
+#include "backend/tbuifontrenderer.h"
 #include "tb_core.h"
 #include "tb_language.h"
 #include "tb_font_renderer.h"
@@ -24,12 +28,6 @@
 
 #ifdef TB_FONT_RENDERER_TBBF
 void register_tbbf_font_renderer();
-#endif
-#ifdef TB_FONT_RENDERER_STB
-void register_stb_font_renderer();
-#endif
-#ifdef TB_FONT_RENDERER_FREETYPE
-void register_freetype_font_renderer();
 #endif
 
 namespace TBUI
@@ -145,6 +143,10 @@ GetTBKey(const Input::InputEvent& inputEvent)
 } // namespace
 
 TBUIRenderer* TBUIContext::renderer = nullptr;
+TBUIFileInterface TBUIContext::fileInterface;
+TBUISystemInterface TBUIContext::systemInterface;
+TBUIClipboardInterface TBUIContext::clipboardInterface;
+TBUISTBFontRenderer* TBUIContext::stbFontRenderer;
 Util::Array<TBUIView*> TBUIContext::views;
 TBUIContext::TBUIState TBUIContext::state;
 static constexpr size_t TBUI_VERTEX_MAX_SIZE = VERTEX_BATCH_SIZE * sizeof(TBUIVertex);
@@ -176,7 +178,7 @@ TBUIContext::Create()
     if (!tb::tb_core_is_initialized())
     {
         renderer = new TBUIRenderer();
-        if (!tb::tb_core_init(renderer))
+        if (!tb::tb_core_init(renderer, &systemInterface, &fileInterface, &clipboardInterface))
         {
             delete renderer;
             return;
@@ -186,25 +188,30 @@ TBUIContext::Create()
         // Load language file
         tb::g_tb_lng->Load("tb:resources/language/lng_en.tb.txt");
 
-        // Load the default skin
-        tb::g_tb_skin->Load("tb:resources/default_skin/skin.tb.txt", "tb:demo/skin/skin.tb.txt");
-
         // Register font renderers.
 #ifdef TB_FONT_RENDERER_TBBF
         register_tbbf_font_renderer();
 #endif
 
-#ifdef TB_FONT_RENDERER_STB
-        register_stb_font_renderer();
-#endif
-#ifdef TB_FONT_RENDERER_FREETYPE
-        register_freetype_font_renderer();
+        // Not great, but turbobadger will delete this
+        // Maybe turbobadger should be patched to not delete this
+        // Or it could allow our own destroy function to be passed in
+        stbFontRenderer = new TBUISTBFontRenderer();
+        tb::g_font_manager->AddRenderer(stbFontRenderer);
+
+#if 0 // Enable to use the fonty skin
+	// New experimental skin using shapes & icon font, to scale perfectly for any DPI
+	// Requires FontAwesome to be added before loading skin.
+	tb::g_font_manager->AddFontInfo("tb:resources/fonty_skin/fontawesome.ttf", "FontAwesome");
+	tb::g_tb_skin->Load("tb:resources/fonty_skin/skin.tb.txt", "tb:demo/skin/skin.tb.txt");
+#else
+        tb::g_tb_skin->Load("tb:resources/default_skin/skin.tb.txt", "tb:demo/skin/skin.tb.txt");
 #endif
 
         // Add fonts we can use to the font manager.
-#if defined(TB_FONT_RENDERER_STB) || defined(TB_FONT_RENDERER_FREETYPE)
-        tb::g_font_manager->AddFontInfo("tb:resources/vera.ttf", "Vera");
-#endif
+        // STB font renderer can render this
+        tb::g_font_manager->AddFontInfo("tb:demo/fonts_ttf/Lato-Regular.ttf", "Lato");
+
 #ifdef TB_FONT_RENDERER_TBBF
         tb::g_font_manager->AddFontInfo("tb:resources/default_font/segoe_white_with_shadow.tb.txt", "Segoe");
         tb::g_font_manager->AddFontInfo("tb:demo/fonts/neon.tb.txt", "Neon");
@@ -213,13 +220,17 @@ TBUIContext::Create()
 #endif
 
         // Set the default font description for widgets to one of the fonts we just added
+        // STB renders Lato smaller than FreeType since it ignores the size table in fonts.
+        // To make demo look similar with all font engines, we use slightly different sizes.
+        // This should match when running in 96dp, but will likely diverge for other DPIs (and fonts).
         tb::TBFontDescription fd;
+        fd.SetID(TBIDC("Lato"));
+        fd.SetSize(tb::g_tb_skin->GetDimensionConverter()->DpToPx(18));
 #ifdef TB_FONT_RENDERER_TBBF
-        fd.SetID(TBIDC("Segoe"));
-#else
-        fd.SetID(TBIDC("Vera"));
+        // Enable this code only if we want to use TBBF only
+        //fd.SetID(TBIDC("Segoe"));
+        //fd.SetSize(tb::g_tb_skin->GetDimensionConverter()->DpToPx(14));
 #endif
-        fd.SetSize(tb::g_tb_skin->GetDimensionConverter()->DpToPx(14));
         tb::g_font_manager->SetDefaultFontDescription(fd);
 
         // Create the font now.
@@ -228,8 +239,9 @@ TBUIContext::Create()
         // Render some glyphs in one go now since we know we are going to use them. It would work fine
         // without this since glyphs are rendered when needed, but with some extra updating of the glyph bitmap.
         if (font)
-            font->RenderGlyphs(" !\"#$%&'()*+,-./"
-                               "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~•·åäöÅÄÖ");
+            font->RenderGlyphs(
+                " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~•·åäöÅÄÖ"
+            );
 
         tb::TBWidgetsAnimationManager::Init();
 
@@ -412,13 +424,12 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 
     switch (inputEvent.GetType())
     {
-    case Input::InputEvent::KeyUp:
-    {
-        return view->InvokeKey(/*GetTBKey(inputEvent)*/0, GetSpecialKey(inputEvent.GetKey()), modifiers, false);
+    case Input::InputEvent::KeyUp: {
+        return view->InvokeKey(/*GetTBKey(inputEvent)*/ 0, GetSpecialKey(inputEvent.GetKey()), modifiers, false);
     }
     break;
     case Input::InputEvent::KeyDown: {
-        return view->InvokeKey(/*GetTBKey(inputEvent)*/0, GetSpecialKey(inputEvent.GetKey()), modifiers, true);
+        return view->InvokeKey(/*GetTBKey(inputEvent)*/ 0, GetSpecialKey(inputEvent.GetKey()), modifiers, true);
     }
     case Input::InputEvent::Character: {
         int c = (int)inputEvent.GetChar();
@@ -466,7 +477,9 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 /**
 */
 void
-TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+TBUIContext::Render(
+    const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex
+)
 {
     Util::Array<TBUIBatch> batches;
 
@@ -529,7 +542,9 @@ TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangl
     CoreGraphics::CmdSetScissorRect(cmdBuf, viewport, 0);
 
     // set projection
-    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
+    CoreGraphics::CmdPushConstants(
+        cmdBuf, CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj
+    );
 
     IndexT vertexOffset = 0;
     IndexT vertexBufferOffset = 0;
@@ -538,8 +553,7 @@ TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangl
     {
         const auto& batch = batches[i];
         const unsigned char* vertexBuffer = (unsigned char*)&batch.vertices.Front();
-        const SizeT vertexBufferSize =
-            batch.vertices.Size() * sizeof(TBUIVertex); // 2 for position, 2 for uvs, 1 int for color
+        const SizeT vertexBufferSize = batch.vertices.Size() * sizeof(TBUIVertex); // 2 for position, 2 for uvs, 1 int for color
 
         // if we render too many vertices, we will simply assert, but should never happen really
         n_assert(
