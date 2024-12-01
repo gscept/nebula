@@ -35,9 +35,12 @@ TBUIRenderer::RenderBatch(Batch* tbBatch)
     CoreGraphics::TextureId texture = CoreGraphics::InvalidTextureId;
     TBUIBitmap* bitmap = (TBUIBitmap*)tbBatch->bitmap;
     if (bitmap)
+    {
         texture = bitmap->GetTexture();
+    }
 
-    TBUIBatch batch(texture);
+    TBUIBatch batch;
+    batch.texture = texture;
     batch.clipRect = this->clipRect;
 
     for (int i = 0; i < tbBatch->vertex_count; i++)
