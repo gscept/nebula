@@ -47,7 +47,7 @@
 #include "ResourceEditWindow.h"
 #include "animation/tb_animation.h"
 #include "tests/tb_test.h"
-#include "tb_system.h"
+#include "platform/tb_system_interface.h"
 #include "tb_language.h"
 #include "tb_inline_select.h"
 #include "tb_select.h"
@@ -336,7 +336,7 @@ ScrollContainerWindow::OnEvent(const TBWidgetEvent& ev)
                 TBMessageData* data = new TBMessageData();
                 data->id1 = ev.target->GetParent()->GetID();
                 data->v1.SetInt(i);
-                PostMessageDelayed(TBIDC("new button"), data, 100 + i * 500);
+                this->PublishMessageDelayed(TBIDC("new button"), data, 100 + i * 500);
             }
             return true;
         }
@@ -494,7 +494,7 @@ MainWindow::OnMessageReceived(TBMessage* msg)
     else if (msg->message == TBIDC("busy"))
     {
         // Keep the message queue busy by posting another "busy" message.
-        this->PostMessage(TBIDC("busy"), nullptr);
+        this->PublishMessage(TBIDC("busy"), nullptr);
     }
     else if (msg->message == TBIDC("delayedmsg"))
     {
@@ -502,7 +502,7 @@ MainWindow::OnMessageReceived(TBMessage* msg)
         text.SetFormatted(
             "Delayed message received!\n\n"
             "It was received %d ms after its intended fire time.",
-            (int)(TBSystem::GetTimeMS() - msg->GetFireTime())
+            (int)(g_system_interface->GetTimeMS() - msg->GetFireTime())
         );
         TBMessageWindow* msg_win = new TBMessageWindow(this, TBIDC(""));
         msg_win->Show("Message window", text);
@@ -521,7 +521,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
         }
         if (ev.target->GetID() == TBIDC("msg"))
         {
-            this->PostMessage(TBIDC("instantmsg"), nullptr);
+            this->PublishMessage(TBIDC("instantmsg"), nullptr);
             return true;
         }
         else if (ev.target->GetID() == TBIDC("busymsg"))
@@ -532,7 +532,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
                 assert(!GetMessageByID(TBIDC("busy")));
                 if (!GetMessageByID(TBIDC("busy")))
                 {
-                    this->PostMessage(TBIDC("busy"), nullptr);
+                    this->PublishMessage(TBIDC("busy"), nullptr);
                     TBMessageWindow* msg_win = new TBMessageWindow(this, TBIDC("test_dialog"));
                     msg_win->Show(
                         "Message window",
@@ -552,7 +552,7 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
         }
         else if (ev.target->GetID() == TBIDC("delayedmsg"))
         {
-            PostMessageDelayed(TBIDC("delayedmsg"), nullptr, 2000);
+            PublishMessageDelayed(TBIDC("delayedmsg"), nullptr, 2000);
             return true;
         }
         else if (ev.target->GetID() == TBIDC("TBWindow.close"))
@@ -575,10 +575,10 @@ MainWindow::OnEvent(const TBWidgetEvent& ev)
         else if (ev.target->GetID() == TBIDC("reload skin bitmaps"))
         {
             int reload_count = 10;
-            double t1 = TBSystem::GetTimeMS();
+            double t1 = g_system_interface->GetTimeMS();
             for (int i = 0; i < reload_count; i++)
                 tb::g_tb_skin->ReloadBitmaps();
-            double t2 = TBSystem::GetTimeMS();
+            double t2 = g_system_interface->GetTimeMS();
 
             TBStr message;
             message.SetFormatted("Reloading the skin graphics %d times took %dms", reload_count, (int)(t2 - t1));
@@ -931,7 +931,7 @@ GameStateManager::OnFrame()
         frame_counter_total++;
 
         // Update the FPS counter
-        double time = TBSystem::GetTimeMS();
+        double time = g_system_interface->GetTimeMS();
         if (time > frame_counter_reset_time + 1000)
         {
             fps = (int)((frame_counter / (time - frame_counter_reset_time)) * 1000);

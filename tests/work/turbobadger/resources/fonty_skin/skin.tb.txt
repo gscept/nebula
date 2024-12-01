@@ -1,0 +1,491 @@
+# Experimental skin using no file bitmaps, only shapes and icon font
+# It requires enabling support for ttf font renderer and adding the font "FontAwesome".
+# Use Font Awesome by Dave Gandy - http://fontawesome.io
+# Font License: SIL OFL 1.1
+
+description
+	name Fonty Skin
+	# Dimensions (padding and such) are specified for this DPI.
+	base-dpi 96
+	# The skin also has graphics available in these DPI modes
+	# (We can specify as much as we want here, since we don't have any bitmaps)
+	supported-dpi 96 120 144 160 192 240 288 320 336 384 432 480
+	glyph-font: "FontAwesome"
+	glyph-font-base-size 15
+defaults
+	spacing 5
+	text-color #000000
+	placeholder
+		opacity 0.2
+	disabled
+		opacity 0.3
+colors
+	# Include custom colors if enabled. Makes it possible for App to change colors runtime (and apply by reloading skin)
+	# FIX: Supply defaults for light & dark base colors. That + accent color covers most need.
+	@if @settings>custom_skin_colors
+		@include @settings>custom_skin_colors
+
+	primary #dddddd
+	primary_dark #aaaaaa
+	primary_light #ffffff
+	accent #0262a6
+
+	button #0003
+	button_hovered #0001
+	button_pressed #0002
+
+	window_normal #333333
+	window_active @>colors>accent
+	window_text #ffffff
+
+	selection @>colors>accent
+
+	dark_icon #0008
+	dark_icon_selected #0008
+
+	light_icon #fff8
+	light_icon_selected #ddd8
+
+# Shapes are bitmaps created runtime from description. See TBShapeRasterizer.
+# The shape name will be usable for the "bitmap" attribute on skin elements.
+shapes
+	rounded_border
+		size 11 11
+		srect
+			radius 4 4 4 4
+			border 1
+		color #fff
+		attr
+			bitmap rounded_border
+			cut 5
+			type StretchBorder
+	rounded_fill
+		size 11 11
+		srect
+			radius 4 4 4 4
+		color #fff
+		attr
+			bitmap rounded_fill
+			cut 5
+	container
+		size 11 11
+		srect
+			radius 4 4 4 4
+			border 1
+		color @>colors>primary_dark
+		attr
+			bitmap container
+			cut 5
+			type StretchBorder
+			padding 10
+	section_container
+		size 11 11
+		srect
+			radius 0 0 4 4
+			border 1
+		color @>colors>primary_dark
+		attr
+			bitmap section_container
+			cut 5
+			type StretchBorder
+			padding 10
+	window_bg
+		size 60 60
+		srect 22, 22, 20, 20
+			radius 4
+		sblur 8
+		color #000000
+		sclear
+		srect 20, 20, 20, 20
+			radius 4
+		color @>colors>primary
+		attr
+			bitmap window_bg
+			cut 25
+			expand 20
+	window_mover
+		size 11 11
+		srect
+			radius 4 4 0 0
+		color #fff
+		attr
+			bitmap window_mover
+			cut 5
+			img-color @>colors>window_normal
+	focus_glow
+		size 60 60
+		srect 20, 20, 20, 20
+			radius 4
+		sblur 8
+		srect 20, 20, 20, 20
+			radius 4
+			mul -1
+		color @>colors>accent
+		sclear
+		srect 20, 20, 20, 20
+			radius 4
+			border 2
+		color @>colors>accent
+		attr
+			bitmap focus_glow
+			cut 25
+			expand 20
+			type StretchBorder
+	radio_border
+		size 30 30
+		srect
+			radius 15
+			border 1
+		color #fff
+	radio_fill
+		size 30 30
+		srect
+			radius 15
+		color #fff
+	radio_inner
+		size 10 10
+		srect: radius: 5
+		color #fff
+	resize_corner
+		size 20 20
+		srect 3 13 4 4
+			radius 2
+		srect 13 3 4 4
+			radius 2
+
+		srect 13 8 4 4
+			radius 2
+		srect 8 13 4 4
+			radius 2
+
+		srect 13 13 4 4
+			radius 2
+		color #0003
+	search.icon
+		sglyph: "\uf002"
+		color #fff
+	arrow.left
+		sglyph: "\uf053"
+		color #fff
+	arrow.right
+		sglyph: "\uf054"
+		color #fff
+	arrow.up
+		sglyph: "\uf077"
+		color #fff
+	arrow.down
+		sglyph: "\uf078"
+		color #fff
+	close
+		sglyph: "\uf00d"
+		color #fff
+	check_mark
+		sglyph: "\uf00c"
+		color #fff
+	# This really sucks. Update TBSpinner for more freedom!
+	spinner
+		size 50 25
+		srect 0 0 25 25
+			radius 12 12
+		srect 25 0 25 25
+			radius 12 12
+			border 2
+		color @>colors>accent
+elements
+	TBButton
+		clone TBButton.flat
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+	TBButton.pressed
+		clone TBButton.flat.pressed
+	TBButton.hovered
+		clone TBButton.flat.hovered
+
+	TBButton.flat
+		padding 5 10 5 10
+		min-width 30
+		min-height 30
+		children
+			element TBButton.flat.pressed
+				state pressed
+			element TBButton.flat.hovered
+				state hovered
+	TBButton.flat.pressed
+		@include shapes>rounded_fill>attr
+		img-color: @>colors>button_pressed
+	TBButton.flat.hovered
+		@include shapes>rounded_fill>attr
+		img-color: @>colors>button_hovered
+
+	# == TBSection skins ==========================================================================
+	TBSection.layout
+		spacing -1
+	TBSection.container
+		@include shapes>section_container>attr
+	TBSectionHeader
+		clone TBWindow.mover
+		padding 5 5 5 25
+		children
+			element TBSectionHeader.down
+				condition: target: this, property: value, value: 1
+			element TBSectionHeader.up
+				condition: target: this, property: value, value: 0
+	TBSectionHeader.down
+		children
+			element TBSectionHeader.down.arrow
+	TBSectionHeader.up
+		children
+			element TBSectionHeader.up.arrow
+	TBSectionHeader.down.arrow
+		type Image
+		bitmap arrow.down
+		img-color @>colors>light_icon
+		img-position-x 0
+		img-ofs-x 4
+	TBSectionHeader.up.arrow
+		type Image
+		bitmap arrow.up
+		img-color @>colors>light_icon
+		img-position-x 0
+		img-ofs-x 4
+
+	# == TBTabContainer skins =============================================================
+	TBTabContainer.rootlayout
+		padding 0
+		spacing -15
+	TBTabContainer.tablayout_x
+		padding 0
+	TBTabContainer.tablayout_y
+		padding 0
+
+	TBTabContainer.container
+		strong-overrides
+			element TBTabContainer.container.top
+				condition: target: ancestors, property: align, value: top
+			element TBTabContainer.container.bottom
+				condition: target: ancestors, property: align, value: bottom
+			element TBTabContainer.container.left
+				condition: target: ancestors, property: align, value: left
+			element TBTabContainer.container.right
+				condition: target: ancestors, property: align, value: right
+	TBTabContainer.container.top
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+		padding 25 5 5 5
+	TBTabContainer.container.bottom
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+		#FIX: Padding isn't applied. Not using TBLayout?
+		padding 5 5 25 5
+	TBTabContainer.container.left
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+		padding 5 5 5 25
+	TBTabContainer.container.right
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+		padding 5 25 5 5
+
+	TBTabContainer.tab
+		@include shapes>rounded_fill>attr
+		img-color @>colors>primary
+		padding 5 10 5 10
+		min-width 30
+		min-height 30
+		children
+			element TBTabContainer.tab.border
+			element TBButton.pressed
+				state pressed
+			element TBButton.hovered
+				state hovered
+	TBTabContainer.tab.border
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+
+	# == TBEditField skin. Create strong overrides for the search type to add magnifier glass icon =====
+	TBEditField.selection
+		background-color: @>colors>selection
+	TBEditField
+		@include shapes>rounded_border>attr
+		img-color @>colors>button
+		padding 5 5 5 5
+		min-width 40
+		min-height 20
+		strong-overrides
+			element TBEditField.search
+				condition: target: this, property: edit-type, value: "search"
+	TBEditField.search
+		clone TBEditField
+		padding 5 5 5 27
+		children
+			element TBEditField.search.icon
+	TBEditField.search.icon
+		bitmap search.icon
+		type: "Image"
+		img-position-x: 0
+		img-ofs-x: 5
+		img-color: @>colors>dark_icon
+
+	# == TBWindow skin =================================================================================
+	TBWindow
+		@include shapes>window_bg>attr
+		padding 10
+	TBWindow.close
+		clone TBButton
+		img-color: @>colors>light_icon
+		bitmap close
+		type: "Image"
+	TBWindow.mover
+		@include shapes>window_mover>attr
+		padding 5
+		text-color @>colors>window_text
+		overrides
+			element TBWindow.mover.active
+				state selected
+	TBWindow.mover.active
+		img-color @>colors>window_active
+		@include shapes>window_mover>attr
+		text-color @>colors>window_text
+
+	# == Misc skins ====================================================================================
+	TBContainer
+		@include shapes>container>attr
+	TBCheckBox
+		clone TBButton
+		width 30
+		height 30
+		children
+			element TBButton.pressed
+				state pressed
+			element TBButton.hovered
+				state hovered
+			element TBCheckBox.selected
+				state selected
+	TBCheckBox.selected
+		img-color: @>colors>dark_icon_selected
+		bitmap check_mark
+		type: "Image"
+
+	TBRadioButton
+		img-color: @>colors>button
+		bitmap radio_border
+		type: "Image"
+		children
+			element TBRadioButton.selected
+				state selected
+			element TBRadioButton.hovered
+				state hovered
+	TBRadioButton.selected
+		img-color: @>colors>dark_icon_selected
+		bitmap radio_inner
+		type: "Image"
+	TBRadioButton.hovered
+		img-color: @>colors>button_hovered
+		bitmap radio_fill
+		type: "Image"
+
+	TBLayout.fadeout_x
+		bitmap fadeout_x.png
+	TBLayout.fadeout_y
+		bitmap fadeout_y.png
+	TBSelectList
+		clone TBContainer
+	TBSelectDropdown
+		clone TBButton
+	TBSelectDropdown.arrow
+		clone arrow.down
+	TBSelectDropdown.window
+		clone TBPopupWindow
+	TBPopupWindow
+		clone TBWindow
+		padding 2
+	TBMenuWindow
+		clone TBPopupWindow
+	TBSelectItem
+		clone TBButton.flat
+		overrides
+			element TBButton.flat.hovered
+				state hovered
+			element TBButton.flat.pressed
+				state selected
+	TBSelectItem.separator
+		clone TBSeparator
+
+	TBSeparator
+		background-color: @>colors>dark_icon
+		height: 1dp
+		strong-overrides
+			element TBSeparator.y
+				condition: target: parent, property: axis, value: x
+	TBSeparator.y
+		background-color: @>colors>dark_icon
+		width: 1dp
+
+	TBScrollBarBgX
+		min-width: 20
+		height 8
+		children
+			element TBScrollBarBgY.track
+	TBScrollBarFgX
+		clone TBScrollBarFgY
+
+	TBScrollBarBgY
+		min-height: 20
+		width 8
+		children
+			element TBScrollBarBgY.track
+	TBScrollBarFgY
+		width 8
+		height 8
+		@include shapes>rounded_fill>attr
+		img-color: @>colors>accent
+	TBScrollBarBgY.track
+		@include shapes>rounded_border>attr
+		img-color: @>colors>button
+		width 10
+		height 10
+
+	TBSliderBgX
+		clone TBScrollBarBgX
+	TBSliderFgX
+		clone TBScrollBarFgX
+
+	TBSliderBgY
+		clone TBScrollBarBgY
+		min-height: 20
+	TBSliderFgY
+		clone TBScrollBarFgY
+
+	TBResizer
+		width 20
+		height 20
+		bitmap resize_corner
+		type Image
+
+	TBInlineSelect
+		max-width 110
+	TBDimmer
+		background-color #00000088
+
+	TBProgressSpinner
+		min-width 28
+		min-height 28
+	TBProgressSpinner.fg
+		bitmap spinner
+		img-color: @>colors>accent
+		type: "Image"
+
+	# The TBList header is always disabled, thus gets slightly less opacity default.
+	TBList.header
+
+	arrow.left: type: "Image", bitmap: "arrow.left"
+		img-color: @>colors>dark_icon
+	arrow.right: type: "Image", bitmap: "arrow.right"
+		img-color: @>colors>dark_icon
+	arrow.up: type: "Image", bitmap: "arrow.up"
+		img-color: @>colors>dark_icon
+	arrow.down: type: "Image", bitmap: "arrow.down"
+		img-color: @>colors>dark_icon
+
+	generic_focus
+		@include shapes>focus_glow>attr

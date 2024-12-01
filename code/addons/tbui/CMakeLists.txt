@@ -22,15 +22,18 @@ add_shaders(tbui.fx)
 
 fips_dir(backend)
     fips_files(
+        tbuifontrenderer.cc
         tbuibatch.h
         tbuibitmap.cc
         tbuibitmap.h
-        tbuiclipboard.cc
-        tbuifile.cc
-        tbuifile.h
+        tbuiclipboardinterface.cc
+        tbuiclipboardinterface.h
+        tbuifileinterface.cc
+        tbuifileinterface.h
         tbuirenderer.cc
         tbuirenderer.h
-        tbuisystem.cc
+        tbuisysteminterface.cc
+        tbuisysteminterface.h
         tbuivertex.h
     )
 
