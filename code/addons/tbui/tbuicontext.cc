@@ -416,7 +416,11 @@ TBUIContext::DestroyView(const TBUIView* view)
 bool
 TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 {
+    if (views.IsEmpty())
+        return false;
+
     TBUIView* view = views.Back();
+
     if (!view)
         return false;
 
@@ -481,6 +485,9 @@ TBUIContext::Render(
     const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex
 )
 {
+    if (views.IsEmpty())
+        return;
+
     Util::Array<TBUIBatch> batches;
 
     // todo: Maybe render only the top view?
