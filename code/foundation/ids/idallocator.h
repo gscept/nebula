@@ -127,10 +127,11 @@ public:
             alloc_for_each_in_tuple(this->objects);
             index = this->size++;
             this->owners.Append(Threading::Thread::GetMyThreadId());
+            this->generations.Append(0);
             n_assert2(MAX_ALLOCS > index, "max amount of allocations exceeded!\n");
         }
         this->allocationLock.Unlock();
-
+        Ids::Id8 generation = this->generations[index];
         return index;
     }
 
@@ -140,11 +141,13 @@ public:
         // TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
         this->allocationLock.Lock();
         this->freeIds.Append(index);
+        this->generations[index]++;
         this->allocationLock.Unlock();
     }
 
 private:
     Util::Array<Ids::Id32> freeIds;
+    Util::Array<Ids::Id8> generations;
 };
 
 } // namespace Ids

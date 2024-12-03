@@ -31,6 +31,8 @@ struct ImguiTextureId
     uint layer : 8 = 0;
     uint mip : 4 = 0;
     uint useAlpha : 1 = 0;
+    uint useRange : 1 = 0;
+    float rangeMin, rangeMax;
 };
 
 class ImguiContext : public Graphics::GraphicsContext
@@ -79,6 +81,8 @@ public:
 
         IndexT textProjectionConstant;
         IndexT packedTextureInfo;
+        IndexT rangeMinConstant;
+        IndexT rangeMaxConstant;
         CoreGraphics::ResourceTableId resourceTable;
         //Ptr<CoreGraphics::BufferLock> vboBufferLock;
         //Ptr<CoreGraphics::BufferLock> iboBufferLock;
