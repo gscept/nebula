@@ -39,6 +39,8 @@ struct
     CoreGraphics::ResourceTableSet raytracingTable;
 
     Util::Array<UpdateVolume> volumesToUpdate;
+
+    Math::vec3 probeDirections188[188];
 } state;
 
 
@@ -84,14 +86,14 @@ DDGIContext::Create()
     state.raytracingTable = CoreGraphics::ShaderCreateResourceTableSet(state.probeUpdateShader, NEBULA_BATCH_GROUP, 1);
 
     // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
-    state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram });
+    state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram }, CoreGraphics::ComputeQueueType);
 
     FrameScript_default::RegisterSubgraph_DDGIProbeUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         if (!state.volumesToUpdate.IsEmpty())
         {
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.pipeline.pipeline);
-            CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTable.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetRaytracingTable(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(), NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
@@ -99,12 +101,28 @@ DDGIContext::Create()
                 CoreGraphics::CmdRaysDispatch(cmdBuf, state.pipeline.table, volumeToUpdate.numProbes, volumeToUpdate.numRays, 1);
             }
         }
-    });
+    }, {
+        { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
+        , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
+    } );
 
     FrameScript_default::RegisterSubgraph_DDGIDebug_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
 
     });
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec3
+SphericalFibonacci(float index, float numSamples)
+{
+    const float b = (sqrt(5.0f) * 0.5f + 0.5f) - 1.0f;
+    float phi = 2 * PI * Math::fract(index * b);
+    float cosTheta = 1.0f - (2.0f * index + 1.0f) * (1.0f / numSamples);
+    float sinTheta = sqrt(Math::clamp(1.0f - (cosTheta * cosTheta), 0.0f, 1.0f));
+    return Math::normalize(Math::vec3((cos(phi) * sinTheta), (sin(phi) * sinTheta), cosTheta));
 }
 
 //------------------------------------------------------------------------------
@@ -131,19 +149,49 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesZ = setup.numProbesZ;
     volume.numRaysPerProbe = setup.numRaysPerProbe;
 
+#if NEBULA_GRAPHICS_DEBUG
+    Util::String volumeName = Util::String::Sprintf("DDGIVolume_%d", ctxId.id);
+#endif
+
     CoreGraphics::TextureCreateInfo radianceCreateInfo;
-    radianceCreateInfo.width = setup.numProbesY * setup.numProbesZ * Probeupdate::NumColorSamples;
-    radianceCreateInfo.height = setup.numProbesX;
-    radianceCreateInfo.format = CoreGraphics::PixelFormat::R10G10B10A2;
+#if NEBULA_GRAPHICS_DEBUG
+    radianceCreateInfo.name = Util::String::Sprintf("%s Radiance", volumeName.c_str());
+#endif
+    radianceCreateInfo.width = setup.numRaysPerProbe;
+    radianceCreateInfo.height = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
+    radianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32F;
     radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.radiance = CoreGraphics::CreateTexture(radianceCreateInfo);
 
-    CoreGraphics::TextureCreateInfo depthCreateInfo;
-    depthCreateInfo.width = setup.numProbesY * setup.numProbesZ * Probeupdate::NumDepthSamples;
-    depthCreateInfo.height = setup.numProbesX;
-    depthCreateInfo.format = CoreGraphics::PixelFormat::R32G32F;
-    depthCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
-    volume.depth = CoreGraphics::CreateTexture(depthCreateInfo);
+    CoreGraphics::TextureCreateInfo irradianceCreateInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    irradianceCreateInfo.name = Util::String::Sprintf("%s Irradiance", volumeName.c_str());
+#endif
+    irradianceCreateInfo.width = setup.numProbesY * setup.numProbesZ;
+    irradianceCreateInfo.height = setup.numProbesX;
+    irradianceCreateInfo.format = CoreGraphics::PixelFormat::R11G11B10F;
+    irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    volume.irradiance = CoreGraphics::CreateTexture(irradianceCreateInfo);
+
+    CoreGraphics::TextureCreateInfo distanceCreateInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    distanceCreateInfo.name = Util::String::Sprintf("%s Distance", volumeName.c_str());
+#endif
+    distanceCreateInfo.width = setup.numProbesY * setup.numProbesZ;
+    distanceCreateInfo.height = setup.numProbesX;
+    distanceCreateInfo.format = CoreGraphics::PixelFormat::R16G16F;
+    distanceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    volume.distance = CoreGraphics::CreateTexture(distanceCreateInfo);
+
+    CoreGraphics::TextureCreateInfo offsetCreateInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    offsetCreateInfo.name = Util::String::Sprintf("%s Offsets", volumeName.c_str());
+#endif
+    offsetCreateInfo.width = setup.numProbesY * setup.numProbesZ;
+    offsetCreateInfo.height = setup.numProbesX;
+    offsetCreateInfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
+    offsetCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    volume.offsets = CoreGraphics::CreateTexture(offsetCreateInfo);
 
     Util::FixedArray<Probeupdate::Probe> probeInitialData(setup.numProbesX * setup.numProbesY * setup.numProbesZ);
     for (uint z = 0; z < setup.numProbesZ; z++)
@@ -157,22 +205,46 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
                 probe.position[1] = y;
                 probe.position[2] = z;
                 probeInitialData[x + (setup.numProbesX * (y + setup.numProbesY * z))] = probe;
+
             }
         }
     }
+    n_assert(setup.numRaysPerProbe < 1024);
+    for (uint rayIndex = 0; rayIndex < setup.numRaysPerProbe; rayIndex++)
+    {
+        SphericalFibonacci(rayIndex, setup.numRaysPerProbe).store(volume.constants.Directions[rayIndex]);
+    }
+
+    // Store another set of minimal ray directions for probe activity updates
+    for (uint rayIndex = 0; rayIndex < Probeupdate::NUM_FIXED_RAYS; rayIndex++)
+    {
+        SphericalFibonacci(rayIndex, Probeupdate::NUM_FIXED_RAYS).store(volume.constants.MinimalDirections[rayIndex]);
+    }
+
     CoreGraphics::BufferCreateInfo probeBufferCreateInfo;
-    probeBufferCreateInfo.elementSize = sizeof(Probeupdate::Probe);
-    probeBufferCreateInfo.size = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
+#if NEBULA_GRAPHICS_DEBUG
+    probeBufferCreateInfo.name = Util::String::Sprintf("%s Probes", volumeName.c_str());
+#endif
+    probeBufferCreateInfo.byteSize = sizeof(Probeupdate::Probe) * setup.numProbesX * setup.numProbesY * setup.numProbesZ;
     probeBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
     probeBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     probeBufferCreateInfo.data = probeInitialData.Begin();
     probeBufferCreateInfo.dataSize = probeInitialData.ByteSize();
     volume.probeBuffer = CoreGraphics::CreateBuffer(probeBufferCreateInfo);
 
+    CoreGraphics::BufferCreateInfo probeVolumeBufferInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    probeVolumeBufferInfo.name = Util::String::Sprintf("%s Volume", volumeName.c_str());
+#endif
+    probeVolumeBufferInfo.byteSize = sizeof(Probeupdate::VolumeConstants);
+    probeVolumeBufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    probeVolumeBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
+    volume.volumeBuffer = CoreGraphics::CreateBuffer(probeVolumeBufferInfo);
+
     volume.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.probeUpdateShader, NEBULA_SYSTEM_GROUP, 1);
     CoreGraphics::ResourceTableSetRWTexture(volume.resourceTable, CoreGraphics::ResourceTableTexture(volume.radiance, Probeupdate::Table_System::RadianceOutput_SLOT));
-    CoreGraphics::ResourceTableSetRWTexture(volume.resourceTable, CoreGraphics::ResourceTableTexture(volume.depth, Probeupdate::Table_System::DepthOutput_SLOT));
     CoreGraphics::ResourceTableSetRWBuffer(volume.resourceTable, CoreGraphics::ResourceTableBuffer(volume.probeBuffer, Probeupdate::Table_System::ProbeBuffer_SLOT));
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.resourceTable, CoreGraphics::ResourceTableBuffer(volume.volumeBuffer, Probeupdate::Table_System::VolumeConstants_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.resourceTable);
 }
 
@@ -210,7 +282,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
 
     state.volumesToUpdate.Clear();
-    for (const Volume& activeVolume : volumes)
+    for (Volume& activeVolume : volumes)
     {
         if (activeVolume.boundingBox.contains(xyz(cameraPos)))
         {
@@ -219,6 +291,12 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.numProbes = activeVolume.numProbesX * activeVolume.numProbesY * activeVolume.numProbesZ;
             volumeToUpdate.numRays = activeVolume.numRaysPerProbe;
             state.volumesToUpdate.Append(volumeToUpdate);
+
+            activeVolume.position.store(activeVolume.constants.Offset);
+            activeVolume.size.store(activeVolume.constants.Scale);
+            Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 10.0f), 0.0f, 0.0f);
+            rotation.store(activeVolume.constants.Rotation);
+            CoreGraphics::BufferUpdate(activeVolume.volumeBuffer, activeVolume.constants);
         }
     }
 
@@ -267,7 +345,10 @@ DDGIContext::Dealloc(Graphics::ContextEntityId id)
 {
     Volume& volume = ddgiVolumeAllocator.Get<0>(id.id);
     CoreGraphics::DestroyTexture(volume.radiance);
-    CoreGraphics::DestroyTexture(volume.depth);
+    CoreGraphics::DestroyTexture(volume.irradiance);
+    CoreGraphics::DestroyTexture(volume.distance);
+    CoreGraphics::DestroyTexture(volume.offsets);
+    CoreGraphics::DestroyTexture(volume.states);
     CoreGraphics::DestroyResourceTable(volume.resourceTable);
     CoreGraphics::DestroyBuffer(volume.probeBuffer);
     ddgiVolumeAllocator.Dealloc(id.id);

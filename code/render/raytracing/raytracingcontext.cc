@@ -43,7 +43,8 @@ struct
     Util::HashTable<CoreGraphics::MeshId, Util::Tuple<uint, CoreGraphics::BlasId>> blasLookup;
     CoreGraphics::BufferWithStaging blasInstanceBuffer;
 
-    CoreGraphics::ResourceTableSet raytracingTestTables;
+    CoreGraphics::ResourceTableSet raytracingTables;
+    CoreGraphics::ResourceTableId raytracingTestOutputTable;
 
     CoreGraphics::BufferId geometryBindingBuffer;
     CoreGraphics::BufferWithStaging objectBindingBuffer;
@@ -128,7 +129,8 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::Skybox] = 0xFFFFFFFF;
     MaterialPropertyMappings[(uint)MaterialTemplates::MaterialProperties::Terrain] = bindingCounter++;
 
-    state.raytracingTestTables = CoreGraphics::ShaderCreateResourceTableSet(raygenShader, NEBULA_BATCH_GROUP, 3);
+    state.raytracingTables = CoreGraphics::ShaderCreateResourceTableSet(raygenShader, NEBULA_BATCH_GROUP, 3);
+    state.raytracingTestOutputTable = CoreGraphics::ShaderCreateResourceTable(raygenShader, NEBULA_SYSTEM_GROUP);
     state.raytracingBundle = CoreGraphics::CreateRaytracingPipeline(shaderMappings);
 
     Raytracetest::Geometry geometryBindings;
@@ -339,13 +341,16 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 
     FrameScript_default::RegisterSubgraph_RaytracingTest_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
+        /*
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
         {
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.raytracingBundle.pipeline);
+            CoreGraphics::CmdSetResourceTable(cmdBuf,  state.raytracingTestOutputTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, {});
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTestTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, {});
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
         }
+        */
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
@@ -363,7 +368,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 void
 RaytracingContext::Discard()
 {
-    state.raytracingTestTables.Discard();
+    state.raytracingTables.Discard();
     state.lightGridResourceTables.Discard();
 }
 
@@ -596,31 +601,31 @@ RaytracingContext::ReconstructTopLevelAcceleration(const Graphics::FrameContext&
 
     if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
     {
-        CoreGraphics::ResourceTableSetAccelerationStructure(
-            state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableTlas(state.toplevelAccelerationStructure, Raytracetest::Table_Batch::TLAS_SLOT)
+        CoreGraphics::ResourceTableSetRWTexture(state.raytracingTestOutputTable,
+            CoreGraphics::ResourceTableTexture(FrameScript_default::Texture_RayTracingTestOutput(), Raytracetest::Table_System::RaytracingOutput_SLOT)
         );
-        CoreGraphics::ResourceTableSetRWTexture(
-            state.raytracingTestTables.tables[ctx.bufferIndex],
-            CoreGraphics::ResourceTableTexture(FrameScript_default::Texture_RayTracingTestOutput(), Raytracetest::Table_Batch::RaytracingOutput_SLOT)
+        CoreGraphics::ResourceTableSetAccelerationStructure(
+            state.raytracingTables.tables[ctx.bufferIndex],
+            CoreGraphics::ResourceTableTlas(state.toplevelAccelerationStructure, Raytracetest::Table_Batch::TLAS_SLOT)
         );
 
         CoreGraphics::ResourceTableSetRWBuffer(
-            state.raytracingTestTables.tables[ctx.bufferIndex],
+            state.raytracingTables.tables[ctx.bufferIndex],
             CoreGraphics::ResourceTableBuffer(state.geometryBindingBuffer, Raytracetest::Table_Batch::Geometry_SLOT)
         );
 
         CoreGraphics::ResourceTableSetRWBuffer(
-            state.raytracingTestTables.tables[ctx.bufferIndex],
+            state.raytracingTables.tables[ctx.bufferIndex],
             CoreGraphics::ResourceTableBuffer(Materials::MaterialLoader::GetMaterialBindingBuffer(), Raytracetest::Table_Batch::MaterialBindings_SLOT)
         );
 
         CoreGraphics::ResourceTableSetRWBuffer(
-            state.raytracingTestTables.tables[ctx.bufferIndex],
+            state.raytracingTables.tables[ctx.bufferIndex],
             CoreGraphics::ResourceTableBuffer(state.objectBindingBuffer.DeviceBuffer(), Raytracetest::Table_Batch::ObjectBuffer_SLOT)
         );
 
-        CoreGraphics::ResourceTableCommitChanges(state.raytracingTestTables.tables[ctx.bufferIndex]);
+        CoreGraphics::ResourceTableCommitChanges(state.raytracingTables.tables[ctx.bufferIndex]);
+        CoreGraphics::ResourceTableCommitChanges(state.raytracingTestOutputTable);
     }
 }
 
@@ -775,6 +780,15 @@ CoreGraphics::BufferId
 RaytracingContext::GetObjectBindingBuffer()
 {
     return state.objectBindingBuffer.DeviceBuffer();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ResourceTableId
+RaytracingContext::GetRaytracingTable(const IndexT bufferIndex)
+{
+    return state.raytracingTables.tables[bufferIndex];
 }
 
 //------------------------------------------------------------------------------

@@ -86,6 +86,8 @@ public:
     static CoreGraphics::TlasId GetTLAS();
     /// Get object binding buffer
     static CoreGraphics::BufferId GetObjectBindingBuffer();
+    /// Get raytracing table
+    static CoreGraphics::ResourceTableId GetRaytracingTable(const IndexT bufferIndex);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering

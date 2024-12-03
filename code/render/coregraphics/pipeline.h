@@ -36,7 +36,7 @@ struct PipelineRayTracingTable
 };
 
 /// Create raytacing pipeline using multiple shader programs
-const PipelineRayTracingTable CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs);
+const PipelineRayTracingTable CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs, const CoreGraphics::QueueType queueType = CoreGraphics::QueueType::GraphicsQueueType);
 /// Destroy raytracing pipeline
 void DestroyRaytracingPipeline(const PipelineRayTracingTable& table);
 
