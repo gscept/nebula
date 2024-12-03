@@ -9,12 +9,15 @@
 #include <cstdint>
 
 #include "frame/default.h"
-#include "gi/shaders/probeupdate.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 #include "lighting/lightcontext.h"
 #include "raytracing/raytracingcontext.h"
 #include "coregraphics/shaperenderer.h"
+
+
+#include "gi/shaders/probeupdate.h"
+#include "gi/shaders/probefinalize.h"
 
 using namespace Graphics;
 
@@ -35,6 +38,9 @@ struct
     CoreGraphics::ShaderId probeUpdateShader;
     CoreGraphics::ShaderProgramId probeUpdateProgram;
     CoreGraphics::PipelineRayTracingTable pipeline;
+
+    CoreGraphics::ShaderId probeFinalizeShader;
+    CoreGraphics::ShaderProgramId probeFinalizeRadianceProgram, probeFinalizeDistanceProgram;
 
     CoreGraphics::ResourceTableSet raytracingTable;
 
@@ -87,6 +93,10 @@ DDGIContext::Create()
 
     // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
     state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram }, CoreGraphics::ComputeQueueType);
+
+    state.probeFinalizeShader = CoreGraphics::ShaderGet("shd:gi/shaders/probefinalize.fxb");
+    state.probeFinalizeRadianceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeRadiance"));
+    state.probeFinalizeDistanceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeDistance"));
 
     FrameScript_default::RegisterSubgraph_DDGIProbeUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
@@ -148,6 +158,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesY = setup.numProbesY;
     volume.numProbesZ = setup.numProbesZ;
     volume.numRaysPerProbe = setup.numRaysPerProbe;
+    volume.options = setup.options;
 
 #if NEBULA_GRAPHICS_DEBUG
     Util::String volumeName = Util::String::Sprintf("DDGIVolume_%d", ctxId.id);
@@ -167,8 +178,8 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 #if NEBULA_GRAPHICS_DEBUG
     irradianceCreateInfo.name = Util::String::Sprintf("%s Irradiance", volumeName.c_str());
 #endif
-    irradianceCreateInfo.width = setup.numProbesY * setup.numProbesZ;
-    irradianceCreateInfo.height = setup.numProbesX;
+    irradianceCreateInfo.width = setup.numProbesY * setup.numProbesZ * (Probeupdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
+    irradianceCreateInfo.height = setup.numProbesX * (Probeupdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.format = CoreGraphics::PixelFormat::R11G11B10F;
     irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.irradiance = CoreGraphics::CreateTexture(irradianceCreateInfo);
@@ -177,8 +188,8 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 #if NEBULA_GRAPHICS_DEBUG
     distanceCreateInfo.name = Util::String::Sprintf("%s Distance", volumeName.c_str());
 #endif
-    distanceCreateInfo.width = setup.numProbesY * setup.numProbesZ;
-    distanceCreateInfo.height = setup.numProbesX;
+    distanceCreateInfo.width = setup.numProbesY * setup.numProbesZ * (Probeupdate::NUM_DISTANCE_TEXELS_PER_PROBE + 2);
+    distanceCreateInfo.height = setup.numProbesX * (Probeupdate::NUM_DISTANCE_TEXELS_PER_PROBE + 2);
     distanceCreateInfo.format = CoreGraphics::PixelFormat::R16G16F;
     distanceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.distance = CoreGraphics::CreateTexture(distanceCreateInfo);
@@ -192,6 +203,16 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     offsetCreateInfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
     offsetCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.offsets = CoreGraphics::CreateTexture(offsetCreateInfo);
+
+    CoreGraphics::TextureCreateInfo statesCreateInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    statesCreateInfo.name = Util::String::Sprintf("%s States", volumeName.c_str());
+#endif
+    statesCreateInfo.width = setup.numProbesY * setup.numProbesZ;
+    statesCreateInfo.height = setup.numProbesX;
+    statesCreateInfo.format = CoreGraphics::PixelFormat::R8;
+    statesCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    volume.states = CoreGraphics::CreateTexture(statesCreateInfo);
 
     Util::FixedArray<Probeupdate::Probe> probeInitialData(setup.numProbesX * setup.numProbesY * setup.numProbesZ);
     for (uint z = 0; z < setup.numProbesZ; z++)
@@ -220,6 +241,13 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     {
         SphericalFibonacci(rayIndex, Probeupdate::NUM_FIXED_RAYS).store(volume.constants.MinimalDirections[rayIndex]);
     }
+
+    volume.constants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
+    volume.constants.ProbeDistances = CoreGraphics::TextureGetBindlessHandle(volume.distance);
+    volume.constants.ProbeOffsets = CoreGraphics::TextureGetBindlessHandle(volume.offsets);
+    volume.constants.ProbeStates = CoreGraphics::TextureGetBindlessHandle(volume.states);
+
+
 
     CoreGraphics::BufferCreateInfo probeBufferCreateInfo;
 #if NEBULA_GRAPHICS_DEBUG
@@ -292,10 +320,34 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.numRays = activeVolume.numRaysPerProbe;
             state.volumesToUpdate.Append(volumeToUpdate);
 
-            activeVolume.position.store(activeVolume.constants.Offset);
-            activeVolume.size.store(activeVolume.constants.Scale);
             Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 10.0f), 0.0f, 0.0f);
-            rotation.store(activeVolume.constants.Rotation);
+            rotation.store(activeVolume.constants.TemporalRotation);
+            activeVolume.size.store(activeVolume.constants.Scale);
+            activeVolume.position.store(activeVolume.constants.Offset);
+            activeVolume.constants.NumIrradianceTexels = Probeupdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
+            activeVolume.constants.ProbeGridDimensions[0] = activeVolume.numProbesX;
+            activeVolume.constants.ProbeGridDimensions[1] = activeVolume.numProbesY;
+            activeVolume.constants.ProbeGridDimensions[2] = activeVolume.numProbesZ;
+            activeVolume.constants.Options |= activeVolume.options.flags.relocate ? Probeupdate::RELOCATION_OPTION : 0x0;
+            activeVolume.constants.Options |= activeVolume.options.flags.scrolling ? Probeupdate::SCROLL_OPTION : 0x0;
+            activeVolume.constants.Options |= activeVolume.options.flags.classify ? Probeupdate::CLASSIFICATION_OPTION : 0x0;
+            activeVolume.constants.Options |= activeVolume.options.flags.lowPrecisionTextures ? Probeupdate::LOW_PRECISION_IRRADIANCE_OPTION : 0x0;
+            activeVolume.constants.Options |= activeVolume.options.flags.partialUpdate ? Probeupdate::PARTIAL_UPDATE_OPTION : 0x0;
+            activeVolume.constants.ProbeIndexStart = 0;
+            activeVolume.constants.ProbeIndexCount = volumeToUpdate.numProbes;
+            activeVolume.constants.ProbeScrollOffsets[0] = 0;
+            activeVolume.constants.ProbeScrollOffsets[1] = 0;
+            activeVolume.constants.ProbeScrollOffsets[2] = 0;
+            Math::quat().store(activeVolume.constants.Rotation);
+            activeVolume.constants.ProbeGridSpacing[0] = activeVolume.size[0] / activeVolume.numProbesX;
+            activeVolume.constants.ProbeGridSpacing[1] = activeVolume.size[1] / activeVolume.numProbesY;
+            activeVolume.constants.ProbeGridSpacing[2] = activeVolume.size[2] / activeVolume.numProbesZ;
+            activeVolume.constants.NumDistanceTexels = Probeupdate::NUM_DISTANCE_TEXELS_PER_PROBE;
+            activeVolume.constants.IrradianceGamma = 1.0f;
+            activeVolume.constants.NormalBias = 10.0f;
+            activeVolume.constants.ViewBias = 40.0f;
+            activeVolume.constants.IrradianceScale = 1.0f;
+
             CoreGraphics::BufferUpdate(activeVolume.volumeBuffer, activeVolume.constants);
         }
     }

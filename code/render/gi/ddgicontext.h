@@ -14,6 +14,19 @@
 namespace GI
 {
 
+union DDGIOptions
+{
+    struct
+    {
+        uint scrolling : 1;             // Infinitely scrolls based on camera position
+        uint classify : 1;              // Enables/disables probes based on hits
+        uint relocate : 1;              // Relocate probes to avoid them being stuck inside geometry
+        uint partialUpdate : 1;         // Update probes using a round-robin method
+        uint lowPrecisionTextures : 1;  // Use more compact texture formats at the expense of quality
+    } flags;
+    uint32 bits = 0x0;
+};
+
 class DDGIContext : public Graphics::GraphicsContext
 {
     __DeclareContext()
@@ -34,6 +47,8 @@ public:
         uint numRaysPerProbe;
         Math::vec3 size;
         Math::vec3 position;
+
+        DDGIOptions options;
     };
 
     /// Create volume
@@ -65,6 +80,7 @@ private:
         CoreGraphics::ResourceTableId resourceTable;
 
         Probeupdate::VolumeConstants constants;
+        DDGIOptions options;
     };
     
     typedef Ids::IdAllocator<
