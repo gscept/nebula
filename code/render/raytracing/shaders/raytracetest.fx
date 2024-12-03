@@ -6,6 +6,7 @@
 #include <lib/mie-rayleigh.fxh>
 #include <lib/pbr.fxh>
 
+group(SYSTEM_GROUP) write rgba16f image2D RaytracingOutput;
 
 //------------------------------------------------------------------------------
 /**
@@ -28,7 +29,7 @@ Raygen(
     Result.material = vec4(0, 0, 0, 0);
     Result.normal = vec3(0, 0, 0);
     Result.depth = 0;
-    Result.miss = 0;
+    Result.bits = 0x0;
 
     // Ray trace against BVH
     traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
@@ -36,7 +37,7 @@ Raygen(
     vec3 F0 = CalculateF0(Result.albedo.rgb, Result.material[MAT_METALLIC], vec3(0.04));
     vec3 WorldSpacePos = origin.xyz + direction.xyz * Result.depth;
     vec3 light = vec3(0);
-    if (Result.miss == 1)
+    if ((Result.bits & RAY_MISS_BIT) != 0)
     {
         vec3 dir = normalize(direction.xyz);
         light += CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
@@ -60,7 +61,7 @@ Miss(
     [ray_payload] in HitResult Result
 )
 {
-    Result.miss = 1;
+    Result.bits |= RAY_MISS_BIT;
 }
 
 //------------------------------------------------------------------------------

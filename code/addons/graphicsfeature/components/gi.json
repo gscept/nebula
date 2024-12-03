@@ -21,7 +21,7 @@
             },
             "numRaysPerProbe": {
                 "type": "uint",
-                "default": 188
+                "default": 188,
             }
         }
     }

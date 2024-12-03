@@ -8,6 +8,8 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include <gi/shaders/probeupdate.h>
+
 #include "graphics/graphicscontext.h"
 namespace GI
 {
@@ -57,9 +59,12 @@ private:
         Math::vec3 size;
         Math::vec3 position;
         Math::bbox boundingBox;
-        CoreGraphics::TextureId radiance, depth;
-        CoreGraphics::BufferId probeBuffer;
+        CoreGraphics::TextureId radiance; // Ray tracing output
+        CoreGraphics::TextureId irradiance, distance, offsets, states;
+        CoreGraphics::BufferId probeBuffer, volumeBuffer;
         CoreGraphics::ResourceTableId resourceTable;
+
+        Probeupdate::VolumeConstants constants;
     };
     
     typedef Ids::IdAllocator<

@@ -9,10 +9,13 @@
 #include <lib/lighting_functions.fxh>
 
 group(BATCH_GROUP) accelerationStructure TLAS;
-group(BATCH_GROUP) write rgba16f image2D RaytracingOutput;
 
 #define MESH_BINDING group(BATCH_GROUP) binding(50)
 #define OBJECT_BINDING group(BATCH_GROUP) binding(49)
+
+const uint RAY_MISS_BIT = 0x1;
+const uint RAY_BACK_FACE_BIT = 0x2;
+const uint RAY_MATERIAL_TWO_SIDED_BIT = 0x4;
 
 struct HitResult
 {
@@ -21,7 +24,7 @@ struct HitResult
     vec4 material;
     vec3 normal;
     float depth;
-    uint miss;
+    uint bits;
 };
 
 // Declare type for vertex positions and uv
