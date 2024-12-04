@@ -75,9 +75,9 @@ private:
         Math::vec3 position;
         Math::bbox boundingBox;
         CoreGraphics::TextureId radiance; // Ray tracing output
-        CoreGraphics::TextureId irradiance, distance, offsets, states;
-        CoreGraphics::BufferId probeBuffer, volumeBuffer;
-        CoreGraphics::ResourceTableId resourceTable;
+        CoreGraphics::TextureId irradiance, distance, offsets, states, scrollSpace;
+        CoreGraphics::BufferId volumeBuffer;
+        CoreGraphics::ResourceTableId updateProbesTable, finalizeProbesTable;
 
         Probeupdate::VolumeConstants constants;
         DDGIOptions options;

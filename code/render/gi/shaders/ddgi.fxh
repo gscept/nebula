@@ -44,6 +44,9 @@ DDGIProbeTexelPosition(int probeIndex, ivec3 probeGridCounts)
     return ivec2(probeIndex % (probeGridCounts.x * probeGridCounts.y), probeIndex / (probeGridCounts.x * probeGridCounts.y));
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 int 
 DDGIProbesPerPlane(ivec3 probeGridCounts)
 {
@@ -208,6 +211,52 @@ vec3
 DDGISurfaceBias(vec3 normal, vec3 cameraDirection, float normalBias, float viewBias)
 {
     return (normal * normalBias) + (-cameraDirection * viewBias);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uvec2
+DDGIThreadBaseCoord(int probeIndex, ivec3 probeGridCounts, int probeNumTexels)
+{
+    int probesPerPlane = DDGIProbesPerPlane(probeGridCounts);
+    int planeIndex = probeIndex / probesPerPlane;
+    int probeIndexInPlane = probeIndex % probesPerPlane;
+    
+    int planeWidthInProbes = probeGridCounts.x;
+    
+    ivec2 probeCoordInPlane = ivec2(probeIndexInPlane % planeWidthInProbes, probeIndexInPlane / planeWidthInProbes);
+    int baseCoordX = (planeWidthInProbes * planeIndex + probeCoordInPlane.x) * probeNumTexels;
+    int baseCoordY = probeCoordInPlane.y * probeNumTexels;
+    return uvec2(baseCoordX, baseCoordY);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec2 
+DDGINormalizedOctahedralCoordinates(ivec2 threadCoords, int numTexels)
+{
+    vec2 octahedralTexelCoord = vec2(threadCoords.x % numTexels, threadCoords.y % numTexels);
+    octahedralTexelCoord.xy += 0.5f;
+    octahedralTexelCoord.xy /= float(numTexels);
+    octahedralTexelCoord *= 2.0f;
+    octahedralTexelCoord -= vec2(1.0f);
+    return octahedralTexelCoord;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+DDGIOctahedralDirection(vec2 coords)
+{
+    vec3 direction = vec3(coords.x, coords.y, 1.0f - abs(coords.x) - abs(coords.y));
+    if (direction.z < 0.0f)
+    {
+        direction.xy = (1.0f - abs(direction.yx)) * DDGISignNotZero(direction.xy);
+    }
+    return normalize(direction);
 }
 
 //------------------------------------------------------------------------------

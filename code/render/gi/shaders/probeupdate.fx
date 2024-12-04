@@ -15,16 +15,6 @@ group(SYSTEM_GROUP) write rg32f image2D RadianceOutput;
 const uint NumColorSamples = 16;
 const uint NumDepthSamples = 8;
 
-struct Probe
-{
-    vec3 position;
-};
-
-group(SYSTEM_GROUP) rw_buffer ProbeBuffer
-{
-    Probe Probes[];
-};
-
 group(SYSTEM_GROUP) constant VolumeConstants
 {
     mat4x4 TemporalRotation;
@@ -50,6 +40,7 @@ group(SYSTEM_GROUP) constant VolumeConstants
     uint ProbeDistances;
     uint ProbeOffsets;
     uint ProbeStates;
+    uint ProbeScrollSpace;
 };
 
 //------------------------------------------------------------------------------
@@ -142,7 +133,6 @@ RayGen(
     int rayIndex = int(gl_LaunchIDEXT.x);
     int probeIndex = int(gl_LaunchIDEXT.y);
 
-    Probe probe = Probes[probeIndex];
     vec3 direction = normalize((vec4(Directions[rayIndex], 0) * Rotation).xyz);
     
     int storageProbeIndex;
