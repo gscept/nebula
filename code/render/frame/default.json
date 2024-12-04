@@ -247,6 +247,11 @@
                         "subgraph": {
                             "name": "DDGI Probe Update"
                         } 
+                    },
+                    {
+                        "subgraph": {
+                            "name": "DDGI Probe Finalize"
+                        }
                     }
                 ]
             },
