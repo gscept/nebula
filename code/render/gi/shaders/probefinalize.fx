@@ -13,6 +13,7 @@ group(SYSTEM_GROUP) read_write r8 image2D ScrollSpaceOutput;
 group(SYSTEM_GROUP) constant FinalizeConstants
 {
     uint Options;
+    vec3 Directions[1024];
     uint RaysPerProbe;
     ivec3 ProbeGridDimensions;
     int ProbeIndexStart;
@@ -24,6 +25,7 @@ group(SYSTEM_GROUP) constant FinalizeConstants
     float NormalBias;
     float ViewBias;
     float IrradianceScale;
+    float DistanceExponent;
     
     
     uint ProbeIrradiance;
@@ -147,10 +149,51 @@ ProbeFinalizeRadiance()
             vec2 value = fetch2D(ProbeIrradiance, Basic2DSampler, ivec2(rayIndex, probeIndex), 0).xy;
             Radiance[rayIndex] = UnpackUIntToFloat3(floatBitsToUint(value.x));
             Distance[rayIndex] = value.y;
-            Direction[rayIndex] = 
+            Direction[rayIndex] = Directions[rayIndex];
         }
     }
     
+    groupMemoryBarrier();
+    
+    if (earlyOut)
+    {
+        return;
+    }
+    
+    uint backfaces = 0;
+    uint maxBackfaces = RaysPerProbe * 0.1f;
+    int rayIndex = 0;
+    if ((Options & CLASSIFICATION_OPTION | RELOCATION_OPTION) == CLASSIFICATION_OPTION | RELOCATION_OPTION)
+    {
+        rayIndex = NUM_FIXED_RAYS;
+    }
+    
+    for (; rayIndex < RaysPerProbe; rayIndex++)
+    {
+        vec3 rayDirection = Direction[rayIndex];
+        float weight = max(0.0f, dot(probeRayDirection, rayDirection));
+        ivec2 probeRayIndex = ivec2(rayIndex, probeIndex);
+        
+        vec3 probeRayRadiance = Radiance[rayIndex];
+        float probeRayDistance = Distance[rayIndex];
+        
+        if (probeRayDistance < 0.0f)
+        {
+            backfaces++;
+            if (backfaces >= maxBackfaces)
+                return;
+            continue;
+        }
+        
+        result += vec4(probeRayRadiance * weight, weight);
+        
+        float probeMaxRayDistance = length(ProbeGridSpacing) * 1.5f;
+        weight = pow(weight, DistanceExponent);
+        
+        float probeRayDistance = min(abs(Distance[rayIndex]), probeMaxRayDistance);
+        
+        result += vec4(probeRayDistance * weight, (probeRayDistance * probeRayDistance), 0.0f, weight);
+    }
 }
 
 //------------------------------------------------------------------------------
