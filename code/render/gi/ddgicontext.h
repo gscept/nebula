@@ -8,6 +8,7 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include <gi/shaders/probefinalize.h>
 #include <gi/shaders/probeupdate.h>
 
 #include "graphics/graphicscontext.h"
@@ -48,6 +49,15 @@ public:
         Math::vec3 size;
         Math::vec3 position;
 
+        float normalBias = 10.0f;
+        float viewBias = 40.0f;
+        float irradianceScale = 1.0f;
+        float distanceExponent = 50.0f;
+        float encodingGamma = 5.0f;
+        float changeThreshold = 0.2f;
+        float brightnessThreshold = 2.0f;
+        float hysteresis = 0.97f;
+
         DDGIOptions options;
     };
 
@@ -76,10 +86,20 @@ private:
         Math::bbox boundingBox;
         CoreGraphics::TextureId radiance; // Ray tracing output
         CoreGraphics::TextureId irradiance, distance, offsets, states, scrollSpace;
-        CoreGraphics::BufferId volumeBuffer;
-        CoreGraphics::ResourceTableId updateProbesTable, finalizeProbesTable;
+        CoreGraphics::BufferId volumeUpdateBuffer, volumeBlendBuffer;
+        CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable;
 
-        Probeupdate::VolumeConstants constants;
+        float normalBias = 10.0f;
+        float viewBias = 40.0f;
+        float irradianceScale = 1.0f;
+        float distanceExponent = 50.0f;
+        float encodingGamma = 5.0f;
+        float changeThreshold = 0.2f;
+        float brightnessThreshold = 2.0f;
+        float hysteresis = 0.97f;
+        
+        Probeupdate::VolumeConstants updateConstants;
+        Probefinalize::BlendConstants blendConstants;
         DDGIOptions options;
     };
     
