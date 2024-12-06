@@ -30,6 +30,15 @@ struct UpdateVolume
 {
     uint probeCounts[3];
     uint numRays;
+    struct
+    {
+        CoreGraphics::TextureId radianceDistanceTexture;
+    } probeUpdateOutputs;
+
+    struct
+    {
+        CoreGraphics::TextureId irradianceTexture, distanceTexture, scrollSpaceTexture;
+    } volumeBlendOutputs;
     CoreGraphics::ResourceTableId updateProbesTable, finalizeProbesTable;
 };
 
@@ -120,12 +129,30 @@ DDGIContext::Create()
     {
         if (!state.volumesToUpdate.IsEmpty())
         {
+            Util::FixedArray<CoreGraphics::TextureBarrierInfo, true> radianceDistanceTextures(state.volumesToUpdate.Size());
+            Util::FixedArray<CoreGraphics::TextureBarrierInfo, true> volumeBlendTextures(state.volumesToUpdate.Size() * 3);
+
+            uint it = 0;
+            for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
+            {
+                radianceDistanceTextures[it] = CoreGraphics::TextureBarrierInfo{ .tex = volumeToUpdate.probeUpdateOutputs.radianceDistanceTexture, .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer() };
+                volumeBlendTextures[it * 3] = CoreGraphics::TextureBarrierInfo{ .tex =  volumeToUpdate.volumeBlendOutputs.irradianceTexture, .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()};
+                volumeBlendTextures[it * 3 + 1] = CoreGraphics::TextureBarrierInfo{ .tex =  volumeToUpdate.volumeBlendOutputs.distanceTexture, .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()};
+                volumeBlendTextures[it * 3 + 2] = CoreGraphics::TextureBarrierInfo{ .tex =  volumeToUpdate.volumeBlendOutputs.scrollSpaceTexture, .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()};
+            }
+
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, radianceDistanceTextures);
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
+
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeFinalizeRadianceProgram);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.finalizeProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], volumeToUpdate.probeCounts[0], 1);
             }
+
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::BarrierDomain::Global, radianceDistanceTextures);
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
         }
     });
 
@@ -164,6 +191,8 @@ DDGIContext::Discard()
 void
 DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup& setup)
 {
+    n_assert_msg(setup.numRaysPerProbe < 1024, "Maximum allowed number of rays per probe is 1024");
+
     ContextEntityId ctxId = GetContextId(id);
     Volume& volume = ddgiVolumeAllocator.Get<0>(ctxId.id);
     volume.boundingBox.set(setup.position, setup.size * Math::vec3(0.5f));
@@ -174,6 +203,15 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesZ = setup.numProbesZ;
     volume.numRaysPerProbe = setup.numRaysPerProbe;
     volume.options = setup.options;
+
+    volume.normalBias = setup.normalBias;
+    volume.viewBias = setup.viewBias;
+    volume.irradianceScale = setup.irradianceScale;
+    volume.distanceExponent = setup.distanceExponent;
+    volume.encodingGamma = setup.encodingGamma;
+    volume.changeThreshold = setup.changeThreshold;
+    volume.brightnessThreshold = setup.brightnessThreshold;
+    volume.hysteresis = setup.hysteresis;
 
 #if NEBULA_GRAPHICS_DEBUG
     Util::String volumeName = Util::String::Sprintf("DDGIVolume_%d", ctxId.id);
@@ -242,40 +280,56 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     n_assert(setup.numRaysPerProbe < 1024);
     for (uint rayIndex = 0; rayIndex < setup.numRaysPerProbe; rayIndex++)
     {
-        SphericalFibonacci(rayIndex, setup.numRaysPerProbe).store(volume.constants.Directions[rayIndex]);
+        SphericalFibonacci(rayIndex, setup.numRaysPerProbe).store(volume.updateConstants.Directions[rayIndex]);
     }
+    memcpy(volume.blendConstants.Directions, volume.updateConstants.Directions, sizeof(volume.updateConstants.Directions));
 
     // Store another set of minimal ray directions for probe activity updates
     for (uint rayIndex = 0; rayIndex < Probeupdate::NUM_FIXED_RAYS; rayIndex++)
     {
-        SphericalFibonacci(rayIndex, Probeupdate::NUM_FIXED_RAYS).store(volume.constants.MinimalDirections[rayIndex]);
+        SphericalFibonacci(rayIndex, Probeupdate::NUM_FIXED_RAYS).store(volume.updateConstants.MinimalDirections[rayIndex]);
     }
 
-    volume.constants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
-    volume.constants.ProbeDistances = CoreGraphics::TextureGetBindlessHandle(volume.distance);
-    volume.constants.ProbeOffsets = CoreGraphics::TextureGetBindlessHandle(volume.offsets);
-    volume.constants.ProbeStates = CoreGraphics::TextureGetBindlessHandle(volume.states);
-    volume.constants.ProbeScrollSpace = CoreGraphics::TextureGetBindlessHandle(volume.scrollSpace);
+    volume.updateConstants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
+    volume.updateConstants.ProbeDistances = CoreGraphics::TextureGetBindlessHandle(volume.distance);
+    volume.updateConstants.ProbeOffsets = CoreGraphics::TextureGetBindlessHandle(volume.offsets);
+    volume.updateConstants.ProbeStates = CoreGraphics::TextureGetBindlessHandle(volume.states);
+    volume.updateConstants.ProbeScrollSpace = CoreGraphics::TextureGetBindlessHandle(volume.scrollSpace);
 
-    CoreGraphics::BufferCreateInfo probeVolumeBufferInfo;
+    volume.blendConstants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
+    volume.blendConstants.ProbeDistances = CoreGraphics::TextureGetBindlessHandle(volume.distance);
+    volume.blendConstants.ProbeOffsets = CoreGraphics::TextureGetBindlessHandle(volume.offsets);
+    volume.blendConstants.ProbeStates = CoreGraphics::TextureGetBindlessHandle(volume.states);
+
+    CoreGraphics::BufferCreateInfo probeVolumeUpdateBufferInfo;
 #if NEBULA_GRAPHICS_DEBUG
-    probeVolumeBufferInfo.name = Util::String::Sprintf("%s Volume", volumeName.c_str());
+    probeVolumeUpdateBufferInfo.name = Util::String::Sprintf("%s Volume Update Constants", volumeName.c_str());
 #endif
-    probeVolumeBufferInfo.byteSize = sizeof(Probeupdate::VolumeConstants);
-    probeVolumeBufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
-    probeVolumeBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
-    volume.volumeBuffer = CoreGraphics::CreateBuffer(probeVolumeBufferInfo);
+    probeVolumeUpdateBufferInfo.byteSize = sizeof(Probeupdate::VolumeConstants);
+    probeVolumeUpdateBufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    probeVolumeUpdateBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
+    volume.volumeUpdateBuffer = CoreGraphics::CreateBuffer(probeVolumeUpdateBufferInfo);
+
+    CoreGraphics::BufferCreateInfo probeVolumeBlendBufferInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    probeVolumeBlendBufferInfo.name = Util::String::Sprintf("%s Volume Blend Constants", volumeName.c_str());
+#endif
+    probeVolumeBlendBufferInfo.byteSize = sizeof(Probefinalize::BlendConstants);
+    probeVolumeBlendBufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    probeVolumeBlendBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
+    volume.volumeBlendBuffer = CoreGraphics::CreateBuffer(probeVolumeBlendBufferInfo);
 
     volume.updateProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probeUpdateShader, NEBULA_SYSTEM_GROUP, 1);
     CoreGraphics::ResourceTableSetRWTexture(volume.updateProbesTable, CoreGraphics::ResourceTableTexture(volume.radiance, Probeupdate::Table_System::RadianceOutput_SLOT));
-    CoreGraphics::ResourceTableSetConstantBuffer(volume.updateProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeBuffer, Probeupdate::Table_System::VolumeConstants_SLOT));
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.updateProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeUpdateBuffer, Probeupdate::Table_System::VolumeConstants_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.updateProbesTable);
 
-    volume.finalizeProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probeFinalizeShader, NEBULA_SYSTEM_GROUP, 1);
-    CoreGraphics::ResourceTableSetRWTexture(volume.finalizeProbesTable, CoreGraphics::ResourceTableTexture(volume.irradiance, Probefinalize::Table_System::IrradianceOutput_SLOT));
-    CoreGraphics::ResourceTableSetRWTexture(volume.finalizeProbesTable, CoreGraphics::ResourceTableTexture(volume.distance, Probefinalize::Table_System::DistanceOutput_SLOT));
-    CoreGraphics::ResourceTableSetRWTexture(volume.finalizeProbesTable, CoreGraphics::ResourceTableTexture(volume.scrollSpace, Probefinalize::Table_System::ScrollSpaceOutput_SLOT));
-    CoreGraphics::ResourceTableCommitChanges(volume.finalizeProbesTable);
+    volume.blendProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probeFinalizeShader, NEBULA_SYSTEM_GROUP, 1);
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.blendProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeUpdateBuffer, Probefinalize::Table_System::BlendConstants_SLOT));
+    CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.irradiance, Probefinalize::Table_System::IrradianceOutput_SLOT));
+    CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.distance, Probefinalize::Table_System::DistanceOutput_SLOT));
+    CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.scrollSpace, Probefinalize::Table_System::ScrollSpaceOutput_SLOT));
+    CoreGraphics::ResourceTableCommitChanges(volume.blendProbesTable);
     //CoreGraphics::ResourceTableSetConstantBuffer(volume.finalizeProbesTable)
 }
 
@@ -323,37 +377,59 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.probeCounts[1] = activeVolume.numProbesY;
             volumeToUpdate.probeCounts[2] = activeVolume.numProbesZ;
             volumeToUpdate.numRays = activeVolume.numRaysPerProbe;
+            volumeToUpdate.probeUpdateOutputs.radianceDistanceTexture = activeVolume.radiance;
+            volumeToUpdate.volumeBlendOutputs.irradianceTexture = activeVolume.irradiance;
+            volumeToUpdate.volumeBlendOutputs.distanceTexture = activeVolume.distance;
+            volumeToUpdate.volumeBlendOutputs.scrollSpaceTexture = activeVolume.scrollSpace;
             state.volumesToUpdate.Append(volumeToUpdate);
 
             Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 10.0f), 0.0f, 0.0f);
-            rotation.store(activeVolume.constants.TemporalRotation);
-            activeVolume.size.store(activeVolume.constants.Scale);
-            activeVolume.position.store(activeVolume.constants.Offset);
-            activeVolume.constants.NumIrradianceTexels = Probeupdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
-            activeVolume.constants.ProbeGridDimensions[0] = activeVolume.numProbesX;
-            activeVolume.constants.ProbeGridDimensions[1] = activeVolume.numProbesY;
-            activeVolume.constants.ProbeGridDimensions[2] = activeVolume.numProbesZ;
-            activeVolume.constants.Options |= activeVolume.options.flags.relocate ? Probeupdate::RELOCATION_OPTION : 0x0;
-            activeVolume.constants.Options |= activeVolume.options.flags.scrolling ? Probeupdate::SCROLL_OPTION : 0x0;
-            activeVolume.constants.Options |= activeVolume.options.flags.classify ? Probeupdate::CLASSIFICATION_OPTION : 0x0;
-            activeVolume.constants.Options |= activeVolume.options.flags.lowPrecisionTextures ? Probeupdate::LOW_PRECISION_IRRADIANCE_OPTION : 0x0;
-            activeVolume.constants.Options |= activeVolume.options.flags.partialUpdate ? Probeupdate::PARTIAL_UPDATE_OPTION : 0x0;
-            activeVolume.constants.ProbeIndexStart = 0;
-            activeVolume.constants.ProbeIndexCount = volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
-            activeVolume.constants.ProbeScrollOffsets[0] = 0;
-            activeVolume.constants.ProbeScrollOffsets[1] = 0;
-            activeVolume.constants.ProbeScrollOffsets[2] = 0;
-            Math::quat().store(activeVolume.constants.Rotation);
-            activeVolume.constants.ProbeGridSpacing[0] = activeVolume.size[0] / activeVolume.numProbesX;
-            activeVolume.constants.ProbeGridSpacing[1] = activeVolume.size[1] / activeVolume.numProbesY;
-            activeVolume.constants.ProbeGridSpacing[2] = activeVolume.size[2] / activeVolume.numProbesZ;
-            activeVolume.constants.NumDistanceTexels = Probeupdate::NUM_DISTANCE_TEXELS_PER_PROBE;
-            activeVolume.constants.IrradianceGamma = 1.0f;
-            activeVolume.constants.NormalBias = 10.0f;
-            activeVolume.constants.ViewBias = 40.0f;
-            activeVolume.constants.IrradianceScale = 1.0f;
+            rotation.store(activeVolume.updateConstants.TemporalRotation);
+            activeVolume.size.store(activeVolume.updateConstants.Scale);
+            activeVolume.position.store(activeVolume.updateConstants.Offset);
+            activeVolume.updateConstants.NumIrradianceTexels = Probeupdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
+            activeVolume.updateConstants.ProbeGridDimensions[0] = activeVolume.numProbesX;
+            activeVolume.updateConstants.ProbeGridDimensions[1] = activeVolume.numProbesY;
+            activeVolume.updateConstants.ProbeGridDimensions[2] = activeVolume.numProbesZ;
+            activeVolume.updateConstants.Options |= activeVolume.options.flags.relocate ? Probeupdate::RELOCATION_OPTION : 0x0;
+            activeVolume.updateConstants.Options |= activeVolume.options.flags.scrolling ? Probeupdate::SCROLL_OPTION : 0x0;
+            activeVolume.updateConstants.Options |= activeVolume.options.flags.classify ? Probeupdate::CLASSIFICATION_OPTION : 0x0;
+            activeVolume.updateConstants.Options |= activeVolume.options.flags.lowPrecisionTextures ? Probeupdate::LOW_PRECISION_IRRADIANCE_OPTION : 0x0;
+            activeVolume.updateConstants.Options |= activeVolume.options.flags.partialUpdate ? Probeupdate::PARTIAL_UPDATE_OPTION : 0x0;
+            activeVolume.updateConstants.ProbeIndexStart = 0;
+            activeVolume.updateConstants.ProbeIndexCount = volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+            activeVolume.updateConstants.ProbeScrollOffsets[0] = 0;
+            activeVolume.updateConstants.ProbeScrollOffsets[1] = 0;
+            activeVolume.updateConstants.ProbeScrollOffsets[2] = 0;
+            Math::quat().store(activeVolume.updateConstants.Rotation);
+            activeVolume.updateConstants.ProbeGridSpacing[0] = activeVolume.size[0] / activeVolume.numProbesX;
+            activeVolume.updateConstants.ProbeGridSpacing[1] = activeVolume.size[1] / activeVolume.numProbesY;
+            activeVolume.updateConstants.ProbeGridSpacing[2] = activeVolume.size[2] / activeVolume.numProbesZ;
+            activeVolume.updateConstants.NumDistanceTexels = Probeupdate::NUM_DISTANCE_TEXELS_PER_PROBE;
+            activeVolume.updateConstants.IrradianceGamma = activeVolume.encodingGamma;
+            activeVolume.updateConstants.NormalBias = activeVolume.normalBias;
+            activeVolume.updateConstants.ViewBias = activeVolume.viewBias;
+            activeVolume.updateConstants.IrradianceScale = activeVolume.irradianceScale;
 
-            CoreGraphics::BufferUpdate(activeVolume.volumeBuffer, activeVolume.constants);
+            activeVolume.blendConstants.Options = activeVolume.updateConstants.Options;
+            activeVolume.blendConstants.RaysPerProbe = activeVolume.numRaysPerProbe;
+            memcpy(activeVolume.blendConstants.ProbeGridDimensions, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
+            activeVolume.blendConstants.ProbeIndexStart = activeVolume.updateConstants.ProbeIndexStart;
+            memcpy(activeVolume.blendConstants.ProbeScrollOffsets, activeVolume.updateConstants.ProbeScrollOffsets, sizeof(activeVolume.blendConstants.ProbeScrollOffsets));
+            activeVolume.blendConstants.ProbeIndexCount = activeVolume.updateConstants.ProbeIndexCount;
+            memcpy(activeVolume.blendConstants.ProbeGridSpacing, activeVolume.updateConstants.ProbeGridSpacing, sizeof(activeVolume.blendConstants.ProbeGridSpacing));
+            activeVolume.blendConstants.InverseGammaEncoding = 1.0f / activeVolume.updateConstants.IrradianceGamma;
+            activeVolume.blendConstants.Hysteresis = activeVolume.hysteresis;
+            activeVolume.blendConstants.NormalBias = activeVolume.normalBias;
+            activeVolume.blendConstants.ViewBias = activeVolume.viewBias;
+
+            activeVolume.blendConstants.IrradianceScale = activeVolume.irradianceScale;
+            activeVolume.blendConstants.DistanceExponent = activeVolume.distanceExponent;
+            activeVolume.blendConstants.ChangeThreshold = activeVolume.changeThreshold;
+            activeVolume.blendConstants.BrightnessThreshold = activeVolume.brightnessThreshold;
+
+            CoreGraphics::BufferUpdate(activeVolume.volumeUpdateBuffer, activeVolume.updateConstants);
+            CoreGraphics::BufferUpdate(activeVolume.volumeBlendBuffer, activeVolume.blendConstants);
         }
     }
 
@@ -407,8 +483,10 @@ DDGIContext::Dealloc(Graphics::ContextEntityId id)
     CoreGraphics::DestroyTexture(volume.offsets);
     CoreGraphics::DestroyTexture(volume.states);
     CoreGraphics::DestroyTexture(volume.scrollSpace);
+    CoreGraphics::DestroyBuffer(volume.volumeUpdateBuffer);
+    CoreGraphics::DestroyBuffer(volume.volumeBlendBuffer);
     CoreGraphics::DestroyResourceTable(volume.updateProbesTable);
-    CoreGraphics::DestroyResourceTable(volume.finalizeProbesTable);
+    CoreGraphics::DestroyResourceTable(volume.blendProbesTable);
     ddgiVolumeAllocator.Dealloc(id.id);
 }
 

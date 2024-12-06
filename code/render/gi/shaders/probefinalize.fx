@@ -10,24 +10,23 @@ group(SYSTEM_GROUP) read_write r11g11b10f image2D IrradianceOutput;
 group(SYSTEM_GROUP) read_write rg16f image2D DistanceOutput;
 group(SYSTEM_GROUP) read_write r8 image2D ScrollSpaceOutput;
 
-group(SYSTEM_GROUP) constant FinalizeConstants
+group(SYSTEM_GROUP) constant BlendConstants
 {
     vec3 Directions[1024];
     uint Options;
-    ivec3 ProbeGridDimensions;
     uint RaysPerProbe;
-    ivec3 ProbeScrollOffsets;
+    ivec3 ProbeGridDimensions;
     int ProbeIndexStart;
-    ivec3 ProbeGridSpacing;
+    ivec3 ProbeScrollOffsets;
     int ProbeIndexCount;
+    ivec3 ProbeGridSpacing;
     
-    float IrradianceGamma;
+    float InverseGammaEncoding;
     float Hysteresis;
     float NormalBias;
     float ViewBias;
     
     float IrradianceScale;
-    float InverseGammaEncoding;
     float DistanceExponent;
     float ChangeThreshold;
     float BrightnessThreshold;
