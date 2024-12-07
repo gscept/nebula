@@ -28,14 +28,14 @@ namespace Game
 class ComponentInspection
 {
 public:
-    using DrawFunc = void(*)(Game::ComponentId, void*, bool*);
+    using DrawFunc = void(*)(Game::Entity, Game::ComponentId, void*, bool*);
     
     static ComponentInspection* Instance();
     static void Destroy();
 
     static void Register(ComponentId component, DrawFunc);
 
-    static void DrawInspector(ComponentId component, void* data, bool* commit);
+    static void DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit);
 
     // set to true if you want full information to be displayed in the inspector
     bool debug = false;
@@ -51,18 +51,18 @@ private:
 
 template<typename TYPE>
 inline void
-ComponentDrawFuncT(ComponentId component, void* data, bool* commit);
+ComponentDrawFuncT(Game::Entity owner, ComponentId component, void* data, bool* commit);
 
 template<typename TYPE, std::size_t i = 0>
 inline void
-InspectorDrawField(ComponentId component, void* data, bool* commit)
+InspectorDrawField(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     if constexpr (i < TYPE::Traits::num_fields)
     {
         if (TYPE::Traits::field_hide_in_inspector[i] && !ComponentInspection::Instance()->debug)
         {
             // Just move to the next field
-            InspectorDrawField<TYPE, i + 1>(component, data, commit);
+            InspectorDrawField<TYPE, i + 1>(owner, component, data, commit);
         }
         else
         {
@@ -87,12 +87,12 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
                 }
             }
             ImGui::TableSetColumnIndex(1);
-            ComponentDrawFuncT<field_type>(component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
+            ComponentDrawFuncT<field_type>(owner, component, (byte*)data + TYPE::Traits::field_byte_offsets[i], commit);
 
             if constexpr (i < TYPE::Traits::num_fields - 1)
             {
                 ImGui::TableNextRow();
-                InspectorDrawField<TYPE, i + 1>(component, data, commit);
+                InspectorDrawField<TYPE, i + 1>(owner, component, data, commit);
             }
         }
     }
@@ -103,33 +103,33 @@ InspectorDrawField(ComponentId component, void* data, bool* commit)
 */
 template<typename TYPE>
 inline void
-ComponentDrawFuncT(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     if constexpr (requires { &TYPE::Traits::num_fields; })
     {
         if constexpr (TYPE::Traits::num_fields > 0 && !std::is_enum<TYPE>())
         {
-            InspectorDrawField<TYPE>(component, data, commit);
+            InspectorDrawField<TYPE>(owner, component, data, commit);
         }
     }
     return;
 }
 
-template<> void ComponentDrawFuncT<Game::Entity>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<bool>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<int>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<int64>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<uint>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<uint64>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<float>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Util::StringAtom>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Math::mat4>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Math::vec3>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Math::vec4>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Math::quat>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Game::Position>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Game::Orientation>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Game::Scale>(ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<Util::Color>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Game::Entity>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<bool>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int64>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint64>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<float>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::StringAtom>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::mat4>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::vec3>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::vec4>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::quat>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Game::Position>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Game::Orientation>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Game::Scale>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::Color>(Game::Entity, ComponentId, void*, bool*);
 
 } // namespace Game

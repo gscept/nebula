@@ -59,5 +59,5 @@ private:
 namespace Game
 {
 template <>
-void ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(ComponentId, void*, bool*);
+void ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(Game::Entity, ComponentId, void*, bool*);
 }

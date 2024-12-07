@@ -1596,9 +1596,9 @@ World::RenderDebug()
     {
         for (uint entityIndex = 0; entityIndex < this->entityMap.Size(); entityIndex++)
         {
-            Game::EntityMapping entity = this->entityMap[entityIndex];
-
-            if (!listInactive && (entity.table == MemDb::InvalidTableId || entity.instance == MemDb::InvalidRow))
+            Game::EntityMapping entityMapping = this->entityMap[entityIndex];
+            
+            if (!listInactive && (entityMapping.table == MemDb::InvalidTableId || entityMapping.instance == MemDb::InvalidRow))
                 continue;
 
             ImGui::BeginGroup();
@@ -1607,20 +1607,20 @@ World::RenderDebug()
             ImGui::TextColored(
                 {1, 0.3f, 0, 1},
                 "tid:%i, partition: %i, index: %i",
-                entity.table,
-                entity.instance.partition,
-                entity.instance.index
+                entityMapping.table,
+                entityMapping.instance.partition,
+                entityMapping.instance.index
             );
-            if (entity.table != MemDb::TableId::Invalid())
+            if (entityMapping.table != MemDb::TableId::Invalid())
             {
-                ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());
+                ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
                 ImGui::EndGroup();
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::BeginTooltip();
-                    ImGui::TextDisabled("- %s", this->db->GetTable(entity.table).name.Value());
-                    MemDb::TableId const table = entity.table;
-                    MemDb::RowId const row = entity.instance;
+                    ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
+                    MemDb::TableId const table = entityMapping.table;
+                    MemDb::RowId const row = entityMapping.instance;
 
                     bool prevDebugState = Game::ComponentInspection::Instance()->debug;
                     Game::ComponentInspection::Instance()->debug = true;
@@ -1644,6 +1644,10 @@ World::RenderDebug()
                         void* data = this->GetInstanceBuffer(table, row.partition, component);
                         data = (byte*)data + (row.index * typeSize);
 
+                        void* ownerBuffer = this->GetInstanceBuffer(table, row.partition, Game::Entity::Traits::fixed_column_index);
+                        ownerBuffer = (byte*)data + (row.index * sizeof(Game::Entity));
+                        Game::Entity owner = *(Game::Entity*)ownerBuffer;
+
                         const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders |
                                                       ImGuiTableFlags_RowBg | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
                         ImGui::PushID(row.index + 0xF23);
@@ -1654,7 +1658,8 @@ World::RenderDebug()
 
                             ImGui::TableNextRow();
                             bool commitChange = false;
-                            Game::ComponentInspection::DrawInspector(component, data, &commitChange);
+                            
+                            Game::ComponentInspection::DrawInspector(owner, component, data, &commitChange);
                             ImGui::EndTable();
                             ImGui::Spacing();
                             ImGui::Spacing();

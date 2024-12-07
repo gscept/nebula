@@ -135,7 +135,8 @@ LevelExporter::ExportLevel(const Ptr<IO::JsonReader>& reader, Game::World* world
 {
     Ptr<BaseGameFeature::LevelParser> parser = BaseGameFeature::LevelParser::Create();
     parser->SetWorld(world);
-    if (parser->LoadJsonLevel(reader))
+    Util::Array<Game::Entity> entities = parser->LoadJsonLevel(reader);
+    if (!entities.IsEmpty())
     {
         world->ExportLevel(outputFile.GetHostAndLocalPath());
         return true;

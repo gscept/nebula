@@ -42,7 +42,7 @@ LevelParser::SetWorld(Game::World* world)
 //------------------------------------------------------------------------------
 /**
 */
-bool 
+Util::Array<Game::Entity>
 LevelParser::LoadJsonLevel(const Ptr<IO::JsonReader> & reader)
 {
     this->BeginLoad();
@@ -55,10 +55,10 @@ LevelParser::LoadJsonLevel(const Ptr<IO::JsonReader> & reader)
         if (levelversion != 100)
         {
             n_warning("Unsupport level version!");
-            return false;
+            return {};
         }
 
-
+        // Now read all entities that exists in this scene
         reader->SetToFirstChild("entities");
         
         this->invalidAttrs.Clear();
@@ -68,9 +68,20 @@ LevelParser::LoadJsonLevel(const Ptr<IO::JsonReader> & reader)
         reader->SetToFirstChild();
         do 
         {
-            Game::Entity entity = this->LoadEntity(reader);
-            if (entity != Game::Entity::Invalid())
-                entities.Append(entity);
+            if (reader->HasAttr("sub_scene"))
+            {
+                // 1. Load subscene consisting of multiple entities.
+                // 2. Group them in editor
+                //    Maybe this can be made with a sort of hierarchical "Transform" component (changes to this entitys transform is propagated to it's children, and the children needs to have a "parent" component, consisting of local pos, rot, scale and a parent ID)
+                // 3. Tie them to the scene resource, so that if the resource is
+                //    updated, the entities are as well
+            }
+            else // regular entity, just load normally
+            {
+                Game::Entity entity = this->LoadEntity(reader);
+                if (entity != Game::Entity::Invalid())
+                    entities.Append(entity);
+            }
 
         }
         while(reader->SetToNextChild());
@@ -106,9 +117,10 @@ LevelParser::LoadJsonLevel(const Ptr<IO::JsonReader> & reader)
 
         this->CommitLevel();
         
-        return true;
+        return entities;
     }
-    return false;
+
+    return Util::Array<Game::Entity>();
 }
 
 //------------------------------------------------------------------------------

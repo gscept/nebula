@@ -546,7 +546,7 @@ IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const
 */
 template <>
 void
-Game::ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(Game::ComponentId component, void* data, bool* commit)
+Game::ComponentDrawFuncT<GraphicsFeature::AreaLightShape>(Game::Entity, Game::ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     static const char* items[] {"Disk", "Rectangle", "Tube"};
