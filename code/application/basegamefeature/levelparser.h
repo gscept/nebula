@@ -58,7 +58,7 @@ public:
     void SetWorld(Game::World* world);
 
     /// Loads a level from a json file in work:levels.
-    bool LoadJsonLevel(const Ptr<IO::JsonReader> & reader);
+    Util::Array<Game::Entity> LoadJsonLevel(const Ptr<IO::JsonReader>& reader);
 
 protected:
     /// parse a single object

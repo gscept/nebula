@@ -182,7 +182,7 @@ Inspector::Run(SaveMode save)
 
             //ImGui::TableHeadersRow();
             ImGui::TableNextRow();
-            Game::ComponentInspection::DrawInspector(component, tempComponent.buffer, &commitChange);
+            Game::ComponentInspection::DrawInspector(entity, component, tempComponent.buffer, &commitChange);
             ImGui::EndTable();
             ImGui::Spacing();
             ImGui::Spacing();

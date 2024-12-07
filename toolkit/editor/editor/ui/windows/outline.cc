@@ -135,41 +135,14 @@ Outline::Run(SaveMode save)
                     float const xPos = ImGui::GetCursorPosX();
                     float const yPos = ImGui::GetCursorPosY();
                     // TODO: We should probably switch to TreeNodes. See here: https://github.com/ocornut/imgui/issues/1861 
-                    ImGui::Selectable(
+                    if (ImGui::Selectable(
                         "##entityselect",
                         selected,
                         //ImGuiSelectableFlags_::ImGuiSelectableFlags_AllowDoubleClick |
                         ImGuiSelectableFlags_::ImGuiSelectableFlags_SpanAllColumns |
                         ImGuiSelectableFlags_::ImGuiSelectableFlags_DontClosePopups,
                         {ImGui::GetColumnWidth(), 20}
-                    );
-                    ImGui::SameLine();
-                    ImGui::SetCursorPosX(xPos);
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::TextDisabled("|-");
-                    ImGui::SameLine();
-                    
-                    // TODO: make this work again
-                    //ImGui::Image(&UIManager::Icons::game, {20,20});
-                    ImGui::Text(" "); // hack: this just replaces the image until that works again
-
-                    ImGui::SameLine();
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text(edit.name.AsCharPtr());
-                    
-                    if (Core::CVarReadInt(cl_debug_worlds) > 0)
-                    {
-                        ImGui::SameLine();
-                        ImGuiStyle const& style = ImGui::GetStyle();
-                        float widthNeeded = ImGui::CalcTextSize(edit.guid.AsString().AsCharPtr()).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::max(ImGui::GetContentRegionAvail().x - widthNeeded, 0.0f));
-                        ImGui::AlignTextToFramePadding();
-                        ImGui::TextColored({0.1,0.2f,0.1f,0.5f}, edit.guid.AsString().AsCharPtr());
-                    }
-                    ImGui::PopID();
-                    ImGui::EndGroup();
-
-                    if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
+                    ))
                     {
                         Util::Array<Editor::Entity> selection;
                         if (ImGui::GetIO().KeyCtrl)
@@ -200,6 +173,40 @@ Outline::Run(SaveMode save)
                             Edit::SetSelection(selection);
                         }
                     }
+                    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+                    {
+                        static Game::Entity entityPayload;
+                        entityPayload = entity;
+                        ImGui::SetDragDropPayload("entity", &entityPayload, sizeof(Game::Entity));
+                        ImGui::EndDragDropSource();
+                    }
+                    
+                    ImGui::SameLine();
+                    ImGui::SetCursorPosX(xPos);
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::TextDisabled("|-");
+                    ImGui::SameLine();
+                    
+                    // TODO: make this work again
+                    //ImGui::Image(&UIManager::Icons::game, {20,20});
+                    ImGui::Text(" "); // hack: this just replaces the image until that works again
+
+                    ImGui::SameLine();
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text(edit.name.AsCharPtr());
+                    
+                    if (Core::CVarReadInt(cl_debug_worlds) > 0)
+                    {
+                        ImGui::SameLine();
+                        ImGuiStyle const& style = ImGui::GetStyle();
+                        float widthNeeded = ImGui::CalcTextSize(edit.guid.AsString().AsCharPtr()).x + style.FramePadding.x * 2.f + style.ItemSpacing.x;
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Math::max(ImGui::GetContentRegionAvail().x - widthNeeded, 0.0f));
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::TextColored({0.1,0.2f,0.1f,0.5f}, edit.guid.AsString().AsCharPtr());
+                    }
+                    ImGui::PopID();
+                    ImGui::EndGroup();
+                    
                     if (!contextMenuOpened && selected && ImGui::BeginPopupContextWindow())
                     {
                         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {4, 5});

@@ -10,11 +10,17 @@
 #include "imgui.h"
 #include "math/mat4.h"
 #include "util/stringatom.h"
+#include "editorstate.h"
+#include "core/cvar.h"
+#include "dynui/im3d/im3dcontext.h"
+#include "game/world.h"
 
 namespace Game
 {
 
 ComponentInspection* ComponentInspection::Singleton = nullptr;
+
+static Core::CVar* cl_draw_entity_references;
 
 //------------------------------------------------------------------------------
 /**
@@ -28,6 +34,8 @@ ComponentInspection::Instance()
     {
         Singleton = new ComponentInspection;
         n_assert(nullptr != Singleton);
+
+        cl_draw_entity_references = Core::CVarCreate(Core::CVarType::CVar_Int, "cl_draw_entity_references", "1", "Draw entity references: (1) when inspecting entity, (2) always, (0) never.");
     }
     return Singleton;
 }
@@ -71,14 +79,14 @@ ComponentInspection::Register(ComponentId component, DrawFunc func)
 /**
 */
 void
-ComponentInspection::DrawInspector(ComponentId component, void* data, bool* commit)
+ComponentInspection::DrawInspector(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ComponentInspection* reg = Instance();
 
     if (reg->inspectors.Size() > component.id)
     {
         if (reg->inspectors[component.id] != nullptr)
-            reg->inspectors[component.id](component, data, commit);
+            reg->inspectors[component.id](owner, component, data, commit);
     }
 }
 
@@ -103,15 +111,55 @@ ComponentInspection::~ComponentInspection()
 */
 template<>
 void
-ComponentDrawFuncT<Game::Entity>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Game::Entity>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
 	MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
 	Game::Entity* entity = (Game::Entity*)data;
-    Ids::Id64 id = (Ids::Id64)*entity;
-	ImGui::Text("%s: %u", desc->name.Value(), id);
-	ImGui::SameLine();
-	ImGui::TextDisabled("| gen: %i | index: %i", entity->generation, entity->index);
+    if (*entity == Game::Entity::Invalid())
+    {
+        ImGui::Text("Unassigned");
+    }
+    else
+    {
+        ImGui::BeginGroup();
+        //if (Game::EditorState::Instance()->isRunning)
+        //{
+        //    // TODO: We should show the name of the entity here
+        //    //ImGui::Text("%s", );
+        //}
+        //else
+        {
+            Ids::Id64 id = (Ids::Id64)*entity;
+            ImGui::Text("%u", desc->name.Value(), id);
+            ImGui::SameLine();
+            ImGui::TextDisabled("| gen: %i | index: %i", entity->generation, entity->index);
+        }
+        ImGui::EndGroup();
+
+        if (Core::CVarReadInt(cl_draw_entity_references) == 1)
+        {
+            if (owner.world == entity->world)
+            {
+                Game::World* world = Game::GetWorld(owner.world);
+                Game::Position p0 = world->GetComponent<Position>(owner);
+                Game::Position p1 = world->GetComponent<Position>(*entity);
+                Math::line line = Math::line(p0, p1); 
+                Im3d::Im3dContext::DrawLine(line, 1.0f, Math::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+            }
+        }
+    }
+    if (ImGui::BeginDragDropTarget())
+    {
+        auto payload = ImGui::AcceptDragDropPayload("entity");
+        if (payload)
+        {
+            Game::Entity entityPayload = *(Game::Entity*)payload->Data;
+            *(Game::Entity*)data = entityPayload;
+            *commit = true;
+        }
+        ImGui::EndDragDropTarget();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +167,7 @@ ComponentDrawFuncT<Game::Entity>(ComponentId component, void* data, bool* commit
 */
 template<>
 void
-ComponentDrawFuncT<bool>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<bool>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::Checkbox("##input_data", (bool*)data))
@@ -132,7 +180,7 @@ ComponentDrawFuncT<bool>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<int>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragInt("##input_data", (int*)data))
@@ -145,7 +193,7 @@ ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
 */
 template <>
 void
-ComponentDrawFuncT<int64>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<int64>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragInt("##input_data", (int*)data))
@@ -158,7 +206,7 @@ ComponentDrawFuncT<int64>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<uint>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragInt("##input_data", (int*)data), 1.0f, 0, 0xFFFFFFFF)
@@ -171,7 +219,7 @@ ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 */
 template <>
 void
-ComponentDrawFuncT<uint64>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<uint64>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragInt("##input_data", (int*)data, 1.0f, 0, 0xFFFFFFFF))
@@ -184,7 +232,7 @@ ComponentDrawFuncT<uint64>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<float>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragFloat("##float_input", (float*)data))
@@ -197,7 +245,7 @@ ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Util::StringAtom>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (((Util::StringAtom*)data)->IsValid())
@@ -227,7 +275,7 @@ ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* co
 */
 template<>
 void
-ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Math::mat4>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat4("##row0", (float*)data))
@@ -246,7 +294,7 @@ ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<Math::vec3>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Math::vec3>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat3("##vec3", (float*)data))
@@ -259,7 +307,7 @@ ComponentDrawFuncT<Math::vec3>(ComponentId component, void* data, bool* commit)
 */
 template <>
 void
-ComponentDrawFuncT<Math::vec4>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Math::vec4>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat4("##vec4", (float*)data))
@@ -272,7 +320,7 @@ ComponentDrawFuncT<Math::vec4>(ComponentId component, void* data, bool* commit)
 */
 template <>
 void
-ComponentDrawFuncT<Math::quat>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Math::quat>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::InputFloat4("##quat", (float*)data))
@@ -285,7 +333,7 @@ ComponentDrawFuncT<Math::quat>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<Game::Position>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Game::Position>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::AlignTextToFramePadding();
@@ -302,7 +350,7 @@ ComponentDrawFuncT<Game::Position>(ComponentId component, void* data, bool* comm
 */
 template<>
 void
-ComponentDrawFuncT<Game::Orientation>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Game::Orientation>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::AlignTextToFramePadding();
@@ -319,7 +367,7 @@ ComponentDrawFuncT<Game::Orientation>(ComponentId component, void* data, bool* c
 */
 template<>
 void
-ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Game::Scale>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::TableSetColumnIndex(0);
     ImGui::AlignTextToFramePadding();
@@ -354,7 +402,7 @@ ComponentDrawFuncT<Game::Scale>(ComponentId component, void* data, bool* commit)
 */
 template<>
 void
-ComponentDrawFuncT<Util::Color>(ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<Util::Color>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::ColorEdit4("##color", (float*)data))
