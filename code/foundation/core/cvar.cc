@@ -40,13 +40,13 @@ CVar*
 CVarCreate(CVarCreateInfo const& info)
 {
     CVar* ptr = CVarGet(info.name);
+    const bool needsInit = (ptr == nullptr);
     if (ptr == nullptr)
     {
         IndexT varIndex = cVarOffset++;
         n_assert(varIndex < MAX_CVARS);
         ptr = &cVars[varIndex];
         cVarTable.Add(info.name, varIndex);
-        CVarParseWrite(ptr, info.defaultValue);
     }
     n_assert2(!Util::String(info.name).ContainsCharFromSet(" "), "CVar name cannot contain spaces.");
         
@@ -56,6 +56,10 @@ CVarCreate(CVarCreateInfo const& info)
     if (info.description != nullptr)
     {
         ptr->description = info.description;
+    }
+    if (needsInit)
+    {
+        CVarParseWrite(ptr, info.defaultValue);
     }
     return ptr;
 }
