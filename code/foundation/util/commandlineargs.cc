@@ -25,7 +25,7 @@ CommandLineArgs::CommandLineArgs()
 */
 CommandLineArgs::CommandLineArgs(const String& l)
 {
-    this->args = l.Tokenize(" \t\n=", '"');
+    this->ParseIntoGroups(l.Tokenize(" \t\n", '"'));
 }
 
 //------------------------------------------------------------------------------
@@ -33,11 +33,32 @@ CommandLineArgs::CommandLineArgs(const String& l)
 */
 CommandLineArgs::CommandLineArgs(int argc, const char** argv)
 {
-    int i;
-    for (i = 0; i < argc; i++)
+	Array<String> argvs;
+	
+    for (int i = 0; i < argc; i++)
     {
-        this->args.Append(argv[i]);
+        argvs.Append(argv[i]);
     }
+	this->ParseIntoGroups(argvs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CommandLineArgs::ParseIntoGroups(const Array<String>& tokenized)
+{
+	Array<String> pair;
+	for (const String& arg : tokenized)
+	{
+		arg.Tokenize("=", '"', pair);
+		if (pair.Size() == 2)
+		{
+			this->keyPairs.Add(pair[0], pair[1]);
+	
+		}
+		this->args.AppendArray(pair);
+	}
 }
 
 //------------------------------------------------------------------------------

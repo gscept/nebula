@@ -6,6 +6,9 @@
 
 #include "app/application.h"
 #include "core/sysfunc.h"
+#include "core/cvar.h"
+
+using namespace Util;
 
 namespace App
 {
@@ -42,6 +45,39 @@ Application::Open()
 {
     n_assert(!this->isOpen);
     this->isOpen = true;
+
+    const Dictionary<String, String>& pairs = this->args.GetPairs();
+    for (const auto& item : pairs)
+    {
+        const String name = item.Key();
+        const String value = item.Value();
+
+        const auto GuessType = [](const String& v)
+            {
+                if (v.IsValidFloat()) return Core::CVar_Float;
+                if (v.IsValidInt()) return Core::CVar_Int;
+                return Core::CVar_String;
+            };
+        Core::CVarCreateInfo info;
+        info.defaultValue = "";
+        info.name = name.c_str();
+        info.description = name.c_str();
+        info.type = GuessType(value);
+
+        Core::CVar* newCVar = Core::CVarCreate(info);
+        n_assert(newCVar != nullptr);
+        switch (info.type)
+        {
+            case Core::CVar_Float:
+                Core::CVarWriteFloat(newCVar, value.AsFloat());
+                break;
+            case Core::CVar_Int:
+                Core::CVarWriteInt(newCVar, value.AsInt());
+                break;
+            case Core::CVar_String:
+                Core::CVarWriteString(newCVar, value.c_str());
+        }
+    }
     return true;
 }
 

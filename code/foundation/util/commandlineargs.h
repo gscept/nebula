@@ -82,14 +82,19 @@ public:
     #endif
     /// append other command string
     void AppendCommandString(const CommandLineArgs& otherArgs);
+    /// get any key value pairs from args
+    const Dictionary<String, String>& GetPairs() const;
 
 private:
     /// put out an error
     void Error(const String& argName) const;
     /// find index of argument, fails hard with error msg if not found
     int FindArgIndex(const String& argName, const IndexT start = 0) const;
+    /// sort out any explicit key=value arguments into separate structure
+    void ParseIntoGroups(const Array<String>& Tokenized);
 
     Array<String> args;
+    Dictionary<String,String> keyPairs;
 };
 
 
@@ -100,6 +105,15 @@ inline bool
 CommandLineArgs::IsEmpty() const
 {
     return this->args.Size() == 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Dictionary<String, String>& 
+CommandLineArgs::GetPairs() const
+{
+    return this->keyPairs;
 }
 
 } // namespace Util
