@@ -78,27 +78,27 @@ FreeCameraUtil::Update(float deltaTime)
         currentMoveSpeed *= 20;
     }
     vec4 translation = vec4(0,0,0,0);
-    if (forwardsKey)
+    if (forwardsKey && this->rotateButton)
     {
         translation.z -= currentMoveSpeed;
     }
-    if (backwardsKey)
+    if (backwardsKey && this->rotateButton)
     {
         translation.z += currentMoveSpeed;
     }
-    if (rightStrafeKey)
+    if (rightStrafeKey && this->rotateButton)
     {
         translation.x += currentMoveSpeed;
     }
-    if (leftStrafeKey)
+    if (leftStrafeKey && this->rotateButton)
     {
         translation.x -= currentMoveSpeed;
     }
-    if (upKey)
+    if (upKey && this->rotateButton)
     {
         translation.y += currentMoveSpeed;
     }
-    if (downKey)
+    if (downKey && this->rotateButton)
     {
         translation.y -= currentMoveSpeed;
     }

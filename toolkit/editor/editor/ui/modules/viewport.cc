@@ -9,7 +9,7 @@
 #include "graphics/stage.h"
 #include "imgui.h"
 #include "dynui/imguicontext.h"
-#include "editor/editor/tools/selectiontool.h"
+#include "editor/editor/tools/selectioncontext.h"
 
 #include "frame/default.h"
 
@@ -78,7 +78,7 @@ Viewport::SetFrameBuffer(Util::String const& name)
 void
 Viewport::Update()
 {
-    if (this->focused && !Tools::SelectionTool::IsTransforming())
+    if (this->focused && !Tools::SelectionContext::IsPaused())
     {
         camera.Update();
         this->focused = false;

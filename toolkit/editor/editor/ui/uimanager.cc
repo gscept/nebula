@@ -27,7 +27,7 @@
 #include "io/filedialog.h"
 #include "io/filestream.h"
 #include "window.h"
-#include "editor/tools/selectiontool.h"
+#include "editor/tools/selectioncontext.h"
 #include "editor/cmds.h"
 
 #include "frame/default.h"
@@ -91,6 +91,8 @@ UIManager::OnActivate()
 
     windowServer = Presentation::WindowServer::Create();
 
+    Tools::SelectionContext::Create();
+
     windowServer->RegisterWindow("Presentation::Console", "Console", "Debug");
     windowServer->RegisterWindow("Presentation::Outline", "Outline");
     windowServer->RegisterWindow("Presentation::History", "History", "Editor");
@@ -120,7 +122,7 @@ UIManager::OnActivate()
     
     windowServer->RegisterCommand([]()
     {
-        auto selection = Tools::SelectionTool::Selection();
+        auto selection = Tools::SelectionContext::Selection();
         Edit::CommandManager::BeginMacro("Delete entities", false);
         Util::Array<Editor::Entity> emptySelection;
         Edit::SetSelection(emptySelection);

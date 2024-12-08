@@ -8,7 +8,7 @@
 #include "editor/commandmanager.h"
 #include "editor/ui/uimanager.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
-#include "editor/tools/selectiontool.h"
+#include "editor/tools/selectioncontext.h"
 #include "game/componentinspection.h"
 #include "editor/cmds.h"
 #include "imgui_internal.h"
@@ -55,7 +55,7 @@ Inspector::Update()
 void
 Inspector::Run(SaveMode save)
 {
-    auto const& selection = Tools::SelectionTool::Selection();
+    auto const& selection = Tools::SelectionContext::Selection();
 
     if (selection.Size() != 1)
         return;
@@ -271,7 +271,7 @@ Inspector::ShowAddComponentMenu()
 
             if (ImGui::Button(name))
             {
-                Editor::Entity const selectedEntity = Tools::SelectionTool::Selection()[0];
+                Editor::Entity const selectedEntity = Tools::SelectionContext::Selection()[0];
                 if (!Editor::state.editorWorld->IsValid(selectedEntity))
                 {
                     return;
