@@ -77,6 +77,7 @@ public:
         {
             float x, y, z, w;
         };
+        float v[4];
         __m128 vec;
     };
 };
