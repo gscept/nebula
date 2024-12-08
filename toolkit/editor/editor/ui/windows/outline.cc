@@ -7,7 +7,7 @@
 #include "editor/editor.h"
 #include "editor/commandmanager.h"
 #include "editor/ui/uimanager.h"
-#include "editor/tools/selectiontool.h"
+#include "editor/tools/selectioncontext.h"
 #include "editor/cmds.h"
 #include "core/cvar.h"
 
@@ -128,7 +128,7 @@ Outline::Run(SaveMode save)
                 
                 ImGui::BeginGroup();
                 {
-                    bool selected = Tools::SelectionTool::Selection().BinarySearchIndex(entity) != InvalidIndex;
+                    bool selected = Tools::SelectionContext::Selection().BinarySearchIndex(entity) != InvalidIndex;
                     ImGui::BeginGroup();
                     // FIXME: rightclicking a selectable when another is selected does not bring up the context menu for the correct entity
                     ImGui::PushID(entity.HashCode());
@@ -147,7 +147,7 @@ Outline::Run(SaveMode save)
                         Util::Array<Editor::Entity> selection;
                         if (ImGui::GetIO().KeyCtrl)
                         {
-                            selection = Tools::SelectionTool::Selection();
+                            selection = Tools::SelectionContext::Selection();
                             if (selected)
                             {
                                 if (!ImGui::IsItemClicked(1))
@@ -163,7 +163,7 @@ Outline::Run(SaveMode save)
                                 selected = true;
                             }
                         }
-                        else if (!selected || (Tools::SelectionTool::Selection().Size() > 1 && !ImGui::IsItemClicked(1)))
+                        else if (!selected || (Tools::SelectionContext::Selection().Size() > 1 && !ImGui::IsItemClicked(1)))
                         {
                             selection.InsertSorted(entity);
                             selected = true;
@@ -232,7 +232,7 @@ Outline::Run(SaveMode save)
                         ImGui::Separator();
                         if (ImGui::Selectable("Delete"))
                         {
-                            auto selection = Tools::SelectionTool::Selection();
+                            auto selection = Tools::SelectionContext::Selection();
                             Edit::CommandManager::BeginMacro("Delete entities", false);
                             Util::Array<Editor::Entity> emptySelection;
                             Edit::SetSelection(emptySelection);

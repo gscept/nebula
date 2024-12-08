@@ -6,7 +6,7 @@
 #include "cmds.h"
 #include "commandmanager.h"
 #include "util/random.h"
-#include "editor/tools/selectiontool.h"
+#include "editor/tools/selectioncontext.h"
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "editor/components/editorcomponents.h"
@@ -291,18 +291,18 @@ struct CMDSetSelection : public Edit::Command
     {
         if (!this->initialized)
         {
-            this->oldSelection = Tools::SelectionTool::Selection();
+            this->oldSelection = Tools::SelectionContext::Selection();
             this->initialized = true;
         }
-        Tools::SelectionTool::state.selection = newSelection;
-        Tools::SelectionTool::state.selection.Sort();
+        Tools::SelectionContext::Instance()->selection = newSelection;
+        Tools::SelectionContext::Instance()->selection.Sort();
         return true;
     };
     bool
     Unexecute() override
     {
-        Tools::SelectionTool::state.selection = oldSelection;
-        Tools::SelectionTool::state.selection.Sort();
+        Tools::SelectionContext::Instance()->selection = oldSelection;
+        Tools::SelectionContext::Instance()->selection.Sort();
         return true;
     };
     Util::Array<Editor::Entity> newSelection;

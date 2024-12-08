@@ -133,8 +133,18 @@ fips_dir(editor)
         fips_files(
             camera.cc
             camera.h
+            toolinterface.h
+            toolinterface.cc
+            selectioncontext.h
+            selectioncontext.cc
             selectiontool.cc
+            translatetool.cc
+            rotatetool.cc
+            scaletool.cc
             selectiontool.h
+            translatetool.h
+            rotatetool.h
+            scaletool.h
             pathconverter.cc
             pathconverter.h
         )

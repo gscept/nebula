@@ -50,11 +50,11 @@ Settings::Update()
 void
 Settings::Run(SaveMode save)
 {
-    bool snapToGridIncrements = Tools::SelectionTool::SnapToGridIncrements();
-    if (ImGui::Checkbox("Grid snap", &snapToGridIncrements))
-    {
-        Tools::SelectionTool::SnapToGridIncrements(snapToGridIncrements);
-    }
+    //bool snapToGridIncrements = Tools::SelectionTool::SnapToGridIncrements();
+    //if (ImGui::Checkbox("Grid snap", &snapToGridIncrements))
+    //{
+    //    //Tools::SelectionTool::SnapToGridIncrements(snapToGridIncrements);
+    //}
 
     bool showGrid = Im3d::Im3dContext::GetGridStatus();
     if (ImGui::Checkbox("Show Grid", &showGrid))
@@ -83,22 +83,22 @@ Settings::Run(SaveMode save)
     }
     ImGui::EndDisabled();
 
-    bool use3DGizmo = Tools::SelectionTool::UseIm3DGizmo();
-    if (ImGui::Checkbox("Use 3D Gizmo for selection", &use3DGizmo))
-    {
-        Tools::SelectionTool::UseIm3DGizmo(use3DGizmo);
-    }
-    int gizmoSize;
-    int gizmoWidth;
-    ImGui::BeginDisabled(!use3DGizmo);
-    Im3d::Im3dContext::GetGizmoSize(gizmoSize, gizmoWidth);
-    bool sizeChange = ImGui::DragInt("Gizmo size", &gizmoSize);
-    sizeChange |= ImGui::DragInt("Gizmo width", &gizmoWidth);
-    if (use3DGizmo && sizeChange)
-    {
-        Im3d::Im3dContext::SetGizmoSize(gizmoSize, gizmoWidth);
-    }
-    ImGui::EndDisabled();
+    //bool use3DGizmo = Tools::SelectionTool::UseIm3DGizmo();
+    //if (ImGui::Checkbox("Use 3D Gizmo for selection", &use3DGizmo))
+    //{
+    //    Tools::SelectionTool::UseIm3DGizmo(use3DGizmo);
+    //}
+    //int gizmoSize;
+    //int gizmoWidth;
+    //ImGui::BeginDisabled(!use3DGizmo);
+    //Im3d::Im3dContext::GetGizmoSize(gizmoSize, gizmoWidth);
+    //bool sizeChange = ImGui::DragInt("Gizmo size", &gizmoSize);
+    //sizeChange |= ImGui::DragInt("Gizmo width", &gizmoWidth);
+    //if (use3DGizmo && sizeChange)
+    //{
+    //    Im3d::Im3dContext::SetGizmoSize(gizmoSize, gizmoWidth);
+    //}
+    //ImGui::EndDisabled();
     const IO::URI path(Editor::UIManager::GetEditorUIIniPath());
     if (ImGui::Button("Save editor layout"))
     { 
