@@ -70,6 +70,47 @@ ComponentSerialization::Serialize(Ptr<IO::JsonWriter> const& writer, ComponentId
 //------------------------------------------------------------------------------
 /**
 */
+void
+ComponentSerialization::Override(ComponentId component, DeserializeJsonFunc deserialize, SerializeJsonFunc serialize)
+{
+    if (component.id >= Singleton->serializers.Size())
+        return;
+
+    Singleton->serializers[component.id].serializeJson = serialize;
+    Singleton->serializers[component.id].deserializeJson = deserialize;
+}
+
+void
+ComponentSerialization::OverrideType(OverridableType type, DeserializeJsonFunc deserialize, SerializeJsonFunc serialize)
+{
+    n_assert(type >= 0 && type < NUM_OVERRIDABLE_TYPES);
+    Singleton->typeOverrides[type].deserializeJson = deserialize;
+    Singleton->typeOverrides[type].serializeJson = serialize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ComponentSerialization::DeserializeJsonFunc&
+ComponentSerialization::GetTypeDeserializeFunc(OverridableType type)
+{
+    n_assert(type >= 0 && type < NUM_OVERRIDABLE_TYPES);
+    return Singleton->typeOverrides[type].deserializeJson;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ComponentSerialization::SerializeJsonFunc&
+ComponentSerialization::GetTypeSerializeFunc(OverridableType type)
+{
+    n_assert(type >= 0 && type < NUM_OVERRIDABLE_TYPES);
+    return Singleton->typeOverrides[type].serializeJson;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ComponentSerialization::ComponentSerialization()
 {
     // empty
@@ -104,7 +145,17 @@ ComponentSerialization::ValidateTypeSize(MemDb::AttributeId component, uint32_t 
 template<> void
 IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 {
-    entity = Game::Entity(this->GetUInt(key));
+    auto& deserialize = Game::ComponentSerialization::GetTypeDeserializeFunc(Game::ComponentSerialization::ENTITY);
+    if (!deserialize)
+    {
+        uint64_t id;
+        this->Get<uint64_t>(id, key);
+        entity = Game::Entity(id);
+    }
+    else
+    {
+        deserialize(this, key, (void*)&entity);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -113,6 +164,14 @@ IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 template<> void
 IO::JsonWriter::Add<Game::Entity>(Game::Entity const& entity, Util::String const& key)
 {
-    this->Add<uint64_t>((uint64_t)entity, key);
+    auto& serialize = Game::ComponentSerialization::GetTypeSerializeFunc(Game::ComponentSerialization::ENTITY);
+    if (!serialize)
+    {
+        this->Add<uint64_t>((uint64_t)entity, key);
+    }
+    else
+    {
+        Game::Entity nonConstEntity = entity;
+        serialize(this, key.AsCharPtr(), (void*)&nonConstEntity);
+    }
 }
-

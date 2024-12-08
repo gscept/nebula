@@ -20,6 +20,7 @@
 #include "util/dictionary.h"
 #include "util/delegate.h"
 #include "game/componentid.h"
+#include <functional>
 
 namespace Game
 {
@@ -30,9 +31,16 @@ namespace Game
 class ComponentSerialization
 {
 public:
-    using DeserializeJsonFunc = Util::Delegate<void(Ptr<IO::JsonReader> const&, const char* name, void*)>;
-    using SerializeJsonFunc   = Util::Delegate<void(Ptr<IO::JsonWriter> const&, const char* name, void*)>;
+    using DeserializeJsonFunc = std::function<void(Ptr<IO::JsonReader> const&, const char* name, void*)>;
+    using SerializeJsonFunc   = std::function<void(Ptr<IO::JsonWriter> const&, const char* name, void*)>;
     
+    enum OverridableType
+    {
+        ENTITY,
+        RESOURCE, // TODO: resources should be a special type, not a stringatom. Should be a wrapper around a string atom instead.
+        NUM_OVERRIDABLE_TYPES
+    };
+
     static ComponentSerialization* Instance();
     static void Destroy();
 
@@ -43,6 +51,17 @@ public:
     static void Deserialize(Ptr<IO::JsonReader> const& reader, ComponentId component, void* ptr);
     /// ptr points to the value that should be stored
     static void Serialize(Ptr<IO::JsonWriter> const& writer, ComponentId component, void* ptr);
+
+    /// override a specific components serialization and deserialization funcs
+    static void Override(ComponentId component, DeserializeJsonFunc deserialize, SerializeJsonFunc serialize);
+
+    /// override a specific type serializer. This will be called instead of a standard variant.
+    static void OverrideType(OverridableType type, DeserializeJsonFunc deserialize, SerializeJsonFunc serialize);
+
+    /// Get the deserialize override for a specific type.
+    static DeserializeJsonFunc& GetTypeDeserializeFunc(OverridableType type);
+    /// Get the serialize override for a specific type
+    static SerializeJsonFunc& GetTypeSerializeFunc(OverridableType type);
 
 private:
     ComponentSerialization();
@@ -60,6 +79,8 @@ private:
     };
 
     Util::Array<Serializer> serializers;
+
+    Serializer typeOverrides[NUM_OVERRIDABLE_TYPES];
 };
 
 //------------------------------------------------------------------------------

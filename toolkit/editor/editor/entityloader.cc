@@ -22,12 +22,38 @@ __ImplementClass(Editor::EntityLoader, 'EELo', BaseGameFeature::LevelParser);
 //------------------------------------------------------------------------------
 /**
 */
+void
+WriteEntityGuid(Ptr<IO::JsonWriter> const& writer, const char* name, void* value)
+{
+    Game::Entity const entity = *(Game::Entity*)value;
+    if (entity == Game::Entity::Invalid() || !Editor::state.editorWorld->IsValid(entity))
+    {
+        return; // no need to write invalid data
+    }
+    
+    Editor::Editable const& edit = Editor::state.editables[entity.index];
+    writer->Add(edit.guid.AsString(), name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 SaveEntities(const char* filePath)
 {
     IO::URI const file = filePath;
     Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
     writer->SetStream(IO::IoServer::Instance()->CreateStream(file));
+
+    // TODO: Maybe move this to a SceneSerializer class that can be used outside of the editor as well.
+
+    // TODO: only set once, both serialize and deserialize
+    Game::ComponentSerialization::OverrideType(
+        Game::ComponentSerialization::ENTITY,
+        nullptr,
+        &WriteEntityGuid
+    );
+
     if (writer->Open())
     {
         writer->BeginObject("level");
@@ -137,6 +163,9 @@ EntityLoader::AddEntity(Game::Entity entity, Util::Guid const& guid)
     if (Editor::state.editables.Size() >= entity.index)
         Editor::state.editables.Append({});
 
+    // TODO: We need to add entities with guids before actually encountering the
+    //       actual entity sometimes if the entity is referenced before it's
+    //       instantiated.
 
     Editable& editable = Editor::state.editables[entity.index];
     

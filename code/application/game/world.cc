@@ -1622,6 +1622,16 @@ World::RenderDebug()
                     MemDb::TableId const table = entityMapping.table;
                     MemDb::RowId const row = entityMapping.instance;
 
+                    void* ownerBuffer = this->GetInstanceBuffer(table, row.partition, Game::Entity::Traits::fixed_column_index);
+                    ownerBuffer = (byte*)ownerBuffer + (row.index * sizeof(Game::Entity));
+                    Game::Entity owner = *(Game::Entity*)ownerBuffer;
+
+                    ImGui::TextDisabled("Entity: %llu", (uint64_t)owner);
+                    ImGui::TextDisabled("Entity.world: %llu", (uint64_t)owner.world);
+                    ImGui::TextDisabled("Entity.reserved: %llu", (uint64_t)owner.reserved);
+                    ImGui::TextDisabled("Entity.generation: %llu", (uint64_t)owner.generation);
+                    ImGui::TextDisabled("Entity.index: %llu", (uint64_t)owner.index);
+
                     bool prevDebugState = Game::ComponentInspection::Instance()->debug;
                     Game::ComponentInspection::Instance()->debug = true;
                     auto const& components = this->db->GetTable(table).GetAttributes();
@@ -1643,10 +1653,6 @@ World::RenderDebug()
                         SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
                         void* data = this->GetInstanceBuffer(table, row.partition, component);
                         data = (byte*)data + (row.index * typeSize);
-
-                        void* ownerBuffer = this->GetInstanceBuffer(table, row.partition, Game::Entity::Traits::fixed_column_index);
-                        ownerBuffer = (byte*)data + (row.index * sizeof(Game::Entity));
-                        Game::Entity owner = *(Game::Entity*)ownerBuffer;
 
                         const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders |
                                                       ImGuiTableFlags_RowBg | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
