@@ -12,7 +12,7 @@
 #include "util/stringatom.h"
 #include "editorstate.h"
 #include "core/cvar.h"
-#include "dynui/im3d/im3dcontext.h"
+//#include "dynui/im3d/im3dcontext.h"
 #include "game/world.h"
 
 namespace Game
@@ -143,16 +143,16 @@ ComponentDrawFuncT<Game::Entity>(Game::Entity owner, ComponentId component, void
         }
         ImGui::EndGroup();
 
-        if (Core::CVarReadInt(cl_draw_entity_references) == 1)
-        {
-            if (owner.world == entity->world)
-            {
-                Game::Position p0 = world->GetComponent<Position>(owner);
-                Game::Position p1 = world->GetComponent<Position>(*entity);
-                Math::line line = Math::line(p0, p1); 
-                Im3d::Im3dContext::DrawLine(line, 1.0f, Math::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-            }
-        }
+        //if (Core::CVarReadInt(cl_draw_entity_references) == 1)
+        //{
+        //    if (owner.world == entity->world)
+        //    {
+        //        Game::Position p0 = world->GetComponent<Position>(owner);
+        //        Game::Position p1 = world->GetComponent<Position>(*entity);
+        //        Math::line line = Math::line(p0, p1); 
+        //        Im3d::Im3dContext::DrawLine(line, 1.0f, Math::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        //    }
+        //}
     }
     if (ImGui::BeginDragDropTarget())
     {
