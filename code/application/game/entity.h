@@ -33,14 +33,14 @@ ID_32_TYPE(WorldHash);
 */
 struct Entity
 {
-    uint32_t index : 22;      // 4M concurrent entities
-    uint32_t generation : 10; // 1024 generations per index
-    uint32_t world : 8;       // world id (not to be confused with world hash)
-    uint32_t reserved : 24;   // not currently in use
+    uint64_t index : 22;      // 4M concurrent entities
+    uint64_t generation : 10; // 1024 generations per index
+    uint64_t world : 8;       // world id (not to be confused with world hash)
+    uint64_t reserved : 24;   // not currently in use
 
     Entity() = default;
     constexpr Entity(uint64_t id);
-    constexpr Entity(uint32_t world, uint32_t generation, uint32_t index);
+    constexpr Entity(uint64_t world, uint64_t generation, uint64_t index);
 
     static constexpr Entity FromId(Ids::Id64 id);
 
@@ -103,7 +103,7 @@ inline constexpr Entity::Entity(uint64_t id)
 //------------------------------------------------------------------------------
 /**
 */
-inline constexpr Entity::Entity(uint32_t world, uint32_t generation, uint32_t index)
+inline constexpr Entity::Entity(uint64_t world, uint64_t generation, uint64_t index)
 {
     this->index = index;
     this->generation = generation;

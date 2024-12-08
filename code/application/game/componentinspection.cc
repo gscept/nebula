@@ -113,12 +113,18 @@ template<>
 void
 ComponentDrawFuncT<Game::Entity>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
-	MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
+    MemDb::Attribute* desc = MemDb::AttributeRegistry::GetAttribute(component);
 
-	Game::Entity* entity = (Game::Entity*)data;
+    Game::Entity* entity = (Game::Entity*)data;
+    Game::World* world = Game::GetWorld(entity->world);
+
     if (*entity == Game::Entity::Invalid())
     {
         ImGui::Text("Unassigned");
+    }
+    else if (!world->IsValid(*entity) || !world->HasInstance(*entity))
+    {
+        ImGui::TextColored({1.0f,0.1f,0.1f,1.0f}, "Invalid");
     }
     else
     {
@@ -141,7 +147,6 @@ ComponentDrawFuncT<Game::Entity>(Game::Entity owner, ComponentId component, void
         {
             if (owner.world == entity->world)
             {
-                Game::World* world = Game::GetWorld(owner.world);
                 Game::Position p0 = world->GetComponent<Position>(owner);
                 Game::Position p1 = world->GetComponent<Position>(*entity);
                 Math::line line = Math::line(p0, p1); 

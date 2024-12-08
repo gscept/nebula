@@ -1177,6 +1177,16 @@ template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* at
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Util::Guid>(Util::Guid& ret, const char* attr)
+{
+    Util::String str;
+    this->Get<Util::String>(str, attr);
+    ret = Util::Guid::FromString(str);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<Util::FourCC>(Util::FourCC& ret, const char* attr)
 {
     const value_variant* node = this->GetChild(attr);
