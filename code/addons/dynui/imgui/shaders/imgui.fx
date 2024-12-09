@@ -16,6 +16,7 @@
 push constant ImGUI [ string Visibility = "PS|VS"; ]
 {
     mat4 TextProjectionModel;
+    uint ColorMask;
     uint PackedTextureInfo;
     float RangeMin;
     float RangeMax;
@@ -40,7 +41,8 @@ render_state TextState
 //------------------------------------------------------------------------------
 /**
 */
-void UnpackTexture(uint val, out uint id, out uint type, out uint mip, out uint layer, out uint useRange, out uint useAlpha)
+void 
+UnpackTexture(uint val, out uint id, out uint type, out uint mip, out uint layer, out uint useRange, out uint useAlpha)
 {
     const uint TEXTURE_TYPE_MASK = 0xF;
     const uint TEXTURE_LAYER_MASK = 0xFF;
@@ -55,6 +57,15 @@ void UnpackTexture(uint val, out uint id, out uint type, out uint mip, out uint 
     useRange = (val >> 16) & TEXTURE_USE_RANGE_MASK;
     useAlpha = (val >> 17) & TEXTURE_USE_ALPHA_MASK;
     id = (val >> 18) & TEXTURE_ID_MASK;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec4
+UnpackMask(uint val)
+{
+    return vec4(val & 0x1, (val >> 1) & 0x1, (val >> 2) & 0x1, (val >> 3) & 0x1);
 }
 
 //------------------------------------------------------------------------------
@@ -105,9 +116,11 @@ psMain(
 
     if (useAlpha == 0)
         texColor.a = 1;
+        
+    vec4 mask = UnpackMask(ImGUI.ColorMask);
 
     // Since we are using sRGB output, remember to degamma
-    FinalColor = Color * texColor;
+    FinalColor = Color * texColor * mask;
 }
 
 

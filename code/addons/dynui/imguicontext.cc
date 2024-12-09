@@ -136,6 +136,18 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         uint id : 11;
     };
 
+    union ColorMask
+    {
+        struct
+        {
+            uint red: 1;
+            uint green: 1;
+            uint blue: 1;
+            uint alpha: 1;
+        };
+        uint bits = 0xF;
+    };
+
     IndexT vertexOffset = 0;
     IndexT indexOffset = 0;
     IndexT vertexBufferOffset = 0;
@@ -201,7 +213,14 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.mip = tex.mip;
                 texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
 
+                ColorMask colorMask;
+                colorMask.red = tex.red;
+                colorMask.green = tex.green;
+                colorMask.blue = tex.blue;
+                colorMask.alpha = tex.alpha;
+
                 CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
+                CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.colorMaskConstant, sizeof(ColorMask), (byte*)&colorMask);
                 if (texInfo.useRange)
                 {
                     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.rangeMinConstant, sizeof(float), &tex.rangeMin);
@@ -352,6 +371,7 @@ ImguiContext::Create()
     state.packedTextureInfo = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
     state.rangeMinConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMin");
     state.rangeMaxConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMax");
+    state.colorMaskConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "ColorMask");
 
     state.inputHandler = ImguiInputHandler::Create();
     Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, state.inputHandler.upcast<Input::InputHandler>());

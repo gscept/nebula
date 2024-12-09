@@ -33,6 +33,11 @@ struct ImguiTextureId
     uint useAlpha : 1 = 0;
     uint useRange : 1 = 0;
     float rangeMin, rangeMax;
+    uint red : 1 = 1;
+    uint green : 1 = 1;
+    uint blue : 1 = 1;
+    uint alpha : 1 = 1;
+    
 };
 
 class ImguiContext : public Graphics::GraphicsContext
@@ -83,6 +88,7 @@ public:
         IndexT packedTextureInfo;
         IndexT rangeMinConstant;
         IndexT rangeMaxConstant;
+        IndexT colorMaskConstant;
         CoreGraphics::ResourceTableId resourceTable;
         //Ptr<CoreGraphics::BufferLock> vboBufferLock;
         //Ptr<CoreGraphics::BufferLock> iboBufferLock;
