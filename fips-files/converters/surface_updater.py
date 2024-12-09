@@ -67,19 +67,51 @@ def convert_xml(input_file, output_file):
 
         print(f"Converted XML written to {output_file}")
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        print(f"Error processing file {input_file}: {e}", file=sys.stderr)
+
+def process_directory(input_dir):
+    """Recursively processes all XML files in a directory structure."""
+    for root, _, files in os.walk(input_dir):
+        for file in files:
+            if file.endswith(".sur"):
+                input_file = os.path.join(root, file)
+                output_file = input_file  # Overwrite the original file
+                print(f"Processing {input_file}...")
+                convert_xml(input_file, output_file)
 
 def main():
     # Set up command-line argument parsing
     parser = argparse.ArgumentParser(description="Convert <Param> XML nodes into <Params> with child tags.")
-    parser.add_argument("input_file", help="Path to the input XML file")
-    parser.add_argument("output_file", help="Path to the output XML file")
+    parser.add_argument(
+        "--file", 
+        help="Path to a single input XML file to process (mutually exclusive with --dir)"
+    )
+    parser.add_argument(
+        "--dir", 
+        help="Path to a directory containing XML files to process recursively (mutually exclusive with --file)"
+    )
 
     # Parse the arguments
     args = parser.parse_args()
 
-    # Call the conversion function with the provided file paths
-    convert_xml(args.input_file, args.output_file)
+    if args.file and args.dir:
+        print("Error: You must specify either --file or --dir, not both.", file=sys.stderr)
+        sys.exit(1)
+
+    if args.file:
+        # Process a single file
+        input_file = os.path.normpath(args.file)
+        output_file = input_file  # Overwrite the original file
+        convert_xml(input_file, output_file)
+
+    elif args.dir:
+        # Process all files in a directory recursively
+        input_dir = os.path.normpath(args.dir)
+        process_directory(input_dir)
+
+    else:
+        print("Error: You must specify either --file or --dir.", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
