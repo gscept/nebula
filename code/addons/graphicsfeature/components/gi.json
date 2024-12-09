@@ -21,7 +21,27 @@
             },
             "numRaysPerProbe": {
                 "type": "uint",
-                "default": 188,
+                "default": 188
+            },
+            "irradianceScale": {
+                "type": "float",
+                "default": 1
+            },
+            "normalBias": {
+                "type": "float",
+                "default": 40
+            },
+            "viewBias": {
+                "type": "float",
+                "default": 10
+            },
+            "distanceExponent": {
+                "type": "float",
+                "default": 50
+            },
+            "hysteresis": {
+                "type": "float",
+                "default": 0.97
             }
         }
     }

@@ -479,6 +479,11 @@ GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVol
     setup.numRaysPerProbe = volume->numRaysPerProbe;
     setup.position = world->GetComponent<Game::Position>(entity);
     setup.size = world->GetComponent<Game::Scale>(entity);
+    setup.irradianceScale = volume->irradianceScale;
+    setup.normalBias = volume->normalBias;
+    setup.viewBias = volume->viewBias;
+    setup.distanceExponent = volume->distanceExponent;
+    setup.hysteresis = volume->hysteresis;
     GI::DDGIContext::SetupVolume(volume->graphicsEntityId, setup);
 }
 
