@@ -7,6 +7,7 @@
 #include "ltc.fxh"
 #include "CSM.fxh"
 #include "clustering.fxh"
+#include "ddgi.fxh"
 
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 0x1;
@@ -552,6 +553,30 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 p
 /**
 */
 vec3
+GI(uint clusterIndex, vec3 pos, vec3 normal)
+{
+    vec3 light = vec3(0, 0, 0);
+    uint flag = AABBs[clusterIndex].featureFlags;
+    vec3 viewVec = normalize(EyePos.xyz - pos);
+    if (CHECK_FLAG(flag, CLUSTER_GI_VOLUME_BIT))
+    {
+        uint count = GIVolumeCountList[clusterIndex];
+        for (int i = 0; i < count; i++)
+            {
+                uint lidx = GIVolumeIndexLists[clusterIndex * MAX_GI_VOLUMES_PER_CLUSTER + i];
+                GIVolume gi = GIVolumes[lidx];
+                vec3 surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
+
+                light += EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options);
+            }
+    }
+    return light;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
 CalculatePointLightAmbientTransmission(
     in PointLight light,
     in PointLightShadowExtension ext,
@@ -759,6 +784,7 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
         light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+        light += GI(firstWaveIndex, worldSpacePos, normal);
     }
     else
     {
@@ -774,11 +800,13 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
             if (scalarIdx == idx)
             {
                 light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+                light += GI(scalarIdx, worldSpacePos, normal);
             }
         }
     }
 #else
     light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+    light += GI(idx, worldSpacePos, normal);
 #endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);
