@@ -8,7 +8,7 @@
 #include <lib/raytracing.fxh>
 #include <lib/mie-rayleigh.fxh>
 #include <lib/pbr.fxh>
-#include "ddgi.fxh"
+#include <lib/ddgi.fxh>
 
 group(SYSTEM_GROUP) write rgba32f image2D RadianceOutput;
 
@@ -191,7 +191,7 @@ RayGen(
     {
         vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
         vec3 dir = normalize(probeRayDirection);
-        vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+        vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb * payload.albedo;
         StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), atmo, 1e27f);
         return;
     }
@@ -246,6 +246,7 @@ RayGen(
         probeLighting = irradiance * (min(albedo, maxAlbedo) / PI);
         probeLighting /= IrradianceScale;
     }
+
     
     StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), probeLighting, payload.depth);
 }

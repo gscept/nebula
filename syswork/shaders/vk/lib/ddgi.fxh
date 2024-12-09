@@ -2,6 +2,8 @@
 //  @file ddgi.fxh
 //  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#ifndef DDGI_FXH
+#define DDGI_FXH
 #include <lib/shared.fxh>
 
 const int PROBE_STATE_INACTIVE = 0;
@@ -462,3 +464,5 @@ vec3 EvaluateDDGIIrradiance(
     
     return irradiance;
 }
+
+#endif // DDGI_FXH

@@ -62,7 +62,8 @@ psStandard(
 
     vec3 light = vec3(0, 0, 0);
     light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, albedo.rgb, material, N);
-    light += calcEnv(albedo, F0, N, viewVec, material);
+    
+    //light += calcEnv(albedo, F0, N, viewVec, material);
     
     OutColor = finalizeColor(light.rgb, albedo.a);
     //OutNormal = vec4(N, 0);

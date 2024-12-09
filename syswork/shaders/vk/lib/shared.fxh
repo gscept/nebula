@@ -485,6 +485,9 @@ struct GIVolume
     ivec3 ScrollOffsets;
     int NumIrradianceTexels;
     textureHandle States;
+    float NormalBias;
+    float ViewBias;
+    uint Options;
 };
 
 #define MAX_GI_VOLUMES_PER_CLUSTER 4
@@ -507,6 +510,11 @@ group(FRAME_GROUP) rw_buffer GIVolumeLists [ string Visibility = "CS|VS|PS"; ]
     GIVolume GIVolumes[64];
 };
 
+//------------------------------------------------------------------------------
+/**
+        Render targets
+*/
+//------------------------------------------------------------------------------
 group(PASS_GROUP) inputAttachment InputAttachment0;
 group(PASS_GROUP) inputAttachment InputAttachment1;
 group(PASS_GROUP) inputAttachment InputAttachment2;

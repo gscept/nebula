@@ -8,8 +8,8 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include <gi/shaders/probefinalize.h>
-#include <gi/shaders/probeupdate.h>
+#include <gi/shaders/probe_finalize.h>
+#include <gi/shaders/probe_update.h>
 
 #include "graphics/graphicscontext.h"
 namespace GI
@@ -98,8 +98,8 @@ private:
         float brightnessThreshold = 2.0f;
         float hysteresis = 0.97f;
         
-        Probeupdate::VolumeConstants updateConstants;
-        Probefinalize::BlendConstants blendConstants;
+        ProbeUpdate::VolumeConstants updateConstants;
+        ProbeFinalize::BlendConstants blendConstants;
         DDGIOptions options;
     };
     

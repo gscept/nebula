@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include <lib/std.fxh>
 #include <lib/shared.fxh>
-#include "ddgi.fxh"
+#include <lib/ddgi.fxh>
 
 group(SYSTEM_GROUP) read_write r11g11b10f image2D IrradianceOutput;
 group(SYSTEM_GROUP) read_write rg16f image2D DistanceOutput;
