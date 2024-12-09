@@ -10,7 +10,7 @@
 #include <lib/pbr.fxh>
 #include "ddgi.fxh"
 
-group(SYSTEM_GROUP) write rg32f image2D RadianceOutput;
+group(SYSTEM_GROUP) write rgba32f image2D RadianceOutput;
 
 const uint NumColorSamples = 16;
 const uint NumDepthSamples = 8;
@@ -27,11 +27,11 @@ group(SYSTEM_GROUP) constant VolumeConstants
     ivec3 ProbeScrollOffsets;
     int ProbeIndexCount;
     vec4 Rotation;
-    ivec3 ProbeGridSpacing;
+    vec3 ProbeGridSpacing;
     int NumDistanceTexels;
-    vec3 MinimalDirections[32];
+    vec4 MinimalDirections[32];
     float IrradianceGamma;
-    vec3 Directions[1024];
+    vec4 Directions[1024];
     float NormalBias;
     float ViewBias;
     float IrradianceScale;
@@ -74,7 +74,7 @@ GetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
     {
         bool useFixedRays = rayIndex < NUM_FIXED_RAYS;
         int adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - NUM_FIXED_RAYS;
-        direction = useFixedRays ? MinimalDirections[adjustedRayIndex] : Directions[adjustedRayIndex];
+        direction = useFixedRays ? MinimalDirections[adjustedRayIndex].xyz : Directions[adjustedRayIndex].xyz;
         if (useFixedRays)
         {
             return direction;
@@ -82,7 +82,7 @@ GetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
     }
     else
     {
-        direction = Directions[rayIndex];
+        direction = Directions[rayIndex].xyz;
     }
     return normalize((rotation * vec4(direction, 0)).xyz);
 }
@@ -111,8 +111,12 @@ PackFloat3ToUInt(vec3 val)
 void
 StoreRadianceAndDepth(ivec2 coordinate, vec3 radiance, float depth)
 {
+    const float ValueThreshold = 1 / 255.0f;
+    if (DDGIMaxComponent(radiance) <= ValueThreshold)
+        radiance = vec3(0);
     radiance *= IrradianceScale;
-    imageStore(RadianceOutput, coordinate, float4(
+    //imageStore(RadianceOutput, coordinate, vec4(radiance, depth));
+    imageStore(RadianceOutput, coordinate, vec4(
         uintBitsToFloat(
             PackFloat3ToUInt(
                 clamp(radiance, vec3(0.0f), vec3(1.0f))
@@ -133,8 +137,6 @@ RayGen(
     int rayIndex = int(gl_LaunchIDEXT.x);
     int probeIndex = int(gl_LaunchIDEXT.y);
 
-    vec3 direction = normalize((vec4(Directions[rayIndex], 0) * Rotation).xyz);
-    
     int storageProbeIndex;
     if ((Options & SCROLL_OPTION) != 0)
     {
@@ -188,9 +190,8 @@ RayGen(
     if ((payload.bits & RAY_MISS_BIT) != 0)
     {
         vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
-        vec3 dir = normalize(direction);
+        vec3 dir = normalize(probeRayDirection);
         vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
-        radiance += atmo;
         StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), atmo, 1e27f);
         return;
     }
@@ -210,23 +211,24 @@ RayGen(
         return;
     }
     
+    // TODO: Calculate light
     // If all conditions fall through, light the probe
     vec3 probeLighting = vec3(0);
     vec3 albedo = payload.albedo - payload.albedo * payload.material[MAT_METALLIC];
     
-    DDGIVolume volumeArg;
-    volumeArg.origin = Offset;
-    volumeArg.rotationQuat = Rotation;
-    volumeArg.probeGridCounts = ProbeGridDimensions;
-    volumeArg.probeGridSpacing = ProbeGridSpacing;
-    volumeArg.probeScrollOffsets = ProbeScrollOffsets;
-    volumeArg.numIrradianceTexels = NumIrradianceTexels;
-    volumeArg.numDistanceTexels = NumDistanceTexels;
-    volumeArg.probeIrradianceGamma = IrradianceGamma;
-    volumeArg.irradianceHandle = ProbeIrradiance;
-    volumeArg.distanceHandle = ProbeDistances;
-    volumeArg.offsetsHandle = ProbeOffsets;
-    volumeArg.statesHandle = ProbeStates; 
+    GIVolume volumeArg;
+    volumeArg.Offset = Offset;
+    volumeArg.Rotation = Rotation;
+    volumeArg.GridCounts = ProbeGridDimensions;
+    volumeArg.GridSpacing = ProbeGridSpacing;
+    volumeArg.ScrollOffsets = ProbeScrollOffsets;
+    volumeArg.NumIrradianceTexels = NumIrradianceTexels;
+    volumeArg.NumDistanceTexels = NumDistanceTexels;
+    volumeArg.EncodingGamma = IrradianceGamma;
+    volumeArg.Irradiance = ProbeIrradiance;
+    volumeArg.Distances = ProbeDistances;
+    volumeArg.Offsets = ProbeOffsets;
+    volumeArg.States = ProbeStates; 
     
     vec3 worldSpacePos = probeWorldPosition + probeRayDirection * payload.depth;
         
