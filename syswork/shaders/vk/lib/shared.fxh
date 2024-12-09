@@ -86,6 +86,7 @@ group(TICK_GROUP) shared constant PerTickParams
     vec4 Balance;
 
     vec3 DoFDistances;
+    uint EnableTerrainShadows;
 
     vec3 BloomColor;
     float BloomIntensity;
