@@ -20,6 +20,15 @@ const uint PARTIAL_UPDATE_OPTION = 0x10;
 //------------------------------------------------------------------------------
 /**
 */
+int 
+DDGIProbesPerPlane(ivec3 probeGridCounts)
+{
+    return probeGridCounts.x * probeGridCounts.z;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 int
 DDGIProbeIndex(ivec2 texCoord, ivec3 probeGridCounts)
 {
@@ -38,20 +47,24 @@ DDGIProbeIndex(ivec3 probeCoords, ivec3 probeGridCounts)
 //------------------------------------------------------------------------------
 /**
 */
+int 
+DDGIProbeIndex(uvec2 threadCoords, ivec3 probeGridCounts, int numTexels)
+{
+    int probesPerPlane = DDGIProbesPerPlane(probeGridCounts);
+    int planeIndex = int(threadCoords.x / (probeGridCounts.x * numTexels));
+    int probeIndexInPlane = int(threadCoords.x / numTexels) - (planeIndex * probeGridCounts.x) + (probeGridCounts.x * int(threadCoords.y / numTexels));
+    return planeIndex * probesPerPlane + probeIndexInPlane;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ivec2 
 DDGIProbeTexelPosition(int probeIndex, ivec3 probeGridCounts)
 {
     return ivec2(probeIndex % (probeGridCounts.x * probeGridCounts.y), probeIndex / (probeGridCounts.x * probeGridCounts.y));
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-int 
-DDGIProbesPerPlane(ivec3 probeGridCounts)
-{
-    return probeGridCounts.x * probeGridCounts.z;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -233,6 +246,26 @@ DDGIThreadBaseCoord(int probeIndex, ivec3 probeGridCounts, int probeNumTexels)
 
 //------------------------------------------------------------------------------
 /**
+    Finds the smallest component of the vector.
+*/
+float 
+DDGIMinComponent(vec3 a)
+{
+    return min(a.x, min(a.y, a.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Finds the largest component of the vector.
+*/
+float
+DDGIMaxComponent(vec3 a)
+{
+    return max(a.x, max(a.y, a.z));
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 vec2 
 DDGINormalizedOctahedralCoordinates(ivec2 threadCoords, int numTexels)
@@ -297,7 +330,7 @@ vec3 EvaluateDDGIIrradiance(
     vec3 worldPosition,
     vec3 surfaceBias,
     vec3 direction,
-    DDGIVolume volume,
+    GIVolume volume,
     uint options
 )
 {
@@ -305,50 +338,50 @@ vec3 EvaluateDDGIIrradiance(
     float accumulatedWeights = 0.0f;
     
     vec3 biasedWorldPosition = worldPosition + surfaceBias;
-    ivec3 baseProbeCoordinates = DDGIBaseProbeGridCoordinates(biasedWorldPosition, volume.origin, volume.rotationQuat, volume.probeGridCounts, volume.probeGridSpacing);
-    vec3 baseProbeWorlPosition = DDGIProbeWorldPosition(baseProbeCoordinates, volume.origin, volume.rotationQuat, volume.probeGridCounts, volume.probeGridSpacing);
+    ivec3 baseProbeCoordinates = DDGIBaseProbeGridCoordinates(biasedWorldPosition, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
+    vec3 baseProbeWorldPosition = DDGIProbeWorldPosition(baseProbeCoordinates, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
     
-    vec3 distanceVolumeSpace = biasedWorldPosition - baseProbeWorlPosition;
+    vec3 distanceVolumeSpace = biasedWorldPosition - baseProbeWorldPosition;
     // TODO: ROTATE
     
-    vec3 alpha = clamp(distanceVolumeSpace / volume.probeGridSpacing, vec3(0), vec3(1));
+    vec3 alpha = clamp(distanceVolumeSpace / volume.GridSpacing, vec3(0), vec3(1));
     for (int probeIndex = 0; probeIndex < 8; probeIndex++)
     {
         ivec3 adjacentProbeOffset = ivec3(probeIndex, probeIndex >> 1, probeIndex >> 2) & ivec3(1);
-        ivec3 adjacentProbeCoords = clamp(baseProbeCoordinates + adjacentProbeOffset, ivec3(0), volume.probeGridCounts - ivec3(1));
+        ivec3 adjacentProbeCoords = clamp(baseProbeCoordinates + adjacentProbeOffset, ivec3(0), volume.GridCounts - ivec3(1));
         float3 adjacentProbeWorldPosition; 
         
         if ((options & RELOCATION_OPTION) != 0)
         {
             if ((options & SCROLL_OPTION) != 0)
             {
-                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithScrollAndOffset(probeIndex, volume.origin, volume.rotationQuat, volume.probeGridCounts, volume.probeGridSpacing, volume.probeScrollOffsets, volume.offsetsHandle);
+                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithScrollAndOffset(probeIndex, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.ScrollOffsets, volume.Offsets);
             }
             else
             {
-                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithOffset(probeIndex, volume.origin, volume.rotationQuat, volume.probeGridCounts, volume.probeGridSpacing, volume.offsetsHandle);
+                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithOffset(probeIndex, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.Offsets);
             }
         }
         else
         {
-            adjacentProbeWorldPosition = DDGIProbeWorldPosition(adjacentProbeCoords, volume.origin, volume.rotationQuat, volume.probeGridCounts, volume.probeGridSpacing);
+            adjacentProbeWorldPosition = DDGIProbeWorldPosition(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
         }
         
-        int adjacentProbeIndex = DDGIProbeIndex(adjacentProbeCoords, volume.probeGridCounts);
+        int adjacentProbeIndex = DDGIProbeIndex(adjacentProbeCoords, volume.GridCounts);
         
         if ((options & CLASSIFICATION_OPTION) != 0)
         {
             int probeIndex;
             if ((options & SCROLL_OPTION) != 0)
             {
-                probeIndex = DDGIProbeIndexOffset(adjacentProbeIndex, volume.probeGridCounts, volume.probeScrollOffsets);
+                probeIndex = DDGIProbeIndexOffset(adjacentProbeIndex, volume.GridCounts, volume.ScrollOffsets);
             }
             else
             {
                 probeIndex = adjacentProbeIndex;
             }
-            ivec2 texelPosition = DDGIProbeTexelPosition(probeIndex, volume.probeGridCounts);
-            int state = floatBitsToInt(fetch2D(volume.statesHandle, Basic2DSampler, texelPosition, 0).x);
+            ivec2 texelPosition = DDGIProbeTexelPosition(probeIndex, volume.GridCounts);
+            int state = floatBitsToInt(fetch2D(volume.States, Basic2DSampler, texelPosition, 0).x);
             if (state == PROBE_STATE_INACTIVE)
                 continue;
         }
@@ -368,13 +401,13 @@ vec3 EvaluateDDGIIrradiance(
         vec2 probeTextureCoords;
         if ((options & SCROLL_OPTION) != 0)
         {
-            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.probeGridCounts, volume.numIrradianceTexels, volume.probeScrollOffsets, options);
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, volume.ScrollOffsets, options);
         }
         else
         {
-            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.probeGridCounts, volume.numIrradianceTexels, ivec3(0), options);
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, ivec3(0), options);
         }
-        vec2 filteredDistance = sample2DLod(volume.distanceHandle, Basic2DSampler, probeTextureCoords, 0).xy;
+        vec2 filteredDistance = sample2DLod(volume.Distances, Basic2DSampler, probeTextureCoords, 0).xy;
         
         float meanDistanceToSurface = filteredDistance.x;
         float variance = abs((filteredDistance.x * filteredDistance.x) - filteredDistance.y);
@@ -402,15 +435,15 @@ vec3 EvaluateDDGIIrradiance(
         octantCoords = DDGIOctahedralCoordinates(direction);
         if ((options & SCROLL_OPTION) != 0)
         {
-            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.probeGridCounts, volume.numIrradianceTexels, volume.probeScrollOffsets, options);
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, volume.ScrollOffsets, options);
         }
         else
         {
-            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.probeGridCounts, volume.numIrradianceTexels, ivec3(0), options);
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, ivec3(0), options);
         }
-        vec3 probeIrradiance = sample2DLod(volume.irradianceHandle, Basic2DSampler, probeTextureCoords, 0).xyz;
+        vec3 probeIrradiance = sample2DLod(volume.Irradiance, Basic2DSampler, probeTextureCoords, 0).xyz;
         
-        vec3 exponent = vec3(volume.probeIrradianceGamma * 0.5f);
+        vec3 exponent = vec3(volume.EncodingGamma * 0.5f);
         probeIrradiance = pow(probeIrradiance, exponent);
         
         irradiance += (weight * probeIrradiance);

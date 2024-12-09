@@ -8,6 +8,7 @@
 
 #include <cstdint>
 
+#include "clustering/clustercontext.h"
 #include "frame/default.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
@@ -18,6 +19,8 @@
 
 #include "gi/shaders/probeupdate.h"
 #include "gi/shaders/probefinalize.h"
+#include "gi/shaders/gi_volume_cull.h"
+#include "graphics/globalconstants.h"
 
 using namespace Graphics;
 
@@ -48,13 +51,21 @@ struct
     CoreGraphics::ShaderProgramId probeUpdateProgram;
     CoreGraphics::PipelineRayTracingTable pipeline;
 
+    CoreGraphics::ShaderId volumeCullShader;
+    CoreGraphics::ShaderProgramId volumeCullProgram, volumeClusterDebugProgram;
+
     CoreGraphics::ShaderId probeFinalizeShader;
-    CoreGraphics::ShaderProgramId probeBlendRadianceProgram, probeBlendDistanceProgram;
+    CoreGraphics::ShaderProgramId probeBlendRadianceProgram, probeBlendDistanceProgram, probeBorderRadianceRowsFixup, probeBorderRadianceColumnsFixup, probeBorderDistanceRowsFixup, probeBorderDistanceColumnsFixup;
 
     CoreGraphics::ResourceTableSet raytracingTable;
 
+    CoreGraphics::BufferId clusterGIVolumeIndexLists;
+    CoreGraphics::BufferSet stagingClusterGIVolumeList;
+    CoreGraphics::BufferId clusterGIVolumeList;
+
     Util::Array<UpdateVolume> volumesToUpdate;
 
+    GiVolumeCull::GIVolume giVolumes[64];
     Math::vec3 probeDirections188[188];
 } state;
 
@@ -86,7 +97,7 @@ DDGIContext::Create()
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    state.probeUpdateShader = CoreGraphics::ShaderGet("shd:gi/shaders/probeupdate.fxb");
+    state.probeUpdateShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_update.fxb");
     state.probeUpdateProgram = CoreGraphics::ShaderGetProgram(state.probeUpdateShader, CoreGraphics::ShaderFeatureMask("ProbeRayGen"));
 
     auto brdfHitShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/brdfhit.fxb");
@@ -103,9 +114,61 @@ DDGIContext::Create()
     // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
     state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram }, CoreGraphics::ComputeQueueType);
 
-    state.probeFinalizeShader = CoreGraphics::ShaderGet("shd:gi/shaders/probefinalize.fxb");
+    state.probeFinalizeShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_finalize.fxb");
     state.probeBlendRadianceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeRadiance"));
     state.probeBlendDistanceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeDistance"));
+    state.probeBorderRadianceRowsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderRowsRadiance"));
+    state.probeBorderRadianceColumnsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderColumnsRadiance"));
+    state.probeBorderDistanceRowsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderRowsDistance"));
+    state.probeBorderDistanceColumnsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderColumnsDistance"));
+
+    state.volumeCullShader = CoreGraphics::ShaderGet("shd:gi/shaders/gi_volume_cull.fxb");
+    state.volumeCullProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Cull"));
+    state.volumeClusterDebugProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Debug"));
+
+    CoreGraphics::BufferCreateInfo rwbInfo;
+    rwbInfo.name = "GIIndexListsBuffer";
+    rwbInfo.size = 1;
+    rwbInfo.elementSize = sizeof(GiVolumeCull::GIIndexLists);
+    rwbInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+    rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+    rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
+    state.clusterGIVolumeIndexLists = CreateBuffer(rwbInfo);
+
+    rwbInfo.name = "GIVolumeLists";
+    rwbInfo.elementSize = sizeof(GiVolumeCull::GIVolume);
+    state.clusterGIVolumeList = CreateBuffer(rwbInfo);
+
+    rwbInfo.name = "GIVolumeListsStagingBuffer";
+    rwbInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+    rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    state.stagingClusterGIVolumeList = CoreGraphics::BufferSet(rwbInfo);
+
+    FrameScript_default::Bind_ClusterGIList(state.clusterGIVolumeList);
+    FrameScript_default::Bind_ClusterGIIndexLists(state.clusterGIVolumeIndexLists);
+    FrameScript_default::RegisterSubgraph_GICopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::BufferCopy from, to;
+        from.offset = 0;
+        to.offset = 0;
+        CmdCopy(cmdBuf, state.stagingClusterGIVolumeList.buffers[bufferIndex], { from }, state.clusterGIVolumeList, { to }, sizeof(Shared::GIVolumeLists));
+    }, {
+        { FrameScript_default::BufferIndex::ClusterGIList, CoreGraphics::PipelineStage::TransferWrite }
+    });
+
+    FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, state.volumeCullProgram);
+
+        // Run chunks of 1024 threads at a time
+        std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
+
+        CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
+    }, {
+        { FrameScript_default::BufferIndex::ClusterGIList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterGIIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
+    });
 
     FrameScript_default::RegisterSubgraph_DDGIProbeUpdate_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
@@ -117,7 +180,7 @@ DDGIContext::Create()
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.updateProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
-                CoreGraphics::CmdRaysDispatch(cmdBuf, state.pipeline.table, volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], volumeToUpdate.numRays, 1);
+                CoreGraphics::CmdRaysDispatch(cmdBuf, state.pipeline.table, volumeToUpdate.numRays, volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 1);
             }
         }
     }, {
@@ -157,9 +220,56 @@ DDGIContext::Create()
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], volumeToUpdate.probeCounts[0], 1);
             }
-
-            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::BarrierDomain::Global, radianceDistanceTextures);
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::BarrierDomain::Global, radianceDistanceTextures);
+
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceRowsFixup);
+            for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
+            {
+                uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+                uint probeGridHeight = volumeToUpdate.probeCounts[0];
+                uint irradianceTextureWidth = probeGridWidth * Probefinalize::NUM_IRRADIANCE_TEXELS_PER_PROBE;
+
+                CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
+                CoreGraphics::CmdDispatch(cmdBuf, irradianceTextureWidth, probeGridHeight, 1);
+            }
+
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceRowsFixup);
+            for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
+            {
+                uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+                uint probeGridHeight = volumeToUpdate.probeCounts[0];
+                uint distanceTextureWidth = probeGridWidth * Probefinalize::NUM_DISTANCE_TEXELS_PER_PROBE;
+
+                CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
+                CoreGraphics::CmdDispatch(cmdBuf, distanceTextureWidth, probeGridHeight, 1);
+            }
+
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
+
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceColumnsFixup);
+            for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
+            {
+                uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+                uint probeGridHeight = volumeToUpdate.probeCounts[0];
+                uint irradianceTextureHeight = probeGridHeight * Probefinalize::NUM_IRRADIANCE_TEXELS_PER_PROBE;
+
+                CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
+                CoreGraphics::CmdDispatch(cmdBuf, probeGridWidth * 2, irradianceTextureHeight, 1);
+            }
+
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceColumnsFixup);
+            for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
+            {
+                uint probeGridWidth = volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+                uint probeGridHeight = volumeToUpdate.probeCounts[0];
+                uint distanceTextureHeight = probeGridHeight * Probefinalize::NUM_DISTANCE_TEXELS_PER_PROBE;
+
+                CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
+                CoreGraphics::CmdDispatch(cmdBuf, probeGridWidth * 2, distanceTextureHeight, 1);
+            }
+
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
         }
     });
 
@@ -174,14 +284,14 @@ DDGIContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-Math::vec3
+Math::vec4
 SphericalFibonacci(float index, float numSamples)
 {
     const float b = (sqrt(5.0f) * 0.5f + 0.5f) - 1.0f;
     float phi = 2 * PI * Math::fract(index * b);
     float cosTheta = 1.0f - (2.0f * index + 1.0f) * (1.0f / numSamples);
     float sinTheta = sqrt(Math::clamp(1.0f - (cosTheta * cosTheta), 0.0f, 1.0f));
-    return Math::normalize(Math::vec3((cos(phi) * sinTheta), (sin(phi) * sinTheta), cosTheta));
+    return Math::vec4(Math::normalize(Math::vec3((cos(phi) * sinTheta), (sin(phi) * sinTheta), cosTheta)), 0);
 }
 
 //------------------------------------------------------------------------------
@@ -194,6 +304,7 @@ DDGIContext::Discard()
 
 //------------------------------------------------------------------------------
 /**
+ *
 */
 void
 DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup& setup)
@@ -303,6 +414,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.updateConstants.ProbeStates = CoreGraphics::TextureGetBindlessHandle(volume.states);
     volume.updateConstants.ProbeScrollSpace = CoreGraphics::TextureGetBindlessHandle(volume.scrollSpace);
 
+    volume.blendConstants.ProbeRadiance = CoreGraphics::TextureGetBindlessHandle(volume.radiance);
     volume.blendConstants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
     volume.blendConstants.ProbeDistances = CoreGraphics::TextureGetBindlessHandle(volume.distance);
     volume.blendConstants.ProbeOffsets = CoreGraphics::TextureGetBindlessHandle(volume.offsets);
@@ -332,7 +444,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     CoreGraphics::ResourceTableCommitChanges(volume.updateProbesTable);
 
     volume.blendProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probeFinalizeShader, NEBULA_SYSTEM_GROUP, 1);
-    CoreGraphics::ResourceTableSetConstantBuffer(volume.blendProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeUpdateBuffer, Probefinalize::Table_System::BlendConstants_SLOT));
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.blendProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeBlendBuffer, Probefinalize::Table_System::BlendConstants_SLOT));
     CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.irradiance, Probefinalize::Table_System::IrradianceOutput_SLOT));
     CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.distance, Probefinalize::Table_System::DistanceOutput_SLOT));
     CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.scrollSpace, Probefinalize::Table_System::ScrollSpaceOutput_SLOT));
@@ -371,8 +483,10 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 {
     const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
+    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
 
     state.volumesToUpdate.Clear();
+    uint volumeCount = 0;
     for (Volume& activeVolume : volumes)
     {
         if (activeVolume.boundingBox.contains(xyz(cameraPos)))
@@ -437,7 +551,49 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
             CoreGraphics::BufferUpdate(activeVolume.volumeUpdateBuffer, activeVolume.updateConstants);
             CoreGraphics::BufferUpdate(activeVolume.volumeBlendBuffer, activeVolume.blendConstants);
+
+            auto& giVolume = state.giVolumes[volumeCount];
+            Math::bbox bbox(activeVolume.position, activeVolume.size);
+            bbox.transform(viewTransform);
+            bbox.pmin.store(giVolume.bboxMin);
+            bbox.pmax.store(giVolume.bboxMax);
+            Math::quat().store(giVolume.Rotation);
+            activeVolume.position.store(giVolume.Offset);
+            giVolume.NumDistanceTexels = Probeupdate::NUM_DISTANCE_TEXELS_PER_PROBE;
+            giVolume.NumIrradianceTexels = Probeupdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
+            giVolume.EncodingGamma = activeVolume.updateConstants.IrradianceGamma;
+            memcpy(giVolume.GridCounts, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
+            memcpy(giVolume.ScrollOffsets, activeVolume.updateConstants.ProbeScrollOffsets, sizeof(activeVolume.blendConstants.ProbeScrollOffsets));
+            memcpy(giVolume.GridSpacing, activeVolume.updateConstants.ProbeGridSpacing, sizeof(activeVolume.blendConstants.ProbeGridSpacing));
+
+            giVolume.Distances = activeVolume.blendConstants.ProbeDistances;
+            giVolume.Irradiance = activeVolume.blendConstants.ProbeIrradiance;
+            giVolume.States = activeVolume.blendConstants.ProbeStates;
+            giVolume.Offsets = activeVolume.blendConstants.ProbeOffsets;
+
+            volumeCount++;
         }
+    }
+
+    // Update shared GI data
+    Shared::GIVolumeUniforms giVolumeUniforms;
+    giVolumeUniforms.NumGIVolumes = volumeCount;
+    giVolumeUniforms.NumGIVolumeClusters = Clustering::ClusterContext::GetNumClusters();
+
+    IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+    CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
+
+    uint offset = CoreGraphics::SetConstants(giVolumeUniforms);
+    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::Table_Frame::GIVolumeUniforms_SLOT, 0, sizeof(Shared::GIVolumeUniforms), (SizeT)offset });
+    ResourceTableCommitChanges(frameResourceTable);
+
+    if (volumeCount > 0)
+    {
+        GiVolumeCull::GIVolumeLists volumeList;
+        Memory::CopyElements(state.giVolumes, volumeList.GIVolumes, volumeCount);
+        CoreGraphics::BufferUpdate(state.stagingClusterGIVolumeList.buffers[bufferIndex], volumeList);
+        CoreGraphics::BufferFlush(state.stagingClusterGIVolumeList.buffers[bufferIndex]);
     }
 
     CoreGraphics::ResourceTableSetRWBuffer(state.raytracingTable.tables[ctx.bufferIndex], CoreGraphics::ResourceTableBuffer(Raytracing::RaytracingContext::GetObjectBindingBuffer(), Probeupdate::Table_Batch::ObjectBuffer_SLOT));

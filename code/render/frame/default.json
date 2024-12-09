@@ -12,6 +12,8 @@
             "ClusterDecalIndexLists",
             "ClusterFogList",
             "ClusterFogIndexLists",
+            "ClusterGIList",
+            "ClusterGIIndexLists",
             "GridLightList",
             "GridLightIndexLists",
             "GridDecalList",
@@ -221,6 +223,16 @@
                     {
                         "subgraph": {
                             "name": "Fog Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "GI Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "GI Cull"
                         }
                     },
                     {

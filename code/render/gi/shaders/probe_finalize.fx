@@ -12,14 +12,14 @@ group(SYSTEM_GROUP) read_write r8 image2D ScrollSpaceOutput;
 
 group(SYSTEM_GROUP) constant BlendConstants
 {
-    vec3 Directions[1024];
+    vec4 Directions[1024];
     uint Options;
     uint RaysPerProbe;
     ivec3 ProbeGridDimensions;
     int ProbeIndexStart;
     ivec3 ProbeScrollOffsets;
     int ProbeIndexCount;
-    ivec3 ProbeGridSpacing;
+    vec3 ProbeGridSpacing;
     
     float InverseGammaEncoding;
     float Hysteresis;
@@ -31,6 +31,7 @@ group(SYSTEM_GROUP) constant BlendConstants
     float ChangeThreshold;
     float BrightnessThreshold;
     
+    uint ProbeRadiance;
     uint ProbeIrradiance;
     uint ProbeDistances;
     uint ProbeOffsets;
@@ -57,25 +58,6 @@ UnpackUIntToFloat3(uint val)
     return unpacked;
 }
 
-//------------------------------------------------------------------------------
-/**
-    Finds the smallest component of the vector.
-*/
-float 
-DDGIMinComponent(vec3 a)
-{
-    return min(a.x, min(a.y, a.z));
-}
-
-//------------------------------------------------------------------------------
-/**
-    Finds the largest component of the vector.
-*/
-float
-DDGIMaxComponent(vec3 a)
-{
-    return max(a.x, max(a.y, a.z));
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -113,8 +95,8 @@ Blend(const uint MODE)
     vec4 result = vec4(0); 
     
     ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-    int probeIndex = DDGIProbeIndex(texel, ProbeGridDimensions);
-    int groupIndex = int(gl_WorkGroupID.x + gl_WorkGroupID.y * NUM_IRRADIANCE_TEXELS_PER_PROBE + gl_WorkGroupID.z * NUM_IRRADIANCE_TEXELS_PER_PROBE * NUM_IRRADIANCE_TEXELS_PER_PROBE);
+    int probeIndex = DDGIProbeIndex(texel, ProbeGridDimensions, NUM_TEXELS_PER_PROBE);
+    int groupIndex = int(gl_LocalInvocationIndex);
     if (probeIndex < 0)
     {
         earlyOut = true;
@@ -142,8 +124,6 @@ Blend(const uint MODE)
                 earlyOut = true;
         }
     }
-    
-    
     
     if ((Options & PARTIAL_UPDATE_OPTION) != 0)
     {
@@ -198,15 +178,16 @@ Blend(const uint MODE)
             if (rayIndex >= RaysPerProbe)
                 break;
                 
-            vec2 value = fetch2D(ProbeIrradiance, Basic2DSampler, ivec2(rayIndex, probeIndex), 0).xy;
+            vec2 value = fetch2D(ProbeRadiance, Basic2DSampler, ivec2(rayIndex, probeIndex), 0).xy;
             if (MODE == RADIANCE_MODE)
+                //Radiance[rayIndex] = value.xyz;
                 Radiance[rayIndex] = UnpackUIntToFloat3(floatBitsToUint(value.x));
             Distance[rayIndex] = value.y;
-            Direction[rayIndex] = Directions[rayIndex]; // TODO: Add rotation
+            Direction[rayIndex] = Directions[rayIndex].xyz; // TODO: Add rotation
         }
     }
     
-    groupMemoryBarrier();
+    barrier();
     
     if (earlyOut)
     {
@@ -260,7 +241,7 @@ Blend(const uint MODE)
     }
     
     const float epsilon = 1e-9f * float(RaysPerProbe);
-    result.rgb *= 1.0f / max(2.0f * result.a, epsilon);
+    result.rgb *= 1.0f / max(2.0f * result.w, epsilon);
     
     
     if (MODE == DISTANCE_MODE)
@@ -316,6 +297,126 @@ Blend(const uint MODE)
         imageStore(DistanceOutput, ivec2(probeTexCoords), result);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BorderRows(const uint MODE)
+{
+    const int NUM_TEXELS_PER_PROBE = MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE;
+    
+    uint probeSideLength = (NUM_TEXELS_PER_PROBE + 2);
+    uint probeSideLengthMinusOne = (probeSideLength - 1);
+    
+    uvec2 thread = gl_GlobalInvocationID.xy;
+    thread.y *= probeSideLength;
+    
+    int mod = int(gl_GlobalInvocationID.x % probeSideLength);
+    if (mod == 0 || mod == probeSideLengthMinusOne)
+        return;
+        
+    uint probeStart = uint(thread.x / probeSideLength) * probeSideLength;
+    uint offset = probeSideLengthMinusOne - (thread.x % probeSideLength);
+    
+    uvec2 copyCoordinates = uvec2(probeStart + offset, (thread.y + 1));
+     
+    vec4 load;
+    if (MODE == RADIANCE_MODE)
+    {
+        load = imageLoad(IrradianceOutput, ivec2(thread));
+        imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+    }
+    else if (MODE == DISTANCE_MODE)
+    {
+        load = imageLoad(DistanceOutput, ivec2(thread));
+        imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BorderColumns(const uint MODE)
+{
+    const int NUM_TEXELS_PER_PROBE = MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE;
+    
+    uint probeSideLength = (NUM_TEXELS_PER_PROBE + 2);
+    uint probeSideLengthMinusOne = (probeSideLength - 1);
+    
+    uvec2 thread = gl_GlobalInvocationID.xy;
+    thread.x *= probeSideLength;
+    
+    uvec2 copyCoordinates = uvec2(0);
+    
+    int mod = int(gl_GlobalInvocationID.y % probeSideLength);
+    if (mod == 0 || mod == probeSideLengthMinusOne)
+    {
+        copyCoordinates.x = thread.x + NUM_TEXELS_PER_PROBE;
+        copyCoordinates.y = thread.y - sign(mod - 1) * NUM_TEXELS_PER_PROBE;
+        
+        vec4 load;
+        if (MODE == RADIANCE_MODE)
+        {
+            load = imageLoad(IrradianceOutput, ivec2(thread));
+            imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+        }
+        else if (MODE == DISTANCE_MODE)
+        {
+            load = imageLoad(DistanceOutput, ivec2(thread));
+            imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+        }
+        
+        thread.x += probeSideLengthMinusOne;
+        copyCoordinates.x = thread.x - NUM_TEXELS_PER_PROBE;
+        
+        if (MODE == RADIANCE_MODE)
+        {
+            load = imageLoad(IrradianceOutput, ivec2(thread));
+            imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+        }
+        else if (MODE == DISTANCE_MODE)
+        {
+            load = imageLoad(DistanceOutput, ivec2(thread));
+            imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+        }
+        return;
+    }
+        
+    uint probeStart = uint(thread.y / probeSideLength) * probeSideLength;
+    uint offset = probeSideLengthMinusOne - (thread.y % probeSideLength);
+    
+    copyCoordinates = uvec2(thread.x + 1, probeStart + offset);
+     
+    vec4 load;
+    if (MODE == RADIANCE_MODE)
+    {
+        load = imageLoad(IrradianceOutput, ivec2(thread));
+        imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+    }
+    else if (MODE == DISTANCE_MODE)
+    {
+        load = imageLoad(DistanceOutput, ivec2(thread));
+        imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+    }
+    
+    thread.x += probeSideLengthMinusOne;
+    copyCoordinates = uvec2(thread.x - 1, probeStart + offset);
+    
+    if (MODE == RADIANCE_MODE)
+    {
+        load = imageLoad(IrradianceOutput, ivec2(thread));
+        imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+    }
+    else if (MODE == DISTANCE_MODE)
+    {
+        load = imageLoad(DistanceOutput, ivec2(thread));
+        imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+    }
+}
+
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -343,6 +444,55 @@ ProbeFinalizeDistance()
 //------------------------------------------------------------------------------
 /**
 */
+[local_size_x] = 8
+[local_size_y] = 8
+[local_size_z] = 1
+shader void
+ProbeFinalizeBorderRowsRadiance()
+{
+    BorderRows(RADIANCE_MODE);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+[local_size_x] = 8
+[local_size_y] = 8
+[local_size_z] = 1
+shader void
+ProbeFinalizeBorderColumnsRadiance()
+{
+    BorderColumns(RADIANCE_MODE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+[local_size_x] = 8
+[local_size_y] = 8
+[local_size_z] = 1
+shader void
+ProbeFinalizeBorderRowsDistance()
+{
+    BorderRows(DISTANCE_MODE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+[local_size_x] = 8
+[local_size_y] = 8
+[local_size_z] = 1
+shader void
+ProbeFinalizeBorderColumnsDistance()
+{
+    BorderColumns(DISTANCE_MODE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 program RadianceFinalize[string Mask = "ProbeFinalizeRadiance"; ]
 {
     ComputeShader = ProbeFinalizeRadiance();
@@ -354,4 +504,36 @@ program RadianceFinalize[string Mask = "ProbeFinalizeRadiance"; ]
 program DistanceFinalize[string Mask = "ProbeFinalizeDistance"; ]
 {
     ComputeShader = ProbeFinalizeDistance();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+program RadianceBorderRowsFixup[ string Mask = "ProbeFinalizeBorderRowsRadiance"; ]
+{
+    ComputeShader = ProbeFinalizeBorderRowsRadiance();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+program RadianceBorderColumnsFixup[ string Mask = "ProbeFinalizeBorderColumnsRadiance"; ]
+{
+    ComputeShader = ProbeFinalizeBorderColumnsRadiance();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+program DistanceBorderRowsFixup[ string Mask = "ProbeFinalizeBorderRowsDistance"; ]
+{
+    ComputeShader = ProbeFinalizeBorderRowsDistance();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+program DistanceBorderColumnsFixup[ string Mask = "ProbeFinalizeBorderColumnsDistance"; ]
+{
+    ComputeShader = ProbeFinalizeBorderColumnsDistance();
 };

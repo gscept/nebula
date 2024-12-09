@@ -211,6 +211,7 @@ const uint CLUSTER_PBR_DECAL_BIT = 0x10u;
 const uint CLUSTER_EMISSIVE_DECAL_BIT = 0x20u;
 const uint CLUSTER_FOG_SPHERE_BIT = 0x40u;
 const uint CLUSTER_FOG_BOX_BIT = 0x80u;
+const uint CLUSTER_GI_VOLUME_BIT = 0x100u;
 
 // set a fixed number of cluster entries
 const uint NUM_CLUSTER_ENTRIES = 16384;
@@ -460,6 +461,49 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
 {
     FogSphere FogSpheres[128];
     FogBox FogBoxes[128];
+};
+
+//------------------------------------------------------------------------------
+/**
+        GI
+*/
+//------------------------------------------------------------------------------
+struct GIVolume
+{
+    vec3 bboxMin;
+    int NumDistanceTexels;
+    vec3 bboxMax;
+    float EncodingGamma;
+    vec3 Offset;
+    textureHandle Irradiance;
+    vec4 Rotation; // quaternion
+    ivec3 GridCounts;
+    textureHandle Distances;
+    vec3 GridSpacing;
+    textureHandle Offsets;
+    ivec3 ScrollOffsets;
+    int NumIrradianceTexels;
+    textureHandle States;
+};
+
+#define MAX_GI_VOLUMES_PER_CLUSTER 4
+
+// this is used to keep track of how many lights we have active
+group(FRAME_GROUP) constant GIVolumeUniforms [ string Visibility = "CS|PS"; ]
+{
+    uint NumGIVolumes;
+    uint NumGIVolumeClusters;
+};
+
+group(FRAME_GROUP) rw_buffer GIIndexLists [ string Visibility = "CS|VS|PS"; ]
+{
+    uint GIVolumeCountList[MAX_GI_VOLUMES_PER_CLUSTER];
+    uint GIVolumeIndexLists[MAX_GI_VOLUMES_PER_CLUSTER];
+};
+
+group(FRAME_GROUP) rw_buffer GIVolumeLists [ string Visibility = "CS|VS|PS"; ]
+{
+    GIVolume GIVolumes[64];
 };
 
 group(PASS_GROUP) inputAttachment InputAttachment0;
