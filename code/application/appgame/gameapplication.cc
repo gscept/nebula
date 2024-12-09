@@ -17,6 +17,7 @@
 #include "jobs2/jobs2.h"
 #include "input/inputserver.h"
 #include "basegamefeature/basegamefeatureunit.h"
+#include "nflatbuffer/flatbufferinterface.h"
 
 #include "profiling/profiling.h"
 
@@ -104,6 +105,8 @@ GameApplication::Open()
         this->ioServer->MountStandardArchives();
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
+
+        Flat::FlatbufferInterface::Init();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = System::NumCpuCores;

@@ -8,6 +8,7 @@ fips_ide_group(addons)
 fips_deps(render turbobadger)
 target_precompile_headers(tbui PRIVATE <render/stdneb.h>)
 target_include_directories(tbui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+nebula_flatc(SYSTEM addons/tbui/tbconfig.fbs)
 
 fips_files(
     tbuicontext.cc

@@ -27,10 +27,7 @@ TBUIFileInterface::Open(const char* filename, TBFileMode mode)
 
     Ptr<IO::FileStream> stream = IO::IoServer::Instance()->CreateStream(filename).downcast<IO::FileStream>();
     stream->SetAccessMode(IO::Stream::AccessMode::ReadAccess);
-    if (!stream->Open())
-    {
-        return 0;
-    }
+    n_assert_fmt(stream->Open(),"Failed to load TB resource: %s", filename);
 
     size_t fileId = allocateFileId();
     openFiles.Add(fileId, stream);

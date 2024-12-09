@@ -88,11 +88,19 @@ AssetBatcherApp::OnBeforeRunLocal()
 {
     IO::IoServer* ioServer = IO::IoServer::Instance();
     ioServer->CreateDirectory("phys:");
-    auto files = ioServer->ListFiles("tool:syswork/data/flatbuffer/physics", "*.fbs", true);
-    for (auto const& file : files)
+    const String flatBufferRoot = "tool:syswork/data/flatbuffer/";
+    auto printname = [](const String& name, const String& folder)
     {
-        Flat::FlatbufferInterface::CompileSchema(file);
-    }
+        const IO::URI root("tool:syswork/data/flatbuffer/");
+        const String rootPath = root.LocalPath();
+        n_assert(0 == folder.FindStringIndex(rootPath));
+        String base = folder.ExtractToEnd(rootPath.Length()+1);
+        String source = String::Sprintf("%s/%s", folder.AsCharPtr(), name.AsCharPtr());
+        String target = String::Sprintf("bfbs:%s/%s", base.AsCharPtr(), name.AsCharPtr());
+        target.ChangeFileExtension("bfbs");
+        Flat::FlatbufferInterface::CompileSchema(source, target);
+    };
+    ioServer->IterateFolders("tool:syswork/data/flatbuffer/", "*.fbs", printname);
     IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
     CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");

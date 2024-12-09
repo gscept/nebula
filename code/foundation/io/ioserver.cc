@@ -291,6 +291,19 @@ IoServer::CreateDirectory(const URI& uri) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+IoServer::EnsureDirectoriesForFile(const URI& uri) const
+{
+    n_assert(uri.Scheme() == "file");
+    String path = uri.GetHostAndLocalPath();
+
+    String folder = path.ExtractToLastSlash();
+    return this->CreateDirectory(folder);
+}
+
+//------------------------------------------------------------------------------
+/**
     This copies a file to another file.
 */
 bool
@@ -693,6 +706,28 @@ IoServer::NativePath(const Util::String& path)
     std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::u8path(path.AsCharPtr()));
 #endif
     return u8path.string().c_str();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+IoServer::IterateFolders(const URI& dir, const Util::String& pattern, FileMapFunc iter)
+{
+    Util::Array<Util::String> dirs;
+    dirs.Append(dir.LocalPath());
+
+    while (dirs.Size() > 0)
+    {
+        Util::String currentDir = dirs.PopFront();
+        Util::Array<Util::String> files = this->ListFiles(currentDir, pattern, false);
+        dirs.AppendArray(this->ListDirectories(currentDir, "*", true));
+        for (auto file : files)
+        {
+            iter(file, currentDir);
+        }
+    }
+
 }
 
 } // namespace IO

@@ -8,6 +8,9 @@
 #include "frame/default.h"
 #include "io/assignregistry.h"
 #include "input/keyboard.h"
+#include "io/ioserver.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "flat/addons/tbui/tbconfig.h"
 
 #include <tb_config.h>
 #include "tbuicontext.h"
@@ -172,6 +175,18 @@ TBUIContext::~TBUIContext()
 void
 TBUIContext::Create()
 {
+    const IO::URI configPath = "config:tb/config.tbcf";
+    if (!IO::IoServer::Instance()->FileExists(configPath))
+    {
+        return;
+    }
+
+    tbui::tbconfigT config;
+    if (!Flat::FlatbufferInterface::DeserializeJsonFlatbuffer<tbui::tbconfig>(config, configPath, "tbconfig"))
+    {
+        return;
+    }
+
     n_assert(FrameSync::FrameSyncTimer::HasInstance());
     __bundle.OnWindowResized = TBUIContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -183,55 +198,40 @@ TBUIContext::Create()
             delete renderer;
             return;
         }
-        IO::AssignRegistry::Instance()->SetAssign(IO::Assign("tb", "root:work/turbobadger"));
+        if (!IO::AssignRegistry::Instance()->HasAssign("tb"))
+        {
+            IO::AssignRegistry::Instance()->SetAssign(IO::Assign("tb", "data:turbobadger"));
+        }
 
         // Load language file
-        tb::g_tb_lng->Load("tb:resources/language/lng_en.tb.txt");
-
+        if (config.languages.size())
+        {
+            tb::g_tb_lng->Load(config.languages[0]->path.c_str());
+        }
         // Register font renderers.
-#ifdef TB_FONT_RENDERER_TBBF
         register_tbbf_font_renderer();
-#endif
 
         // Not great, but turbobadger will delete this
         // Maybe turbobadger should be patched to not delete this
         // Or it could allow our own destroy function to be passed in
         stbFontRenderer = new TBUISTBFontRenderer();
         tb::g_font_manager->AddRenderer(stbFontRenderer);
-
-#if 0 // Enable to use the fonty skin
-	// New experimental skin using shapes & icon font, to scale perfectly for any DPI
-	// Requires FontAwesome to be added before loading skin.
-	tb::g_font_manager->AddFontInfo("tb:resources/fonty_skin/fontawesome.ttf", "FontAwesome");
-	tb::g_tb_skin->Load("tb:resources/fonty_skin/skin.tb.txt", "tb:demo/skin/skin.tb.txt");
-#else
-        tb::g_tb_skin->Load("tb:resources/default_skin/skin.tb.txt", "tb:demo/skin/skin.tb.txt");
-#endif
-
-        // Add fonts we can use to the font manager.
-        // STB font renderer can render this
-        tb::g_font_manager->AddFontInfo("tb:demo/fonts_ttf/Lato-Regular.ttf", "Lato");
-
-#ifdef TB_FONT_RENDERER_TBBF
-        tb::g_font_manager->AddFontInfo("tb:resources/default_font/segoe_white_with_shadow.tb.txt", "Segoe");
-        tb::g_font_manager->AddFontInfo("tb:demo/fonts/neon.tb.txt", "Neon");
-        tb::g_font_manager->AddFontInfo("tb:demo/fonts/orangutang.tb.txt", "Orangutang");
-        tb::g_font_manager->AddFontInfo("tb:demo/fonts/orange.tb.txt", "Orange");
-#endif
-
-        // Set the default font description for widgets to one of the fonts we just added
-        // STB renders Lato smaller than FreeType since it ignores the size table in fonts.
-        // To make demo look similar with all font engines, we use slightly different sizes.
-        // This should match when running in 96dp, but will likely diverge for other DPIs (and fonts).
-        tb::TBFontDescription fd;
-        fd.SetID(TBIDC("Lato"));
-        fd.SetSize(tb::g_tb_skin->GetDimensionConverter()->DpToPx(18));
-#ifdef TB_FONT_RENDERER_TBBF
-        // Enable this code only if we want to use TBBF only
-        //fd.SetID(TBIDC("Segoe"));
-        //fd.SetSize(tb::g_tb_skin->GetDimensionConverter()->DpToPx(14));
-#endif
-        tb::g_font_manager->SetDefaultFontDescription(fd);
+        
+        for (const auto & font : config.fonts)
+        {
+            tb::g_font_manager->AddFontInfo(font->path.c_str(), font->name.c_str());
+            if (config.default_font == font->name)
+            {
+                tb::TBFontDescription fd;
+                fd.SetID(TBIDC(config.default_font.c_str()));
+                if (font->scale > 0)
+                {
+                    fd.SetSize(tb::g_tb_skin->GetDimensionConverter()->DpToPx(font->scale));
+                }
+                tb::g_font_manager->SetDefaultFontDescription(fd);
+            }
+        }
+        tb::g_tb_skin->Load(config.default_skin.c_str(), config.skin.c_str());
 
         // Create the font now.
         tb::TBFontFace* font = tb::g_font_manager->CreateFontFace(tb::g_font_manager->GetDefaultFontDescription());
