@@ -1,0 +1,28 @@
+// configuration for tb 
+
+namespace tbui;
+
+table tblanguage
+{
+	lang : string;
+	path : string;
+}
+
+table tbfont
+{
+	name : string;
+	path : string;
+	scale : int = 0;	
+}
+
+table tbconfig
+{
+	languages : [tblanguage];
+	fonts : [tbfont];
+	skin : string;
+	default_font : string;
+	default_skin : string;
+}
+root_type tbconfig;
+file_identifier "TBCF";
+file_extension "tbc";

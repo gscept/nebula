@@ -1,0 +1,36 @@
+{
+	skin: "tb:demo/skin/skin.tb.txt",
+	default_skin: "tb:resources/default_skin/skin.tb.txt",
+	default_font: "Lato",
+    languages : [
+        {
+            lang : "en",
+            path : "tb:resources/language/lng_en.tb.txt",
+        }
+    ],
+	fonts : [
+		{
+			name : "Lato",
+			path : "tb:demo/fonts_ttf/Lato-Regular.ttf",
+			scale : 18,
+		},
+		{
+			name : "Segoe",
+			path : "tb:resources/default_font/segoe_white_with_shadow.tb.txt",
+			scale : 14,
+		},
+		{
+			name : "Neon",
+			path : "tb:demo/fonts/neon.tb.txt",
+		},
+		{
+			name : "Orangutang",
+			path : "tb:demo/fonts/orangutang.tb.txt",
+		},
+		{
+			name : "Orange",
+			path : "tb:demo/fonts/orange.tb.txt",
+		}
+	]
+
+}

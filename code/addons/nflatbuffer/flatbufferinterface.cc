@@ -46,7 +46,7 @@ struct FlatbufferState
 void FlatbufferState::Init()
 {
     n_assert(IO::AssignRegistry::HasInstance());
-    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("bfbs", "data:flatbuffer"));
+    IO::AssignRegistry::Instance()->SetAssign(IO::Assign("bfbs", "export:data/flatbuffer"));
     // this is only for tool-time as it uses work
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("fbs", "root:work/data/flatbuffer"));
     flatbuffers::SetLoadFileFunction(&FlatLoadFileFunction);
@@ -132,7 +132,8 @@ void FlatbufferInterface::Init()
 //------------------------------------------------------------------------------
 /**
 */
-bool FlatbufferInterface::LoadSchema(IO::URI const& file)
+bool 
+FlatbufferInterface::LoadSchema(IO::URI const& file)
 {
     return state.LoadFbs(file);
 }
@@ -140,23 +141,81 @@ bool FlatbufferInterface::LoadSchema(IO::URI const& file)
 //------------------------------------------------------------------------------
 /**
 */
-bool FlatbufferInterface::CompileSchema(IO::URI const& file)
+flatbuffers::Parser* 
+FlatbufferInterface::CreateParserForJson(IO::URI const& file)
+{
+    Util::String ext = file.LocalPath().GetFileExtension();
+    ext.ToUpper();
+    n_assert(state.schemaFiles.Contains(ext.AsCharPtr()));
+    return CreateParser(state.schemaFiles[ext]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+FlatbufferInterface::ParseJson(IO::URI const& file)
+{
+    Util::String contents;
+    if (IO::IoServer::Instance()->ReadFile(file, contents))
+    {
+        flatbuffers::Parser* parser = CreateParserForJson(file);
+        if (parser->ParseJson(contents.AsCharPtr(),file.LocalPath().AsCharPtr()))
+        {
+            auto builderSize = parser->builder_.GetSize();
+            char* builderData = reinterpret_cast<char*>(parser->builder_.GetBufferPointer());
+            Util::Blob blob(builderData, builderSize);
+            delete parser;
+            return blob;
+        }
+        delete parser;
+    }
+    return Util::Blob();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool FlatbufferInterface::CompileSchema(IO::URI const& file, IO::URI const& outFile)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
+    bool retval = false;
     if (stream->Open())
     {
-        void* buf = stream->Map();
+        IO::Stream::Size fileSize = stream->GetSize();
+        char* tempBuffer = (char*)Memory::Alloc(Memory::ScratchHeap, fileSize + 1);
+        stream->Read(tempBuffer, fileSize);
+        stream->Close();
+        tempBuffer[fileSize] = '\0';
         IO::URI systemInclude = "tool:syswork/data/flatbuffer/";
-        const char* includes[2];
+        IO::URI projectInclude = "fbs:";
+        const char* includes[3];
         includes[0] = systemInclude.LocalPath().AsCharPtr();
-        includes[1] = nullptr;
+        includes[1] = projectInclude.LocalPath().AsCharPtr();
+        includes[2] = nullptr;
+
+
         flatbuffers::Parser* parser = new flatbuffers::Parser;
-        parser->Parse((const char*)buf, includes, file.LocalPath().AsCharPtr());
-        parser->Serialize();
-        auto blorf = parser->builder_.GetSize();
-        char* ff = reinterpret_cast<char*>(parser->builder_.GetBufferPointer());
+
+        if (parser->Parse((const char*)tempBuffer, includes, file.LocalPath().AsCharPtr()))
+        {
+            Memory::Free(Memory::ScratchHeap, tempBuffer);
+            parser->Serialize();
+            auto builderSize = parser->builder_.GetSize();
+            char* builderData = reinterpret_cast<char*>(parser->builder_.GetBufferPointer());
+            IO::IoServer::Instance()->EnsureDirectoriesForFile(outFile);
+            Ptr<IO::Stream> outStream = IO::IoServer::Instance()->CreateStream(outFile);
+            outStream->SetAccessMode(IO::Stream::WriteAccess);
+            if (outStream->Open())
+            {
+                outStream->Write(builderData, builderSize);
+                outStream->Close();
+                retval = true;
+            }
+        }
+        delete parser;
     }
-    return false;
+    return retval;
 }
 
 //------------------------------------------------------------------------------

@@ -143,10 +143,13 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("msh",   "export:meshes"));
     this->SetAssign(Assign("ani",   "export:anims"));
     this->SetAssign(Assign("ske",   "export:skeletons"));
+#if PUBLIC_BUILD
     this->SetAssign(Assign("data",  "export:data"));        
+#else
+    this->SetAssign(Assign("data", "root:data"));
+#endif
     this->SetAssign(Assign("video", "export:video"));
     this->SetAssign(Assign("db",    "export:db"));
-    this->SetAssign(Assign("seq",   "export:sequences"));
     this->SetAssign(Assign("audio", "export:audio"));
     this->SetAssign(Assign("shd",   "export:shaders"));
     this->SetAssign(Assign("tex",   "export:textures"));
@@ -154,14 +157,13 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("mdl",   "export:models"));
     this->SetAssign(Assign("phys",  "export:physics"));
     this->SetAssign(Assign("audio", "export:audio"));    
-    this->SetAssign(Assign("sui",   "export:sui"));       
     this->SetAssign(Assign("mat",   "export:materials"));
     this->SetAssign(Assign("sur",   "export:surfaces"));
-    this->SetAssign(Assign("scr",   "root:data/scripts"));
-    this->SetAssign(Assign("gui",   "root:data/gui"));
+    this->SetAssign(Assign("scr",   "data:scripts"));
+    this->SetAssign(Assign("gui",   "data:gui"));
     
     // assign for nav meshes
-    this->SetAssign(Assign("nav", "root:data/navigation"));
+    this->SetAssign(Assign("nav",   "data:navigation"));
 
     // setup special system assigns (for placeholders, etc...)
     this->SetAssign(Assign("sysmsh",    "msh:system"));
@@ -171,6 +173,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("syssur",    "sur:system"));
     this->SetAssign(Assign("sysphys",   "phys:system"));
 
+    this->SetAssign(Assign("config", "data:config"));
 
     // tools assigns
     this->SetAssign(Assign("tool", Core::CoreServer::Instance()->GetToolDirectory().AsString()));    

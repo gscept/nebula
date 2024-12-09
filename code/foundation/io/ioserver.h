@@ -70,6 +70,8 @@ public:
     Ptr<Stream> CreateStream(const URI& uri) const;
     /// create all missing directories in the path
     bool CreateDirectory(const URI& uri) const;
+    /// create all missing directories 
+    bool EnsureDirectoriesForFile(const URI& uri) const;
     /// delete an empty directory
     bool DeleteDirectory(const URI& path) const;
     /// return true if directory exists
@@ -102,6 +104,10 @@ public:
     Util::Array<Util::String> ListFiles(const URI& dir, const Util::String& pattern, bool asFullPath=false) const;
     /// list all subdirectories matching a pattern in a directory
     Util::Array<Util::String> ListDirectories(const URI& dir, const Util::String& pattern, bool asFullPath=false, bool prioritizeArchive=true) const;
+
+    using FileMapFunc = void(const Util::String& file, const Util::String& folder);
+    /// iterate through all files in hierarchy and call provided function 
+    void IterateFolders(const URI& dir, const Util::String& pattern, FileMapFunc iter);
 
     /// create a temporary file name
     URI CreateTemporaryFilename(const URI& path) const;
