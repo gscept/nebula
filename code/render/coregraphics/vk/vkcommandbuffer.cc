@@ -679,6 +679,7 @@ CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(buf.id);
     Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id);
     pipelineBundle.raytracingLayout = pipelineObj.layout;
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
 
     bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
     pipelineBundle.graphicsLayout = pipelineObj.layout;
@@ -688,8 +689,6 @@ CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
         CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
         CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
     }
-
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
 }
 
 //------------------------------------------------------------------------------
