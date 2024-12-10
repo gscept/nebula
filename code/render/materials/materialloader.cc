@@ -198,13 +198,13 @@ LoadTexture(const Ptr<IO::BXmlReader>& reader, CoreGraphics::TextureId def, cons
             dirtyFlag = true;
         });
         handle = CoreGraphics::TextureGetBindlessHandle(tmp);
+        reader->SetToParent();
     }
     else
     {
         CoreGraphics::TextureIdLock _0(def);
         handle = CoreGraphics::TextureGetBindlessHandle(def);
     }
-    reader->SetToParent();
 }
 
 //------------------------------------------------------------------------------
@@ -217,12 +217,12 @@ LoadVec4(const Ptr<IO::BXmlReader>& reader, const char* name, float value[4], co
     {
         Math::vec4 val = reader->GetVec4("value");
         val.store(value);
+        reader->SetToParent();
     }
     else
     {
         def.store(value);
     }
-    reader->SetToParent();
 }
 
 //------------------------------------------------------------------------------
@@ -235,12 +235,12 @@ LoadVec3(const Ptr<IO::BXmlReader>& reader, const char* name, float value[3], co
     {
         Math::vec4 val = reader->GetVec4("value");
         val.store3(value);
+        reader->SetToParent();
     }
     else
     {
         def.store(value);
     }
-    reader->SetToParent();
 }
 
 //------------------------------------------------------------------------------
@@ -252,18 +252,18 @@ LoadFloat(const Ptr<IO::BXmlReader>& reader, const char* name, float& value, con
     if (reader->SetToFirstChild(name))
     {
         value = reader->GetFloat("value");
+        reader->SetToParent();
     }
     else
     {
         value = def;
     }
-    reader->SetToParent();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 MaterialLoader::Setup()
 {
     this->placeholderResourceName = "syssur:placeholder.sur";
@@ -333,7 +333,7 @@ MaterialLoader::Setup()
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
         LoadFloat(reader, "Transmission", material.Transmission, 0);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::BRDF, brdfLoader);
+    LoaderMap.Add(MaterialTemplates::MaterialProperties::BSDF, bsdfLoader);
 
     auto unlitLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_MATERIAL(UnlitMaterial);
@@ -501,9 +501,6 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
                 auto loader = LoaderMap.ValueAtIndex(loaderIndex);
                 loader(reader, id, job.tag);
                 state.dirtySet.bits = 0x3;
-
-                // jump up one level
-                reader->SetToNode("Params");
             }
 
             // This is the legacy material system loaded with the new surface format
