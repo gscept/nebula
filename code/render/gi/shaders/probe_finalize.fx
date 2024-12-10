@@ -183,7 +183,7 @@ Blend(const uint MODE)
                 Radiance[rayIndex] = value.xyz;
                 //Radiance[rayIndex] = UnpackUIntToFloat3(floatBitsToUint(value.x));
             Distance[rayIndex] = value.w;
-            Direction[rayIndex] = Directions[rayIndex].xyz; // TODO: Add rotation
+            Direction[rayIndex] = DDGIGetProbeDirection(rayIndex, mat4x4(0), Options);//Directions[rayIndex].xyz; // TODO: Add rotation
         }
     }
     
