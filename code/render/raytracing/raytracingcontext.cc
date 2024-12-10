@@ -21,6 +21,7 @@
 #include "raytracing/shaders/light_grid_cs.h"
 
 #include "frame/default.h"
+#include "lighting/lightcontext.h"
 
 namespace Raytracing
 {
@@ -183,7 +184,6 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
         ResourceTableCommitChanges(state.lightGridResourceTables.tables[i]);
     }
 
-
     // Create buffers for updating blas instances
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.name = "BLAS Instance Buffer";
@@ -201,25 +201,26 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     state.objectBindingBuffer = CoreGraphics::BufferWithStaging(objectBindingBufferCreateInfo);
 
     FrameScript_default::Bind_RayTracingObjectBindings(state.objectBindingBuffer.DeviceBuffer());
-    FrameScript_default::Bind_GridLightList(state.lightGrid);
+    FrameScript_default::Bind_GridLightBuffer(state.lightGrid);
     FrameScript_default::Bind_GridLightIndexLists(state.lightGridIndexLists);
 
     FrameScript_default::RegisterSubgraph_RaytracingLightGridGen_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridGenProgram);
         CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
+        CoreGraphics::CmdDispatch(cmdBuf, 64 * 64 * 64, 1, 1);
     }, {
-        { FrameScript_default::BufferIndex::GridLightList, CoreGraphics::PipelineStage::ComputeShaderWrite }
+        { FrameScript_default::BufferIndex::GridLightBuffer, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
     FrameScript_default::RegisterSubgraph_RaytracingLightGridCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CmdSetShaderProgram(cmdBuf, state.lightGridCullProgram);
         CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        CoreGraphics::CmdDispatch(cmdBuf, 64 * 64, 1, 1);
+        CoreGraphics::CmdDispatch(cmdBuf, 64*64, 1, 1);
     }, {
-        { FrameScript_default::BufferIndex::GridLightList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        { FrameScript_default::BufferIndex::GridLightBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
+        , { FrameScript_default::BufferIndex::ClusterLightList, CoreGraphics::PipelineStage::ComputeShaderRead }
         , { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
     });
 
@@ -341,16 +342,14 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 
     FrameScript_default::RegisterSubgraph_RaytracingTest_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        /*
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
         {
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.raytracingBundle.pipeline);
             CoreGraphics::CmdSetResourceTable(cmdBuf,  state.raytracingTestOutputTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, {});
-            CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTestTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, {});
+            CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, {});
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
         }
-        */
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
@@ -642,8 +641,9 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     uniformData.NumCells[0] = 64;
     uniformData.NumCells[1] = 64;
     uniformData.NumCells[2] = 64;
+    uniformData.BlockSize[0] = 64;
+    uniformData.BlockSize[1] = 64;
     CoreGraphics::BufferUpdate(state.lightGridConstants, uniformData);
-    CoreGraphics::BufferFlush(state.lightGridConstants);
 
     const Util::Array<Graphics::GraphicsEntityId>& entities = RaytracingContext::__state.entities;
 
@@ -750,8 +750,12 @@ RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 
     IndexT tickCbo, viewCbo, shadowCbo;
     Graphics::GetOffsets(tickCbo, viewCbo, shadowCbo);
-    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), LightGridCs::Table_Frame::ViewConstants_SLOT, 0, sizeof(LightGridCs::ViewConstants), (SizeT)viewCbo });
-    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), LightGridCs::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(LightGridCs::ShadowViewConstants), (SizeT)shadowCbo });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::ViewConstants_SLOT, 0, sizeof(Shared::ViewConstants), (SizeT)viewCbo });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(Shared::ShadowViewConstants), (SizeT)shadowCbo });
+    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGrid, Shared::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGridIndexLists, Shared::Table_Frame::LightIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { Lighting::LightContext::GetLightsBuffer(), Shared::Table_Frame::LightLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGridConstants, Shared::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(Shared::ClusterUniforms), 0 });
     ResourceTableCommitChanges(state.lightGridResourceTables.tables[ctx.bufferIndex]);
 }
 
@@ -759,9 +763,9 @@ RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 /**
 */
 CoreGraphics::ResourceTableId
-RaytracingContext::GetLightGridResourceTable()
+RaytracingContext::GetLightGridResourceTable(IndexT bufferIndex)
 {
-    return state.lightGridResourceTables.tables[CoreGraphics::GetBufferedFrameIndex()];
+    return state.lightGridResourceTables.tables[bufferIndex];
 }
 
 //------------------------------------------------------------------------------

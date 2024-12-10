@@ -81,7 +81,7 @@ public:
     static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
     /// Get light grid resources
-    static CoreGraphics::ResourceTableId GetLightGridResourceTable();
+    static CoreGraphics::ResourceTableId GetLightGridResourceTable(IndexT bufferIndex);
     /// Get TLAS
     static CoreGraphics::TlasId GetTLAS();
     /// Get object binding buffer

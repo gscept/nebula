@@ -1218,6 +1218,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 float height = shape == AreaLightShape::Tube ? 1.0f : scale.y;
                 trans.setscale(Math::vector(width * range[i], height * range[i], twoSided ? range[i] * 2 : -range[i]));
                 trans.setposition(trans.getposition() + Math::vector(0, 0, twoSided ? 0 : -range[i] / 2));
+
+                trans.getmatrix().position.store(areaLight.center);
+                (abs(trans.getmatrix().get_x()) + abs(trans.getmatrix().get_y()) + abs(trans.getmatrix().get_z())).store(areaLight.extents);
                 Math::mat4 viewSpace = viewTransform * trans.getmatrix();
                 Math::bbox bbox(viewSpace);
 

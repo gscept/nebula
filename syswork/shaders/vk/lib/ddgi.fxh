@@ -328,7 +328,8 @@ struct DDGIVolume
 //------------------------------------------------------------------------------
 /**
 */
-vec3 EvaluateDDGIIrradiance(
+vec3 
+EvaluateDDGIIrradiance(
     vec3 worldPosition,
     vec3 surfaceBias,
     vec3 direction,

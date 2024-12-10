@@ -298,9 +298,9 @@ struct PointLightShadowExtension
 
 struct AreaLight
 {
-    vec3 bboxMin;               // Bounding box min point
+    vec3 center;
     float range;
-    vec3 bboxMax;               // Bounding box max point
+    vec3 extents;
     float radius;
 
     vec3 xAxis;
@@ -501,8 +501,8 @@ group(FRAME_GROUP) constant GIVolumeUniforms [ string Visibility = "CS|PS"; ]
 
 group(FRAME_GROUP) rw_buffer GIIndexLists [ string Visibility = "CS|VS|PS"; ]
 {
-    uint GIVolumeCountList[MAX_GI_VOLUMES_PER_CLUSTER];
-    uint GIVolumeIndexLists[MAX_GI_VOLUMES_PER_CLUSTER];
+    uint GIVolumeCountList[NUM_CLUSTER_ENTRIES];
+    uint GIVolumeIndexLists[NUM_CLUSTER_ENTRIES * MAX_GI_VOLUMES_PER_CLUSTER];
 };
 
 group(FRAME_GROUP) rw_buffer GIVolumeLists [ string Visibility = "CS|VS|PS"; ]

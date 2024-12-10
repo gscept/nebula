@@ -418,7 +418,7 @@ ENDIF()
                 ddgicontext.h
             )
         fips_dir(gi/shaders)
-            add_shaders(probe_update.fx probe_finalize.fx probe_debug.fx ddgi.fxh gi_volume_cull.fx)
+            add_shaders(probe_update.fx probe_finalize.fx probe_debug.fx gi_volume_cull.fx)
         fips_dir(graphics) 
             fips_files(
 				bindlessregistry.cc
