@@ -1219,14 +1219,11 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 trans.setscale(Math::vector(width * range[i], height * range[i], twoSided ? range[i] * 2 : -range[i]));
                 trans.setposition(trans.getposition() + Math::vector(0, 0, twoSided ? 0 : -range[i] / 2));
 
-                trans.getmatrix().position.store(areaLight.center);
-                (abs(trans.getmatrix().get_x()) + abs(trans.getmatrix().get_y()) + abs(trans.getmatrix().get_z())).store(areaLight.extents);
-                Math::mat4 viewSpace = viewTransform * trans.getmatrix();
-                Math::bbox bbox(viewSpace);
+                trans.getmatrix().position.store3(areaLight.center);
+                Math::vec4 localExtents = abs(trans.getmatrix().get_x()) + abs(trans.getmatrix().get_y()) + abs(trans.getmatrix().get_z()) * 0.5f;
+                localExtents.store3(areaLight.extents);
 
-                bbox.pmin.store3(areaLight.bboxMin);
                 areaLight.range = range[i];
-                bbox.pmax.store3(areaLight.bboxMax);
                 areaLight.radius = scale.y;
 
                 uint flags = 0;
