@@ -178,11 +178,11 @@ Blend(const uint MODE)
             if (rayIndex >= RaysPerProbe)
                 break;
                 
-            vec2 value = fetch2D(ProbeRadiance, Basic2DSampler, ivec2(rayIndex, probeIndex), 0).xy;
+            vec4 value = fetch2D(ProbeRadiance, Basic2DSampler, ivec2(rayIndex, probeIndex), 0);
             if (MODE == RADIANCE_MODE)
-                //Radiance[rayIndex] = value.xyz;
-                Radiance[rayIndex] = UnpackUIntToFloat3(floatBitsToUint(value.x));
-            Distance[rayIndex] = value.y;
+                Radiance[rayIndex] = value.xyz;
+                //Radiance[rayIndex] = UnpackUIntToFloat3(floatBitsToUint(value.x));
+            Distance[rayIndex] = value.w;
             Direction[rayIndex] = Directions[rayIndex].xyz; // TODO: Add rotation
         }
     }

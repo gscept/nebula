@@ -115,13 +115,15 @@ StoreRadianceAndDepth(ivec2 coordinate, vec3 radiance, float depth)
     if (DDGIMaxComponent(radiance) <= ValueThreshold)
         radiance = vec3(0);
     radiance *= IrradianceScale;
-    //imageStore(RadianceOutput, coordinate, vec4(radiance, depth));
+    imageStore(RadianceOutput, coordinate, vec4(radiance, depth));
+    /*
     imageStore(RadianceOutput, coordinate, vec4(
         uintBitsToFloat(
             PackFloat3ToUInt(
                 clamp(radiance, vec3(0.0f), vec3(1.0f))
             )
         ), depth, 0.0f, 0.0f));
+        */
 }
 
 //------------------------------------------------------------------------------
@@ -183,7 +185,11 @@ RayGen(
 
     const float MaxDistance = 10000.0f;
     payload.bits = 0x0;
-    
+    payload.albedo = vec3(1, 1, 1);
+    payload.alpha = 0.0f;
+    payload.material = vec4(0, 0, 0, 0);
+    payload.normal = vec3(0, 0, 0);
+    payload.depth = 0;
     vec3 radiance = vec3(0,0,0);
 
     traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
@@ -231,7 +237,9 @@ RayGen(
     volumeArg.States = ProbeStates; 
     
     vec3 worldSpacePos = probeWorldPosition + probeRayDirection * payload.depth;
-        
+    
+    vec3 light = CalculateLightRT(worldSpacePos, payload.depth / MaxDistance, payload.albedo.rgb, payload.material, payload.normal);
+
     vec3 relativePos = abs(worldSpacePos - Offset);
     if (relativePos.x > Scale.x || relativePos.y > Scale.y || relativePos.z > Scale.z)
     {
@@ -246,9 +254,8 @@ RayGen(
         probeLighting = irradiance * (min(albedo, maxAlbedo) / PI);
         probeLighting /= IrradianceScale;
     }
-
     
-    StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), probeLighting, payload.depth);
+    StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), light + probeLighting, payload.depth);
 }
 
 //------------------------------------------------------------------------------
