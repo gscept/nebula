@@ -144,6 +144,16 @@ DDGIContext::Create()
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
     state.stagingClusterGIVolumeList = CoreGraphics::BufferSet(rwbInfo);
 
+    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
+    {
+        CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
+
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeIndexLists, Shared::Table_Frame::GIIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeList, Shared::Table_Frame::GIVolumeLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::GIVolumeUniforms_SLOT, 0, sizeof(ProbeFinalize::GIVolumeUniforms), 0 });
+        ResourceTableCommitChanges(frameResourceTable);
+    }
+
     FrameScript_default::Bind_ClusterGIList(state.clusterGIVolumeList);
     FrameScript_default::Bind_ClusterGIIndexLists(state.clusterGIVolumeIndexLists);
     FrameScript_default::RegisterSubgraph_GICopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -159,6 +169,7 @@ DDGIContext::Create()
     FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.volumeCullProgram);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         // Run chunks of 1024 threads at a time
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
@@ -176,7 +187,7 @@ DDGIContext::Create()
         {
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.pipeline.pipeline);
             CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetRaytracingTable(bufferIndex), NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(), NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.updateProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
@@ -185,6 +196,7 @@ DDGIContext::Create()
         }
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
+        , { FrameScript_default::BufferIndex::GridLightBuffer, CoreGraphics::PipelineStage::RayTracingShaderRead }
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
     } );
 
@@ -341,8 +353,9 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 #endif
     radianceCreateInfo.width = setup.numRaysPerProbe;
     radianceCreateInfo.height = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
-    radianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32F;
+    radianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
     radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+
     volume.radiance = CoreGraphics::CreateTexture(radianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo irradianceCreateInfo;
@@ -353,6 +366,8 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     irradianceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.format = CoreGraphics::PixelFormat::R11G11B10F;
     irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    irradianceCreateInfo.swizzle.red = CoreGraphics::TextureChannelMapping::Red;
+    irradianceCreateInfo.swizzle.blue = CoreGraphics::TextureChannelMapping::Blue;
     volume.irradiance = CoreGraphics::CreateTexture(irradianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo distanceCreateInfo;
@@ -504,7 +519,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.volumeBlendOutputs.scrollSpaceTexture = activeVolume.scrollSpace;
             state.volumesToUpdate.Append(volumeToUpdate);
 
-            Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 10.0f), 0.0f, 0.0f);
+            Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 25.0f), 0.0f, 0.0f);
             rotation.store(activeVolume.updateConstants.TemporalRotation);
             activeVolume.size.store(activeVolume.updateConstants.Scale);
             activeVolume.position.store(activeVolume.updateConstants.Offset);
@@ -554,7 +569,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
             auto& giVolume = state.giVolumes[volumeCount];
 
-            Math::mat4 transform = Math::scaling(activeVolume.size * 0.5f);
+            Math::mat4 transform = Math::scaling(activeVolume.size);
             transform.translate(activeVolume.position);
             Math::bbox bbox = viewTransform * transform;
             bbox.pmin.store(giVolume.bboxMin);
