@@ -14,7 +14,7 @@
             "ClusterFogIndexLists",
             "ClusterGIList",
             "ClusterGIIndexLists",
-            "GridLightList",
+            "GridLightBuffer",
             "GridLightIndexLists",
             "GridDecalList",
             "GridDecalIndexLists",

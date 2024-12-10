@@ -2,6 +2,10 @@
 //  raytracing.fxh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+
+#ifndef RAYTRACING_FXH
+#define RAYTRACING_FXH
+
 #include <lib/std.fxh>
 #include <lib/shared.fxh>
 #include <material_interfaces.fx>
@@ -322,3 +326,5 @@ CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, ve
     light += albedo.rgb * material[MAT_EMISSIVE];
     return light;
 }
+
+#endif // RAYTRACING_FXH

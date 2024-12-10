@@ -96,7 +96,6 @@ DecalContext::Create()
     rwbInfo.name = "DecalListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-
     decalState.stagingClusterDecalsList = BufferSet(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
@@ -353,7 +352,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 //------------------------------------------------------------------------------
 /**
-    Todo: Right now, we just render a box, 
+    Todo: Right now, we just render a box,
     but probably we want some type of mesh to illustrate this is a decal,
     and not some 'empty' object
 */

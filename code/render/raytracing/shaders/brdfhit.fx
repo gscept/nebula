@@ -24,7 +24,10 @@ ClosestHit(
     BRDFMaterial mat = BRDFMaterials + obj.MaterialOffset;
     vec4 normals = sample2DLod(mat.NormalMap, Basic2DSampler, uv, 0);
     vec3 tNormal = TangentSpaceNormal(normals.xy, tbn);
-
+    
+    float facing = dot(tNormal, gl_WorldRayDirectionEXT);
+    Result.bits |= facing <= 0 ? RAY_BACK_FACE_BIT : 0x0; 
+        
     vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0);
     vec4 material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
     Result.alpha = albedo.a;
