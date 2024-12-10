@@ -95,7 +95,7 @@ ShaderSetup(
     uint32_t numsets = 0;
 
     // always create push constant range in layout, making all shaders using push constants compatible
-    uint32_t maxConstantBytes = CoreGraphics::MaxPushConstantSize;
+    uint32_t maxPushConstantBytes = CoreGraphics::MaxPushConstantSize;
     uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
     constantRange.Resize(NumShaders); // one per shader stage
     uint i;
@@ -142,9 +142,8 @@ ShaderSetup(
         if (block->variables.empty()) continue;
         if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
         {
-            n_assert(block->alignedSize <= maxConstantBytes);
-            n_assert(block->alignedSize <= CoreGraphics::MaxPushConstantSize);
-            maxConstantBytes -= block->alignedSize;
+            n_assert(block->alignedSize <= maxPushConstantBytes);
+            maxPushConstantBytes -= block->alignedSize;
             CoreGraphics::ResourcePipelinePushConstantRange range;
             range.offset = pushRangeOffset;
             range.size = block->alignedSize;
