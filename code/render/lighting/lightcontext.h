@@ -12,6 +12,7 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/texture.h"
 #include <array>
+#include <system_shaders/lights_cluster.h>
 
 namespace Frame
 {
@@ -150,6 +151,9 @@ public:
     static const CoreGraphics::BufferId GetLightIndexBuffer();
     /// get light lists buffer
     static const CoreGraphics::BufferId GetLightsBuffer();
+    /// get light uniforms
+    static const LightsCluster::LightUniforms& GetLightUniforms();
+    
 private:
 
     /// Set global light transform

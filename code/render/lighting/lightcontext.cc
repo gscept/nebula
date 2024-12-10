@@ -82,6 +82,7 @@ struct
 
     // these are used to update the light clustering
     alignas(16) LightsCluster::LightLists lightList;
+    LightsCluster::LightUniforms consts;
 
 } clusterState;
 
@@ -1015,6 +1016,15 @@ LightContext::GetLightsBuffer()
 //------------------------------------------------------------------------------
 /**
 */
+const LightsCluster::LightUniforms&
+LightContext::GetLightUniforms()
+{
+    return clusterState.consts;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction)
 {
@@ -1278,13 +1288,13 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     // get per-view resource tables
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    LightsCluster::LightUniforms consts;
-    consts.NumSpotLights = numSpotLights;
-    consts.NumPointLights = numPointLights;
-    consts.NumAreaLights = numAreaLights;
-    consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
-    consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
-    IndexT offset = SetConstants(consts);
+
+    clusterState.consts.NumSpotLights = numSpotLights;
+    clusterState.consts.NumPointLights = numPointLights;
+    clusterState.consts.NumAreaLights = numAreaLights;
+    clusterState.consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
+    clusterState.consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
+    IndexT offset = SetConstants(clusterState.consts);
     ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), (SizeT)offset });
     ResourceTableCommitChanges(frameResourceTable);
 
