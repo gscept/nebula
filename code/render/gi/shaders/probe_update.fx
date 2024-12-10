@@ -63,29 +63,6 @@ GetProbeTexel(int probe, int3 probeGridDimensions)
     return ivec2(probe % (probeGridDimensions.x * probeGridDimensions.y), probe / (probeGridDimensions.x * probeGridDimensions.y));
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-vec3
-GetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
-{
-    vec3 direction;
-    if ((options & (RELOCATION_OPTION | CLASSIFICATION_OPTION)) != 0)
-    {
-        bool useFixedRays = rayIndex < NUM_FIXED_RAYS;
-        int adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - NUM_FIXED_RAYS;
-        direction = useFixedRays ? MinimalDirections[adjustedRayIndex].xyz : Directions[adjustedRayIndex].xyz;
-        if (useFixedRays)
-        {
-            return direction;
-        }
-    }
-    else
-    {
-        direction = Directions[rayIndex].xyz;
-    }
-    return normalize((rotation * vec4(direction, 0)).xyz);
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -181,7 +158,7 @@ RayGen(
         probeWorldPosition = DDGIProbeWorldPosition(probeIndex, Offset, Rotation, ProbeGridDimensions, ProbeGridSpacing);
     }
     
-    vec3 probeRayDirection = GetProbeDirection(rayIndex, TemporalRotation, Options); 
+    vec3 probeRayDirection = DDGIGetProbeDirection(rayIndex, TemporalRotation, Options); 
 
     const float MaxDistance = 10000.0f;
     payload.bits = 0x0;

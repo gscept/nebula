@@ -248,6 +248,30 @@ DDGIThreadBaseCoord(int probeIndex, ivec3 probeGridCounts, int probeNumTexels)
 
 //------------------------------------------------------------------------------
 /**
+*/
+vec3
+DDGIGetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
+{
+    vec3 direction;
+    if ((options & (RELOCATION_OPTION | CLASSIFICATION_OPTION)) != 0)
+    {
+        bool useFixedRays = rayIndex < NUM_FIXED_RAYS;
+        int adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - NUM_FIXED_RAYS;
+        direction = useFixedRays ? MinimalDirections[adjustedRayIndex].xyz : Directions[adjustedRayIndex].xyz;
+        if (useFixedRays)
+        {
+            return direction;
+        }
+    }
+    else
+    {
+        direction = Directions[rayIndex].xyz;
+    }
+    return normalize((rotation * vec4(direction, 0)).xyz);
+}
+
+//------------------------------------------------------------------------------
+/**
     Finds the smallest component of the vector.
 */
 float 
