@@ -279,8 +279,8 @@ CalculateClusterIndexRT(vec2 screenPos, float depth, float scale, float bias)
 vec3
 CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, vec3 normal)
 {
-    vec3 clusterCenter = EyePos.xyz - worldSpacePos;
-    uvec3 index3D = uvec3(clusterCenter) / BlockSize.xxx;
+    vec3 clusterCenter = worldSpacePos - EyePos.xyz;
+    uvec3 index3D = ivec3((clusterCenter / BlockSize.yyy) + NumCells * 0.5f);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);

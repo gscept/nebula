@@ -52,7 +52,7 @@ Raygen(
     //vec3 dir = normalize(Result.normal);
     //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 
-    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(light / 10.0f, 0.0f));
+    imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(light, 0.0f));
 }
 
 //------------------------------------------------------------------------------
