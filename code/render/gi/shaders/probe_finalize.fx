@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  @file probefinalize.fx
+//  @file probe_finalize.fx
 //  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include <lib/std.fxh>
@@ -12,8 +12,10 @@ group(SYSTEM_GROUP) read_write r8 image2D ScrollSpaceOutput;
 
 group(SYSTEM_GROUP) constant BlendConstants
 {
+    mat4x4 TemporalRotation;
     vec4 Directions[1024];
     uint Options;
+    vec4 MinimalDirections[32];
     uint RaysPerProbe;
     ivec3 ProbeGridDimensions;
     int ProbeIndexStart;
@@ -38,6 +40,8 @@ group(SYSTEM_GROUP) constant BlendConstants
     uint ProbeStates;
 };
 
+#include "probe_shared.fxh"
+
 groupshared vec3 Radiance[1024];
 groupshared float Distance[1024];
 groupshared vec3 Direction[1024];
@@ -57,7 +61,6 @@ UnpackUIntToFloat3(uint val)
     unpacked.z = float(((val >> 20) & 0x000003FF)) / 1023.0f;
     return unpacked;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -82,6 +85,27 @@ RadianceHysteresis(vec3 previous, vec3 current, float hysteresis)
         lerpDelta = min(max(ConstThreshold, abs(lerpDelta)), abs(delta)) * sign(lerpDelta);
     }
     return previous + lerpDelta;
+}
+
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec4
+LoadRadiance(ivec2 coords, uint mode)
+{
+#ifdef USE_COMPRESSED_RADIANCE
+    vec2 value = fetch2D(ProbeRadiance, Basic2DSampler, coords, 0).xy;
+    vec4 res = vec4(0);
+    if (mode == RADIANCE_MODE)
+        res.xyz = UnpackUIntToFloat3(floatBitsToUint(value.x));
+    res.w = value.y;
+    return res;
+#else
+    vec4 value = fetch2D(ProbeRadiance, Basic2DSampler, coords, 0);
+    return value;
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -178,12 +202,11 @@ Blend(const uint MODE)
             if (rayIndex >= RaysPerProbe)
                 break;
                 
-            vec4 value = fetch2D(ProbeRadiance, Basic2DSampler, ivec2(rayIndex, probeIndex), 0);
+            vec4 value = LoadRadiance(ivec2(rayIndex, probeIndex), MODE);
             if (MODE == RADIANCE_MODE)
                 Radiance[rayIndex] = value.xyz;
-                //Radiance[rayIndex] = UnpackUIntToFloat3(floatBitsToUint(value.x));
             Distance[rayIndex] = value.w;
-            Direction[rayIndex] = DDGIGetProbeDirection(rayIndex, mat4x4(0), Options);//Directions[rayIndex].xyz; // TODO: Add rotation
+            Direction[rayIndex] = DDGIGetProbeDirection(rayIndex, TemporalRotation, Options);
         }
     }
     
@@ -262,7 +285,12 @@ Blend(const uint MODE)
     
     if (MODE == RADIANCE_MODE)
     {
-        result.rgb = pow(result.rgb, vec3(InverseGammaEncoding));
+        result.xyz = pow(result.xyz, vec3(InverseGammaEncoding));
+        
+        if (DDGIMaxComponent(previous.xyz - result.xyz) > ChangeThreshold)
+        {
+            hysteresis = max(0.0f, hysteresis - 0.75f);
+        }
         
         if ((Options & SCROLL_OPTION) != 0)
         {
@@ -324,13 +352,25 @@ BorderRows(const uint MODE)
     vec4 load;
     if (MODE == RADIANCE_MODE)
     {
-        load = imageLoad(IrradianceOutput, ivec2(thread));
-        imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+        load = imageLoad(IrradianceOutput, ivec2(copyCoordinates));
+        imageStore(IrradianceOutput, ivec2(thread), load);
+        
+        thread.y += probeSideLengthMinusOne;
+        copyCoordinates = uvec2(probeStart + offset, thread.y - 1);
+        
+        load = imageLoad(IrradianceOutput, ivec2(copyCoordinates));
+        imageStore(IrradianceOutput, ivec2(thread), load);
     }
     else if (MODE == DISTANCE_MODE)
     {
-        load = imageLoad(DistanceOutput, ivec2(thread));
-        imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+        load = imageLoad(DistanceOutput, ivec2(copyCoordinates));
+        imageStore(DistanceOutput, ivec2(thread), load);
+        
+        thread.y += probeSideLengthMinusOne;
+        copyCoordinates = uvec2(probeStart + offset, thread.y - 1);
+        
+        load = imageLoad(DistanceOutput, ivec2(copyCoordinates));
+        imageStore(DistanceOutput, ivec2(thread), load);
     }
 }
 
@@ -359,13 +399,13 @@ BorderColumns(const uint MODE)
         vec4 load;
         if (MODE == RADIANCE_MODE)
         {
-            load = imageLoad(IrradianceOutput, ivec2(thread));
-            imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+            load = imageLoad(IrradianceOutput, ivec2(copyCoordinates));
+            imageStore(IrradianceOutput, ivec2(thread), load);
         }
         else if (MODE == DISTANCE_MODE)
         {
-            load = imageLoad(DistanceOutput, ivec2(thread));
-            imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+            load = imageLoad(DistanceOutput, ivec2(copyCoordinates));
+            imageStore(DistanceOutput, ivec2(thread), load);
         }
         
         thread.x += probeSideLengthMinusOne;
@@ -373,13 +413,13 @@ BorderColumns(const uint MODE)
         
         if (MODE == RADIANCE_MODE)
         {
-            load = imageLoad(IrradianceOutput, ivec2(thread));
-            imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+            load = imageLoad(IrradianceOutput, ivec2(copyCoordinates));
+            imageStore(IrradianceOutput, ivec2(thread), load);
         }
         else if (MODE == DISTANCE_MODE)
         {
-            load = imageLoad(DistanceOutput, ivec2(thread));
-            imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+            load = imageLoad(DistanceOutput, ivec2(copyCoordinates));
+            imageStore(DistanceOutput, ivec2(thread), load);
         }
         return;
     }
@@ -392,13 +432,13 @@ BorderColumns(const uint MODE)
     vec4 load;
     if (MODE == RADIANCE_MODE)
     {
-        load = imageLoad(IrradianceOutput, ivec2(thread));
-        imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+        load = imageLoad(IrradianceOutput, ivec2(copyCoordinates));
+        imageStore(IrradianceOutput, ivec2(thread), load);
     }
     else if (MODE == DISTANCE_MODE)
     {
-        load = imageLoad(DistanceOutput, ivec2(thread));
-        imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+        load = imageLoad(DistanceOutput, ivec2(copyCoordinates));
+        imageStore(DistanceOutput, ivec2(thread), load);
     }
     
     thread.x += probeSideLengthMinusOne;
@@ -406,13 +446,13 @@ BorderColumns(const uint MODE)
     
     if (MODE == RADIANCE_MODE)
     {
-        load = imageLoad(IrradianceOutput, ivec2(thread));
-        imageStore(IrradianceOutput, ivec2(copyCoordinates), load);
+        load = imageLoad(IrradianceOutput, ivec2(copyCoordinates));
+        imageStore(IrradianceOutput, ivec2(thread), load);
     }
     else if (MODE == DISTANCE_MODE)
     {
-        load = imageLoad(DistanceOutput, ivec2(thread));
-        imageStore(DistanceOutput, ivec2(copyCoordinates), load);
+        load = imageLoad(DistanceOutput, ivec2(copyCoordinates));
+        imageStore(DistanceOutput, ivec2(thread), load);
     }
 }
 

@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  @file probeupdate.fx
+//  @file probe_update.fx
 //  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
@@ -43,6 +43,8 @@ group(SYSTEM_GROUP) constant VolumeConstants
     uint ProbeScrollSpace;
 };
 
+#include "probe_shared.fxh"
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -62,7 +64,6 @@ GetProbeTexel(int probe, int3 probeGridDimensions)
 {
     return ivec2(probe % (probeGridDimensions.x * probeGridDimensions.y), probe / (probeGridDimensions.x * probeGridDimensions.y));
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -92,15 +93,16 @@ StoreRadianceAndDepth(ivec2 coordinate, vec3 radiance, float depth)
     if (DDGIMaxComponent(radiance) <= ValueThreshold)
         radiance = vec3(0);
     radiance *= IrradianceScale;
-    imageStore(RadianceOutput, coordinate, vec4(radiance, depth));
-    /*
+#ifdef USE_COMPRESSED_RADIANCE
     imageStore(RadianceOutput, coordinate, vec4(
-        uintBitsToFloat(
-            PackFloat3ToUInt(
-                clamp(radiance, vec3(0.0f), vec3(1.0f))
-            )
-        ), depth, 0.0f, 0.0f));
-        */
+            uintBitsToFloat(
+                PackFloat3ToUInt(
+                    clamp(radiance, vec3(0.0f), vec3(1.0f))
+                )
+            ), depth, 0.0f, 0.0f));
+#else
+    imageStore(RadianceOutput, coordinate, vec4(radiance, depth));
+#endif
 }
 
 //------------------------------------------------------------------------------

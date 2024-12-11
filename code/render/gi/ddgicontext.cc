@@ -66,7 +66,6 @@ struct
     Util::Array<UpdateVolume> volumesToUpdate;
 
     GiVolumeCull::GIVolume giVolumes[64];
-    Math::vec3 probeDirections188[188];
 } state;
 
 
@@ -169,7 +168,7 @@ DDGIContext::Create()
     FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, state.volumeCullProgram);
-        CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        //CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
         // Run chunks of 1024 threads at a time
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
@@ -422,6 +421,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     {
         SphericalFibonacci(rayIndex, ProbeUpdate::NUM_FIXED_RAYS).store(volume.updateConstants.MinimalDirections[rayIndex]);
     }
+    memcpy(volume.blendConstants.MinimalDirections, volume.updateConstants.MinimalDirections, sizeof(volume.updateConstants.MinimalDirections));
 
     volume.updateConstants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
     volume.updateConstants.ProbeDistances = CoreGraphics::TextureGetBindlessHandle(volume.distance);
@@ -547,6 +547,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             activeVolume.updateConstants.ViewBias = activeVolume.viewBias;
             activeVolume.updateConstants.IrradianceScale = activeVolume.irradianceScale;
 
+            rotation.store(activeVolume.blendConstants.TemporalRotation);
             activeVolume.blendConstants.Options = activeVolume.updateConstants.Options;
             activeVolume.blendConstants.RaysPerProbe = activeVolume.numRaysPerProbe;
             memcpy(activeVolume.blendConstants.ProbeGridDimensions, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
@@ -566,33 +567,33 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
             CoreGraphics::BufferUpdate(activeVolume.volumeUpdateBuffer, activeVolume.updateConstants);
             CoreGraphics::BufferUpdate(activeVolume.volumeBlendBuffer, activeVolume.blendConstants);
-
-            auto& giVolume = state.giVolumes[volumeCount];
-
-            Math::mat4 transform = Math::scaling(activeVolume.size);
-            transform.translate(activeVolume.position);
-            Math::bbox bbox = viewTransform * transform;
-            bbox.pmin.store(giVolume.bboxMin);
-            bbox.pmax.store(giVolume.bboxMax);
-            Math::quat().store(giVolume.Rotation);
-            activeVolume.position.store(giVolume.Offset);
-            giVolume.NumDistanceTexels = ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE;
-            giVolume.NumIrradianceTexels = ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
-            giVolume.EncodingGamma = activeVolume.updateConstants.IrradianceGamma;
-            memcpy(giVolume.GridCounts, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
-            memcpy(giVolume.ScrollOffsets, activeVolume.updateConstants.ProbeScrollOffsets, sizeof(activeVolume.blendConstants.ProbeScrollOffsets));
-            memcpy(giVolume.GridSpacing, activeVolume.updateConstants.ProbeGridSpacing, sizeof(activeVolume.blendConstants.ProbeGridSpacing));
-
-            giVolume.ViewBias = activeVolume.viewBias;
-            giVolume.NormalBias = activeVolume.normalBias;
-            giVolume.Options = activeVolume.updateConstants.Options;
-            giVolume.Distances = activeVolume.blendConstants.ProbeDistances;
-            giVolume.Irradiance = activeVolume.blendConstants.ProbeIrradiance;
-            giVolume.States = activeVolume.blendConstants.ProbeStates;
-            giVolume.Offsets = activeVolume.blendConstants.ProbeOffsets;
-
-            volumeCount++;
         }
+
+        auto& giVolume = state.giVolumes[volumeCount];
+
+        Math::mat4 transform = Math::scaling(activeVolume.size * 2);
+        transform.translate(activeVolume.position);
+        Math::bbox bbox = viewTransform * transform;
+        bbox.pmin.store(giVolume.bboxMin);
+        bbox.pmax.store(giVolume.bboxMax);
+        Math::quat().store(giVolume.Rotation);
+        activeVolume.position.store(giVolume.Offset);
+        giVolume.NumDistanceTexels = ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE;
+        giVolume.NumIrradianceTexels = ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
+        giVolume.EncodingGamma = activeVolume.updateConstants.IrradianceGamma;
+        memcpy(giVolume.GridCounts, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
+        memcpy(giVolume.ScrollOffsets, activeVolume.updateConstants.ProbeScrollOffsets, sizeof(activeVolume.blendConstants.ProbeScrollOffsets));
+        memcpy(giVolume.GridSpacing, activeVolume.updateConstants.ProbeGridSpacing, sizeof(activeVolume.blendConstants.ProbeGridSpacing));
+
+        giVolume.ViewBias = activeVolume.viewBias;
+        giVolume.NormalBias = activeVolume.normalBias;
+        giVolume.Options = activeVolume.updateConstants.Options;
+        giVolume.Distances = activeVolume.blendConstants.ProbeDistances;
+        giVolume.Irradiance = activeVolume.blendConstants.ProbeIrradiance;
+        giVolume.States = activeVolume.blendConstants.ProbeStates;
+        giVolume.Offsets = activeVolume.blendConstants.ProbeOffsets;
+
+        volumeCount++;
     }
 
     // Update shared GI data

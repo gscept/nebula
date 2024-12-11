@@ -566,7 +566,7 @@ GI(uint clusterIndex, vec3 pos, vec3 normal, vec3 albedo)
             uint lidx = GIVolumeIndexLists[clusterIndex * MAX_GI_VOLUMES_PER_CLUSTER + i];
             GIVolume gi = GIVolumes[lidx];
             vec3 surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
-
+            //light += vec3(1,0,0);
             light += EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * albedo;
         }
     }
