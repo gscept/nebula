@@ -180,6 +180,16 @@ DDGIProbeWorldPositionWithOffset(int probeIndex, vec3 origin, vec4 rotation, ive
 //------------------------------------------------------------------------------
 /**
 */
+vec3
+DDGIProbeWorldPositionWithOffset(ivec3 probeCoords, vec3 origin, vec4 rotation, ivec3 probeGridCounts, vec3 probeGridSpacing, uint probeOffsets)
+{
+    int probeIndex = DDGIProbeIndex(probeCoords, probeGridCounts);
+    return DDGIProbeWorldPositionWithOffset(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing, probeOffsets);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 int
 DDGIProbeIndexOffset(int baseProbeIndex, ivec3 probeGridCounts, ivec3 probeScrollOffsets)
 {
@@ -199,6 +209,16 @@ DDGIProbeWorldPositionWithScrollAndOffset(int probeIndex, vec3 origin, vec4 rota
     int storageProbeIndex = DDGIProbeIndexOffset(probeIndex, probeGridCounts, probeScrollOffsets);
     ivec2 offsetTexCoords = ivec2(storageProbeIndex % textureWidth, storageProbeIndex / textureWidth);
     return DDGIDecodeProbeOffsets(offsetTexCoords, probeGridSpacing, probeOffsets) + DDGIProbeWorldPosition(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+DDGIProbeWorldPositionWithScrollAndOffset(ivec3 probeCoords, vec3 origin, vec4 rotation, ivec3 probeGridCounts, vec3 probeGridSpacing, ivec3 probeScrollOffsets, uint probeOffsets)
+{
+    int probeIndex = DDGIProbeIndex(probeCoords, probeGridCounts);
+    return DDGIProbeWorldPositionWithScrollAndOffset(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing, probeScrollOffsets, probeOffsets);
 }
 
 //------------------------------------------------------------------------------
@@ -227,7 +247,6 @@ DDGISurfaceBias(vec3 normal, vec3 cameraDirection, float normalBias, float viewB
 {
     return (normal * normalBias) + (-cameraDirection * viewBias);
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -341,11 +360,11 @@ EvaluateDDGIIrradiance(
         {
             if ((options & SCROLL_OPTION) != 0)
             {
-                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithScrollAndOffset(probeIndex, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.ScrollOffsets, volume.Offsets);
+                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithScrollAndOffset(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.ScrollOffsets, volume.Offsets);
             }
             else
             {
-                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithOffset(probeIndex, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.Offsets);
+                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithOffset(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.Offsets);
             }
         }
         else

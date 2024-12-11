@@ -298,8 +298,6 @@ LightContext::SetupGlobalLight(
         const Math::vec3& color,
         const float intensity,
         const Math::vec3& ambient,
-        const Math::vec3& backlight,
-        const float backlightFactor,
         const float zenith,
         const float azimuth,
         bool castShadows)
@@ -320,9 +318,7 @@ LightContext::SetupGlobalLight(
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
 
     SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
-    directionalLightAllocator.Get<DirectionalLight_Backlight>(lid) = backlight;
     directionalLightAllocator.Get<DirectionalLight_Ambient>(lid) = ambient;
-    directionalLightAllocator.Get<DirectionalLight_BacklightOffset>(lid) = backlightFactor;
 
     if (castShadows && shadowCasterAllocator.Size() < 16)
     {
@@ -1062,10 +1058,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     Shared::PerTickParams params = Graphics::GetTickParams();
     (genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
     directionalLightAllocator.Get<DirectionalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
-    directionalLightAllocator.Get<DirectionalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
     directionalLightAllocator.Get<DirectionalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
     Math::vec4 viewSpaceLightDir = viewTransform * Math::vec4(directionalLightAllocator.Get<DirectionalLight_Direction>(globalLightId), 0.0f);
-    params.GlobalBackLightOffset = directionalLightAllocator.Get<DirectionalLight_BacklightOffset>(globalLightId);
 
     params.ltcLUT0 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut0);
     params.ltcLUT1 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut1);

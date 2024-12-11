@@ -100,11 +100,9 @@ group(TICK_GROUP) shared constant PerTickParams
     vec2 GlobalLightShadowMapSize;
     vec4 GlobalLightDirWorldspace;
     vec4 GlobalLightColor;
-    vec4 GlobalBackLightColor;
     vec4 GlobalAmbientLightColor;
     mat4 CSMShadowMatrix;
 
-    float GlobalBackLightOffset;
     textureHandle GlobalLightShadowBuffer;
     textureHandle TerrainShadowBuffer;
     int NumEnvMips;
@@ -487,6 +485,7 @@ struct GIVolume
     textureHandle States;
     float NormalBias;
     float ViewBias;
+    float IrradianceScale;
     uint Options;
 };
 

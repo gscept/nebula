@@ -46,7 +46,7 @@ Raygen(
     {
     
         //light += Result.albedo;
-        light += CalculateLightRT(WorldSpacePos, Result.depth / 10000.0f, Result.albedo.rgb, Result.material, Result.normal);
+        light += CalculateLightRT(WorldSpacePos, origin.xyz, Result.depth / 10000.0f, Result.albedo.rgb, Result.material, Result.normal);
     }
     //light += CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, WorldSpacePos);
     //vec3 dir = normalize(Result.normal);

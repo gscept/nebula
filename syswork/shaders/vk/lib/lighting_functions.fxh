@@ -440,11 +440,10 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     @param depth			The fragments depth (gl_FragCoord.z)
 */
 vec3
-LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 pos, vec3 normal, float depth)
+LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, vec3 F0, vec3 pos, vec3 normal, float depth)
 {
     vec3 light = vec3(0, 0, 0);
     uint flag = AABBs[clusterIndex].featureFlags;
-    vec3 viewVec = normalize(EyePos.xyz - pos);
     if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
@@ -567,7 +566,7 @@ GI(uint clusterIndex, vec3 pos, vec3 normal, vec3 albedo)
             GIVolume gi = GIVolumes[lidx];
             vec3 surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
             //light += vec3(1,0,0);
-            light += EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * albedo;
+            light += EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * (albedo / PI) / gi.IrradianceScale;
         }
     }
     return light;
@@ -783,7 +782,7 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
     // Check if all waves use the same index and do this super cheaply
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
-        light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
         light += GI(firstWaveIndex, worldSpacePos, normal, albedo);
     }
     else
@@ -799,13 +798,13 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
             // this will effectively scalarize the light lists
             if (scalarIdx == idx)
             {
-                light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
                 light += GI(scalarIdx, worldSpacePos, normal, albedo);
             }
         }
     }
 #else
-    light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
     light += GI(idx, worldSpacePos, normal, albedo);
 #endif
 

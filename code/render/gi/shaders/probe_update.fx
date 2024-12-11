@@ -171,18 +171,18 @@ RayGen(
     payload.depth = 0;
     vec3 radiance = vec3(0,0,0);
 
-    traceRayEXT(TLAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
+    traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
     if ((payload.bits & RAY_MISS_BIT) != 0)
     {
         vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
         vec3 dir = normalize(probeRayDirection);
-        vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb * payload.albedo;
+        vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
         StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), atmo, 1e27f);
         return;
     }
     
-    // If hit is back face but is a two-sided material
-    if ((payload.bits & (RAY_BACK_FACE_BIT | RAY_MATERIAL_TWO_SIDED_BIT)) == (RAY_BACK_FACE_BIT | RAY_MATERIAL_TWO_SIDED_BIT))
+    // If hit is back face and it's not a 2 sided material two-sided material
+    if ((payload.bits & (RAY_BACK_FACE_BIT | RAY_MATERIAL_TWO_SIDED_BIT)) == RAY_BACK_FACE_BIT)
     {
         StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), vec3(0), -payload.depth * 0.2f);
         return;
@@ -217,7 +217,7 @@ RayGen(
     
     vec3 worldSpacePos = probeWorldPosition + probeRayDirection * payload.depth;
     
-    vec3 light = CalculateLightRT(worldSpacePos, payload.depth / MaxDistance, payload.albedo.rgb, payload.material, payload.normal);
+    vec3 light = CalculateLightRT(worldSpacePos, probeWorldPosition, payload.depth / MaxDistance, payload.albedo.rgb, payload.material, payload.normal);
 
     vec3 relativePos = abs(worldSpacePos - Offset);
     if (relativePos.x > Scale.x || relativePos.y > Scale.y || relativePos.z > Scale.z)
@@ -245,6 +245,7 @@ Miss(
     [ray_payload] in HitResult payload
 )
 {
+    payload.bits |= RAY_MISS_BIT;
     payload.bits |= RAY_MISS_BIT;
 }
 
