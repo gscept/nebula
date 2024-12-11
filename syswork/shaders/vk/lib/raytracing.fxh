@@ -43,19 +43,19 @@ ptr alignment(8) struct VertexAttributeNormals
     ivec2 normal_tangent;
 };
 
-ptr alignment(4) struct VertexAttributeSecondaryUv
+ptr alignment(16) struct VertexAttributeSecondaryUv
 {
     ivec2 normal_tangent;
     uint uv;
 };
 
-ptr alignment(4) struct VertexAttributeColor
+ptr alignment(16) struct VertexAttributeColor
 {
     ivec2 normal_tangent;
     uint color;
 };
 
-ptr alignment(4) struct VertexAttributeSkin
+ptr alignment(32) struct VertexAttributeSkin
 {
     ivec2 normal_tangent;
     vec4 weights;
@@ -160,7 +160,7 @@ UnpackNormal32(int packedNormal)
     int x = packedNormal & 0xFF;
     int y = (packedNormal >> 8) & 0xFF;
     int z = (packedNormal >> 16) & 0xFF;
-    vec3 unpacked = vec3(x, y, z) / 128.0f;
+    vec3 unpacked = vec3(x, y, z) / 127.0f;
     return unpacked;
 }
 
@@ -201,7 +201,7 @@ SampleTerrain(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, o
 /**
 */
 void
-SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out mat3 tbn)
+SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out vec3 normal, out vec3 tangent, out float sign)
 {
     // Sample the index buffer
     if (obj.Use16BitIndex == 1)
@@ -219,8 +219,6 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
     
     vec3 n1, n2, n3;
     vec3 t1, t2, t3;
-    float sign;
-
     
     switch (obj.VertexLayout)
     {
@@ -250,10 +248,8 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
         }
     }
     
-    vec3 norm = BaryCentricVec3(n1, n2, n3, baryCoords);
-    vec3 tang = BaryCentricVec3(t1, t2, t3, baryCoords);
-
-    tbn = TangentSpace(tang, norm, sign);
+    normal = BaryCentricVec3(n1, n2, n3, baryCoords);
+    tangent = BaryCentricVec3(t1, t2, t3, baryCoords);
 }
 #define OFFSET_PTR(ptr, offset, type) type(VoidPtr(ptr) + offset)
 
@@ -277,14 +273,14 @@ CalculateClusterIndexRT(vec2 screenPos, float depth, float scale, float bias)
 /**
 */
 vec3
-CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, vec3 normal)
+CalculateLightRT(vec3 worldSpacePos, vec3 origin, float depth, vec3 albedo, vec4 material, vec3 normal)
 {
     vec3 clusterCenter = worldSpacePos - EyePos.xyz;
     uvec3 index3D = ivec3((clusterCenter / BlockSize.yyy) + NumCells * 0.5f);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);
+    vec3 viewVec = normalize(origin.xyz - worldSpacePos.xyz);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
     light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
 
@@ -299,7 +295,7 @@ CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, ve
     // Check if all waves use the same index and do this super cheaply
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
-        light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
     }
     else
     {
@@ -314,12 +310,12 @@ CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, ve
             // this will effectively scalarize the light lists
             if (scalarIdx == idx)
             {
-                light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
             }
         }
     }
 #else
-    light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, depth);
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
 #endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);

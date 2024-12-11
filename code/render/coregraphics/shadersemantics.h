@@ -38,8 +38,6 @@
 #define NEBULA_SEMANTIC_GLOBALLIGHTDIRWORLDSPACE   "GlobalLightDirWorldspace"
 #define NEBULA_SEMANTIC_GLOBALLIGHTCOLOR           "GlobalLightColor"
 #define NEBULA_SEMANTIC_GLOBALAMBIENTLIGHTCOLOR    "GlobalAmbientLightColor"
-#define NEBULA_SEMANTIC_GLOBALBACKLIGHTCOLOR       "GlobalBackLightColor"
-#define NEBULA_SEMANTIC_GLOBALBACKLIGHTOFFSET      "GlobalBackLightOffset"
 #define NEBULA_SEMANTIC_GLOBALLIGHTSHADOWBIAS      "GlobalLightShadowBias"
 #define NEBULA_SEMANTIC_LIGHTPROJTRANSFORM         "LightProjTransform"   
 #define NEBULA_SEMANTIC_LIGHTTRANSFORM             "LightTransform"   

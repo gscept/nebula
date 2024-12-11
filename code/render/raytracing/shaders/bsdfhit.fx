@@ -19,15 +19,24 @@ ClosestHit(
 
     uvec3 indices;
     vec2 uv;
-    mat3 tbn;
-    SampleGeometry(obj, gl_PrimitiveID, barycentricCoords, indices, uv, tbn);
-
+    vec3 normal, tangent;
+    float sign;
+    SampleGeometry(obj, gl_PrimitiveID, barycentricCoords, indices, uv, normal, tangent, sign);
+    
+    normal = gl_ObjectToWorldEXT * vec4(normal, 0);
+    tangent = gl_ObjectToWorldEXT * vec4(tangent, 0);
+    mat3 tbn = TangentSpace(tangent, normal, sign);
+    
     BSDFMaterial mat = BSDFMaterials + obj.MaterialOffset;
-    vec4 normals = sample2DLod(mat.NormalMap, Basic2DSampler, uv, 0);
+    vec4 normals = sample2DLod(mat.NormalMap, NormalSampler, uv, 0);
     vec3 tNormal = TangentSpaceNormal(normals.xy, tbn);
+    
+    float facing = dot(normal, gl_WorldRayDirectionEXT);
+    Result.bits |= facing > 0 ? RAY_BACK_FACE_BIT : 0x0; 
 
     vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0);
     vec4 material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
+    material[MAT_EMISSIVE] = 0;
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;
     Result.material = material;

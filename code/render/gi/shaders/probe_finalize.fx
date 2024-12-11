@@ -87,8 +87,6 @@ RadianceHysteresis(vec3 previous, vec3 current, float hysteresis)
     return previous + lerpDelta;
 }
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -210,26 +208,28 @@ Blend(const uint MODE)
         }
     }
     
+    groupMemoryBarrier();
     barrier();
     
     if (earlyOut)
     {
         return;
     }
-    
-    uint backfaces;
-    uint maxBackfaces;
-    if (MODE == RADIANCE_MODE)
-    {
-        backfaces = 0;
-        maxBackfaces = uint(RaysPerProbe * 0.1f);
-    }
-    
+
     int rayIndex = 0;
     if ((Options & (CLASSIFICATION_OPTION | RELOCATION_OPTION)) == (CLASSIFICATION_OPTION | RELOCATION_OPTION))
     {
         rayIndex = NUM_FIXED_RAYS;
     }
+        
+    uint backfaces;
+    uint maxBackfaces;
+    if (MODE == RADIANCE_MODE)
+    {
+        backfaces = 0;
+        maxBackfaces = uint((RaysPerProbe - rayIndex) * 0.1f);
+    }
+    
     
     for (; rayIndex < RaysPerProbe; rayIndex++)
     {
@@ -286,12 +286,7 @@ Blend(const uint MODE)
     if (MODE == RADIANCE_MODE)
     {
         result.xyz = pow(result.xyz, vec3(InverseGammaEncoding));
-        
-        if (DDGIMaxComponent(previous.xyz - result.xyz) > ChangeThreshold)
-        {
-            hysteresis = max(0.0f, hysteresis - 0.75f);
-        }
-        
+
         if ((Options & SCROLL_OPTION) != 0)
         {
             if (probeSpace.x == prevProbeSpace.x && probeSpace.y == prevProbeSpace.y && probeSpace.z == prevProbeSpace.z)
@@ -310,12 +305,12 @@ Blend(const uint MODE)
         {
             if (probeSpace.x == prevProbeSpace.x && probeSpace.y == prevProbeSpace.y && probeSpace.z == prevProbeSpace.z)
             {
-                result = vec4(mix(result.rg, previous.rg, hysteresis), 0.0f, 1.0f);
+                result = vec4(mix(result.xyz, previous.xyz, hysteresis), 1.0f);
             }
         }
         else
         {
-            result = vec4(mix(result.rg, previous.rg, hysteresis), 0.0f, 1.0f);
+            result = vec4(mix(result.xyz, previous.xyz, hysteresis), 1.0f);
         }
     }
     

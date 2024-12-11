@@ -46,7 +46,7 @@ VkTypes::AsVkFormat(CoreGraphics::PixelFormat::Code p)
     case PixelFormat::R16G16B16A16F:    return VK_FORMAT_R16G16B16A16_SFLOAT;
     case PixelFormat::R16G16B16A16:     return VK_FORMAT_R16G16B16A16_UINT;
     case PixelFormat::R11G11B10F:       return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-    case PixelFormat::R9G9B9E5F:         return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
+    case PixelFormat::R9G9B9E5F:        return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
     case PixelFormat::R32F:             return VK_FORMAT_R32_SFLOAT;
     case PixelFormat::R32:              return VK_FORMAT_R32_UINT;
     case PixelFormat::R32G32F:          return VK_FORMAT_R32G32_SFLOAT;

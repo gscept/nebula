@@ -52,7 +52,7 @@ public:
     static void Discard();
 
     /// setup entity as global light
-    static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows = false);
+    static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const float zenith, const float azimuth, bool castShadows = false);
     /// Setup entity as point light source
     static void SetupPointLight(
         const Graphics::GraphicsEntityId id
@@ -257,8 +257,6 @@ private:
     enum
     {
         DirectionalLight_Direction,
-        DirectionalLight_Backlight,
-        DirectionalLight_BacklightOffset,
         DirectionalLight_Ambient,
         DirectionalLight_Transform,
         DirectionalLight_ViewProjTransform,
@@ -267,8 +265,6 @@ private:
 
     typedef Ids::IdAllocator<
         Math::vector,                               // direction
-        Math::vec3,                                 // backlight color
-        float,                                      // backlight offset
         Math::vec3,                                 // ambient
         Math::mat4,                                 // transform (basically just a rotation in the direction)
         Math::mat4,                                 // transform for visibility and such

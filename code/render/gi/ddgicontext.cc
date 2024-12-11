@@ -332,6 +332,8 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesZ = setup.numProbesZ;
     volume.numRaysPerProbe = setup.numRaysPerProbe;
     volume.options = setup.options;
+    volume.options.flags.relocate = false;
+    //volume.options.flags.lowPrecisionTextures = true;
 
     volume.normalBias = setup.normalBias;
     volume.viewBias = setup.viewBias;
@@ -363,7 +365,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 #endif
     irradianceCreateInfo.width = setup.numProbesY * setup.numProbesZ * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
-    irradianceCreateInfo.format = CoreGraphics::PixelFormat::R11G11B10F;
+    irradianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
     irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     irradianceCreateInfo.swizzle.red = CoreGraphics::TextureChannelMapping::Red;
     irradianceCreateInfo.swizzle.blue = CoreGraphics::TextureChannelMapping::Blue;
@@ -519,9 +521,10 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.volumeBlendOutputs.scrollSpaceTexture = activeVolume.scrollSpace;
             state.volumesToUpdate.Append(volumeToUpdate);
 
-            Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 25.0f), 0.0f, 0.0f);
+            Math::vec3 size = activeVolume.size * 2;
+            Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 5.0f), 0.0f, 0.0f);
             rotation.store(activeVolume.updateConstants.TemporalRotation);
-            activeVolume.size.store(activeVolume.updateConstants.Scale);
+            size.store(activeVolume.updateConstants.Scale);
             activeVolume.position.store(activeVolume.updateConstants.Offset);
             activeVolume.updateConstants.NumIrradianceTexels = ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
             activeVolume.updateConstants.ProbeGridDimensions[0] = activeVolume.numProbesX;
@@ -538,9 +541,9 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             activeVolume.updateConstants.ProbeScrollOffsets[1] = 0;
             activeVolume.updateConstants.ProbeScrollOffsets[2] = 0;
             Math::quat().store(activeVolume.updateConstants.Rotation);
-            activeVolume.updateConstants.ProbeGridSpacing[0] = activeVolume.size[0] / float(activeVolume.numProbesX);
-            activeVolume.updateConstants.ProbeGridSpacing[1] = activeVolume.size[1] / float(activeVolume.numProbesY);
-            activeVolume.updateConstants.ProbeGridSpacing[2] = activeVolume.size[2] / float(activeVolume.numProbesZ);
+            activeVolume.updateConstants.ProbeGridSpacing[0] = size[0] / float(activeVolume.numProbesX);
+            activeVolume.updateConstants.ProbeGridSpacing[1] = size[1] / float(activeVolume.numProbesY);
+            activeVolume.updateConstants.ProbeGridSpacing[2] = size[2] / float(activeVolume.numProbesZ);
             activeVolume.updateConstants.NumDistanceTexels = ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE;
             activeVolume.updateConstants.IrradianceGamma = activeVolume.encodingGamma;
             activeVolume.updateConstants.NormalBias = activeVolume.normalBias;
@@ -581,6 +584,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         giVolume.NumDistanceTexels = ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE;
         giVolume.NumIrradianceTexels = ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;
         giVolume.EncodingGamma = activeVolume.updateConstants.IrradianceGamma;
+        giVolume.IrradianceScale = activeVolume.blendConstants.IrradianceScale;
         memcpy(giVolume.GridCounts, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
         memcpy(giVolume.ScrollOffsets, activeVolume.updateConstants.ProbeScrollOffsets, sizeof(activeVolume.blendConstants.ProbeScrollOffsets));
         memcpy(giVolume.GridSpacing, activeVolume.updateConstants.ProbeGridSpacing, sizeof(activeVolume.blendConstants.ProbeGridSpacing));
