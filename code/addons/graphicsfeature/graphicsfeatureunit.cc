@@ -126,7 +126,7 @@ GraphicsFeatureUnit::OnActivate()
     {
         Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::VegetationSetup>(vegetationSettings, (byte*)contents.AsCharPtr());
     }
-    
+
     SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
     SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
 
@@ -246,7 +246,7 @@ GraphicsFeatureUnit::OnActivate()
             Vegetation::VegetationContext::Create(vegSettings);
         }
     }
-  
+
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
@@ -283,7 +283,7 @@ GraphicsFeatureUnit::OnActivate()
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 70_rad, 0_rad, true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -335,7 +335,7 @@ GraphicsFeatureUnit::OnActivate()
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
     };
-    
+
     if (terrainSettings.config && terrainSettings.config->use)
     {
         preLogicCalls.Append(Terrain::TerrainContext::RenderUI);

@@ -552,11 +552,10 @@ LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, v
 /**
 */
 vec3
-GI(uint clusterIndex, vec3 pos, vec3 normal, vec3 albedo)
+GI(uint clusterIndex, vec3 viewVec, vec3 pos, vec3 normal, vec3 albedo)
 {
     vec3 light = vec3(0, 0, 0);
     uint flag = AABBs[clusterIndex].featureFlags;
-    vec3 viewVec = normalize(EyePos.xyz - pos);
     if (CHECK_FLAG(flag, CLUSTER_GI_VOLUME_BIT))
     {
         uint count = GIVolumeCountList[clusterIndex];
@@ -783,7 +782,7 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
         light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
-        light += GI(firstWaveIndex, worldSpacePos, normal, albedo);
+        light += GI(firstWaveIndex, viewVec, worldSpacePos, normal, albedo);
     }
     else
     {
@@ -799,13 +798,13 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
             if (scalarIdx == idx)
             {
                 light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
-                light += GI(scalarIdx, worldSpacePos, normal, albedo);
+                light += GI(scalarIdx, viewVec, worldSpacePos, normal, albedo);
             }
         }
     }
 #else
     light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
-    light += GI(idx, worldSpacePos, normal, albedo);
+    light += GI(idx, viewVec, worldSpacePos, normal, albedo);
 #endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);

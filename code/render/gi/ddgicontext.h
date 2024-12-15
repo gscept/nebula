@@ -49,10 +49,10 @@ public:
         Math::vec3 size;
         Math::vec3 position;
 
-        float normalBias = 10.0f;
-        float viewBias = 40.0f;
+        float normalBias = 0.1f;
+        float viewBias = 0.4f;
         float irradianceScale = 1.0f;
-        float distanceExponent = 50.0f;
+        float distanceExponent = 0.5f;
         float encodingGamma = 5.0f;
         float changeThreshold = 0.2f;
         float brightnessThreshold = 2.0f;
@@ -89,8 +89,8 @@ private:
         CoreGraphics::BufferId volumeUpdateBuffer, volumeBlendBuffer;
         CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable;
 
-        float normalBias = 10.0f;
-        float viewBias = 40.0f;
+        float normalBias = 0.1f;
+        float viewBias = 0.4f;
         float irradianceScale = 1.0f;
         float distanceExponent = 50.0f;
         float encodingGamma = 5.0f;
@@ -101,6 +101,11 @@ private:
         ProbeUpdate::VolumeConstants updateConstants;
         ProbeFinalize::BlendConstants blendConstants;
         DDGIOptions options;
+
+#ifndef PUBLIC_BUILD
+        CoreGraphics::ResourceTableId debugResourceTable;
+#endif
+
     };
     
     typedef Ids::IdAllocator<

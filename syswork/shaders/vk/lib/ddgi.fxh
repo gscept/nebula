@@ -43,7 +43,7 @@ DDGIProbeIndex(ivec2 texCoord, ivec3 probeGridCounts)
 int 
 DDGIProbeIndex(ivec3 probeCoords, ivec3 probeGridCounts)
 {
-    return probeCoords.x + (probeGridCounts.x * probeGridCounts.z) + (probeGridCounts.x * probeGridCounts.z) * probeCoords.y;
+    return probeCoords.x + (probeGridCounts.x * probeCoords.z) + (probeGridCounts.x * probeGridCounts.z) * probeCoords.y;
 }
 
 //------------------------------------------------------------------------------
@@ -406,11 +406,11 @@ EvaluateDDGIIrradiance(
         vec2 probeTextureCoords;
         if ((options & SCROLL_OPTION) != 0)
         {
-            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, volume.ScrollOffsets, options);
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumDistanceTexels, volume.ScrollOffsets, options);
         }
         else
         {
-            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, ivec3(0), options);
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumDistanceTexels, ivec3(0), options);
         }
         vec2 filteredDistance = sample2DLod(volume.Distances, Basic2DSampler, probeTextureCoords, 0).xy;
         
