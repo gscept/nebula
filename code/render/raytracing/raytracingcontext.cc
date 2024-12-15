@@ -354,6 +354,8 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
+    }, {
+        { FrameScript_default::TextureIndex::RayTracingTestOutput, CoreGraphics::PipelineStage::RayTracingShaderWrite }
     } );
 
 

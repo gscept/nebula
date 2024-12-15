@@ -171,7 +171,7 @@ float
 UnpackSign(int packedNormal)
 {
     int sig = (packedNormal >> 24) & 0xFF;
-    return sig == 127 ? 1.0f : 0.0f;
+    return sig == -128 ? -1.0f : 1.0f;
 }
 
 //------------------------------------------------------------------------------

@@ -9,6 +9,8 @@
 #include <cstdint>
 
 #include "clustering/clustercontext.h"
+#include "coregraphics/meshloader.h"
+#include "coregraphics/meshresource.h"
 #include "frame/default.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
@@ -21,6 +23,10 @@
 #include "gi/shaders/probe_finalize.h"
 #include "gi/shaders/gi_volume_cull.h"
 #include "graphics/globalconstants.h"
+
+#ifndef PUBLIC_BUILD
+#include "gi/shaders/probe_debug.h"
+#endif
 
 using namespace Graphics;
 
@@ -43,6 +49,10 @@ struct UpdateVolume
         CoreGraphics::TextureId irradianceTexture, distanceTexture, scrollSpaceTexture;
     } volumeBlendOutputs;
     CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable;
+
+#ifndef PUBLIC_BUILD
+    CoreGraphics::ResourceTableId debugTable;
+#endif
 };
 
 struct
@@ -66,6 +76,14 @@ struct
     Util::Array<UpdateVolume> volumesToUpdate;
 
     GiVolumeCull::GIVolume giVolumes[64];
+
+#ifndef PUBLIC_BUILD
+    CoreGraphics::ShaderId debugShader;
+    CoreGraphics::ShaderProgramId debugProgram;
+    CoreGraphics::PipelineId debugPipeline;
+    CoreGraphics::MeshResourceId debugMeshResource;
+    CoreGraphics::MeshId debugMesh;
+#endif
 } state;
 
 
@@ -92,6 +110,9 @@ DDGIContext::Create()
     __CreateContext();
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = DDGIContext::OnRenderDebug;
+
+    state.debugMeshResource = Resources::CreateResource("sysmsh:sphere.nvx", "GI", nullptr, nullptr, true, false);
+    state.debugMesh = CoreGraphics::MeshResourceGetMesh(state.debugMeshResource, 0);
 #endif
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -110,6 +131,7 @@ DDGIContext::Create()
 
     state.raytracingTable = CoreGraphics::ShaderCreateResourceTableSet(state.probeUpdateShader, NEBULA_BATCH_GROUP, 1);
 
+
     // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
     state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram }, CoreGraphics::ComputeQueueType);
 
@@ -124,6 +146,11 @@ DDGIContext::Create()
     state.volumeCullShader = CoreGraphics::ShaderGet("shd:gi/shaders/gi_volume_cull.fxb");
     state.volumeCullProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Cull"));
     state.volumeClusterDebugProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Debug"));
+
+#ifndef PUBLIC_BUILD
+    state.debugShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_debug.fxb");
+    state.debugProgram = CoreGraphics::ShaderGetProgram(state.debugShader, CoreGraphics::ShaderFeatureMask("Debug"));
+#endif
 
     CoreGraphics::BufferCreateInfo rwbInfo;
     rwbInfo.name = "GIIndexListsBuffer";
@@ -284,9 +311,32 @@ DDGIContext::Create()
         }
     });
 
+    FrameScript_default::RegisterSubgraphPipelines_DDGIDebug_Pass([](const CoreGraphics::PassId pass, const uint subpass)
+    {
+#ifndef PUBLIC_BUILD
+        state.debugPipeline = CoreGraphics::CreateGraphicsPipeline(
+            {
+                .shader = state.debugProgram,
+                .pass = pass,
+                .subpass = subpass,
+                .inputAssembly = CoreGraphics::InputAssemblyKey{ { .topo = CoreGraphics::PrimitiveTopology::TriangleList, .primRestart = false } }
+            });
+#endif
+    });
+
     FrameScript_default::RegisterSubgraph_DDGIDebug_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
+#ifndef PUBLIC_BUILD
+        CoreGraphics::CmdSetGraphicsPipeline(cmdBuf, state.debugPipeline);
+        CoreGraphics::MeshBind(state.debugMesh, cmdBuf);
 
+        for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
+        {
+            CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.debugTable, NEBULA_SYSTEM_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+            const CoreGraphics::PrimitiveGroup& prim = CoreGraphics::MeshGetPrimitiveGroup(state.debugMesh, 0);
+            CoreGraphics::CmdDraw(cmdBuf, volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], prim);
+        }
+#endif
     });
 
 
@@ -411,7 +461,6 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     scrollSpaceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.scrollSpace = CoreGraphics::CreateTexture(scrollSpaceCreateInfo);
 
-    n_assert(setup.numRaysPerProbe < 1024);
     for (uint rayIndex = 0; rayIndex < setup.numRaysPerProbe; rayIndex++)
     {
         SphericalFibonacci(rayIndex, setup.numRaysPerProbe).store(volume.updateConstants.Directions[rayIndex]);
@@ -466,6 +515,12 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.distance, ProbeFinalize::Table_System::DistanceOutput_SLOT));
     CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.scrollSpace, ProbeFinalize::Table_System::ScrollSpaceOutput_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.blendProbesTable);
+
+#ifndef PUBLIC_BUILD
+    volume.debugResourceTable = CoreGraphics::ShaderCreateResourceTable(state.debugShader, NEBULA_SYSTEM_GROUP, 1);
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.debugResourceTable, CoreGraphics::ResourceTableBuffer(volume.volumeUpdateBuffer, ProbeDebug::Table_System::VolumeConstants_SLOT));
+    CoreGraphics::ResourceTableCommitChanges(volume.debugResourceTable);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -519,9 +574,13 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.volumeBlendOutputs.irradianceTexture = activeVolume.irradiance;
             volumeToUpdate.volumeBlendOutputs.distanceTexture = activeVolume.distance;
             volumeToUpdate.volumeBlendOutputs.scrollSpaceTexture = activeVolume.scrollSpace;
+
+#ifndef PUBLIC_BUILD
+            volumeToUpdate.debugTable = activeVolume.debugResourceTable;
+#endif
             state.volumesToUpdate.Append(volumeToUpdate);
 
-            Math::vec3 size = activeVolume.size * 2;
+            Math::vec3 size = activeVolume.size;
             Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 5.0f), 0.0f, 0.0f);
             rotation.store(activeVolume.updateConstants.TemporalRotation);
             size.store(activeVolume.updateConstants.Scale);
@@ -574,7 +633,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
         auto& giVolume = state.giVolumes[volumeCount];
 
-        Math::mat4 transform = Math::scaling(activeVolume.size * 2);
+        Math::mat4 transform = Math::scaling(activeVolume.size);
         transform.translate(activeVolume.position);
         Math::bbox bbox = viewTransform * transform;
         bbox.pmin.store(giVolume.bboxMin);

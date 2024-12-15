@@ -12,9 +12,6 @@
 
 group(SYSTEM_GROUP) write rgba32f image2D RadianceOutput;
 
-const uint NumColorSamples = 16;
-const uint NumDepthSamples = 8;
-
 group(SYSTEM_GROUP) constant VolumeConstants
 {
     mat4x4 TemporalRotation;
@@ -169,7 +166,6 @@ RayGen(
     payload.material = vec4(0, 0, 0, 0);
     payload.normal = vec3(0, 0, 0);
     payload.depth = 0;
-    vec3 radiance = vec3(0,0,0);
 
     traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
     if ((payload.bits & RAY_MISS_BIT) != 0)
@@ -213,7 +209,11 @@ RayGen(
     volumeArg.Irradiance = ProbeIrradiance;
     volumeArg.Distances = ProbeDistances;
     volumeArg.Offsets = ProbeOffsets;
-    volumeArg.States = ProbeStates; 
+    volumeArg.States = ProbeStates;
+    volumeArg.NormalBias = NormalBias;
+    volumeArg.ViewBias = ViewBias;
+    volumeArg.IrradianceScale = IrradianceScale; 
+    volumeArg.Options = Options;
     
     vec3 worldSpacePos = probeWorldPosition + probeRayDirection * payload.depth;
     
