@@ -554,7 +554,7 @@ LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, v
 vec3
 GI(uint clusterIndex, vec3 viewVec, vec3 pos, vec3 normal, vec3 albedo)
 {
-    vec3 light = vec3(0, 0, 0);
+    vec3 accumulatedGi = vec3(0, 0, 0);
     uint flag = AABBs[clusterIndex].featureFlags;
     if (CHECK_FLAG(flag, CLUSTER_GI_VOLUME_BIT))
     {
@@ -563,12 +563,27 @@ GI(uint clusterIndex, vec3 viewVec, vec3 pos, vec3 normal, vec3 albedo)
         {
             uint lidx = GIVolumeIndexLists[clusterIndex * MAX_GI_VOLUMES_PER_CLUSTER + i];
             GIVolume gi = GIVolumes[lidx];
+            vec3 relativePosition = pos - gi.Offset;
+            /// TODO: Rotate
+            if (relativePosition.x > gi.Size.x || relativePosition.y > gi.Size.y || relativePosition.z > gi.Size.z)
+                continue;
+                
+                
+            vec3 edgeDistance = gi.Size - abs(relativePosition);
+            float edgeMinDistance = min(min(edgeDistance.x, edgeDistance.y), edgeDistance.z);
+            float weight = 0.0f;
+            if (gi.Blend == 0.0f)
+                weight = (edgeMinDistance < gi.BlendCutoff) ? 0.0f : 1.0f;
+            else
+                weight = clamp((edgeMinDistance - gi.BlendCutoff) / gi.Blend, 0.0f, 1.0f);
+            
             vec3 surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
             //light += vec3(1,0,0);
-            light += EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * (albedo / PI) / gi.IrradianceScale;
+            vec3 volumeGI = max(vec3(0), EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * (albedo / PI) / gi.IrradianceScale);
+            accumulatedGi = mix(accumulatedGi, volumeGI, vec3(weight));
         }
     }
-    return light;
+    return accumulatedGi;
 }
 
 //------------------------------------------------------------------------------

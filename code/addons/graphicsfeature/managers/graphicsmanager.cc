@@ -484,6 +484,8 @@ GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVol
     setup.viewBias = volume->viewBias;
     setup.distanceExponent = volume->distanceExponent;
     setup.hysteresis = volume->hysteresis;
+    setup.blend = volume->borderBlend;
+    setup.blendCutoff = volume->borderBlendCutoff;
     GI::DDGIContext::SetupVolume(volume->graphicsEntityId, setup);
 }
 

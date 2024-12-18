@@ -23,17 +23,40 @@
                 "type": "uint",
                 "default": 188
             },
+            "relocate": {
+                "type": "bool",
+                "default": false,
+                "description": "Relocate probes if they are inside geometry"
+            },
+            "scrolling": {
+                "type": "bool",
+                "default": false,
+                "description": "Scroll probes infinitely based on camera position"
+            },
+            "updateBudget": {
+                "type": "float",
+                "default": 1.0,
+                "description": "Percentage of probes to update per frame, 1.0 means 100%"
+            },
+            "classify": {
+                "type": "bool",
+                "default": false,
+                "description": "Automatically disable probes that hit no geometry. This is to save performance. Said probes shoot a minimal set of rays to check if they should invalidate their status"
+            },
             "irradianceScale": {
                 "type": "float",
-                "default": 1
+                "default": 1,
+                "description": "Energy of output irradiance"
             },
             "normalBias": {
                 "type": "float",
-                "default": 40
+                "default": 0.1,
+                "description": "Adds distance on surface along normal direction to avoid aliasing"
             },
             "viewBias": {
                 "type": "float",
-                "default": 10
+                "default": 0.1,
+                "description": "Adds distance on surface along camera view direction to avoid aliasing"
             },
             "distanceExponent": {
                 "type": "float",
@@ -42,6 +65,16 @@
             "hysteresis": {
                 "type": "float",
                 "default": 0.97
+            },
+            "borderBlendCutoff": {
+                "type": "float",
+                "default": 0.0,
+                "description": "Percentage distance from the volume edge where blending should start"
+            },
+            "borderBlend": {
+                "type": "float",
+                "default": 0.0,
+                "description": "Blend gradient factor based on cutoff point and outer edge of volume"
             }
         }
     }

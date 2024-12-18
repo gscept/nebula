@@ -382,7 +382,6 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesZ = setup.numProbesZ;
     volume.numRaysPerProbe = setup.numRaysPerProbe;
     volume.options = setup.options;
-    volume.options.flags.relocate = false;
     //volume.options.flags.lowPrecisionTextures = true;
 
     volume.normalBias = setup.normalBias;
@@ -393,6 +392,8 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.changeThreshold = setup.changeThreshold;
     volume.brightnessThreshold = setup.brightnessThreshold;
     volume.hysteresis = setup.hysteresis;
+    volume.blend = setup.blend;
+    volume.blendCutoff = setup.blendCutoff;
 
 #if NEBULA_GRAPHICS_DEBUG
     Util::String volumeName = Util::String::Sprintf("DDGIVolume_%d", ctxId.id);
@@ -417,8 +418,6 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     irradianceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
     irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
-    irradianceCreateInfo.swizzle.red = CoreGraphics::TextureChannelMapping::Red;
-    irradianceCreateInfo.swizzle.blue = CoreGraphics::TextureChannelMapping::Blue;
     volume.irradiance = CoreGraphics::CreateTexture(irradianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo distanceCreateInfo;
@@ -633,7 +632,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
         auto& giVolume = state.giVolumes[volumeCount];
 
-        Math::mat4 transform = Math::scaling(activeVolume.size);
+        Math::mat4 transform = Math::scaling(activeVolume.size * 1.5f);
         transform.translate(activeVolume.position);
         Math::bbox bbox = viewTransform * transform;
         bbox.pmin.store(giVolume.bboxMin);
@@ -647,7 +646,10 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         memcpy(giVolume.GridCounts, activeVolume.updateConstants.ProbeGridDimensions, sizeof(activeVolume.blendConstants.ProbeGridDimensions));
         memcpy(giVolume.ScrollOffsets, activeVolume.updateConstants.ProbeScrollOffsets, sizeof(activeVolume.blendConstants.ProbeScrollOffsets));
         memcpy(giVolume.GridSpacing, activeVolume.updateConstants.ProbeGridSpacing, sizeof(activeVolume.blendConstants.ProbeGridSpacing));
+        activeVolume.size.store(giVolume.Size);
 
+        giVolume.BlendCutoff = activeVolume.blendCutoff;
+        giVolume.Blend = activeVolume.blend;
         giVolume.ViewBias = activeVolume.viewBias;
         giVolume.NormalBias = activeVolume.normalBias;
         giVolume.Options = activeVolume.updateConstants.Options;

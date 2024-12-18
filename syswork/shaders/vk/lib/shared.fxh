@@ -482,7 +482,12 @@ struct GIVolume
     textureHandle Offsets;
     ivec3 ScrollOffsets;
     int NumIrradianceTexels;
+    vec3 Size;
     textureHandle States;
+    
+    float BlendCutoff;
+    float Blend;
+    
     float NormalBias;
     float ViewBias;
     float IrradianceScale;

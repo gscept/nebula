@@ -57,6 +57,8 @@ public:
         float changeThreshold = 0.2f;
         float brightnessThreshold = 2.0f;
         float hysteresis = 0.97f;
+        float blendCutoff = 0.0f;
+        float blend = 0.0f;
 
         DDGIOptions options;
     };
@@ -97,6 +99,8 @@ private:
         float changeThreshold = 0.2f;
         float brightnessThreshold = 2.0f;
         float hysteresis = 0.97f;
+        float blendCutoff = 0.0f;
+        float blend = 0.0f;
         
         ProbeUpdate::VolumeConstants updateConstants;
         ProbeFinalize::BlendConstants blendConstants;
