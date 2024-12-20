@@ -1,9 +1,6 @@
 # Nebula engine   
 ![CI](https://github.com/gscept/nebula/workflows/CI/badge.svg)
 
-![image](https://github.com/user-attachments/assets/d7d4843b-591d-48d6-ad00-0cae34091d26)
-
-
 Get in contact on Discord! https://discord.gg/wuYPxUF
 
 Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
