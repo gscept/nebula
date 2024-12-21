@@ -1079,10 +1079,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .taskShader = true,
         .meshShader = true,
         .multiviewMeshShader = false,
-        .primitiveFragmentShadingRateMeshShader = info.features.enableVariableRateShading,
+        .primitiveFragmentShadingRateMeshShader = CoreGraphics::VariableRateShadingSupported,
         .meshShaderQueries = false,
     };
-    if (info.features.enableMeshShaders)
+    if (CoreGraphics::MeshShadersSupported)
     {
         lastExtension = &meshShadersFeatures;
     }
@@ -1097,7 +1097,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .primitiveFragmentShadingRate = true,
         .attachmentFragmentShadingRate = true,
     };
-    if (info.features.enableVariableRateShading)
+    if (CoreGraphics::VariableRateShadingSupported)
     {
         lastExtension = &variableShadingFeatures;
     }
@@ -1126,7 +1126,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         .rayTraversalPrimitiveCulling = false
     };
 
-    if (info.features.enableRayTracing)
+    if (CoreGraphics::RayTracingSupported)
     {
         lastExtension = &raytracingFeatures;
     }
