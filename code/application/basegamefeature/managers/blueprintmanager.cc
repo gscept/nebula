@@ -19,8 +19,8 @@ namespace Game
 __ImplementClass(Game::BlueprintManager, 'BpMa', Game::Manager);
 __ImplementSingleton(BlueprintManager)
 
-Util::String BlueprintManager::blueprintFolder("data:tables/");
-Util::String BlueprintManager::templatesFolder("data:tables/templates");
+Util::String BlueprintManager::blueprintFolder("tbl:");
+Util::String BlueprintManager::templatesFolder("tbl:templates");
 
 //------------------------------------------------------------------------------
 /**
