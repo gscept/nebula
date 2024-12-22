@@ -69,6 +69,20 @@ UpdateOccupancy(uint32_t* occupancyList, uint32_t& slotsUsed, const CoreGraphics
 /**
 */
 void
+UpdateValueDescriptorSet(bool& dynamic, uint32_t& num, uint32_t& numDyn, const unsigned set)
+{
+    if (set == NEBULA_DYNAMIC_OFFSET_GROUP || set == NEBULA_INSTANCE_GROUP)
+    {
+        dynamic = true;
+        numDyn++;
+    }
+    num++;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ShaderSetup(
     VkDevice dev,
     const Util::StringAtom& name,
@@ -95,7 +109,6 @@ ShaderSetup(
     uint32_t numsets = 0;
 
     // always create push constant range in layout, making all shaders using push constants compatible
-    uint32_t maxConstantBytes = CoreGraphics::MaxPushConstantSize;
     uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
     constantRange.Resize(NumShaders); // one per shader stage
     uint i;
@@ -117,58 +130,43 @@ ShaderSetup(
     for (i = 0; i < varblocks.size(); i++)
     {
         AnyFX::VkVarblock* block = static_cast<AnyFX::VkVarblock*>(varblocks[i]);
-        VkDescriptorSetLayoutBinding& binding = block->bindingLayout;
-        ResourceTableLayoutConstantBuffer cbo;
-        cbo.slot = binding.binding;
-        cbo.num = binding.descriptorCount;
-        cbo.visibility = AllVisibility;
-        uint32_t slotsUsed = 0;
-        if (block->HasAnnotation("Visibility"))
-        {
-            cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
-        }
-
-        if (binding.binding != 0xFFFFFFFF)
-        {
-            bool occupiesNewBinding = !bindingTable[binding.binding];
-            bindingTable[binding.binding] = true;
-
-            if (occupiesNewBinding)
-            {
-                UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
-            }
-        }
-
+        resourceSlotMapping.Add(block->name.c_str(), block->binding);
         if (block->variables.empty()) continue;
+
         if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
         {
-            n_assert(block->alignedSize <= maxConstantBytes);
-            n_assert(block->alignedSize <= CoreGraphics::MaxPushConstantSize);
-            maxConstantBytes -= block->alignedSize;
             CoreGraphics::ResourcePipelinePushConstantRange range;
             range.offset = pushRangeOffset;
             range.size = block->alignedSize;
             range.vis = AllGraphicsVisibility; // only allow for fragment bit...
             constantRange[0] = range; // okay, this is hacky
             pushRangeOffset += block->alignedSize;
+            n_assert(CoreGraphics::MaxPushConstantSize >= pushRangeOffset); // test if the next offset would still be in range
             goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
         }
         {
-            // add to resource map
-            resourceSlotMapping.Add(block->name.c_str(), block->binding);
+            ResourceTableLayoutConstantBuffer cbo;
+            cbo.slot = block->binding;
+            cbo.num = block->bindingLayout.descriptorCount;
+            cbo.visibility = AllVisibility;
+            cbo.dynamicOffset = false;
+            uint32_t slotsUsed = 0;
+            if (block->HasAnnotation("Visibility"))
+            {
+                cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
+            }
+
+            if (block->binding != 0xFFFFFFFF && !bindingTable[block->binding])
+            {
+                bindingTable[block->binding] = true;
+                UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
+            }
+            UpdateValueDescriptorSet(cbo.dynamicOffset, numUniform, numUniformDyn, block->set);
+
             ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(block->set);
             numsets = Math::max(numsets, block->set + 1);
-
-            if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP)
-            {
-                cbo.dynamicOffset = true; numUniformDyn += slotsUsed;
-            }
-            else
-            {
-                cbo.dynamicOffset = false; numUniform += slotsUsed;
-            }
-
             rinfo.constantBuffers.Append(cbo);
+
             n_assert(block->alignedSize <= CoreGraphics::MaxConstantBufferSize);
         }
         skipbuffer:
@@ -197,39 +195,30 @@ ShaderSetup(
     {
         AnyFX::VkVarbuffer* buffer = static_cast<AnyFX::VkVarbuffer*>(varbuffers[i]);
         resourceSlotMapping.Add(buffer->name.c_str(), buffer->binding);
+        if (buffer->alignedSize == 0) continue;
+
         VkDescriptorSetLayoutBinding& binding = buffer->bindingLayout;
         ResourceTableLayoutShaderRWBuffer rwbo;
-        rwbo.slot = binding.binding;
+        rwbo.slot = buffer->binding;
         rwbo.num = binding.descriptorCount;
         rwbo.visibility = AllVisibility;
+        rwbo.dynamicOffset = false;
         uint32_t slotsUsed = 0;
-
-        if (buffer->alignedSize == 0) continue;
-        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(buffer->set);
-        numsets = Math::max(numsets, buffer->set + 1);
 
         if (buffer->HasAnnotation("Visibility"))
         {
             rwbo.visibility = ShaderVisibilityFromString(buffer->GetAnnotationString("Visibility").c_str());
         }
 
-        bool occupiesNewBinding = !bindingTable[binding.binding];
-        bindingTable[binding.binding] = true;
-
-        if (occupiesNewBinding)
+        if (!bindingTable[buffer->binding])
         {
+            bindingTable[buffer->binding] = true;
             UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
         }
+        UpdateValueDescriptorSet(rwbo.dynamicOffset, numStorage, numStorageDyn, buffer->set);
 
-        if (buffer->set == NEBULA_DYNAMIC_OFFSET_GROUP || buffer->set == NEBULA_INSTANCE_GROUP)
-        {
-            rwbo.dynamicOffset = true; numStorageDyn += slotsUsed;
-        }
-        else
-        {
-            rwbo.dynamicOffset = false; numStorage += slotsUsed;
-        }
-
+        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(buffer->set);
+        numsets = Math::max(numsets, buffer->set + 1);
         rinfo.rwBuffers.Append(rwbo);
     }
     n_assert(CoreGraphics::MaxResourceTableDynamicOffsetReadWriteBuffers >= numStorageDyn);
