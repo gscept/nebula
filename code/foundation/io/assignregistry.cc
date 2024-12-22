@@ -161,6 +161,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("sur",   "export:surfaces"));
     this->SetAssign(Assign("scr",   "data:scripts"));
     this->SetAssign(Assign("gui",   "data:gui"));
+    this->SetAssign(Assign("tbl", "export:data/tables"));
     
     // assign for nav meshes
     this->SetAssign(Assign("nav",   "data:navigation"));
