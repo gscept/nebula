@@ -239,10 +239,11 @@ TBUIContext::Create()
         // Render some glyphs in one go now since we know we are going to use them. It would work fine
         // without this since glyphs are rendered when needed, but with some extra updating of the glyph bitmap.
         if (font)
+        {
             font->RenderGlyphs(
                 " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ï∑Â‰ˆ≈ƒ÷"
             );
-
+        }
         tb::TBWidgetsAnimationManager::Init();
 
         // setup state
@@ -354,6 +355,10 @@ TBUIContext::Discard()
 void
 TBUIContext::FrameUpdate(const Graphics::FrameContext& ctx)
 {
+    if (views.IsEmpty())
+    {
+        return;
+    }
     tb::TBMessageHandler::ProcessMessages();
     tb::TBAnimationManager::Update();
 
@@ -417,12 +422,16 @@ bool
 TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 {
     if (views.IsEmpty())
+    {
         return false;
+    }
 
     TBUIView* view = views.Back();
 
     if (!view)
+    {
         return false;
+    }
 
     tb::MODIFIER_KEYS modifiers = GetModifierKeys();
 
@@ -481,12 +490,12 @@ TBUIContext::ProcessInput(const Input::InputEvent& inputEvent)
 /**
 */
 void
-TBUIContext::Render(
-    const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex
-)
+TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
 {
     if (views.IsEmpty())
+    {
         return;
+    }
 
     Util::Array<TBUIBatch> batches;
 
