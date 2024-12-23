@@ -9,7 +9,9 @@
 #include "graphics/cameracontext.h"
 #include "visibility/visibilitycontext.h"
 #include "dynui/imguicontext.h"
+#if WITH_NEBULA_ADDON_TBUI
 #include "tbui/tbuicontext.h"
+#endif
 #include "characters/charactercontext.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "appgame/gameapplication.h"
@@ -160,7 +162,9 @@ GraphicsFeatureUnit::OnActivate()
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
     //StaticUI::StaticUIContext::Create();
+#if WITH_NEBULA_ADDON_TBUI
     TBUI::TBUIContext::Create();
+#endif
 
     CameraContext::Create();
     ModelContext::Create();
@@ -292,7 +296,9 @@ GraphicsFeatureUnit::OnActivate()
     Util::Array<Graphics::ViewIndependentCall> preLogicCalls =
     {
         Dynui::ImguiContext::NewFrame,
+#if WITH_NEBULA_ADDON_TBUI
         TBUI::TBUIContext::FrameUpdate,
+#endif
         CameraContext::UpdateCameras,
         ModelContext::UpdateTransforms,
         Characters::CharacterContext::UpdateAnimations,
@@ -383,7 +389,9 @@ GraphicsFeatureUnit::OnDeactivate()
     Raytracing::RaytracingContext::Discard();
     Im3d::Im3dContext::Discard();
     Dynui::ImguiContext::Discard();
+#if WITH_NEBULA_ADDON_TBUI
     TBUI::TBUIContext::Discard();
+#endif
     FeatureUnit::OnDeactivate();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->defaultStage);

@@ -49,4 +49,8 @@
             "Value":       "toolkit:syswork/materials"
          }
       ],   
+      "Addons":
+      [
+         "tbui",
+      ],
 }
