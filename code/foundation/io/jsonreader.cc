@@ -328,6 +328,19 @@ JsonReader::GetChildNodeName(SizeT childIndex)
  
 */
 bool
+JsonReader::IsString() const
+{
+    n_assert(this->IsOpen());
+    n_assert(0 != this->curNode);
+    return this->curNode->is_string();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+ 
+*/
+bool
 JsonReader::IsArray() const
 {
     n_assert(this->IsOpen());
