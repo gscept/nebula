@@ -60,6 +60,8 @@ public:
     /// gets the childname of the child at index, or empty string if no child exists or has no name.
     Util::String GetChildNodeName(SizeT childIndex);
 
+    /// check if current node is a string
+    bool IsString() const;
     /// check if current node is an array
     bool IsArray() const;    
     /// check if current node is an object (can have keys)
