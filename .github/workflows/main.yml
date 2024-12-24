@@ -138,10 +138,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     name: Notify
-    if: cancelled() == false
+    if: cancelled() == false && github.repository == 'gscept/nebula'
     steps:
      - name: Notification       
        uses: gscept/action-telegram@v1.1.1
+       continue-on-error: true
        with:
          botToken: ${{ secrets.BotToken }}
          chatId: ${{ secrets.ChatID }}
