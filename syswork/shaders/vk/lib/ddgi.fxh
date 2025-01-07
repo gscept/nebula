@@ -8,7 +8,7 @@
 
 const int PROBE_STATE_INACTIVE = 0;
 const int PROBE_STATE_ACTIVE = 1;
-const int NUM_FIXED_RAYS = 32;
+const int DDGI_NUM_FIXED_RAYS = 32;
 
 const int NUM_IRRADIANCE_TEXELS_PER_PROBE = 6;
 const int NUM_DISTANCE_TEXELS_PER_PROBE = 14;

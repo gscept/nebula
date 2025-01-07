@@ -30,6 +30,7 @@ group(SYSTEM_GROUP) constant VolumeConstants
     float IrradianceGamma;
     vec4 Directions[1024];
     float NormalBias;
+    
     float ViewBias;
     float IrradianceScale;
     
@@ -134,7 +135,7 @@ RayGen(
     int state = floatBitsToInt(fetch2D(ProbeStates, Basic2DSampler, texelPosition, 0).x);
     if ((Options & CLASSIFICATION_OPTION) != 0)
     {
-        if (state == PROBE_STATE_INACTIVE && rayIndex >= NUM_FIXED_RAYS)
+        if (state == PROBE_STATE_INACTIVE && rayIndex >= DDGI_NUM_FIXED_RAYS)
         {
             return;
         }

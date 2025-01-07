@@ -219,7 +219,7 @@ Blend(const uint MODE)
     int rayIndex = 0;
     if ((Options & (CLASSIFICATION_OPTION | RELOCATION_OPTION)) == (CLASSIFICATION_OPTION | RELOCATION_OPTION))
     {
-        rayIndex = NUM_FIXED_RAYS;
+        rayIndex = DDGI_NUM_FIXED_RAYS;
     }
         
     uint backfaces;

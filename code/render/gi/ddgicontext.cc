@@ -468,9 +468,9 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     memcpy(volume.blendConstants.Directions, volume.updateConstants.Directions, sizeof(volume.updateConstants.Directions));
 
     // Store another set of minimal ray directions for probe activity updates
-    for (uint rayIndex = 0; rayIndex < ProbeUpdate::NUM_FIXED_RAYS; rayIndex++)
+    for (uint rayIndex = 0; rayIndex < ProbeUpdate::DDGI_NUM_FIXED_RAYS; rayIndex++)
     {
-        SphericalFibonacci(rayIndex, ProbeUpdate::NUM_FIXED_RAYS).store(volume.updateConstants.MinimalDirections[rayIndex]);
+        SphericalFibonacci(rayIndex, ProbeUpdate::DDGI_NUM_FIXED_RAYS).store(volume.updateConstants.MinimalDirections[rayIndex]);
     }
     memcpy(volume.blendConstants.MinimalDirections, volume.updateConstants.MinimalDirections, sizeof(volume.updateConstants.MinimalDirections));
 
