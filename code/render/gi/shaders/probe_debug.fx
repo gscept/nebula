@@ -9,34 +9,6 @@
 #include <lib/pbr.fxh>
 #include <lib/ddgi.fxh>
 
-group(SYSTEM_GROUP) constant VolumeConstants
-{
-    mat4x4 TemporalRotation;
-    vec3 Scale;
-    uint Options;
-    vec3 Offset;
-    int NumIrradianceTexels;
-    ivec3 ProbeGridDimensions;
-    int ProbeIndexStart;
-    ivec3 ProbeScrollOffsets;
-    int ProbeIndexCount;
-    vec4 Rotation;
-    vec3 ProbeGridSpacing;
-    int NumDistanceTexels;
-    vec4 MinimalDirections[32];
-    float IrradianceGamma;
-    vec4 Directions[1024];
-    float NormalBias;
-    float ViewBias;
-    float IrradianceScale;
-    
-    uint ProbeIrradiance;
-    uint ProbeDistances;
-    uint ProbeOffsets;
-    uint ProbeStates;
-    uint ProbeScrollSpace;
-};
-
 #include "probe_shared.fxh"
 
 
@@ -53,11 +25,15 @@ DebugVS(
     out vec3 WorldPosition
 )
 {
-    vec3 probeWorldPosition = DDGIProbeWorldPosition(gl_InstanceIndex, Offset, Rotation, ProbeGridDimensions, ProbeGridSpacing);
+    vec3 probeWorldPosition;
+    if ((Options & RELOCATION_OPTION) != 0)
+        probeWorldPosition = DDGIProbeWorldPositionWithOffset(gl_InstanceIndex, Offset, Rotation, ProbeGridDimensions, ProbeGridSpacing, ProbeOffsets);
+    else
+        probeWorldPosition = DDGIProbeWorldPosition(gl_InstanceIndex, Offset, Rotation, ProbeGridDimensions, ProbeGridSpacing);
     WorldPosition = probeWorldPosition;
     
     Normal = normal;
-    gl_Position = ViewProjection * vec4(probeWorldPosition, 1);
+    gl_Position = ViewProjection * vec4(position * 0.1f + probeWorldPosition, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -90,9 +66,9 @@ DebugPS(
 
 render_state DefaultState
 {
-    DepthWrite = false;
+    DepthWrite = true;
     DepthEnabled = true;
-    DepthFunc = Equal;
+    DepthFunc = LessEqual;
 };
 
 //------------------------------------------------------------------------------

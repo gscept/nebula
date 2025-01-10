@@ -12,34 +12,7 @@
 
 group(SYSTEM_GROUP) write rgba32f image2D RadianceOutput;
 
-group(SYSTEM_GROUP) constant VolumeConstants
-{
-    mat4x4 TemporalRotation;
-    vec3 Scale;
-    uint Options;
-    vec3 Offset;
-    int NumIrradianceTexels;
-    ivec3 ProbeGridDimensions;
-    int ProbeIndexStart;
-    ivec3 ProbeScrollOffsets;
-    int ProbeIndexCount;
-    vec4 Rotation;
-    vec3 ProbeGridSpacing;
-    int NumDistanceTexels;
-    vec4 MinimalDirections[32];
-    float IrradianceGamma;
-    vec4 Directions[1024];
-    float NormalBias;
-    
-    float ViewBias;
-    float IrradianceScale;
-    
-    uint ProbeIrradiance;
-    uint ProbeDistances;
-    uint ProbeOffsets;
-    uint ProbeStates;
-    uint ProbeScrollSpace;
-};
+
 
 #include "probe_shared.fxh"
 

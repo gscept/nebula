@@ -59,6 +59,7 @@ public:
         float hysteresis = 0.97f;
         float blendCutoff = 0.0f;
         float blend = 0.0f;
+        float updateBudget = 1.0f;
 
         DDGIOptions options;
     };
@@ -88,8 +89,8 @@ private:
         Math::bbox boundingBox;
         CoreGraphics::TextureId radiance; // Ray tracing output
         CoreGraphics::TextureId irradiance, distance, offsets, states, scrollSpace;
-        CoreGraphics::BufferId volumeUpdateBuffer, volumeBlendBuffer;
-        CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable;
+        CoreGraphics::BufferId volumeConstantBuffer;
+        CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable, relocateProbesTable, classifyProbesTable;
 
         float normalBias = 0.1f;
         float viewBias = 0.4f;
@@ -98,12 +99,13 @@ private:
         float encodingGamma = 5.0f;
         float changeThreshold = 0.2f;
         float brightnessThreshold = 2.0f;
+        float backfaceThreshold = 0.25f;
+        float minFrontfaceDistance = 0.1f;
         float hysteresis = 0.97f;
         float blendCutoff = 0.0f;
         float blend = 0.0f;
         
-        ProbeUpdate::VolumeConstants updateConstants;
-        ProbeFinalize::BlendConstants blendConstants;
+        ProbeUpdate::VolumeConstants volumeConstants;
         DDGIOptions options;
 
 #ifndef PUBLIC_BUILD

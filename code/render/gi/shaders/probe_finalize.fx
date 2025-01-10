@@ -10,36 +10,6 @@ group(SYSTEM_GROUP) read_write r11g11b10f image2D IrradianceOutput;
 group(SYSTEM_GROUP) read_write rg16f image2D DistanceOutput;
 group(SYSTEM_GROUP) read_write r8 image2D ScrollSpaceOutput;
 
-group(SYSTEM_GROUP) constant BlendConstants
-{
-    mat4x4 TemporalRotation;
-    vec4 Directions[1024];
-    uint Options;
-    vec4 MinimalDirections[32];
-    uint RaysPerProbe;
-    ivec3 ProbeGridDimensions;
-    int ProbeIndexStart;
-    ivec3 ProbeScrollOffsets;
-    int ProbeIndexCount;
-    vec3 ProbeGridSpacing;
-    
-    float InverseGammaEncoding;
-    float Hysteresis;
-    float NormalBias;
-    float ViewBias;
-    
-    float IrradianceScale;
-    float DistanceExponent;
-    float ChangeThreshold;
-    float BrightnessThreshold;
-    
-    uint ProbeRadiance;
-    uint ProbeIrradiance;
-    uint ProbeDistances;
-    uint ProbeOffsets;
-    uint ProbeStates;
-};
-
 #include "probe_shared.fxh"
 
 groupshared vec3 Radiance[1024];
@@ -217,7 +187,7 @@ Blend(const uint MODE)
     }
 
     int rayIndex = 0;
-    if ((Options & (CLASSIFICATION_OPTION | RELOCATION_OPTION)) == (CLASSIFICATION_OPTION | RELOCATION_OPTION))
+    if ((Options & (CLASSIFICATION_OPTION | RELOCATION_OPTION)) != 0)
     {
         rayIndex = DDGI_NUM_FIXED_RAYS;
     }

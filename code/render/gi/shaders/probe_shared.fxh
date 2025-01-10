@@ -3,6 +3,59 @@
 //  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
+#ifndef PROBE_SHARED_FXH
+#define PROBE_SHARED_FXH
+#include <lib/std.fxh>
+group(SYSTEM_GROUP) constant VolumeConstants
+{
+    mat4x4 TemporalRotation;
+
+    vec3 Scale;
+    uint Options;
+
+    vec3 Offset;
+    int NumIrradianceTexels;
+
+    ivec3 ProbeGridDimensions;
+    int ProbeIndexStart;
+
+    ivec3 ProbeScrollOffsets;
+    int ProbeIndexCount;
+
+    vec4 Rotation;
+
+    vec3 ProbeGridSpacing;
+    int NumDistanceTexels;
+
+    vec4 MinimalDirections[32];
+    
+    vec4 Directions[1024];
+
+    float InverseGammaEncoding;
+    float Hysteresis;
+    float IrradianceGamma;
+    uint RaysPerProbe;
+    
+    float NormalBias;
+    float ViewBias;
+    float IrradianceScale;
+    float DistanceExponent;
+    
+    float ChangeThreshold;
+    float BrightnessThreshold;
+    float BackfaceThreshold;
+    float ProbeDistanceScale;
+
+    float MinFrontfaceDistance;
+    uint ProbeIrradiance;
+    uint ProbeDistances;
+    uint ProbeOffsets;
+
+    uint ProbeStates;
+    uint ProbeScrollSpace;
+    uint ProbeRadiance;
+};
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -44,3 +97,5 @@ DDGIThreadBaseCoord(int probeIndex, ivec3 probeGridCounts, int probeNumTexels)
     int baseCoordY = probeCoordInPlane.y * probeNumTexels;
     return uvec2(baseCoordX, baseCoordY);
 }
+
+#endif // PROBE_SHARED_FXH

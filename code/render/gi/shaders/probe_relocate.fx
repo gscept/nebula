@@ -8,37 +8,6 @@
 
 group(SYSTEM_GROUP) write rgba16f image2D ProbeOffsetsOutput;
 
-group(SYSTEM_GROUP) constant VolumeConstants
-{
-    mat4x4 TemporalRotation;
-    vec3 Scale;
-    uint Options;
-    vec3 Offset;
-    int NumIrradianceTexels;
-    ivec3 ProbeGridDimensions;
-    int ProbeIndexStart;
-    ivec3 ProbeScrollOffsets;
-    int ProbeIndexCount;
-    vec4 Rotation;
-    vec3 ProbeGridSpacing;
-    int NumDistanceTexels;
-    vec4 MinimalDirections[32];
-    float IrradianceGamma;
-    vec4 Directions[1024];
-    uint RaysPerProbe;
-    float NormalBias;
-    float ViewBias;
-    float IrradianceScale;
-    float BackfaceThreshold;
-    float ProbeDistanceScale;
-    float MinFrontfaceDistance;
-    
-    uint ProbeIrradiance;
-    uint ProbeDistances;
-    uint ProbeOffsets;
-    uint ProbeStates;
-    uint ProbeScrollSpace;
-};
 #include <probe_shared.fxh>
 
 //------------------------------------------------------------------------------
@@ -90,7 +59,7 @@ ProbeRelocation()
         if (hitDistance < 0.0f)
         {
             backfaceCount++;
-            hitDistance = hitDistance * -1.5f;
+            hitDistance = hitDistance * -5.0f;
             if (hitDistance < closestBackfaceDistance)
             {
                 closestBackfaceDistance = hitDistance;
@@ -104,6 +73,11 @@ ProbeRelocation()
                 closestFrontfaceDistance = hitDistance;
                 closestFrontfaceIndex = rayIndex;
             }
+            else if (hitDistance > farthestFrontfaceDistance)
+            {
+                farthestFrontfaceDistance = hitDistance;
+                farthestFrontfaceIndex = rayIndex;
+            }
         }
     }
     
@@ -112,6 +86,18 @@ ProbeRelocation()
     {
         vec3 closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, TemporalRotation, Options));
         fulloffset = currentOffset + closestBackfaceDirection * (ProbeDistanceScale + 1.0f);
+    }
+    else if (closestFrontfaceDistance < MinFrontfaceDistance)
+    {
+        vec3 closestFrontfaceDirection = DDGIGetProbeDirection(closestFrontfaceIndex, TemporalRotation, Options);
+        vec3 farthestFrontfaceDirection = DDGIGetProbeDirection(farthestFrontfaceIndex, TemporalRotation, Options);
+        
+        if (dot(closestFrontfaceDirection, farthestFrontfaceDirection) <= 0.f)
+        {
+            farthestFrontfaceDistance *= min(farthestFrontfaceDistance, 1.0f);
+            
+            fulloffset = currentOffset + farthestFrontfaceDirection * ProbeDistanceScale;
+        }
     }
     else if (closestFrontfaceDistance > MinFrontfaceDistance + ProbeDistanceScale)
     {
