@@ -6,7 +6,7 @@
 #include <lib/shared.fxh>
 #include <lib/ddgi.fxh>
 
-group(SYSTEM_GROUP) write rgba16f image2D ProbeOffsetsOutput;
+group(SYSTEM_GROUP) read_write rgba16f image2D ProbeOffsetsOutput;
 
 #include <probe_shared.fxh>
 
@@ -38,7 +38,7 @@ ProbeRelocation()
     
     ivec2 offsetTexelPosition = ivec2(DDGIProbeTexelPosition(storageProbeIndex, ProbeGridDimensions));
     
-    vec3 currentOffset = DDGIDecodeProbeOffsets(offsetTexelPosition, ProbeGridDimensions, ProbeOffsets);
+    vec3 currentOffset = DDGIDecodeProbeOffsets(offsetTexelPosition, ProbeGridSpacing, ProbeOffsets);
     
     int closestBackfaceIndex = -1;
     int closestFrontfaceIndex = -1;
@@ -54,7 +54,7 @@ ProbeRelocation()
     {
         ivec2 rayTexCoord = ivec2(rayIndex, probeIndex);
         
-        float hitDistance = fetch2D(ProbeIrradiance, Basic2DSampler, rayTexCoord, 0).w;
+        float hitDistance = fetch2D(ProbeRadiance, Basic2DSampler, rayTexCoord, 0).w;
 
         if (hitDistance < 0.0f)
         {
@@ -81,7 +81,7 @@ ProbeRelocation()
         }
     }
     
-    vec3 fulloffset = vec3(1e27f, 1e27f, 1e27f);
+    vec3 fulloffset = vec3(1e27);
     if (closestBackfaceIndex != -1 && (float(backfaceCount) / numRays) > BackfaceThreshold)
     {
         vec3 closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, TemporalRotation, Options));

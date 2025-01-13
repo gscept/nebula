@@ -28,7 +28,7 @@ group(SYSTEM_GROUP) constant VolumeConstants
     int NumDistanceTexels;
 
     vec4 MinimalDirections[32];
-    
+    vec4 ExtraDirections[1024-32];
     vec4 Directions[1024];
 
     float InverseGammaEncoding;
@@ -66,8 +66,8 @@ DDGIGetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
     if ((options & (RELOCATION_OPTION | CLASSIFICATION_OPTION)) != 0)
     {
         bool useFixedRays = rayIndex < DDGI_NUM_FIXED_RAYS;
-        int adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - DDGI_NUM_FIXED_RAYS;
-        direction = useFixedRays ? MinimalDirections[adjustedRayIndex].xyz : Directions[adjustedRayIndex].xyz;
+        int  adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - DDGI_NUM_FIXED_RAYS;
+        direction = useFixedRays ? MinimalDirections[adjustedRayIndex].xyz : ExtraDirections[adjustedRayIndex].xyz;
         if (useFixedRays)
         {
             return direction;

@@ -364,6 +364,7 @@ EvaluateDDGIIrradiance(
             }
             else
             {
+                //adjacentProbeWorldPosition = DDGIProbeWorldPosition(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
                 adjacentProbeWorldPosition = DDGIProbeWorldPositionWithOffset(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.Offsets);
             }
         }
