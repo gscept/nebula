@@ -90,7 +90,7 @@ private:
         CoreGraphics::TextureId radiance; // Ray tracing output
         CoreGraphics::TextureId irradiance, distance, offsets, states, scrollSpace;
         CoreGraphics::BufferId volumeConstantBuffer;
-        CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable, relocateProbesTable, classifyProbesTable;
+        CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable, relocateProbesTable;
 
         float normalBias = 0.1f;
         float viewBias = 0.4f;

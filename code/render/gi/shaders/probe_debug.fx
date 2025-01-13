@@ -22,7 +22,8 @@ DebugVS(
     [slot=1] in vec3 normal,
     [slot=3] in vec4 tangent,
     out vec3 Normal,
-    out vec3 WorldPosition
+    out vec3 WorldPosition,
+    out flat int Instance 
 )
 {
     vec3 probeWorldPosition;
@@ -33,6 +34,7 @@ DebugVS(
     WorldPosition = probeWorldPosition;
     
     Normal = normal;
+    Instance = gl_InstanceIndex;
     gl_Position = ViewProjection * vec4(position * 0.1f + probeWorldPosition, 1);
 }
 
@@ -43,6 +45,7 @@ shader void
 DebugPS(
     in vec3 normal
     , in vec3 worldPos
+    , in flat int instance
     , [color0] out vec4 Color
 )
 {
@@ -59,6 +62,17 @@ DebugPS(
     volumeArg.Distances = ProbeDistances;
     volumeArg.Offsets = ProbeOffsets;
     volumeArg.States = ProbeStates; 
+    
+    if ((Options & CLASSIFICATION_OPTION) != 0)
+    {
+        ivec2 probeTexel = DDGIProbeTexelPosition(instance, ProbeGridDimensions);
+        float status = fetch2D(ProbeStates, Basic2DSampler, probeTexel, 0).r;
+        if (status == PROBE_STATE_INACTIVE)
+        {
+            Color = vec4(mix(vec3(1,0,0), vec3(0,0,1), vec3(hash12(gl_FragCoord.xy))), 1);
+            return;
+        }
+    }
     
     vec3 irradiance = EvaluateDDGIIrradiance(worldPos, vec3(0), normal, volumeArg, Options);
     Color = vec4(irradiance, 1);

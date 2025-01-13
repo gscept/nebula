@@ -22,8 +22,7 @@
 #include "gi/shaders/probe_update.h"
 #include "gi/shaders/probe_finalize.h"
 #include "gi/shaders/gi_volume_cull.h"
-#include "gi/shaders/probe_classify.h"
-#include "gi/shaders/probe_relocate.h"
+#include "gi/shaders/probe_relocate_and_classify.h"
 #include "graphics/globalconstants.h"
 
 #ifndef PUBLIC_BUILD
@@ -58,7 +57,7 @@ struct UpdateVolume
     {
         CoreGraphics::TextureId offsetsTexture, statesTexture;
     } volumeStateOutputs;
-    CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable, relocateProbesTable, classifyProbesTable;
+    CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable, relocateAndClassifyProbesTable;
 
 #ifndef PUBLIC_BUILD
     CoreGraphics::ResourceTableId debugTable;
@@ -77,8 +76,8 @@ struct
     CoreGraphics::ShaderId probeFinalizeShader;
     CoreGraphics::ShaderProgramId probeBlendRadianceProgram, probeBlendDistanceProgram, probeBorderRadianceRowsFixup, probeBorderRadianceColumnsFixup, probeBorderDistanceRowsFixup, probeBorderDistanceColumnsFixup;
 
-    CoreGraphics::ShaderId probesRelocateShader, probesClassifyShader;
-    CoreGraphics::ShaderProgramId probesRelocateProgram, probesClassifyProgram;
+    CoreGraphics::ShaderId probesRelocateAndClassifyShader;
+    CoreGraphics::ShaderProgramId probesRelocateAndClassifyProgram;
 
     CoreGraphics::ResourceTableSet raytracingTable;
 
@@ -162,11 +161,8 @@ DDGIContext::Create()
     state.volumeCullProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Cull"));
     state.volumeClusterDebugProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Debug"));
 
-    state.probesRelocateShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_relocate.fxb");
-    state.probesRelocateProgram = CoreGraphics::ShaderGetProgram(state.probesRelocateShader, CoreGraphics::ShaderFeatureMask("ProbeRelocate"));
-
-    state.probesClassifyShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_classify.fxb");
-    state.probesClassifyProgram = CoreGraphics::ShaderGetProgram(state.probesClassifyShader, CoreGraphics::ShaderFeatureMask("ProbeClassify"));
+    state.probesRelocateAndClassifyShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_relocate_and_classify.fxb");
+    state.probesRelocateAndClassifyProgram = CoreGraphics::ShaderGetProgram(state.probesRelocateAndClassifyShader, CoreGraphics::ShaderFeatureMask("ProbeRelocateAndClassify"));
 
 #ifndef PUBLIC_BUILD
     state.debugShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_debug.fxb");
@@ -336,33 +332,24 @@ DDGIContext::Create()
 
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
-                if (volumeToUpdate.relocateProbesTable != CoreGraphics::InvalidResourceTableId)
+                if (volumeToUpdate.relocateAndClassifyProbesTable != CoreGraphics::InvalidResourceTableId)
                 {
-                    CoreGraphics::TextureBarrierInfo bar =
+                    CoreGraphics::TextureBarrierInfo bar0 =
                     {
                         .tex = volumeToUpdate.volumeStateOutputs.offsetsTexture,
                         .subres =  CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                     };
-                    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, { bar });
-
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probesRelocateProgram);
-                    CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.relocateProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
-                    CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 8), Math::divandroundup(volumeToUpdate.probeCounts[0], 4), 1);
-                    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, { bar });
-                }
-
-                if (volumeToUpdate.classifyProbesTable != CoreGraphics::InvalidResourceTableId)
-                {
-                    CoreGraphics::TextureBarrierInfo bar =
+                    CoreGraphics::TextureBarrierInfo bar1 =
                     {
                         .tex = volumeToUpdate.volumeStateOutputs.statesTexture,
                         .subres =  CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                     };
-                    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, { bar });
-                    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probesClassifyProgram);
-                    CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.classifyProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
+                    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, { bar0, bar1 });
+
+                    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probesRelocateAndClassifyProgram);
+                    CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.relocateAndClassifyProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                     CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 8), Math::divandroundup(volumeToUpdate.probeCounts[0], 4), 1);
-                    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, { bar });
+                    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, { bar0, bar1 });
                 }
             }
         }
@@ -564,15 +551,12 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     CoreGraphics::ResourceTableSetRWTexture(volume.blendProbesTable, CoreGraphics::ResourceTableTexture(volume.scrollSpace, ProbeFinalize::Table_System::ScrollSpaceOutput_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.blendProbesTable);
 
-    volume.relocateProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probesRelocateShader, NEBULA_SYSTEM_GROUP, 1);
-    CoreGraphics::ResourceTableSetConstantBuffer(volume.relocateProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeConstantBuffer, ProbeRelocate::Table_System::VolumeConstants_SLOT));
-    CoreGraphics::ResourceTableSetRWTexture(volume.relocateProbesTable, CoreGraphics::ResourceTableTexture(volume.offsets, ProbeRelocate::Table_System::ProbeOffsetsOutput_SLOT));
+    volume.relocateProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probesRelocateAndClassifyShader, NEBULA_SYSTEM_GROUP, 1);
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.relocateProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeConstantBuffer, ProbeRelocateAndClassify::Table_System::VolumeConstants_SLOT));
+    CoreGraphics::ResourceTableSetRWTexture(volume.relocateProbesTable, CoreGraphics::ResourceTableTexture(volume.offsets, ProbeRelocateAndClassify::Table_System::ProbeOffsetsOutput_SLOT));
+    CoreGraphics::ResourceTableSetRWTexture(volume.relocateProbesTable, CoreGraphics::ResourceTableTexture(volume.states, ProbeRelocateAndClassify::Table_System::ProbeStateOutput_SLOT));
     CoreGraphics::ResourceTableCommitChanges(volume.relocateProbesTable);
 
-    volume.classifyProbesTable = CoreGraphics::ShaderCreateResourceTable(state.probesClassifyShader, NEBULA_SYSTEM_GROUP, 1);
-    CoreGraphics::ResourceTableSetConstantBuffer(volume.classifyProbesTable, CoreGraphics::ResourceTableBuffer(volume.volumeConstantBuffer, ProbeClassify::Table_System::VolumeConstants_SLOT));
-    CoreGraphics::ResourceTableSetRWTexture(volume.classifyProbesTable, CoreGraphics::ResourceTableTexture(volume.states, ProbeClassify::Table_System::ProbeStateOutput_SLOT));
-    CoreGraphics::ResourceTableCommitChanges(volume.classifyProbesTable);
 
 #ifndef PUBLIC_BUILD
     volume.debugResourceTable = CoreGraphics::ShaderCreateResourceTable(state.debugShader, NEBULA_SYSTEM_GROUP, 1);
@@ -634,8 +618,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         volumeToUpdate.volumeStateOutputs.statesTexture = activeVolume.states;
         volumeToUpdate.updateProbesTable = CoreGraphics::InvalidResourceTableId;
         volumeToUpdate.blendProbesTable = CoreGraphics::InvalidResourceTableId;
-        volumeToUpdate.relocateProbesTable = CoreGraphics::InvalidResourceTableId;
-        volumeToUpdate.classifyProbesTable = CoreGraphics::InvalidResourceTableId;
+        volumeToUpdate.relocateAndClassifyProbesTable = CoreGraphics::InvalidResourceTableId;
 
         Math::vec3 size = activeVolume.size;
         Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 5.0f), 0.0f, 0.0f);
@@ -690,10 +673,8 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         {
             volumeToUpdate.updateProbesTable = activeVolume.updateProbesTable;
             volumeToUpdate.blendProbesTable = activeVolume.blendProbesTable;
-            if (activeVolume.options.flags.relocate)
-                volumeToUpdate.relocateProbesTable = activeVolume.relocateProbesTable;
-            if (activeVolume.options.flags.classify)
-                volumeToUpdate.classifyProbesTable = activeVolume.classifyProbesTable;
+            if (activeVolume.options.flags.relocate || activeVolume.options.flags.classify)
+                volumeToUpdate.relocateAndClassifyProbesTable = activeVolume.relocateProbesTable;
             state.volumesToUpdate.Append(volumeToUpdate);
         }
 
