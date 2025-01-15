@@ -211,6 +211,7 @@ DDGIContext::Create()
 
     FrameScript_default::RegisterSubgraph_GICull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
+
         CmdSetShaderProgram(cmdBuf, state.volumeCullProgram);
         //CoreGraphics::CmdSetResourceTable(cmdBuf, Raytracing::RaytracingContext::GetLightGridResourceTable(bufferIndex), NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
@@ -267,13 +268,16 @@ DDGIContext::Create()
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, radianceDistanceTextures);
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
 
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Blend Radiance");
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBlendRadianceProgram);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], volumeToUpdate.probeCounts[0], 1);
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
 
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Blend Distance");
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBlendDistanceProgram);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
@@ -281,7 +285,9 @@ DDGIContext::Create()
                 CoreGraphics::CmdDispatch(cmdBuf, volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], volumeToUpdate.probeCounts[0], 1);
             }
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
+            CoreGraphics::CmdEndMarker(cmdBuf);
 
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Radiance Rows Fixup");
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceRowsFixup);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
@@ -292,7 +298,9 @@ DDGIContext::Create()
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, irradianceTextureWidth, probeGridHeight, 1);
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
 
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Distance Rows Fixup");
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceRowsFixup);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
@@ -303,9 +311,11 @@ DDGIContext::Create()
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, distanceTextureWidth, probeGridHeight, 1);
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
 
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
 
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Radiance Columns Fixup");
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderRadianceColumnsFixup);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
@@ -316,7 +326,9 @@ DDGIContext::Create()
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, probeGridWidth * 2, irradianceTextureHeight, 1);
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
 
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Distance Columns Fixup");
             CoreGraphics::CmdSetShaderProgram(cmdBuf, state.probeBorderDistanceColumnsFixup);
             for (const UpdateVolume& volumeToUpdate : state.volumesToUpdate)
             {
@@ -327,6 +339,7 @@ DDGIContext::Create()
                 CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.blendProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                 CoreGraphics::CmdDispatch(cmdBuf, probeGridWidth * 2, distanceTextureHeight, 1);
             }
+            CoreGraphics::CmdEndMarker(cmdBuf);
 
             CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, volumeBlendTextures);
 
@@ -334,6 +347,8 @@ DDGIContext::Create()
             {
                 if (volumeToUpdate.relocateAndClassifyProbesTable != CoreGraphics::InvalidResourceTableId)
                 {
+                    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "DDGI Relocate and Classify Probes");
+
                     CoreGraphics::TextureBarrierInfo bar0 =
                     {
                         .tex = volumeToUpdate.volumeStateOutputs.offsetsTexture,
@@ -350,6 +365,8 @@ DDGIContext::Create()
                     CoreGraphics::CmdSetResourceTable(cmdBuf, volumeToUpdate.relocateAndClassifyProbesTable, NEBULA_SYSTEM_GROUP, CoreGraphics::ComputePipeline, nullptr);
                     CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2], 8), Math::divandroundup(volumeToUpdate.probeCounts[0], 4), 1);
                     CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global, { bar0, bar1 });
+
+                    CoreGraphics::CmdEndMarker(cmdBuf);
                 }
             }
         }
@@ -620,9 +637,30 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         volumeToUpdate.blendProbesTable = CoreGraphics::InvalidResourceTableId;
         volumeToUpdate.relocateAndClassifyProbesTable = CoreGraphics::InvalidResourceTableId;
 
+        float u1 = 2 * PI * Math::rand();
+        float cos1 = std::cosf(u1);
+        float sin1 = std::sinf(u1);
+
+        float u2 = 2 * PI * Math::rand();
+        float cos2 = std::cosf(u2);
+        float sin2 = std::sinf(u2);
+
+        float u3 = Math::rand();
+        float sq3 = 2 * Math::sqrt(u3 * (1 - u3));
+        float s2 = 2 * u3 * sin2 * sin2 - 1.0f;
+        float c2 = 2 * u3 * cos2 * cos2 - 1.0f;
+        float sc = 2 * u3 * sin2 * cos2;
+
+        Math::mat4 randomRotation = Math::mat4(
+            Math::vec4(cos1 * c2 - sin1 * sc, sin1 * sc + cos1 * s2, sq3 * cos2, 0),
+            Math::vec4(cos1 * sc - sin1 * s2, sin1 * sc + cos1 * s2, sq3 * sin2, 0),
+            Math::vec4(cos1 * (sq3 * cos2) - sin1 * (sq3 * sin2), sin1 * (sq3 * cos2) + cos1 * (sq3 * sin2), 1 - 2 * u3, 0),
+            Math::vec4(0, 0, 0, 1)
+            );
+
+
         Math::vec3 size = activeVolume.size;
-        Math::mat4 rotation = Math::rotationyawpitchroll(Math::sin(ctx.frameIndex / 5.0f), 0.0f, 0.0f);
-        rotation.store(activeVolume.volumeConstants.TemporalRotation);
+        randomRotation.store(activeVolume.volumeConstants.TemporalRotation);
         size.store(activeVolume.volumeConstants.Scale);
         activeVolume.position.store(activeVolume.volumeConstants.Offset);
         activeVolume.volumeConstants.NumIrradianceTexels = ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE;

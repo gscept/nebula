@@ -81,7 +81,7 @@ StoreRadianceAndDepth(ivec2 coordinate, vec3 radiance, float depth)
 */
 shader void
 RayGen(
-    [ray_payload] out HitResult payload
+    [ray_payload] out LightResponsePayload payload
 )
 {
     //payload.radiance = vec3(0);
@@ -135,10 +135,11 @@ RayGen(
 
     const float MaxDistance = 10000.0f;
     payload.bits = 0x0;
-    payload.albedo = vec3(1, 1, 1);
+    payload.albedo = vec3(0);
+    payload.material = vec4(0);
+    payload.radiance = vec3(0);
     payload.alpha = 0.0f;
-    payload.material = vec4(0, 0, 0, 0);
-    payload.normal = vec3(0, 0, 0);
+    payload.normal = vec3(0);
     payload.depth = 0;
 
     traceRayEXT(TLAS, gl_RayFlagsNoneEXT, 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
@@ -191,7 +192,7 @@ RayGen(
     
     vec3 worldSpacePos = probeWorldPosition + probeRayDirection * payload.depth;
     
-    vec3 light = CalculateLightRT(worldSpacePos, probeWorldPosition, payload.depth / MaxDistance, payload.albedo.rgb, payload.material, payload.normal);
+    vec3 light = payload.radiance;
 
     vec3 relativePos = abs(worldSpacePos - Offset);
     if (relativePos.x > Scale.x || relativePos.y > Scale.y || relativePos.z > Scale.z)

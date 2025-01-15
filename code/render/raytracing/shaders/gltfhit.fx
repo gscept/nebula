@@ -10,7 +10,7 @@
 */
 shader void
 ClosestHit(
-    [ray_payload] in HitResult Result,
+    [ray_payload] in LightResponsePayload Result,
     [hit_attribute] in vec2 baryCoords
 )
 {
@@ -47,12 +47,16 @@ ClosestHit(
     material[MAT_METALLIC] = metallicRoughness.b;
     material[MAT_ROUGHNESS] = metallicRoughness.g;
     material[MAT_CAVITY] = Greyscale(occlusion);
-    material[MAT_EMISSIVE] = 0.0f;
+    material[MAT_EMISSIVE] = 0; // Emissive isn't used by the light RT
 
+    vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+    vec3 radiance = CalculateLightRT(worldPos, EyePos.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + emissive.xyz * mat.emissiveFactor.xyz * albedo.a;
+        
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;
-    Result.material = material;
+    Result.radiance = radiance;
     Result.normal = tNormal;
+    Result.material = material;
     Result.depth = gl_HitTEXT;
 }
 

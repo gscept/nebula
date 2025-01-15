@@ -13,7 +13,7 @@ group(SYSTEM_GROUP) write rgba16f image2D RaytracingOutput;
 */
 shader void 
 Raygen(
-    [ray_payload] out HitResult Result
+    [ray_payload] out LightResponsePayload Result
 )
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
@@ -24,9 +24,8 @@ Raygen(
     vec4 target = InvProjection * vec4(d.x, d.y, 1, 1);
     vec4 direction = InvView * vec4(normalize(target.xyz), 0);
 
-    Result.albedo = vec3(0, 0, 0);
+    Result.radiance = vec3(0, 0, 0);
     Result.alpha = 0.0f;
-    Result.material = vec4(0, 0, 0, 0);
     Result.normal = vec3(0, 0, 0);
     Result.depth = 0;
     Result.bits = 0x0;
@@ -46,7 +45,7 @@ Raygen(
     {
     
         //light += (Result.normal + 1.0f) * 0.5f;
-        light += CalculateLightRT(WorldSpacePos, origin.xyz, Result.depth / 10000.0f, Result.albedo.rgb, Result.material, Result.normal);
+        light += Result.radiance;
     }
     //light += CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, WorldSpacePos);
     //vec3 dir = normalize(Result.normal);

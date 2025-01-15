@@ -10,7 +10,7 @@
 */
 shader void
 ClosestHit(
-    [ray_payload] in HitResult Result,
+    [ray_payload] in LightResponsePayload Result,
     [hit_attribute] in vec2 baryCoords
 )
 {
@@ -36,11 +36,15 @@ ClosestHit(
 
     vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0);
     vec4 material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
-    material[MAT_EMISSIVE] = 0;
-    Result.alpha = albedo.a;
+    
+    vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+    vec3 radiance = CalculateLightRT(worldPos, EyePos.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + albedo.xyz * material[MAT_EMISSIVE] * albedo.a;
+        
     Result.albedo = albedo.rgb;
-    Result.material = material;
+    Result.alpha = albedo.a;
+    Result.radiance = radiance;
     Result.normal = tNormal;
+    Result.material = material;
     Result.depth = gl_HitTEXT;
 }
 

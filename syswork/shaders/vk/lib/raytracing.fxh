@@ -21,6 +21,20 @@ const uint RAY_MISS_BIT = 0x1;
 const uint RAY_BACK_FACE_BIT = 0x2;
 const uint RAY_MATERIAL_TWO_SIDED_BIT = 0x4;
 
+struct LightResponsePayload
+{
+    vec3 radiance;
+    float alpha;
+    
+    vec3 normal;
+    float depth;
+    
+    vec3 albedo;
+    uint bits;
+    
+    vec4 material;
+};
+
 struct HitResult
 {
     vec3 albedo;
@@ -317,9 +331,6 @@ CalculateLightRT(vec3 worldSpacePos, vec3 origin, float depth, vec3 albedo, vec4
 #else
     light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
 #endif
-
-    //light += IBL(albedo, F0, normal, viewVec, material);
-    light += albedo.rgb * material[MAT_EMISSIVE];
     return light;
 }
 
