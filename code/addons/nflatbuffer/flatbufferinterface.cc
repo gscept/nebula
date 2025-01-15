@@ -176,6 +176,31 @@ FlatbufferInterface::ParseJson(IO::URI const& file)
 //------------------------------------------------------------------------------
 /**
 */
+Util::Blob
+FlatbufferInterface::ParseJson(IO::URI const& file, const Util::String& schema)
+{
+    Util::String contents;
+    if (IO::IoServer::Instance()->ReadFile(file, contents))
+    {
+        IndexT schemaIndex = state.schemaFiles.FindIndex(schema.AsCharPtr());
+        n_assert(schemaIndex != InvalidIndex);
+        flatbuffers::Parser* parser = CreateParser(state.schemaFiles.ValueAtIndex(schemaIndex));
+        if (parser->ParseJson(contents.AsCharPtr(),file.LocalPath().AsCharPtr()))
+        {
+            auto builderSize = parser->builder_.GetSize();
+            char* builderData = reinterpret_cast<char*>(parser->builder_.GetBufferPointer());
+            Util::Blob blob(builderData, builderSize);
+            delete parser;
+            return blob;
+        }
+        delete parser;
+    }
+    return Util::Blob();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool FlatbufferInterface::CompileSchema(IO::URI const& file, IO::URI const& outFile)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);

@@ -1,0 +1,105 @@
+//------------------------------------------------------------------------------
+//
+//    Project settings format
+//
+//    (C) 2024 Individual contributors, see AUTHORS file
+//
+//------------------------------------------------------------------------------
+include "foundation/math.fbs";
+
+namespace App;
+table TerrainConfig
+{
+    use: bool;
+    raytracing: bool = false;
+    max_height: float = 128.0;
+    min_height: float = 0.0;
+    world_size_width: float = 1024.0;
+    world_size_height: float = 1024.0;
+    tile_size_width: float = 64.0;
+    tile_size_height: float = 64.0;
+    quads_per_tile_width: float = 16.0;
+    quads_per_tile_height: float = 16.0;
+}
+
+table TerrainInstanceSettings
+{
+    height: string;
+    decision: string;
+}
+
+table TerrainBiomeParameters
+{
+    slope_threshold: float = 0.5;
+    height_threshold: float = 1024.0;
+    uv_scale_factor: float = 64.0;
+    use_weights: bool;
+    weights: string;
+}
+
+table TerrainBiomeMaterial
+{
+    albedo: string;
+    normal: string;
+    material: string;
+}
+
+table TerrainBiomeSettings
+{
+    parameters: TerrainBiomeParameters;
+    flat_material: TerrainBiomeMaterial;
+    slope_material: TerrainBiomeMaterial;
+    height_material: TerrainBiomeMaterial;
+    height_slope_material: TerrainBiomeMaterial;
+    mask: string;
+}
+
+table TerrainSetup
+{
+    config: TerrainConfig;
+    instance: TerrainInstanceSettings;
+    biomes: [TerrainBiomeSettings];
+}
+
+table VegetationSetup
+{
+    use: bool = false;
+}
+
+table SunSettings
+{
+    cast_shadows: bool;
+    color: Flat.Vec3 (native_inline);
+    intensity: float;
+    ambient: Flat.Vec3 (native_inline);
+    backlight: Flat.Vec3 (native_inline);
+    direction: Flat.Vec3 (native_inline);
+}
+
+table ClusterSettings
+{
+    min_z: float = 0.001;
+    max_z: float = 10000.0;
+}
+
+table HistogramSettings
+{
+    window_left: float = 0;
+    window_bottom: float = 0;
+    window_width: float = 1;
+    window_height: float = 1;
+    mip: int = 1;
+}
+
+table LevelSettings
+{
+    terrain_setup: TerrainSetup;
+    vegetation_setup: VegetationSetup;
+    sun_settings: SunSettings;
+    cluster_settings: ClusterSettings;
+    histogram_settings: HistogramSettings;
+}
+
+root_type LevelSettings;
+file_identifier "NLST";
+file_extension "nlst";

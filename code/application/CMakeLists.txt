@@ -90,7 +90,7 @@ nebula_begin_module(application)
         )
     fips_dir(.)
 
-nebula_flatc(SYSTEM game/level.fbs)
+nebula_flatc(SYSTEM game/level.fbs application/projectsettings.fbs application/levelsettings.fbs)
 nebula_end_module()
 
 if(FIPS_WINDOWS)

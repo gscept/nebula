@@ -35,6 +35,8 @@ public:
     ///
     static Util::Blob ParseJson(IO::URI const& file);
     ///
+    static Util::Blob ParseJson(IO::URI const& file, const Util::String& schema);
+    ///
     static bool HasSchema(Util::StringAtom identifier);
 
     /// Helper function, use SerializeFlatbuffer macro instead
@@ -119,7 +121,7 @@ template<typename BaseT, typename ItemT>
 bool 
 FlatbufferInterface::DeserializeJsonFlatbuffer(ItemT& item, const IO::URI& file, const Util::String& rootName)
 {
-    Util::Blob flatBuffer = FlatbufferInterface::ParseJson(file);
+    Util::Blob flatBuffer = FlatbufferInterface::ParseJson(file, rootName);
     if (flatBuffer.IsValid())
     {
         const BaseT* bItem = flatbuffers::GetRoot<BaseT>(flatBuffer.GetPtr());

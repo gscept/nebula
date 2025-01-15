@@ -26,6 +26,8 @@ namespace App
 __ImplementSingleton(App::GameApplication);
 IndexT GameApplication::FrameIndex = -1;
 bool GameApplication::editorEnabled = false;
+App::ProjectSettingsT GameApplication::ProjectSettings;
+App::LevelSettingsT GameApplication::LevelSettings;
 
 
 using namespace Util;
@@ -43,7 +45,6 @@ GameApplication::GameApplication() :
     ,defaultTcpPort(2100)
 #endif
 {
-    
     __ConstructSingleton;
 }
 
@@ -72,7 +73,7 @@ GameApplication::Open()
         this->coreServer = CoreServer::Create();
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
         this->coreServer->SetAppName(Application::Instance()->GetAppTitle());
-                
+
         Util::String root = IO::FSWrapper::GetHomeDirectory();
 
 #if PUBLIC_BUILD
@@ -80,7 +81,7 @@ GameApplication::Open()
         {
             root = System::NebulaSettings::ReadString(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path");
         }
-#else 
+#else
         if(System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
         {
             root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
@@ -91,7 +92,7 @@ GameApplication::Open()
         }
 #endif
         this->coreServer->SetRootDirectory(root);
-        this->coreServer->Open();        
+        this->coreServer->Open();
 
         // setup game content server
         this->gameContentServer = GameContentServer::Create();
@@ -107,6 +108,8 @@ GameApplication::Open()
         this->ioInterface->Open();
 
         Flat::FlatbufferInterface::Init();
+
+        Flat::FlatbufferInterface::DeserializeJsonFlatbuffer<App::ProjectSettings>(ProjectSettings, "proj:work/data/tables/projectsettings.json"_uri, "NPST");
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = System::NumCpuCores;
@@ -163,7 +166,7 @@ GameApplication::Open()
         this->gameServer->Start();
         // setup profiling stuff
         _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
-        
+
 
         return true;
     }
@@ -197,7 +200,7 @@ GameApplication::Close()
     this->gameContentServer = nullptr;
 
     this->resourceServer->Close();
-    this->resourceServer = nullptr;    
+    this->resourceServer = nullptr;
 
 #if __NEBULA_HTTP__
     this->debugInterface->Close();
