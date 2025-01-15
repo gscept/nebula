@@ -54,6 +54,8 @@ public:
     static bool IsEditorEnabled();
 
     static App::ProjectSettingsT ProjectSettings;
+    static App::LevelSettingsT LevelSettings;
+
 protected:
     /// setup game features
     virtual void SetupGameFeatures();
@@ -71,7 +73,6 @@ protected:
 
 
     static bool editorEnabled;
-
     
 #if __NEBULA_HTTP__
     Ptr<Debug::DebugInterface> debugInterface;

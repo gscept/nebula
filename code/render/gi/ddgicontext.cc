@@ -99,14 +99,18 @@ struct
     CoreGraphics::MeshResourceId debugMeshResource;
     CoreGraphics::MeshId debugMesh;
 #endif
+
+    float updateBudget;
 } state;
 
 
 //------------------------------------------------------------------------------
 /**
 */
-DDGIContext::DDGIContext()
+DDGIContext::DDGIContext(const DDGISetupInfo& info)
 {
+    n_assert(info.budget > 0.0f && info.budget <= 1.0f);
+    state.updateBudget = info.budget;
 }
 
 //------------------------------------------------------------------------------
@@ -673,8 +677,9 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.classify ? ProbeUpdate::CLASSIFICATION_OPTION : 0x0;
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.lowPrecisionTextures ? ProbeUpdate::LOW_PRECISION_IRRADIANCE_OPTION : 0x0;
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.partialUpdate ? ProbeUpdate::PARTIAL_UPDATE_OPTION : 0x0;
-        activeVolume.volumeConstants.ProbeIndexStart = 0;
-        activeVolume.volumeConstants.ProbeIndexCount = volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+        uint numProbes = volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
+        activeVolume.volumeConstants.ProbeIndexStart = activeVolume.volumeConstants.ProbeIndexStart + uint(numProbes * state.updateBudget) % numProbes;
+        activeVolume.volumeConstants.ProbeIndexCount = uint(numProbes * state.updateBudget);
         activeVolume.volumeConstants.ProbeScrollOffsets[0] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[1] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[2] = 0;

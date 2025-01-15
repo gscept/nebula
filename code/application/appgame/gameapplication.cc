@@ -29,7 +29,6 @@ bool GameApplication::editorEnabled = false;
 App::ProjectSettingsT GameApplication::ProjectSettings;
 App::LevelSettingsT GameApplication::LevelSettings;
 
-
 using namespace Util;
 using namespace Core;
 using namespace IO;
