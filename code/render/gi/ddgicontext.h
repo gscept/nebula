@@ -28,17 +28,12 @@ union DDGIOptions
     uint32 bits = 0x0;
 };
 
-struct DDGISetupInfo
-{
-    float budget = 1.0f;    // Percentage of the probes to update per frame, should be between (0, 1]
-};
-
 class DDGIContext : public Graphics::GraphicsContext
 {
     __DeclareContext()
 public:
     /// Constructor
-    DDGIContext(const DDGISetupInfo& info);
+    DDGIContext();
     /// Destructor
     ~DDGIContext();
 

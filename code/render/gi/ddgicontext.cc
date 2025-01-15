@@ -28,6 +28,7 @@
 #ifndef PUBLIC_BUILD
 #include "gi/shaders/probe_debug.h"
 #endif
+#include "appgame/gameapplication.h"
 #include "core/cvar.h"
 
 Core::CVar* g_debug_ddgi = Core::CVarCreate(Core::CVar_Int, "g_debug_ddgi", "0", "Draw DDGI probes");
@@ -99,18 +100,14 @@ struct
     CoreGraphics::MeshResourceId debugMeshResource;
     CoreGraphics::MeshId debugMesh;
 #endif
-
-    float updateBudget;
 } state;
 
 
 //------------------------------------------------------------------------------
 /**
 */
-DDGIContext::DDGIContext(const DDGISetupInfo& info)
+DDGIContext::DDGIContext()
 {
-    n_assert(info.budget > 0.0f && info.budget <= 1.0f);
-    state.updateBudget = info.budget;
 }
 
 //------------------------------------------------------------------------------
@@ -619,6 +616,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
     Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
+    const auto& projectSettings = App::GameApplication::ProjectSettings;
 
     state.volumesToUpdate.Clear();
     state.volumesToDraw.Clear();
@@ -678,8 +676,9 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.lowPrecisionTextures ? ProbeUpdate::LOW_PRECISION_IRRADIANCE_OPTION : 0x0;
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.partialUpdate ? ProbeUpdate::PARTIAL_UPDATE_OPTION : 0x0;
         uint numProbes = volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
-        activeVolume.volumeConstants.ProbeIndexStart = activeVolume.volumeConstants.ProbeIndexStart + uint(numProbes * state.updateBudget) % numProbes;
-        activeVolume.volumeConstants.ProbeIndexCount = uint(numProbes * state.updateBudget);
+        float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);
+        activeVolume.volumeConstants.ProbeIndexStart = activeVolume.volumeConstants.ProbeIndexStart + uint(numProbes * budget) % numProbes;
+        activeVolume.volumeConstants.ProbeIndexCount = uint(numProbes * budget);
         activeVolume.volumeConstants.ProbeScrollOffsets[0] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[1] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[2] = 0;
