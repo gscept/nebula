@@ -486,6 +486,12 @@ GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVol
     setup.hysteresis = volume->hysteresis;
     setup.blend = volume->borderBlend;
     setup.blendCutoff = volume->borderBlendCutoff;
+    setup.updateBudget = volume->updateBudget;
+
+    setup.options.flags.relocate = volume->relocate;
+    setup.options.flags.scrolling = volume->scrolling;
+    setup.options.flags.classify = volume->classify;
+
     GI::DDGIContext::SetupVolume(volume->graphicsEntityId, setup);
 }
 
