@@ -617,6 +617,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
     Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     const auto& projectSettings = App::GameApplication::ProjectSettings;
+    float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);
 
     state.volumesToUpdate.Clear();
     state.volumesToDraw.Clear();
@@ -674,11 +675,10 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.scrolling ? ProbeUpdate::SCROLL_OPTION : 0x0;
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.classify ? ProbeUpdate::CLASSIFICATION_OPTION : 0x0;
         activeVolume.volumeConstants.Options |= activeVolume.options.flags.lowPrecisionTextures ? ProbeUpdate::LOW_PRECISION_IRRADIANCE_OPTION : 0x0;
-        activeVolume.volumeConstants.Options |= activeVolume.options.flags.partialUpdate ? ProbeUpdate::PARTIAL_UPDATE_OPTION : 0x0;
+        activeVolume.volumeConstants.Options |= budget != 1.0f ? ProbeUpdate::PARTIAL_UPDATE_OPTION : 0x0;
         uint numProbes = volumeToUpdate.probeCounts[0] * volumeToUpdate.probeCounts[1] * volumeToUpdate.probeCounts[2];
-        float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);
-        activeVolume.volumeConstants.ProbeIndexStart = activeVolume.volumeConstants.ProbeIndexStart + uint(numProbes * budget) % numProbes;
-        activeVolume.volumeConstants.ProbeIndexCount = uint(numProbes * budget);
+        activeVolume.volumeConstants.ProbeIndexStart = (activeVolume.volumeConstants.ProbeIndexStart + activeVolume.volumeConstants.ProbeIndexCount) % numProbes;
+        activeVolume.volumeConstants.ProbeIndexCount = Math::min(uint(numProbes * budget), numProbes - activeVolume.volumeConstants.ProbeIndexStart);
         activeVolume.volumeConstants.ProbeScrollOffsets[0] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[1] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[2] = 0;

@@ -22,7 +22,6 @@ union DDGIOptions
         uint scrolling : 1;             // Infinitely scrolls based on camera position
         uint classify : 1;              // Enables/disables probes based on hits
         uint relocate : 1;              // Relocate probes to avoid them being stuck inside geometry
-        uint partialUpdate : 1;         // Update probes using a round-robin method
         uint lowPrecisionTextures : 1;  // Use more compact texture formats at the expense of quality
     } flags;
     uint32 bits = 0x0;
