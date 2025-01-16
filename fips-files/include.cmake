@@ -317,6 +317,7 @@ macro(nebula_material_template_compile)
         COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files} ${SHADERC} ${NROOT}/syswork/shaders/vk "${abs_output_folder}"
         BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" "${abs_output_folder}/${out_shader_header}"
         WORKING_DIRECTORY "${NROOT}"
+        SOURCES ${material_definition_files}
         DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files}
         VERBATIM)
     add_dependencies(render materialtemplates)
@@ -353,6 +354,7 @@ macro(nebula_framescript_compile)
             COMMAND ${PYTHON} ${NROOT}/fips-files/generators/framescriptc.py ${script} "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
             BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}"
             WORKING_DIRECTORY "${NROOT}"
+            SOURCES ${script}
             DEPENDS ${NROOT}/fips-files/generators/framescriptc.py ${script}
             VERBATIM)
         add_dependencies(render ${target_name})
