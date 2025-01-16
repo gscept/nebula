@@ -24,12 +24,13 @@ Raygen(
     vec4 target = InvProjection * vec4(d.x, d.y, 1, 1);
     vec4 direction = InvView * vec4(normalize(target.xyz), 0);
 
-    Result.radiance = vec3(0, 0, 0);
-    Result.alpha = 0.0f;
-    Result.normal = vec3(0, 0, 0);
-    Result.depth = 0;
     Result.bits = 0x0;
-
+    Result.albedo = vec3(0);
+    Result.material = vec4(0);
+    Result.radiance = vec3(0);
+    Result.alpha = 0.0f;
+    Result.normal = vec3(0);
+    Result.depth = 0;
     // Ray trace against BVH
     traceRayEXT(TLAS, gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
 

@@ -273,12 +273,7 @@
                 "queue": "Graphics",
                 "_comment": "Calculate shadow maps and depth prepass",
                 "ops": [
-
-                    {
-                        "subgraph": {
-                            "name": "Raytracing Test"
-                        }
-                    },
+                    
                     {
                         "subgraph": {
                             "name": "StaticUI"
@@ -536,7 +531,11 @@
                         }
                     },
 
-
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Test"
+                        }
+                    },
                     {
                         "subgraph": {
                             "name": "Vegetation Copy Indirect"

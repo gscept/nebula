@@ -345,18 +345,19 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     {
         if (state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
         {
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::BarrierDomain::Global, { CoreGraphics::TextureBarrierInfo{.tex = FrameScript_default::Texture_RayTracingTestOutput(), .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer() }}, nullptr, nullptr);
             CoreGraphics::CmdSetRayTracingPipeline(cmdBuf, state.raytracingBundle.pipeline);
             CoreGraphics::CmdSetResourceTable(cmdBuf,  state.raytracingTestOutputTable, NEBULA_SYSTEM_GROUP, CoreGraphics::RayTracingPipeline, {});
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.raytracingTables.tables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::RayTracingPipeline, {});
             CoreGraphics::CmdSetResourceTable(cmdBuf, state.lightGridResourceTables.tables[bufferIndex], NEBULA_FRAME_GROUP, CoreGraphics::RayTracingPipeline, nullptr);
             CoreGraphics::CmdRaysDispatch(cmdBuf, state.raytracingBundle.table, 640, 480, 1);
+            CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::RayTracingShaderWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global, { CoreGraphics::TextureBarrierInfo{.tex = FrameScript_default::Texture_RayTracingTestOutput(), .subres = CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer() }}, nullptr, nullptr);
         }
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
+        , { FrameScript_default::BufferIndex::GridLightBuffer, CoreGraphics::PipelineStage::RayTracingShaderRead }
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
-    }, {
-        { FrameScript_default::TextureIndex::RayTracingTestOutput, CoreGraphics::PipelineStage::RayTracingShaderWrite }
-    } );
+    });
 
 
     state.maxAllowedInstances = settings.maxNumAllowedInstances;
