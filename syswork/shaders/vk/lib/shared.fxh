@@ -168,7 +168,7 @@ group(FRAME_GROUP) constant ViewConstants
     vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance, w is unused
 };
 
-group(FRAME_GROUP) constant ShadowViewConstants[string Visibility = "VS|CS|PS|RGS";]
+group(FRAME_GROUP) constant ShadowViewConstants[string Visibility = "VS|CS|PS|RCS";]
 {
     vec4 CascadeOffset[NUM_CASCADES];
     vec4 CascadeScale[NUM_CASCADES];
@@ -222,13 +222,13 @@ struct ClusterAABB
     uint featureFlags;
 };
 
-group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RGS"; ]
+group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RCS"; ]
 {
     ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) constant ClusterUniforms [ string Visibility = "CS|VS|PS|RGS"; ]
+group(FRAME_GROUP) constant ClusterUniforms [ string Visibility = "CS|VS|PS|RCS"; ]
 {
     vec2 FramebufferDimensions;
     vec2 InvFramebufferDimensions;
@@ -330,7 +330,7 @@ group(FRAME_GROUP) constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RGS";]
+group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RCS";]
 {
     uint PointLightCountList[NUM_CLUSTER_ENTRIES];
     uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
@@ -340,7 +340,7 @@ group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RGS";
     uint AreaLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
 };
 
-group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RGS";]
+group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RCS";]
 {
     SpotLight SpotLights[1024];
     SpotLightProjectionExtension SpotLightProjection[256];
