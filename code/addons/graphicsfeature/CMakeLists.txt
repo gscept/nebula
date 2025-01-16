@@ -1,5 +1,5 @@
 nebula_begin_module(graphicsfeature)
-fips_deps(render application dynui nflatbuffer)
+fips_deps(render application dynui tbui nflatbuffer)
 target_precompile_headers(graphicsfeature PRIVATE <application/stdneb.h>)
 fips_ide_group(features)
 fips_files(
