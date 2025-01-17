@@ -761,7 +761,7 @@ ShaderGetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics
 /**
 */
 const CoreGraphics::ResourceTableId
-ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize)
+ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize, const char* name)
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
@@ -770,8 +770,9 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
     {
         ResourceTableCreateInfo crInfo =
         {
-            Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
-            overallocationSize
+            .name = name,
+            .layout = Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
+            .overallocationSize = overallocationSize
         };
         return CoreGraphics::CreateResourceTable(crInfo);
     }
@@ -781,7 +782,7 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
 /**
 */
 ResourceTableSet
-ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize)
+ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize, const char* name)
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
@@ -790,8 +791,9 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
     {
         ResourceTableCreateInfo crInfo =
         {
-            Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
-            overallocationSize
+            .name = name,
+            .layout = Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
+            .overallocationSize = overallocationSize
         };
         return CoreGraphics::ResourceTableSet(crInfo);
     }

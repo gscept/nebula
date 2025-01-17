@@ -330,6 +330,7 @@ struct ResourceTableTlas
 
 struct ResourceTableCreateInfo
 {
+    const char* name = nullptr;
     ResourceTableLayoutId layout;
     uint overallocationSize = 256;
 };
