@@ -31,7 +31,6 @@
 #include <raytracing/shaders/raytracetest.h>
 
 #include "options.h"
-#include "appgame/gameapplication.h"
 #include "core/cvar.h"
 
 Core::CVar* g_debug_ddgi = Core::CVarCreate(Core::CVar_Int, "g_debug_ddgi", "0", "Draw DDGI probes");
