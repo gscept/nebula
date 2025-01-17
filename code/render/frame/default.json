@@ -6,7 +6,7 @@
         ],
         "ImportBuffers": [
             "ClusterBuffer",
-            "ClusterLightList",
+            "LightList",
             "ClusterLightIndexLists",
             "ClusterDecalList",
             "ClusterDecalIndexLists",
@@ -14,7 +14,7 @@
             "ClusterFogIndexLists",
             "ClusterGIList",
             "ClusterGIIndexLists",
-            "GridLightBuffer",
+            "GridBuffer",
             "GridLightIndexLists",
             "GridDecalList",
             "GridDecalIndexLists",

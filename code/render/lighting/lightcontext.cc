@@ -240,7 +240,7 @@ LightContext::Create()
     });
 
     // Bind shadows
-    FrameScript_default::Bind_ClusterLightList(clusterState.clusterLightsList);
+    FrameScript_default::Bind_LightList(clusterState.clusterLightsList);
     FrameScript_default::Bind_ClusterLightIndexLists(clusterState.clusterLightIndexLists);
     FrameScript_default::RegisterSubgraph_LightsCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
@@ -249,7 +249,7 @@ LightContext::Create()
         to.offset = 0;
         CmdCopy(cmdBuf, clusterState.stagingClusterLightsList.buffers[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
     }, {
-        { FrameScript_default::BufferIndex::ClusterLightList, CoreGraphics::PipelineStage::TransferWrite }
+        { FrameScript_default::BufferIndex::LightList, CoreGraphics::PipelineStage::TransferWrite }
     });
 
     FrameScript_default::RegisterSubgraph_LightsCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -260,7 +260,7 @@ LightContext::Create()
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
         CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
     }, {
-        { FrameScript_default::BufferIndex::ClusterLightList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        { FrameScript_default::BufferIndex::LightList, CoreGraphics::PipelineStage::ComputeShaderRead }
         , { FrameScript_default::BufferIndex::ClusterLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
@@ -1224,8 +1224,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 trans.setposition(trans.getposition() + Math::vector(0, 0, twoSided ? 0 : -range[i] / 2));
 
                 trans.getmatrix().position.store3(areaLight.center);
-                Math::vec4 localExtents = abs(trans.getmatrix().get_x()) + abs(trans.getmatrix().get_y()) + abs(trans.getmatrix().get_z()) * 0.5f;
-                localExtents.store3(areaLight.extents);
+                Math::bbox box = trans.getmatrix();
+                //Math::vec3 localExtents = Math::vec3((abs(trans.getscale().x) + abs(trans.getscale().y) + abs(trans.getscale().z)) * 0.5f);
+                box.extents().store(areaLight.extents);
 
                 areaLight.range = range[i];
                 areaLight.radius = scale.y;

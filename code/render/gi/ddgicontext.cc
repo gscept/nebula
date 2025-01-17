@@ -246,7 +246,7 @@ DDGIContext::Create()
         }
     }, {
         { FrameScript_default::BufferIndex::GridLightIndexLists, CoreGraphics::PipelineStage::RayTracingShaderRead }
-        , { FrameScript_default::BufferIndex::GridLightBuffer, CoreGraphics::PipelineStage::RayTracingShaderRead }
+        , { FrameScript_default::BufferIndex::GridBuffer, CoreGraphics::PipelineStage::RayTracingShaderRead }
         , { FrameScript_default::BufferIndex::RayTracingObjectBindings, CoreGraphics::PipelineStage::RayTracingShaderRead }
     } );
 

@@ -50,7 +50,7 @@ ClosestHit(
     material[MAT_EMISSIVE] = 0; // Emissive isn't used by the light RT
 
     vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-    vec3 radiance = CalculateLightRT(worldPos, EyePos.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + emissive.xyz * albedo.a;
+    vec3 radiance = CalculateLightRT(worldPos, gl_WorldRayOriginEXT.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + emissive.xyz * albedo.a;
         
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;

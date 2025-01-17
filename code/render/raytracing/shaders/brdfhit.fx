@@ -33,11 +33,14 @@ ClosestHit(
     float facing = dot(normal, gl_WorldRayDirectionEXT);
     Result.bits |= facing > 0 ? RAY_BACK_FACE_BIT : 0x0; 
         
-    vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0);
+    vec4 albedo = sample2DLod(mat.AlbedoMap, Basic2DSampler, uv, 0) * mat.MatAlbedoIntensity;
+    albedo.a *= mat.AlphaBlendFactor;
     vec4 material = sample2DLod(mat.ParameterMap, Basic2DSampler, uv, 0);
+    material[MAT_ROUGHNESS] *= mat.MatRoughnessIntensity;
+    material[MAT_METALLIC] += mat.MatMetallicIntensity;
     
     vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-    vec3 radiance = CalculateLightRT(worldPos, EyePos.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + albedo.xyz * material[MAT_EMISSIVE] * albedo.a;
+    vec3 radiance = CalculateLightRT(worldPos, gl_WorldRayOriginEXT.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + albedo.xyz * material[MAT_EMISSIVE] * albedo.a;
 
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;

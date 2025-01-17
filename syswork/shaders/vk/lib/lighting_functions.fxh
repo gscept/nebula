@@ -623,6 +623,7 @@ CalculatePointLightAmbientTransmission(
     float shadowFactor = 1.0f;
     if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
     {
+        // TODO: The View here must be inferred from the view vector instead of relying the camera matrix
         vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
         shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
         shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
