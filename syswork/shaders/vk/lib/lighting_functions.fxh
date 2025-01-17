@@ -222,6 +222,7 @@ CalculateRectLight(
     , in vec3 viewVec
     , in vec3 normal
     , in vec4 material
+    , in vec3 albedo
     , in bool twoSided
 )
 {
@@ -261,7 +262,7 @@ CalculateRectLight(
     vec3 spec = vec3(LtcRectIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcRectIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided));
+    vec3 diff = vec3(LtcRectIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided)) * albedo;
 
     return li.color * (spec + diff) * attenuation;
 }
@@ -276,6 +277,7 @@ CalculateDiskLight(
     , in vec3 viewVec
     , in vec3 normal
     , in vec4 material
+    , in vec3 albedo
     , in bool twoSided
 )
 {
@@ -315,7 +317,7 @@ CalculateDiskLight(
     vec3 spec = vec3(LtcDiskIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcDiskIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided));
+    vec3 diff = vec3(LtcDiskIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided)) * albedo;
 
     return li.color * (diff + spec) * attenuation;
 }
@@ -330,6 +332,7 @@ CalculateTubeLight(
     , in vec3 viewVec
     , in vec3 normal
     , in vec4 material
+    , in vec3 albedo
     , in bool twoSided
 )
 {
@@ -365,7 +368,7 @@ CalculateTubeLight(
     vec3 spec = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, minv, points));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, mat3(1), points));
+    vec3 diff = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, mat3(1), points)) * albedo;
 
     return li.color * (spec + diff) * (1.0f / 2 * PI) * attenuation;
 }
@@ -518,6 +521,7 @@ LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, v
                     , viewVec
                     , normal
                     , material
+                    , diffuseColor
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
@@ -529,6 +533,7 @@ LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, v
                     , viewVec
                     , normal
                     , material
+                    , diffuseColor
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
@@ -540,6 +545,7 @@ LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, v
                     , viewVec
                     , normal
                     , material
+                    , diffuseColor
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
