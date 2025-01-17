@@ -7,6 +7,7 @@
 #include "shaderconfig.h"
 #include "resources/resourceserver.h"
 #include "materials/materialtemplates.h"
+
 namespace Materials
 {
 
@@ -137,7 +138,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             {
                 CoreGraphics::TextureId tex = Resources::CreateResource(texture->def->resource, "materials", nullptr, nullptr, true, false);
                 CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex, texture->slot });
-            }            
+            }
         }
 
         // Finish off by comitting all table changes
@@ -234,6 +235,14 @@ MaterialSetConstants(const MaterialId mat, const void* data, const uint size)
     const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
     CoreGraphics::BufferUpdate(buf, data, size);
     CoreGraphics::BufferFlush(buf);
+
+    IndexT materialBufferBinding = Materials::MaterialGetBufferBinding(mat);
+    const MaterialBindlessBufferBinding& bindlessBinding = Materials::MaterialGetBindlessForEditor(mat);
+    if (bindlessBinding.buffer != nullptr)
+    {
+        memcpy(bindlessBinding.buffer, data, size);
+        *bindlessBinding.dirtyFlag = true;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -325,6 +334,25 @@ MaterialGetSortCode(const MaterialId mat)
 }
 
 #ifdef WITH_NEBULA_EDITOR
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MaterialBindlessForEditor(const MaterialId mat, char* buf, bool* dirtyFlag)
+{
+    MaterialBindlessBufferBinding binding{buf, dirtyFlag};
+    materialAllocator.Set<Material_BufferPointer>(mat.id, binding);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const MaterialBindlessBufferBinding&
+MaterialGetBindlessForEditor(const MaterialId mat)
+{
+    return materialAllocator.Get<Material_BufferPointer>(mat.id);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
