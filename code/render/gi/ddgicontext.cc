@@ -28,6 +28,8 @@
 #ifndef PUBLIC_BUILD
 #include "gi/shaders/probe_debug.h"
 #endif
+#include <raytracing/shaders/raytracetest.h>
+
 #include "options.h"
 #include "appgame/gameapplication.h"
 #include "core/cvar.h"
@@ -450,7 +452,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesX = setup.numProbesX;
     volume.numProbesY = setup.numProbesY;
     volume.numProbesZ = setup.numProbesZ;
-    volume.numRaysPerProbe = setup.numRaysPerProbe;
+    volume.numRaysPerProbe = min(setup.numRaysPerProbe, Raytracetest::DDGI_NUM_FIXED_RAYS);
     volume.options = setup.options;
 
     //volume.options.flags.lowPrecisionTextures = true;
