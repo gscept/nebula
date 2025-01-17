@@ -47,9 +47,9 @@ def convert_xml(input_file, output_file):
             value = param.get("value")
 
             if name and value:
-                # Create a new tag for each name/value pair
+                # Create a new tag for each name and set the "value" attribute
                 new_tag = ET.Element(name)
-                new_tag.set("value", value)
+                new_tag.set("value", value)  # Set the value as an attribute
                 params_tag.append(new_tag)
 
         # Remove all existing <Param> elements from <Surface>
