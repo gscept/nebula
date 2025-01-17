@@ -476,7 +476,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 #if NEBULA_GRAPHICS_DEBUG
     radianceCreateInfo.name = Util::String::Sprintf("%s Radiance", volumeName.c_str());
 #endif
-    radianceCreateInfo.width = setup.numRaysPerProbe;
+    radianceCreateInfo.width = volume.numRaysPerProbe;
     radianceCreateInfo.height = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
     radianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
     radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
@@ -533,9 +533,9 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     scrollSpaceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
     volume.scrollSpace = CoreGraphics::CreateTexture(scrollSpaceCreateInfo);
 
-    for (uint rayIndex = 0; rayIndex < setup.numRaysPerProbe; rayIndex++)
+    for (uint rayIndex = 0; rayIndex < volume.numRaysPerProbe; rayIndex++)
     {
-        SphericalFibonacci(rayIndex, setup.numRaysPerProbe).store(volume.volumeConstants.Directions[rayIndex]);
+        SphericalFibonacci(rayIndex, volume.numRaysPerProbe).store(volume.volumeConstants.Directions[rayIndex]);
     }
 
     // Store another set of minimal ray directions for probe activity updates
@@ -545,9 +545,9 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     }
 
     // Store another set of minimal ray directions for probe activity updates
-    for (uint rayIndex = 0; rayIndex < setup.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS; rayIndex++)
+    for (uint rayIndex = 0; rayIndex < volume.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS; rayIndex++)
     {
-        SphericalFibonacci(rayIndex, setup.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS).store(volume.volumeConstants.ExtraDirections[rayIndex]);
+        SphericalFibonacci(rayIndex, volume.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS).store(volume.volumeConstants.ExtraDirections[rayIndex]);
     }
 
     volume.volumeConstants.ProbeIrradiance = CoreGraphics::TextureGetBindlessHandle(volume.irradiance);
