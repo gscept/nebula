@@ -107,7 +107,7 @@ psGLTF(
     vec4 metallicRoughness = sample2D(_GLTF.metallicRoughnessTexture, MaterialSampler, UV) * vec4(1.0f, _GLTF.roughnessFactor, _GLTF.metallicFactor, 1.0f);
     vec4 emissive = sample2D(_GLTF.emissiveTexture, MaterialSampler, UV) * _GLTF.emissiveFactor;
     vec4 occlusion = sample2D(_GLTF.occlusionTexture, MaterialSampler, UV);
-    vec4 normals = sample2D(_GLTF.normalTexture, NormalSampler, UV);
+    vec4 normals = sample2D(_GLTF.normalTexture, NormalSampler, UV) * _GLTF.normalScale;
     vec4 material;
     material[MAT_METALLIC] = metallicRoughness.b;
     material[MAT_ROUGHNESS] = metallicRoughness.g;

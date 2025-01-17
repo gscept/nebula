@@ -33,11 +33,11 @@ ClosestHit(
     GLTFMaterial mat = GLTFMaterials + obj.MaterialOffset;
 
     /* Tangent space normal transform */
-    vec4 normals = sample2DLod(mat.normalTexture, NormalSampler, uv, 0);
+    vec4 normals = sample2DLod(mat.normalTexture, NormalSampler, uv, 0) * mat.normalScale;
     vec3 tNormal = normalize(TangentSpaceNormal(normals.xy, tbn));
 
     /* Surface properties */
-    vec4 albedo = sample2DLod(mat.baseColorTexture, Basic2DSampler, uv, 0);
+    vec4 albedo = sample2DLod(mat.baseColorTexture, Basic2DSampler, uv, 0) * mat.baseColorFactor;
     vec4 metallicRoughness = sample2DLod(mat.metallicRoughnessTexture, Basic2DSampler, uv, 0) * vec4(1.0f, mat.roughnessFactor, mat.metallicFactor, 1.0f);
     vec4 emissive = sample2DLod(mat.emissiveTexture, Basic2DSampler, uv, 0) * mat.emissiveFactor;
     vec4 occlusion = sample2DLod(mat.occlusionTexture, Basic2DSampler, uv, 0);
