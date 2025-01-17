@@ -93,13 +93,12 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 {
     if (!CoreGraphics::RayTracingSupported)
         return;
-
+    __CreateContext();
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = RaytracingContext::OnRenderDebug;
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    __CreateContext();
 
     auto raygenShader = CoreGraphics::ShaderGet("shd:raytracing/shaders/raytracetest.fxb");
     auto raygenProgram = CoreGraphics::ShaderGetProgram(raygenShader, CoreGraphics::ShaderFeatureMask("test"));
@@ -497,6 +496,9 @@ void RaytracingContext::SetupMesh(
     , const CoreGraphics::VertexLayoutType vertexLayout
 )
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     Graphics::ContextEntityId contextId = GetContextId(id);
 
     state.blasLock.Enter();

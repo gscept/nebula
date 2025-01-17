@@ -28,6 +28,7 @@
 #ifndef PUBLIC_BUILD
 #include "gi/shaders/probe_debug.h"
 #endif
+#include "options.h"
 #include "appgame/gameapplication.h"
 #include "core/cvar.h"
 
@@ -123,6 +124,9 @@ DDGIContext::~DDGIContext()
 void
 DDGIContext::Create()
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     __CreateContext();
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = DDGIContext::OnRenderDebug;
@@ -433,6 +437,9 @@ DDGIContext::Discard()
 void
 DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup& setup)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     n_assert_msg(setup.numRaysPerProbe < 1024, "Maximum allowed number of rays per probe is 1024");
 
     ContextEntityId ctxId = GetContextId(id);
@@ -613,10 +620,13 @@ DDGIContext::SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size
 void
 DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     const Math::point cameraPos = CameraContext::GetTransform(view->GetCamera()).position;
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();
     Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
-    const auto& projectSettings = App::GameApplication::ProjectSettings;
+    const auto& projectSettings = Options::ProjectSettings;
     float budget = Math::clamp(projectSettings.gi_settings->update_budget, 0.01f, 1.0f);
 
     state.volumesToUpdate.Clear();
@@ -789,6 +799,9 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 void
 DDGIContext::OnRenderDebug(uint32_t flags)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
+
     CoreGraphics::ShapeRenderer* shapeRenderer = CoreGraphics::ShapeRenderer::Instance();
 
     const Util::Array<Volume>& volumes = ddgiVolumeAllocator.GetArray<0>();

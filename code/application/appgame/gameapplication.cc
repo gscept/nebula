@@ -5,6 +5,8 @@
 //------------------------------------------------------------------------------
 
 #include "appgame/gameapplication.h"
+
+#include "options.h"
 #include "core/debug/corepagehandler.h"
 #include "threading/debug/threadpagehandler.h"
 #include "memory/debug/memorypagehandler.h"
@@ -26,8 +28,6 @@ namespace App
 __ImplementSingleton(App::GameApplication);
 IndexT GameApplication::FrameIndex = -1;
 bool GameApplication::editorEnabled = false;
-App::ProjectSettingsT GameApplication::ProjectSettings;
-App::LevelSettingsT GameApplication::LevelSettings;
 
 using namespace Util;
 using namespace Core;
@@ -108,7 +108,7 @@ GameApplication::Open()
 
         Flat::FlatbufferInterface::Init();
 
-        Flat::FlatbufferInterface::DeserializeJsonFlatbuffer<App::ProjectSettings>(ProjectSettings, "proj:work/data/tables/projectsettings.json"_uri, "NPST");
+        Options::InitOptions();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = System::NumCpuCores;

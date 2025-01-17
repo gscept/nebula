@@ -1226,7 +1226,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 trans.getmatrix().position.store3(areaLight.center);
                 Math::bbox box = trans.getmatrix();
                 //Math::vec3 localExtents = Math::vec3((abs(trans.getscale().x) + abs(trans.getscale().y) + abs(trans.getscale().z)) * 0.5f);
-                box.extents().store(areaLight.extents);
+                (box.extents() * 2).store(areaLight.extents);
 
                 areaLight.range = range[i];
                 areaLight.radius = scale.y;

@@ -24,10 +24,6 @@
 #include "http/httpserverproxy.h"     
 #include "basegamefeature/basegamefeatureunit.h"
 
-#include "nflatbuffer/nebula_flat.h"
-#include "flat/application/levelsettings.h"
-#include "flat/application/projectsettings.h"
-
 //------------------------------------------------------------------------------
 namespace App
 {
@@ -53,8 +49,6 @@ public:
     ///
     static bool IsEditorEnabled();
 
-    static App::ProjectSettingsT ProjectSettings;
-    static App::LevelSettingsT LevelSettings;
 
 protected:
     /// setup game features
