@@ -6,12 +6,12 @@
 #define DDGI_FXH
 #include <lib/shared.fxh>
 
-const int PROBE_STATE_INACTIVE = 0;
-const int PROBE_STATE_ACTIVE = 1;
-const int DDGI_NUM_FIXED_RAYS = 32;
+const uint PROBE_STATE_INACTIVE = 0;
+const uint PROBE_STATE_ACTIVE = 1;
+const uint DDGI_NUM_FIXED_RAYS = 32;
 
-const int NUM_IRRADIANCE_TEXELS_PER_PROBE = 6;
-const int NUM_DISTANCE_TEXELS_PER_PROBE = 14;
+const uint NUM_IRRADIANCE_TEXELS_PER_PROBE = 6;
+const uint NUM_DISTANCE_TEXELS_PER_PROBE = 14;
 
 const uint RELOCATION_OPTION = 0x1;
 const uint SCROLL_OPTION = 0x2;

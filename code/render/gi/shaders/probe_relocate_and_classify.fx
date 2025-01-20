@@ -50,7 +50,7 @@ ProbeRelocationAndClassify()
     float farthestFrontfaceDistance = 0;
     float backfaceCount = 0;
     
-    int numRays = min(int(RaysPerProbe), DDGI_NUM_FIXED_RAYS);
+    int numRays = min(int(RaysPerProbe), int(DDGI_NUM_FIXED_RAYS));
     
     for (int rayIndex = 0; rayIndex < numRays; rayIndex++)
     {

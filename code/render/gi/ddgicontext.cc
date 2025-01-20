@@ -451,7 +451,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesX = setup.numProbesX;
     volume.numProbesY = setup.numProbesY;
     volume.numProbesZ = setup.numProbesZ;
-    volume.numRaysPerProbe = min(setup.numRaysPerProbe, Raytracetest::DDGI_NUM_FIXED_RAYS);
+    volume.numRaysPerProbe = Math::min(setup.numRaysPerProbe, Raytracetest::DDGI_NUM_FIXED_RAYS);
     volume.options = setup.options;
 
     //volume.options.flags.lowPrecisionTextures = true;
@@ -652,12 +652,12 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         volumeToUpdate.relocateAndClassifyProbesTable = CoreGraphics::InvalidResourceTableId;
 
         float u1 = 2 * PI * Math::rand();
-        float cos1 = std::cosf(u1);
-        float sin1 = std::sinf(u1);
+        float cos1 = Math::cos(u1);
+        float sin1 = Math::sin(u1);
 
         float u2 = 2 * PI * Math::rand();
-        float cos2 = std::cosf(u2);
-        float sin2 = std::sinf(u2);
+        float cos2 = Math::cos(u2);
+        float sin2 = Math::sin(u2);
 
         float u3 = Math::rand();
         float sq3 = 2 * Math::sqrt(u3 * (1 - u3));

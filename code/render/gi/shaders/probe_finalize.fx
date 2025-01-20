@@ -83,7 +83,7 @@ void
 Blend(const uint MODE)
 {
     bool earlyOut = false;
-    const int NUM_TEXELS_PER_PROBE = MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE;
+    const int NUM_TEXELS_PER_PROBE = int(MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE);
     vec4 result = vec4(0); 
     
     ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
@@ -189,7 +189,7 @@ Blend(const uint MODE)
     int rayIndex = 0;
     if ((Options & (CLASSIFICATION_OPTION | RELOCATION_OPTION)) != 0)
     {
-        rayIndex = DDGI_NUM_FIXED_RAYS;
+        rayIndex = int(DDGI_NUM_FIXED_RAYS);
     }
         
     uint backfaces;
@@ -297,7 +297,7 @@ Blend(const uint MODE)
 void
 BorderRows(const uint MODE)
 {
-    const int NUM_TEXELS_PER_PROBE = MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE;
+    const int NUM_TEXELS_PER_PROBE = int(MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE);
     
     uint probeSideLength = (NUM_TEXELS_PER_PROBE + 2);
     uint probeSideLengthMinusOne = (probeSideLength - 1);
@@ -345,7 +345,7 @@ BorderRows(const uint MODE)
 void
 BorderColumns(const uint MODE)
 {
-    const int NUM_TEXELS_PER_PROBE = MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE;
+    const int NUM_TEXELS_PER_PROBE = int(MODE == RADIANCE_MODE ? NUM_IRRADIANCE_TEXELS_PER_PROBE : NUM_DISTANCE_TEXELS_PER_PROBE);
     
     uint probeSideLength = (NUM_TEXELS_PER_PROBE + 2);
     uint probeSideLengthMinusOne = (probeSideLength - 1);
