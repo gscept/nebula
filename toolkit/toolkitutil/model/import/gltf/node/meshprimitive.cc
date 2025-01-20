@@ -71,9 +71,9 @@ AttributeToComponentIndex(Gltf::Primitive::Attribute attribute, bool normalized)
 //------------------------------------------------------------------------------
 /**
 */
-template <typename TYPE, int n>
+template <typename TYPE, size_t n>
 Math::vec4
-ReadVertexData(void const* const buffer, const uint i)
+ReadVertexData(void const* const buffer, const size_t i)
 {
     static_assert(n >= 1 && n <= 4, "You're doing it wrong!");
     TYPE const* const v = (TYPE*)(buffer);
@@ -84,17 +84,17 @@ ReadVertexData(void const* const buffer, const uint i)
     }
     else if constexpr (n == 2)
     {
-        uint const offset = i * n;
+        size_t const offset = i * n;
         ret = Math::vec4((float)v[offset], (float)v[offset + 1], 0.0f, 0.0f);
     }
     else if constexpr (n == 3)
     {
-        uint const offset = i * n;
+        size_t const offset = i * n;
         ret = Math::vec4((float)v[offset], (float)v[offset + 1], (float)v[offset + 2], 0.0f);
     }
     else if constexpr (n == 4)
     {
-        uint const offset = i * n;
+        size_t const offset = i * n;
         ret = Math::vec4((float)v[offset], (float)v[offset + 1], (float)v[offset + 2], (float)v[offset + 3]);
     }
     return ret;
@@ -104,7 +104,7 @@ ReadVertexData(void const* const buffer, const uint i)
 /**
 */
 Math::vec4
-ReadVertexData(CoreGraphics::VertexComponent::Format format, void const* const buffer, uint32_t index)
+ReadVertexData(CoreGraphics::VertexComponent::Format format, void const* const buffer, size_t index)
 {
     Math::vec4 data;
     switch (format)
@@ -277,9 +277,9 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
                 for (size_t j = 0; j < count; j++)
                 {
                     Math::vec4 data = ReadVertexData(vertexBufferAccessor.format, vbuf, j);
-                    uint32_t idx = *((uint32_t*)(ibuf + (j * indexByteStride)));
+                    size_t idx = *((uint32_t*)(ibuf + (j * indexByteStride)));
                     idx &= indexMask;
-                    MeshBuilderVertex& vtx = meshBuilder->VertexAt(idx);
+                    MeshBuilderVertex& vtx = meshBuilder->VertexAt((IndexT)idx);
                     vtx.SetPosition(data);
                 }
             }
@@ -299,7 +299,7 @@ MeshPrimitiveFunc(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT inv
             for (size_t i = 0; i < triCount * 3; i += 3)
             {
                 MeshBuilderTriangle triangle;
-                triangle.SetVertexIndices(i, i + 1, i + 2);
+                triangle.SetVertexIndices((IndexT)i, (IndexT)i + 1, (IndexT)i + 2);
                 meshBuilder->AddTriangle(triangle);
             }
         }

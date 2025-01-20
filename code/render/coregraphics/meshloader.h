@@ -28,6 +28,9 @@ public:
 		bool copySource;
 	};
 
+    /// Get vertex layout
+    static const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexLayoutType type);
+    
 private:
 
     struct MeshStreamData
@@ -47,9 +50,7 @@ private:
 
     /// Update intermediate loaded state
     void UpdateLoaderSyncState() override;
-
-    /// Get vertex layout
-    static const CoreGraphics::VertexLayoutId GetLayout(const CoreGraphics::VertexLayoutType type);
+    
     /// setup mesh from nvx3 file in memory
     ResourceLoader::_StreamData SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJob& job, const MeshResourceId meshResource);
 

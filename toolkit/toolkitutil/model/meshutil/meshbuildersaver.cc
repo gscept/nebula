@@ -24,7 +24,7 @@ using namespace Math;
 /**
 */
 bool
-MeshBuilderSaver::Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilderGroup>& groups, Platform::Code platform)
+MeshBuilderSaver::Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, Platform::Code platform)
 {
     // make sure the target directory exists
     IoServer::Instance()->CreateDirectory(uri.LocalPath().ExtractDirName());
@@ -35,12 +35,11 @@ MeshBuilderSaver::Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& mesh
     {
         ByteOrder byteOrder(ByteOrder::Host, Platform::GetPlatformByteOrder(platform));
 
-        MeshBuilderSaver::WriteHeader(stream, meshes, groups, byteOrder);
+        MeshBuilderSaver::WriteHeader(stream, meshes, byteOrder);
         MeshBuilderSaver::WriteMeshes(stream, meshes, byteOrder);
-        MeshBuilderSaver::WriteGroups(stream, groups, byteOrder);
+        MeshBuilderSaver::WriteMeshlets(stream, meshes, byteOrder);
         MeshBuilderSaver::WriteVertices(stream, meshes, byteOrder);
         MeshBuilderSaver::WriteTriangles(stream, meshes, byteOrder);
-        MeshBuilderSaver::WriteMeshlets(stream, meshes, byteOrder);
 
         stream->Close();
         stream = nullptr;
@@ -59,12 +58,16 @@ MeshBuilderSaver::Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& mesh
 /**
 */
 void
-MeshBuilderSaver::WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilderGroup>& groups, const System::ByteOrder& byteOrder)
+MeshBuilderSaver::WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder)
 {
     SizeT indexDataSize = 0;
     SizeT vertexDataSize = 0;
+    SizeT meshDataSize = meshes.Size() * sizeof(Nvx3VertexRange);
+    SizeT meshletDataSize = 0;
     for (IndexT i = 0; i < meshes.Size(); i++)
     {
+        meshDataSize += meshes[i]->groups.Size() * sizeof(Nvx3Group);
+        
         // The enum is the size of the type
         vertexDataSize += sizeof(CoreGraphics::BaseVertex) * meshes[i]->vertices.Size();
         vertexDataSize += MeshBuilderVertex::GetSize(meshes[i]->componentMask) * meshes[i]->vertices.Size();
@@ -77,14 +80,17 @@ MeshBuilderSaver::WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<M
     // write header
     Nvx3Header nvx3Header;
     nvx3Header.magic = byteOrder.Convert<uint>(NEBULA_NVX_MAGICNUMBER);
+    nvx3Header.meshDataOffset = sizeof(Nvx3Header);
     nvx3Header.numMeshes = byteOrder.Convert<uint>(meshes.Size());
-    nvx3Header.numGroups = byteOrder.Convert<uint>(groups.Size());
-    nvx3Header.numMeshlets = 0;
-    nvx3Header.indexDataSize = indexDataSize;
+    nvx3Header.meshletDataOffset = sizeof(Nvx3Header) + meshDataSize;
+    nvx3Header.numMeshlets = 0; // TODO: Add meshlet support
+    nvx3Header.vertexDataOffset = sizeof(Nvx3Header) + meshDataSize + meshletDataSize; 
     nvx3Header.vertexDataSize = vertexDataSize;
+    nvx3Header.indexDataOffset = sizeof(Nvx3Header) + meshDataSize + meshletDataSize + vertexDataSize;
+    nvx3Header.indexDataSize = indexDataSize;
 
     // write header
-    stream->Write(&nvx3Header, sizeof(nvx3Header));
+    stream->Write(&nvx3Header, sizeof(Nvx3Header));
 }
 
 //------------------------------------------------------------------------------
@@ -95,6 +101,9 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const Util::Array<M
 {
     uint indexByteOffset = 0;
     uint vertexByteOffset = 0;
+    uint groupByteOffset = sizeof(Nvx3Header) + meshes.Size() * sizeof(Nvx3VertexRange);
+
+    Util::Array<Nvx3Group, 32> groups;
     for (IndexT curMeshIndex = 0; curMeshIndex < meshes.Size(); curMeshIndex++)
     {
         const MeshBuilder* mesh = meshes[curMeshIndex];
@@ -108,35 +117,36 @@ MeshBuilderSaver::WriteMeshes(const Ptr<IO::Stream>& stream, const Util::Array<M
         nvx3VertexRange.indexByteOffset = indexByteOffset;
         nvx3VertexRange.baseVertexByteOffset = vertexByteOffset;
         nvx3VertexRange.attributesVertexByteOffset = vertexByteOffset + baseVertexDataSize;
+        nvx3VertexRange.firstGroupOffset = groupByteOffset;
+        nvx3VertexRange.numGroups = mesh->groups.Size();
+        stream->Write(&nvx3VertexRange, sizeof(Nvx3VertexRange));
 
-        stream->Write(&nvx3VertexRange, sizeof(nvx3VertexRange));
+        for (IndexT curGroupIndex = 0; curGroupIndex < mesh->groups.Size(); curGroupIndex++)
+        {
+            const MeshBuilderGroup& group = mesh->groups[curGroupIndex];
+            int firstTriangle = group.GetFirstTriangleIndex();
+            int numTriangles = group.GetNumTriangles();
+            
+            Nvx3Group nvx3Group;
+            nvx3Group.firstIndex = byteOrder.Convert<uint>(firstTriangle * 3);
+            nvx3Group.numIndices = byteOrder.Convert<uint>(numTriangles * 3);
+            nvx3Group.primType = PrimitiveTopology::TriangleList;
+            
+            // TODO: Add support for meshlets
+            nvx3Group.firstMeshlet = 0;
+            nvx3Group.numMeshlets = 0;
+            groups.Append(nvx3Group);
+        }
 
+        groupByteOffset += mesh->groups.Size() * sizeof(Nvx3Group);
         indexByteOffset += mesh->triangles.Size() * 3 * IndexType::SizeOf(nvx3VertexRange.indexType);
         vertexByteOffset += baseVertexDataSize + attributesVertexDataSize;
     }
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MeshBuilderSaver::WriteGroups(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilderGroup>& groups, const System::ByteOrder& byteOrder)
-{
+    // Write groups after all meshes
     for (IndexT groupIndex = 0; groupIndex < groups.Size(); groupIndex++)
     {
-        const MeshBuilderGroup& curGroup = groups[groupIndex];
-        int firstTriangle = curGroup.GetFirstTriangleIndex();
-        int numTriangles = curGroup.GetNumTriangles();
-
-        Nvx3Group nvx3Group;
-        nvx3Group.firstIndex = byteOrder.Convert<uint>(firstTriangle * 3);
-        nvx3Group.numIndices = byteOrder.Convert<uint>(numTriangles * 3);
-        nvx3Group.primType = PrimitiveTopology::TriangleList;
-        nvx3Group.firstMeshlet = 0;
-        nvx3Group.numMeshlets = 0; // TODO
-
-        // write group to stream
-        stream->Write(&nvx3Group, sizeof(nvx3Group));
+        stream->Write(&groups[groupIndex], sizeof(Nvx3Group));
     }
 }
 

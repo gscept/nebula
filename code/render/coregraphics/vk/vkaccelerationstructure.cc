@@ -131,7 +131,7 @@ CreateBlas(const BlasCreateInfo& info)
 
     constexpr VkBuildAccelerationStructureFlagsKHR Lookup[] = {
         VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR
-        , VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR 
+        , VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR
         , VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR
         , VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR
         , VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR
@@ -177,6 +177,7 @@ CreateBlas(const BlasCreateInfo& info)
     };
 
     // Match the number of geometries to the amount of primitive groups
+    setup.geometries.Reserve(info.primitiveGroups.Size());
     for (IndexT i = 0; i < info.primitiveGroups.Size(); i++)
     {
         setup.geometries.Append(geometry);
@@ -200,6 +201,7 @@ CreateBlas(const BlasCreateInfo& info)
     Util::Array<uint> maxPrimitiveCounts;
 
     // Each primitive group is an individual range
+    setup.rangeInfos.Reserve(info.primitiveGroups.Size());
     for (IndexT i = 0; i < info.primitiveGroups.Size(); i++)
     {
         uint primitiveCount = info.primitiveGroups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);

@@ -17,8 +17,8 @@ struct GeometrySetup
     VkAccelerationStructureGeometryTrianglesDataKHR triangleData;
     VkAccelerationStructureBuildSizesInfoKHR buildSizes;
     VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo;
-    Util::Array<VkAccelerationStructureGeometryKHR> geometries;
-    Util::Array<VkAccelerationStructureBuildRangeInfoKHR> rangeInfos;
+    Util::PinnedArray<256, VkAccelerationStructureGeometryKHR> geometries;
+    Util::PinnedArray<256, VkAccelerationStructureBuildRangeInfoKHR> rangeInfos;
 };
 
 enum

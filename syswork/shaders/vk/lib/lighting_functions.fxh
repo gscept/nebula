@@ -394,7 +394,8 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
-        vec4 shadowPos = CSMShadowMatrix * vec4(worldSpacePosition, 1); // csm contains inversed view + csm transform
+        // CSM transform takes us from world space to light view space
+        vec4 shadowPos = CSMShadowMatrix * vec4(worldSpacePosition, 1);
         shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer
 #ifdef CSM_DEBUG
         , csmDebug  

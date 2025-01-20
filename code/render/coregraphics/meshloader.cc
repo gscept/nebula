@@ -32,18 +32,18 @@ MeshLoader::MeshLoader()
     CoreGraphics::VertexLayoutCreateInfo vlCreateInfo;
     vlCreateInfo.name = "Normal"_atm;
     vlCreateInfo.comps = {
-        VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }  
+        VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
-        , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }  
-        , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 } 
+        , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }
+        , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
     };
     Layouts[(uint)CoreGraphics::VertexLayoutType::Normal] = CreateVertexLayout(vlCreateInfo);
 
     vlCreateInfo.name = "SecondaryUVs"_atm;
     vlCreateInfo.comps = {
-        VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }  
+        VertexComponent{ VertexComponent::IndexName::Position, VertexComponent::Float3, 0 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::Short2, 0 }
-        , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }  
+        , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::TexCoord2, VertexComponent::UShort2N, 1 }
     };
@@ -132,15 +132,15 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
     ResourceName name = job.name;
     MeshStreamData* streamData = (MeshStreamData*)stream.data;
     auto header = (Nvx3Header*)streamData->mappedData;
+    char* basePtr = (char*)streamData->mappedData;
 
     uint bitsToLoad = job.loadState.requestedBits & ~(job.loadState.loadedBits | job.loadState.pendingBits);
 
     n_assert(header->magic == NEBULA_NVX_MAGICNUMBER);
     n_assert(header->numMeshes > 0);
-    auto vertexRanges = (Nvx3VertexRange*)(header + 1);
-    auto groups = (Nvx3Group*)(vertexRanges + header->numMeshes);
-    auto vertexData = (ubyte*)(groups + header->numGroups);
-    auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
+    auto vertexRanges = (Nvx3VertexRange*)(basePtr + header->meshDataOffset);
+    auto vertexData = (ubyte*)(basePtr + header->vertexDataOffset);
+    auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
     //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
     CoreGraphics::BufferId vbo = CoreGraphics::GetVertexBuffer();
@@ -330,7 +330,6 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
 {
     n_assert(stream.isvalid());
 
-    Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
     void* mapPtr = nullptr;
     Util::FixedArray<MeshId> meshes;
 
@@ -340,12 +339,12 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
     reader->SetStream(stream);
     if (reader->Open())
     {
-        n_assert(0 == primGroups.Size());
         n_assert(stream->CanBeMapped());
         n_assert(nullptr == mapPtr);
 
         // map the stream to memory
         mapPtr = stream->MemoryMap();
+        char* basePtr = (char*)mapPtr;
 
         n_assert(nullptr != mapPtr);
 
@@ -357,10 +356,9 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
         }
 
         n_assert(header->numMeshes > 0);
-        auto vertexRanges = (Nvx3VertexRange*)(header + 1);
-        auto groups = (Nvx3Group*)(vertexRanges + header->numMeshes);
-        auto vertexData = (ubyte*)(groups + header->numGroups);
-        auto indexData = (ubyte*)(vertexData + header->vertexDataSize);
+        auto vertexRanges = (Nvx3VertexRange*)(basePtr + header->meshDataOffset);
+        auto vertexData = (ubyte*)(basePtr + header->vertexDataOffset);
+        auto indexData = (ubyte*)(basePtr + header->indexDataOffset);
         //auto meshletData = (Nvx3Meshlet*)(indexData + header->indexDataSize);
 
         meshes.Resize(header->numMeshes);
@@ -399,25 +397,28 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
             }
         }
 
-        for (uint i = 0; i < header->numGroups; i++)
-        {
-            PrimitiveGroup group;
-            group.SetBaseIndex(groups[i].firstIndex);
-            group.SetNumIndices(groups[i].numIndices);
-            primGroups.Append(group);
-        }
-
         for (uint i = 0; i < header->numMeshes; i++)
         {
+            Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
+            const Nvx3VertexRange& range = vertexRanges[i];
+
+            for (uint j = 0; j < range.numGroups; j++)
+            {
+                PrimitiveGroup group;
+                const Nvx3Group* nvxGroup = (Nvx3Group*)(basePtr + range.firstGroupOffset + j * sizeof(Nvx3Group));
+                group.SetBaseIndex(nvxGroup->firstIndex);
+                group.SetNumIndices(nvxGroup->numIndices);
+                primGroups.Append(group);
+            }
             MeshCreateInfo mshInfo;
-            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + vertexRanges[i].baseVertexByteOffset), 0 });
-            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + vertexRanges[i].attributesVertexByteOffset), 1 });
-            mshInfo.indexBufferOffset = streamData->indexAllocationOffset.offset + (SizeT)vertexRanges[i].indexByteOffset;
+            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + range.baseVertexByteOffset), 0 });
+            mshInfo.streams.Append({ vbo, (SizeT)(streamData->vertexAllocationOffset.offset + range.attributesVertexByteOffset), 1 });
+            mshInfo.indexBufferOffset = streamData->indexAllocationOffset.offset + (SizeT)range.indexByteOffset;
             mshInfo.indexBuffer = ibo;
             mshInfo.topology = PrimitiveTopology::TriangleList;
-            mshInfo.indexType = vertexRanges[i].indexType;
+            mshInfo.indexType = range.indexType;
             mshInfo.primitiveGroups = primGroups;
-            mshInfo.vertexLayout = Layouts[(uint)vertexRanges[i].layout];
+            mshInfo.vertexLayout = Layouts[(uint)range.layout];
             mshInfo.vertexBufferAllocation = vertexAllocation;
             mshInfo.indexBufferAllocation = indexAllocation;
             mshInfo.name = job.name;
