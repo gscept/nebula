@@ -1,0 +1,19 @@
+{
+    "terrain_setup": {
+        "config": {
+            "use": false
+        }
+    },
+    "vegetation_setup": {
+        
+    },
+    "sun_settings": {
+        
+    },
+    "cluster_settings": {
+        
+    },
+    "histogram_settings": {
+        
+    }
+}

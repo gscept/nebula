@@ -451,7 +451,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     volume.numProbesX = setup.numProbesX;
     volume.numProbesY = setup.numProbesY;
     volume.numProbesZ = setup.numProbesZ;
-    volume.numRaysPerProbe = Math::min(setup.numRaysPerProbe, Raytracetest::DDGI_NUM_FIXED_RAYS);
+    volume.numRaysPerProbe = Math::min(setup.numRaysPerProbe, ProbeUpdate::DDGI_NUM_FIXED_RAYS);
     volume.options = setup.options;
 
     //volume.options.flags.lowPrecisionTextures = true;
