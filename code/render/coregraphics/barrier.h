@@ -95,14 +95,14 @@ struct TextureSubresourceInfo
 
 struct BufferSubresourceInfo
 {
-    uint offset, size;
+    uint64 offset, size;
 
     BufferSubresourceInfo() :
         offset(0),
         size(NEBULA_WHOLE_BUFFER_SIZE)
     {}
 
-    BufferSubresourceInfo(uint offset, uint size) :
+    BufferSubresourceInfo(uint64 offset, uint64 size) :
         offset(offset),
         size(size)
     {}

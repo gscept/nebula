@@ -523,12 +523,9 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
 /**
 */
 void
-CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets)
+CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint, true>& offsets)
 {
-    if (offsets.IsEmpty())
-        CmdSetResourceTable(id, table, slot, pipeline, 0, nullptr);
-    else
-        CmdSetResourceTable(id, table, slot, pipeline, offsets.Size(), offsets.Begin());
+    CmdSetResourceTable(id, table, slot, pipeline, offsets.Size(), offsets.Begin());
 }
 
 //------------------------------------------------------------------------------

@@ -121,7 +121,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             if (AllBits(instanceGroupMask, 1 << it))
             {
                 IndexT slot = it;
-                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
+                uint64 bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
                     CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
@@ -443,7 +443,8 @@ MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBuffer
 
         // Set instance table
         CoreGraphics::ConstantBufferOffset offset = materialInstanceAllocator.Get<MaterialInstance_Offsets>(id.instance);
-        CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, 1, &offset);
+        n_assert((offset & 0xFFFFFFFF00000000) == 0x0);
+        CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, { (uint)offset });
     }
 }
 

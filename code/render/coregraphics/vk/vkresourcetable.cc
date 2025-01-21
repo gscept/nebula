@@ -547,7 +547,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     else
         buff.buffer = BufferGetVk(buf.buf);
     buff.offset = buf.offset;
-    buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
+    buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? Math::min(BufferGetByteSize(buf.buf), CoreGraphics::MaxConstantBufferSize) : buf.size;
 
     WriteInfo inf;
     inf.buf = buff;

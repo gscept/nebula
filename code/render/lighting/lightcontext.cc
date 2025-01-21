@@ -1288,8 +1288,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     clusterState.consts.NumAreaLights = numAreaLights;
     clusterState.consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     clusterState.consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
-    IndexT offset = SetConstants(clusterState.consts);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), (SizeT)offset });
+    uint64 offset = SetConstants(clusterState.consts);
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     Combine::CombineUniforms combineConsts;
@@ -1297,7 +1297,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     combineConsts.LowresResolution[0] = 1.0f / lightDims.width;
     combineConsts.LowresResolution[1] = 1.0f / lightDims.height;
     offset = SetConstants(combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), (SizeT)offset });
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 

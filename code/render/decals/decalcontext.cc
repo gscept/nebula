@@ -335,8 +335,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    uint offset = SetConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), (SizeT)offset });
+    uint64 offset = SetConstants(decalUniforms);
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // update list of point lights

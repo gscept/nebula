@@ -14,7 +14,7 @@ VkBufferSparseExtensionAllocator bufferSparseExtensionAllocator;
 //------------------------------------------------------------------------------
 /**
 */
-VkBuffer 
+VkBuffer
 BufferGetVk(const CoreGraphics::BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).buf;
@@ -23,7 +23,7 @@ BufferGetVk(const CoreGraphics::BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-VkDeviceMemory 
+VkDeviceMemory
 BufferGetVkMemory(const CoreGraphics::BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).mem.mem;
@@ -32,7 +32,7 @@ BufferGetVkMemory(const CoreGraphics::BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-VkDevice 
+VkDevice
 BufferGetVkDevice(const CoreGraphics::BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).dev;
@@ -48,7 +48,7 @@ _IMPL_ACQUIRE_RELEASE(BufferId, bufferAllocator);
 //------------------------------------------------------------------------------
 /**
 */
-const BufferId 
+const BufferId
 CreateBuffer(const BufferCreateInfo& info)
 {
     Ids::Id32 id = bufferAllocator.Alloc();
@@ -277,12 +277,12 @@ CreateBuffer(const BufferCreateInfo& info)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 DestroyBuffer(const BufferId id)
 {
     __Lock(bufferAllocator, id.id);
     VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id);
-    
+
     CoreGraphics::DelayedDeleteBuffer(id);
     CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     loadInfo.mem = CoreGraphics::Alloc{};
@@ -292,7 +292,7 @@ DestroyBuffer(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const BufferUsageFlags 
+const BufferUsageFlags
 BufferGetType(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).usageFlags;
@@ -301,7 +301,7 @@ BufferGetType(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT 
+const uint64
 BufferGetSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).size;
@@ -310,7 +310,7 @@ BufferGetSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT 
+const uint64
 BufferGetElementSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).elementSize;
@@ -319,7 +319,7 @@ BufferGetElementSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT 
+const uint64
 BufferGetByteSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).byteSize;
@@ -328,7 +328,7 @@ BufferGetByteSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const SizeT
+const uint64
 BufferGetUploadMaxSize()
 {
     return 65536;
@@ -337,7 +337,7 @@ BufferGetUploadMaxSize()
 //------------------------------------------------------------------------------
 /**
 */
-void* 
+void*
 BufferMap(const BufferId id)
 {
     const VkBufferMapInfo& mapInfo = bufferAllocator.ConstGet<Buffer_MapInfo>(id.id);
@@ -348,7 +348,7 @@ BufferMap(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 BufferUnmap(const BufferId id)
 {
     // Do nothing on Vulkan
@@ -387,8 +387,8 @@ void
 BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern)
 {
     const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
-    
-    int remainingBytes = setup.byteSize;
+
+    uint64 remainingBytes = setup.byteSize;
     uint numChunks = Math::divandroundup(setup.byteSize, BufferGetUploadMaxSize());
     int chunkOffset = 0;
     for (uint i = 0; i < numChunks; i++)
@@ -406,8 +406,8 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 //------------------------------------------------------------------------------
 /**
 */
-void 
-BufferFlush(const BufferId id, IndexT offset, SizeT size)
+void
+BufferFlush(const BufferId id, uint64 offset, uint64 size)
 {
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
@@ -417,8 +417,8 @@ BufferFlush(const BufferId id, IndexT offset, SizeT size)
 //------------------------------------------------------------------------------
 /**
 */
-void 
-BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
+void
+BufferInvalidate(const BufferId id, uint64 offset, uint64 size)
 {
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
