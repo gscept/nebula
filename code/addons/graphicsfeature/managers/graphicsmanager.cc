@@ -470,6 +470,8 @@ GraphicsManager::InitDecal(Game::World* world, Game::Entity entity, Decal* decal
 void
 GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVolume* volume)
 {
+    if (!CoreGraphics::RayTracingSupported)
+        return;
     volume->graphicsEntityId = Graphics::CreateEntity().id;
     GI::DDGIContext::RegisterEntity(volume->graphicsEntityId);
     GI::DDGIContext::VolumeSetup setup;
