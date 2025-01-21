@@ -27,7 +27,7 @@ namespace Vulkan
 #if NEBULA_GRAPHICS_DEBUG
 struct NvidiaAftermathCheckpoint
 {
-    Util::String name;
+    Util::StringAtom name;
     NvidiaAftermathCheckpoint* prev;
     bool push : 1;
 };

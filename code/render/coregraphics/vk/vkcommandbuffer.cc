@@ -1609,10 +1609,11 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
+        NvidiaAftermathCheckpoint* prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
         checkpoint.name = name;
         checkpoint.push = 1;
-        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        checkpoint.prev = prev;
         vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif
@@ -1651,10 +1652,11 @@ CmdEndMarker(const CmdBufferId id)
     Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
+        NvidiaAftermathCheckpoint* prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
         checkpoint.name = nullptr;
         checkpoint.push = 0;
-        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        checkpoint.prev = prev;
         vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif
@@ -1683,10 +1685,11 @@ CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
+        NvidiaAftermathCheckpoint* prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
         checkpoint.name = name;
         checkpoint.push = 0;
-        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        checkpoint.prev = prev;
         vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif

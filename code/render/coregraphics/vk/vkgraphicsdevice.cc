@@ -682,7 +682,7 @@ DeviceLost()
                         if (next->name != nullptr)
                         {
                             n_printf("%*s", indentation * 4, "-");
-                            n_printf(" %s\n", next->name.AsCharPtr());
+                            n_printf(" %s\n", next->name.Value());
                         }
 
                         if (next->push)
@@ -1790,6 +1790,8 @@ SubmitImmediateCommandBuffers()
 
         graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, vkBufs, { handoverWait }, "Setup");
         graphicsWait.queue = CoreGraphics::GraphicsQueueType;
+
+        state.queueHandler.AppendSubmissionTimeline(CoreGraphics::ComputeQueueType, nullptr, {graphicsWait}, "Wait for Setup");
 
         // Add wait event
         AddSubmissionEvent(graphicsWait);

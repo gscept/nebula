@@ -85,7 +85,7 @@ VkSubContextHandler::Setup(VkDevice dev, const Util::FixedArray<Util::Pair<uint,
             VkResult res = vkCreateSemaphore(this->device, &inf, nullptr, &this->semaphores[i][j]);
             n_assert(res == VK_SUCCESS);
             this->semaphoreSubmissionIds[i][j] = 0;
-        
+
 #if NEBULA_GRAPHICS_DEBUG
             VkDebugUtilsObjectNameInfoEXT info =
             {
@@ -127,7 +127,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 //------------------------------------------------------------------------------
 /**
 */
-uint64 
+uint64
 VkSubContextHandler::AppendSubmissionTimeline(
     CoreGraphics::QueueType type
     , VkCommandBuffer cmds
@@ -137,14 +137,14 @@ VkSubContextHandler::AppendSubmissionTimeline(
 #endif
 )
 {
-    n_assert(cmds != VK_NULL_HANDLE);
     Threading::CriticalScope _0(&this->submissionLock);
 
     uint64 ret = GetNextTimelineIndex(type);
 
     Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Emplace();
-    sub.buffers.Append(cmds);
+    if (cmds != VK_NULL_HANDLE)
+        sub.buffers.Append(cmds);
     sub.signalSemaphores.Append(this->semaphores[type][this->currentQueue[type]]);
     sub.signalIndices.Append(ret);
     sub.queue = type;
@@ -164,7 +164,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 
     // Progress the semaphore counter
     this->semaphoreSubmissionIds[type][this->currentQueue[type]] = ret;
-    
+
     return ret;
 }
 
@@ -207,7 +207,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 
     // Progress the semaphore counter
     this->semaphoreSubmissionIds[type][this->currentQueue[type]] = ret;
-    
+
     return ret;
 }
 
@@ -223,7 +223,7 @@ VkSubContextHandler::GetNextTimelineIndex(CoreGraphics::QueueType type)
 //------------------------------------------------------------------------------
 /**
 */
-uint64_t 
+uint64_t
 VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds)
 {
     Threading::CriticalScope _0(&this->submissionLock);
@@ -394,7 +394,7 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
 {
     // we can't really signal index UINT64_MAX, so skip it
@@ -433,7 +433,7 @@ VkSubContextHandler::Poll(CoreGraphics::QueueType type, uint64_t index)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkSubContextHandler::FlushSparseBinds(VkFence fence)
 {
     // abort early

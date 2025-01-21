@@ -97,7 +97,7 @@ MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream)
 //------------------------------------------------------------------------------
 /**
 */
-const uint
+const uint64
 MeshGetVertexOffset(const MeshId id, const IndexT stream)
 {
     return meshAllocator.ConstGet<Mesh_Internals>(id.id).streams[stream].offset;
@@ -115,7 +115,7 @@ MeshGetIndexBuffer(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint
+const uint64
 MeshGetIndexOffset(const MeshId id)
 {
     return meshAllocator.ConstGet<Mesh_Internals>(id.id).indexBufferOffset;

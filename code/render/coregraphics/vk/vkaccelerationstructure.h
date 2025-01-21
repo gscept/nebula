@@ -14,7 +14,6 @@ namespace Vulkan
 
 struct GeometrySetup
 {
-    VkAccelerationStructureGeometryTrianglesDataKHR triangleData;
     VkAccelerationStructureBuildSizesInfoKHR buildSizes;
     VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo;
     Util::PinnedArray<256, VkAccelerationStructureGeometryKHR> geometries;
