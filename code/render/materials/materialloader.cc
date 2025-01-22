@@ -72,6 +72,7 @@ struct MaterialBuffer
                 this->hostBufferData = (char*)CoreGraphics::BufferMap(this->hostBuffer);
                 this->deviceBuffer = CoreGraphics::CreateBuffer(this->deviceBufferCreateInfo);
                 this->deviceAddress = CoreGraphics::BufferGetDeviceAddress(this->deviceBuffer);
+                this->dirty = true;
             }
         }
         return ret;

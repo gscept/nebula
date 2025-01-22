@@ -76,11 +76,6 @@ ptr alignment(32) struct VertexAttributeSkin
     uint indices;
 };
 
-ptr alignment(4) struct VertexAttributeDummy
-{
-    uint dummy;
-};
-
 ptr alignment(4) struct Indexes32
 {
     uint index;
@@ -105,8 +100,9 @@ MESH_BINDING rw_buffer Geometry
 struct Object
 {
     VertexPosUv PositionsPtr;
-    VertexAttributeDummy AttrPtr;
+    uvec2 AttrPtr;
     Indexes16 IndexPtr;
+    uint AttributeStride;
     uint Use16BitIndex;
     uint MaterialOffset;
     uint VertexLayout;
@@ -185,7 +181,20 @@ float
 UnpackSign(int packedNormal)
 {
     int sig = (packedNormal >> 24) & 0xFF;
-    return sig == -128 ? -1.0f : 1.0f;
+    return sig == 0x7F ? -1.0f : 1.0f;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+uvec2 
+OffsetPointer(uvec2 basePtr, uint offset)
+{
+    uint carry;
+    uint lo = uaddCarry(basePtr.x, offset, carry);
+    uint hi = basePtr.y + carry;
+    return uvec2(lo, hi);
 }
 
 //------------------------------------------------------------------------------
@@ -233,31 +242,34 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
     
     vec3 n1, n2, n3;
     vec3 t1, t2, t3;
-    
     switch (obj.VertexLayout)
     {
         case 1: // Normal
         {
-            VertexAttributeNormals attrs = VertexAttributeNormals(obj.AttrPtr);
-            n1 = UnpackNormal32(attrs[indices.x].normal_tangent.x);
-            n2 = UnpackNormal32(attrs[indices.y].normal_tangent.x);
-            n3 = UnpackNormal32(attrs[indices.z].normal_tangent.x);
-            t1 = UnpackNormal32(attrs[indices.x].normal_tangent.y);
-            t2 = UnpackNormal32(attrs[indices.y].normal_tangent.y);
-            t3 = UnpackNormal32(attrs[indices.z].normal_tangent.y);
-            sign = UnpackSign(attrs[indices.x].normal_tangent.y);
+            VertexAttributeNormals attrs1 = VertexAttributeNormals(OffsetPointer(obj.AttrPtr, indices.x * obj.AttributeStride));
+            VertexAttributeNormals attrs2 = VertexAttributeNormals(OffsetPointer(obj.AttrPtr, indices.y * obj.AttributeStride));
+            VertexAttributeNormals attrs3 = VertexAttributeNormals(OffsetPointer(obj.AttrPtr, indices.z * obj.AttributeStride));
+            n1 = UnpackNormal32(attrs1.normal_tangent.x);
+            n2 = UnpackNormal32(attrs2.normal_tangent.x);
+            n3 = UnpackNormal32(attrs3.normal_tangent.x);
+            t1 = UnpackNormal32(attrs1.normal_tangent.y);
+            t2 = UnpackNormal32(attrs2.normal_tangent.y);
+            t3 = UnpackNormal32(attrs3.normal_tangent.y);
+            sign = UnpackSign(attrs1.normal_tangent.y);
             break;
         }
         case 4: // Skin
         {
-            VertexAttributeSkin attrs = VertexAttributeSkin(obj.AttrPtr);
-            n1 = UnpackNormal32(attrs[indices.x].normal_tangent.x);
-            n2 = UnpackNormal32(attrs[indices.y].normal_tangent.x);
-            n3 = UnpackNormal32(attrs[indices.z].normal_tangent.x);
-            t1 = UnpackNormal32(attrs[indices.x].normal_tangent.y);
-            t2 = UnpackNormal32(attrs[indices.y].normal_tangent.y);
-            t3 = UnpackNormal32(attrs[indices.z].normal_tangent.y);
-            sign = UnpackSign(attrs[indices.x].normal_tangent.y);
+            VertexAttributeSkin attrs1 = VertexAttributeSkin(OffsetPointer(obj.AttrPtr, indices.x * obj.AttributeStride));
+            VertexAttributeSkin attrs2 = VertexAttributeSkin(OffsetPointer(obj.AttrPtr, indices.y * obj.AttributeStride));
+            VertexAttributeSkin attrs3 = VertexAttributeSkin(OffsetPointer(obj.AttrPtr, indices.z * obj.AttributeStride));
+            n1 = UnpackNormal32(attrs1.normal_tangent.x);
+            n2 = UnpackNormal32(attrs2.normal_tangent.x);
+            n3 = UnpackNormal32(attrs3.normal_tangent.x);
+            t1 = UnpackNormal32(attrs1.normal_tangent.y);
+            t2 = UnpackNormal32(attrs2.normal_tangent.y);
+            t3 = UnpackNormal32(attrs3.normal_tangent.y);
+            sign = UnpackSign(attrs1.normal_tangent.y);
             break;
         }
     }

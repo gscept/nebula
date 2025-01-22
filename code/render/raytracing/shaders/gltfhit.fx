@@ -30,7 +30,7 @@ ClosestHit(
     float facing = dot(normal, gl_WorldRayDirectionEXT);
     Result.bits |= facing > 0 ? RAY_BACK_FACE_BIT : 0x0; 
 
-    GLTFMaterial mat = GLTFMaterials + obj.MaterialOffset;
+    GLTFMaterial mat = GLTFMaterials[obj.MaterialOffset];
 
     /* Tangent space normal transform */
     vec4 normals = sample2DLod(mat.normalTexture, NormalSampler, uv, 0) * mat.normalScale;

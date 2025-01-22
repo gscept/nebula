@@ -396,12 +396,11 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     raytracingContextAllocator.Set<Raytracing_NumStructures>(contextId.id, numObjects);
     raytracingContextAllocator.Set<Raytracing_UpdateType>(contextId.id, UpdateType::Dynamic);
 
-    IndexT counter = 0;
     IndexT instanceCounter = 0;
     for (IndexT i = nodes.begin; i < nodes.end; i++)
     {
         Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
-        Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, offset = alloc.offset, &counter, &instanceCounter, i, pNode](Resources::ResourceId id)
+        Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, offset = alloc.offset, primitiveGroup = pNode->GetPrimitiveGroupIndex(), &instanceCounter, i, pNode](Resources::ResourceId id)
         {
             Threading::CriticalScope _s(&state.blasLock);
             CoreGraphics::MeshResourceId meshRes = id;
@@ -417,7 +416,6 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             if (blasIndex == InvalidIndex)
             {
                 // Reset primitive group counter
-                counter = 0;
                 const CoreGraphics::VertexLayoutId layout = CoreGraphics::MeshGetVertexLayout(mesh);
                 auto& comps = CoreGraphics::VertexLayoutGetComponents(layout);
 
@@ -450,32 +448,35 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             CoreGraphics::BufferIdLock _2(CoreGraphics::GetIndexBuffer());
 
             // Because the smallest machine unit is 4 bytes, the offset must be in integers, not in bytes
-            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, counter);
+            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, primitiveGroup);
             constants.Use16BitIndex = CoreGraphics::MeshGetIndexType(mesh) == CoreGraphics::IndexType::Index16 ? 1 : 0;
             constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
-            constants.AttrPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
+            CoreGraphics::DeviceAddress attributeAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
+            memcpy(constants.AttrPtr, &attributeAddress, sizeof(CoreGraphics::DeviceAddress));
             constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + CoreGraphics::MeshGetIndexOffset(mesh);
+            constants.AttributeStride = (uint)CoreGraphics::VertexLayoutGetStreamSize(CoreGraphics::MeshGetVertexLayout(mesh), 1);
             constants.VertexLayout = (uint)temp->vertexLayout;
-            state.objects[offset + instanceCounter] = constants;
+
+            uint instanceIndex = offset + instanceCounter;
+            state.objects[instanceIndex] = constants;
 
             // Setup instance
             CoreGraphics::BlasInstanceCreateInfo createIntInfo;
             createIntInfo.flags = flags;
             createIntInfo.mask = mask;
             createIntInfo.shaderOffset = MaterialPropertyMappings[(uint)temp->properties];
-            createIntInfo.instanceIndex = offset;
+            createIntInfo.instanceIndex = instanceIndex;
             createIntInfo.blas = blas;
             createIntInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
             // Disable instance if the vertex layout isn't supported
             CoreGraphics::BlasIdLock _0(createIntInfo.blas);
-            state.blasInstances[offset + instanceCounter] = CoreGraphics::CreateBlasInstance(createIntInfo);
-            state.blasInstanceMeshes[offset + instanceCounter] = mesh;
+            state.blasInstances[instanceIndex] = CoreGraphics::CreateBlasInstance(createIntInfo);
+            state.blasInstanceMeshes[instanceIndex] = mesh;
 
             state.numRegisteredInstances++;
             state.topLevelNeedsReconstruction = true;
         });
-        counter++;
         instanceCounter++;
     }
     state.topLevelNeedsReconstruction = true;
