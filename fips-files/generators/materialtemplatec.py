@@ -323,7 +323,7 @@ class MaterialInterfaceDefinition:
                 texCounter += 1
         
         ret = ""
-        ret += "ptr struct {}Material \n{{\n{}}};\n".format(self.name, contents)
+        ret += "ptr alignment(16) struct {}Material \n{{\n{}}};\n".format(self.name, contents)
         ret += textures
         ret += "\n"
         ret += "MATERIAL_CB_BINDING constant {}Constants \n{{\n{}}} _{};\n".format(self.name, contents, self.name)
