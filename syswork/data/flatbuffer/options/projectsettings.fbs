@@ -8,7 +8,8 @@
 namespace App;
 table GISettings
 {
-    update_budget: float;
+    update_budget: float = 1.0;
+    update_frequency: float = 0.0;
 }
 
 table ProjectSettings

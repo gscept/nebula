@@ -103,6 +103,8 @@ struct
     CoreGraphics::MeshResourceId debugMeshResource;
     CoreGraphics::MeshId debugMesh;
 #endif
+
+    Timing::Time elapsedTime;
 } state;
 
 
@@ -633,6 +635,12 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
     state.volumesToUpdate.Clear();
     state.volumesToDraw.Clear();
+
+    state.elapsedTime += ctx.frameTime;
+    bool updateThisFrame = state.elapsedTime >= projectSettings.gi_settings->update_frequency;
+    if (updateThisFrame)
+        state.elapsedTime = 0;
+
     uint volumeCount = 0;
     for (Volume& activeVolume : volumes)
     {
@@ -731,7 +739,10 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
             volumeToUpdate.blendProbesTable = activeVolume.blendProbesTable;
             if (activeVolume.options.flags.relocate || activeVolume.options.flags.classify)
                 volumeToUpdate.relocateAndClassifyProbesTable = activeVolume.relocateProbesTable;
-            state.volumesToUpdate.Append(volumeToUpdate);
+            if (updateThisFrame)
+            {
+                state.volumesToUpdate.Append(volumeToUpdate);
+            }
         }
 
 #ifndef PUBLIC_BUILD
