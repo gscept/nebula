@@ -41,7 +41,7 @@ struct BlasCreateInfo
     CoreGraphics::VertexComponent::Format positionsFormat;
     uint64 stride;
     uint64 vertexOffset, indexOffset;
-    Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+    CoreGraphics::PrimitiveGroup primGroup;
     AccelerationStructureBuildFlags flags;
 };
 

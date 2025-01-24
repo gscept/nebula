@@ -46,30 +46,30 @@ struct HitResult
 };
 
 // Declare type for vertex positions and uv
-ptr alignment(16) struct VertexPosUv
+ptr alignment(4) struct VertexPosUv
 {
     vec3 position;
     int uv;
 };
 
-ptr alignment(8) struct VertexAttributeNormals
+ptr alignment(4) struct VertexAttributeNormals
 {
     ivec2 normal_tangent;
 };
 
-ptr alignment(16) struct VertexAttributeSecondaryUv
+ptr alignment(4) struct VertexAttributeSecondaryUv
 {
     ivec2 normal_tangent;
     uint uv;
 };
 
-ptr alignment(16) struct VertexAttributeColor
+ptr alignment(4) struct VertexAttributeColor
 {
     ivec2 normal_tangent;
     uint color;
 };
 
-ptr alignment(32) struct VertexAttributeSkin
+ptr alignment(4) struct VertexAttributeSkin
 {
     ivec2 normal_tangent;
     vec4 weights;
@@ -99,13 +99,16 @@ MESH_BINDING rw_buffer Geometry
 
 struct Object
 {
-    VertexPosUv PositionsPtr;
+    uvec2 PositionsPtr;
     uvec2 AttrPtr;
-    Indexes16 IndexPtr;
+    uvec2 IndexPtr;
     uint AttributeStride;
     uint Use16BitIndex;
     uint MaterialOffset;
     uint VertexLayout;
+    uint BaseIndexOffset;
+    uint BaseVertexPositionOffset;
+    uint BaseVertexAttributeOffset;
 };
 
 OBJECT_BINDING rw_buffer ObjectBuffer
@@ -167,11 +170,7 @@ UnpackUV32(int packedUv)
 vec3
 UnpackNormal32(int packedNormal)
 {
-    int x = packedNormal & 0xFF;
-    int y = (packedNormal >> 8) & 0xFF;
-    int z = (packedNormal >> 16) & 0xFF;
-    vec3 unpacked = vec3(x, y, z) / 127.0f;
-    return unpacked;
+    return unpackSnorm4x8(packedNormal).xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -181,7 +180,7 @@ float
 UnpackSign(int packedNormal)
 {
     int sig = (packedNormal >> 24) & 0xFF;
-    return sig == 0x7F ? -1.0f : 1.0f;
+    return sig == 0x80 ? -1.0f : 1.0f;
 }
 
 
@@ -203,18 +202,22 @@ OffsetPointer(uvec2 basePtr, uint offset)
 void
 SampleTerrain(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out mat3 tbn)
 {
-    // Sample the index buffer
     if (obj.Use16BitIndex == 1)
-        indices = uvec3(obj.IndexPtr[prim * 3].index, obj.IndexPtr[prim * 3 + 1].index, obj.IndexPtr[prim * 3 + 2].index);
+    {
+        Indexes16 i16Ptr = Indexes16(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+    }
     else
     {
-        Indexes32 i32Ptr = Indexes32(obj.IndexPtr);
-        indices = uvec3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+        Indexes32 i32 = Indexes32(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i32[prim * 3].index, i32[prim * 3 + 1].index, i32[prim * 3 + 2].index);
     }
+    
+    VertexPosUv positionsPtr = VertexPosUv(OffsetPointer(obj.PositionsPtr, obj.BaseVertexPositionOffset));
 
-    vec2 uv0 = UnpackUV32((obj.PositionsPtr[indices.x]).uv);
-    vec2 uv1 = UnpackUV32((obj.PositionsPtr[indices.y]).uv);
-    vec2 uv2 = UnpackUV32((obj.PositionsPtr[indices.z]).uv);
+    vec2 uv0 = UnpackUV32((positionsPtr[indices.x]).uv);
+    vec2 uv1 = UnpackUV32((positionsPtr[indices.y]).uv);
+    vec2 uv2 = UnpackUV32((positionsPtr[indices.z]).uv);
     uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
 
     tbn = PlaneTBN(vec3(0, 1, 0));
@@ -228,17 +231,24 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
 {
     // Sample the index buffer
     if (obj.Use16BitIndex == 1)
-        indices = uvec3(obj.IndexPtr[prim * 3].index, obj.IndexPtr[prim * 3 + 1].index, obj.IndexPtr[prim * 3 + 2].index);
+    {
+        Indexes16 i16Ptr = Indexes16(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+    }
     else
     {
-        Indexes32 i32Ptr = Indexes32(obj.IndexPtr);
-        indices = uvec3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+        Indexes32 i32 = Indexes32(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i32[prim * 3].index, i32[prim * 3 + 1].index, i32[prim * 3 + 2].index);
     }
+    
+    VertexPosUv positionsPtr = VertexPosUv(OffsetPointer(obj.PositionsPtr, obj.BaseVertexPositionOffset));
 
-    vec2 uv0 = UnpackUV32((obj.PositionsPtr[indices.x]).uv);
-    vec2 uv1 = UnpackUV32((obj.PositionsPtr[indices.y]).uv);
-    vec2 uv2 = UnpackUV32((obj.PositionsPtr[indices.z]).uv);
+    vec2 uv0 = UnpackUV32((positionsPtr[indices.x]).uv);
+    vec2 uv1 = UnpackUV32((positionsPtr[indices.y]).uv);
+    vec2 uv2 = UnpackUV32((positionsPtr[indices.z]).uv);
     uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+    
+    uvec2 attribPtr = OffsetPointer(obj.AttrPtr, obj.BaseVertexAttributeOffset);
     
     vec3 n1, n2, n3;
     vec3 t1, t2, t3;
@@ -246,9 +256,9 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
     {
         case 1: // Normal
         {
-            VertexAttributeNormals attrs1 = VertexAttributeNormals(OffsetPointer(obj.AttrPtr, indices.x * obj.AttributeStride));
-            VertexAttributeNormals attrs2 = VertexAttributeNormals(OffsetPointer(obj.AttrPtr, indices.y * obj.AttributeStride));
-            VertexAttributeNormals attrs3 = VertexAttributeNormals(OffsetPointer(obj.AttrPtr, indices.z * obj.AttributeStride));
+            VertexAttributeNormals attrs1 = VertexAttributeNormals(OffsetPointer(attribPtr, indices.x * obj.AttributeStride));
+            VertexAttributeNormals attrs2 = VertexAttributeNormals(OffsetPointer(attribPtr, indices.y * obj.AttributeStride));
+            VertexAttributeNormals attrs3 = VertexAttributeNormals(OffsetPointer(attribPtr, indices.z * obj.AttributeStride));
             n1 = UnpackNormal32(attrs1.normal_tangent.x);
             n2 = UnpackNormal32(attrs2.normal_tangent.x);
             n3 = UnpackNormal32(attrs3.normal_tangent.x);
@@ -260,9 +270,9 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
         }
         case 4: // Skin
         {
-            VertexAttributeSkin attrs1 = VertexAttributeSkin(OffsetPointer(obj.AttrPtr, indices.x * obj.AttributeStride));
-            VertexAttributeSkin attrs2 = VertexAttributeSkin(OffsetPointer(obj.AttrPtr, indices.y * obj.AttributeStride));
-            VertexAttributeSkin attrs3 = VertexAttributeSkin(OffsetPointer(obj.AttrPtr, indices.z * obj.AttributeStride));
+            VertexAttributeSkin attrs1 = VertexAttributeSkin(OffsetPointer(attribPtr, indices.x * obj.AttributeStride));
+            VertexAttributeSkin attrs2 = VertexAttributeSkin(OffsetPointer(attribPtr, indices.y * obj.AttributeStride));
+            VertexAttributeSkin attrs3 = VertexAttributeSkin(OffsetPointer(attribPtr, indices.z * obj.AttributeStride));
             n1 = UnpackNormal32(attrs1.normal_tangent.x);
             n2 = UnpackNormal32(attrs2.normal_tangent.x);
             n3 = UnpackNormal32(attrs3.normal_tangent.x);
@@ -277,8 +287,6 @@ SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, 
     normal = BaryCentricVec3(n1, n2, n3, baryCoords);
     tangent = BaryCentricVec3(t1, t2, t3, baryCoords);
 }
-#define OFFSET_PTR(ptr, offset, type) type(VoidPtr(ptr) + offset)
-
 
 //------------------------------------------------------------------------------
 /**

@@ -57,10 +57,10 @@ BlasGetVkBuild(const CoreGraphics::BlasId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>&
+const VkAccelerationStructureBuildRangeInfoKHR&
 BlasGetVkRanges(const CoreGraphics::BlasId id)
 {
-    return blasAllocator.ConstGet<Blas_Geometry>(id.id).rangeInfos;
+    return blasAllocator.ConstGet<Blas_Geometry>(id.id).primitiveGroup;
 }
 
 //------------------------------------------------------------------------------
@@ -154,33 +154,27 @@ CreateBlas(const BlasCreateInfo& info)
     vkGetPhysicalDeviceFormatProperties2(Vulkan::GetCurrentPhysicalDevice(), positionsFormat, &formatProps);
     n_assert(formatProps.formatProperties.bufferFeatures & VK_FORMAT_FEATURE_2_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR);
 
-    // Match the number of geometries to the amount of primitive groups
-    setup.geometries.Reserve(info.primitiveGroups.Size());
-    for (IndexT i = 0; i < info.primitiveGroups.Size(); i++)
+    VkAccelerationStructureGeometryTrianglesDataKHR triangleData =
     {
-        VkAccelerationStructureGeometryTrianglesDataKHR triangleData =
-        {
-            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
-            .pNext = nullptr,
-            .vertexFormat = positionsFormat,
-            .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + info.vertexOffset},
-            .vertexStride = (uint64)info.stride,
-            .maxVertex = info.indexType == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
-            .indexType = info.indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
-            .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + info.indexOffset},
-            .transformData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr } // TODO: Support transforms
-        };
-        VkAccelerationStructureGeometryKHR geometry =
-        {
-            .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
-            .pNext = nullptr,
-            .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
-            .geometry = VkAccelerationStructureGeometryDataKHR{ .triangles = triangleData },
-            .flags = VK_GEOMETRY_OPAQUE_BIT_KHR // TODO, add support for avoiding anyhit or single-invocation anyhit optimizations
-        };
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
+        .pNext = nullptr,
+        .vertexFormat = positionsFormat,
+        .vertexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = vboAddr + info.vertexOffset},
+        .vertexStride = (uint64)info.stride,
+        .maxVertex = info.indexType == IndexType::Index16 ? 0xFFFE : 0xFFFFFFFE,
+        .indexType = info.indexType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32,
+        .indexData = VkDeviceOrHostAddressConstKHR {.deviceAddress = iboAddr + info.indexOffset},
+        .transformData = VkDeviceOrHostAddressConstKHR{ .hostAddress = nullptr } // TODO: Support transforms
+    };
+    setup.geometry =
+    {
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+        .pNext = nullptr,
+        .geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
+        .geometry = VkAccelerationStructureGeometryDataKHR{ .triangles = triangleData },
+        .flags = VK_GEOMETRY_OPAQUE_BIT_KHR // TODO, add support for avoiding anyhit or single-invocation anyhit optimizations
+    };
 
-        setup.geometries.Append(geometry);
-    }
 
     setup.buildGeometryInfo =
     {
@@ -191,28 +185,19 @@ CreateBlas(const BlasCreateInfo& info)
         .mode = VkBuildAccelerationStructureModeKHR::VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
         .srcAccelerationStructure = VK_NULL_HANDLE,
         .dstAccelerationStructure = VK_NULL_HANDLE,
-        .geometryCount = (uint)info.primitiveGroups.Size(),
-        .pGeometries = setup.geometries.Begin(),
+        .geometryCount = 1,
+        .pGeometries = &setup.geometry,
         .ppGeometries = nullptr,
         .scratchData = VkDeviceOrHostAddressKHR{ .hostAddress = nullptr }
     };
 
-    Util::Array<uint> maxPrimitiveCounts;
-
-    // Each primitive group is an individual range
-    setup.rangeInfos.Reserve(info.primitiveGroups.Size());
-    for (IndexT i = 0; i < info.primitiveGroups.Size(); i++)
-    {
-        uint primitiveCount = info.primitiveGroups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
-        setup.rangeInfos.Append(
-        {
-            .primitiveCount = (uint)primitiveCount,
-            .primitiveOffset = (uint)info.primitiveGroups[i].GetBaseIndex() * CoreGraphics::IndexType::SizeOf(info.indexType), // Primitive offset is defined in the mesh
-            .firstVertex = 0,
-            .transformOffset = 0
-        });
-        maxPrimitiveCounts.Append(primitiveCount);
-    }
+    setup.primitiveGroup = {
+        .primitiveCount = (uint)info.primGroup.GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList),
+        .primitiveOffset = (uint)info.primGroup.GetBaseIndex() * CoreGraphics::IndexType::SizeOf(info.indexType), // Primitive offset is defined in the mesh
+        .firstVertex = 0,
+        .transformOffset = 0
+    };
+    uint maxPrimitiveCount = setup.primitiveGroup.primitiveCount;
 
     // Get build sizes
     setup.buildSizes =
@@ -221,7 +206,7 @@ CreateBlas(const BlasCreateInfo& info)
         nullptr,
         0, 0, 0
     };
-    vkGetAccelerationStructureBuildSizesKHR(dev, type, &setup.buildGeometryInfo, maxPrimitiveCounts.Begin(), &setup.buildSizes);
+    vkGetAccelerationStructureBuildSizesKHR(dev, type, &setup.buildGeometryInfo, &maxPrimitiveCount, &setup.buildSizes);
 
     CoreGraphics::BufferCreateInfo bufferInfo;
     bufferInfo.byteSize = setup.buildSizes.accelerationStructureSize;

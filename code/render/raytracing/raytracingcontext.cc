@@ -41,7 +41,7 @@ struct
     Memory::RangeAllocator blasInstanceAllocator;
     bool topLevelNeedsReconstruction, topLevelNeedsBuild, topLevelNeedsUpdate;
 
-    Util::HashTable<CoreGraphics::MeshId, Util::Tuple<uint, CoreGraphics::BlasId>> blasLookup;
+    Util::HashTable<CoreGraphics::MeshId, Util::Tuple<uint, Util::Array<CoreGraphics::BlasId>>> blasLookup;
     CoreGraphics::BufferWithStaging blasInstanceBuffer;
 
     CoreGraphics::ResourceTableSet raytracingTables;
@@ -400,7 +400,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
     for (IndexT i = nodes.begin; i < nodes.end; i++)
     {
         Models::PrimitiveNode* pNode = static_cast<Models::PrimitiveNode*>(Models::ModelContext::NodeInstances.renderable.nodes[i]);
-        Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, offset = alloc.offset, primitiveGroup = pNode->GetPrimitiveGroupIndex(), &instanceCounter, i, pNode](Resources::ResourceId id)
+        Resources::CreateResourceListener(pNode->GetMeshResource(), [flags, mask, offset = alloc.offset, instanceCounter, i, pNode](Resources::ResourceId id)
         {
             Threading::CriticalScope _s(&state.blasLock);
             CoreGraphics::MeshResourceId meshRes = id;
@@ -419,26 +419,32 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
                 const CoreGraphics::VertexLayoutId layout = CoreGraphics::MeshGetVertexLayout(mesh);
                 auto& comps = CoreGraphics::VertexLayoutGetComponents(layout);
 
-                CoreGraphics::BlasCreateInfo createInfo;
-                createInfo.vbo = CoreGraphics::MeshGetVertexBuffer(mesh, 0);
-                createInfo.ibo = CoreGraphics::MeshGetIndexBuffer(mesh);
-                createInfo.indexType = CoreGraphics::MeshGetIndexType(mesh);
-                createInfo.positionsFormat = comps[0].GetFormat();
-                createInfo.stride = CoreGraphics::VertexLayoutGetStreamSize(layout, 0);
-                createInfo.vertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
-                createInfo.indexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
-                createInfo.primitiveGroups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
-                createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
-                CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
-                state.blases.Append(blas);
-                blasIndex = state.blasLookup.Add(mesh, Util::MakeTuple(1, blas));
-
-                CoreGraphics::BlasIdRelease(blas);
-                state.blasesToRebuild.Append(blas);
+                const Util::Array<CoreGraphics::PrimitiveGroup>& primGroups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
+                Util::Array<CoreGraphics::BlasId> blasesCreated;
+                blasesCreated.Reserve(primGroups.Size());
+                for (auto& group : primGroups)
+                {
+                    CoreGraphics::BlasCreateInfo createInfo;
+                    createInfo.vbo = CoreGraphics::MeshGetVertexBuffer(mesh, 0);
+                    createInfo.ibo = CoreGraphics::MeshGetIndexBuffer(mesh);
+                    createInfo.indexType = CoreGraphics::MeshGetIndexType(mesh);
+                    createInfo.positionsFormat = comps[0].GetFormat();
+                    createInfo.stride = CoreGraphics::VertexLayoutGetStreamSize(layout, 0);
+                    createInfo.vertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+                    createInfo.indexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
+                    createInfo.primGroup = group;
+                    createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
+                    CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
+                    blasesCreated.Append(blas);
+                    state.blases.Append(blas);
+                    CoreGraphics::BlasIdRelease(blas);
+                    state.blasesToRebuild.Append(blas);
+                }
+                blasIndex = state.blasLookup.Add(mesh, Util::MakeTuple(1, blasesCreated));
             }
 
             // Increment ref count
-            auto& [refCount, blas] = state.blasLookup.ValueAtIndex(mesh, blasIndex);
+            auto& [refCount, blases] = state.blasLookup.ValueAtIndex(mesh, blasIndex);
             refCount++;
 
             Raytracetest::Object constants;
@@ -448,14 +454,22 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             CoreGraphics::BufferIdLock _2(CoreGraphics::GetIndexBuffer());
 
             // Because the smallest machine unit is 4 bytes, the offset must be in integers, not in bytes
-            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, primitiveGroup);
-            constants.Use16BitIndex = CoreGraphics::MeshGetIndexType(mesh) == CoreGraphics::IndexType::Index16 ? 1 : 0;
-            constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
+            CoreGraphics::IndexType::Code indexType = CoreGraphics::MeshGetIndexType(mesh);
+            uint positionsStride = (uint)CoreGraphics::VertexLayoutGetStreamSize(CoreGraphics::MeshGetVertexLayout(mesh), 0);
+            uint attributeStride = (uint)CoreGraphics::VertexLayoutGetStreamSize(CoreGraphics::MeshGetVertexLayout(mesh), 1);
+            CoreGraphics::PrimitiveGroup group = CoreGraphics::MeshGetPrimitiveGroup(mesh, pNode->GetPrimitiveGroupIndex());
+            constants.Use16BitIndex =  indexType == CoreGraphics::IndexType::Index16 ? 1 : 0;
+            CoreGraphics::DeviceAddress positionsAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 0);
+            memcpy(constants.PositionsPtr, &positionsAddress, sizeof(CoreGraphics::DeviceAddress));
             CoreGraphics::DeviceAddress attributeAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + CoreGraphics::MeshGetVertexOffset(mesh, 1);
             memcpy(constants.AttrPtr, &attributeAddress, sizeof(CoreGraphics::DeviceAddress));
-            constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + CoreGraphics::MeshGetIndexOffset(mesh);
-            constants.AttributeStride = (uint)CoreGraphics::VertexLayoutGetStreamSize(CoreGraphics::MeshGetVertexLayout(mesh), 1);
+            CoreGraphics::DeviceAddress indexAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + CoreGraphics::MeshGetIndexOffset(mesh);
+            memcpy(constants.IndexPtr, &indexAddress, sizeof(CoreGraphics::DeviceAddress));
+            constants.AttributeStride = attributeStride;
             constants.VertexLayout = (uint)temp->vertexLayout;
+            constants.BaseIndexOffset = (CoreGraphics::DeviceAddress)group.GetBaseIndex() * CoreGraphics::IndexType::SizeOf(indexType);
+            constants.BaseVertexPositionOffset = (CoreGraphics::DeviceAddress)group.GetBaseVertex() * positionsStride;
+            constants.BaseVertexAttributeOffset = (CoreGraphics::DeviceAddress)group.GetBaseVertex() * attributeStride;
 
             uint instanceIndex = offset + instanceCounter;
             state.objects[instanceIndex] = constants;
@@ -466,7 +480,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
             createIntInfo.mask = mask;
             createIntInfo.shaderOffset = MaterialPropertyMappings[(uint)temp->properties];
             createIntInfo.instanceIndex = instanceIndex;
-            createIntInfo.blas = blas;
+            createIntInfo.blas = blases[pNode->GetPrimitiveGroupIndex()];
             createIntInfo.transform = Models::ModelContext::NodeInstances.transformable.nodeTransforms[Models::ModelContext::NodeInstances.renderable.nodeTransformIndex[i]];
 
             // Disable instance if the vertex layout isn't supported
@@ -532,7 +546,7 @@ void RaytracingContext::SetupMesh(
         createInfo.vertexOffset = vertices.offset + patchCounter * patchVertexStride;
         createInfo.indexOffset = indices.offset;
         createInfo.flags = CoreGraphics::AccelerationStructureBuildFlags::FastTrace;
-        createInfo.primitiveGroups = { patchPrimGroup };
+        createInfo.primGroup = patchPrimGroup;
         CoreGraphics::BlasId blas = CoreGraphics::CreateBlas(createInfo);
         blases[patchCounter] = blas;
         state.blasesToRebuild.Append(blas);
@@ -558,8 +572,14 @@ void RaytracingContext::SetupMesh(
         Raytracetest::Object constants;
         constants.Use16BitIndex = indexType == CoreGraphics::IndexType::Index16 ? 1 : 0;
         constants.MaterialOffset = materialTableOffset;
-        constants.IndexPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + createInfo.indexOffset;
-        constants.PositionsPtr = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + createInfo.vertexOffset;
+        CoreGraphics::DeviceAddress indexAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetIndexBuffer()) + createInfo.indexOffset;
+        memcpy(constants.IndexPtr, &indexAddress, sizeof(CoreGraphics::DeviceAddress));
+        CoreGraphics::DeviceAddress positionsAddress = CoreGraphics::BufferGetDeviceAddress(CoreGraphics::GetVertexBuffer()) + createInfo.vertexOffset;
+        memcpy(constants.PositionsPtr, &positionsAddress, sizeof(CoreGraphics::DeviceAddress));
+        constants.AttributeStride = 0x0;
+        constants.BaseVertexPositionOffset = 0x0;
+        constants.BaseVertexAttributeOffset = 0x0;
+        constants.BaseIndexOffset = 0x0;
         constants.VertexLayout = (uint)vertexLayout;
         state.objects[i] = constants;
 
@@ -834,20 +854,27 @@ RaytracingContext::Dealloc(Graphics::ContextEntityId id)
     SizeT numAllocs = raytracingContextAllocator.Get<Raytracing_NumStructures>(id.id);
     for (IndexT i = range.offset; i < numAllocs; i++)
     {
+        CoreGraphics::BlasInstanceIdLock _0(state.blasInstances[i]);
         CoreGraphics::DestroyBlasInstance(state.blasInstances[i]);
         CoreGraphics::MeshId mesh = state.blasInstanceMeshes[i];
 
         // Delete a mesh
         if (mesh != CoreGraphics::InvalidMeshId)
         {
-            auto& [refCount, blas] = state.blasLookup.ValueAtIndex(mesh, i);
-            if (refCount == 1)
+            IndexT index = state.blasLookup.FindIndex(mesh);
+            if (index != InvalidIndex)
             {
-                CoreGraphics::DestroyBlas(blas);
-                state.blasLookup.EraseIndex(mesh, i);
+                auto& [refCount, blases] = state.blasLookup.ValueAtIndex(mesh, index);
+                if (refCount == 1)
+                {
+                    for (auto blas : blases)
+                        CoreGraphics::DestroyBlas(blas);
+                    state.blasLookup.EraseIndex(mesh, i);
+                    state.blasInstanceMeshes[i] = CoreGraphics::InvalidMeshId;
+                }
+                else
+                    refCount--;
             }
-            else
-                refCount--;
         }
         else
         {

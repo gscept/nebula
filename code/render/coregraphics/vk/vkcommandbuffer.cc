@@ -709,7 +709,7 @@ CmdBarrier(
     VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
     VkDependencyFlags depFlags = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
     uint numBuffers = buffers.Size() + accelerationStructures.Size();
-    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)StackAlloc(numBuffers * sizeof(VkBufferMemoryBarrier));
+    VkBufferMemoryBarrier* bufferBarriers = ArrayAllocStack<VkBufferMemoryBarrier>(numBuffers);
 
     IndexT i, j = 0;
     for (i = 0; i < buffers.Size(); i++, j++)
@@ -754,7 +754,7 @@ CmdBarrier(
     }
 
     uint numImages = textures.Size();
-    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)StackAlloc(textures.Size() * sizeof(VkImageMemoryBarrier));
+    VkImageMemoryBarrier* imageBarriers = ArrayAllocStack<VkImageMemoryBarrier>(textures.Size());
     for (i = 0; i < textures.Size(); i++, j++)
     {
         VkImageMemoryBarrier& vkBar = imageBarriers[j];
@@ -804,8 +804,8 @@ CmdBarrier(
         numBuffers, bufferBarriers,
         numImages, imageBarriers);
 
-    StackFree(bufferBarriers);
-    StackFree(imageBarriers);
+    ArrayFreeStack(textures.size(), imageBarriers);
+    ArrayFreeStack(numBuffers, bufferBarriers);
 }
 
 //------------------------------------------------------------------------------
@@ -827,7 +827,7 @@ CmdHandover(
     VkPipelineStageFlags fromFlags = VkTypes::AsVkPipelineStage(fromStage);
     VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
     uint numBuffers = buffers.Size();
-    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)StackAlloc(numBuffers * sizeof(VkBufferMemoryBarrier));
+    VkBufferMemoryBarrier* bufferBarriers = ArrayAllocStack<VkBufferMemoryBarrier>(numBuffers);
 
     for (uint32_t i = 0; i < numBuffers; i++)
     {
@@ -847,7 +847,7 @@ CmdHandover(
     }
 
     uint numImages = textures.Size();
-    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)StackAlloc(textures.Size() * sizeof(VkImageMemoryBarrier));
+    VkImageMemoryBarrier* imageBarriers = ArrayAllocStack<VkImageMemoryBarrier>(textures.Size());
     IndexT i, j = 0;
     for (i = 0; i < textures.Size(); i++, j++)
     {
@@ -940,8 +940,8 @@ CmdHandover(
         , numImages, imageBarriers
     );
 
-    StackFree(imageBarriers);
-    StackFree(bufferBarriers);
+    ArrayFreeStack(textures.Size(), imageBarriers);
+    ArrayFreeStack(numBuffers, bufferBarriers);
 }
 
 //------------------------------------------------------------------------------
@@ -1158,8 +1158,8 @@ CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     const VkAccelerationStructureBuildGeometryInfoKHR& buildInfo = Vulkan::BlasGetVkBuild(blas);
-    const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& rangeInfo = Vulkan::BlasGetVkRanges(blas);
-    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { rangeInfo.ConstBegin() };
+    const VkAccelerationStructureBuildRangeInfoKHR& rangeInfo = Vulkan::BlasGetVkRanges(blas);
+    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { &rangeInfo };
     vkCmdBuildAccelerationStructuresKHR(cmdBuf, 1, &buildInfo, ranges);
 }
 

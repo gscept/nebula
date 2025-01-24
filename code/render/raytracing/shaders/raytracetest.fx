@@ -34,8 +34,6 @@ Raygen(
     // Ray trace against BVH
     traceRayEXT(TLAS, gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, origin.xyz, 0.01f, direction.xyz, 10000.0f, 0);
 
-    vec3 F0 = CalculateF0(Result.albedo.rgb, Result.material[MAT_METALLIC], vec3(0.04));
-    vec3 WorldSpacePos = origin.xyz + direction.xyz * Result.depth;
     vec3 light = vec3(0);
     if ((Result.bits & RAY_MISS_BIT) != 0)
     {
@@ -48,9 +46,6 @@ Raygen(
         //light += (Result.normal + 1.0f) * 0.5f;
         light += Result.radiance;
     }
-    //light += CalculateGlobalLight(Result.albedo, Result.material, F0, -normalize(target.xyz), Result.normal, WorldSpacePos);
-    //vec3 dir = normalize(Result.normal);
-    //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 
     imageStore(RaytracingOutput, ivec2(gl_LaunchIDEXT.xy), vec4(light, 0.0f));
 }
