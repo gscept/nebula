@@ -522,10 +522,10 @@ LightContext::SetupAreaLight(
     const MaterialTemplates::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
     void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
 
-    MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)StackAlloc(matTemplate->bufferSize);
+    MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
     (color * intensity).store(data->EmissiveColor);
     Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
-    StackFree(data);
+    ArrayFreeStack(1, data);
 
     CoreGraphics::MeshId mesh;
     switch (shape)
