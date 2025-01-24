@@ -35,7 +35,7 @@ DebugVS(
     
     Normal = normal;
     Instance = gl_InstanceIndex;
-    gl_Position = ViewProjection * vec4(position * 0.1f + probeWorldPosition, 1);
+    gl_Position = ViewProjection * vec4(position * DebugSize + probeWorldPosition, 1);
 }
 
 //------------------------------------------------------------------------------

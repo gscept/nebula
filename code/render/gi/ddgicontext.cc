@@ -34,6 +34,7 @@
 #include "core/cvar.h"
 
 Core::CVar* g_debug_ddgi = Core::CVarCreate(Core::CVar_Int, "g_debug_ddgi", "0", "Draw DDGI probes");
+Core::CVar* g_debug_ddgi_probe_size = Core::CVarCreate(Core::CVar_Float, "g_debug_ddgi_probe_size", "0.01f", "Set size of DDGI probes");
 
 using namespace Graphics;
 
@@ -445,13 +446,13 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 
     ContextEntityId ctxId = GetContextId(id);
     Volume& volume = ddgiVolumeAllocator.Get<0>(ctxId.id);
-    volume.boundingBox.set(setup.position, setup.size * Math::vec3(0.5f));
+    volume.boundingBox.set(setup.position, setup.size);
     volume.position = setup.position;
     volume.size = setup.size;
     volume.numProbesX = setup.numProbesX;
     volume.numProbesY = setup.numProbesY;
     volume.numProbesZ = setup.numProbesZ;
-    volume.numRaysPerProbe = Math::min(setup.numRaysPerProbe, ProbeUpdate::DDGI_NUM_FIXED_RAYS);
+    volume.numRaysPerProbe = Math::max(setup.numRaysPerProbe, ProbeUpdate::DDGI_NUM_FIXED_RAYS);
     volume.options = setup.options;
 
     //volume.options.flags.lowPrecisionTextures = true;
@@ -544,7 +545,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     }
 
     // Store another set of minimal ray directions for probe activity updates
-    for (uint rayIndex = 0; rayIndex < volume.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS; rayIndex++)
+    for (uint rayIndex = 0; rayIndex < (volume.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS); rayIndex++)
     {
         SphericalFibonacci(rayIndex, volume.numRaysPerProbe - ProbeUpdate::DDGI_NUM_FIXED_RAYS).store(volume.volumeConstants.ExtraDirections[rayIndex]);
     }
@@ -600,7 +601,7 @@ DDGIContext::SetPosition(const Graphics::GraphicsEntityId id, const Math::vec3& 
     ContextEntityId ctxId = GetContextId(id);
     Volume& volume = ddgiVolumeAllocator.Get<0>(ctxId.id);
     volume.position = position;
-    volume.boundingBox.set(volume.position, volume.size * 0.5f);
+    volume.boundingBox.set(volume.position, volume.size);
 }
 
 //------------------------------------------------------------------------------
@@ -612,7 +613,7 @@ DDGIContext::SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size
     ContextEntityId ctxId = GetContextId(id);
     Volume& volume = ddgiVolumeAllocator.Get<0>(ctxId.id);
     volume.size = size;
-    volume.boundingBox.set(volume.position, volume.size * 0.5f);
+    volume.boundingBox.set(volume.position, volume.size);
 }
 
 //------------------------------------------------------------------------------
@@ -694,9 +695,9 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         activeVolume.volumeConstants.ProbeScrollOffsets[1] = 0;
         activeVolume.volumeConstants.ProbeScrollOffsets[2] = 0;
         Math::quat().store(activeVolume.volumeConstants.Rotation);
-        activeVolume.volumeConstants.ProbeGridSpacing[0] = size[0] / float(activeVolume.numProbesX);
-        activeVolume.volumeConstants.ProbeGridSpacing[1] = size[1] / float(activeVolume.numProbesY);
-        activeVolume.volumeConstants.ProbeGridSpacing[2] = size[2] / float(activeVolume.numProbesZ);
+        activeVolume.volumeConstants.ProbeGridSpacing[0] = size[0] * 2.0f / float(activeVolume.numProbesX);
+        activeVolume.volumeConstants.ProbeGridSpacing[1] = size[1] * 2.0f / float(activeVolume.numProbesY);
+        activeVolume.volumeConstants.ProbeGridSpacing[2] = size[2] * 2.0f / float(activeVolume.numProbesZ);
         activeVolume.volumeConstants.NumDistanceTexels = ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE;
         activeVolume.volumeConstants.IrradianceGamma = activeVolume.encodingGamma;
         activeVolume.volumeConstants.NormalBias = activeVolume.normalBias;
@@ -718,6 +719,8 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
         activeVolume.volumeConstants.ChangeThreshold = activeVolume.changeThreshold;
         activeVolume.volumeConstants.BrightnessThreshold = activeVolume.brightnessThreshold;
 
+        activeVolume.volumeConstants.DebugSize = Core::CVarReadFloat(g_debug_ddgi_probe_size);
+
         CoreGraphics::BufferUpdate(activeVolume.volumeConstantBuffer, activeVolume.volumeConstants);
 
 
@@ -738,7 +741,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
         auto& giVolume = state.giVolumes[volumeCount];
 
-        Math::mat4 transform = Math::scaling(activeVolume.size * 1.5f);
+        Math::mat4 transform = Math::scaling(activeVolume.size * 2.0f);
         transform.translate(activeVolume.position);
         Math::bbox bbox = viewTransform * transform;
         bbox.pmin.store(giVolume.bboxMin);

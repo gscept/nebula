@@ -142,7 +142,7 @@ RayGen(
     payload.normal = vec3(0);
     payload.depth = 0;
 
-    traceRayEXT(TLAS, gl_RayFlagsCullBackFacingTrianglesEXT, 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
+    traceRayEXT(TLAS, gl_RayFlagsNoneEXT , 0xff, 0, 0, 0, probeWorldPosition, 0.01f, probeRayDirection, MaxDistance, 0);
     if ((payload.bits & RAY_MISS_BIT) != 0)
     {
         vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
@@ -209,7 +209,7 @@ RayGen(
         probeLighting /= IrradianceScale;
     }
     
-    StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), light + probeLighting, payload.depth);
+    StoreRadianceAndDepth(ivec2(gl_LaunchIDEXT.xy), max(vec3(0), light + probeLighting), payload.depth);
 }
 
 //------------------------------------------------------------------------------

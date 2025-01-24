@@ -54,6 +54,8 @@ group(SYSTEM_GROUP) constant VolumeConstants
     uint ProbeStates;
     uint ProbeScrollSpace;
     uint ProbeRadiance;
+    
+    float DebugSize;
 };
 
 //------------------------------------------------------------------------------
