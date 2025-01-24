@@ -34,8 +34,6 @@ CreateMesh(const MeshCreateInfo& info)
         .vertexLayout = info.vertexLayout,
         .primitiveTopology = info.topology,
         .primitiveGroups = info.primitiveGroups,
-        .vertexAllocation = info.vertexBufferAllocation,
-        .indexAllocation = info.indexBufferAllocation
     };
     meshAllocator.Set<Mesh_Internals>(id, internals);
     meshAllocator.Release(id);
@@ -50,11 +48,6 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
-    const CoreGraphics::VertexAlloc& vertices = meshAllocator.ConstGet<Mesh_Internals>(id.id).vertexAllocation;
-    const CoreGraphics::VertexAlloc& indices = meshAllocator.ConstGet<Mesh_Internals>(id.id).indexAllocation;
-
-    CoreGraphics::DeallocateVertices(vertices);
-    CoreGraphics::DeallocateIndices(indices);
     meshAllocator.Dealloc(id.id);
 }
 
