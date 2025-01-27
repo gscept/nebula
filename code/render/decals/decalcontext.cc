@@ -96,7 +96,6 @@ DecalContext::Create()
     rwbInfo.name = "DecalListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-
     decalState.stagingClusterDecalsList = BufferSet(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
@@ -336,8 +335,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    uint offset = SetConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), (SizeT)offset });
+    uint64 offset = SetConstants(decalUniforms);
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // update list of point lights
@@ -353,7 +352,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 //------------------------------------------------------------------------------
 /**
-    Todo: Right now, we just render a box, 
+    Todo: Right now, we just render a box,
     but probably we want some type of mesh to illustrate this is a decal,
     and not some 'empty' object
 */

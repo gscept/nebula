@@ -95,7 +95,7 @@ ShaderSetup(
     uint32_t numsets = 0;
 
     // always create push constant range in layout, making all shaders using push constants compatible
-    uint32_t maxConstantBytes = CoreGraphics::MaxPushConstantSize;
+    uint32_t maxPushConstantBytes = CoreGraphics::MaxPushConstantSize;
     uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
     constantRange.Resize(NumShaders); // one per shader stage
     uint i;
@@ -142,9 +142,8 @@ ShaderSetup(
         if (block->variables.empty()) continue;
         if (AnyFX::HasFlags(block->qualifiers, AnyFX::Qualifiers::Push))
         {
-            n_assert(block->alignedSize <= maxConstantBytes);
-            n_assert(block->alignedSize <= CoreGraphics::MaxPushConstantSize);
-            maxConstantBytes -= block->alignedSize;
+            n_assert(block->alignedSize <= maxPushConstantBytes);
+            maxPushConstantBytes -= block->alignedSize;
             CoreGraphics::ResourcePipelinePushConstantRange range;
             range.offset = pushRangeOffset;
             range.size = block->alignedSize;
@@ -762,7 +761,7 @@ ShaderGetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics
 /**
 */
 const CoreGraphics::ResourceTableId
-ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize)
+ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize, const char* name)
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
@@ -771,8 +770,9 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
     {
         ResourceTableCreateInfo crInfo =
         {
-            Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
-            overallocationSize
+            .name = name,
+            .layout = Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
+            .overallocationSize = overallocationSize
         };
         return CoreGraphics::CreateResourceTable(crInfo);
     }
@@ -782,7 +782,7 @@ ShaderCreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, c
 /**
 */
 ResourceTableSet
-ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize)
+ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize, const char* name)
 {
     const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
@@ -791,8 +791,9 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
     {
         ResourceTableCreateInfo crInfo =
         {
-            Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
-            overallocationSize
+            .name = name,
+            .layout = Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
+            .overallocationSize = overallocationSize
         };
         return CoreGraphics::ResourceTableSet(crInfo);
     }

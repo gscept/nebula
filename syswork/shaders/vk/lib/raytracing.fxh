@@ -2,6 +2,10 @@
 //  raytracing.fxh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+
+#ifndef RAYTRACING_FXH
+#define RAYTRACING_FXH
+
 #include <lib/std.fxh>
 #include <lib/shared.fxh>
 #include <material_interfaces.fx>
@@ -9,10 +13,27 @@
 #include <lib/lighting_functions.fxh>
 
 group(BATCH_GROUP) accelerationStructure TLAS;
-group(BATCH_GROUP) write rgba16f image2D RaytracingOutput;
 
 #define MESH_BINDING group(BATCH_GROUP) binding(50)
 #define OBJECT_BINDING group(BATCH_GROUP) binding(49)
+
+const uint RAY_MISS_BIT = 0x1;
+const uint RAY_BACK_FACE_BIT = 0x2;
+const uint RAY_MATERIAL_TWO_SIDED_BIT = 0x4;
+
+struct LightResponsePayload
+{
+    vec3 radiance;
+    float alpha;
+    
+    vec3 normal;
+    float depth;
+    
+    vec3 albedo;
+    uint bits;
+    
+    vec4 material;
+};
 
 struct HitResult
 {
@@ -21,17 +42,17 @@ struct HitResult
     vec4 material;
     vec3 normal;
     float depth;
-    uint miss;
+    uint bits;
 };
 
 // Declare type for vertex positions and uv
-ptr alignment(16) struct VertexPosUv
+ptr alignment(4) struct VertexPosUv
 {
     vec3 position;
     int uv;
 };
 
-ptr alignment(8) struct VertexAttributeNormals
+ptr alignment(4) struct VertexAttributeNormals
 {
     ivec2 normal_tangent;
 };
@@ -53,11 +74,6 @@ ptr alignment(4) struct VertexAttributeSkin
     ivec2 normal_tangent;
     vec4 weights;
     uint indices;
-};
-
-ptr alignment(4) struct VertexAttributeDummy
-{
-    uint dummy;
 };
 
 ptr alignment(4) struct Indexes32
@@ -83,12 +99,16 @@ MESH_BINDING rw_buffer Geometry
 
 struct Object
 {
-    VertexPosUv PositionsPtr;
-    VertexAttributeDummy AttrPtr;
-    Indexes16 IndexPtr;
+    uvec2 PositionsPtr;
+    uvec2 AttrPtr;
+    uvec2 IndexPtr;
+    uint AttributeStride;
     uint Use16BitIndex;
     uint MaterialOffset;
     uint VertexLayout;
+    uint BaseIndexOffset;
+    uint BaseVertexPositionOffset;
+    uint BaseVertexAttributeOffset;
 };
 
 OBJECT_BINDING rw_buffer ObjectBuffer
@@ -150,11 +170,7 @@ UnpackUV32(int packedUv)
 vec3
 UnpackNormal32(int packedNormal)
 {
-    int x = packedNormal & 0xFF;
-    int y = (packedNormal >> 8) & 0xFF;
-    int z = (packedNormal >> 16) & 0xFF;
-    vec3 unpacked = vec3(x, y, z) / 128.0f;
-    return unpacked;
+    return unpackSnorm4x8(packedNormal).xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +180,20 @@ float
 UnpackSign(int packedNormal)
 {
     int sig = (packedNormal >> 24) & 0xFF;
-    return sig == 127 ? 1.0f : 0.0f;
+    return sig == 0x80 ? -1.0f : 1.0f;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+uvec2 
+OffsetPointer(uvec2 basePtr, uint offset)
+{
+    uint carry;
+    uint lo = uaddCarry(basePtr.x, offset, carry);
+    uint hi = basePtr.y + carry;
+    return uvec2(lo, hi);
 }
 
 //------------------------------------------------------------------------------
@@ -173,18 +202,22 @@ UnpackSign(int packedNormal)
 void
 SampleTerrain(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out mat3 tbn)
 {
-    // Sample the index buffer
     if (obj.Use16BitIndex == 1)
-        indices = uvec3(obj.IndexPtr[prim * 3].index, obj.IndexPtr[prim * 3 + 1].index, obj.IndexPtr[prim * 3 + 2].index);
+    {
+        Indexes16 i16Ptr = Indexes16(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+    }
     else
     {
-        Indexes32 i32Ptr = Indexes32(obj.IndexPtr);
-        indices = uvec3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+        Indexes32 i32 = Indexes32(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i32[prim * 3].index, i32[prim * 3 + 1].index, i32[prim * 3 + 2].index);
     }
+    
+    VertexPosUv positionsPtr = VertexPosUv(OffsetPointer(obj.PositionsPtr, obj.BaseVertexPositionOffset));
 
-    vec2 uv0 = UnpackUV32((obj.PositionsPtr[indices.x]).uv);
-    vec2 uv1 = UnpackUV32((obj.PositionsPtr[indices.y]).uv);
-    vec2 uv2 = UnpackUV32((obj.PositionsPtr[indices.z]).uv);
+    vec2 uv0 = UnpackUV32((positionsPtr[indices.x]).uv);
+    vec2 uv1 = UnpackUV32((positionsPtr[indices.y]).uv);
+    vec2 uv2 = UnpackUV32((positionsPtr[indices.z]).uv);
     uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
 
     tbn = PlaneTBN(vec3(0, 1, 0));
@@ -194,62 +227,66 @@ SampleTerrain(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, o
 /**
 */
 void
-SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out mat3 tbn)
+SampleGeometry(in Object obj, uint prim, in vec3 baryCoords, out uvec3 indices, out vec2 uv, out vec3 normal, out vec3 tangent, out float sign)
 {
     // Sample the index buffer
     if (obj.Use16BitIndex == 1)
-        indices = uvec3(obj.IndexPtr[prim * 3].index, obj.IndexPtr[prim * 3 + 1].index, obj.IndexPtr[prim * 3 + 2].index);
+    {
+        Indexes16 i16Ptr = Indexes16(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+    }
     else
     {
-        Indexes32 i32Ptr = Indexes32(obj.IndexPtr);
-        indices = uvec3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+        Indexes32 i32 = Indexes32(OffsetPointer(obj.IndexPtr, obj.BaseIndexOffset));
+        indices = uvec3(i32[prim * 3].index, i32[prim * 3 + 1].index, i32[prim * 3 + 2].index);
     }
+    
+    VertexPosUv positionsPtr = VertexPosUv(OffsetPointer(obj.PositionsPtr, obj.BaseVertexPositionOffset));
 
-    vec2 uv0 = UnpackUV32((obj.PositionsPtr[indices.x]).uv);
-    vec2 uv1 = UnpackUV32((obj.PositionsPtr[indices.y]).uv);
-    vec2 uv2 = UnpackUV32((obj.PositionsPtr[indices.z]).uv);
+    vec2 uv0 = UnpackUV32((positionsPtr[indices.x]).uv);
+    vec2 uv1 = UnpackUV32((positionsPtr[indices.y]).uv);
+    vec2 uv2 = UnpackUV32((positionsPtr[indices.z]).uv);
     uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+    
+    uvec2 attribPtr = OffsetPointer(obj.AttrPtr, obj.BaseVertexAttributeOffset);
     
     vec3 n1, n2, n3;
     vec3 t1, t2, t3;
-    float sign;
-
-    
     switch (obj.VertexLayout)
     {
         case 1: // Normal
         {
-            VertexAttributeNormals attrs = VertexAttributeNormals(obj.AttrPtr);
-            n1 = UnpackNormal32(attrs[indices.x].normal_tangent.x);
-            n2 = UnpackNormal32(attrs[indices.y].normal_tangent.x);
-            n3 = UnpackNormal32(attrs[indices.z].normal_tangent.x);
-            t1 = UnpackNormal32(attrs[indices.x].normal_tangent.y);
-            t2 = UnpackNormal32(attrs[indices.y].normal_tangent.y);
-            t3 = UnpackNormal32(attrs[indices.z].normal_tangent.y);
-            sign = UnpackSign(attrs[indices.x].normal_tangent.y);
+            VertexAttributeNormals attrs1 = VertexAttributeNormals(OffsetPointer(attribPtr, indices.x * obj.AttributeStride));
+            VertexAttributeNormals attrs2 = VertexAttributeNormals(OffsetPointer(attribPtr, indices.y * obj.AttributeStride));
+            VertexAttributeNormals attrs3 = VertexAttributeNormals(OffsetPointer(attribPtr, indices.z * obj.AttributeStride));
+            n1 = UnpackNormal32(attrs1.normal_tangent.x);
+            n2 = UnpackNormal32(attrs2.normal_tangent.x);
+            n3 = UnpackNormal32(attrs3.normal_tangent.x);
+            t1 = UnpackNormal32(attrs1.normal_tangent.y);
+            t2 = UnpackNormal32(attrs2.normal_tangent.y);
+            t3 = UnpackNormal32(attrs3.normal_tangent.y);
+            sign = UnpackSign(attrs1.normal_tangent.y);
             break;
         }
         case 4: // Skin
         {
-            VertexAttributeSkin attrs = VertexAttributeSkin(obj.AttrPtr);
-            n1 = UnpackNormal32(attrs[indices.x].normal_tangent.x);
-            n2 = UnpackNormal32(attrs[indices.y].normal_tangent.x);
-            n3 = UnpackNormal32(attrs[indices.z].normal_tangent.x);
-            t1 = UnpackNormal32(attrs[indices.x].normal_tangent.y);
-            t2 = UnpackNormal32(attrs[indices.y].normal_tangent.y);
-            t3 = UnpackNormal32(attrs[indices.z].normal_tangent.y);
-            sign = UnpackSign(attrs[indices.x].normal_tangent.y);
+            VertexAttributeSkin attrs1 = VertexAttributeSkin(OffsetPointer(attribPtr, indices.x * obj.AttributeStride));
+            VertexAttributeSkin attrs2 = VertexAttributeSkin(OffsetPointer(attribPtr, indices.y * obj.AttributeStride));
+            VertexAttributeSkin attrs3 = VertexAttributeSkin(OffsetPointer(attribPtr, indices.z * obj.AttributeStride));
+            n1 = UnpackNormal32(attrs1.normal_tangent.x);
+            n2 = UnpackNormal32(attrs2.normal_tangent.x);
+            n3 = UnpackNormal32(attrs3.normal_tangent.x);
+            t1 = UnpackNormal32(attrs1.normal_tangent.y);
+            t2 = UnpackNormal32(attrs2.normal_tangent.y);
+            t3 = UnpackNormal32(attrs3.normal_tangent.y);
+            sign = UnpackSign(attrs1.normal_tangent.y);
             break;
         }
     }
     
-    vec3 norm = BaryCentricVec3(n1, n2, n3, baryCoords);
-    vec3 tang = BaryCentricVec3(t1, t2, t3, baryCoords);
-
-    tbn = TangentSpace(tang, norm, sign);
+    normal = BaryCentricVec3(n1, n2, n3, baryCoords);
+    tangent = BaryCentricVec3(t1, t2, t3, baryCoords);
 }
-#define OFFSET_PTR(ptr, offset, type) type(VoidPtr(ptr) + offset)
-
 
 //------------------------------------------------------------------------------
 /**
@@ -270,14 +307,14 @@ CalculateClusterIndexRT(vec2 screenPos, float depth, float scale, float bias)
 /**
 */
 vec3
-CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, vec3 normal)
+CalculateLightRT(vec3 worldSpacePos, vec3 origin, float depth, vec3 albedo, vec4 material, vec3 normal)
 {
-    vec3 clusterCenter = EyePos.xyz - worldSpacePos;
-    uvec3 index3D = uvec3(clusterCenter) / BlockSize.xxx;
+    vec3 clusterCenter = worldSpacePos - EyePos.xyz;
+    uvec3 index3D = ivec3((clusterCenter / BlockSize.yyy) + NumCells * 0.5f);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
-    vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);
+    vec3 viewVec = normalize(origin.xyz - worldSpacePos.xyz);
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
     light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
 
@@ -292,7 +329,7 @@ CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, ve
     // Check if all waves use the same index and do this super cheaply
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
-        light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
     }
     else
     {
@@ -307,15 +344,14 @@ CalculateLightRT(vec3 worldSpacePos, float depth, vec3 albedo, vec4 material, ve
             // this will effectively scalarize the light lists
             if (scalarIdx == idx)
             {
-                light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
             }
         }
     }
 #else
-    light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, depth);
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
 #endif
-
-    //light += IBL(albedo, F0, normal, viewVec, material);
-    light += albedo.rgb * material[MAT_EMISSIVE];
     return light;
 }
+
+#endif // RAYTRACING_FXH

@@ -9,7 +9,7 @@
 */
 shader void
 BoxHit(
-    [ray_payload] in HitResult Result,
+    [ray_payload] in LightResponsePayload Result,
     [hit_attribute] in vec2 baryCoords
 )
 {
@@ -22,15 +22,20 @@ BoxHit(
     TerrainMaterial mat = TerrainMaterials[obj.MaterialOffset];
     SampleTerrain(obj, gl_PrimitiveID, barycentricCoords, indices, uv, tbn);
 
-    vec4 normals = sample2DLod(mat.LowresNormalFallback, Basic2DSampler, uv, 0);
+    vec4 normals = sample2DLod(mat.LowresNormalFallback, NormalSampler, uv, 0);
     vec3 tNormal = TangentSpaceNormal(normals.xy, tbn);
 
     vec4 albedo = sample2DLod(mat.LowresAlbedoFallback, Basic2DSampler, uv, 0);
     vec4 material = sample2DLod(mat.LowresMaterialFallback, Basic2DSampler, uv, 0);
+    
+    vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+    vec3 radiance = CalculateLightRT(worldPos, gl_WorldRayOriginEXT.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + albedo.xyz * material[MAT_EMISSIVE] * albedo.a;
+        
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;
-    Result.material = material;
+    Result.radiance = radiance;
     Result.normal = tNormal;
+    Result.material = material;
     Result.depth = gl_HitTEXT;
 }
 

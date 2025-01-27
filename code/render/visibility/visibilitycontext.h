@@ -187,9 +187,6 @@ private:
     friend class ObserverContext;
     friend class Models::ModelContext;
 
-    using AtomTransform = Math::mat4;
-    using AtomIsActive = bool;
-
     // observable corresponds to a single entity
     typedef Ids::IdAllocator<
         Graphics::GraphicsEntityId, // The entity id that this component is bound to

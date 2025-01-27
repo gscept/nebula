@@ -95,9 +95,9 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 CoreGraphics::ShaderFeature::Mask ShaderFeatureMask(const Util::String& mask);
 
 /// create resource table from shader
-const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
+const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1, const char* name = nullptr);
 /// create resource table set from shader
-ResourceTableSet ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
+ResourceTableSet ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint overallocationSize = 1, const char* name = nullptr);
 /// Returns true if there is a resource table for the given group in the shader
 const bool ShaderHasResourceTable(const ShaderId id, const IndexT group);
 /// create constant buffer from shader using name (don't use too frequently)

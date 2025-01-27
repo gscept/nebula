@@ -13,12 +13,12 @@
 #include "util/string.h"
 #include "core/rttimacros.h"
 
-#define NEBULA_WHOLE_BUFFER_SIZE (-1)
+#define NEBULA_WHOLE_BUFFER_SIZE (~0ull)
 #define NEBULA_ALL_MIPS (-1)
 #define NEBULA_ALL_LAYERS (-1)
 namespace CoreGraphics
 {
-typedef uint ConstantBufferOffset;
+typedef uint64 ConstantBufferOffset;
 
 union InputAssemblyKey
 {

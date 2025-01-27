@@ -8,9 +8,24 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include <gi/shaders/probe_finalize.h>
+#include <gi/shaders/probe_update.h>
+
 #include "graphics/graphicscontext.h"
 namespace GI
 {
+
+union DDGIOptions
+{
+    struct
+    {
+        uint scrolling : 1;             // Infinitely scrolls based on camera position
+        uint classify : 1;              // Enables/disables probes based on hits
+        uint relocate : 1;              // Relocate probes to avoid them being stuck inside geometry
+        uint lowPrecisionTextures : 1;  // Use more compact texture formats at the expense of quality
+    } flags;
+    uint32 bits = 0x0;
+};
 
 class DDGIContext : public Graphics::GraphicsContext
 {
@@ -21,28 +36,93 @@ public:
     /// Destructor
     ~DDGIContext();
 
+    /// setup light context
+    static void Create();
+    /// discard light context
+    static void Discard();
 
+    struct VolumeSetup
+    {
+        uint numProbesX, numProbesY, numProbesZ;
+        uint numRaysPerProbe;
+        Math::vec3 size;
+        Math::vec3 position;
+
+        float normalBias = 0.1f;
+        float viewBias = 0.4f;
+        float irradianceScale = 1.0f;
+        float distanceExponent = 0.5f;
+        float encodingGamma = 5.0f;
+        float changeThreshold = 0.2f;
+        float brightnessThreshold = 2.0f;
+        float hysteresis = 0.97f;
+        float blendCutoff = 0.0f;
+        float blend = 0.0f;
+        float updateBudget = 1.0f;
+
+        DDGIOptions options;
+    };
 
     /// Create volume
-    void SetupVolume(const Graphics::GraphicsEntityId id);
+    static void SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup& setup);
+    /// Set volume position
+    static void SetPosition(const Graphics::GraphicsEntityId id, const Math::vec3& position);
+    /// Set volume scale
+    static void SetSize(const Graphics::GraphicsEntityId id, const Math::vec3& size);
+
+    /// prepare light lists
+    static void UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+
+#ifndef PUBLIC_BUILD
+    static void OnRenderDebug(uint32_t flags);
+#endif
 
 private:
 
     struct Volume
     {
-        CoreGraphics::TextureId radiance, normals, depth;
-        CoreGraphics::BufferId constants, probeBuffer;
+        uint numProbesX, numProbesY, numProbesZ;
+        uint numRaysPerProbe;
+        Math::vec3 size;
+        Math::vec3 position;
+        Math::bbox boundingBox;
+        CoreGraphics::TextureId radiance; // Ray tracing output
+        CoreGraphics::TextureId irradiance, distance, offsets, states, scrollSpace;
+        CoreGraphics::BufferId volumeConstantBuffer;
+        CoreGraphics::ResourceTableId updateProbesTable, blendProbesTable, relocateProbesTable;
+
+        float normalBias = 0.1f;
+        float viewBias = 0.4f;
+        float irradianceScale = 1.0f;
+        float distanceExponent = 50.0f;
+        float encodingGamma = 5.0f;
+        float changeThreshold = 0.2f;
+        float brightnessThreshold = 2.0f;
+        float backfaceThreshold = 0.25f;
+        float minFrontfaceDistance = 0.1f;
+        float hysteresis = 0.97f;
+        float blendCutoff = 0.0f;
+        float blend = 0.0f;
+        
+        ProbeUpdate::VolumeConstants volumeConstants;
+        DDGIOptions options;
+
+#ifndef PUBLIC_BUILD
+        CoreGraphics::ResourceTableId debugResourceTable;
+#endif
 
     };
+    
     typedef Ids::IdAllocator<
         Volume
     > DDGIVolumeAllocator;
-    static DDGIVolumeAllocator allocator;
+    static DDGIVolumeAllocator ddgiVolumeAllocator;
+    
 
-    typedef Ids::IdAllocator<
-        Graphics::GraphicsEntityId
-    > ContributorAllocator;
-    static ContributorAllocator contributorAllocator;
+    /// allocate a new slice for this context
+    static Graphics::ContextEntityId Alloc();
+    /// deallocate a slice
+    static void Dealloc(Graphics::ContextEntityId id);
 };
 
 } // namespace GI

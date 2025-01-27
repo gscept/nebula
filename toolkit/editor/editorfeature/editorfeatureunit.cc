@@ -12,6 +12,7 @@
 #include "graphicsfeature/components/model.h"
 #include "graphicsfeature/components/decal.h"
 #include "graphicsfeature/components/lighting.h"
+#include "graphicsfeature/components/gi.h"
 #include "dynui/im3d/im3dcontext.h"
 
 // TEMP: Move this to editor game manager
@@ -22,6 +23,7 @@
 #include "lighting/lightcontext.h"
 #include "models/modelcontext.h"
 #include "decals/decalcontext.h"
+#include "gi/ddgicontext.h"
 
 namespace EditorFeature
 {
@@ -151,6 +153,23 @@ EditorFeatureUnit::OnActivate()
                 {
                     Math::mat4 transform = Math::trs(pos, rot, scale);
                     Decals::DecalContext::SetTransform(decal.graphicsEntityId, transform);
+                }
+            )
+            .Build();
+
+        Game::ProcessorBuilder(world, "EditorGameManager.UpdateDDGIVolumeTransform"_atm)
+            .On("OnEndFrame")
+            .OnlyModified()
+            .RunInEditor()
+            .Func(
+                [](Game::World* world,
+                   Game::Position const& pos,
+                   Game::Orientation const& rot,
+                   Game::Scale const& scale,
+                   GraphicsFeature::DDGIVolume const& volume)
+                {
+                    GI::DDGIContext::SetPosition(volume.graphicsEntityId, pos);
+                    GI::DDGIContext::SetSize(volume.graphicsEntityId, scale);
                 }
             )
             .Build();

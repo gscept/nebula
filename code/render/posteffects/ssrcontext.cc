@@ -51,7 +51,7 @@ SSRContext::~SSRContext()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSRContext::Create()
 {
     __CreatePluginContext();
@@ -96,7 +96,7 @@ SSRContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSRContext::Discard()
 {
     using namespace CoreGraphics;
@@ -110,7 +110,7 @@ SSRContext::Discard()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
@@ -148,7 +148,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     using namespace Graphics;
@@ -173,11 +173,11 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     SsrCs::SSRBlock ssrBlock;
     viewToTextureSpaceMatrix.store(ssrBlock.ViewToTextureSpace);
-    uint ssrOffset = CoreGraphics::SetConstants(ssrBlock);
+    uint64 ssrOffset = CoreGraphics::SetConstants(ssrBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::Table_Batch::SSRBlock_SLOT, 0, sizeof(SsrCs::SSRBlock), (SizeT)ssrOffset });
+    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::Table_Batch::SSRBlock_SLOT, 0, sizeof(SsrCs::SSRBlock), ssrOffset });
     ResourceTableCommitChanges(ssrState.ssrTraceTables[bufferIndex]);
 }
 

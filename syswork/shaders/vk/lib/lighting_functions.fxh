@@ -7,6 +7,7 @@
 #include "ltc.fxh"
 #include "CSM.fxh"
 #include "clustering.fxh"
+#include "ddgi.fxh"
 
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 0x1;
@@ -221,6 +222,7 @@ CalculateRectLight(
     , in vec3 viewVec
     , in vec3 normal
     , in vec4 material
+    , in vec3 albedo
     , in bool twoSided
 )
 {
@@ -260,7 +262,7 @@ CalculateRectLight(
     vec3 spec = vec3(LtcRectIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcRectIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided));
+    vec3 diff = vec3(LtcRectIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided)) * albedo;
 
     return li.color * (spec + diff) * attenuation;
 }
@@ -275,6 +277,7 @@ CalculateDiskLight(
     , in vec3 viewVec
     , in vec3 normal
     , in vec4 material
+    , in vec3 albedo
     , in bool twoSided
 )
 {
@@ -314,7 +317,7 @@ CalculateDiskLight(
     vec3 spec = vec3(LtcDiskIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcDiskIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided));
+    vec3 diff = vec3(LtcDiskIntegrate(normal, viewVec, pos, mat3(1), points, false, twoSided)) * albedo;
 
     return li.color * (diff + spec) * attenuation;
 }
@@ -329,6 +332,7 @@ CalculateTubeLight(
     , in vec3 viewVec
     , in vec3 normal
     , in vec4 material
+    , in vec3 albedo
     , in bool twoSided
 )
 {
@@ -364,7 +368,7 @@ CalculateTubeLight(
     vec3 spec = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, minv, points));
 
     // Integrate diffuse
-    vec3 diff = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, mat3(1), points));
+    vec3 diff = vec3(LtcLineIntegrate(normal, viewVec, pos, li.radius, mat3(1), points)) * albedo;
 
     return li.color * (spec + diff) * (1.0f / 2 * PI) * attenuation;
 }
@@ -390,18 +394,23 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
-        vec4 shadowPos = CSMShadowMatrix * vec4(worldSpacePosition, 1); // csm contains inversed view + csm transform
+        // CSM transform takes us from world space to light view space
+        vec4 shadowPos = CSMShadowMatrix * vec4(worldSpacePosition, 1);
         shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer
 #ifdef CSM_DEBUG
         , csmDebug  
 #endif
         );
 
-        vec2 terrainUv = mad(worldSpacePosition.xz, InvTerrainSize, vec2(0.5f));
-        //shadowFactor *= sample2DLod(TerrainShadowBuffer, CSMTextureSampler, terrainUv, 0).r;
-        vec2 terrainShadow = TerrainShadows(TerrainShadowBuffer, terrainUv, TerrainShadowMapPixelSize); 
-        float blend = abs(worldSpacePosition.y - terrainShadow.y * 0.8f) / (terrainShadow.y - terrainShadow.y * 0.8f);
-        shadowFactor *= terrainShadow.x * blend;
+        if (EnableTerrainShadows == 1)
+        {
+            vec2 terrainUv = mad(worldSpacePosition.xz, InvTerrainSize, vec2(0.5f));
+            //shadowFactor *= sample2DLod(TerrainShadowBuffer, CSMTextureSampler, terrainUv, 0).r;
+            vec2 terrainShadow = TerrainShadows(TerrainShadowBuffer, terrainUv, TerrainShadowMapPixelSize); 
+            float blend = abs(worldSpacePosition.y - terrainShadow.y * 0.8f) / (terrainShadow.y - terrainShadow.y * 0.8f);
+            shadowFactor *= terrainShadow.x * blend;
+        }
+        
         //shadowFactor *= terrainShadow.x < 1.0f ?  * terrainShadow.x : 1.0f;
         //shadowFactor *= lerp(1.0f, terrainShadow.x, smoothstep(terrainShadow.y * 0.8f, terrainShadow.y, worldSpacePosition.y));
 
@@ -435,11 +444,10 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     @param depth			The fragments depth (gl_FragCoord.z)
 */
 vec3
-LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 pos, vec3 normal, float depth)
+LocalLights(uint clusterIndex, vec3 viewVec, vec3 diffuseColor, vec4 material, vec3 F0, vec3 pos, vec3 normal, float depth)
 {
     vec3 light = vec3(0, 0, 0);
     uint flag = AABBs[clusterIndex].featureFlags;
-    vec3 viewVec = normalize(EyePos.xyz - pos);
     if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
@@ -514,6 +522,7 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 p
                     , viewVec
                     , normal
                     , material
+                    , diffuseColor
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
@@ -525,6 +534,7 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 p
                     , viewVec
                     , normal
                     , material
+                    , diffuseColor
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
@@ -536,12 +546,51 @@ LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec3 p
                     , viewVec
                     , normal
                     , material
+                    , diffuseColor
                     , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
         }
     }
     return light;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+GI(uint clusterIndex, vec3 viewVec, vec3 pos, vec3 normal, vec3 albedo)
+{
+    vec3 accumulatedGi = vec3(0, 0, 0);
+    uint flag = AABBs[clusterIndex].featureFlags;
+    if (CHECK_FLAG(flag, CLUSTER_GI_VOLUME_BIT))
+    {
+        uint count = GIVolumeCountList[clusterIndex];
+        for (int i = 0; i < count; i++)
+        {
+            uint lidx = GIVolumeIndexLists[clusterIndex * MAX_GI_VOLUMES_PER_CLUSTER + i];
+            GIVolume gi = GIVolumes[lidx];
+            vec3 relativePosition = pos - gi.Offset;
+            /// TODO: Rotate
+            if (relativePosition.x > gi.Size.x || relativePosition.y > gi.Size.y || relativePosition.z > gi.Size.z)
+                continue;
+                
+                
+            vec3 edgeDistance = gi.Size - abs(relativePosition);
+            float edgeMinDistance = min(min(edgeDistance.x, edgeDistance.y), edgeDistance.z);
+            float weight = 0.0f;
+            if (gi.Blend == 0.0f)
+                weight = (edgeMinDistance < gi.BlendCutoff) ? 0.0f : 1.0f;
+            else
+                weight = clamp((edgeMinDistance - gi.BlendCutoff) / gi.Blend, 0.0f, 1.0f);
+            
+            vec3 surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
+            //light += vec3(1,0,0);
+            vec3 volumeGI = max(vec3(0), EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * (albedo / PI) / gi.IrradianceScale);
+            accumulatedGi = mix(accumulatedGi, volumeGI, vec3(weight));
+        }
+    }
+    return accumulatedGi;
 }
 
 //------------------------------------------------------------------------------
@@ -575,6 +624,7 @@ CalculatePointLightAmbientTransmission(
     float shadowFactor = 1.0f;
     if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
     {
+        // TODO: The View here must be inferred from the view vector instead of relying the camera matrix
         vec3 projDir = (InvView * vec4(-lightDir, 0)).xyz;
         shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
         shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
@@ -754,7 +804,8 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
     // Check if all waves use the same index and do this super cheaply
     if (subgroupBallot(firstWaveIndex == idx) == execMask)
     {
-        light += LocalLights(firstWaveIndex, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+        light += GI(firstWaveIndex, viewVec, worldSpacePos, normal, albedo);
     }
     else
     {
@@ -769,12 +820,14 @@ CalculateLight(vec3 worldSpacePos, vec3 clipXYZ, vec3 albedo, vec4 material, vec
             // this will effectively scalarize the light lists
             if (scalarIdx == idx)
             {
-                light += LocalLights(scalarIdx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+                light += GI(scalarIdx, viewVec, worldSpacePos, normal, albedo);
             }
         }
     }
 #else
-    light += LocalLights(idx, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+    light += GI(idx, viewVec, worldSpacePos, normal, albedo);
 #endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);

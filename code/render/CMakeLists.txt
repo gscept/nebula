@@ -12,7 +12,7 @@ nebula_begin_module(render)
     add_nebula_shaders()
     set(target_has_shaders 1)
     target_include_directories(render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons ${CODE_ROOT}/render)
-    fips_deps(foundation input resource anyfx imgui)
+    fips_deps(foundation input resource anyfx imgui options)
     if (TARGET system_resources-res)
         target_link_libraries(render $<TARGET_OBJECTS:system_resources-res>)
     endif()
@@ -418,7 +418,7 @@ ENDIF()
                 ddgicontext.h
             )
         fips_dir(gi/shaders)
-            add_shaders(probeupdate.fx)
+            add_shaders(probe_shared.fxh probe_update.fx probe_finalize.fx probe_debug.fx gi_volume_cull.fx probe_relocate_and_classify.fx)
         fips_dir(graphics) 
             fips_files(
 				bindlessregistry.cc

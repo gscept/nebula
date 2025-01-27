@@ -49,6 +49,7 @@ public:
     ///
     static bool IsEditorEnabled();
 
+
 protected:
     /// setup game features
     virtual void SetupGameFeatures();
@@ -64,8 +65,8 @@ protected:
     Ptr<IO::IoInterface> ioInterface;  
     Ptr<BaseGameFeature::BaseGameFeatureUnit> baseGameFeature;
 
-    static bool editorEnabled;
 
+    static bool editorEnabled;
     
 #if __NEBULA_HTTP__
     Ptr<Debug::DebugInterface> debugInterface;

@@ -20,6 +20,7 @@
 #include "components/decal.h"
 #include "components/lighting.h"
 #include "components/model.h"
+#include "components/gi.h"
 
 namespace GraphicsFeature
 {
@@ -47,11 +48,14 @@ public:
     static void InitAreaLight(Game::World* world, Game::Entity entity, AreaLight* light);
     /// called automatically when a decal needs to be initialized
     static void InitDecal(Game::World* world, Game::Entity entity, Decal* decal);
+    /// called automatically when a ddgi volume needs to be initialized
+    static void InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVolume* volume);
 
 private:
     void InitUpdateModelTransformProcessor();
     void InitUpdateLightTransformProcessor();
     void InitUpdateDecalTransformProcessor();
+    void InitUpdateDDGIVolumeTransformProcessor();
 };
 
 } // namespace GraphicsFeature

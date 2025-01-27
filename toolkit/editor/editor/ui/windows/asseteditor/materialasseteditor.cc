@@ -186,7 +186,32 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 }
             }
             ImGui::SameLine();
-            pressed |= ImGui::Button(Util::Format("%s###BUTTON%s", name.AsCharPtr(), name.AsCharPtr()).AsCharPtr());
+            pressed |= ImGui::Button(Util::Format("%s###BUTTON%d", name.AsCharPtr(), i).AsCharPtr());
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_None))
+            {
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                {
+                    ImGui::SetClipboardText(name.AsCharPtr());
+                    pressed = false;
+                }
+                else if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+                {
+                    const char* clipboard = ImGui::GetClipboardText();
+                    if (clipboard != nullptr)
+                    {
+                        auto cmd = new CMDMaterialSetTexture;
+                        cmd->bindlessOffset = value->bindlessOffset;
+                        cmd->index = i;
+                        cmd->hash = value->hashedName;
+                        cmd->assetEditor = assetEditor;
+                        cmd->asset = clipboard;
+                        cmd->item = item;
+                        cmd->oldAsset = name;
+                        Edit::CommandManager::Execute(cmd);
+                    }
+                    pressed = false;
+                }
+            }
             if (pressed)
             {
                 // TODO: Replace file dialog with asset browser view/instance
@@ -204,7 +229,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                     cmd->item = item;
                     cmd->oldAsset = name;
                     Edit::CommandManager::Execute(cmd);
-                }
+                }  
             }
         }
     }
@@ -214,7 +239,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
     {
         auto& kvp = materialTemplate->values.KeyValuePairAtIndex(i);
         const MaterialTemplates::MaterialTemplateValue* value = kvp.Value();
-        ubyte* imguiState = (ubyte*)StackAlloc(materialTemplate->bufferSize);
+        ubyte* imguiState = ArrayAllocStack<ubyte>(materialTemplate->bufferSize);
         ubyte* currentState = Materials::MaterialGetConstants(item->asset.material);
         memcpy(imguiState, currentState, materialTemplate->bufferSize);
 
@@ -227,22 +252,22 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
             {
-                ImGui::SliderFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
+                ImGui::SliderFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
             {
-                ImGui::SliderFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
+                ImGui::SliderFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
             {
-                ImGui::SliderFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
+                ImGui::SliderFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
             {
-                ImGui::SliderFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
+                ImGui::SliderFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Color:
@@ -280,7 +305,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             ImGui::SetTooltip(kvp.Value()->desc);
         }
 
-        StackFree(imguiState);
+        ArrayFreeStack(materialTemplate->bufferSize, imguiState);
     }
 }
 
@@ -350,7 +375,8 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
 
     Ptr<IO::XmlWriter> writer = IO::XmlWriter::Create();
     writer->SetStream(stream);
-    writer->Open();
+    bool isOpen = writer->Open();
+    n_assert(isOpen);
     writer->BeginNode("Nebula");
     {
         writer->BeginNode("Surface");

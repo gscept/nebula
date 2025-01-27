@@ -71,9 +71,14 @@ void csCull()
 
     numLights = 0;
     for (uint i = 0; i < NumAreaLights; i++)
-    {
+    { 
         const AreaLight light = AreaLights[i];
-        if (TestAABBAABB(aabb, light.bboxMin, light.bboxMax))
+        vec3 viewSpaceCenter = (View * vec4(light.center, 1)).xyz;
+        
+        //vec3 maxExtents = vec3(max(max(viewSpaceExtents.x, viewSpaceExtents.y), viewSpaceExtents.z));
+        vec3 viewSpaceMin = viewSpaceCenter - light.extents;
+        vec3 viewSpaceMax = viewSpaceCenter + light.extents;
+        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
         {
             AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;

@@ -20,9 +20,9 @@ struct VkBufferLoadInfo
     VkDevice dev;
     CoreGraphics::Alloc mem;
     CoreGraphics::BufferAccessMode mode;
-    uint32_t size;
-    uint32_t elementSize;
-    uint32_t byteSize;
+    uint64 size;
+    uint64 elementSize;
+    uint64 byteSize;
     Ids::Id32 sparseExtension;
 };
 

@@ -39,7 +39,7 @@ public:
     const Util::String& GetCategory() const;
 
     /// Merges the scene into a set of nodes and their corresponding primitive groups, and a set of meshes
-    void OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilderGroup>& outGroups, Util::Array<MeshBuilder*>& outMeshes);
+    void OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilder*>& outMeshes);
     /// Merges physics nodes and meshes into a single mesh builder and a set of nodes
     void OptimizePhysics(Util::Array<SceneNode*>& outNodes, MeshBuilder*& outMesh);
 

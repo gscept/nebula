@@ -271,7 +271,7 @@ struct ResourceTableBuffer
         , dynamicOffset(false)
     {};
 
-    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size)
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, uint64 size)
         : buf(buf)
         , slot(slot)
         , index(0)
@@ -281,7 +281,7 @@ struct ResourceTableBuffer
         , dynamicOffset(false)
     {};
 
-    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size, SizeT offset)
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, uint64 size, uint64 offset)
         : buf(buf)
         , slot(slot)
         , index(0)
@@ -291,7 +291,7 @@ struct ResourceTableBuffer
         , dynamicOffset(false)
     {};
 
-    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT index, SizeT size, SizeT offset, bool texelBuffer = false, bool dynamicOffset = false)
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT index, uint64 size, uint64 offset, bool texelBuffer = false, bool dynamicOffset = false)
         : buf(buf)
         , slot(slot)
         , index(index)
@@ -305,8 +305,8 @@ struct ResourceTableBuffer
     IndexT slot;
     IndexT index;
 
-    SizeT size;
-    SizeT offset;
+    uint64 size;
+    uint64 offset;
 
     bool texelBuffer;
     bool dynamicOffset;
@@ -330,6 +330,7 @@ struct ResourceTableTlas
 
 struct ResourceTableCreateInfo
 {
+    const char* name = nullptr;
     ResourceTableLayoutId layout;
     uint overallocationSize = 256;
 };

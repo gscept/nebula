@@ -128,11 +128,24 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
 
     struct TextureInfo
     {
-        uint32 type : 4;
-        uint32 layer : 8;
-        uint32 mip : 8;
-        uint32 useAlpha : 1;
-        uint32 id : 11;
+        uint type : 4;
+        uint layer : 8;
+        uint mip : 4;
+        uint useRange : 1;
+        uint useAlpha : 1;
+        uint id : 11;
+    };
+
+    union ColorMask
+    {
+        struct
+        {
+            uint red: 1;
+            uint green: 1;
+            uint blue: 1;
+            uint alpha: 1;
+        };
+        uint bits = 0xF;
     };
 
     IndexT vertexOffset = 0;
@@ -175,6 +188,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
 
                 TextureInfo texInfo;
                 texInfo.type = 0;
+                texInfo.useRange = tex.useRange;
                 texInfo.useAlpha = tex.useAlpha;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
@@ -199,7 +213,19 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.mip = tex.mip;
                 texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
 
+                ColorMask colorMask;
+                colorMask.red = tex.red;
+                colorMask.green = tex.green;
+                colorMask.blue = tex.blue;
+                colorMask.alpha = tex.alpha;
+
                 CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
+                CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.colorMaskConstant, sizeof(ColorMask), (byte*)&colorMask);
+                if (texInfo.useRange)
+                {
+                    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.rangeMinConstant, sizeof(float), &tex.rangeMin);
+                    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, ImguiContext::state.rangeMaxConstant, sizeof(float), &tex.rangeMax);
+                }
 
                 // setup primitive
                 CoreGraphics::PrimitiveGroup primitive;
@@ -343,6 +369,9 @@ ImguiContext::Create()
 
     state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
     state.packedTextureInfo = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
+    state.rangeMinConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMin");
+    state.rangeMaxConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMax");
+    state.colorMaskConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "ColorMask");
 
     state.inputHandler = ImguiInputHandler::Create();
     Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, state.inputHandler.upcast<Input::InputHandler>());
@@ -353,7 +382,7 @@ ImguiContext::Create()
     components.Append(VertexComponent(1, VertexComponent::Float2, 0));
     components.Append(VertexComponent(2, VertexComponent::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ .name = "ImGui"_atm, .comps = components });
-    
+
 #if WITH_NEBULA_EDITOR
     if (App::GameApplication::IsEditorEnabled())
     {
@@ -393,6 +422,24 @@ ImguiContext::Create()
                 ImguiDrawFunction(cmdBuf, viewport);
             });
     }
+
+    FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
+    {
+        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
+        if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
+            CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
+        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
+    });
+
+    FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    {
+#ifdef NEBULA_NO_DYNUI_ASSERTS
+        ImguiContext::RecoverImGuiContextErrors();
+#endif
+        //ImGui::Render();
+        //ImguiDrawFunction(cmdBuf, viewport, false);
+    });
+
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 

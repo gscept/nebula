@@ -341,7 +341,7 @@ ResourceServer::GetStreamLoader() const
     IndexT i = this->typeMap.FindIndex(&POOL_TYPE::RTTI);
     if (i != InvalidIndex)
     {
-        return static_cast<POOL_TYPE*>(this->loaders[i].get());
+        return static_cast<POOL_TYPE*>(this->loaders[this->typeMap.ValueAtIndex(i)].get());
     }
 
     n_error("No loader registered for this type");

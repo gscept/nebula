@@ -223,8 +223,6 @@ SimpleViewerApplication::Open()
             Math::vec3(1, 1, 1),
             10.0f,
             Math::vec3(0, 0, 0),
-            Math::vec3(0, 0, 0),
-            0.0f,
             60_rad,
             0_rad,
             true

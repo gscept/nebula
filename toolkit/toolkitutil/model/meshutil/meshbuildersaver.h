@@ -19,15 +19,13 @@ class MeshBuilderSaver
 {
 public:
     /// save nvx3 file
-    static bool Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilderGroup>& groups, Platform::Code platform);
+    static bool Save(const IO::URI& uri, const Util::Array<MeshBuilder*>& meshes, Platform::Code platform);
 private:
 
     /// write header to stream using nvx3
-    static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const Util::Array<MeshBuilderGroup>& groups, const System::ByteOrder& byteOrder);
+    static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
     /// Write meshes
     static void WriteMeshes(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
-    /// write groups to stream in nvx3
-    static void WriteGroups(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilderGroup>& groups, const System::ByteOrder& byteOrder);
 
     /// write the vertices to stream
     static void WriteVertices(const Ptr<IO::Stream>& stream, const Util::Array<MeshBuilder*>& meshes, const System::ByteOrder& byteOrder);
