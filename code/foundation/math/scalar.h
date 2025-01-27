@@ -260,6 +260,15 @@ fmod(scalar x, scalar y)
 
 //------------------------------------------------------------------------------
 /**
+*/
+__forceinline scalar
+fract(scalar x)
+{
+    return x - (int)x;
+}
+
+//------------------------------------------------------------------------------
+/**
     Normalize an angular value into the range rad(0) to rad(360).
     FIXME : seems that the xna version limits from -pi to pi, not 0 .. 2pi. 
             will copy behaviour despite what description says

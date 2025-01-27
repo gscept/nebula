@@ -72,6 +72,33 @@ MeshBuilder::GetPrimitiveTopology()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+MeshBuilder::SetPrimitiveGroups(const Util::Array<MeshBuilderGroup>& groups)
+{
+    this->groups = groups;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<MeshBuilderGroup>&
+MeshBuilder::GetPrimitiveGroups()
+{
+    return this->groups;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+MeshBuilder::ClearPrimitiveGroups()
+{
+    this->groups.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
     This method copies a triangle with its vertices from the source mesh
     to this mesh. Vertices will only be copied if they don't already exist
     in this mesh. To accomplish this, an indexMap array must be provided. The
@@ -459,6 +486,8 @@ MeshBuilder::Merge(MeshBuilder const& sourceMesh)
     IndexT vertIndex;
     SizeT triCount = sourceMesh.GetNumTriangles();
     IndexT triIndex;
+    SizeT groupCount = sourceMesh.groups.Size();
+    IndexT groupIndex;
 
     for (vertIndex = 0; vertIndex < sourceMesh.GetNumVertices(); vertIndex++)
     {
@@ -475,6 +504,11 @@ MeshBuilder::Merge(MeshBuilder const& sourceMesh)
 
         // add triangle to mesh
         this->AddTriangle(tri);
+    }
+
+    for (groupIndex = 0; groupIndex < groupCount; groupIndex++)
+    {
+        this->groups.Append(sourceMesh.groups[groupIndex]);
     }
 }
 

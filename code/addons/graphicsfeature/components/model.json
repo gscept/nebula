@@ -11,7 +11,10 @@
         "default": -1,
         "hideInInspector": true
       },
-      "raytracing": "bool",
+      "raytracing": {
+          "type": "bool",
+          "default": true
+      },
       "anim": {
         "type": "resource",
         "default": ""

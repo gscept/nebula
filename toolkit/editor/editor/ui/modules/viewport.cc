@@ -218,7 +218,7 @@ Viewport::Render()
 
     auto view = Graphics::GraphicsServer::Instance()->GetView("mainview");
     view->SetViewport(Math::rectangle<int>(0, 0, imageSize.x, imageSize.y));
-    this->focused = ImGui::IsWindowFocused();
+    this->focused = ImGui::IsWindowFocused() | ImGui::IsWindowHovered();
 
     if (this->focused)
     {

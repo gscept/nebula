@@ -54,7 +54,7 @@ ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id)
 void
 SetupEmptyDescriptorSetLayout()
 {
-    VkDescriptorSetLayoutCreateInfo info = 
+    VkDescriptorSetLayoutCreateInfo info =
     {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         nullptr,
@@ -222,6 +222,8 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
     ResourceTableLayoutAllocTable(layout, dev, info.overallocationSize, poolIndex, set);
 
     ResourceTableId ret = id;
+    if (info.name != nullptr)
+        ObjectSetName(ret, info.name);
     return ret;
 }
 
@@ -334,7 +336,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
@@ -469,7 +471,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
@@ -509,7 +511,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
     n_assert(!buf.texelBuffer);
@@ -545,7 +547,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     else
         buff.buffer = BufferGetVk(buf.buf);
     buff.offset = buf.offset;
-    buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
+    buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? Math::min(BufferGetByteSize(buf.buf), CoreGraphics::MaxConstantBufferSize) : buf.size;
 
     WriteInfo inf;
     inf.buf = buff;
@@ -557,7 +559,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id);
@@ -675,7 +677,7 @@ ResourceTableSetAccelerationStructure(const ResourceTableId id, const ResourceTa
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 ResourceTableBlock(bool b)
 {
     ResourceTableBlocked = b;
@@ -929,7 +931,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         RW buffers
     */
     //------------------------------------------------------------------------------
-    
+
     VkDescriptorPoolSize rwBufferSize, rwDynamicBufferSize;
     rwBufferSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     rwBufferSize.descriptorCount = 0;
@@ -990,7 +992,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         Samplers
     */
     //------------------------------------------------------------------------------
-    
+
     VkDescriptorPoolSize samplerSize;
     samplerSize.type = VK_DESCRIPTOR_TYPE_SAMPLER;
     samplerSize.descriptorCount = 0;
@@ -1021,7 +1023,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         Input attachments
     */
     //------------------------------------------------------------------------------
-    
+
     VkDescriptorPoolSize inputAttachmentSize;
     inputAttachmentSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     inputAttachmentSize.descriptorCount = 0;

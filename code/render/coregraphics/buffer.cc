@@ -95,6 +95,8 @@ BufferWithStaging::BufferWithStaging(BufferWithStaging&& rhs)
     if (this->deviceBuffer != InvalidBufferId)
         DestroyBuffer(this->deviceBuffer);
     this->deviceBuffer = std::move(rhs.deviceBuffer);
+    rhs.deviceBuffer = CoreGraphics::InvalidBufferId;
+    rhs.hostBuffers.buffers.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -107,6 +109,8 @@ BufferWithStaging::operator=(BufferWithStaging&& rhs)
     if (this->deviceBuffer != InvalidBufferId)
         DestroyBuffer(this->deviceBuffer);
     this->deviceBuffer = std::move(rhs.deviceBuffer);
+    rhs.deviceBuffer = CoreGraphics::InvalidBufferId;
+    rhs.hostBuffers.buffers.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -144,6 +148,8 @@ BufferWithStaging::Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes)
 */
 BufferWithStaging::~BufferWithStaging()
 {
+    if (this->deviceBuffer != InvalidBufferId)
+        DestroyBuffer(this->deviceBuffer);
 }
 
 } // namespace CoreGraphics

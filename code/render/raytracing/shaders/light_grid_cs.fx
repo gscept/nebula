@@ -64,8 +64,9 @@ void csCull()
     for (uint i = 0; i < NumAreaLights; i++)
     {
         const AreaLight light = AreaLights[i];
-        // TODO: Area lights needs to be in world space
-        if (TestAABBAABB(aabb, light.bboxMin, light.bboxMax))
+        vec3 worldSpaceMin = light.center - light.extents;
+        vec3 worldSpaceMax = light.center + light.extents;
+        if (TestAABBAABB(aabb, worldSpaceMin, worldSpaceMax))
         {
             AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
@@ -92,13 +93,14 @@ void csClusterAABB()
     if (index1D > NumCells.x * NumCells.y * NumCells.z)
         return;
 
-    vec3 offsetMin = vec3(index3D.x - NumCells.x * 0.5f, index3D.y - NumCells.y * 0.5f, index3D.z - NumCells.z * 0.5f);
-    vec3 offsetMax = vec3(index3D.x + 1 - NumCells.x * 0.5f, index3D.y + 1 - NumCells.y * 0.5f, index3D.z + 1 - NumCells.z * 0.5f);
+    vec3 offsetMin = vec3(index3D.x - NumCells.x * 0.5f, index3D.y - NumCells.y * 0.5f, index3D.z - NumCells.z * 0.5f) * BlockSize.y;
+    vec3 offsetMax = vec3((index3D.x + 1) - NumCells.x * 0.5f, (index3D.y + 1) - NumCells.y * 0.5f, (index3D.z + 1) - NumCells.z * 0.5f) * BlockSize.y;
 
     // Calculate AABB using min and max
     ClusterAABB aabb;
-    aabb.minPoint = vec4(EyePos.xyz + offsetMin * BlockSize.x, 1);
-    aabb.maxPoint = vec4(EyePos.xyz + offsetMax * BlockSize.x, 1);
+    vec3 eye = EyePos.xyz;
+    aabb.minPoint = vec4(eye.xyz + offsetMin, 1);
+    aabb.maxPoint = vec4(eye.xyz + offsetMax, 1);
     vec3 extents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
     float radius = dot(extents, extents);
     aabb.featureFlags = 0;

@@ -68,7 +68,7 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     shaderInfo.stageCount = programInfo.stageCount;
     shaderInfo.pStages = programInfo.graphicsShaderInfos;
 
-    // Since this is the public facing API, we have to convert the primitive type as it's expected to be in CoreGraphics 
+    // Since this is the public facing API, we have to convert the primitive type as it's expected to be in CoreGraphics
     InputAssemblyKey translatedKey;
     translatedKey.topo = Vulkan::VkTypes::AsVkPrimitiveType((CoreGraphics::PrimitiveTopology::Code)info.inputAssembly.topo);
     translatedKey.primRestart = info.inputAssembly.primRestart;
@@ -97,7 +97,7 @@ DestroyGraphicsPipeline(const PipelineId pipeline)
 /**
 */
 const PipelineRayTracingTable
-CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs)
+CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> programs, const CoreGraphics::QueueType queueType)
 {
     PipelineRayTracingTable ret;
     VkDevice dev = CoreGraphics::GetCurrentDevice();
@@ -363,7 +363,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
 
     Memory::Free(Memory::ResourceHeap, buf);
 
-    auto CreateShaderTableBuffer = [](const Util::Array<char>& data, RayDispatchTable::Entry& tableEntry) -> CoreGraphics::BufferId
+    auto CreateShaderTableBuffer = [queueType](const Util::Array<char>& data, RayDispatchTable::Entry& tableEntry) -> CoreGraphics::BufferId
     {
         tableEntry.baseAddress = 0xFFFFFFFF;
         tableEntry.numEntries = 0;
@@ -374,7 +374,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         CoreGraphics::BufferCreateInfo tableInfo;
         tableInfo.byteSize = data.Size();
         tableInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderTable | CoreGraphics::BufferUsageFlag::ShaderAddress;
-        tableInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
+        tableInfo.queueSupport = queueType == CoreGraphics::ComputeQueueType ? CoreGraphics::BufferQueueSupport::ComputeQueueSupport : CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
         tableInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
         tableInfo.data = data.Begin();
         tableInfo.dataSize = data.Size();

@@ -523,12 +523,9 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
 /**
 */
 void
-CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets)
+CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint, true>& offsets)
 {
-    if (offsets.IsEmpty())
-        CmdSetResourceTable(id, table, slot, pipeline, 0, nullptr);
-    else
-        CmdSetResourceTable(id, table, slot, pipeline, offsets.Size(), offsets.Begin());
+    CmdSetResourceTable(id, table, slot, pipeline, offsets.Size(), offsets.Begin());
 }
 
 //------------------------------------------------------------------------------
@@ -679,6 +676,7 @@ CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(buf.id);
     Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id);
     pipelineBundle.raytracingLayout = pipelineObj.layout;
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
 
     bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
     pipelineBundle.graphicsLayout = pipelineObj.layout;
@@ -688,8 +686,6 @@ CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
         CoreGraphics::CmdSetResourceTable(buf, Graphics::GetTickResourceTable(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
         CoreGraphics::CmdSetResourceTable(buf, Graphics::GetFrameResourceTable(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::RayTracingPipeline, nullptr);
     }
-
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
 }
 
 //------------------------------------------------------------------------------
@@ -713,7 +709,7 @@ CmdBarrier(
     VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
     VkDependencyFlags depFlags = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
     uint numBuffers = buffers.Size() + accelerationStructures.Size();
-    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)StackAlloc(numBuffers * sizeof(VkBufferMemoryBarrier));
+    VkBufferMemoryBarrier* bufferBarriers = ArrayAllocStack<VkBufferMemoryBarrier>(numBuffers);
 
     IndexT i, j = 0;
     for (i = 0; i < buffers.Size(); i++, j++)
@@ -758,7 +754,7 @@ CmdBarrier(
     }
 
     uint numImages = textures.Size();
-    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)StackAlloc(textures.Size() * sizeof(VkImageMemoryBarrier));
+    VkImageMemoryBarrier* imageBarriers = ArrayAllocStack<VkImageMemoryBarrier>(textures.Size());
     for (i = 0; i < textures.Size(); i++, j++)
     {
         VkImageMemoryBarrier& vkBar = imageBarriers[j];
@@ -808,8 +804,8 @@ CmdBarrier(
         numBuffers, bufferBarriers,
         numImages, imageBarriers);
 
-    StackFree(bufferBarriers);
-    StackFree(imageBarriers);
+    ArrayFreeStack(textures.size(), imageBarriers);
+    ArrayFreeStack(numBuffers, bufferBarriers);
 }
 
 //------------------------------------------------------------------------------
@@ -831,7 +827,7 @@ CmdHandover(
     VkPipelineStageFlags fromFlags = VkTypes::AsVkPipelineStage(fromStage);
     VkPipelineStageFlags toFlags = VkTypes::AsVkPipelineStage(toStage);
     uint numBuffers = buffers.Size();
-    VkBufferMemoryBarrier* bufferBarriers = (VkBufferMemoryBarrier*)StackAlloc(numBuffers * sizeof(VkBufferMemoryBarrier));
+    VkBufferMemoryBarrier* bufferBarriers = ArrayAllocStack<VkBufferMemoryBarrier>(numBuffers);
 
     for (uint32_t i = 0; i < numBuffers; i++)
     {
@@ -851,7 +847,7 @@ CmdHandover(
     }
 
     uint numImages = textures.Size();
-    VkImageMemoryBarrier* imageBarriers = (VkImageMemoryBarrier*)StackAlloc(textures.Size() * sizeof(VkImageMemoryBarrier));
+    VkImageMemoryBarrier* imageBarriers = ArrayAllocStack<VkImageMemoryBarrier>(textures.Size());
     IndexT i, j = 0;
     for (i = 0; i < textures.Size(); i++, j++)
     {
@@ -944,8 +940,8 @@ CmdHandover(
         , numImages, imageBarriers
     );
 
-    StackFree(imageBarriers);
-    StackFree(bufferBarriers);
+    ArrayFreeStack(textures.Size(), imageBarriers);
+    ArrayFreeStack(numBuffers, bufferBarriers);
 }
 
 //------------------------------------------------------------------------------
@@ -1162,8 +1158,8 @@ CmdBuildBlas(const CmdBufferId id, const CoreGraphics::BlasId blas)
 {
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     const VkAccelerationStructureBuildGeometryInfoKHR& buildInfo = Vulkan::BlasGetVkBuild(blas);
-    const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& rangeInfo = Vulkan::BlasGetVkRanges(blas);
-    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { rangeInfo.ConstBegin() };
+    const VkAccelerationStructureBuildRangeInfoKHR& rangeInfo = Vulkan::BlasGetVkRanges(blas);
+    const VkAccelerationStructureBuildRangeInfoKHR* ranges[] = { &rangeInfo };
     vkCmdBuildAccelerationStructuresKHR(cmdBuf, 1, &buildInfo, ranges);
 }
 
@@ -1613,10 +1609,11 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
+        NvidiaAftermathCheckpoint* prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
         checkpoint.name = name;
         checkpoint.push = 1;
-        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        checkpoint.prev = prev;
         vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif
@@ -1655,10 +1652,11 @@ CmdEndMarker(const CmdBufferId id)
     Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
+        NvidiaAftermathCheckpoint* prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
         checkpoint.name = nullptr;
         checkpoint.push = 0;
-        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        checkpoint.prev = prev;
         vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif
@@ -1687,10 +1685,11 @@ CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
     Util::Array<NvidiaAftermathCheckpoint>& checkpoints = commandBuffers.Get<CmdBuffer_NVCheckpoints>(id.id);
     if (CoreGraphics::NvidiaCheckpointsSupported)
     {
+        NvidiaAftermathCheckpoint* prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
         NvidiaAftermathCheckpoint& checkpoint = checkpoints.Emplace();
         checkpoint.name = name;
         checkpoint.push = 0;
-        checkpoint.prev = checkpoints.IsEmpty() ? nullptr : &checkpoints.Back();
+        checkpoint.prev = prev;
         vkCmdSetCheckpointNV(cmdBuf, &checkpoint);
     }
 #endif

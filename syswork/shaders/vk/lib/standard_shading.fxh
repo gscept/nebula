@@ -54,6 +54,7 @@ psStandard(
 {
     vec4 albedo   = calcColor(sample2D(_BRDF.AlbedoMap, MaterialSampler, UV)) * _BRDF.MatAlbedoIntensity;
     vec4 material = calcMaterial(sample2D(_BRDF.ParameterMap, MaterialSampler, UV));
+    material[MAT_EMISSIVE] = 0.0f;
     vec3 N        = normalize(calcBump(Tangent, Normal, Sign, sample2D(_BRDF.NormalMap, NormalSampler, UV)));
     
     //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, albedo, N, material);
@@ -62,7 +63,8 @@ psStandard(
 
     vec3 light = vec3(0, 0, 0);
     light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, albedo.rgb, material, N);
-    light += calcEnv(albedo, F0, N, viewVec, material);
+    
+    //light += calcEnv(albedo, F0, N, viewVec, material);
     
     OutColor = finalizeColor(light.rgb, albedo.a);
     //OutNormal = vec4(N, 0);

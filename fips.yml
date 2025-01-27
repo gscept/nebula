@@ -62,6 +62,7 @@ exports:
         - code/addons
         - code/audio
         - code/input
+        - code/options
         - toolkit/editor
     modules:
         foundation: code/foundation
@@ -72,4 +73,5 @@ exports:
         addons: code/addons
         audio: code/audio
         input: code/input
+        options: code/options
         toolkit: toolkit

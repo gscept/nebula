@@ -93,16 +93,39 @@ ResourceBrowser::Run(SaveMode save)
             CoreGraphics::TextureIdLock _0(CoreGraphics::TrackedTextures[current]);
             selectedTex.nebulaHandle = CoreGraphics::TrackedTextures[current];
             CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(CoreGraphics::TrackedTextures[current]);
-            float ratio = dims.width / dims.height;
+            float ratio = dims.height / float(dims.width);
             ImVec2 remainder = ImGui::GetContentRegionAvail();
             static int mip = 0, layer = 0;
             static bool alpha = false;
+            static bool range = false;
+            static bool red = true, green = true, blue = true, a = true;
+            static float minRange = 0, maxRange = 1;
             if (ImGui::BeginChild("Preview", ImVec2{ 0, 0 }))
             {
                 ImGui::Image(&selectedTex, ImVec2{ (float)remainder.x, (float)remainder.x * ratio });
                 ImGui::InputInt("Mip", &mip);
                 ImGui::InputInt("Layer", &layer);
+                
+                ImGui::Checkbox("R", &red);
+                ImGui::SameLine();
+                ImGui::Checkbox("G", &green);
+                ImGui::SameLine();
+                ImGui::Checkbox("B", &blue);
+                ImGui::SameLine();
+                ImGui::Checkbox("A", &a);
+                
                 ImGui::Checkbox("Alpha", &alpha);
+                ImGui::Checkbox("Range", &range);
+                if (range)
+                {
+                    static float rangeMax = 200.0f;
+                    ImGui::InputFloat("Range Max", &rangeMax);
+                    ImGui::SliderFloat("Min", &minRange, 0.001f, rangeMax);
+                    ImGui::SliderFloat("Max", &maxRange, 0.001f, rangeMax);
+                    float tempMin = minRange;
+                    minRange = Math::min(minRange, maxRange);
+                    maxRange = Math::max(tempMin, maxRange);
+                }
                 mip = Math::min(Math::max(0, mip), CoreGraphics::TextureGetNumMips(CoreGraphics::TrackedTextures[current]) - 1);
                 layer = Math::min(Math::max(0, layer), CoreGraphics::TextureGetNumLayers(CoreGraphics::TrackedTextures[current]) - 1);
                 ImGui::EndChild();
@@ -111,6 +134,13 @@ ResourceBrowser::Run(SaveMode save)
             selectedTex.layer = layer;
             selectedTex.mip = mip;
             selectedTex.useAlpha = alpha;
+            selectedTex.useRange = range;
+            selectedTex.rangeMin = minRange;
+            selectedTex.rangeMax = maxRange;
+            selectedTex.red = red;
+            selectedTex.green = green;
+            selectedTex.blue = blue;
+            selectedTex.alpha = a;
         }
         else
         {

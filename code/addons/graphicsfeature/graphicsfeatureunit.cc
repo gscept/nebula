@@ -33,10 +33,8 @@
 #include "graphicsfeature/managers/cameramanager.h"
 
 #include "nflatbuffer/nebula_flat.h"
-#include "flat/graphicsfeature/graphicsfeatureschema.h"
-#include "flat/graphicsfeature/terrainschema.h"
-#include "flat/graphicsfeature/vegetationschema.h"
 #include "nflatbuffer/flatbufferinterface.h"
+#include "flat/options/levelsettings.h"
 #include "components/camera.h"
 #include "components/decal.h"
 #include "components/lighting.h"
@@ -48,6 +46,7 @@
 
 #include "frame/default.h"
 #include "frame/shadows.h"
+#include "gi/ddgicontext.h"
 #if WITH_NEBULA_EDITOR
 #include "frame/editorframe.h"
 #endif
@@ -89,6 +88,7 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<PointLight>({.decay = true, .OnInit = &GraphicsManager::InitPointLight });
     this->RegisterComponentType<SpotLight>({.decay = true, .OnInit = &GraphicsManager::InitSpotLight });
     this->RegisterComponentType<AreaLight>({.decay = true, .OnInit = &GraphicsManager::InitAreaLight });
+    this->RegisterComponentType<DDGIVolume>({.decay = true, .OnInit = &GraphicsManager::InitDDGIVolume});
     this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
     this->RegisterComponentType<Camera>();
@@ -112,20 +112,15 @@ GraphicsFeatureUnit::OnActivate()
     this->inputServer->Open();
     Util::String contents;
 
-    const IO::URI terrainSetupPath("data:tables/graphicsfeature/terrain.pter");
-    GraphicsFeature::TerrainSetupT terrainSettings;
-    if (IO::IoServer::Instance()->ReadFile(terrainSetupPath, contents))
+    const IO::URI levelSetupPath("tbl:app/base_level.nlst");
+    App::LevelSettingsT levelSettings;
+    if (IO::IoServer::Instance()->ReadFile(levelSetupPath, contents))
     {
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::TerrainSetup>(terrainSettings, (byte*)contents.AsCharPtr());
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<App::LevelSettings>(levelSettings, (byte*)contents.AsCharPtr());
     }
+    auto& terrainSettings = levelSettings.terrain_setup;
+    auto& vegetationSettings = levelSettings.vegetation_setup;
 
-    const IO::URI vegetationSetupPath("data:tables/graphicsfeature/vegetation.pveg");
-    GraphicsFeature::VegetationSetupT vegetationSettings;
-    if (IO::IoServer::Instance()->ReadFile(vegetationSetupPath, contents))
-    {
-        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::VegetationSetup>(vegetationSettings, (byte*)contents.AsCharPtr());
-    }
-    
     SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
     SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
 
@@ -175,28 +170,28 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    if (terrainSettings.config && terrainSettings.config->use)
+    if (terrainSettings && terrainSettings->config && terrainSettings->config->use)
     {
         Terrain::TerrainSetupSettings settings {
-            terrainSettings.config->min_height,
-            terrainSettings.config->max_height, // Min/max height
-            terrainSettings.config->world_size_width,
-            terrainSettings.config->world_size_height, // World size in meters
-            terrainSettings.config->tile_size_width,
-            terrainSettings.config->tile_size_height, // Tile size in meters
-            terrainSettings.config->quads_per_tile_width,
-            terrainSettings.config->quads_per_tile_height, // Amount of quads per tile
+            terrainSettings->config->min_height,
+            terrainSettings->config->max_height, // Min/max height
+            terrainSettings->config->world_size_width,
+            terrainSettings->config->world_size_height, // World size in meters
+            terrainSettings->config->tile_size_width,
+            terrainSettings->config->tile_size_height, // Tile size in meters
+            terrainSettings->config->quads_per_tile_width,
+            terrainSettings->config->quads_per_tile_height, // Amount of quads per tile
         };
         Terrain::TerrainContext::Create(settings);
         Terrain::TerrainContext::SetSun(this->globalLight);
 
         this->terrain.entity = Graphics::CreateEntity();
         Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
-        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings.instance->height, terrainSettings.instance->decision, terrainSettings.config->raytracing);
+        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings->instance->height, terrainSettings->instance->decision, terrainSettings->config->raytracing);
 
-        for (IndexT i = 0; i < terrainSettings.biomes.size(); i++)
+        for (IndexT i = 0; i < terrainSettings->biomes.size(); i++)
         {
-            const std::unique_ptr<TerrainBiomeSettingsT>& settings = terrainSettings.biomes[i];
+            const std::unique_ptr<App::TerrainBiomeSettingsT>& settings = terrainSettings->biomes[i];
 
             Terrain::BiomeParameters biomeParams =
             {
@@ -237,20 +232,21 @@ GraphicsFeatureUnit::OnActivate()
             this->terrain.biomes.Append(biome);
         }
 
-        if (vegetationSettings.use)
+        if (vegetationSettings && vegetationSettings->use)
         {
             Vegetation::VegetationSetupSettings vegSettings {
-                terrainSettings.config->min_height,
-                terrainSettings.config->max_height, // min/max height
-                Math::vec2 {terrainSettings.config->world_size_width, terrainSettings.config->world_size_height}};
+                terrainSettings->config->min_height,
+                terrainSettings->config->max_height, // min/max height
+                Math::vec2 {terrainSettings->config->world_size_width, terrainSettings->config->world_size_height}};
             Vegetation::VegetationContext::Create(vegSettings);
         }
     }
-  
+
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
     Fog::VolumetricFogContext::Create();
+    GI::DDGIContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
@@ -282,7 +278,7 @@ GraphicsFeatureUnit::OnActivate()
     });
 
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 70_rad, 0_rad, true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1), 50.000f, Math::vec3(0, 0, 0), 70_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -314,6 +310,7 @@ GraphicsFeatureUnit::OnActivate()
         Fog::VolumetricFogContext::UpdateViewDependentResources,
         Lighting::LightContext::UpdateViewDependentResources,
         Raytracing::RaytracingContext::UpdateViewResources,
+        GI::DDGIContext::UpdateActiveVolumes,
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =
@@ -334,14 +331,14 @@ GraphicsFeatureUnit::OnActivate()
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
     };
-    
-    if (terrainSettings.config && terrainSettings.config->use)
+
+    if (terrainSettings->config && terrainSettings->config->use)
     {
         preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
         preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);
         postLogicViewCalls.Append(Terrain::TerrainContext::UpdateLOD);
 
-        if (vegetationSettings.use)
+        if (vegetationSettings->use)
         {
             postLogicViewCalls.Append(Vegetation::VegetationContext::UpdateViewResources);
         }

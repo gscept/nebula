@@ -228,9 +228,9 @@ void SubmitImmediateCommandBuffers();
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of memory and set data, return offset (thread safe)
-template<class TYPE> uint SetConstants(const TYPE& data);
+template<class TYPE> uint64 SetConstants(const TYPE& data);
 /// Allocate range of memory and set data as an array of elements, return offset  (thread safe)
-template<class TYPE> uint SetConstants(const TYPE* data, SizeT elements);
+template<class TYPE> uint64 SetConstants(const TYPE* data, SizeT elements);
 /// Set constants based on pre-allocated memory  (thread safe)
 template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE& data);
 /// Set constants based on pre-allocated memory  (thread safe)

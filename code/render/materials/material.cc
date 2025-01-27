@@ -7,6 +7,7 @@
 #include "shaderconfig.h"
 #include "resources/resourceserver.h"
 #include "materials/materialtemplates.h"
+
 namespace Materials
 {
 
@@ -120,7 +121,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             if (AllBits(instanceGroupMask, 1 << it))
             {
                 IndexT slot = it;
-                SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
+                uint64 bufSize = CoreGraphics::ShaderGetConstantBufferSize(shader, NEBULA_INSTANCE_GROUP, CoreGraphics::ShaderCalculateConstantBufferIndex(instanceGroupMask, it));
                 IndexT bufferIndex = 0;
                 for (const auto& table : instanceTables)
                     CoreGraphics::ResourceTableSetConstantBuffer(table, { CoreGraphics::GetConstantBuffer(bufferIndex++), slot, 0, bufSize, 0, false, true });
@@ -137,7 +138,7 @@ CreateMaterial(const MaterialTemplates::Entry* entry)
             {
                 CoreGraphics::TextureId tex = Resources::CreateResource(texture->def->resource, "materials", nullptr, nullptr, true, false);
                 CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex, texture->slot });
-            }            
+            }
         }
 
         // Finish off by comitting all table changes
@@ -234,6 +235,14 @@ MaterialSetConstants(const MaterialId mat, const void* data, const uint size)
     const auto& buf = materialAllocator.Get<Material_Buffer>(mat.id);
     CoreGraphics::BufferUpdate(buf, data, size);
     CoreGraphics::BufferFlush(buf);
+
+    IndexT materialBufferBinding = Materials::MaterialGetBufferBinding(mat);
+    const MaterialBindlessBufferBinding& bindlessBinding = Materials::MaterialGetBindlessForEditor(mat);
+    if (bindlessBinding.buffer != nullptr)
+    {
+        memcpy(bindlessBinding.buffer, data, size);
+        *bindlessBinding.dirtyFlag = true;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -328,6 +337,25 @@ MaterialGetSortCode(const MaterialId mat)
 //------------------------------------------------------------------------------
 /**
 */
+void
+MaterialBindlessForEditor(const MaterialId mat, char* buf, bool* dirtyFlag)
+{
+    MaterialBindlessBufferBinding binding{buf, dirtyFlag};
+    materialAllocator.Set<Material_BufferPointer>(mat.id, binding);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const MaterialBindlessBufferBinding&
+MaterialGetBindlessForEditor(const MaterialId mat)
+{
+    return materialAllocator.Get<Material_BufferPointer>(mat.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ubyte*
 MaterialGetConstants(const MaterialId mat)
 {
@@ -415,7 +443,8 @@ MaterialInstanceApply(const MaterialInstanceId id, const CoreGraphics::CmdBuffer
 
         // Set instance table
         CoreGraphics::ConstantBufferOffset offset = materialInstanceAllocator.Get<MaterialInstance_Offsets>(id.instance);
-        CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, 1, &offset);
+        n_assert((offset & 0xFFFFFFFF00000000) == 0x0);
+        CoreGraphics::CmdSetResourceTable(buf, table, NEBULA_INSTANCE_GROUP, CoreGraphics::GraphicsPipeline, { (uint)offset });
     }
 }
 

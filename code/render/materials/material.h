@@ -32,6 +32,20 @@ ID_32_24_8_NAMED_TYPE(MaterialInstanceId, instance, materialId, materialGenerati
 
 typedef IndexT BatchIndex;
 
+enum BindlessBufferDirtyBits
+{
+    Graphics = 0x1,      // Bindless material buffers needs a graphics queue update
+    Compute = 0x2,        // Bindless material buffers needs a compute queue update
+    All = Graphics | Compute
+};
+
+#ifdef WITH_NEBULA_EDITOR
+struct MaterialBindlessBufferBinding
+{
+    char* buffer = nullptr;
+    bool* dirtyFlag = nullptr;
+};
+#endif
 
 /// Create material
 MaterialId CreateMaterial(const MaterialTemplates::Entry* entry);
@@ -54,6 +68,7 @@ void MaterialSetBufferBinding(const MaterialId id, IndexT index);
 /// Get material GPU buffer binding
 IndexT MaterialGetBufferBinding(const MaterialId id);
 
+
 /// Add texture to LOD update
 void MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex);
 /// Update LOD for material
@@ -70,6 +85,10 @@ const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const Ma
 uint64_t MaterialGetSortCode(const MaterialId mat);
 
 #ifdef WITH_NEBULA_EDITOR
+/// Set pointer to material buffer
+void MaterialBindlessForEditor(const MaterialId mat, char* buf, bool* dirtyFlag);
+/// Get buffer pointer
+const MaterialBindlessBufferBinding& MaterialGetBindlessForEditor(const MaterialId mat);
 /// Get the pointer to the constants
 ubyte* MaterialGetConstants(const MaterialId mat);
 /// Get texture value
@@ -112,6 +131,7 @@ enum
     Material_Template
 #ifdef WITH_NEBULA_EDITOR
     , Material_TextureValues
+    , Material_BufferPointer
 #endif
 };
 
@@ -129,6 +149,7 @@ typedef Ids::IdAllocator<
     const MaterialTemplates::Entry*                                                 // template
 #ifdef WITH_NEBULA_EDITOR
     , Util::Array<Resources::ResourceId>
+    , MaterialBindlessBufferBinding
 #endif
 > MaterialAllocator;
 extern MaterialAllocator materialAllocator;

@@ -103,13 +103,13 @@ void DestroyBuffer(const BufferId id);
 /// get type of buffer
 const BufferUsageFlags BufferGetType(const BufferId id);
 /// get buffer size, which is the number of elements
-const SizeT BufferGetSize(const BufferId id);
+const uint64 BufferGetSize(const BufferId id);
 /// get buffer element size, this is the size of a single element, like a vertex or index, and is multiplied with the size
-const SizeT BufferGetElementSize(const BufferId id);
+const uint64 BufferGetElementSize(const BufferId id);
 /// get buffer total byte size
-const SizeT BufferGetByteSize(const BufferId id);
+const uint64 BufferGetByteSize(const BufferId id);
 /// get maximum size of upload for BufferUpload
-const SizeT BufferGetUploadMaxSize();
+const uint64 BufferGetUploadMaxSize();
 
 /// map memory
 void* BufferMap(const BufferId id);
@@ -138,9 +138,9 @@ template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, c
 void BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern);
 
 /// flush any changes done to the buffer on the CPU side so they are visible on the GPU
-void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
+void BufferFlush(const BufferId id, uint64 offset = 0ull, uint64 size = NEBULA_WHOLE_BUFFER_SIZE);
 /// invalidate buffer CPU side, such that any GPU changes will be made visible
-void BufferInvalidate(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
+void BufferInvalidate(const BufferId id, uint64 offset = 0ull, uint64 size = NEBULA_WHOLE_BUFFER_SIZE);
 
 /// Evict a page
 void BufferSparseEvict(const BufferId id, IndexT pageIndex);

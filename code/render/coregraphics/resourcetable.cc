@@ -14,9 +14,12 @@ ResourceTableSet::ResourceTableSet(const ResourceTableCreateInfo& createInfo)
 {
     const SizeT numTables = CoreGraphics::GetNumBufferedFrames();
     this->tables.Resize(numTables);
+    const char* name = createInfo.name;
     for (IndexT i = 0; i < numTables; i++)
     {
         this->tables[i] = CreateResourceTable(createInfo);
+        if (createInfo.name != nullptr)
+            CoreGraphics::ObjectSetName(this->tables[i], Util::String::Sprintf("%s %d", createInfo.name, i).AsCharPtr());
     }
 }
 

@@ -207,15 +207,13 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
     n_assert(header->numMeshes > 0);
 
     CoreGraphics::Nvx3Elements elements;
-    CoreGraphics::Nvx3::FillNvx3Elements(header, elements);
-
-    const CoreGraphics::Nvx3Group& group = elements.groups[primGroup];
+    CoreGraphics::Nvx3::FillNvx3Elements((char*)mapPtr, header, elements);
 
     const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
     const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;
-
     const uint vertexCount = (elements.ranges[0].attributesVertexByteOffset - elements.ranges[0].baseVertexByteOffset) / vertexStride;
-    
+    const CoreGraphics::Nvx3Group* group = (CoreGraphics::Nvx3Group*)((char*)mapPtr + elements.ranges[0].firstGroupOffset + sizeof(CoreGraphics::Nvx3Group) * primGroup);
+
     switch (type)
     {
         // FIXME, cooking doesnt seem to like our meshes,
@@ -252,7 +250,7 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
             meshDesc.points.stride = vertexStride;
             meshDesc.points.data = groupVertexBase;
 
-            meshDesc.triangles.count = group.numIndices / 3;
+            meshDesc.triangles.count = group->numIndices / 3;
             if (elements.ranges[0].indexType == CoreGraphics::IndexType::Index16)
             {
                 meshDesc.flags |= PxMeshFlag::e16_BIT_INDICES;
@@ -333,6 +331,7 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform c
     n_assert(nullptr == mapPtr);
     // map the stream to memory
     mapPtr = stream->MemoryMap();
+    char* basePtr = (char*)mapPtr;
     n_assert(nullptr != mapPtr);
 
     auto header = (CoreGraphics::Nvx3Header*)mapPtr;
@@ -348,9 +347,9 @@ AddMeshColliders(PhysicsResource::MeshColliderT* colliderNode, Math::transform c
     n_assert(header->numMeshes > 0);
 
     CoreGraphics::Nvx3Elements elements;
-    CoreGraphics::Nvx3::FillNvx3Elements(header, elements);
+    CoreGraphics::Nvx3::FillNvx3Elements(basePtr, header, elements);
 
-    const CoreGraphics::Nvx3Group& group = elements.groups[primGroup];
+    const CoreGraphics::Nvx3Group* group = (CoreGraphics::Nvx3Group*)(basePtr + elements.ranges[0].firstGroupOffset + sizeof(CoreGraphics::Nvx3Group) * primGroup);
 
     const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
     const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;

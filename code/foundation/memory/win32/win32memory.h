@@ -48,9 +48,6 @@ extern void FreeVirtual(void* ptr, size_t size);
 extern char* DuplicateCString(const char* from);
 /// check if 2 memory regions are overlapping
 extern bool IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const unsigned char* dstPtr, size_t dstSize);
-/// Allocate memory on the stack
-#define StackAlloc(size) _malloca(size);
-#define StackFree(ptr) _freea(ptr);
 
 //------------------------------------------------------------------------------
 /**

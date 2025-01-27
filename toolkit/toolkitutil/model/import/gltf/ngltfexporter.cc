@@ -90,7 +90,7 @@ NglTFExporter::ParseScene()
             // Set texture attrs for normal textures
             TextureAttrs attrs;
             attrs.SetPixelFormat(TextureAttrs::BC5);
-            attrs.SetFlipNormalY(true);
+            attrs.SetFlipNormalY(false);
             attrs.SetMaxHeight(8192);
             attrs.SetMaxWidth(8192);
             

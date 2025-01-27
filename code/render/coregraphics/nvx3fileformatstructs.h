@@ -27,11 +27,14 @@ namespace CoreGraphics
 struct Nvx3Header
 {
     uint magic;
+    uint meshDataOffset;
     uint numMeshes;         // The number of Nvx3Mesh structs
-    uint numGroups;
+    uint meshletDataOffset;
     uint numMeshlets;
-    uint indexDataSize;     // The total byte size of the index data for all meshes
+    uint vertexDataOffset;
     uint vertexDataSize;
+    uint indexDataOffset;
+    uint indexDataSize;     // The total byte size of the index data for all meshes
 };
 
 struct Nvx3VertexRange
@@ -39,6 +42,8 @@ struct Nvx3VertexRange
     uint indexByteOffset;
     uint baseVertexByteOffset;
     uint attributesVertexByteOffset;
+    uint firstGroupOffset;
+    uint numGroups;
     CoreGraphics::IndexType::Code indexType;
     CoreGraphics::VertexLayoutType layout;
 };
@@ -64,7 +69,6 @@ struct Nvx3Meshlet
 struct Nvx3Elements
 {
     CoreGraphics::Nvx3VertexRange* ranges;
-    CoreGraphics::Nvx3Group* groups;
     ubyte* vertexData;
     ubyte* indexData;
     CoreGraphics::Nvx3Meshlet* meshlets;
@@ -72,7 +76,7 @@ struct Nvx3Elements
 
 namespace Nvx3
 {
-    void FillNvx3Elements(Nvx3Header* header, Nvx3Elements& OutElements);
+    void FillNvx3Elements(char* basePointer, Nvx3Header* header, Nvx3Elements& OutElements);
 };
 
 #pragma pack(pop)
@@ -86,14 +90,13 @@ namespace Nvx3
 /**
 */
 inline void 
-FillNvx3Elements(Nvx3Header* header, Nvx3Elements& OutElements)
+FillNvx3Elements(char* basePointer, Nvx3Header* header, Nvx3Elements& OutElements)
 {
     n_assert(header != nullptr);
-    OutElements.ranges = (CoreGraphics::Nvx3VertexRange*)(header + 1);
-    OutElements.groups = (CoreGraphics::Nvx3Group*)(OutElements.ranges + header->numMeshes);
-    OutElements.vertexData = (ubyte*)(OutElements.groups + header->numGroups);
-    OutElements.indexData = (ubyte*)(OutElements.vertexData + header->vertexDataSize);
-    OutElements.meshlets = (CoreGraphics::Nvx3Meshlet*)(OutElements.indexData + header->indexDataSize);
+    OutElements.ranges = (CoreGraphics::Nvx3VertexRange*)(basePointer + header->meshDataOffset);
+    OutElements.vertexData = (ubyte*)(basePointer + header->vertexDataOffset);
+    OutElements.indexData = (ubyte*)(basePointer + header->indexDataOffset);
+    OutElements.meshlets = (CoreGraphics::Nvx3Meshlet*)(basePointer + header->meshletDataOffset);
 }
 
 } // namespace Nvx3

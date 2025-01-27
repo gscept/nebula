@@ -14,11 +14,10 @@ namespace Vulkan
 
 struct GeometrySetup
 {
-    VkAccelerationStructureGeometryTrianglesDataKHR triangleData;
     VkAccelerationStructureBuildSizesInfoKHR buildSizes;
     VkAccelerationStructureBuildGeometryInfoKHR buildGeometryInfo;
-    Util::Array<VkAccelerationStructureGeometryKHR> geometries;
-    Util::Array<VkAccelerationStructureBuildRangeInfoKHR> rangeInfos;
+    VkAccelerationStructureGeometryKHR geometry;
+    VkAccelerationStructureBuildRangeInfoKHR primitiveGroup;
 };
 
 enum
@@ -51,7 +50,7 @@ const VkAccelerationStructureKHR BlasGetVk(const CoreGraphics::BlasId id);
 /// Get build info for bottom level acceleration structure
 const VkAccelerationStructureBuildGeometryInfoKHR& BlasGetVkBuild(const CoreGraphics::BlasId id);
 /// Get range infos for bottom level acceleration structure
-const Util::Array<VkAccelerationStructureBuildRangeInfoKHR>& BlasGetVkRanges(const CoreGraphics::BlasId id);
+const VkAccelerationStructureBuildRangeInfoKHR& BlasGetVkRanges(const CoreGraphics::BlasId id);
 
 struct InstanceSetup
 {

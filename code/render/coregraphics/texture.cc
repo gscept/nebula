@@ -29,7 +29,7 @@ Util::Array<CoreGraphics::TextureId> TrackedTextures;
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id)
 {
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, "Mipmap");
@@ -145,7 +145,7 @@ TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::TextureId tex, 
 //------------------------------------------------------------------------------
 /**
 */
-TextureCreateInfoAdjusted 
+TextureCreateInfoAdjusted
 TextureGetAdjustedInfo(const TextureCreateInfo& info)
 {
     TextureCreateInfoAdjusted rt;
@@ -177,6 +177,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     rt.window = CoreGraphics::InvalidWindowId;
     rt.alias = info.alias;
     rt.defaultLayout = info.defaultLayout;
+    rt.swizzle = info.swizzle;
 
     // correct depth-stencil formats if layout is shader read
     if (CoreGraphics::PixelFormat::IsDepthFormat(rt.format) && rt.defaultLayout == CoreGraphics::ImageLayout::ShaderRead)

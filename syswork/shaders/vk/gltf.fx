@@ -107,7 +107,7 @@ psGLTF(
     vec4 metallicRoughness = sample2D(_GLTF.metallicRoughnessTexture, MaterialSampler, UV) * vec4(1.0f, _GLTF.roughnessFactor, _GLTF.metallicFactor, 1.0f);
     vec4 emissive = sample2D(_GLTF.emissiveTexture, MaterialSampler, UV) * _GLTF.emissiveFactor;
     vec4 occlusion = sample2D(_GLTF.occlusionTexture, MaterialSampler, UV);
-    vec4 normals = sample2D(_GLTF.normalTexture, NormalSampler, UV);
+    vec4 normals = sample2D(_GLTF.normalTexture, NormalSampler, UV) * _GLTF.normalScale;
     vec4 material;
     material[MAT_METALLIC] = metallicRoughness.b;
     material[MAT_ROUGHNESS] = metallicRoughness.g;
@@ -118,13 +118,9 @@ psGLTF(
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
     vec3 F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], vec3(0.04));
     
-    float viewDepth = CalculateViewDepth(View, WorldSpacePos);
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewDepth, InvZScale, InvZBias);
-    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
-    
     vec3 light = vec3(0, 0, 0);
     light += CalculateLight(WorldSpacePos, gl_FragCoord.xyz, baseColor.rgb, material, N);
-    light += calcEnv(baseColor, F0, N, viewVec, material);
+    //light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;
     
     OutColor = finalizeColor(light.rgb, baseColor.a);

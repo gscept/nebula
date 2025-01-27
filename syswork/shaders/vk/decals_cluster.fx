@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  lights_cluster_cull.fxh
+//  decals_cluster.fx
 //  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ render_state EmissiveState
     DepthEnabled = false;
 };
 
-write rgba16f image2D Decals;
+//write rgba16f image2D Decals;
 write rgba16f image2D DebugOutput;
 
 //------------------------------------------------------------------------------

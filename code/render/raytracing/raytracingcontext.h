@@ -80,6 +80,15 @@ public:
     /// Update view constants
     static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
+    /// Get light grid resources
+    static CoreGraphics::ResourceTableId GetLightGridResourceTable(IndexT bufferIndex);
+    /// Get TLAS
+    static CoreGraphics::TlasId GetTLAS();
+    /// Get object binding buffer
+    static CoreGraphics::BufferId GetObjectBindingBuffer();
+    /// Get raytracing table
+    static CoreGraphics::ResourceTableId GetRaytracingTable(const IndexT bufferIndex);
+
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
     static void OnRenderDebug(uint32_t flags);

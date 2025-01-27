@@ -18,7 +18,7 @@ sampler_state MaterialSampler
 
 sampler_state NormalSampler
 {
-	Filter = MinMagLinearMipPoint;
+	Filter = MinMagMipLinear;
 };
 
 sampler_state CubeSampler

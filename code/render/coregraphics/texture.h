@@ -137,7 +137,7 @@ struct TextureCreateInfo
     SizeT dataSize;
     CoreGraphics::TextureType type;
     CoreGraphics::PixelFormat::Code format;
-    float width, height, depth;
+    float width, height, depth; // these are float because they might be a scale factor (if window relative)
     uint mips, minMip, layers;
     uint samples;
     bool clear;

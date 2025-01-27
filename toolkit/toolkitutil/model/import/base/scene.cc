@@ -49,7 +49,7 @@ Scene::~Scene()
     Caller takes ownership of the output meshes and has to delete them
 */
 void
-Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilderGroup>& outGroups, Util::Array<MeshBuilder*>& outMeshes)
+Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<SceneNode*>& outCharacterNodes, Util::Array<MeshBuilder*>& outMeshes)
 {
     // Bucket meshes based on components
     Util::Dictionary<MeshBuilderVertex::ComponentMask, Util::Array<SceneNode*>> nodesByComponents;
@@ -66,90 +66,72 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
         }
     }
 
-    IndexT groupId = 0;
-    if (true)
+    
+    // Create a mesh builder per each component and emit primitive groups per unique material
+    for (IndexT i = 0; i < nodesByComponents.Size(); i++)
     {
-        // Create a mesh builder per each component and emit primitive groups per unique material
-        for (IndexT i = 0; i < nodesByComponents.Size(); i++)
+        Util::Array<MeshBuilderGroup> groups;
+        IndexT groupId = 0;
+
+        MeshBuilder* builder = new MeshBuilder;
+        const Util::Array<SceneNode*>& nodes = nodesByComponents.ValueAtIndex(i);
+        builder->SetComponents(nodesByComponents.KeyAtIndex(i));
+        builder->SetPrimitiveTopology(this->meshes[nodes[0]->mesh.meshIndex].GetPrimitiveTopology());
+
+        // Sort nodes on material, this allows us to merge all meshes in sequence
+        std::sort(nodes.begin(), nodes.end(), [](SceneNode* lhs, SceneNode* rhs)
         {
-            MeshBuilder* builder = new MeshBuilder;
-            const Util::Array<SceneNode*>& nodes = nodesByComponents.ValueAtIndex(i);
-            builder->SetComponents(nodesByComponents.KeyAtIndex(i));
-            builder->SetPrimitiveTopology(this->meshes[nodes[0]->mesh.meshIndex].GetPrimitiveTopology());
+            return lhs->mesh.material < rhs->mesh.material;
+        });
 
-            // Sort nodes on material, this allows us to merge all meshes in sequence
-            std::sort(nodes.begin(), nodes.end(), [](SceneNode* lhs, SceneNode* rhs)
-            {
-                return lhs->mesh.material < rhs->mesh.material;
-            });
-
-            IndexT triangleOffset = 0, numTriangles = 0;
-            SceneNode* firstNodeInRange = nullptr;
-            MeshBuilderGroup* group;
-            for (IndexT j = 0; j < nodes.Size(); j++)
-            {
-                auto meshToMerge = this->meshes[nodes[j]->mesh.meshIndex];
-
-                // Since we're flattening the scene, integrate the transform in the mesh
-                meshToMerge.Transform(nodes[j]->base.globalTransform);     
-                nodes[j]->base.rotation = Math::quat();
-                nodes[j]->base.scale = Math::vec3(1);
-                nodes[j]->base.translation = Math::vec3(0);
-
-                // Whenever we hit another material, we need a new primitive group
-                if (firstNodeInRange == nullptr
-                    || nodes[j]->mesh.material != firstNodeInRange->mesh.material)
-                {
-                    // Repoint first node in range
-                    firstNodeInRange = nodes[j];
-
-                    // Set group ID within this mesh and the index into the whole mesh resource
-                    firstNodeInRange->mesh.groupId = groupId++;
-                    firstNodeInRange->mesh.meshIndex = outMeshes.Size();
-                    firstNodeInRange->base.boundingBox.begin_extend();
-
-                    // This is also the output node
-                    outMeshNodes.Append(firstNodeInRange);
-
-                    // Get a new group
-                    group = &outGroups.Emplace();
-
-                    // Add group and set first index
-                    triangleOffset += numTriangles;
-                    group->SetFirstTriangleIndex(triangleOffset);
-                    numTriangles = 0;
-                }
-
-                // Calculate the new triangle count for our current group
-                numTriangles += meshToMerge.GetNumTriangles();
-                group->SetNumTriangles(numTriangles);
-
-                firstNodeInRange->base.boundingBox.extend(meshToMerge.ComputeBoundingBox());
-
-                // Merge meshes
-                builder->Merge(meshToMerge);
-            }
-            outMeshes.Append(builder);
-        }
-    }
-    else
-    {
-        for (IndexT i = 0; i < nodesByComponents.Size(); i++)
+        IndexT triangleOffset = 0, numTriangles = 0;
+        SceneNode* firstNodeInRange = nullptr;
+        MeshBuilderGroup* group;
+        for (IndexT j = 0; j < nodes.Size(); j++)
         {
-            const Util::Array<SceneNode*>& nodes = nodesByComponents.ValueAtIndex(i);
-            for (auto& node : nodes)
-            {
-                MeshBuilder* mesh = &this->meshes[node->mesh.meshIndex];
-                node->mesh.groupId = groupId++;
-                outMeshNodes.Append(node);
-                outMeshes.Append(mesh);
+            auto meshToMerge = this->meshes[nodes[j]->mesh.meshIndex];
 
-                MeshBuilderGroup group;
-                group.SetFirstTriangleIndex(0);
-                group.SetNumTriangles(mesh->GetNumTriangles());
-                outGroups.Append(group);
+            // Since we're flattening the scene, integrate the transform in the mesh
+            meshToMerge.Transform(nodes[j]->base.globalTransform);     
+            nodes[j]->base.rotation = Math::quat();
+            nodes[j]->base.scale = Math::vec3(1);
+            nodes[j]->base.translation = Math::vec3(0);
+
+            // Whenever we hit another material, we need a new primitive group
+            if (firstNodeInRange == nullptr
+                || nodes[j]->mesh.material != firstNodeInRange->mesh.material)
+            {
+                // Repoint first node in range
+                firstNodeInRange = nodes[j];
+
+                // Set group ID within this mesh and the index into the whole mesh resource
+                firstNodeInRange->mesh.groupId = groupId++;
+                firstNodeInRange->mesh.meshIndex = outMeshes.Size();
+                firstNodeInRange->base.boundingBox.begin_extend();
+
+                // This is also the output node
+                outMeshNodes.Append(firstNodeInRange);
+
+                // Get a new group
+                group = &groups.Emplace();
+
+                // Add group and set first index
+                triangleOffset += numTriangles;
+                group->SetFirstTriangleIndex(triangleOffset);
+                numTriangles = 0;
             }
+
+            // Calculate the new triangle count for our current group
+            numTriangles += meshToMerge.GetNumTriangles();
+            group->SetNumTriangles(numTriangles);
+
+            firstNodeInRange->base.boundingBox.extend(meshToMerge.ComputeBoundingBox());
+
+            // Merge meshes
+            builder->Merge(meshToMerge);
         }
+        builder->SetPrimitiveGroups(groups);
+        outMeshes.Append(builder);
     }
 
     // Go through and split primitive groups if they are skins.
@@ -157,15 +139,19 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
     // access 255 individual joints
     for (IndexT i = 0; i < outMeshNodes.Size(); i++)
     {
-        SceneNode* node = outMeshNodes[i]; 
+        SceneNode* node = outMeshNodes[i];
+        Util::Array<MeshBuilderGroup> groups;
+
         if (node->base.isSkin)
         {
             MeshBuilder* mesh = outMeshes[node->mesh.meshIndex];
+            IndexT groupId = 0;
+
             Util::Set<IndexT> joints;
             SizeT baseTriangle = 0;
             SizeT numTriangles = 0;
             IndexT currentGroup = node->mesh.groupId;
-            MeshBuilderGroup& group = outGroups[currentGroup];
+            MeshBuilderGroup& group = mesh->GetPrimitiveGroups()[currentGroup];
             for (IndexT j = 0; j < mesh->GetNumTriangles(); j++)
             {
                 const MeshBuilderTriangle& tri = mesh->TriangleAt(j);
@@ -196,7 +182,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
 
                     group.SetFirstTriangleIndex(baseTriangle);
                     group.SetNumTriangles(numTriangles);
-                    outGroups.Append(group);
+                    groups.Append(group);
 
                     // The joints pushing us over the boundary is saved for the next iteration
                     baseTriangle = numTriangles;
@@ -223,7 +209,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
             {
                 // The first joint is going to be the lowest value in our range
                 const Util::Set<IndexT>& lookup = node->skin.jointLookup[i];
-                const MeshBuilderGroup& group = outGroups[node->skin.skinFragments[i]];
+                const MeshBuilderGroup& group = mesh->GetPrimitiveGroups()[node->skin.skinFragments[i]];
                 for (IndexT i = 0; i < group.GetNumTriangles(); i++)
                 {
                     const MeshBuilderTriangle& tri = mesh->TriangleAt(group.GetFirstTriangleIndex() + i);

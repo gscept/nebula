@@ -82,6 +82,7 @@ struct
 
     // these are used to update the light clustering
     alignas(16) LightsCluster::LightLists lightList;
+    LightsCluster::LightUniforms consts;
 
 } clusterState;
 
@@ -239,7 +240,7 @@ LightContext::Create()
     });
 
     // Bind shadows
-    FrameScript_default::Bind_ClusterLightList(clusterState.clusterLightsList);
+    FrameScript_default::Bind_LightList(clusterState.clusterLightsList);
     FrameScript_default::Bind_ClusterLightIndexLists(clusterState.clusterLightIndexLists);
     FrameScript_default::RegisterSubgraph_LightsCopy_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
@@ -248,7 +249,7 @@ LightContext::Create()
         to.offset = 0;
         CmdCopy(cmdBuf, clusterState.stagingClusterLightsList.buffers[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
     }, {
-        { FrameScript_default::BufferIndex::ClusterLightList, CoreGraphics::PipelineStage::TransferWrite }
+        { FrameScript_default::BufferIndex::LightList, CoreGraphics::PipelineStage::TransferWrite }
     });
 
     FrameScript_default::RegisterSubgraph_LightsCull_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -259,7 +260,7 @@ LightContext::Create()
         std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
         CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
     }, {
-        { FrameScript_default::BufferIndex::ClusterLightList, CoreGraphics::PipelineStage::ComputeShaderRead }
+        { FrameScript_default::BufferIndex::LightList, CoreGraphics::PipelineStage::ComputeShaderRead }
         , { FrameScript_default::BufferIndex::ClusterLightIndexLists, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::BufferIndex::ClusterBuffer, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
@@ -297,8 +298,6 @@ LightContext::SetupGlobalLight(
         const Math::vec3& color,
         const float intensity,
         const Math::vec3& ambient,
-        const Math::vec3& backlight,
-        const float backlightFactor,
         const float zenith,
         const float azimuth,
         bool castShadows)
@@ -319,9 +318,7 @@ LightContext::SetupGlobalLight(
     Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
 
     SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
-    directionalLightAllocator.Get<DirectionalLight_Backlight>(lid) = backlight;
     directionalLightAllocator.Get<DirectionalLight_Ambient>(lid) = ambient;
-    directionalLightAllocator.Get<DirectionalLight_BacklightOffset>(lid) = backlightFactor;
 
     if (castShadows && shadowCasterAllocator.Size() < 16)
     {
@@ -525,10 +522,10 @@ LightContext::SetupAreaLight(
     const MaterialTemplates::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
     void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
 
-    MaterialInterfaces::ArealightMaterial* data = (MaterialInterfaces::ArealightMaterial*)StackAlloc(matTemplate->bufferSize);
+    MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
     (color * intensity).store(data->EmissiveColor);
     Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
-    StackFree(data);
+    ArrayFreeStack(1, data);
 
     CoreGraphics::MeshId mesh;
     switch (shape)
@@ -1015,6 +1012,15 @@ LightContext::GetLightsBuffer()
 //------------------------------------------------------------------------------
 /**
 */
+const LightsCluster::LightUniforms&
+LightContext::GetLightUniforms()
+{
+    return clusterState.consts;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction)
 {
@@ -1052,10 +1058,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     Shared::PerTickParams params = Graphics::GetTickParams();
     (genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
     directionalLightAllocator.Get<DirectionalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
-    directionalLightAllocator.Get<DirectionalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
     directionalLightAllocator.Get<DirectionalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
-    Math::vec4 viewSpaceLightDir = viewTransform * Math::vec4(directionalLightAllocator.Get<DirectionalLight_Direction>(globalLightId), 0.0f);
-    params.GlobalBackLightOffset = directionalLightAllocator.Get<DirectionalLight_BacklightOffset>(globalLightId);
 
     params.ltcLUT0 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut0);
     params.ltcLUT1 = CoreGraphics::TextureGetBindlessHandle(textureState.ltcLut1);
@@ -1065,6 +1068,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
     {
         params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMap);
+        params.EnableTerrainShadows = lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId ? 1 : 0;
         params.TerrainShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.terrainShadowMap);
         params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
         params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / Math::max(1u, lightServerState.terrainSize);
@@ -1217,12 +1221,13 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 float height = shape == AreaLightShape::Tube ? 1.0f : scale.y;
                 trans.setscale(Math::vector(width * range[i], height * range[i], twoSided ? range[i] * 2 : -range[i]));
                 trans.setposition(trans.getposition() + Math::vector(0, 0, twoSided ? 0 : -range[i] / 2));
-                Math::mat4 viewSpace = viewTransform * trans.getmatrix();
-                Math::bbox bbox(viewSpace);
 
-                bbox.pmin.store3(areaLight.bboxMin);
+                trans.getmatrix().position.store3(areaLight.center);
+                Math::bbox box = trans.getmatrix();
+                //Math::vec3 localExtents = Math::vec3((abs(trans.getscale().x) + abs(trans.getscale().y) + abs(trans.getscale().z)) * 0.5f);
+                (box.extents() * 2).store(areaLight.extents);
+
                 areaLight.range = range[i];
-                bbox.pmax.store3(areaLight.bboxMax);
                 areaLight.radius = scale.y;
 
                 uint flags = 0;
@@ -1277,14 +1282,14 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     // get per-view resource tables
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    LightsCluster::LightUniforms consts;
-    consts.NumSpotLights = numSpotLights;
-    consts.NumPointLights = numPointLights;
-    consts.NumAreaLights = numAreaLights;
-    consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
-    consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
-    IndexT offset = SetConstants(consts);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), (SizeT)offset });
+
+    clusterState.consts.NumSpotLights = numSpotLights;
+    clusterState.consts.NumPointLights = numPointLights;
+    clusterState.consts.NumAreaLights = numAreaLights;
+    clusterState.consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
+    clusterState.consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
+    uint64 offset = SetConstants(clusterState.consts);
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     Combine::CombineUniforms combineConsts;
@@ -1292,7 +1297,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     combineConsts.LowresResolution[0] = 1.0f / lightDims.width;
     combineConsts.LowresResolution[1] = 1.0f / lightDims.height;
     offset = SetConstants(combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), (SizeT)offset });
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 

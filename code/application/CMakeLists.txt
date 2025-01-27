@@ -5,7 +5,7 @@
 nebula_begin_module(application)
     nebula_add_blueprints()
     target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    fips_deps(foundation audio resource scripting memdb imgui input)
+    fips_deps(foundation audio resource scripting memdb imgui input options)
     fips_dir(.)
     if (FIPS_WINDOWS)
         fips_files(application.natvis)

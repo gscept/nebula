@@ -579,7 +579,7 @@ SetupPass(const PassId pid)
         runtimeInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetParameter");
 
         CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
-        runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout, 8 });
+        runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ Util::String::Sprintf("Pass %s Descriptors", loadInfo.name.Value()).AsCharPtr(), tableLayout, 8 });
         runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
         CoreGraphics::ResourceTableBuffer write;

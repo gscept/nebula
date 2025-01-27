@@ -1,0 +1,22 @@
+//------------------------------------------------------------------------------
+//
+//    Project settings format
+//
+//    (C) 2024 Individual contributors, see AUTHORS file
+//
+//------------------------------------------------------------------------------
+namespace App;
+table GISettings
+{
+    update_budget: float = 1.0;
+    update_frequency: float = 0.0;
+}
+
+table ProjectSettings
+{
+    gi_settings: GISettings;
+}
+
+root_type ProjectSettings;
+file_identifier "NPST";
+file_extension "npst";

@@ -6,13 +6,15 @@
         ],
         "ImportBuffers": [
             "ClusterBuffer",
-            "ClusterLightList",
+            "LightList",
             "ClusterLightIndexLists",
             "ClusterDecalList",
             "ClusterDecalIndexLists",
             "ClusterFogList",
             "ClusterFogIndexLists",
-            "GridLightList",
+            "ClusterGIList",
+            "ClusterGIIndexLists",
+            "GridBuffer",
             "GridLightIndexLists",
             "GridDecalList",
             "GridDecalIndexLists",
@@ -225,6 +227,16 @@
                     },
                     {
                         "subgraph": {
+                            "name": "GI Copy"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "GI Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
                             "name": "Sun Terrain Shadows"
                         }
                     },
@@ -242,6 +254,16 @@
                         "subgraph": {
                             "name": "Terrain Raytracing Mesh Generate"
                         }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "DDGI Probe Update"
+                        } 
+                    },
+                    {
+                        "subgraph": {
+                            "name": "DDGI Probe Finalize"
+                        }
                     }
                 ]
             },
@@ -251,12 +273,7 @@
                 "queue": "Graphics",
                 "_comment": "Calculate shadow maps and depth prepass",
                 "ops": [
-
-                    {
-                        "subgraph": {
-                            "name": "Raytracing Test"
-                        }
-                    },
+                    
                     {
                         "subgraph": {
                             "name": "StaticUI"
@@ -454,6 +471,11 @@
                                             "batch": {
                                                 "name": "LightMeshes"
                                             }
+                                        },
+                                        {
+                                            "subgraph": {
+                                                "name": "DDGI Debug"
+                                            }
                                         }
                                     ]
                                 },
@@ -509,7 +531,11 @@
                         }
                     },
 
-
+                    {
+                        "subgraph": {
+                            "name": "Raytracing Test"
+                        }
+                    },
                     {
                         "subgraph": {
                             "name": "Vegetation Copy Indirect"

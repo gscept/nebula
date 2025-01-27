@@ -45,8 +45,6 @@ struct MeshCreateInfo
     VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveTopology::Code topology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
-
-    CoreGraphics::VertexAlloc vertexBufferAllocation, indexBufferAllocation;
 };
 
 /// create new mesh
@@ -63,11 +61,11 @@ const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// Set vertex buffer
 const void MeshSetVertexBuffer(const MeshId id, const BufferId buffer, const IndexT stream);
 /// Get mesh vertex offset
-const uint MeshGetVertexOffset(const MeshId id, const IndexT stream);
+const uint64 MeshGetVertexOffset(const MeshId id, const IndexT stream);
 /// get index buffer
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// Get index buffer base offset
-const uint MeshGetIndexOffset(const MeshId id);
+const uint64 MeshGetIndexOffset(const MeshId id);
 /// Get index type
 const IndexType::Code MeshGetIndexType(const MeshId id);
 /// Get topology
@@ -93,7 +91,6 @@ struct __Mesh
     VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
-    CoreGraphics::VertexAlloc vertexAllocation, indexAllocation;
 };
 
 typedef Ids::IdAllocatorSafe<

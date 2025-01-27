@@ -75,7 +75,7 @@ VolumetricFogContext::~VolumetricFogContext()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::Create()
 {
     __CreateContext();
@@ -225,7 +225,7 @@ VolumetricFogContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::Discard()
 {
 }
@@ -233,11 +233,11 @@ VolumetricFogContext::Discard()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetupBoxVolume(
-    const Graphics::GraphicsEntityId id, 
+    const Graphics::GraphicsEntityId id,
     const Math::mat4& transform,
-    const float density, 
+    const float density,
     const Math::vec3& absorption)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -253,7 +253,7 @@ VolumetricFogContext::SetupBoxVolume(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -266,12 +266,12 @@ VolumetricFogContext::SetBoxTransform(const Graphics::GraphicsEntityId id, const
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetupSphereVolume(
-    const Graphics::GraphicsEntityId id, 
+    const Graphics::GraphicsEntityId id,
     const Math::vec3& position,
-    float radius, 
-    const float density, 
+    float radius,
+    const float density,
     const Math::vec3& absorption)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -288,7 +288,7 @@ VolumetricFogContext::SetupSphereVolume(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::vec3& position)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -301,7 +301,7 @@ VolumetricFogContext::SetSpherePosition(const Graphics::GraphicsEntityId id, con
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetSphereRadius(const Graphics::GraphicsEntityId id, const float radius)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -314,7 +314,7 @@ VolumetricFogContext::SetSphereRadius(const Graphics::GraphicsEntityId id, const
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetTurbidity(const Graphics::GraphicsEntityId id, const float turbidity)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -324,7 +324,7 @@ VolumetricFogContext::SetTurbidity(const Graphics::GraphicsEntityId id, const fl
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const Math::vec3& absorption)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -334,7 +334,7 @@ VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const M
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     using namespace CoreGraphics;
@@ -405,8 +405,8 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     // get per-view resource tables
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    uint offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), (SizeT)offset });
+    uint64 offset = SetConstants(fogUniforms);
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables
@@ -423,7 +423,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 {
     if (fogState.showUI)
@@ -447,7 +447,7 @@ VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetGlobalTurbidity(float f)
 {
     fogState.turbidity = f;
@@ -456,7 +456,7 @@ VolumetricFogContext::SetGlobalTurbidity(float f)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetGlobalAbsorption(const Math::vec3& color)
 {
     fogState.color = color;
@@ -465,7 +465,7 @@ VolumetricFogContext::SetGlobalAbsorption(const Math::vec3& color)
 //------------------------------------------------------------------------------
 /**
 */
-Math::mat4 
+Math::mat4
 VolumetricFogContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -484,7 +484,7 @@ VolumetricFogContext::GetTransform(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
@@ -502,7 +502,7 @@ VolumetricFogContext::SetTransform(const Graphics::GraphicsEntityId id, const Ma
 //------------------------------------------------------------------------------
 /**
 */
-Graphics::ContextEntityId 
+Graphics::ContextEntityId
 VolumetricFogContext::Alloc()
 {
     return fogGenericVolumeAllocator.Alloc();
@@ -511,7 +511,7 @@ VolumetricFogContext::Alloc()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VolumetricFogContext::Dealloc(Graphics::ContextEntityId id)
 {
     fogGenericVolumeAllocator.Dealloc(id.id);

@@ -28,7 +28,7 @@ struct
         int bits;
     };
     DirtySet tickParamsDirty;
-    IndexT tickCboOffset, viewCboOffset, shadowViewCboOffset;
+    uint64 tickCboOffset, viewCboOffset, shadowViewCboOffset;
 
     Shared::ViewConstants viewConstants;
     Shared::ShadowViewConstants shadowViewConstants;
@@ -53,7 +53,7 @@ CreateGlobalConstants(const GlobalConstantsCreateInfo& info)
     {
         state.frameResourceTables[i] = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP, state.frameResourceTables.Size());
         CoreGraphics::ObjectSetName(state.frameResourceTables[i], "Main Frame Group Descriptor");
-        
+
         state.tickResourceTables[i] = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP, state.tickResourceTables.Size());
         CoreGraphics::ObjectSetName(state.tickResourceTables[i], "Main Tick Group Descriptor");
     }
@@ -85,12 +85,12 @@ AllocateGlobalConstants()
     IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
 
     // Bind tables with memory allocated
-    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ViewConstants_SLOT, 0, sizeof(Shared::ViewConstants), (SizeT)state.viewCboOffset });
-    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(Shared::ShadowViewConstants), (SizeT)state.shadowViewCboOffset });
+    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ViewConstants_SLOT, 0, sizeof(Shared::ViewConstants), state.viewCboOffset });
+    ResourceTableSetConstantBuffer(state.frameResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(Shared::ShadowViewConstants), state.shadowViewCboOffset });
     ResourceTableCommitChanges(state.frameResourceTables[bufferedFrameIndex]);
 
     // Update tick resource tables
-    ResourceTableSetConstantBuffer(state.tickResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Tick::PerTickParams_SLOT, 0, sizeof(Shared::PerTickParams), (SizeT)state.tickCboOffset });
+    ResourceTableSetConstantBuffer(state.tickResourceTables[bufferedFrameIndex], { CoreGraphics::GetConstantBuffer(bufferedFrameIndex), Shared::Table_Tick::PerTickParams_SLOT, 0, sizeof(Shared::PerTickParams), state.tickCboOffset });
     ResourceTableCommitChanges(state.tickResourceTables[bufferedFrameIndex]);
 }
 
@@ -200,7 +200,7 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType 
 /**
 */
 void
-GetOffsets(IndexT& tickOffset, IndexT& viewOffset, IndexT& shadowOffset)
+GetOffsets(uint64& tickOffset, uint64& viewOffset, uint64& shadowOffset)
 {
     tickOffset = state.tickCboOffset;
     viewOffset = state.viewCboOffset;

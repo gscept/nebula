@@ -76,7 +76,7 @@ SSAOContext::~SSAOContext()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSAOContext::Create()
 {
     __CreatePluginContext();
@@ -88,7 +88,7 @@ SSAOContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSAOContext::Discard()
 {
     CoreGraphics::DestroyTexture(ssaoState.internalTargets[0]);
@@ -105,7 +105,7 @@ SSAOContext::Discard()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSAOContext::Setup()
 {
     using namespace CoreGraphics;
@@ -241,7 +241,7 @@ SSAOContext::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     // get camera settings
@@ -307,21 +307,21 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     hbaoBlock.UVToViewA[1] = ssaoState.vars.uvToViewA.y;
     hbaoBlock.UVToViewB[0] = ssaoState.vars.uvToViewB.x;
     hbaoBlock.UVToViewB[1] = ssaoState.vars.uvToViewB.y;
-    uint hbaoOffset = CoreGraphics::SetConstants(hbaoBlock);
+    uint64 hbaoOffset = CoreGraphics::SetConstants(hbaoBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoCs::Table_Batch::HBAOBlock_SLOT, 0, sizeof(HbaoCs::HBAOBlock), (SizeT)hbaoOffset });
+    ResourceTableSetConstantBuffer(ssaoState.hbaoTable[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoCs::Table_Batch::HBAOBlock_SLOT, 0, sizeof(HbaoCs::HBAOBlock), hbaoOffset });
     ResourceTableCommitChanges(ssaoState.hbaoTable[bufferIndex]);
 
     HbaoblurCs::HBAOBlur blurBlock;
     blurBlock.BlurFalloff = ssaoState.vars.blurFalloff;
     blurBlock.BlurDepthThreshold = ssaoState.vars.blurThreshold;
     blurBlock.PowerExponent = 1.5f;
-    uint blurOffset = CoreGraphics::SetConstants(blurBlock);
+    uint64 blurOffset = CoreGraphics::SetConstants(blurBlock);
 
-    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur_SLOT, 0, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
-    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur_SLOT, 0, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur_SLOT, 0, sizeof(HbaoblurCs::HBAOBlur), blurOffset });
+    ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), HbaoblurCs::Table_Batch::HBAOBlur_SLOT, 0, sizeof(HbaoblurCs::HBAOBlur), blurOffset });
     ResourceTableCommitChanges(ssaoState.blurTableX[bufferIndex]);
     ResourceTableCommitChanges(ssaoState.blurTableY[bufferIndex]);
 }

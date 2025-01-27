@@ -55,6 +55,13 @@ public:
     /// get primitive topology
     const CoreGraphics::PrimitiveTopology::Code& GetPrimitiveTopology();
 
+    /// Set groups
+    void SetPrimitiveGroups(const Util::Array<MeshBuilderGroup>& groups);
+    /// Get groups
+    const Util::Array<MeshBuilderGroup>& GetPrimitiveGroups();
+    /// Clear primitive groups
+    void ClearPrimitiveGroups();
+
     /// copy triangle with its vertices, do not generate redundant vertices
     void CopyTriangle(const MeshBuilder& srcMesh, IndexT triIndex, Util::FixedArray<IndexT>& indexMap);
     /// compute overall bounding box
@@ -96,6 +103,7 @@ private:
     CoreGraphics::PrimitiveTopology::Code topology;
     MeshBuilderVertex::ComponentMask componentMask;
     Util::Array<MeshBuilderVertex> vertices;
+    Util::Array<MeshBuilderGroup> groups;
 };
 
 //------------------------------------------------------------------------------

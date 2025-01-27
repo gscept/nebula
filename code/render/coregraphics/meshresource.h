@@ -25,8 +25,18 @@ const SizeT MeshResourceGetNumMeshes(const MeshResourceId id);
 /// Destroy
 void DestroyMeshResource(const MeshResourceId id);
 
+
+enum
+{
+    MeshResource_Meshes,
+    MeshResource_VertexData,
+    MeshResource_IndexData
+};
+
 typedef Ids::IdAllocator<
-    Util::FixedArray<MeshId>
+    Util::FixedArray<MeshId>,
+    CoreGraphics::VertexAlloc,
+    CoreGraphics::VertexAlloc
 > MeshResourceAllocator;
 extern MeshResourceAllocator meshResourceAllocator;
 

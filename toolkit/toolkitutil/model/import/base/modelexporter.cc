@@ -114,9 +114,8 @@ ModelExporter::ExportFile(const IO::URI& file)
     // Merge meshes based on vertex component and material
     Util::Array<SceneNode*> mergedMeshNodes;
     Util::Array<SceneNode*> mergedCharacterNodes;
-    Util::Array<MeshBuilderGroup> mergedGroups;
     Util::Array<MeshBuilder*> mergedMeshes;
-    this->scene->OptimizeGraphics(mergedMeshNodes, mergedCharacterNodes, mergedGroups, mergedMeshes);
+    this->scene->OptimizeGraphics(mergedMeshNodes, mergedCharacterNodes, mergedMeshes);
 
     Util::String physicsMeshExportName = String::Sprintf("msh:%s/%s_ph.nvx", this->category.AsCharPtr(), this->file.AsCharPtr());
     IO::URI destinationFiles[] =
@@ -136,7 +135,7 @@ ModelExporter::ExportFile(const IO::URI& file)
     };
 
     // save mesh to file
-    if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Mesh], mergedMeshes, mergedGroups, this->platform))
+    if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Mesh], mergedMeshes, this->platform))
     {
         this->logger->Error("Failed to save NVX file : % s\n", destinationFiles[DestinationFile::Mesh].LocalPath().AsCharPtr());
     }
@@ -168,9 +167,7 @@ ModelExporter::ExportFile(const IO::URI& file)
         timer.Start();
 
         // save mesh
-        group.SetFirstTriangleIndex(0);
-        group.SetNumTriangles(physicsMesh->GetNumTriangles());
-        if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Physics], { physicsMesh }, { group }, this->platform))
+        if (!MeshBuilderSaver::Save(destinationFiles[DestinationFile::Physics], { physicsMesh }, this->platform))
         {
             this->logger->Error("Failed to save physics NVX file : % s\n", destinationFiles[DestinationFile::Physics].LocalPath().AsCharPtr());
         }

@@ -86,6 +86,7 @@ group(TICK_GROUP) shared constant PerTickParams
     vec4 Balance;
 
     vec3 DoFDistances;
+    uint EnableTerrainShadows;
 
     vec3 BloomColor;
     float BloomIntensity;
@@ -99,11 +100,9 @@ group(TICK_GROUP) shared constant PerTickParams
     vec2 GlobalLightShadowMapSize;
     vec4 GlobalLightDirWorldspace;
     vec4 GlobalLightColor;
-    vec4 GlobalBackLightColor;
     vec4 GlobalAmbientLightColor;
     mat4 CSMShadowMatrix;
 
-    float GlobalBackLightOffset;
     textureHandle GlobalLightShadowBuffer;
     textureHandle TerrainShadowBuffer;
     int NumEnvMips;
@@ -169,7 +168,7 @@ group(FRAME_GROUP) constant ViewConstants
     vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance, w is unused
 };
 
-group(FRAME_GROUP) constant ShadowViewConstants[string Visibility = "VS|CS|PS|RGS";]
+group(FRAME_GROUP) constant ShadowViewConstants[string Visibility = "VS|CS|PS|RCS";]
 {
     vec4 CascadeOffset[NUM_CASCADES];
     vec4 CascadeScale[NUM_CASCADES];
@@ -211,9 +210,10 @@ const uint CLUSTER_PBR_DECAL_BIT = 0x10u;
 const uint CLUSTER_EMISSIVE_DECAL_BIT = 0x20u;
 const uint CLUSTER_FOG_SPHERE_BIT = 0x40u;
 const uint CLUSTER_FOG_BOX_BIT = 0x80u;
+const uint CLUSTER_GI_VOLUME_BIT = 0x100u;
 
 // set a fixed number of cluster entries
-const uint NUM_CLUSTER_ENTRIES = 16384;
+const uint NUM_CLUSTER_ENTRIES = 262144;
 
 struct ClusterAABB
 {
@@ -222,13 +222,13 @@ struct ClusterAABB
     uint featureFlags;
 };
 
-group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RGS"; ]
+group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS|RCS"; ]
 {
     ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
-group(FRAME_GROUP) constant ClusterUniforms [ string Visibility = "CS|VS|PS|RGS"; ]
+group(FRAME_GROUP) constant ClusterUniforms [ string Visibility = "CS|VS|PS|RCS"; ]
 {
     vec2 FramebufferDimensions;
     vec2 InvFramebufferDimensions;
@@ -296,9 +296,9 @@ struct PointLightShadowExtension
 
 struct AreaLight
 {
-    vec3 bboxMin;               // Bounding box min point
+    vec3 center;
     float range;
-    vec3 bboxMax;               // Bounding box max point
+    vec3 extents;
     float radius;
 
     vec3 xAxis;
@@ -330,7 +330,7 @@ group(FRAME_GROUP) constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
 };
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RGS";]
+group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RCS";]
 {
     uint PointLightCountList[NUM_CLUSTER_ENTRIES];
     uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
@@ -340,7 +340,7 @@ group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS|RGS";
     uint AreaLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
 };
 
-group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RGS";]
+group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS|RCS";]
 {
     SpotLight SpotLights[1024];
     SpotLightProjectionExtension SpotLightProjection[256];
@@ -462,6 +462,63 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
     FogBox FogBoxes[128];
 };
 
+//------------------------------------------------------------------------------
+/**
+        GI
+*/
+//------------------------------------------------------------------------------
+struct GIVolume
+{
+    vec3 bboxMin;
+    int NumDistanceTexels;
+    vec3 bboxMax;
+    float EncodingGamma;
+    vec3 Offset;
+    textureHandle Irradiance;
+    vec4 Rotation; // quaternion
+    ivec3 GridCounts;
+    textureHandle Distances;
+    vec3 GridSpacing;
+    textureHandle Offsets;
+    ivec3 ScrollOffsets;
+    int NumIrradianceTexels;
+    vec3 Size;
+    textureHandle States;
+    
+    float BlendCutoff;
+    float Blend;
+    
+    float NormalBias;
+    float ViewBias;
+    float IrradianceScale;
+    uint Options;
+};
+
+#define MAX_GI_VOLUMES_PER_CLUSTER 4
+
+// this is used to keep track of how many lights we have active
+group(FRAME_GROUP) constant GIVolumeUniforms [ string Visibility = "CS|PS"; ]
+{
+    uint NumGIVolumes;
+    uint NumGIVolumeClusters;
+};
+
+group(FRAME_GROUP) rw_buffer GIIndexLists [ string Visibility = "CS|VS|PS"; ]
+{
+    uint GIVolumeCountList[NUM_CLUSTER_ENTRIES];
+    uint GIVolumeIndexLists[NUM_CLUSTER_ENTRIES * MAX_GI_VOLUMES_PER_CLUSTER];
+};
+
+group(FRAME_GROUP) rw_buffer GIVolumeLists [ string Visibility = "CS|VS|PS"; ]
+{
+    GIVolume GIVolumes[64];
+};
+
+//------------------------------------------------------------------------------
+/**
+        Render targets
+*/
+//------------------------------------------------------------------------------
 group(PASS_GROUP) inputAttachment InputAttachment0;
 group(PASS_GROUP) inputAttachment InputAttachment1;
 group(PASS_GROUP) inputAttachment InputAttachment2;
