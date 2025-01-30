@@ -26,8 +26,8 @@ group(TICK_GROUP) binding(0) uniform Textures3D : [MAX_TEXTURES]* texture3D;
 group(TICK_GROUP) binding(0) uniform TexturesCube : [MAX_TEXTURES]* textureCube;
 group(TICK_GROUP) binding(0) uniform TexturesCubeArray : [MAX_TEXTURES]* textureCubeArray;
 sampler_state Basic2DSampler{};
-sampler_state PointSampler { Filter = FilterMode.Nearest; AddressU = AddressMode.Clamp; AddressV = AddressMode.Clamp; };
-sampler_state LinearSampler { Filter = FilterMode.Nearest; AddressU = AddressMode.Clamp; AddressV = AddressMode.Clamp; };
+sampler_state PointSampler { Filter = FilterMode.Nearest; Address = AddressMode.Clamp; };
+sampler_state LinearSampler { Filter = FilterMode.Nearest; Address = AddressMode.Clamp; };
  
 
 #define sample2D(handle, sampler, uv)						    textureSample(Textures2D[handle], sampler, uv)
