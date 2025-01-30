@@ -1,0 +1,60 @@
+//------------------------------------------------------------------------------
+//  billboard.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/techniques.gpuh>
+#include <lib/util.gpuh>
+
+struct BillboardData
+{
+    Color : f32x4;
+    AlbedoMap : u32;
+};
+uniform Billboard : *BillboardData;
+
+sampler_state BillboardSampler {};
+
+render_state BillboardState
+{
+    Cull = CullMode.None;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+BillboardVS(
+    binding(0) in position : f32x2,
+    binding(2) in uv : f32x2,
+    out UV : f32x2
+) void
+{
+    gplExportVertexCoordinates(ViewConstants.ViewProjection * Objects.Model * f32x4(position, 0, 1));
+    UV = uv;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+BillboardPS(
+    in UV : f32x2
+) void
+{
+    const diffColor = sample2D(Billboard.AlbedoMap, BillboardSampler, UV) * Billboard.Color;
+    const alpha = diffColor.w;
+    if (alpha < 0.5f) 
+        discard;
+        
+    gplExportColor(EncodeHDR(diffColor), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SimpleTechnique(Render, "Static", BillboardVS, BillboardPS, BillboardState);
