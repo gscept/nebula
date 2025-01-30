@@ -33,6 +33,7 @@ program Main\
 
 #define SimpleTechnique(name, features, vertexShader, pixelShader, renderState) \
 @Mask(features) \
+program name\
 { \
 	VertexShader = vertexShader; \
 	PixelShader = pixelShader; \
