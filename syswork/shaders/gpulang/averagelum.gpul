@@ -11,7 +11,6 @@
 uniform ColorSource : *texture2D;
 uniform PreviousLum : *texture2D;
 
-
 struct AverageLumData
 {
     TimeDiff : f32;
@@ -50,8 +49,7 @@ vsMain(
     Performs a 2x2 kernel downscale, will only render 1 pixel
 */
 entry_point
-psMain(in UV : f32x2
-) void
+psMain(in UV : f32x2) void
 {
     const sample1 : f32x4 = textureFetch(ColorSource, i32x2(1, 0), 0);
     const sample2 : f32x4 = textureFetch(ColorSource, i32x2(0, 1), 0);
