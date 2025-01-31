@@ -3,6 +3,7 @@
 //
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+const weights2 : [14]f32 = { 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 };
 #include <lib/shared.gpuh>
 #include <lib/techniques.gpuh>
 
@@ -17,15 +18,15 @@ sampler_state InputSampler
 
 struct BloomData
 {
-    int Mips;
-    vec4 Resolutions[14];
+    Mips : i32;
+    Resolutions : [14]f32x4;
 };
 
 uniform BloomUniforms : *BloomData;
 
 render_state PostEffectState
 {
-    CullMode = Back;
+    Cull = CullMode.Back;
     DepthEnabled = false;
     DepthWrite = false;
 };
@@ -35,12 +36,12 @@ uniform BloomOutput : *mutable rgba16f texture2D;
 uniform Intermediate : *texture2D;
 uniform BloomIntermediate : *[14] mutable rgba16f texture2D;
 
-workgroup f32x3 SampleLookup[KERNEL_SIZE][KERNEL_SIZE];
+workgroup SampleLookup : [KERNEL_SIZE][KERNEL_SIZE]f32x3;
 
 //------------------------------------------------------------------------------
 /**
 */
-LoadLDS(i32x2 pixel) f32x3
+LoadLDS(pixel : i32x2) f32x3
 {
     return SampleLookup[pixel.x][pixel.y];
 }
@@ -48,19 +49,19 @@ LoadLDS(i32x2 pixel) f32x3
 //------------------------------------------------------------------------------
 /**
 */
-SampleTentUpscale(i32x2 center) f32x3
+SampleTentUpscale(center : i32x2) f32x3
 {
-    const a = LoadLDS(center + ivec2(-1, 1));
-    const b = LoadLDS(center + ivec2(0, 1));
-    const c = LoadLDS(center + ivec2(1, 1));
+    const a = LoadLDS(center + if32x2(-1, 1));
+    const b = LoadLDS(center + if32x2(0, 1));
+    const c = LoadLDS(center + if32x2(1, 1));
 
-    const d = LoadLDS(center + ivec2(-1, 0));
-    const e = LoadLDS(center + ivec2(0, 0));
-    const f = LoadLDS(center + ivec2(1, 0));
+    const d = LoadLDS(center + if32x2(-1, 0));
+    const e = LoadLDS(center + if32x2(0, 0));
+    const f = LoadLDS(center + if32x2(1, 0));
 
-    const g = LoadLDS(center + ivec2(-1, -1));
-    const h = LoadLDS(center + ivec2(0, -1));
-    const i = LoadLDS(center + ivec2(1, -1));
+    const g = LoadLDS(center + if32x2(-1, -1));
+    const h = LoadLDS(center + if32x2(0, -1));
+    const i = LoadLDS(center + if32x2(1, -1));
 
     const res = e * 4.0f;
     res += (b + d + f + h) * 2.0f;
@@ -71,42 +72,44 @@ SampleTentUpscale(i32x2 center) f32x3
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = KERNEL_SIZE
-[local_size_y] = KERNEL_SIZE
-[local_size_z] = 1
-shader
-void
-csUpscale()
+local_size_x(KERNEL_SIZE)
+local_size_y(KERNEL_SIZE)
+local_size_z(1)
+entry_point
+csUpscale() void
 {
+    const threadIndex = gplGetLocalInvocationIndex().xy;
+    const groupIndex = gplGetWorkGroupIndex();
+    
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
-    const tileStart = gplGetWorkGroupIndex().xy * (KERNEL_SIZE - 2);
+    const tileStart = groupIndex.xy * (KERNEL_SIZE - 2);
     const tileEnd = tileStart + u32x2(KERNEL_SIZE - 2);
 
     // The apron defines which pixels we will sample and load into LDS
     const apronStart = tileStart - u32x2(1);
     const apronEnd = tileEnd + u32x2(1);
-    const sampleCoord = apronStart + gplGetLocalInvocationIndex().xy;
+    const sampleCoord = apronStart + threadIndex;
 
-    const outputPixel = tileStart + gplGetLocalInvocationIndex().xy;
+    const outputPixel = tileStart + threadIndex;
 
-    const tileEndClamped = min(tileEnd, u32x2(Resolutions[gplGetWorkGroupIndex().z].xy));
+    const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[groupIndex.z].xy));
 
     // Only run waves on pixels within the target resolution
     const pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
-    const mippedDimensions = Resolutions[gplGetWorkGroupIndex().z].xy;
+    const mippedDimensions = BloomUniforms.Resolutions[groupIndex.z].xy;
     const sampleUV = (f32x2(sampleCoord) + f32x2(0.5f)) / mippedDimensions;
 
-    const weights : [14]f32 = { 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 };
+    
 
     // All waves load into LDS
-    SampleLookup[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = SampleCubic(Input, InputSampler, Resolutions[gl_WorkGroupID.z], sampleUV, gl_WorkGroupID.z);
+    SampleLookup[threadIndex.x][threadIndex.y] = SampleCubic(Input, InputSampler, BloomUniforms.Resolutions[groupIndex.z], sampleUV, groupIndex.z);
     barrier();
 
     // Only the 14x14 kernel inside the padded one runs the tent filter
     if (pixelOutputMask)
     {
-        vec3 sum = SampleTentUpscale(ivec2(gl_LocalInvocationID.xy) + ivec2(1)) * weights[gl_WorkGroupID.z];
-        imageStore(BloomIntermediate[gl_WorkGroupID.z], ivec2(outputPixel.x, outputPixel.y), vec4(sum, 0));
+        const sum = SampleTentUpscale(i32x2(threadIndex) + i32x2(1)) * weights[groupIndex.z];
+        textureStore(BloomIntermediate[groupIndex.z], i32x2(outputPixel.x, outputPixel.y), f32x3(sum, 0));
     }
 }
 
@@ -114,37 +117,37 @@ csUpscale()
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 256
-shader
-void
-csMerge()
+local_size_x(256)
+entry_point
+csMerge() void
 {
+    const threadIndex = gplGetLocalInvocationIndex().xy;
+    const groupIndex = gplGetWorkGroupIndex();
+    
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
-    const uvec2 tileStart = uvec2(gl_WorkGroupID.x * 256, gl_WorkGroupID.y);
-    const uvec2 tileEnd = tileStart + uvec2(256, 1);
+    const tileStart = u32x2(groupIndex.x * 256, groupIndex.y);
+    const tileEnd = tileStart + u32x2(256, 1);
 
-    uvec2 outputPixel = tileStart + gl_LocalInvocationID.xy;
+    outputPixel = tileStart + threadIndex.xy;
 
-    const uvec2 tileEndClamped = min(tileEnd, uvec2(Resolutions[0].xy));
+    const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[0].xy));
 
     // Only run waves on pixels within the target resolution
-    vec3 sum = vec3(0);
-    bool pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
-    vec2 uv = (vec2(outputPixel) + vec2(0.5f)) / Resolutions[0].xy;
-    for (int i = 0; i < Mips; i++)
+    var sum = f32x3(0);
+    const pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
+    const uv = (f32x2(outputPixel) + f32x2(0.5f)) / BloomUniforms.Resolutions[0].xy;
+    for (int i = 0; i < BloomUniforms.Mips; i++)
     {
-        ivec2 inputPixel = ivec2(outputPixel) >> i;
-        
+        const inputPixel = if32x2(outputPixel) >> i;
         sum += textureLod(sampler2D(Intermediate, InputSampler), uv, i).rgb;
         //sum += imageLoad(BloomIntermediate[i], inputPixel).rgb;
     }
     
     if (pixelOutputMask)
     {
-        vec3 weight = sum / Mips;
-        imageStore(BloomOutput, ivec2(outputPixel.x, outputPixel.y), vec4(sum, saturate(dot(weight, weight)) * BloomIntensity));
+        const weight = sum / BloomUniforms.Mips;
+        textureStore(BloomOutput, if32x2(outputPixel.x, outputPixel.y), vec4(sum, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity));
     }
-        
 }
 
 //------------------------------------------------------------------------------
