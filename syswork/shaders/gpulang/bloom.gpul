@@ -3,7 +3,6 @@
 //
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-const weights2 : [14]f32 = { 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 };
 #include <lib/shared.gpuh>
 #include <lib/techniques.gpuh>
 
@@ -11,9 +10,9 @@ const weights2 : [14]f32 = { 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 
 
 sampler_state InputSampler
 {
-    Filter = Linear;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    Filter = FilterMode.Linear;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
 };
 
 struct BloomData
@@ -27,14 +26,14 @@ uniform BloomUniforms : *BloomData;
 render_state PostEffectState
 {
     Cull = CullMode.Back;
-    DepthEnabled = false;
-    DepthWrite = false;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
 };
 
 uniform Input : *texture2D;
 uniform BloomOutput : *mutable rgba16f texture2D;
 uniform Intermediate : *texture2D;
-uniform BloomIntermediate : *[14] mutable rgba16f texture2D;
+uniform BloomIntermediate : [14]*mutable rgba16f texture2D;
 
 workgroup SampleLookup : [KERNEL_SIZE][KERNEL_SIZE]f32x3;
 
@@ -51,19 +50,19 @@ LoadLDS(pixel : i32x2) f32x3
 */
 SampleTentUpscale(center : i32x2) f32x3
 {
-    const a = LoadLDS(center + if32x2(-1, 1));
-    const b = LoadLDS(center + if32x2(0, 1));
-    const c = LoadLDS(center + if32x2(1, 1));
+    const a = LoadLDS(center + i32x2(-1, 1));
+    const b = LoadLDS(center + i32x2(0, 1));
+    const c = LoadLDS(center + i32x2(1, 1));
 
-    const d = LoadLDS(center + if32x2(-1, 0));
-    const e = LoadLDS(center + if32x2(0, 0));
-    const f = LoadLDS(center + if32x2(1, 0));
+    const d = LoadLDS(center + i32x2(-1, 0));
+    const e = LoadLDS(center + i32x2(0, 0));
+    const f = LoadLDS(center + i32x2(1, 0));
 
-    const g = LoadLDS(center + if32x2(-1, -1));
-    const h = LoadLDS(center + if32x2(0, -1));
-    const i = LoadLDS(center + if32x2(1, -1));
+    const g = LoadLDS(center + i32x2(-1, -1));
+    const h = LoadLDS(center + i32x2(0, -1));
+    const i = LoadLDS(center + i32x2(1, -1));
 
-    const res = e * 4.0f;
+    var res = e * 4.0f;
     res += (b + d + f + h) * 2.0f;
     res += (a + c + g + i);
     return res / 16.0f;
@@ -78,8 +77,8 @@ local_size_z(1)
 entry_point
 csUpscale() void
 {
-    const threadIndex = gplGetLocalInvocationIndex().xy;
-    const groupIndex = gplGetWorkGroupIndex();
+    const threadIndex = computeGetLocalInvocationIndex().xy;
+    const groupIndex = computeGetWorkGroupIndex();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
     const tileStart = groupIndex.xy * (KERNEL_SIZE - 2);
@@ -95,21 +94,21 @@ csUpscale() void
     const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[groupIndex.z].xy));
 
     // Only run waves on pixels within the target resolution
-    const pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
+    const pixelOutputMask = all(outputPixel < tileEndClamped);
     const mippedDimensions = BloomUniforms.Resolutions[groupIndex.z].xy;
     const sampleUV = (f32x2(sampleCoord) + f32x2(0.5f)) / mippedDimensions;
 
-    
-
     // All waves load into LDS
     SampleLookup[threadIndex.x][threadIndex.y] = SampleCubic(Input, InputSampler, BloomUniforms.Resolutions[groupIndex.z], sampleUV, groupIndex.z);
-    barrier();
+    executionBarrierWorkgroup();
+    
+    const weights : [14] f32 = [ 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 ];
 
     // Only the 14x14 kernel inside the padded one runs the tent filter
     if (pixelOutputMask)
     {
         const sum = SampleTentUpscale(i32x2(threadIndex) + i32x2(1)) * weights[groupIndex.z];
-        textureStore(BloomIntermediate[groupIndex.z], i32x2(outputPixel.x, outputPixel.y), f32x3(sum, 0));
+        textureStore(BloomIntermediate[groupIndex.z], i32x2(outputPixel.x, outputPixel.y), f32x4(sum, 0));
     }
 }
 
@@ -121,32 +120,32 @@ local_size_x(256)
 entry_point
 csMerge() void
 {
-    const threadIndex = gplGetLocalInvocationIndex().xy;
-    const groupIndex = gplGetWorkGroupIndex();
+    const threadIndex = computeGetLocalInvocationIndex().xy;
+    const groupIndex = computeGetWorkGroupIndex();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
     const tileStart = u32x2(groupIndex.x * 256, groupIndex.y);
     const tileEnd = tileStart + u32x2(256, 1);
 
-    outputPixel = tileStart + threadIndex.xy;
+    const outputPixel = tileStart + threadIndex.xy;
 
     const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[0].xy));
 
     // Only run waves on pixels within the target resolution
     var sum = f32x3(0);
-    const pixelOutputMask = all(lessThan(outputPixel, tileEndClamped));
+    const pixelOutputMask = all(outputPixel < tileEndClamped);
     const uv = (f32x2(outputPixel) + f32x2(0.5f)) / BloomUniforms.Resolutions[0].xy;
-    for (int i = 0; i < BloomUniforms.Mips; i++)
+    for (var i : i32 = 0; i < BloomUniforms.Mips; i++)
     {
-        const inputPixel = if32x2(outputPixel) >> i;
-        sum += textureLod(sampler2D(Intermediate, InputSampler), uv, i).rgb;
+        const inputPixel = i32x2(outputPixel) >> i;
+        sum += textureSampleLod(Intermediate, InputSampler, uv, i).rgb;
         //sum += imageLoad(BloomIntermediate[i], inputPixel).rgb;
     }
     
     if (pixelOutputMask)
     {
         const weight = sum / BloomUniforms.Mips;
-        textureStore(BloomOutput, if32x2(outputPixel.x, outputPixel.y), vec4(sum, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity));
+        textureStore(BloomOutput, i32x2(outputPixel.x, outputPixel.y), f32x4(sum, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity));
     }
 }
 

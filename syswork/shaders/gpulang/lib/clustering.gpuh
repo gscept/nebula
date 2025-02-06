@@ -1,0 +1,169 @@
+//------------------------------------------------------------------------------
+//  clustering.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#ifndef CLUSTERING_GPUH
+#define CLUSTERING_GPUH
+
+#define CHECK_FLAG(bits, bit) ((bits & bit) == bit)
+
+//------------------------------------------------------------------------------
+/**
+    Calculate 3D index from screen position and depth
+*/ 
+CalculateClusterIndex(screenPos : f32x2, depth : f32, scale : f32, bias : f32) u32x3
+{
+    const i = u32(screenPos.x);
+    const j = u32(screenPos.y);
+    const k = u32(log2(-depth) * scale + bias);
+
+    return u32x3(i, j, k);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculate view Z from world space
+*/
+CalculateViewDepth(view : f32x4x4, worldPos : f32x3) f32
+{
+    const m = f32x4(view[0][2], view[1][2], view[2][2], view[3][2]);
+    return dot(m, f32x4(worldPos, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TestAABBAABB(aabb : ClusterAABB, bboxMin : f32x3, bboxMax : f32x3) b8
+{
+    // this expression can be unfolded like this:
+    //	C = min x, y, z in A must be smaller than the max x, y, z in B
+    //	D = max x, y, z in A must be bigger than the min x, y, z in B
+    //	E = C equals D
+    //	return if all members of E are true
+    return all((aabb.minPoint.xyz < bboxMax) == (aabb.maxPoint.xyz > bboxMin));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TestAABBSphere(aabb : ClusterAABB, pos : f32x3, radius : f32) b8
+{
+    var sqDist = 0.0f;
+    for (var i : i32 = 0; i < 3; i++)
+    {
+        const v = (pos)[i];
+
+        if (v < aabb.minPoint[i]) sqDist += pow(aabb.minPoint[i] - v, 2);
+        if (v > aabb.maxPoint[i]) sqDist += pow(v - aabb.maxPoint[i], 2);
+    }
+    return sqDist <= radius * radius;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Treat AABB as a sphere for simplicity of intersection detection.
+
+    https://bartwronski.com/2017/04/13/cull-that-cone/
+*/
+TestAABBCone(aabb : ClusterAABB, pos : f32x3, forward : f32x3, radius : f32, sinCosAngles : f32x2) b8
+{
+    const aabbExtents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
+    const aabbCenter = aabb.minPoint.xyz + aabbExtents;
+    const aabbRadius = aabb.maxPoint.w;
+
+    const v = aabbCenter - pos;
+    const vlensq = dot(v, v);
+    const v1len = dot(v, -forward);
+    const distanceClosestPoint = sinCosAngles.y * sqrt(vlensq - v1len * v1len) - v1len * sinCosAngles.x;
+
+    const angleCull = distanceClosestPoint > aabbRadius;
+    const frontCull = v1len > aabbRadius + radius;
+    const backCull = v1len < -aabbRadius;
+    return !(angleCull || backCull || frontCull);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TestAABBOBB(aabb : ClusterAABB, obb : f32x4x4) b8
+{
+    return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TestAABBOrthoProjection(aabb : ClusterAABB, viewProjection : f32x4x4) b8
+{
+    var points : [8]f32x4 = [
+        f32x4(aabb.minPoint.xyz, 1.0f)                                          // near bottom left
+        , f32x4(aabb.maxPoint.x, aabb.minPoint.yz, 1.0f)                        // near bottom right
+        , f32x4(aabb.minPoint.x, aabb.maxPoint.y, aabb.minPoint.z, 1.0f)        // near top left
+        , f32x4(aabb.maxPoint.xy, aabb.minPoint.z, 1.0f)                        // near top right
+        , f32x4(aabb.minPoint.xy, aabb.maxPoint.z, 1.0f)                        // far bottom left
+        , f32x4(aabb.maxPoint.x, aabb.minPoint.y, aabb.maxPoint.z, 1.0f)        // far bottom right
+        , f32x4(aabb.minPoint.x, aabb.maxPoint.yz, 1.0f)                        // far top left
+        , f32x4(aabb.maxPoint.xyz, 1.0f)                                        // far top right
+    ];
+    
+    for (var i : i32 = 0; i < 8; i++)
+    {
+        // Transform cluster AABB points to clip space
+        points[i] = points[i] * viewProjection;
+
+        // Simply check if interlaps overlap with the unit cube
+        if (all((points[i].xyz > f32x3(-1.0)) == (points[i].xyz < f32x3(1.0))))
+            return true;
+    }    
+    return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TestAABBPerspectiveProjection(aabb : ClusterAABB, viewProjection : f32x4x4) b8
+{
+    var points : [8]f32x4 = [
+        f32x4(aabb.minPoint.xyz, 1.0f)                                          // near bottom left
+        , f32x4(aabb.maxPoint.x, aabb.minPoint.yz, 1.0f)                        // near bottom right
+        , f32x4(aabb.minPoint.x, aabb.maxPoint.y, aabb.minPoint.z, 1.0f)        // near top left
+        , f32x4(aabb.maxPoint.xy, aabb.minPoint.z, 1.0f)                        // near top right
+        , f32x4(aabb.minPoint.xy, aabb.maxPoint.z, 1.0f)                        // far bottom left
+        , f32x4(aabb.maxPoint.x, aabb.minPoint.y, aabb.maxPoint.z, 1.0f)        // far bottom right
+        , f32x4(aabb.minPoint.x, aabb.maxPoint.yz, 1.0f)                        // far top left
+        , f32x4(aabb.maxPoint.xyz, 1.0f)                                        // far top right
+    ];
+
+    var mask : u32 = 0xffff;
+    for (var i : i32 = 0; i < 2; i++)
+    {
+        // Transform cluster AABB points to clip space
+        points[i * 4] = viewProjection * points[i * 4];
+        points[i * 4 + 1] = viewProjection * points[i * 4 + 1];
+        points[i * 4 + 2] = viewProjection * points[i * 4 + 2];
+        points[i * 4 + 3] = viewProjection * points[i * 4 + 3];
+
+        const xs = f32x4(points[i].x, points[i * 4 + 1].x, points[i * 4 + 2].x, points[i * 4 + 3].x);
+        const ys = f32x4(points[i].y, points[i * 4 + 1].y, points[i * 4 + 2].y, points[i * 4 + 3].y);
+        const zs = f32x4(points[i].z, points[i * 4 + 1].z, points[i * 4 + 2].z, points[i * 4 + 3].z);
+        const ws = f32x4(points[i].w, points[i * 4 + 1].w, points[i * 4 + 2].w, points[i * 4 + 3].w);
+
+        const flags : u32x4 =
+            u32x4(xs < -ws) * u32x4(0x1)
+            + u32x4(xs > ws) * u32x4(0x2)
+            + u32x4(ys < -ws) * u32x4(0x4)
+            + u32x4(ys > ws) * u32x4(0x8)
+            + u32x4(zs < -ws) * u32x4(0x10)
+            + u32x4(zs > ws) * u32x4(0x20)
+            ;
+
+        mask &= flags.x;
+        mask &= flags.y;
+        mask &= flags.z;
+        mask &= flags.w;
+    }
+    return mask == 0;
+}
+
+#endif // CLUSTERING_GPUH
