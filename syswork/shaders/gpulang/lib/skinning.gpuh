@@ -1,0 +1,72 @@
+//------------------------------------------------------------------------------
+//  skinning.gpuh
+//  (C) 2025 Invidiual contributors
+//------------------------------------------------------------------------------
+
+#ifndef SKINNING_GPUH
+#define SKINNING_GPUH
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+
+uniform JointInstanceTexture : *texture2D;
+
+//------------------------------------------------------------------------------
+/**
+    Compute a skinned vertex position.
+*/
+SkinnedPosition(inPos : f32x3, weights : f32x4, indices : u32x4 ) f32x4
+{		
+	// need to re-normalize weights because of compression
+	const normWeights = weights / dot(weights, f32x4(1.0));
+	
+	// the fact that this works blows my mind, but it must be faster...
+	const joint = JointPalette[indices[0]].Transform * weights[0] +
+				   JointPalette[indices[1]].Transform * weights[1] +
+				   JointPalette[indices[2]].Transform * weights[2] +
+				   JointPalette[indices[3]].Transform * weights[3];
+	return joint * f32x4(inPos, 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Compute a skinned vertex position using .
+*/
+SkinnedPositionInstanced(inPos : f32x3, weights : f32x4, indices : u32x4, ID : u32) f32x4
+{	
+    // need to re-normalize weights because of compression
+    const normWeights = weights / dot(weights, f32x4(1.0));
+	const joint = JointPalette[indices[0]].Transform * weights[0] +
+				   JointPalette[indices[1]].Transform * weights[1] +
+				   JointPalette[indices[2]].Transform * weights[2] +
+				   JointPalette[indices[3]].Transform * weights[3];
+	return joint * f32x4(inPos, 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Compute a skinned vertex normal.
+*/
+SkinnedNormal(inNormal : f32x3, weights : f32x4, indices : u32x4) f32x4
+{
+	// the fact that this works blows my mind, but it must be faster...
+	const joint = JointPalette[indices[0]].Transform * weights[0] + 
+				   JointPalette[indices[1]].Transform * weights[1] + 
+				   JointPalette[indices[2]].Transform * weights[2] + 
+				   JointPalette[indices[3]].Transform * weights[3];
+	return joint * f32x4(inNormal, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Compute a skinned vertex normal.
+*/
+SkinnedNormalInstanced(inNormal : f32x3, weights : f32x4, indices : u32x4, ID : u32) f32x4
+{
+	const joint = JointPalette[indices[0]].Transform * weights[0] + 
+				   JointPalette[indices[1]].Transform * weights[1] + 
+				   JointPalette[indices[2]].Transform * weights[2] + 
+				   JointPalette[indices[3]].Transform * weights[3];
+	return joint * f32x4(inNormal, 0);
+}
+
+#endif

@@ -1,0 +1,597 @@
+//------------------------------------------------------------------------------
+//  geometrybase.gpuh
+//  (C) 2012 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#ifndef GEOMETRYBASE_GPUH
+#define GEOMETRYBASE_GPUH
+
+#include <lib/std.gpuh>
+#include <lib/skinning.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/defaultsamplers.gpuh>
+#include <lib/pbr.gpuh>
+#include <lib/stencil.gpuh>
+
+#include <lib/material_interfaces.gpuh>
+
+//#define PN_TRIANGLES
+render_state StandardState
+{
+};
+
+render_state StencilState
+{
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+    DepthTestFunction = CompareMode.Equal;
+    StencilEnabled = true;
+    StencilFront.WriteMask = STENCIL_BIT_CHARACTER;
+    StencilFront.Pass = StencilOp.Replace;
+};
+
+render_state StandardNoCullState
+{
+    Cull = CullFace.None;
+};
+
+render_state AlphaState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+};
+
+render_state DefaultState
+{
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+    DepthTestFunction = CompareMode.Equal;
+};
+
+render_state DoubleSidedState
+{
+    Cull = CullFace.None;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+    DepthTestFunction = CompareMode.Equal;
+};
+
+render_state AlphaDoubleSidedState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+    DepthTestFunction = CompareMode.Less;
+    Cull = CullFace.None;
+};
+
+render_state DepthState
+{
+    Cull = CullFace.Back;
+};
+
+render_state DepthStateDoubleSided
+{
+    Cull = CullFace.None;
+};
+
+const FresnelPower = 0.0f;
+const FresnelStrength = 0.0f;
+
+//---------------------------------------------------------------------------------------------------------------------------
+//											DIFFUSE
+//---------------------------------------------------------------------------------------------------------------------------
+enum ColorMaskModes
+{
+    None,
+    Alpha,
+    Masked,
+    AlphaMasked
+};
+
+link_defined ColorMaskMode = ColorMaskModes.None;
+MaskColor(albedo : f32x4, cutoff : f32) f32x4
+{
+    if (ColorMaskMode == ColorMaskModes.None)
+    {
+        return f32x4(albedo.rgb, 1.0f);
+    }
+    else if (ColorMaskMode == ColorMaskModes.Alpha)
+    {
+        return albedo;
+    }
+    else if (ColorMaskMode == ColorMaskModes.Masked)
+    {
+        if (gplIsPixelShader)
+        {
+            if (albedo.a <= cutoff)
+                discard;
+        }
+        return f32x4(albedo.rgb, 1.0f);
+    }
+    else if (ColorMaskMode == ColorMaskModes.AlphaMasked)
+    {
+        if (gplIsPixelShader)
+        {
+            if (albedo.a <= cutoff)
+                discard;
+        }
+        return albedo;
+    }
+    return albedo;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+//											NORMAL
+//---------------------------------------------------------------------------------------------------------------------------
+enum NormalMapFormats
+{
+    DXT5Normal,
+    BC7Normal,
+    GeometryNormal
+};
+
+link_defined NormalMapFormat = NormalMapFormats.BC7Normal;
+UnpackNormalMap(tangent : f32x3, normal : f32x3, sign : f32, normalMapData : f32x4) f32x3
+{
+    if (NormalMapFormat == NormalMapFormats.DXT5Normal)
+    {
+        const tangentViewMatrix = TangentSpace(tangent, normal, sign);
+        const tNormal = TangentSpaceNormal(normalMapData.ag, tangentViewMatrix);
+        return tNormal;
+    }
+    else if (NormalMapFormat == NormalMapFormats.BC7Normal)
+    {
+        const tangentViewMatrix = TangentSpace(tangent, normal, sign);
+        const tNormal = TangentSpaceNormal(normalMapData.xy, tangentViewMatrix);
+        return tNormal;
+    }
+    else if (NormalMapFormat == NormalMapFormats.GeometryNormal)
+    {
+        return normal;
+    }
+    return normal;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+//											MATERIAL
+//---------------------------------------------------------------------------------------------------------------------------
+enum MaterialMapFormats
+{
+    DefaultMaterialMap,
+    OSMMaterialMap
+};
+link_defined MaterialMapFormat = MaterialMapFormats.DefaultMaterialMap;
+UnpackMaterialMap(materialMapData : f32x4) f32x4
+{
+    if (MaterialMapFormat == MaterialMapFormats.DefaultMaterialMap)
+    {
+        return materialMapData;
+    }
+    else if (MaterialMapFormat == MaterialMapFormats.OSMMaterialMap)
+    {
+        return ConvertOSM(materialMapData);
+    }
+    return materialMapData;
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+//											ENVIRONMENT
+//---------------------------------------------------------------------------------------------------------------------------
+enum ReflectionMethods
+{
+    ImageBasedLighting,
+    CubeMapReflections,
+    IrradianceMapDiffuse,
+    NoBakedIllumination
+};
+link_defined ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+EvaluateReflection(albedo : f32x4, f0 : f32x3, worldNormal : f32x3, worldViewVec : f32x3, material : f32x4) f32x3
+{
+    if (ReflectionMethod == ReflectionMethods.ImageBasedLighting)
+    {
+        const reflectVec = reflect(-worldViewVec, worldNormal);
+        const NdotV = saturate(dot(worldNormal, worldViewVec));
+        const F = FresnelSchlickGloss(f0, NdotV, material[MAT_ROUGHNESS]);
+        const reflection = sampleCubeLod(PerTickParams.EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * PerTickParams.NumEnvMips).rgb;
+        const irradiance = sampleCubeLod(PerTickParams.IrradianceMap, CubeSampler, worldNormal, 0).rgb;
+        var kD = f32x3(1.0f) - F;
+        kD *= 1.0f - material[MAT_METALLIC];
+    
+        const ambientTerm = (irradiance * kD * albedo.rgb) * material[MAT_CAVITY];
+        return (ambientTerm + reflection * F);
+    }
+    else if (ReflectionMethod == ReflectionMethods.CubeMapReflections)
+    {
+        const reflectVec = reflect(-worldViewVec, worldNormal);
+        const NdotV = saturate(dot(worldNormal, worldViewVec));
+        const F = FresnelSchlickGloss(f0, NdotV, material[MAT_ROUGHNESS]);
+        const reflection = sampleCubeLod(PerTickParams.EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * PerTickParams.NumEnvMips).rgb;
+        return (reflection * F);
+    }
+    else if (ReflectionMethod == ReflectionMethods.IrradianceMapDiffuse)
+    {
+        const NdotV = saturate(dot(worldNormal, worldViewVec));
+        const F = FresnelSchlickGloss(f0, NdotV, material[MAT_ROUGHNESS]);
+        const irradiance = sampleCubeLod(PerTickParams.IrradianceMap, CubeSampler, worldNormal, 0).rgb;
+        var kD = f32x3(1.0f) - F;
+        kD *= 1.0f - material[MAT_METALLIC];
+        const ambientTerm = (irradiance * kD * albedo.rgb);
+        return ambientTerm * material[MAT_CAVITY];
+    }
+    else if (ReflectionMethod == ReflectionMethods.NoBakedIllumination)
+    {
+        return f32x3(0);
+    }
+    return f32x3(0);
+}
+
+//------------------------------------------------------------------------------
+/**
+                STATIC GEOMETRY
+*/
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDepthStatic(binding(0) in position : f32x3) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDepthStaticAlphaMask(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out UV : f32x2) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psDepthOnly() void
+{
+    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const dither = hash12(seed);
+    if (dither < ObjectUniforms.DitherFactor)
+        discard;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psDepthOnlyAlphaMask(in UV : f32x2) void
+{
+    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const dither = hash12(seed);
+    if (dither < ObjectUniforms.DitherFactor)
+        discard;
+
+    const baseColor = sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= BRDFConstants.AlphaSensitivity)
+        discard;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStatic(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x4,
+    out Tangent : f32x3,
+    out Normal : f32x3,
+    out no_interpolate Sign : f32,
+    out UV : f32x2,
+    out WorldSpacePos : f32x3
+) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    
+    Tangent 	  = normalize((ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz);
+    Normal 		  = normalize((ObjectUniforms.Model * f32x4(normal, 0)).xyz);
+    Sign          = tangent.w;
+
+    UV            = UnpackUV(uv);
+    WorldSpacePos = modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticInstanced(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x4,
+    out Tangent : f32x3,
+    out Normal : f32x3,
+    out no_interpolate Sign : f32,
+    out UV : f32x2,
+    out WorldSpacePos : f32x3
+) void
+{
+    const modelTransform = Instances.ModelArray[vertexGetInstanceIndex()]; 
+    const modelSpace = modelTransform * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+
+    Tangent 	  = (modelTransform * f32x4(tangent.xyz, 0)).xyz;
+    Normal 		  = (modelTransform * f32x4(normal, 0)).xyz;
+    Sign          = tangent.w;
+
+    UV            = UnpackUV(uv);
+    WorldSpacePos = modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticColored(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x4,
+    binding(5) in color : f32x4,
+    out Tangent : f32x3,
+    out Normal : f32x3,
+    out no_interpolate Sign : f32,
+    out UV : f32x2,
+    out Color : f32x4,
+    out WorldViewVec : f32x3
+) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+
+    UV = UnpackUV(uv);
+    Color = color;
+
+    Tangent     = (ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz;
+    Normal      = (ObjectUniforms.Model * f32x4(normal.xyz, 0)).xyz;
+    Sign        = tangent.w;
+
+    WorldViewVec = ViewConstants.EyePos.xyz - modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+                SKINNED GEOMETRY
+*/
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDepthSkinned(
+    binding(0) in position : f32x3,
+    binding(7) in weights : f32x4,
+    binding(8) in indices : u32x4
+) void
+{
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+    const modelSpace = ObjectUniforms.Model * skinnedPos;
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsDepthSkinnedAlphaMask(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(7) in weights : f32x4,
+    binding(8) in indices : u32x4,
+    out UV : f32x2
+) void
+{
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+    const modelSpace = ObjectUniforms.Model * skinnedPos;
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsSkinned(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x4,
+    binding(7) in weights : f32x4,
+    binding(8) in indices : u32x4,
+    out Tangent : f32x3,
+    out Normal : f32x3,
+    out no_interpolate Sign : f32,
+    out UV : f32x2,
+    out WorldSpacePos : f32x3
+) void
+{
+    const skinnedPos      = SkinnedPosition(position, weights, indices);
+    const skinnedNormal   = SkinnedNormal(normal, weights, indices);
+    const skinnedTangent  = SkinnedNormal(tangent.xyz, weights, indices);
+
+    const modelSpace = ObjectUniforms.Model * skinnedPos;
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    
+    Tangent 	  = normalize((ObjectUniforms.Model * skinnedTangent).xyz);
+    Normal 		  = normalize((ObjectUniforms.Model * skinnedNormal).xyz);
+    Sign          = tangent.w;
+
+    UV            = UnpackUV(uv);
+    WorldSpacePos = modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsBillboard(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out UV : f32x2
+) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Ubershader for standard geometry
+*/
+enum UberShaderOutput : i32
+{
+    Albedo,
+    Normals,
+    Material
+};
+entry_point
+psUber(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2
+) void
+{
+    const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), 1.0f) * BRDFConstants.MatAlbedoIntensity;
+    const material = 	UnpackMaterialMap(sample2D(BRDFConstants.ParameterMap, MaterialSampler, UV));
+    const normals = 	sample2D(BRDFConstants.NormalMap, NormalSampler, UV);
+
+    const bumpNormal = normalize(UnpackNormalMap(Tangent, Normal, Sign, normals));
+
+    pixelExportColor(albedo, UberShaderOutput.Albedo);
+    pixelExportColor(bumpNormal, UberShaderOutput.Normals);
+    pixelExportColor(material, UberShaderOutput.Material);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Ubershader for standard geometry.
+    Tests for alpha clipping
+*/
+entry_point
+psUberAlphaTest(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2
+) void
+{
+    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+    const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
+    if (dither > 1.0f)
+        discard;
+
+    const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), BRDFConstants.AlphaSensitivity) * BRDFConstants.MatAlbedoIntensity;
+    if (albedo.a < BRDFConstants.AlphaSensitivity) { discard; }
+    const material = 	UnpackMaterialMap(sample2D(BRDFConstants.ParameterMap, MaterialSampler, UV));
+    const normals = 	sample2D(BRDFConstants.NormalMap, NormalSampler, UV);
+    
+    const bumpNormal = normalize(UnpackNormalMap(Tangent, Normal, Sign, normals));
+
+    pixelExportColor(albedo, UberShaderOutput.Albedo);
+    pixelExportColor(bumpNormal, UberShaderOutput.Normals);
+    pixelExportColor(material, UberShaderOutput.Material);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Ubershader for standard geometry
+*/
+entry_point
+psUberVertexColor(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2
+) void
+{
+    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+    const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
+    if (dither > 1.0f)
+        discard;
+
+    const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), BRDFConstants.AlphaSensitivity) * BRDFConstants.MatAlbedoIntensity;
+    if (albedo.a < BRDFConstants.AlphaSensitivity) { discard; }
+    const material = 	UnpackMaterialMap(sample2D(BRDFConstants.ParameterMap, MaterialSampler, UV));
+    const normals = 	sample2D(BRDFConstants.NormalMap, NormalSampler, UV);
+    
+    const bumpNormal = normalize(UnpackNormalMap(Tangent, Normal, Sign, normals));
+
+    pixelExportColor(albedo, UberShaderOutput.Albedo);
+    pixelExportColor(bumpNormal, UberShaderOutput.Normals);
+    pixelExportColor(material, UberShaderOutput.Material);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psUberAlpha(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2
+) void
+{
+    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+    const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
+    if (dither > 1.0f)
+        discard;
+
+    const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), 1.0f) * BRDFConstants.MatAlbedoIntensity;
+    const material = 	UnpackMaterialMap(sample2D(BRDFConstants.ParameterMap, MaterialSampler, UV));
+    const normals = 	sample2D(BRDFConstants.NormalMap, NormalSampler, UV);
+    
+    const bumpNormal = normalize(UnpackNormalMap(Tangent, Normal, Sign, normals));
+
+    pixelExportColor(albedo, UberShaderOutput.Albedo);
+    pixelExportColor(bumpNormal, UberShaderOutput.Normals);
+    pixelExportColor(material, UberShaderOutput.Material);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psBillboard(in UV : f32x2) void
+{
+    // get diffcolor
+    const diffColor = MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), 1.0f);
+
+    pixelExportColor(diffColor, 0);
+}
+
+#endif

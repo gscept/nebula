@@ -30,34 +30,34 @@ sampler_state PointSampler { Filter = FilterMode.Nearest; Address = AddressMode.
 sampler_state LinearSampler { Filter = FilterMode.Nearest; Address = AddressMode.Clamp; };
  
 
-#define sample2D(handle, sampler, uv)						    gplTextureSample(Textures2D[handle], sampler, uv)
-#define sample2DLod(handle, sampler, uv, lod)				    gplTextureSampleLod(Textures2D[handle], sampler, uv, lod)
-#define sample2DGrad(handle, sampler, uv, ddx, ddy)			    gplTextureSampleGrad(Textures2D[handle], sampler, uv, ddx, ddy)
+#define sample2D(handle, sampler, uv)						    textureSample(Textures2D[handle], sampler, uv)
+#define sample2DLod(handle, sampler, uv, lod)				    textureSampleLod(Textures2D[handle], sampler, uv, lod)
+#define sample2DGrad(handle, sampler, uv, ddx, ddy)			    textureSampleGrad(Textures2D[handle], sampler, uv, ddx, ddy)
 
-#define sample2DMS(handle, sampler, uv)						    gplTextureSample(Textures2DMS[handle], sampler, uv)
-#define sample2DMSLod(handle, sampler, uv, lod)				    gplTextureSampleLod(Textures2DMS[handle], sampler, uv, lod)
-#define sample2DMSGrad(handle, sampler, uv, ddx, ddy)		    gplTextureSampleGrad(Textures2D[handle], sampler, uv, ddx, ddy)
+#define sample2DMS(handle, sampler, uv)						    textureSample(Textures2DMS[handle], sampler, uv)
+#define sample2DMSLod(handle, sampler, uv, lod)				    textureSampleLod(Textures2DMS[handle], sampler, uv, lod)
+#define sample2DMSGrad(handle, sampler, uv, ddx, ddy)		    textureSampleGrad(Textures2D[handle], sampler, uv, ddx, ddy)
 
-#define sampleCube(handle, sampler, uvw)					    gplTextureSample(TexturesCube[handle], sampler, uvw)
-#define sampleCubeLod(handle, sampler, uvw, lod)			    gplTextureSampleLod(TexturesCube[handle], sampler, uvw, lod)
+#define sampleCube(handle, sampler, uvw)					    textureSample(TexturesCube[handle], sampler, uvw)
+#define sampleCubeLod(handle, sampler, uvw, lod)			    textureSampleLod(TexturesCube[handle], sampler, uvw, lod)
 
-#define sample2DArray(handle, sampler, uvw)					    gplTextureSample(Textures2DArray[handle], sampler, uvw)
-#define sample2DArrayGrad(handle, sampler, uvw, ddx, ddy)	    gplTextureSampleGrad(Textures2DArray[handle], sampler, uvw, ddx, ddy)
-#define sample2DArrayLod(handle, sampler, uvw, lod)			    gplTextureSampleLod(Textures2DArray[handle], sampler, uvw, lod)
+#define sample2DArray(handle, sampler, uvw)					    textureSample(Textures2DArray[handle], sampler, uvw)
+#define sample2DArrayGrad(handle, sampler, uvw, ddx, ddy)	    textureSampleGrad(Textures2DArray[handle], sampler, uvw, ddx, ddy)
+#define sample2DArrayLod(handle, sampler, uvw, lod)			    textureSampleLod(Textures2DArray[handle], sampler, uvw, lod)
 
-#define sample3D(handle, sampler, uvw)						    gplTextureSample(Textures3D[handle], sampler, uvw)
-#define sample3DLod(handle, sampler, uvw, lod)				    gplTextureSampleLod(Textures3D[handle], sampler, uvw, lod)
+#define sample3D(handle, sampler, uvw)						    textureSample(Textures3D[handle], sampler, uvw)
+#define sample3DLod(handle, sampler, uvw, lod)				    textureSampleLod(Textures3D[handle], sampler, uvw, lod)
 
-#define sample2DArrayShadow(handle, sampler, uv, index, depth)	gplTextureSampleCompare(Textures2DArray[handle], sampler, f32x3(uv, index), depth)
+#define sample2DArrayShadow(handle, sampler, uv, index, depth)	textureSampleCompare(Textures2DArray[handle], sampler, f32x3(uv, index), depth)
 
-#define fetch2D(handle, sampler, uv, lod)					    gplTextureFetch(Textures2D[handle], uv, lod)
-#define fetch2DMS(handle, sampler, uv, lod)					    gplTextureFetch(Textures2DMS[handle], uv, lod)
-#define fetchCube(handle, sampler, uvw, lod)				    gplTextureFetch(Textures2DArray[handle], uvw, lod)
-#define fetch2DArray(handle, sampler, uvw, lod)				    gplTextureFetch(Textures2DArray[handle], uvw, lod)
-#define fetch3D(handle, sampler, uvw, lod)					    gplTextureFetch(Textures3D[handle], uvw, lod)
-#define fetchStencil(handle, sampler, uv, lod)				    (castToU32(gplTextureFetch(Textures2D[handle], sampler, uv, lod).r))
+#define fetch2D(handle, sampler, uv, lod)					    textureFetch(Textures2D[handle], uv, lod)
+#define fetch2DMS(handle, sampler, uv, lod)					    textureFetch(Textures2DMS[handle], uv, lod)
+#define fetchCube(handle, sampler, uvw, lod)				    textureFetch(Textures2DArray[handle], uvw, lod)
+#define fetch2DArray(handle, sampler, uvw, lod)				    textureFetch(Textures2DArray[handle], uvw, lod)
+#define fetch3D(handle, sampler, uvw, lod)					    textureFetch(Textures3D[handle], uvw, lod)
+#define fetchStencil(handle, sampler, uv, lod)				    (castToU32(textureFetch(Textures2D[handle], uv, lod).r))
 
-#define query_lod2D(handle, sampler, uv)                        gplTextureGetSampledMip(sampler2D(Textures2D[handle], sampler), uv)
+#define query_lod2D(handle, sampler, uv)                        textureGetSampledMip(sampler2D(Textures2D[handle], sampler), uv)
 
 // these parameters are updated once per application tick
 struct TickParams
@@ -77,6 +77,7 @@ struct TickParams
     Balance : f32x4;
 
     DoFDistances : f32x3;
+    EnableTerrainShadows : u32;
 
     BloomColor : f32x3;
     BloomIntensity : f32;
@@ -188,7 +189,7 @@ sampler_state SpotlightTextureSampler
     Filter = FilterMode.MinMagLinearMipPoint;
     AddressU = AddressMode.Border;
     AddressV = AddressMode.Border;
-    BorderColor = BorderColor.Transparent;
+    Border = Color.Transparent;
 };
 
 //------------------------------------------------------------------------------
@@ -204,6 +205,8 @@ const CLUSTER_PBR_DECAL_BIT = 0x10u;
 const CLUSTER_EMISSIVE_DECAL_BIT = 0x20u;
 const CLUSTER_FOG_SPHERE_BIT = 0x40u;
 const CLUSTER_FOG_BOX_BIT = 0x80u;
+const CLUSTER_GI_VOLUME_BIT = 0x100u;
+
 
 // set a fixed number of cluster entries
 const NUM_CLUSTER_ENTRIES = 16384;
@@ -459,6 +462,61 @@ struct FogListData
 };
 group(FRAME_GROUP) uniform FogLists : *mutable FogListData;
 
+//------------------------------------------------------------------------------
+/**
+        GI
+*/
+//------------------------------------------------------------------------------
+struct GIVolume
+{
+    bboxMin : f32x3;
+    NumDistanceTexels : i32;
+    bboxMax : f32x3; 
+    EncodingGamma : f32;
+    Offset : f32x3;
+    Irradiance : u32;
+    Rotation : f32x4; // quaternion
+    GridCounts : i32x3;
+    Distances : u32;
+    GridSpacing : f32x3;
+    Offsets : u32;
+    ScrollOffsets : i32x3;
+    NumIrradianceTexels : i32;
+    Size : f32x3;
+    States : u32;
+    
+    BlendCutoff : f32;
+    Blend : f32;
+    
+    NormalBias : f32;
+    ViewBias : f32;
+    IrradianceScale : f32;
+    Options : u32;
+};
+
+#define MAX_GI_VOLUMES_PER_CLUSTER 4
+
+struct GIVolumeParams
+{
+    NumGIVolumes : u32;
+    NumGIVolumeClusters : u32;
+};
+group(FRAME_GROUP) uniform GIVolumeUniforms : *GIVolumeParams;
+
+struct GIIndexListData
+{
+    GIVolumeCountList : [NUM_CLUSTER_ENTRIES]u32;
+    GIVolumeIndexLists : [NUM_CLUSTER_ENTRIES * MAX_GI_VOLUMES_PER_CLUSTER]u32;
+};
+
+group(FRAME_GROUP) uniform GIIndexLists : *mutable GIIndexListData;
+group(FRAME_GROUP) uniform GIVolumeLists : [64]* mutable GIVolume;
+
+//------------------------------------------------------------------------------
+/**
+        Passes
+*/
+//------------------------------------------------------------------------------
 group(PASS_GROUP) uniform InputAttachment0 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment1 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment2 : *pixelCache;
@@ -477,16 +535,12 @@ group(PASS_GROUP) uniform InputAttachment14 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment15 : *pixelCache;
 group(PASS_GROUP) uniform DepthAttachment : *pixelCache;
 
-struct RenderTargetParameters
+struct PassParameters
 {
     Dimensions : f32x4;    // render target dimensions are size (xy) inversed size (zw)
     Scale : f32x2;         // dimensions / viewport
 };
 
-struct PassParams
-{
-    RenderTargetParameter : [16] RenderTargetParameters; // render target dimensions are size (xy) inversed size (zw)
-};
-group(PASS_GROUP) uniform PassBlock : *PassParams;
+group(PASS_GROUP) uniform PassUniforms : [16]* PassParameters;
 
 #endif // SHARED_H

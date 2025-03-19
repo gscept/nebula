@@ -1,0 +1,41 @@
+//------------------------------------------------------------------------------
+//  defaultsamplers.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#ifndef DEFAULTSAMPLERS_GPUH
+#define DEFAULTSAMPLERS_GPUH
+
+// samplers
+sampler_state GeometryTextureSampler
+{
+};
+
+sampler_state MaterialSampler
+{
+	Filter = FilterMode.MinMagMipLinear;
+};
+
+sampler_state NormalSampler
+{
+	Filter = FilterMode.MinMagMipLinear;
+};
+
+sampler_state CubeSampler
+{
+	Filter = FilterMode.MinMagMipLinear;
+	AddressU = AddressMode.Repeat;
+	AddressV = AddressMode.Repeat;
+	AddressW = AddressMode.Repeat;
+};
+
+sampler_state EnvironmentSampler
+{
+	Filter = FilterMode.MinMagMipLinear;
+	AddressU = AddressMode.Repeat;
+	AddressV = AddressMode.Repeat;
+	AddressW = AddressMode.Repeat;
+};
+
+#endif // DEFAULTSAMPLERS_GPUH
+

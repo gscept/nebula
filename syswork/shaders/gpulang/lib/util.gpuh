@@ -94,7 +94,7 @@ CubicWeights(v : f32) f32x4
 /**
     Sample texture using bicubic sampling
 */
-SampleCubic(tex : *texture2D, samp : *sampler, res : f32x4, pixel : f32x2, mip : u32) f32x3
+SampleCubic(uniform tex : *texture2D, uniform samp : *sampler, res : f32x4, pixel : f32x2, mip : u32) f32x3
 {
     var coords : f32x2 = pixel * res.xy - 0.5f;
     const fxy : f32x2 = fract(coords);
@@ -281,7 +281,7 @@ log_conv(x0 : f32, x : f32, y0 : f32, y : f32) f32
 /**
     Compute pixel size.
 */
-GetPixelSize(tex : *texture2D) f32x2
+GetPixelSize(uniform tex : *texture2D) f32x2
 {
     var size : f32x2 = textureGetSize(tex);
     size = f32x2(1.0f) / size;
@@ -292,7 +292,7 @@ GetPixelSize(tex : *texture2D) f32x2
 /**
     Compute pixel size.
 */
-GetScaledUVs(uvs : f32x2, tex : *texture2D, dimensions : f32x2) f32x2
+GetScaledUVs(uvs : f32x2, uniform tex : *texture2D, dimensions : f32x2) f32x2
 {
     const texSize : f32x2 = textureGetSize(tex);
     uvs = uvs * (dimensions / texSize);
@@ -303,7 +303,7 @@ GetScaledUVs(uvs : f32x2, tex : *texture2D, dimensions : f32x2) f32x2
 /**
     Compute UV from pixel coordinate and texture
 */
-GetUV(pixel : i32x2, tex : *texture2D) f32x2
+GetUV(pixel : i32x2, uniform tex : *texture2D) f32x2
 {
     var size : f32x2 = textureGetSize(tex);
     size = pixel / size;
@@ -314,7 +314,7 @@ GetUV(pixel : i32x2, tex : *texture2D) f32x2
 /**
     Compute pixel from UV
 */
-GetPixel(uv : f32x2, tex : *texture2D) i32x2
+GetPixel(uv : f32x2, uniform tex : *texture2D) i32x2
 {
     var size : i32x2 = textureGetSize(tex);
     size = i32x2(uv * size);
@@ -325,7 +325,7 @@ GetPixel(uv : f32x2, tex : *texture2D) i32x2
 /**
     Compute texture ratio to current pixel size
 */
-GetTextureRatio(tex : *texture2D, pixelSize : f32x2) f32x2
+GetTextureRatio(uniform tex : *texture2D, pixelSize : f32x2) f32x2
 {
     const size : i32x2 = textureGetSize(tex);
     const currentTextureSize : f32x2 = f32x2(1.0f) / size;
