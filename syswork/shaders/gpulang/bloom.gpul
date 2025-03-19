@@ -25,7 +25,7 @@ uniform BloomUniforms : *BloomData;
 
 render_state PostEffectState
 {
-    Cull = CullMode.Back;
+    Cull = CullFace.Back;
     DepthTestEnabled = false;
     DepthWriteEnabled = false;
 };
@@ -78,7 +78,7 @@ entry_point
 csUpscale() void
 {
     const threadIndex = computeGetLocalInvocationIndex().xy;
-    const groupIndex = computeGetWorkGroupIndex();
+    const groupIndex = computeGetWorkgroupIndex();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
     const tileStart = groupIndex.xy * (KERNEL_SIZE - 2);
@@ -121,7 +121,7 @@ entry_point
 csMerge() void
 {
     const threadIndex = computeGetLocalInvocationIndex().xy;
-    const groupIndex = computeGetWorkGroupIndex();
+    const groupIndex = computeGetWorkgroupIndex();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
     const tileStart = u32x2(groupIndex.x * 256, groupIndex.y);

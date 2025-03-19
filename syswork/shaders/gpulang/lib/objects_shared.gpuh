@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-//  objects_shared.fxh
-//  (C) 2020 gscept
+//  objects_shared.gpuh
+//  (C) 2025 gscept
 //------------------------------------------------------------------------------
-#ifndef OBJECTS_SHARED_FXH
-#define OBJECTS_SHARED_FXH
+#ifndef OBJECTS_SHARED_GPUH
+#define OBJECTS_SHARED_GPUH
 
 #include <lib/std.gpuh>
 
@@ -16,8 +16,7 @@ struct Object
 };
 
 // contains variables which are guaranteed to be unique per object.
-@Visibility("VS|PS")
-group(DYNAMIC_OFFSET_GROUP) uniform Objects : *Object;
+group(DYNAMIC_OFFSET_GROUP) uniform ObjectUniforms : *Object;
 
 // Instancing data is a buffer of 256 transforms
 const MAX_INSTANCING_BATCH_SIZE : i32 = 256;
@@ -29,15 +28,13 @@ struct InstanceGroupData
     IdArray : [MAX_INSTANCING_BATCH_SIZE]i32;
 };
 
-@Visibility("VS")
 group(DYNAMIC_OFFSET_GROUP) uniform Instances : *mutable InstanceGroupData;
 
 // Joints are limited to 256 matrices
-struct JointPalette
+struct Joint
 {
-    Joints : [256]f32x4x4;
+    Transform : f32x4x4;
 };
-@Visibility("VS")
-group(DYNAMIC_OFFSET_GROUP) uniform Joints : *JointPalette;
+group(DYNAMIC_OFFSET_GROUP) uniform JointPalette : [256] *Joint;
 
-#endif // OBJECTS_SHARED_FXH
+#endif // OBJECTS_SHARED_GPUH

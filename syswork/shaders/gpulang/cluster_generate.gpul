@@ -2,6 +2,7 @@
 //  cluster_generate.gpul
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 #include <lib/shared.gpuh>
@@ -48,7 +49,8 @@ csClusterAABB() void
     aabb.featureFlags = 0;
     aabb.minPoint.w = radius;
     aabb.maxPoint.w = sqrt(radius);
-    *(ClusterAABBs[index1D]) = aabb;
+    bufferStore(ClusterAABBs[index1D], aabb);
+    //ClusterAABBs[index1D] = aabb;
 }
 
 //------------------------------------------------------------------------------
