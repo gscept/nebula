@@ -24,7 +24,7 @@ sampler_state LuminanceSampler
 
 render_state AverageLumState
 {
-    Cull = CullMode.Back;
+    Cull = CullFace.Back;
     DepthTestEnabled = false;
     DepthWriteEnabled = false;
 };
@@ -40,7 +40,7 @@ vsMain(
     out UV : f32x2
 ) void 
 {
-    gplExportVertexCoordinates(f32x4(position, 1));
+    vertexExportCoordinates(f32x4(position, 1));
     UV = uv;
 }
 
@@ -60,7 +60,7 @@ psMain(in UV : f32x2) void
 
     var lum : f32 = lastLum + (currentLum - lastLum) * (1.0 - pow(0.98, 30.0 * AverageLumBlock.TimeDiff));
     lum = max(0.25f, lum);
-    gplExportColor(lum, 0);
+    pixelExportColor(lum, 0);
 }
 
 //------------------------------------------------------------------------------

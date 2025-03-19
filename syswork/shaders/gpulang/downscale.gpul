@@ -1,0 +1,57 @@
+//------------------------------------------------------------------------------
+//  downsample.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/techniques.gpuh>
+
+uniform ColorSource : *texture2D;
+
+sampler_state ColorSampler
+{
+    Filter = FilterMode.Point;
+};
+
+render_state DownscaleState
+{
+    Cull = CullFace.Back;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+};
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2) void 
+{
+    vertexExportCoordinates(f32x4(position, 1));
+    UV = uv;
+    UV.y = 1 - UV.y;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Performs a 2x2 kernel downscale
+*/
+entry_point
+psMain(in uv : f32x2) void
+{
+    const pixelSize = GetPixelSize(ColorSource);
+    const sample1 = textureSampleLod(ColorSource, ColorSampler, uv + f32x2(0.5f, 0.5f) * pixelSize, 0);
+    const sample2 = textureSampleLod(ColorSource, ColorSampler, uv + f32x2(0.5f, -0.5f) * pixelSize, 0);
+    const sample3 = textureSampleLod(ColorSource, ColorSampler, uv + f32x2(-0.5f, 0.5f) * pixelSize, 0);
+    const sample4 = textureSampleLod(ColorSource, ColorSampler, uv + f32x2(-0.5f, -0.5f) * pixelSize, 0);
+    pixelExportColor((sample1+sample2+sample3+sample4) * 0.25f, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PostEffect(vsMain, psMain, DownscaleState);

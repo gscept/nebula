@@ -20,7 +20,7 @@ sampler_state BillboardSampler {};
 
 render_state BillboardState
 {
-    Cull = CullMode.None;
+    Cull = CullFace.None;
 };
 
 //------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ BillboardVS(
     out UV : f32x2
 ) void
 {
-    gplExportVertexCoordinates(ViewConstants.ViewProjection * Objects.Model * f32x4(position, 0, 1));
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 0, 1));
     UV = uv;
 }
 
@@ -51,7 +51,7 @@ BillboardPS(
     if (alpha < 0.5f) 
         discard;
         
-    gplExportColor(EncodeHDR(diffColor), 0);
+    pixelExportColor(EncodeHDR(diffColor), 0);
 }
 
 //------------------------------------------------------------------------------

@@ -1,0 +1,65 @@
+//------------------------------------------------------------------------------
+//  standard_shading.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#ifndef STANDARD_SHADING_GPUH
+#define STANDARD_SHADING_GPUH 
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/defaultsamplers.gpuh>
+#include <lib/pbr.gpuh>
+#include <lib/geometrybase.gpuh>
+#include <lib/clustering.gpuh>
+#include <lib/lighting_functions.gpuh>
+#include <lib/material_interfaces.gpuh>
+
+//---------------------------------------------------------------------------------------------------------------------------
+//											FINALIZE COLOR
+//---------------------------------------------------------------------------------------------------------------------------
+enum PackColorMethods
+{
+    Solid,
+    Transparent
+};
+link_defined PackColorMethod  = PackColorMethods.Solid;
+PackColor(color : f32x3, alpha : f32) f32x4
+{
+    if (PackColorMethod == PackColorMethods.Solid)
+        return f32x4(color, 1.0f);
+    else if (PackColorMethod == PackColorMethods.Transparent)
+        return f32x4(color, alpha);
+    return f32x4(color, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Standard shader for conductors (metals) and dielectic materials (non-metal)
+*/
+early_depth
+entry_point
+psStandard(
+    in Tangent : f32x3,
+    in Normal : f32x3,
+    in no_interpolate Sign : f32,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3
+) void
+{
+    const albedo   = MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), 1.0f) * BRDFConstants.MatAlbedoIntensity;
+    var material = UnpackMaterialMap(sample2D(BRDFConstants.ParameterMap, MaterialSampler, UV));
+    material[MAT_EMISSIVE] = 0.0f;
+    const N        = normalize(UnpackNormalMap(Tangent, Normal, Sign, sample2D(BRDFConstants.NormalMap, NormalSampler, UV)));
+    
+    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
+    const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
+
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, albedo.rgb, material, N);
+    
+    pixelExportColor(PackColor(light.rgb, albedo.a), 0);
+}
+
+#endif

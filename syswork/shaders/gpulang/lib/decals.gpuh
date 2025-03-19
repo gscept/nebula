@@ -1,0 +1,107 @@
+//------------------------------------------------------------------------------
+//  decals.gpuh
+//  (C) 2025 Individual contributors, See LICENSE file
+//------------------------------------------------------------------------------
+
+#ifndef DECALS_GPUH
+#define DECALS_GPUH
+
+sampler_state DecalSampler
+{
+    Filter = FilterMode.MinMagMipLinear;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+    Border = Color.Transparent;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : *f32x4, normal : *f32x3, material : *f32x4) void
+{
+    var totAlbedo = f32x3(0);
+    var totNormal = f32x3(0);
+    var totMaterial = f32x4(0);
+    var totWeight = 0.0f; 
+
+    // calculate custom derivatives for the decal sampling method
+    var viewPosDerivativeX : f32x2 = ddx(viewPos.xy) * ViewConstants.FocalLengthNearFar.z * 2.0f;
+    var viewPosDerivativeY : f32x2 = ddy(viewPos.xy) * ViewConstants.FocalLengthNearFar.z * 2.0f;
+
+    // adjust gradient based on dFdx in depth, if the distance is too big, clip the gradient
+    const dFdDepth = fwidth(depth);
+    if (dFdDepth > 0.001f)
+    {
+        viewPosDerivativeX = f32x2(0.0f);
+        viewPosDerivativeY = f32x2(0.0f);
+    }
+
+    const flag = ClusterAABBs[idx].featureFlags;
+    if (CHECK_FLAG(flag, CLUSTER_PBR_DECAL_BIT))
+    {
+        const count = DecalIndexLists.PBRDecalCountList[idx];
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const didx = DecalIndexLists.PBRDecalIndexList[idx * MAX_DECALS_PER_CLUSTER + i];
+            const decal = DecalLists.PBRDecals[didx];
+            const localPos = decal.invModel * worldPos;
+
+            // check if pixel is inside the bounding box
+            const dist = f32x3(0.5f) - abs(localPos.xyz);
+            if (all(dist > f32x3(0)))
+            {
+                // assume the XY are the texture coordinates
+                const uv = localPos.xy + f32x2(0.5f);
+
+                // calculate a weight which serves as a smooth blend off the normal
+                const norm = *normal;
+                var weight = saturate(dot(decal.direction, -norm.xyz));
+                const d_albedo = sample2DGrad(decal.albedo, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
+                const d_normal = sample2DGrad(decal.normal, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
+                const d_material = sample2DGrad(decal.material, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
+                weight *= d_albedo.a;
+
+                if (weight > 0.0f)
+                {
+                    // calculate tbn
+                    const d_tangent = decal.tangent;
+                    const binormal = cross(d_tangent, normal);
+                    const tangent = cross(binormal, normal);
+                    const tbn = f32x3x3(tangent, binormal, normal);
+
+                    // calculate normal map in TBN space
+                    var tNormal = f32x3(0, 0, 0);
+                    tNormal.xy = (d_normal.ag * 2.0f) - 1.0f;
+                    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
+                    tNormal = tbn * tNormal;
+
+                    totAlbedo += d_albedo.xyz * weight;
+                    totNormal += tNormal * weight;
+                    totMaterial += d_material * weight;
+                    totWeight += weight;
+                }
+            }
+
+            // no need to go on if the pixel is saturated with decals
+            if (totWeight >= 1.0f)
+                break;
+        }
+    }
+
+    if (totWeight == 0)
+    {
+        return;
+    }
+
+    // normalize the normal
+    totNormal = normalize(totNormal);
+    const alb = *albedo;
+    const mat = *material;
+    
+    // write outputs, make sure to include the total weight so we can do a proper blending
+    *albedo.xyz = (1.0f - totWeight) * alb.xyz + (totAlbedo * totWeight);
+    *normal = totNormal;
+    *material.xyz = (1.0f - totWeight) * mat.xyz + totMaterial.xyz * totWeight;
+}
+
+#endif

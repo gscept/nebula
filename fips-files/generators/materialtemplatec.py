@@ -315,18 +315,29 @@ class MaterialInterfaceDefinition:
         contents = ""
         textures = ""
         texCounter = 64 - 16;
+        
+        typeTranslation = {
+            "float": "f32",
+            "vec2": "f32x2",
+            "vec3": "f32x3",
+            "vec4": "f32x4",
+            "bool": "b8",
+            "texture2D": "texture2D",
+            "textureHandle": "u32"
+        }
+        
         for v in self.values:
             if v.type != 'texture2d':
-                contents += "\t{} {};\n".format(v.type, v.name)
+                contents += "\t{} : {};\n".format(v.name, typeTranslation[v.type])
             else:
-                textures += "group(BATCH_GROUP) binding({}) texture2D {}_{};\n".format(texCounter, self.name, v.name)
+                textures += "group(BATCH_GROUP) binding({}) uniform {}_{} : *texture2D;\n".format(texCounter, self.name, v.name)
                 texCounter += 1
         
         ret = ""
-        ret += "ptr alignment(16) struct {}Material \n{{\n{}}};\n".format(self.name, contents)
+        ret += "struct {}Material \n{{\n{}}};\n".format(self.name, contents)
         ret += textures
         ret += "\n"
-        ret += "MATERIAL_CB_BINDING constant {}Constants \n{{\n{}}} _{};\n".format(self.name, contents, self.name)
+        ret += "MATERIAL_CB_BINDING uniform {}Constants : *{}Material;\n".format(self.name, self.name)
         return ret
 
 
@@ -539,7 +550,7 @@ class MaterialTemplateGenerator:
         materialNames = "\\\n"
         for i in self.interfaces:
             f.WriteLine(i.FormatShader())
-            materialNames += "\t\t{}Material {}Materials;\\\n".format(i.name, i.name);
+            materialNames += "\t\t{}Materials : *{}Material;\\\n".format(i.name, i.name);
 
         f.WriteLine("#define MATERIAL_LIST_{} {}".format(Path(self.name).stem, materialNames))
 
@@ -556,7 +567,7 @@ class MaterialTemplateGenerator:
         f.WriteLine("DO NOT EDIT")
         f.DecreaseIndent()
         f.WriteLine("*/")
-        f.WriteLine("#include <lib/std.fxh>")
+        f.WriteLine("#include <lib/std.gpuh>")
         f.WriteLine("#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)")
         f.WriteLine("")
 
@@ -579,7 +590,7 @@ if __name__ == '__main__':
 
     outHeaderPath = '{}/materialtemplates.h'.format(outDir)
     outSourcePath = '{}/materialtemplates.cc'.format(outDir)
-    outShaderPath = '{}/material_interfaces.fx'.format(outDir)
+    outShaderPath = '{}/material_interfaces.gpul'.format(outDir)
     compilerChangeTime = os.path.getmtime(sys.argv[0])
 
     hasModifications = False
@@ -619,7 +630,7 @@ if __name__ == '__main__':
         for file in files:
             path = Path(file).stem
 
-            print("[Material Template Compiler] '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc & '{}/material_interfaces.fx' ".format(file, outDir, outDir, outDir))
+            print("[Material Template Compiler] '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc & '{}/material_interfaces.gpul' ".format(file, outDir, outDir, outDir))
             generator.SetDocument(file)
             generator.SetName(path)
             generator.Parse()
@@ -671,21 +682,22 @@ if __name__ == '__main__':
 
         # Finish shader
         shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
-        shaderF.WriteLine("const uint MaterialBindingSlot = 51;")
-        shaderF.WriteLine("const uint MaterialBufferSlot = 52;")
+        shaderF.WriteLine("const MaterialBindingSlot = 51u;")
+        shaderF.WriteLine("const MaterialBufferSlot = 52u;")
 
         bindingsContent = ''
         for file in files:
             fileName = Path(file).stem
             bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
 
-        shaderF.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
+        shaderF.WriteLine("struct MaterialBinding\n{{\n{}}};".format(bindingsContent));
+        shaderF.WriteLine("MATERIAL_BINDING uniform MaterialPointers : *MaterialBinding;")
         generator.EndShader(shaderF)
         shaderF.Close()
 
     
     # Finally, run the AnyFX compiler
-    shaderBinaryOutput = "{}/material_interfaces.fxb".format(outDir)
+    shaderBinaryOutput = "{}/material_interfaces.gplb".format(outDir)
     shaderHeaderOutput = "{}/material_interfaces.h".format(outDir)
 
     try:

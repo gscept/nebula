@@ -1,0 +1,24 @@
+//------------------------------------------------------------------------------
+//  blur_cube_rgba16f_cs.gpul
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#define IMAGE_IS_RGBA16F 1
+#define IMAGE_IS_ARRAY 1
+#include "blur_cs.fxh"
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program BlurX
+{
+    ComputeShader = csMainX;
+};
+
+@Mask("Alt1")
+program BlurY
+{
+    ComputeShader = csMainY;
+};

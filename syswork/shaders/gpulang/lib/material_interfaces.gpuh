@@ -1,0 +1,163 @@
+// Material Interface #version:1#
+#pragma once
+//------------------------------------------------------------------------------
+/**
+    This file was generated with Nebula's Material Template compiler tool.
+    DO NOT EDIT
+*/
+#include <lib/std.gpuh>
+#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)
+
+struct BasicMaterial 
+{
+    AlbedoMap : u32;
+    AlphaSensitivity : f32;
+    AlphaBlendFactor : f32;
+};
+
+MATERIAL_CB_BINDING uniform BasicConstants : *BasicMaterial;
+
+struct BRDFMaterial 
+{
+    AlbedoMap : u32;
+    AlphaSensitivity : f32;
+    AlphaBlendFactor : f32;
+    ParameterMap : u32;
+    MatAlbedoIntensity : f32x4;
+    MatSpecularIntensity : f32x4;
+    MatRoughnessIntensity : f32;
+    MatMetallicIntensity : f32;
+    NormalMap : u32;
+};
+
+MATERIAL_CB_BINDING uniform BRDFConstants : *BRDFMaterial;
+
+struct BSDFMaterial 
+{
+    AlbedoMap : u32;
+    AlphaSensitivity : f32;
+    AlphaBlendFactor : f32;
+    ParameterMap : u32;
+    MatAlbedoIntensity : f32x4;
+    MatSpecularIntensity : f32x4;
+    MatRoughnessIntensity : f32;
+    MatMetallicIntensity : f32;
+    NormalMap : u32;
+    Transmission : f32;
+};
+
+MATERIAL_CB_BINDING uniform BSDFConstants : *BSDFMaterial;
+
+struct UnlitMaterial 
+{
+    AlbedoMap : u32;
+    AlphaSensitivity : f32;
+    AlphaBlendFactor : f32;
+    Brightness : f32;
+};
+
+MATERIAL_CB_BINDING uniform UnlitConstants : *UnlitMaterial;
+
+struct BlendAddMaterial 
+{
+    AlbedoMap : u32;
+    AlphaSensitivity : f32;
+    AlphaBlendFactor : f32;
+    Brightness : f32;
+    Layer2 : u32;
+    Layer3 : u32;
+    Layer4 : u32;
+    UVAnim1 : f32x2;
+    UVAnim2 : f32x2;
+    UVAnim3 : f32x2;
+    UVAnim4 : f32x2;
+};
+
+MATERIAL_CB_BINDING uniform BlendAddConstants : *BlendAddMaterial;
+
+struct BillboardMaterial 
+{
+    AlbedoMap : u32;
+    Color : f32x4;
+    ViewAligned : b8;
+};
+
+MATERIAL_CB_BINDING uniform BillboardConstants : *BillboardMaterial;
+
+struct SkyboxMaterial 
+{
+    SkyLayer1 : u32;
+    SkyLayer2 : u32;
+    SkyBlendFactor : f32;
+    SkyRotationFactor : f32;
+    Contrast : f32;
+    Brightness : f32;
+};
+
+MATERIAL_CB_BINDING uniform SkyboxConstants : *SkyboxMaterial;
+
+struct TerrainMaterial 
+{
+    LowresAlbedoFallback : u32;
+    LowresNormalFallback : u32;
+    LowresMaterialFallback : u32;
+};
+
+MATERIAL_CB_BINDING uniform TerrainConstants : *TerrainMaterial;
+
+struct ArealightMaterial 
+{
+    EmissiveColor : f32x4;
+};
+
+MATERIAL_CB_BINDING uniform ArealightConstants : *ArealightMaterial;
+
+struct PlaceholderMaterial 
+{
+    AlbedoMap : u32;
+};
+
+MATERIAL_CB_BINDING uniform PlaceholderConstants : *PlaceholderMaterial;
+
+#define MATERIAL_LIST_base \
+        BasicMaterials : *BasicMaterial;\
+        BRDFMaterials : *BRDFMaterial;\
+        BSDFMaterials : *BSDFMaterial;\
+        UnlitMaterials : *UnlitMaterial;\
+        BlendAddMaterials : *BlendAddMaterial;\
+        BillboardMaterials : *BillboardMaterial;\
+        SkyboxMaterials : *SkyboxMaterial;\
+        TerrainMaterials : *TerrainMaterial;\
+        ArealightMaterials : *ArealightMaterial;\
+        PlaceholderMaterials : *PlaceholderMaterial;\
+
+struct GLTFMaterial 
+{
+    baseColorTexture : u32;
+    alphaCutoff : f32;
+    normalTexture : u32;
+    metallicRoughnessTexture : u32;
+    emissiveTexture : u32;
+    occlusionTexture : u32;
+    metallicFactor : f32;
+    roughnessFactor : f32;
+    baseColorFactor : f32x4;
+    emissiveFactor : f32x4;
+    normalScale : f32;
+};
+
+MATERIAL_CB_BINDING uniform GLTFConstants : *GLTFMaterial;
+
+#define MATERIAL_LIST_gltf \
+        GLTFMaterials : *GLTFMaterial;\
+
+#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)
+const MaterialBindingSlot = 51u;
+const MaterialBufferSlot = 52u;
+struct MaterialBinding
+{
+    MATERIAL_LIST_base
+    MATERIAL_LIST_gltf
+};
+MATERIAL_BINDING uniform MaterialPointers : *MaterialBinding;
+
