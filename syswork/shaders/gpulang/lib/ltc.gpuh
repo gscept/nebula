@@ -1,0 +1,368 @@
+//------------------------------------------------------------------------------
+//  @file ltc.fxh
+//  @copyright (C) 2023 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+const LUT_SIZE = 64.0f;
+const LUT_SCALE = (LUT_SIZE - 1.0f) / LUT_SIZE;
+const LUT_BIAS = 0.5f / LUT_SIZE;
+
+//------------------------------------------------------------------------------
+/**
+*/
+LtcEdgeIntegrate(p1 : f32x3, p2 : f32x3) f32x3
+{
+    const x = dot(p1, p2);
+    const y = abs(x);
+
+    const a = 0.8543985 + (0.4965155 + 0.0145206 * y) * y;
+    const b = 3.4175940 + (4.1616724 + y) * y;
+    const v = a / b;
+
+    const theta_sintheta = (x > 0.0) ? v : 0.5 * invSqrt(max(1.0 - x * x, 1e-7)) - v;
+
+    return cross(p1, p2) * theta_sintheta;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+LtcRectIntegrate(
+    n : f32x3
+    , v : f32x3
+    , p : f32x3
+    , minv : f32x3x3
+    , corners : [4]f32x3
+    , specular : b8
+    , twoSided : b8
+) f32
+{
+    var t1, t2 : f32x3;
+    t1 = normalize(v - n * dot(v, n));
+    t2 = cross(n, t1);
+
+    const r = transpose(f32x3x3(t1, t2, n));
+
+    var L : [4]f32x3;
+    L[0] = corners[0] - p;
+    L[1] = corners[1] - p;
+    L[2] = corners[2] - p;
+    L[3] = corners[3] - p;
+    if (specular)
+    {
+        minv = minv * r;
+        L[0] = minv * L[0];
+        L[1] = minv * L[1];
+        L[2] = minv * L[2];
+        L[3] = minv * L[3];
+    }
+    else
+    {
+        L[0] = r * L[0];
+        L[1] = r * L[1];
+        L[2] = r * L[2];
+        L[3] = r * L[3];
+    }
+
+    var sum = 0.0f;
+
+    const dir = corners[0] - p;
+    const lightNormal = cross(corners[1] - corners[0], corners[3] - corners[0]);
+    const behind = dot(dir, lightNormal) < 0.0f;
+    if (behind && !twoSided)
+        return 0.0f;
+
+    L[0] = normalize(L[0]);
+    L[1] = normalize(L[1]);
+    L[2] = normalize(L[2]);
+    L[3] = normalize(L[3]);
+
+    var vsum = f32x3(0.0f);
+    vsum += LtcEdgeIntegrate(L[0], L[1]);
+    vsum += LtcEdgeIntegrate(L[1], L[2]);
+    vsum += LtcEdgeIntegrate(L[2], L[3]);
+    vsum += LtcEdgeIntegrate(L[3], L[0]);
+
+    const len = length(vsum);
+    var z = vsum.z / len;
+
+    z *= behind ? -1.0f : 1.0f;
+
+    var uv = f32x2(z * 0.5f + 0.5f, len);
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    const scale = sample2DLod(PerTickParams.ltcLUT1, LinearSampler, uv, 0).w;
+
+    sum = len * scale;
+    return sum;
+}
+
+// An extended version of the implementation from
+// "How to solve a cubic equation, revisited"
+// http://momentsingraphics.de/?p=105
+LtcSolveCubic(Coefficient : f32x4) f32x3
+{
+    // Normalize the polynomial
+    Coefficient.xyz /= Coefficient.w;
+    // Divide middle coefficients by three
+    Coefficient.yz /= 3.0f;
+
+    const A = Coefficient.w;
+    const B = Coefficient.z;
+    const C = Coefficient.y;
+    const D = Coefficient.x;
+    const pi = 3.14159265f;
+
+    // Compute the Hessian and the discriminant
+    const Delta = f32x3(
+        -Coefficient.z * Coefficient.z + Coefficient.y,
+        -Coefficient.y * Coefficient.z + Coefficient.x,
+        dot(f32x2(Coefficient.z, -Coefficient.y), Coefficient.xy)
+    );
+
+    const Discriminant = dot(f32x2(4.0f * Delta.x, -Delta.y), Delta.zy);
+
+    var RootsA, RootsD : f32x3;
+
+    var xlc, xsc : f32x2;
+
+    // Algorithm A
+    {
+        const A_a = 1.0;
+        const C_a = Delta.x;
+        const D_a = -2.0 * B * Delta.x + Delta.y;
+
+        // Take the cubic root of a normalized complex number
+        const Theta = atan(sqrt(Discriminant), -D_a) / 3.0f;
+
+        const x_1a = 2.0 * sqrt(-C_a) * cos(Theta);
+        const x_3a = 2.0 * sqrt(-C_a) * cos(Theta + (2.0f / 3.0f) * pi);
+
+        var xl : f32;
+        if ((x_1a + x_3a) > 2.0f * B)
+            xl = x_1a;
+        else
+            xl = x_3a;
+
+        xlc = f32x2(xl - B, A);
+    }
+
+    // Algorithm D
+    {
+        const A_d = D;
+        const C_d = Delta.z;
+        const D_d = -D * Delta.y + 2.0f * C * Delta.z;
+
+        // Take the cubic root of a normalized complex number
+        const Theta = atan(D * sqrt(Discriminant), -D_d) / 3.0f;
+
+        const x_1d = 2.0f * sqrt(-C_d) * cos(Theta);
+        const x_3d = 2.0f * sqrt(-C_d) * cos(Theta + (2.0f / 3.0f) * pi);
+
+        var xs : f32;
+        if (x_1d + x_3d < 2.0f * C)
+            xs = x_1d;
+        else
+            xs = x_3d;
+
+        xsc = f32x2(-D, xs + C);
+    }
+
+    const E = xlc.y * xsc.y;
+    const F = -xlc.x * xsc.y - xlc.y * xsc.x;
+    const G = xlc.x * xsc.x;
+
+    const xmc = f32x2(C * F - B * G, -B * F + C * E);
+
+    var Root = f32x3(xsc.x / xsc.y, xmc.x / xmc.y, xlc.x / xlc.y);
+
+    if (Root.x < Root.y && Root.x < Root.z)
+        Root.xyz = Root.yxz;
+    else if (Root.z < Root.x && Root.z < Root.y)
+        Root.xyz = Root.xzy;
+
+    return Root;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+LtcDiskIntegrate(
+    n : f32x3
+    , v : f32x3
+    , p : f32x3
+    , minv : f32x3x3
+    , corners : [3]f32x3
+    , specular : b8
+    , twoSided : b8
+) f32
+{
+    var t1, t2 : f32x3;
+    t1 = normalize(v - n * dot(v, n));
+    t2 = cross(n, t1);
+
+    const r = transpose(f32x3x3(t1, t2, n));
+
+    var L : [3]f32x3;
+    L[0] = r * (corners[0] - p);
+    L[1] = r * (corners[1] - p);
+    L[2] = r * (corners[2] - p);
+
+    var c = 0.5f * (L[0] + L[2]);
+    var v1 = 0.5f * (L[1] - L[2]);
+    var v2 = 0.5f * (L[1] - L[0]);
+    if (specular)
+    {
+        c = minv * c;
+        v1 = minv * v1;
+        v2 = minv * v2;
+    }
+
+    if (!twoSided && dot(cross(v1, v2), c) < 0.0f)
+        return 0.0f;
+
+    // Compute ellipsis eigen vectors
+    var a, b : f32;
+    const d11 = dot(v1, v1);
+    const d22 = dot(v2, v2);
+    const d12 = dot(v1, v2);
+
+    if (abs(d12) / sqrt(d11 * d22) > 0.0007f)
+    {
+        const tr = d11 + d22;
+        var det = -d12 * d12 + d11 * d22;
+
+        det = sqrt(det);
+        const u = 0.5f * sqrt(tr - 2.0f * det);
+        const v = 0.5f * sqrt(tr + 2.0f * det);
+
+        const e_max = sqr(u + v);
+        const e_min = sqr(u - v);
+
+        var _v1, _v2 : f32x3;
+
+        if (d11 > d22)
+        {
+            _v1 = d12 * v1 + (e_max - d11) * v2;
+            _v2 = d12 * v1 + (e_min - d11) * v2;
+        }
+        else
+        {
+            _v1 = d12 * v2 + (e_max - d22) * v1;
+            _v2 = d12 * v2 + (e_min - d22) * v1;
+        }
+
+        a = 1.0f / e_max;
+        b = 1.0f / e_min;
+        v1 = normalize(_v1);
+        v2 = normalize(_v2);
+    }
+    else
+    {
+        a = 1.0f / d11;
+        b = 1.0f / d22;
+        v1 *= sqrt(a);
+        v2 *= sqrt(b);
+    }
+
+    var v3 = normalize(cross(v1, v2));
+    v3 *= dot(c, v3) < 0.0f ? -1.0f : 1.0f;
+
+    const l = dot(v3, c);
+    const x0 = dot(v1, c) / l;
+    const y0 = dot(v2, c) / l;
+
+    a *= l * l;
+    b *= l * l;
+
+    const c0 = a * b;
+    const c1 = a * b * (1.0f + x0 * x0 + y0 * y0) - a - b;
+    const c2 = 1.0f - a * (1.0f + x0 * x0) - b * (1.0f + y0 * y0);
+    const c3 = 1.0f;
+
+    const roots = LtcSolveCubic(f32x4(c0, c1, c2, c3));
+
+    const e1 = roots.x;
+    const e2 = roots.y;
+    const e3 = roots.z;
+
+    var avgDir = f32x3(a * x0 / (a - e2), b * y0 / (b - e2), 1.0f);
+    const rotate = f32x3x3(v1, v2, v3);
+
+    avgDir = normalize(rotate * avgDir);
+
+    const L1 = sqrt(-e2 / e3);
+    const L2 = sqrt(-e2 / e1);
+    const formFactor = max(0.0f, L1 * L2 * invSqrt((1.0f + L1 * L1) * (1.0f + L2 * L2)));
+
+    var uv = f32x2(avgDir.z * 0.5f + 0.5f, formFactor);
+    uv = uv * LUT_SCALE + LUT_BIAS;
+    const scale = sample2DLod(PerTickParams.ltcLUT1, LinearSampler, uv, 0).w;
+
+    return formFactor * scale;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Integration of p0 with distance
+*/
+Fp0(d : f32, l : f32) f32
+{
+    return l / (d * (d * d + l * l)) + atan(l / d) / (d * d);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Integration of tangent with distance
+*/
+Fwt(d : f32, l : f32) f32
+{
+    return l * l / (d * (d * d + l * l));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+LtcLineIntegrate(
+    n : f32x3
+    , v : f32x3
+    , p : f32x3
+    , radius : f32
+    , minv : f32x3x3
+    , points : [2]f32x3
+) f32
+{
+    var t1, t2 : f32x3;
+    t1 = normalize(v - n * dot(v, n));
+    t2 = cross(n, t1);
+
+    const r = transpose(f32x3x3(t1, t2, n));
+
+    const p1 = r * (points[0] - p);
+    const p2 = r * (points[1] - p);
+
+    const p1o = minv * p1;
+    const p2o = minv * p2;
+
+    const tangent = normalize(p2o - p1o);
+
+    var p1d, p2d = p1o, p2o;
+    if (p1o.z <= 0.0 && p2o.z <= 0.0) return 0.0;
+    if (p1o.z < 0.0) p1d = (+p1o * p2o.z - p2o * p1o.z) / (+p2o.z - p1o.z);
+    if (p2o.z < 0.0) p2d = (-p1o * p2o.z + p2o * p1o.z) / (-p2o.z + p1o.z);
+
+    const l1 = dot(p1d, tangent);
+    const l2 = dot(p2d, tangent);
+
+    const po = p1d - l1 * tangent;
+
+    const d = length(po);
+
+    var diffuse = ((Fp0(d, l2) - Fp0(d, l1)) * po.z + (Fwt(d, l2) - Fwt(d, l1)) * tangent.z) / PI;
+
+    const ortho = normalize(cross(p1, p2));
+    const w = 1.0f / length(inverse(transpose(minv)) * ortho);
+    diffuse = w * diffuse;
+
+    return min(1.0f, diffuse * radius);
+}

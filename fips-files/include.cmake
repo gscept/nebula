@@ -140,7 +140,8 @@ if(N_RENDERER_VULKAN)
     add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Vulkan)
 endif()
 
-option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
+option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" ON)
+option(N_NEBULA_PROFILE_SHADER_BUILDS "Profile shader compilation" OFF)
 
 option(USE_DOTNET "Build with .NET support" OFF)
 
@@ -194,7 +195,11 @@ macro(compile_gpulang_intern)
     set(nebula_shader ${ARGV1})
     if(SHADERC)
         if(N_NEBULA_DEBUG_SHADERS)
-            set(shader_debug "-debug")
+            set(shader_debug "-debug -validate")
+        endif()
+        
+        if (N_NEBULA_PROFILE_SHADER_BUILDS)
+            set(shader_profile "-profile")
         endif()
 
         if (nebula_shader)
@@ -219,7 +224,7 @@ macro(compile_gpulang_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${GPULANGC} -M -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h -t shader)
+            execute_process(COMMAND ${GPULANGC} -M -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h)
         endif()
 
         # sadly this doesnt work for some reason
@@ -235,7 +240,7 @@ macro(compile_gpulang_intern)
         endif()
 
         add_custom_command(OUTPUT ${binaryOutput}
-            COMMAND ${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}
+            COMMAND ${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${binaryOutput} -h ${headerOutput} ${shader_debug} ${shader_profile}
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${GPULANGC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -251,7 +256,7 @@ macro(compile_gpulang_intern)
 
         if(N_ENABLE_SHADER_COMMAND_GENERATION)
             # create compile flags file for live shader compile
-            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -o ${binaryOutput} -h ${headerOutput} -t shader ${shader_debug}")
+            file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -o ${binaryOutput} -h ${headerOutput} ${shader_debug} ${shader_profile}")
         endif()
     endif()
 endmacro()

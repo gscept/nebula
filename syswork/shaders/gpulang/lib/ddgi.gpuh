@@ -1,0 +1,447 @@
+//------------------------------------------------------------------------------
+//  @file ddgi.gpuh
+//  @copyright (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#ifndef DDGI_GPUH
+#define DDGI_GPUH
+#include <lib/shared.gpuh>
+
+const PROBE_STATE_INACTIVE = 0;
+const PROBE_STATE_ACTIVE = 1;
+const DDGI_NUM_FIXED_RAYS = 32;
+
+const NUM_IRRADIANCE_TEXELS_PER_PROBE = 6;
+const NUM_DISTANCE_TEXELS_PER_PROBE = 14;
+
+const RELOCATION_OPTION = 0x1;
+const SCROLL_OPTION = 0x2;
+const CLASSIFICATION_OPTION = 0x4;
+const LOW_PRECISION_IRRADIANCE_OPTION = 0x8;
+const PARTIAL_UPDATE_OPTION = 0x10;
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbesPerPlane(probeGridCounts : i32x3) i32
+{
+    return probeGridCounts.x * probeGridCounts.z;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeIndex(texCoord : i32x2, probeGridCounts : i32x3) i32
+{
+    return texCoord.x + (texCoord.y * (probeGridCounts.x * probeGridCounts.y));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeIndex(probeCoords : i32x3, probeGridCounts : i32x3) i32
+{
+    return probeCoords.x + (probeGridCounts.x * probeCoords.z) + (probeGridCounts.x * probeGridCounts.z) * probeCoords.y;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeIndex(threadCoords : u32x2, probeGridCounts : i32x3, numTexels : i32) i32
+{
+    const probesPerPlane = DDGIProbesPerPlane(probeGridCounts);
+    const planeIndex = i32(threadCoords.x / (probeGridCounts.x * numTexels));
+    const probeIndexInPlane = i32(threadCoords.x / numTexels) - (planeIndex * probeGridCounts.x) + (probeGridCounts.x * i32(threadCoords.y / numTexels));
+    return planeIndex * probesPerPlane + probeIndexInPlane;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeTexelPosition(probeIndex : i32, probeGridCounts : i32x3) i32x2
+{
+    return i32x2(probeIndex % (probeGridCounts.x * probeGridCounts.y), probeIndex / (probeGridCounts.x * probeGridCounts.y));
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeCoords(probeIndex : i32, probeGridCounts : i32x3) i32x3
+{
+    var ret : i32x3;
+    ret.x = probeIndex % probeGridCounts.x;
+    ret.y = probeIndex / (probeGridCounts.x * probeGridCounts.z);
+    ret.z = (probeIndex / probeGridCounts.x) % probeGridCounts.z;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeUV(probeIndex : i32, octantCoords : f32x2, probeGridCounts : i32x3, numTexels : i32, probeScrollOffsets : i32x3, options : u32) f32x2
+{
+    const probesPerPlane = DDGIProbesPerPlane(probeGridCounts);
+    var planeIndex = probeIndex / probesPerPlane;
+    
+    const probeInteriorTexels = f32(numTexels);
+    const probeTexels = probeInteriorTexels * 2;
+    
+    var gridSpaceX = probeIndex % probeGridCounts.x;
+    var gridSpaceY = probeIndex / probeGridCounts.x;
+    
+    if ((options & SCROLL_OPTION) != 0)
+    {
+        gridSpaceX = (gridSpaceX + probeScrollOffsets.x) % probeGridCounts.x;
+        gridSpaceY = (gridSpaceY + probeScrollOffsets.z) % probeGridCounts.z;
+        planeIndex = (planeIndex + probeScrollOffsets.y) % probeGridCounts.y;
+    }
+    
+    const x = gridSpaceX + (planeIndex * probeGridCounts.x);
+    const y = gridSpaceY % probeGridCounts.z;
+    
+    const textureWidth = probeTexels * (probeGridCounts.x * probeGridCounts.y);
+    const textureHeight = probeTexels * probeGridCounts.z;
+    
+    var uv = f32x2(x * probeTexels, y * probeTexels) + (probeTexels * 0.5f);
+    uv += octantCoords.xy * (probeInteriorTexels * 0.5f);
+    uv /= f32x2(textureWidth, textureHeight);
+    return uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIBaseProbeGridCoordinates(worldPosition : f32x3, volumeOrigin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3) i32x3
+{
+    var position = worldPosition - volumeOrigin;
+    // TODO: handle rotations
+    
+    position += (probeGridSpacing * (probeGridCounts - 1)) * 0.5f;
+    var probeCoords = i32x3(position / probeGridSpacing);
+    
+    probeCoords = clamp(probeCoords, i32x3(0), (probeGridCounts - i32x3(1)));
+    
+    return probeCoords; 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeWorldPosition(probeCoords : i32x3, origin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3) f32x3
+{
+    const probeGridWorldPosition = probeCoords * probeGridSpacing;
+    const probeGridShift = (probeGridSpacing * (probeGridCounts - 1)) * 0.5f;
+    
+    var probeWorldPosition = probeGridWorldPosition - probeGridShift;
+    // TODO: ROTATE
+    probeWorldPosition += origin;
+    return probeWorldPosition;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeWorldPosition(probeIndex : i32, origin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3) f32x3
+{
+    const probeCoords = DDGIProbeCoords(probeIndex, probeGridCounts);
+    return DDGIProbeWorldPosition(probeCoords, origin, rotation, probeGridCounts, probeGridSpacing);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIDecodeProbeOffsets(probeOffsetTexcoord : i32x2, probeGridSpacing : f32x3, probeOffsets : u32) f32x3
+{
+    return fetch2D(probeOffsets, Basic2DSampler, probeOffsetTexcoord, 0).xyz * probeGridSpacing; 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeWorldPositionWithOffset(probeIndex : i32, origin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3, probeOffsets : u32) f32x3
+{
+    const textureWidth = probeGridCounts.x * probeGridCounts.y;
+    const offsetTexCoords = i32x2(probeIndex % textureWidth, probeIndex / textureWidth);
+    return DDGIDecodeProbeOffsets(offsetTexCoords, probeGridSpacing, probeOffsets) + DDGIProbeWorldPosition(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeWorldPositionWithOffset(probeCoords : i32x3, origin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3, probeOffsets : u32) f32x3
+{
+    const probeIndex = DDGIProbeIndex(probeCoords, probeGridCounts);
+    return DDGIProbeWorldPositionWithOffset(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing, probeOffsets);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeIndexOffset(baseProbeIndex : i32, probeGridCounts : i32x3, probeScrollOffsets : i32x3) i32
+{
+    const probeGridCoord = DDGIProbeCoords(baseProbeIndex, probeGridCounts);
+    const offsetProbeGridCoord = (probeGridCoord + probeScrollOffsets) % probeGridCounts;
+    const offsetProbeIndex = DDGIProbeIndex(offsetProbeGridCoord, probeGridCounts);
+    return offsetProbeIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeWorldPositionWithScrollAndOffset(probeIndex : i32, origin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3, probeScrollOffsets : i32x3, probeOffsets : u32) f32x3
+{
+    const textureWidth = probeGridCounts.x * probeGridCounts.y;
+    const storageProbeIndex = DDGIProbeIndexOffset(probeIndex, probeGridCounts, probeScrollOffsets);
+    const offsetTexCoords = i32x2(storageProbeIndex % textureWidth, storageProbeIndex / textureWidth);
+    return DDGIDecodeProbeOffsets(offsetTexCoords, probeGridSpacing, probeOffsets) + DDGIProbeWorldPosition(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIProbeWorldPositionWithScrollAndOffset(probeCoords : i32x3, origin : f32x3, rotation : f32x4, probeGridCounts : i32x3, probeGridSpacing : f32x3, probeScrollOffsets : i32x3, probeOffsets : u32) f32x3
+{
+    const probeIndex = DDGIProbeIndex(probeCoords, probeGridCounts);
+    return DDGIProbeWorldPositionWithScrollAndOffset(probeIndex, origin, rotation, probeGridCounts, probeGridSpacing, probeScrollOffsets, probeOffsets);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGISignNotZero(v : f32) f32
+{
+    return v >= 0.0f ? 1.0f : -1.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGISignNotZero(v : f32x2) f32x2
+{
+    return f32x2(DDGISignNotZero(v.x), DDGISignNotZero(v.y));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGISurfaceBias(normal : f32x3, cameraDirection : f32x3, normalBias : f32, viewBias : f32) f32x3
+{
+    return (normal * normalBias) + (-cameraDirection * viewBias);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Finds the smallest component of the vector.
+*/
+DDGIMinComponent(a : f32x3) f32
+{
+    return min(a.x, min(a.y, a.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Finds the largest component of the vector.
+*/
+DDGIMaxComponent(a : f32x3) f32
+{
+    return max(a.x, max(a.y, a.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGINormalizedOctahedralCoordinates(threadCoords : i32x2, numTexels : i32) f32x2
+{
+    var octahedralTexelCoord = f32x2(threadCoords.x % numTexels, threadCoords.y % numTexels);
+    octahedralTexelCoord.xy += 0.5f;
+    octahedralTexelCoord.xy /= f32(numTexels);
+    octahedralTexelCoord *= 2.0f;
+    octahedralTexelCoord -= f32x2(1.0f);
+    return octahedralTexelCoord;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+DDGIOctahedralDirection(coords : f32x2) f32x3
+{
+    var direction = f32x3(coords.x, coords.y, 1.0f - abs(coords.x) - abs(coords.y));
+    if (direction.z < 0.0f)
+    {
+        direction.xy = (1.0f - abs(direction.yx)) * DDGISignNotZero(direction.xy);
+    }
+    return normalize(direction);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/ 
+DDGIOctahedralCoordinates(direction : f32x3) f32x2
+{
+    const l1norm = abs(direction.x) + abs(direction.y) + abs(direction.z);
+    var uv = direction.xy * (1.0f / l1norm);
+    if (direction.z < 0.0f)
+    {
+        uv = (1.0f - abs(uv.yx)) * DDGISignNotZero(direction.xy);
+    }
+    return uv;
+}
+
+struct DDGIVolume
+{
+    origin : f32x3;
+    rotationQuat: f32x4;
+    probeGridCounts : i32x3;
+    probeGridSpacing : f32x3;
+    probeScrollOffsets : i32x3;
+    numIrradianceTexels : i32;
+    numDistanceTexels : i32;
+    probeIrradianceGamma : f32;
+    irradianceHandle : u32;
+    distanceHandle : u32;
+    offsetsHandle : u32;
+    statesHandle : u32;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+EvaluateDDGIIrradiance(
+    worldPosition : f32x3,
+    surfaceBias : f32x3,
+    direction : f32x3,
+    volume : GIVolume,
+    options : u32
+) f32x3
+{
+    var irradiance = f32x3(0, 0, 0);
+    var accumulatedWeights = 0.0f;
+    
+    const biasedWorldPosition = worldPosition + surfaceBias;
+    const baseProbeCoordinates = DDGIBaseProbeGridCoordinates(biasedWorldPosition, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
+    const baseProbeWorldPosition = DDGIProbeWorldPosition(baseProbeCoordinates, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
+    
+    const distanceVolumeSpace = biasedWorldPosition - baseProbeWorldPosition;
+    // TODO: ROTATE
+    
+    const alpha = clamp(distanceVolumeSpace / volume.GridSpacing, f32x3(0), f32x3(1));
+    for (var probeIndex : i32 = 0; probeIndex < 8; probeIndex++)
+    {
+        const adjacentProbeOffset = i32x3(probeIndex, probeIndex >> 1, probeIndex >> 2) & i32x3(1);
+        const adjacentProbeCoords = clamp(baseProbeCoordinates + adjacentProbeOffset, i32x3(0), volume.GridCounts - i32x3(1));
+        var adjacentProbeWorldPosition : f32x3;
+        
+        if ((options & RELOCATION_OPTION) != 0)
+        {
+            if ((options & SCROLL_OPTION) != 0)
+            {
+                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithScrollAndOffset(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.ScrollOffsets, volume.Offsets);
+            }
+            else
+            {
+                //adjacentProbeWorldPosition = DDGIProbeWorldPosition(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
+                adjacentProbeWorldPosition = DDGIProbeWorldPositionWithOffset(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing, volume.Offsets);
+            }
+        }
+        else
+        {
+            adjacentProbeWorldPosition = DDGIProbeWorldPosition(adjacentProbeCoords, volume.Offset, volume.Rotation, volume.GridCounts, volume.GridSpacing);
+        }
+        
+        const adjacentProbeIndex = DDGIProbeIndex(adjacentProbeCoords, volume.GridCounts);
+        
+        if ((options & CLASSIFICATION_OPTION) != 0)
+        {
+            var probeIndex : i32;
+            if ((options & SCROLL_OPTION) != 0)
+            {
+                probeIndex = DDGIProbeIndexOffset(adjacentProbeIndex, volume.GridCounts, volume.ScrollOffsets);
+            }
+            else
+            {
+                probeIndex = adjacentProbeIndex;
+            }
+            const texelPosition = DDGIProbeTexelPosition(probeIndex, volume.GridCounts);
+            const state = castToI32(fetch2D(volume.States, Basic2DSampler, texelPosition, 0).x);
+            if (state == PROBE_STATE_INACTIVE)
+                continue;
+        }
+        
+        const worldPosToAdjacentProbe = normalize(adjacentProbeWorldPosition - worldPosition);
+        const biasedPosToAdjacentProbe = normalize(adjacentProbeWorldPosition - biasedWorldPosition);
+        const biasedPosToAdjustedProbeDistance = length(adjacentProbeWorldPosition - biasedWorldPosition);
+        
+        const trilinear = max(f32x3(0.001f), lerp(1.0f - alpha, alpha, f32x3(adjacentProbeOffset)));
+        const trilinearWeight = (trilinear.x * trilinear.y * trilinear.z);
+        var weight = 1.0f;
+        
+        const wrapShading = (dot(worldPosToAdjacentProbe, direction) + 1.0f) * 0.5f;
+        weight *= (wrapShading * wrapShading) + 0.2f;
+        
+        var octantCoords = DDGIOctahedralCoordinates(-biasedPosToAdjacentProbe);
+        var probeTextureCoords : f32x2;
+        if ((options & SCROLL_OPTION) != 0)
+        {
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumDistanceTexels, volume.ScrollOffsets, options);
+        }
+        else
+        {
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumDistanceTexels, i32x3(0), options);
+        }
+        const filteredDistance = sample2DLod(volume.Distances, Basic2DSampler, probeTextureCoords, 0).xy;
+        
+        const meanDistanceToSurface = filteredDistance.x;
+        const variance = abs((filteredDistance.x * filteredDistance.x) - filteredDistance.y);
+        
+        var chebyshevWeight = 1.0f;
+        if (biasedPosToAdjustedProbeDistance > meanDistanceToSurface)
+        {
+            const v = biasedPosToAdjustedProbeDistance - meanDistanceToSurface;
+            chebyshevWeight = variance / (variance + (v*v));
+            
+            chebyshevWeight = max((chebyshevWeight * chebyshevWeight * chebyshevWeight), 0.0f);
+        }        
+        
+        weight *= max(0.05f, chebyshevWeight);
+        weight = max(0.000001f, weight);
+        
+        const crushThreshold = 0.2f;
+        if (weight < crushThreshold)
+        {
+            weight *= (weight * weight) * (1.0f / (crushThreshold * crushThreshold));
+        }
+        
+        weight *= trilinearWeight;
+        
+        octantCoords = DDGIOctahedralCoordinates(direction);
+        if ((options & SCROLL_OPTION) != 0)
+        {
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, volume.ScrollOffsets, options);
+        }
+        else
+        {
+            probeTextureCoords = DDGIProbeUV(adjacentProbeIndex, octantCoords, volume.GridCounts, volume.NumIrradianceTexels, i32x3(0), options);
+        }
+        var probeIrradiance = sample2DLod(volume.Irradiance, Basic2DSampler, probeTextureCoords, 0).xyz;
+        
+        const exponent = f32x3(volume.EncodingGamma * 0.5f);
+        probeIrradiance = pow(probeIrradiance, exponent);
+        
+        irradiance += (weight * probeIrradiance);
+        accumulatedWeights += weight;
+    }
+    
+    if (accumulatedWeights == 0.0f)
+        return f32x3(0);
+        
+    irradiance *= (1.0f / accumulatedWeights);
+    irradiance *= irradiance;
+    irradiance *= PI * 2.0f;
+    
+    if ((options & LOW_PRECISION_IRRADIANCE_OPTION) != 0)
+        irradiance *= 1.0989f; 
+    
+    return irradiance;
+}
+
+#endif // DDGI_FXH

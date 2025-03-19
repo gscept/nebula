@@ -1,0 +1,139 @@
+//------------------------------------------------------------------------------
+//  pbr.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#ifndef PBR_GPUH
+#define PBR_GPUH
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/util.gpuh>
+
+// Definitions for the current setup of the material buffer
+#define MAT_METALLIC 0
+#define MAT_ROUGHNESS 1
+#define MAT_CAVITY 2
+#define MAT_EMISSIVE 3
+
+//------------------------------------------------------------------------------
+/**
+	Calculate fresnel amount using Schlick's approximation
+*/
+FresnelSchlick(spec : f32x3, dotprod : f32) f32x3
+{
+	const base = 1.0 - clamp(dotprod, 0.0f, 1.0f);
+	const exponent = pow(base, 5);
+	return spec + (1 - spec) * exponent;
+}
+
+//------------------------------------------------------------------------------
+/**
+	Calculate fresnel amount using Schlick's approximation but with roughness
+*/
+FresnelSchlickGloss(spec : f32x3, dotprod : f32, roughness : f32) f32x3
+{
+	const base = 1.0 - clamp(dotprod, 0.0f, 1.0f);
+	const exponent = pow(base, 5);
+	return spec + (max(f32x3(1 - roughness), spec) - spec) * exponent;
+}
+
+//------------------------------------------------------------------------------
+/**
+    GGX normal distribution function (NDF)
+    This approximates the ratio of microfacets aligned to given halfway vector H
+*/
+NormalDistributionGGX(NdotH : f32, roughness : f32) f32
+{
+	const a = pow(roughness, 4);
+	const NdotH2 = NdotH * NdotH;
+	
+	var denom = (NdotH2 * (a - 1.0f) + 1.0f);
+	denom = PI * denom * denom;
+	
+	return (a / (denom + 0.00001f)); // epsilon to avoid division by zero
+}
+
+//------------------------------------------------------------------------------
+/**
+    Smith with Schlick-GGX geometry function
+    This statistically approximates the ratio of microfacets that overshadow each other
+*/
+GeometrySchlickGGX(NdotV : f32, k : f32) f32
+{
+	const denom = mad(NdotV, 1.0f - k,  k);
+	return NdotV / denom;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+GeometrySmith(NdotV : f32, NdotL : f32, roughness : f32) f32
+{	
+	const r = roughness + 1.0f;
+	const k = (r*r) * 0.125f; // (r^2 / 8)
+	const ggxNV = GeometrySchlickGGX(NdotV, k);
+	const ggxNL = GeometrySchlickGGX(NdotL, k);
+	return ggxNV * ggxNL;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateF0(color : f32x3, metallic : f32, def : f32x3) f32x3
+{
+    // F0 as 0.04 will usually look good for all dielectric (non-metal) surfaces
+	// F0 = vec3(0.04);
+	// for metallic surfaces we interpolate between F0 and the albedo value with metallic value as our lerp weight
+	return lerp(def, color.rgb, metallic);
+}
+
+//------------------------------------------------------------------------------
+/**
+	TODO: Add more variants of diffuse lobes.
+*/
+DiffuseLobe(diffuseColor : f32x3, roughness : f32, NdotV : f32, NdotL : f32, LdotH : f32) f32x3
+{
+	// Lambert
+	return diffuseColor / PI;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SpecularLobe(material : f32x4, F0 : f32x3, H : f32x3, NdotV : f32, NdotL : f32, NdotH : f32, LdotH : f32) f32x3
+{
+	const D = NormalDistributionGGX(NdotH, material[MAT_ROUGHNESS]);
+	const G = GeometrySmith(NdotV, NdotL, material[MAT_ROUGHNESS]);
+	const F = FresnelSchlickGloss(F0, max(LdotH, 0.0), material[MAT_ROUGHNESS]);
+	return (D * G) * F;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+EvaluateBRDF(diffuseColor : f32x3, material : f32x4, F0 : f32x3, H : f32x3, NdotV : f32, NdotL : f32, NdotH : f32, LdotH : f32) f32x3
+{
+	//material[MAT_ROUGHNESS] = max(0.07f, material[MAT_ROUGHNESS]);
+	const diffuseContrib = (diffuseColor * (1.0f - material[MAT_METALLIC]));
+	const diffuseTerm = DiffuseLobe(diffuseContrib, material[MAT_ROUGHNESS], NdotV, NdotL, LdotH);
+	const specularTerm = SpecularLobe(material, F0, H, NdotV, NdotL, NdotH, LdotH);
+	const brdf = diffuseTerm + specularTerm;
+	return brdf;
+}
+
+//------------------------------------------------------------------------------
+/**
+	OSM = Occlusion, Smoothness, Metalness
+*/
+ConvertOSM(material : f32x4) f32x4
+{
+	var ret : f32x4;
+	ret[MAT_METALLIC] = material.b;
+	ret[MAT_ROUGHNESS] = 1 - material.g;
+	ret[MAT_CAVITY] = 1 - material.r;
+	ret[MAT_EMISSIVE] = material.a;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+#endif

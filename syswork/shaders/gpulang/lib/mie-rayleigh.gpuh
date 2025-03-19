@@ -1,0 +1,89 @@
+//------------------------------------------------------------------------------
+//  mie-rayleigh.gpul
+//
+//	Common functions used to calculate a Mie and Rayleigh sky scattering
+//
+//	Source: https://github.com/Tw1ddle/Sky-Shader
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#define PI 3.141592653589793238462643383279502884197169
+
+//------------------------------------------------------------------------------
+/**
+*/
+RayleighIntegrate(lambda : f32x3) f32x3
+{
+	return (8.0f * pow(PI, 3.0f) * pow(pow(PerTickParams.RefractiveIndex, 2.0f) - 1.0f, 2.0f) * (6.0f + 3.0f * PerTickParams.DepolarizationFactor)) / (3.0f * PerTickParams.Molecules * pow(lambda, f32x3(4.0f)) * (6.0f - 7.0f * PerTickParams.DepolarizationFactor));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+MieIntegrate(lambda : f32x3, k : f32x3, t : f32) f32x3
+{
+	const c = 0.2f * t * 10e-18;
+	return 0.434 * c * PI * pow((2.0f * PI) / lambda, f32x3(PerTickParams.MieV - 2.0f)) * k;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+RayleighPhase(cosTheta : f32) f32
+{
+	return (3.0f / (16.0f * PI)) * (1.0f + pow(cosTheta, 2.0f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+HenyeyGreensteinPhase(cosTheta : f32, g : f32) f32
+{
+	return (1.0f / (4.0f * PI)) * ((1.0f - pow(g, 2.0f)) / pow(1.0f - 2.0f * g * cosTheta + pow(g, 2.0f), 1.5f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SunIntensity(zenithAngle : f32) f32
+{
+	const cutoff = PI / 1.95f;
+	return PerTickParams.SunIntensityFactor * max(0.0f, 1.0f - exp(-((cutoff - acos(zenithAngle)) / PerTickParams.SunIntensityFalloff)));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateAtmosphericScattering(p : f32x3, lp : f32x3) f32x3 
+{
+	const sunfade = 1.0 - clamp(1.0f - exp(lp.y), 0.0f, 1.0f);
+	const rayleighCoefficient = PerTickParams.RayleighFactor - (1.0f - sunfade);
+	const betaR = RayleighIntegrate(PerTickParams.PrimaryColors) * rayleighCoefficient;
+
+	const betaM = MieIntegrate(PerTickParams.PrimaryColors, PerTickParams.MieKCoefficient, PerTickParams.Turbidity) * PerTickParams.MieCoefficient;
+
+	const zenith = acos(max(0.0f, dot(f32x3(0, 1, 0), p)));
+	const denom = cos(zenith) + 0.15f * pow(93.885f - ((zenith * 180.0f) / PI), -1.253f);
+	const sr = PerTickParams.RayleighZenithLength / denom;
+	const sm = PerTickParams.MieZenithLength / denom;
+
+	const fex = exp(-(betaR * sr + betaM * sm));
+
+	const cosTheta = dot(p, lp);
+	const betaRTheta = betaR * RayleighPhase(cosTheta * 0.5f + 0.5f);
+	const betaMTheta = betaM * HenyeyGreensteinPhase(cosTheta, PerTickParams.MieDirectionalG);
+	const sunE = SunIntensity(dot(lp, f32x3(0, 1, 0)));
+	var lin = pow(sunE * ((betaRTheta + betaMTheta) / (betaR + betaM)) * (1.0f - fex), f32x3(1.5f));
+	lin *= lerp(f32x3(1.0f), pow(sunE * ((betaRTheta + betaMTheta) / (betaR + betaM)) * fex, f32x3(0.5f)), clamp(pow(1.0f - dot(f32x3(0, 1, 0), lp), 5.0f), 0.0f, 1.0f));
+
+	const sunAngleDiameterCos = cos(PerTickParams.SunDiscSize);
+	const sundisk = smoothStep(sunAngleDiameterCos, sunAngleDiameterCos + 0.00002, cosTheta);
+	var l0 = f32x3(0.1f) * fex;
+	l0 += sunE * fex * sundisk;
+	var texColor = lin + l0;
+	texColor *= 0.04f;
+	texColor += f32x3(0.0f, 0.001f, 0.0025f) * 0.3f;
+
+	return texColor;
+}

@@ -1,0 +1,164 @@
+//------------------------------------------------------------------------------
+//  finalize.gpul
+//  (C) 2025 Individual contributors, See LICENSE file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/techniques.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/preetham.gpuh>
+#include <lib/mie-rayleigh.gpuh>
+
+struct FinalizeData
+{
+    DepthTexture: u32;
+    ColorTexture: u32;
+    NormalTexture: u32;
+    LuminanceTexture: u32;
+    BloomTexture: u32;
+};
+group(BATCH_GROUP) uniform FinalizeUniforms : *FinalizeData;
+
+sampler_state UpscaleSampler
+{
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+    Border = Color.Transparent;
+};
+
+sampler_state DefaultSampler
+{
+    Filter = FilterMode.Point;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+    Border = Color.Transparent;
+};
+
+render_state FinalizeState
+{
+    Cull = CullFace.Back;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+};
+
+// depth of field samples
+#define MAXDOFSAMPLES 23
+
+const DofSamples : [MAXDOFSAMPLES]f32x2 = [
+        f32x2( 0.0, 0.0 ),
+        f32x2( -0.326212, -0.40581  ),
+        f32x2( -0.840144, -0.07358  ),
+        f32x2( -0.695914,  0.457137 ),
+        f32x2( -0.203345,  0.620716 ),
+        f32x2(  0.96234,  -0.194983 ),
+        f32x2(  0.473434, -0.480026 ),
+        f32x2(  0.519456,  0.767022 ),
+        f32x2(  0.185461, -0.893124 ),
+        f32x2(  0.507431,  0.064425 ),
+        f32x2(  0.89642,   0.412458 ),
+        f32x2( -0.32194,   0.93261f ),
+        f32x2(  0.326212,  0.40581  ),
+        f32x2(  0.840144,  0.07358  ),
+        f32x2(  0.695914, -0.457137 ),
+        f32x2(  0.203345, -0.620716 ),
+        f32x2( -0.96234,   0.194983 ),
+        f32x2( -0.473434,  0.480026 ),
+        f32x2( -0.519456, -0.767022 ),
+        f32x2( -0.185461,  0.893124 ),
+        f32x2( -0.507431, -0.064425 ),
+        f32x2( -0.89642,  -0.412458 ),
+        f32x2(  0.32194,  -0.93261f )
+];   
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2
+) void
+{
+    vertexExportCoordinates(f32x4(position, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Compute fogging given a sampled fog intensity value from the depth
+    pass and a fog color.
+*/
+Fog(fogDepth : f32) f32
+{
+    return clamp((PerTickParams.FogDistances.y - fogDepth) / (PerTickParams.FogDistances.y - PerTickParams.FogDistances.x), PerTickParams.FogColor.a, 1.0);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Get a depth-of-field blurred sample. Set all values to 0 in order to disable DoF
+*/
+DepthOfField(depth : f32, uv : f32x2) f32x4
+{
+    // compute focus-blur param (0 -> no blur, 1 -> max blur)
+    const focusDist = PerTickParams.DoFDistances.x;
+    const focusLength = PerTickParams.DoFDistances.y;
+    const filterRadius = PerTickParams.DoFDistances.z;
+    const focus = saturate(abs(depth - focusDist) / focusLength);
+    
+    // perform a gaussian blur around uv
+    var sampleColor = f32x3(0.0f);
+    const dofWeight = 1.0f / MAXDOFSAMPLES;
+    const pixelSize = PassUniforms[0].Dimensions.zw;
+    const uvMul = focus * filterRadius * pixelSize.xy;
+    for (var i : i32 = 0; i < MAXDOFSAMPLES; i++)
+    {
+        sampleColor += sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, uv + (DofSamples[i] * uvMul), 0).rgb;
+    }
+    sampleColor *= dofWeight;
+    return f32x4(sampleColor, 1);
+} 
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(in UV : f32x2) void
+{
+    // get an averaged depth value        
+    const depth = sample2DLod(FinalizeUniforms.DepthTexture, DefaultSampler, UV * PassUniforms[0].Scale, 0).r;
+    const viewPos = PixelToView(UV, depth, ViewConstants.InvProjection);
+    const normal = sample2DLod(FinalizeUniforms.NormalTexture, DefaultSampler, UV * PassUniforms[0].Scale, 0).xyz;
+
+    const worldPos = ViewToWorld(viewPos, ViewConstants.fInvView);
+    const viewVec = ViewConstants.EyePos.xyz - worldPos.xyz;
+    const viewNormal = (ViewConstants.View * f32x4(normal, 0)).xyz;
+    
+    var c = f32x4(sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, UV * PassUniforms[0].Scale, 0).rgb, 1.0f);
+    
+    const bloom = sample2DLod(FinalizeUniforms.BloomTexture, UpscaleSampler, UV * PassUniforms[0].Scale, 0);
+    //vec4 godray = subpassLoad(InputAttachment1);
+    c.rgb = lerp(c.rgb, bloom.rgb, bloom.a);
+
+    const grey = f32x4(dot(c.xyz, Luminance.xyz));
+    c = PerTickParams.Balance * lerp(grey, c, PerTickParams.Saturation);
+    c.rgb *= PerTickParams.FadeValue;
+
+    // Convert color to luminance
+    const lumAvg = ViewConstants.Time_Random_Luminance_X.z;
+    var xyY = RGBToXYY(c.rgb);
+    const lp = (xyY.z / (9.6 * lumAvg + 0.0001f)) / max(0.01f, PerTickParams.MaxLuminance);
+
+    // Tonemap in luma space
+    xyY = ToneMap(xyY, lp, PerTickParams.MaxLuminance);
+
+    // Convert back to RGB
+    pixelExportColor(f32x4(XYYToRGB(xyY), 1), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PostEffect(vsMain, psMain, FinalizeState);
