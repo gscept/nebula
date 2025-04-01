@@ -15,7 +15,7 @@ local_size_x(64)
 entry_point
 csClusterAABB() void
 {
-    const index1D = computeGetGlobalInvocationIndex().x;
+    const index1D = computeGetGlobalInvocationIndices().x;
     const index3D = Unpack1DTo3D(index1D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     if (index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z)

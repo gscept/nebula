@@ -26,8 +26,8 @@ derivative_index_linear
 entry_point
 csCombine() void
 {
-    const coord = f32x2(computeGetGlobalInvocationIndex().xy) * CombineUniforms.LowresResolution;
-    const fullscaleCoord = i32x2(computeGetGlobalInvocationIndex().xy);
+    const coord = f32x2(computeGetGlobalInvocationIndices().xy) * CombineUniforms.LowresResolution;
+    const fullscaleCoord = i32x2(computeGetGlobalInvocationIndices().xy);
     const fog = textureSample(Fog, LinearSampler, coord);
     const reflections = textureSample(Reflections, LinearSampler, coord);
     const ao = textureSample(AO, LinearSampler, coord).r;
