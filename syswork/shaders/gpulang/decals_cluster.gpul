@@ -64,7 +64,7 @@ local_size(u32x3(64, 1, 1))
 entry_point
 csCull() void
 {
-    const index1D = computeGetGlobalInvocationIndex().x;
+    const index1D = computeGetGlobalInvocationIndices().x;
 
     if (index1D > DecalUniforms.NumDecalClusters)
         return;
@@ -117,7 +117,7 @@ local_size(u32x3(64, 1, 1))
 entry_point
 csDebug() void
 {
-    const coord = i32x2(computeGetGlobalInvocationIndex().xy);
+    const coord = i32x2(computeGetGlobalInvocationIndices().xy);
     const depth = fetch2D(PerTickParams.DepthBuffer, PointSampler, coord, 0).r;
 
     // convert screen coord to view-space position

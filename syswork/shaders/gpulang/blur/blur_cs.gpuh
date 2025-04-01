@@ -105,31 +105,31 @@ csMainX() void
 	const size = BlurUniforms.Viewport;
 
 	// calculate offsets
-	const  tileStart = i32(computeGetWorkgroupIndex().x) * BLUR_TILE_WIDTH;
+	const  tileStart = i32(computeGetWorkgroupIndices().x) * BLUR_TILE_WIDTH;
 	const    tileEnd = tileStart + BLUR_TILE_WIDTH;
 	const apronStart = i32(tileStart) - KERNEL_RADIUS;
 	const   apronEnd = tileEnd + KERNEL_RADIUS;
 
-    const x = max(0, min(apronStart + i32(computeGetLocalInvocationIndex().x), size.x - 1));
-    const y = i32(computeGetWorkgroupIndex().y);
-    const z = computeGetWorkgroupIndex().z;
+    const x = max(0, min(apronStart + i32(computeGetLocalInvocationIndices().x), size.x - 1));
+    const y = i32(computeGetWorkgroupIndices().y);
+    const z = computeGetWorkgroupIndices().z;
 
     if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
-        SharedMemory[computeGetLocalInvocationIndex().x] = IMAGE_LOAD_VEC(0);
+        SharedMemory[computeGetLocalInvocationIndices().x] = IMAGE_LOAD_VEC(0);
     else
     {
     // load into workgroup saved memory, this allows us to use the original pixel even though
     // we might have replaced it with the result from this thread!
 #if IMAGE_IS_ARRAY
-        SharedMemory[computeGetLocalInvocationIndex().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageX, f32x3(x, y, z), 0));
+        SharedMemory[computeGetLocalInvocationIndices().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageX, f32x3(x, y, z), 0));
 #else
-        SharedMemory[computeGetLocalInvocationIndex().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageX, f32x2(x, y), 0));
+        SharedMemory[computeGetLocalInvocationIndices().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageX, f32x2(x, y), 0));
 #endif
     }
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
-	const writePos = tileStart + computeGetLocalInvocationIndex().x;
+	const writePos = tileStart + computeGetLocalInvocationIndices().x;
 	const tileEndClamped = min(tileEnd, u32(size.x));
 
 	if (writePos < tileEndClamped)
@@ -138,7 +138,7 @@ csMainX() void
 
         for (var i : i32 = 0; i <= KERNEL_RADIUS * 2; ++i)
 		{
-            const j = max(0, min(i32(computeGetLocalInvocationIndex().x) + i, SHARED_MEM_SIZE - 1));
+            const j = max(0, min(i32(computeGetLocalInvocationIndices().x) + i, SHARED_MEM_SIZE - 1));
             blurTotal += weights[i] * SharedMemory[j];
         }
 
@@ -161,31 +161,31 @@ csMainY() void
     const size = BlurUniforms.Viewport;
 
 	// calculate offsets
-	const  tileStart = i32(computeGetWorkgroupIndex().x) * BLUR_TILE_WIDTH;
+	const  tileStart = i32(computeGetWorkgroupIndices().x) * BLUR_TILE_WIDTH;
 	const    tileEnd = tileStart + BLUR_TILE_WIDTH;
 	const apronStart = i32(tileStart) - KERNEL_RADIUS;
 	const   apronEnd = tileEnd + KERNEL_RADIUS;
 
-    const x = i32(computeGetWorkgroupIndex().y);
-    const y = max(0, min(apronStart + i32(computeGetLocalInvocationIndex().x), size.y - 1));
-    const z = computeGetWorkgroupIndex().z;
+    const x = i32(computeGetWorkgroupIndices().y);
+    const y = max(0, min(apronStart + i32(computeGetLocalInvocationIndices().x), size.y - 1));
+    const z = computeGetWorkgroupIndices().z;
 
     if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
-        SharedMemory[computeGetLocalInvocationIndex().x] = IMAGE_LOAD_VEC(0);
+        SharedMemory[computeGetLocalInvocationIndices().x] = IMAGE_LOAD_VEC(0);
     else
     {
     // load into workgroup saved memory, this allows us to use the original pixel even though
     // we might have replaced it with the result from this thread!
 #if IMAGE_IS_ARRAY
-        SharedMemory[computeGetLocalInvocationIndex().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageY, f32x3(x, y, z), 0));
+        SharedMemory[computeGetLocalInvocationIndices().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageY, f32x3(x, y, z), 0));
 #else
-        SharedMemory[computeGetLocalInvocationIndex().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageY, f32x2(x, y), 0));
+        SharedMemory[computeGetLocalInvocationIndices().x] = IMAGE_LOAD_SWIZZLE(textureFetch(InputImageY, f32x2(x, y), 0));
 #endif
     }
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
-	const writePos = tileStart + computeGetLocalInvocationIndex().x;
+	const writePos = tileStart + computeGetLocalInvocationIndices().x;
 	const tileEndClamped = min(tileEnd, u32(size.y));
 
 	if (writePos < tileEndClamped)
@@ -194,7 +194,7 @@ csMainY() void
 
         for (var i : i32 = 0; i <= KERNEL_RADIUS * 2; ++i)
 		{
-            const j = max(0, min(i32(computeGetLocalInvocationIndex().x) + i, SHARED_MEM_SIZE - 1));
+            const j = max(0, min(i32(computeGetLocalInvocationIndices().x) + i, SHARED_MEM_SIZE - 1));
             blurTotal += weights[i] * SharedMemory[j];
         }
 
