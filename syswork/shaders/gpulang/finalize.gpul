@@ -132,7 +132,7 @@ psMain(in UV : f32x2) void
     const viewPos = PixelToView(UV, depth, ViewConstants.InvProjection);
     const normal = sample2DLod(FinalizeUniforms.NormalTexture, DefaultSampler, UV * PassUniforms[0].Scale, 0).xyz;
 
-    const worldPos = ViewToWorld(viewPos, ViewConstants.fInvView);
+    const worldPos = ViewToWorld(viewPos, ViewConstants.InvView);
     const viewVec = ViewConstants.EyePos.xyz - worldPos.xyz;
     const viewNormal = (ViewConstants.View * f32x4(normal, 0)).xyz;
     
