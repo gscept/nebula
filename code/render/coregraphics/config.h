@@ -146,6 +146,7 @@ ShaderVisibilityFromString(const Util::String& str)
     return ret;
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */

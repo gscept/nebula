@@ -147,6 +147,8 @@ ENDIF()
                 event.h
                 fence.h
                 graphicsdevice.h
+                gpulangshaderloader.cc
+                gpulangshaderloader.h
                 image.cc
                 image.h
                 imagefileformat.cc

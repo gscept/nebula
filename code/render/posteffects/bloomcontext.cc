@@ -20,7 +20,7 @@ struct
 {
     CoreGraphics::ShaderProgramId intermediateProgram;
     CoreGraphics::ShaderProgramId mergeProgram;
-    CoreGraphics::ShaderId shader;
+    CoreGraphics::ShaderId shader, gpulangShader;
 
     CoreGraphics::ResourceTableId resourceTable;
     CoreGraphics::BufferId constants;
@@ -55,6 +55,7 @@ BloomContext::Setup()
     using namespace CoreGraphics;
 
     // setup shaders
+    bloomState.gpulangShader = ShaderGet("shd:gpulang/gpulang/bloom.gplb");
     bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
     bloomState.intermediateProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Intermediate"));
     bloomState.mergeProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Merge"));
