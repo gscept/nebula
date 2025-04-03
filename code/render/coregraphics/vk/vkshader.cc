@@ -442,6 +442,492 @@ ShaderSetup(
 #endif
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SamplerFilter
+SamplerFilterFromGPULang(GPULang::Filter filter)
+{
+    switch (filter)
+    {
+        case GPULang::Filter::PointFilter:
+            return CoreGraphics::SamplerFilter::NearestFilter;
+        case GPULang::Filter::LinearFilter:
+            return CoreGraphics::SamplerFilter::LinearFilter;
+    }
+    n_error("Invalid GPULang filter mode");
+    return CoreGraphics::SamplerFilter::LinearFilter;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SamplerMipMode
+SamplerMipFilterFromGPULang(GPULang::Filter filter)
+{
+    switch (filter)
+    {
+        case GPULang::Filter::PointFilter:
+            return CoreGraphics::SamplerMipMode::NearestMipMode;
+        case GPULang::Filter::LinearFilter:
+            return CoreGraphics::SamplerMipMode::LinearMipMode;
+    }
+    n_error("Invalid GPULang filter mode");
+    return CoreGraphics::SamplerMipMode::LinearMipMode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SamplerCompareOperation
+SamplerCompareOpFromGPULang(GPULang::CompareMode mode)
+{
+    switch (mode)
+    {
+        case GPULang::CompareMode::NeverCompare:
+            return CoreGraphics::SamplerCompareOperation::NeverCompare;
+        case GPULang::CompareMode::LessCompare:
+            return CoreGraphics::SamplerCompareOperation::LessCompare;
+        case GPULang::CompareMode::EqualCompare:
+            return CoreGraphics::SamplerCompareOperation::EqualCompare;
+        case GPULang::CompareMode::LessEqualCompare:
+            return CoreGraphics::SamplerCompareOperation::LessOrEqualCompare;
+        case GPULang::CompareMode::GreaterCompare:
+            return CoreGraphics::SamplerCompareOperation::GreaterCompare;
+        case GPULang::CompareMode::NotEqualCompare:
+            return CoreGraphics::SamplerCompareOperation::NotEqualCompare;
+        case GPULang::CompareMode::GreaterEqualCompare:
+            return CoreGraphics::SamplerCompareOperation::GreaterOrEqualCompare;
+        case GPULang::CompareMode::AlwaysCompare:
+            return CoreGraphics::SamplerCompareOperation::AlwaysCompare;
+    }
+    n_error("Invalid GPULang compare mode");
+    return CoreGraphics::SamplerCompareOperation::AlwaysCompare;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SamplerAddressMode
+SamplerAddressModeFromGPULang(GPULang::AddressMode address)
+{
+    switch (address)
+    {
+        case GPULang::AddressMode::RepeatAddressMode:
+            return CoreGraphics::SamplerAddressMode::RepeatAddressMode;
+        case GPULang::AddressMode::MirrorAddressMode:
+            return CoreGraphics::SamplerAddressMode::MirroredRepeatAddressMode;
+        case GPULang::AddressMode::ClampAddressMode:
+            return CoreGraphics::SamplerAddressMode::ClampToEdgeAddressMode;
+        case GPULang::AddressMode::BorderAddressMode:
+            return CoreGraphics::SamplerAddressMode::ClampToBorderAddressMode;
+    }
+    n_error("Invalid GPULang address mode");
+    return CoreGraphics::SamplerAddressMode::RepeatAddressMode;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SamplerBorderMode
+SamplerBorderModeFromGPULang(GPULang::BorderColor color)
+{
+    switch (color)
+    {
+    case GPULang::BorderColor::TransparentBorder:
+        return CoreGraphics::SamplerBorderMode::FloatTransparentBlackBorder;
+    case GPULang::BorderColor::BlackBorder:
+        return CoreGraphics::SamplerBorderMode::FloatOpaqueBlackBorder;
+    case GPULang::BorderColor::WhiteBorder:
+        return CoreGraphics::SamplerBorderMode::FloatOpaqueWhiteBorder;
+    }
+    n_error("Invalid GPULang border color");
+    return CoreGraphics::SamplerBorderMode::FloatOpaqueBlackBorder;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline CoreGraphics::ShaderVisibility
+ShaderVisibilityFromGPULang(const GPULang::ShaderUsage usage)
+{
+    CoreGraphics::ShaderVisibility ret = CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.vertexShader ? CoreGraphics::VertexShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.hullShader ? CoreGraphics::HullShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.domainShader ? CoreGraphics::DomainShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.geometryShader ? CoreGraphics::GeometryShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.pixelShader ? CoreGraphics::PixelShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.computeShader ? CoreGraphics::ComputeShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.taskShader ? CoreGraphics::TaskShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.meshShader ? CoreGraphics::MeshShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.rayGenerationShader ? CoreGraphics::RayGenerationShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.rayAnyHitShader ? CoreGraphics::RayAnyHitShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.rayClosestHitShader ? CoreGraphics::RayClosestHitShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.rayMissShader ? CoreGraphics::RayMissShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.rayIntersectionShader ? CoreGraphics::RayIntersectionShaderVisibility : CoreGraphics::InvalidVisibility;
+    ret |= usage.flags.rayCallableShader ? CoreGraphics::CallableShaderVisibility : CoreGraphics::InvalidVisibility;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderSetup(
+    VkDevice dev,
+    const Util::StringAtom& name,
+    GPULang::Loader* loader,
+    Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
+    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
+    Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+    Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
+    CoreGraphics::ResourcePipelineId& pipelineLayout,
+    Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
+    Util::Dictionary<Util::StringAtom, IndexT>& constantBindings
+)
+{
+    using namespace CoreGraphics;
+
+    // construct layout create info
+    ResourceTableLayoutCreateInfo layoutInfo;
+    Util::Dictionary<uint32_t, ResourceTableLayoutCreateInfo> layoutCreateInfos;
+    uint32_t numsets = 0;
+
+        // always create push constant range in layout, making all shaders using push constants compatible
+    uint32_t maxPushConstantBytes = CoreGraphics::MaxPushConstantSize;
+    uint32_t pushRangeOffset = 0; // we must append previous push range size to offset
+    constantRange.Resize(NumShaders); // one per shader stage
+    uint i;
+    for (i = 0; i < NumShaders; i++)
+        constantRange[i] = CoreGraphics::ResourcePipelinePushConstantRange{ 0,0,InvalidVisibility };
+
+    // assert we are not over-stepping any uniform buffer limit we are using, perStage is used for ALL_STAGES
+    uint32_t numUniformDyn = 0;
+    uint32_t numUniform = 0;
+    uint32_t numStorageDyn = 0;
+    uint32_t numStorage = 0;
+
+    uint32_t numPerStageUniformBuffers[NumShaders] = {0};
+    uint32_t numPerStageStorageBuffers[NumShaders] = {0};
+    uint32_t numPerStageSamplers[NumShaders] = {0};
+    uint32_t numPerStageSampledImages[NumShaders] = {0};
+    uint32_t numPerStageStorageImages[NumShaders] = {0};
+    uint32_t numPerStageInputAttachments[NumShaders] = {0};
+    uint32_t numPerStageAccelerationStructures[NumShaders] = {0};
+    uint32_t numInputAttachments = 0;
+    bool bindingTable[128] = { false };
+
+    enum
+    {
+        SamplerSlots,
+        ConstantBufferSlots,
+        RWBufferSlots,
+        ImageSlots,
+        RWImageSlots,
+        PixelCacheSlots,
+        AccelerationStructureSlots,
+
+        NumSlots
+    };
+    uint32_t slotsUsed[NumSlots] = {0};
+
+    uint32_t maxTextures = CoreGraphics::MaxResourceTableSampledImages;
+    uint32_t remainingTextures = maxTextures;
+
+    auto it = loader->nameToObject.begin();
+    while (it != loader->nameToObject.end())
+    {
+        auto& [name, object] = *it;
+        if (object->type == GPULang::Serialize::Type::SamplerStateType)
+        {
+            auto sampler = (GPULang::Deserialize::SamplerState*)object;
+            SamplerCreateInfo info;
+            info.magFilter = SamplerFilterFromGPULang(sampler->magFilter);
+            info.minFilter = SamplerFilterFromGPULang(sampler->minFilter);
+            info.mipmapMode = SamplerMipFilterFromGPULang(sampler->mipFilter);
+            info.addressModeU = SamplerAddressModeFromGPULang(sampler->addressU);
+            info.addressModeV = SamplerAddressModeFromGPULang(sampler->addressV);
+            info.addressModeW = SamplerAddressModeFromGPULang(sampler->addressW);
+            info.mipLodBias = sampler->mipLodBias;
+            info.anisotropyEnable = sampler->anisotropicEnabled;
+            info.maxAnisotropy = sampler->maxAnisotropy;
+            info.compareEnable = sampler->compareSamplerEnabled;
+            info.compareOp = SamplerCompareOpFromGPULang(sampler->compareMode);
+            info.minLod = sampler->minLod;
+            info.maxLod = sampler->maxLod;
+            info.borderColor = SamplerBorderModeFromGPULang(sampler->borderColor);
+            info.unnormalizedCoordinates = sampler->unnormalizedSamplingEnabled;
+            SamplerId samp = CreateSampler(info);
+            immutableSamplers.Add(samp);
+
+            ResourceTableLayoutSampler sampBinding;
+            sampBinding.slot = sampler->binding;
+            sampBinding.visibility = CoreGraphics::ShaderVisibility::AllGraphicsVisibility;
+            sampBinding.sampler = samp;
+
+            if (sampler->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[sampler->binding];
+                bindingTable[sampler->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed[SamplerSlots], sampBinding.visibility);
+                }
+            }
+            resourceSlotMapping.Add(sampler->name, sampler->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(sampler->group);
+            numsets = Math::max(numsets, sampler->group + 1);
+            rinfo.samplers.Append(sampBinding);
+
+        }
+        it++;
+    }
+
+    for (size_t i = 0; i < loader->variables.size(); i++)
+    {
+        const GPULang::Deserialize::Variable* variable = loader->variables[i];
+        if (variable->bindingType == GPULang::BindingType::Buffer)
+        {
+            ResourceTableLayoutConstantBuffer cbo;
+            cbo.slot = variable->binding;
+            cbo.num = variable->arraySizes[0];
+            cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed[ConstantBufferSlots], cbo.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+
+            if (variable->group == NEBULA_DYNAMIC_OFFSET_GROUP || variable->group == NEBULA_INSTANCE_GROUP)
+            {
+                cbo.dynamicOffset = true; numUniformDyn += slotsUsed[ConstantBufferSlots];
+            }
+            else
+            {
+                cbo.dynamicOffset = false; numUniform += slotsUsed[ConstantBufferSlots];
+            }
+
+            rinfo.constantBuffers.Append(cbo);
+            n_assert(variable->byteSize <= CoreGraphics::MaxConstantBufferSize);
+        }
+        else if (variable->bindingType == GPULang::BindingType::Inline)
+        {
+            n_assert(variable->byteSize <= maxPushConstantBytes);
+            maxPushConstantBytes -= variable->byteSize;
+            CoreGraphics::ResourcePipelinePushConstantRange range;
+            range.offset = pushRangeOffset;
+            range.size = variable->byteSize;
+            range.vis = ShaderVisibilityFromGPULang(variable->visibility); // only allow for fragment bit...
+            constantRange[0] = range; // okay, this is hacky
+            pushRangeOffset += variable->byteSize;
+        }
+        else if (variable->bindingType == GPULang::BindingType::MutableBuffer)
+        {
+            ResourceTableLayoutShaderRWBuffer rwbo;
+            rwbo.slot = variable->binding;
+            rwbo.num = variable->arraySizes[0];
+            rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageStorageBuffers, slotsUsed[RWBufferSlots], rwbo.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+
+            if (variable->group == NEBULA_DYNAMIC_OFFSET_GROUP || variable->group == NEBULA_INSTANCE_GROUP)
+            {
+                rwbo.dynamicOffset = true; numStorageDyn += slotsUsed[RWBufferSlots];
+            }
+            else
+            {
+                rwbo.dynamicOffset = false; numStorage += slotsUsed[RWBufferSlots];
+            }
+
+            rinfo.rwBuffers.Append(rwbo);
+        }
+        else if (variable->bindingType == GPULang::BindingType::Sampler)
+        {
+            ResourceTableLayoutSampler samp;
+            samp.slot = variable->binding;
+            samp.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            samp.sampler = CoreGraphics::InvalidSamplerId;
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageSamplers, slotsUsed[SamplerSlots], samp.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+            rinfo.samplers.Append(samp);
+        }
+        else if (variable->bindingType == GPULang::BindingType::Image)
+        {
+            ResourceTableLayoutTexture tex;
+            tex.slot = variable->binding;
+            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            tex.num = variable->arraySizes[0];
+            tex.immutableSampler = CoreGraphics::InvalidSamplerId;
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageSampledImages, slotsUsed[ImageSlots], tex.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+            rinfo.textures.Append(tex);
+        }
+        else if (variable->bindingType == GPULang::BindingType::MutableImage)
+        {
+            ResourceTableLayoutTexture tex;
+            tex.slot = variable->binding;
+            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            tex.num = variable->arraySizes[0];
+            tex.immutableSampler = CoreGraphics::InvalidSamplerId;
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageStorageImages, slotsUsed[ImageSlots], tex.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+            rinfo.rwTextures.Append(tex);
+        }
+        else if (variable->bindingType == GPULang::BindingType::PixelCache)
+        {
+            ResourceTableLayoutInputAttachment tex;
+            tex.slot = variable->binding;
+            tex.visibility = ShaderVisibility::PixelShaderVisibility;
+            tex.num = variable->arraySizes[0];
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageInputAttachments, slotsUsed[PixelCacheSlots], tex.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+            rinfo.inputAttachments.Append(tex);
+        }
+        else if (variable->bindingType == GPULang::BindingType::AccelerationStructure)
+        {
+            ResourceTableLayoutAccelerationStructure bvh;
+            bvh.slot = variable->binding;
+            bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            bvh.num = variable->arraySizes[0];
+
+            if (variable->binding != 0xFFFFFFFF)
+            {
+                bool occupiesNewBinding = !bindingTable[variable->binding];
+                bindingTable[variable->binding] = true;
+
+                if (occupiesNewBinding)
+                {
+                    UpdateOccupancy(numPerStageAccelerationStructures, slotsUsed[AccelerationStructureSlots], bvh.visibility);
+                }
+            }
+            resourceSlotMapping.Add(variable->name, variable->binding);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(variable->group);
+            numsets = Math::max(numsets, variable->group + 1);
+            rinfo.accelerationStructures.Append(bvh);
+        }
+    }
+    n_assert(CoreGraphics::MaxResourceTableDynamicOffsetConstantBuffers >= numUniformDyn);
+    n_assert(CoreGraphics::MaxResourceTableConstantBuffers >= numUniform);
+        for (uint i = 0; i < NumShaders; i++)
+        n_assert(CoreGraphics::MaxPerStageConstantBuffers >= numPerStageUniformBuffers[i]);
+
+    n_assert(CoreGraphics::MaxResourceTableDynamicOffsetReadWriteBuffers >= numStorageDyn);
+    n_assert(CoreGraphics::MaxResourceTableReadWriteBuffers >= numStorage);
+        for (uint i = 0; i < NumShaders; i++)
+        n_assert(CoreGraphics::MaxPerStageReadWriteBuffers >= numPerStageUniformBuffers[i]);
+
+        
+    // skip the rest if we don't have any descriptor sets
+    if (!layoutCreateInfos.IsEmpty())
+    {
+        setLayouts.Resize(numsets);
+        for (IndexT i = 0; i < layoutCreateInfos.Size(); i++)
+        {
+            const ResourceTableLayoutCreateInfo& info = layoutCreateInfos.ValueAtIndex(i);
+            ResourceTableLayoutId layout = CreateResourceTableLayout(info);
+            setLayouts[i] = Util::MakePair(layoutCreateInfos.KeyAtIndex(i), layout);
+            setLayoutMap.Add(layoutCreateInfos.KeyAtIndex(i), i);
+
+#if NEBULA_GRAPHICS_DEBUG
+            ObjectSetName(layout, Util::String::Sprintf("%s - Resource Table Layout %d", name.Value(), i).AsCharPtr());
+#endif
+        }
+    }
+
+    Util::Array<ResourceTableLayoutId> layoutList;
+    Util::Array<uint32_t> layoutIndices;
+    for (IndexT i = 0; i < setLayouts.Size(); i++)
+    {
+        const ResourceTableLayoutId& a = Util::Get<1>(setLayouts[i]);
+        if (a != ResourceTableLayoutId::Invalid())
+        {
+            layoutList.Append(a);
+            layoutIndices.Append(Util::Get<0>(setLayouts[i]));
+        }
+    }
+
+    ResourcePipelineCreateInfo piInfo =
+    {
+        layoutList, layoutIndices, constantRange[0]
+    };
+    pipelineLayout = CreateResourcePipeline(piInfo);
+
+#if NEBULA_GRAPHICS_DEBUG
+    ObjectSetName(pipelineLayout, Util::String::Sprintf("%s - Resource Pipeline", name.Value()).AsCharPtr());
+#endif
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -590,6 +1076,137 @@ CreateShader(const ShaderCreateInfo& info)
                 return lhs.binding < rhs.binding;
             }
         );
+    }
+
+    // setup shader variations
+    const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
+    if (!programs.empty())
+    {
+        for (size_t i = 0; i < programs.size(); i++)
+        {
+            // get program object from shader subsystem
+            AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
+
+            // allocate new program object and set it up
+            Ids::Id32 programId = shaderProgramAlloc.Alloc();
+            VkShaderProgramSetup(programId, info.name, program, setupInfo.pipelineLayout);
+
+            // make an ID which is the shader id and program id
+            ShaderProgramId shaderProgramId;
+            shaderProgramId.shader = ret.id;
+            shaderProgramId.program = programId;
+            runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
+        }
+
+        // set active variation
+        runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
+        runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
+    }
+
+    // delete the AnyFX effect
+    delete effect;
+
+#if __NEBULA_HTTP__
+    //res->debugState = res->CreateState();
+#endif
+    return ret;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ShaderId
+CreateShader(const GPULangShaderCreateInfo& info)
+{
+    Ids::Id32 id = shaderAlloc.Alloc();
+    VkReflectionInfo& reflectionInfo = shaderAlloc.Get<Shader_ReflectionInfo>(id);
+    VkShaderSetupInfo& setupInfo = shaderAlloc.Get<Shader_SetupInfo>(id);
+    VkShaderRuntimeInfo& runtimeInfo = shaderAlloc.Get<Shader_RuntimeInfo>(id);
+
+    ShaderId ret = id;
+
+    setupInfo.id = ShaderIdentifier::FromName(info.name);
+    setupInfo.name = info.name;
+    setupInfo.dev = Vulkan::GetCurrentDevice();
+
+    // the setup code is massive, so just let it be in VkShader...
+    ShaderSetup(
+        setupInfo.dev,
+        info.name,
+        info.loader,
+        setupInfo.constantRangeLayout,
+        setupInfo.immutableSamplers,
+        setupInfo.descriptorSetLayouts,
+        setupInfo.descriptorSetLayoutMap,
+        setupInfo.pipelineLayout,
+        setupInfo.resourceIndexMap,
+        setupInfo.constantBindings
+    );
+
+    /*
+    // setup variables
+    const std::vector<AnyFX::VariableBase*> variables = effect->GetVariables();
+    for (size_t i = 0; i < variables.size(); i++)
+    {
+        AnyFX::VariableBase* var = variables[i];
+        VkReflectionInfo::Variable refl;
+        refl.name = var->name.c_str();
+        refl.blockBinding = -1;
+        refl.blockSet = -1;
+        refl.type = var->type;
+        if (var->parentBlock)
+        {
+            refl.blockName = var->parentBlock->name.c_str();
+            refl.blockBinding = var->parentBlock->binding;
+            refl.blockSet = var->parentBlock->set;
+        }
+
+        reflectionInfo.variables.Append(refl);
+        reflectionInfo.variablesByName.Add(refl.name, refl);
+    }
+
+    // setup varblocks (uniform buffers)
+    const std::vector<AnyFX::VarblockBase*> varblocks = effect->GetVarblocks();
+    for (size_t i = 0; i < varblocks.size(); i++)
+    {
+        AnyFX::VarblockBase* var = varblocks[i];
+        VkReflectionInfo::UniformBuffer refl;
+        refl.name = var->name.c_str();
+        refl.binding = var->binding;
+        refl.set = var->set;
+        refl.byteSize = var->alignedSize;
+
+        if (var->binding != 0xFFFFFFFF)
+        {
+            n_assert(var->binding < 64);
+            reflectionInfo.uniformBuffersMask.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersMask.Size()), 0);
+            reflectionInfo.uniformBuffersMask[var->set] |= (1ull << (uint64)var->binding);
+        }
+
+        reflectionInfo.uniformBuffers.Append(refl);
+        reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
+        reflectionInfo.uniformBuffersPerSet.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersPerSet.Size()), nullptr);
+        reflectionInfo.uniformBuffersPerSet[var->set].Append(refl);
+    }
+
+    // Sort uniform buffers by binding
+    for (auto& set : reflectionInfo.uniformBuffersPerSet)
+    {
+        set.SortWithFunc(
+            [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
+            {
+                return lhs.binding < rhs.binding;
+            }
+        );
+    }
+    */
+    for (auto& [name, object] : info.loader->nameToObject)
+    {
+        if (object->type == GPULang::Serialize::Type::ProgramType)
+        {
+            auto program = (GPULang::Deserialize::Program*)object;
+        }
     }
 
     // setup shader variations
