@@ -32,6 +32,7 @@
 #include "coregraphics/buffer.h"
 #include "util/variant.h"
 #include "util/dictionary.h"
+#include "api/loader.h"
 
 namespace AnyFX
 {
@@ -59,6 +60,12 @@ struct ShaderCreateInfo
     AnyFX::ShaderEffect* effect;
 };
 
+struct GPULangShaderCreateInfo
+{
+    Resources::ResourceName name;
+    GPULang::Loader* loader;
+};
+
 enum ShaderConstantType
 {
     UnknownVariableType,
@@ -84,6 +91,8 @@ const Util::String ConstantTypeToString(const ShaderConstantType& type);
 
 /// Create new shader
 const ShaderId CreateShader(const ShaderCreateInfo& info);
+/// Create new shader
+const ShaderId CreateShader(const GPULangShaderCreateInfo& info);
 /// Destroy shader
 void DestroyShader(const ShaderId id);
 /// Reload shader

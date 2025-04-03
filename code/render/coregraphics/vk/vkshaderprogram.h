@@ -12,6 +12,7 @@
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/resourcetable.h"
 #include "util/arraystack.h"
+#include "util/serialize.h"
 
 
 namespace Vulkan
@@ -75,15 +76,23 @@ void VkShaderProgramDiscard(VkShaderProgramSetupInfo& info, VkShaderProgramRunti
 
 /// setup from AnyFX program
 void VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderName, AnyFX::VkProgram* program, const CoreGraphics::ResourcePipelineId& pipelineLayout);
+/// setup from AnyFX program
+void VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderName, GPULang::Deserialize::Program* program, const CoreGraphics::ResourcePipelineId& pipelineLayout);
 
 /// create shader object
 void VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned binarySize, char* binary);
+/// create shader object
+void VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, GPULang::Deserialize::Program::Shader* binary);
 /// create this program as a graphics program
 void VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime);
+/// create this program as a graphics program
+void VkShaderProgramSetupAsGraphics(GPULang::Deserialize::Program* program, const Resources::ResourceName& shaderName, VkShaderProgramRuntimeInfo& runtime);
 /// create this program as a compute program (can be done immediately)
 void VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 /// create this program as a compute program (can be done immediately)
 void VkShaderProgramSetupAsRaytracing(AnyFX::VkProgram* program, const Resources::ResourceName& shaderName, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
+/// create this program as a compute program (can be done immediately)
+void VkShaderProgramSetupAsRaytracing(GPULang::Deserialize::Program* program, const Resources::ResourceName& shaderName, VkShaderProgramSetupInfo& setup, VkShaderProgramRuntimeInfo& runtime);
 /// Get raytracing library pipepline
 VkPipeline VkShaderProgramGetRaytracingLibrary(const CoreGraphics::ShaderProgramId id);
 /// Get resource layout of shader program
