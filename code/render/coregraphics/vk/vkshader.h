@@ -37,6 +37,19 @@ void ShaderSetup(
     Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
     Util::Dictionary<Util::StringAtom, IndexT>& constantBindings
 );
+
+void ShaderSetup(
+    VkDevice dev,
+    const Util::StringAtom& name,
+    GPULang::Loader* loader,
+    Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
+    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
+    Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+    Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
+    CoreGraphics::ResourcePipelineId& pipelineLayout,
+    Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
+    Util::Dictionary<Util::StringAtom, IndexT>& constantBindings
+);
 /// cleanup shader
 void ShaderCleanup(
     VkDevice dev,

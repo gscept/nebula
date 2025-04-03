@@ -11,6 +11,7 @@
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
 #include "graphics/cameracontext.h"
+#include "graphics/view.h"
 #include "threading/lockfreequeue.h"
 #include "materials/material.h"
 
@@ -617,6 +618,8 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     // get the lod camera
     Graphics::GraphicsEntityId lodCamera = Graphics::CameraContext::GetLODCamera();
     const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCamera);
+    const Math::mat4& viewTransform = Graphics::CameraContext::GetView(lodCamera);
+    const CameraSettings& settings = Graphics::CameraContext::GetSettings(lodCamera);
 
     n_assert(TransformsUpdateCounter == 0);
     TransformsUpdateCounter = 1;
@@ -673,6 +676,8 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
             , instanceBoxes = instanceBoxes.Begin()
             , cameraTransform
+            , focalLength = settings.GetFov()
+            , viewTransform
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {
@@ -690,8 +695,20 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             {
                 Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
                 Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
+                float radius = box.diagonal_size();
                 box.affine_transform(transform);
                 instanceBoxes[j] = box;
+
+                Math::point center = box.center();
+
+                // https://iquilezles.org/articles/sphereproj/
+                Math::vec4 centerInViewSpace = viewTransform * center;
+                float r2 = radius * radius;
+                float z2 = centerInViewSpace.z * centerInViewSpace.z;
+                float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
+                float screenArea = PI * focalLength * focalLength * r2 * Math::sqrt(Math::abs((l2-r2) / (r2-z2))) / (r2-z2);
+                //if (r2 > 3)
+                    //n_printf("Area: %f\n", screenArea);
 
                 Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
                 NodeInstances.renderable.nodeMeshes[j] = primitiveNode->GetMesh();
