@@ -750,8 +750,8 @@ AddBinding(Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding>& bindings, co
         const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
         if (prevBinding.descriptorCount != binding.descriptorCount
             || prevBinding.descriptorType != binding.descriptorType
-            || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
-            || prevBinding.stageFlags != binding.stageFlags)
+            || prevBinding.pImmutableSamplers != binding.pImmutableSamplers)
+            //|| prevBinding.stageFlags != binding.stageFlags)
         {
             n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
         }

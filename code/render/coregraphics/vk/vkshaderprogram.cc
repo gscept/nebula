@@ -80,6 +80,9 @@ VkShaderProgramSetup(const Ids::Id24 id, const Resources::ResourceName& shaderNa
         runtime.type = CoreGraphics::InvalidPipeline;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VkShaderProgramSetup(
     const Ids::Id24 id,
@@ -90,9 +93,12 @@ VkShaderProgramSetup(
 {
     String mask, name;
     for (size_t i = 0; i < program->annotationCount; i++)
-        if (strcmp(program->annotations[i].name, "Mask") == 0)
+    {
+        String annot = String(program->annotations[i].name, program->annotations[i].nameLength);
+        if (annot == "Mask")
             mask = String(program->annotations[i].data.s.string, program->annotations[i].data.s.length);
-    String name = String(program->name, program->nameLength);
+    }
+    name = String(program->name, program->nameLength);
     
     VkShaderProgramSetupInfo& setup = shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(id);
     VkProgramReflectionInfo& refl = shaderProgramAlloc.Get<ShaderProgram_ReflectionInfo>(id);
@@ -178,21 +184,21 @@ VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, unsigned
 void
 VkShaderProgramCreateShader(const VkDevice dev, VkShaderModule* shader, GPULang::Deserialize::Program::Shader* binary)
 {
-        if (binary->binaryLength > 0)
+    if (binary->binaryLength > 0)
+    {
+        VkShaderModuleCreateInfo info =
         {
-            VkShaderModuleCreateInfo info =
-            {
-                VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-                NULL,
-                0,                                      // flags
-                binary->binaryLength, // Vulkan expects the binary to be uint32, so we must assume size is in units of 4 bytes
-                binary->binary
-            };
+            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            NULL,
+            0,                                      // flags
+            binary->binaryLength, // Vulkan expects the binary to be uint32, so we must assume size is in units of 4 bytes
+            binary->binary
+        };
 
-            // create shader
-            VkResult res = vkCreateShaderModule(dev, &info, NULL, shader);
-            assert(res == VK_SUCCESS);
-        }
+        // create shader
+        VkResult res = vkCreateShaderModule(dev, &info, NULL, shader);
+        assert(res == VK_SUCCESS);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -462,6 +468,7 @@ StencilOpFromGPULang(GPULang::StencilOp op)
         case GPULang::StencilOp::StencilDecrementWrapOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_WRAP;
     }
     n_error("Invalid GPULang stencil op");
+    return VkStencilOp::VK_STENCIL_OP_KEEP;
 }
 
 //------------------------------------------------------------------------------
