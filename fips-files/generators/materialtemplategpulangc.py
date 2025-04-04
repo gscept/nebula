@@ -273,7 +273,7 @@ class MaterialTemplateDefinition:
                 func += '\t\tIndexT bufferSlot = InvalidIndex;\n'
                 func += '\t\tif (this->entry.bufferName != nullptr) bufferSlot = CoreGraphics::ShaderGetResourceSlot({}, this->entry.bufferName);\n'.format('shader')
                 func += '\t\tthis->__{} = Entry::Pass{{.shader = shader, .program = program, .index = {}, .name = "{}", .bufferIndex=bufferSlot }};\n'.format(p.batch, passCounter, p.batch)
-                func += '\t\tthis->entry.passes.Add(MaterialTemplates::BatchGroup::{}, &this->__{});\n'.format(p.batch, p.batch)
+                func += '\t\tthis->entry.passes.Add(MaterialTemplatesGPULang::BatchGroup::{}, &this->__{});\n'.format(p.batch, p.batch)
                 func += '\t\tthis->entry.texturesPerBatch[{}].Resize({});\n'.format(passCounter, numTextures)
                 texCounter = 0
                 for var in self.variables:
@@ -315,18 +315,29 @@ class MaterialInterfaceDefinition:
         contents = ""
         textures = ""
         texCounter = 64 - 16;
+        
+        typeTranslation = {
+            "float": "f32",
+            "vec2": "f32x2",
+            "vec3": "f32x3",
+            "vec4": "f32x4",
+            "bool": "b8",
+            "texture2D": "texture2D",
+            "textureHandle": "u32"
+        }
+        
         for v in self.values:
             if v.type != 'texture2d':
-                contents += "\t{} {};\n".format(v.type, v.name)
+                contents += "\t{} : {};\n".format(v.name, typeTranslation[v.type])
             else:
-                textures += "group(BATCH_GROUP) binding({}) texture2D {}_{};\n".format(texCounter, self.name, v.name)
+                textures += "group(BATCH_GROUP) binding({}) uniform {}_{} : *texture2D;\n".format(texCounter, self.name, v.name)
                 texCounter += 1
         
         ret = ""
-        ret += "ptr alignment(16) struct {}Material \n{{\n{}}};\n".format(self.name, contents)
+        ret += "struct {}Material \n{{\n{}}};\n".format(self.name, contents)
         ret += textures
         ret += "\n"
-        ret += "MATERIAL_CB_BINDING constant {}Constants \n{{\n{}}} _{};\n".format(self.name, contents, self.name)
+        ret += "MATERIAL_CB_BINDING uniform {}Constants : *{}Material;\n".format(self.name, self.name)
         return ret
 
 
@@ -450,7 +461,7 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "math/vec3.h"')
         f.WriteLine('#include "math/vec4.h"')
         f.WriteLine('using namespace Util;')
-        f.WriteLine('namespace MaterialTemplates\n{\n')
+        f.WriteLine('namespace MaterialTemplatesGPULang\n{\n')
         f.WriteLine('enum class BatchGroup;\n')
         
 
@@ -458,7 +469,7 @@ class MaterialTemplateGenerator:
     ##
     #
     def EndHeader(self, f):
-        f.WriteLine('} // namespace MaterialTemplates\n')
+        f.WriteLine('} // namespace MaterialTemplatesGPULang\n')
 
     #------------------------------------------------------------------------------
     ##
@@ -483,7 +494,7 @@ class MaterialTemplateGenerator:
                 setupStr += '\t__{}.Setup();\n'.format(mat.name)
                 setupStr += '\tLookup.Add("{}"_hash, &__{}.entry);\n'.format(mat.name, mat.name)
                 for p in mat.passes:
-                    setupStr += '\tConfigs[(uint)MaterialTemplates::BatchGroup::{}].Append(&__{}.entry);\n'.format(p.batch, mat.name)
+                    setupStr += '\tConfigs[(uint)MaterialTemplatesGPULang::BatchGroup::{}].Append(&__{}.entry);\n'.format(p.batch, mat.name)
                 setupStr += '\n'
                 f.WriteLine('struct {}::{} {}::__{};'.format(self.name, mat.name, self.name, mat.name))
         f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates()\n{{\n{}}}\n'.format(setupStr))
@@ -512,14 +523,14 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "math/vec3.h"')
         f.WriteLine('#include "math/vec4.h"')
         f.WriteLine('using namespace Util;')
-        f.WriteLine('namespace MaterialTemplates\n{\n')
+        f.WriteLine('namespace MaterialTemplatesGPULang\n{\n')
         
 
     #------------------------------------------------------------------------------
     ##
     #  
     def EndSource(self, f):
-        f.WriteLine('} // namespace MaterialTemplates\n')
+        f.WriteLine('} // namespace MaterialTemplatesGPULang\n')
 
     #------------------------------------------------------------------------------
     ##
@@ -539,7 +550,7 @@ class MaterialTemplateGenerator:
         materialNames = "\\\n"
         for i in self.interfaces:
             f.WriteLine(i.FormatShader())
-            materialNames += "\t\t{}Material {}Materials;\\\n".format(i.name, i.name);
+            materialNames += "\t\t{}Materials : *{}Material;\\\n".format(i.name, i.name);
 
         f.WriteLine("#define MATERIAL_LIST_{} {}".format(Path(self.name).stem, materialNames))
 
@@ -556,7 +567,7 @@ class MaterialTemplateGenerator:
         f.WriteLine("DO NOT EDIT")
         f.DecreaseIndent()
         f.WriteLine("*/")
-        f.WriteLine("#include <lib/std.fxh>")
+        f.WriteLine("#include <lib/std.gpuh>")
         f.WriteLine("#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)")
         f.WriteLine("")
 
@@ -577,9 +588,9 @@ if __name__ == '__main__':
     shaderInclude = sys.argv[-2]
     outDir = sys.argv[-1]
 
-    outHeaderPath = '{}/materialtemplates.h'.format(outDir)
-    outSourcePath = '{}/materialtemplates.cc'.format(outDir)
-    outShaderPath = '{}/material_interfaces.fx'.format(outDir)
+    outHeaderPath = '{}/materialtemplatesgpulang.h'.format(outDir)
+    outSourcePath = '{}/materialtemplatesgpulang.cc'.format(outDir)
+    outShaderPath = '{}/material_interfaces.gpul'.format(outDir)
     compilerChangeTime = os.path.getmtime(sys.argv[0])
 
     hasModifications = False
@@ -600,7 +611,7 @@ if __name__ == '__main__':
     
 
     if hasModifications:
-        generator.SetName("materialtemplates")
+        generator.SetName("materialtemplatesgpulang")
         headerF = IDLC.filewriter.FileWriter()
         headerF.Open(outHeaderPath)
         generator.BeginHeader(headerF)
@@ -610,7 +621,7 @@ if __name__ == '__main__':
         generator.BeginSource(sourceF)
 
         sourceF.WriteLine('Util::Dictionary<uint, Entry*> Lookup;')
-        sourceF.WriteLine('Util::Array<Entry*> Configs[(uint)MaterialTemplates::BatchGroup::Num];')
+        sourceF.WriteLine('Util::Array<Entry*> Configs[(uint)MaterialTemplatesGPULang::BatchGroup::Num];')
 
         shaderF = IDLC.filewriter.FileWriter()
         shaderF.Open(outShaderPath)
@@ -619,7 +630,7 @@ if __name__ == '__main__':
         for file in files:
             path = Path(file).stem
 
-            print("[Material Template Compiler] '{}' -> '{}/materialtemplates.h' & '{}/materialtemplates.cc & '{}/material_interfaces.fx' ".format(file, outDir, outDir, outDir))
+            print("[Material Template Compiler] '{}' -> '{}/materialtemplatesgpulang.h' & '{}/materialtemplatesgpulang.cc & '{}/material_interfaces.gpul' ".format(file, outDir, outDir, outDir))
             generator.SetDocument(file)
             generator.SetName(path)
             generator.Parse()
@@ -652,7 +663,7 @@ if __name__ == '__main__':
 
         headerF.WriteLine('enum class MaterialProperties\n{{\n{}}};'.format(enumStr))
         headerF.WriteLine('extern Util::Dictionary<uint, Entry*> Lookup;')
-        headerF.WriteLine('extern Util::Array<Entry*> Configs[(uint)MaterialTemplates::BatchGroup::Num];\n')
+        headerF.WriteLine('extern Util::Array<Entry*> Configs[(uint)MaterialTemplatesGPULang::BatchGroup::Num];\n')
         headerF.WriteLine('void SetupMaterialTemplates();\n')
         
         generator.EndHeader(headerF)
@@ -671,21 +682,22 @@ if __name__ == '__main__':
 
         # Finish shader
         shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
-        shaderF.WriteLine("const uint MaterialBindingSlot = 51;")
-        shaderF.WriteLine("const uint MaterialBufferSlot = 52;")
+        shaderF.WriteLine("const MaterialBindingSlot = 51u;")
+        shaderF.WriteLine("const MaterialBufferSlot = 52u;")
 
         bindingsContent = ''
         for file in files:
             fileName = Path(file).stem
             bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
 
-        shaderF.WriteLine("MATERIAL_BINDING rw_buffer MaterialBindings\n{{\n{}}};".format(bindingsContent))
+        shaderF.WriteLine("struct MaterialBinding\n{{\n{}}};".format(bindingsContent));
+        shaderF.WriteLine("MATERIAL_BINDING uniform MaterialPointers : *MaterialBinding;")
         generator.EndShader(shaderF)
         shaderF.Close()
 
     
     # Finally, run the AnyFX compiler
-    shaderBinaryOutput = "{}/material_interfaces.fxb".format(outDir)
+    shaderBinaryOutput = "{}/material_interfaces.gplb".format(outDir)
     shaderHeaderOutput = "{}/material_interfaces.h".format(outDir)
 
     try:

@@ -663,7 +663,7 @@ ShaderSetup(
 
             ResourceTableLayoutSampler sampBinding;
             sampBinding.slot = sampler->binding;
-            sampBinding.visibility = CoreGraphics::ShaderVisibility::AllGraphicsVisibility;
+            sampBinding.visibility = CoreGraphics::ShaderVisibility::AllVisibility;
             sampBinding.sampler = samp;
 
             if (sampler->binding != 0xFFFFFFFF)
@@ -688,11 +688,18 @@ ShaderSetup(
     for (size_t i = 0; i < loader->variables.size(); i++)
     {
         const GPULang::Deserialize::Variable* variable = loader->variables[i];
+
+        // Skip variables without any visibility
+        if (variable->visibility.bits == 0x0)
+            continue;
+
         if (variable->bindingType == GPULang::BindingType::Buffer)
         {
             ResourceTableLayoutConstantBuffer cbo;
             cbo.slot = variable->binding;
-            cbo.num = variable->arraySizes[0];
+            cbo.num = 1;
+            if (variable->arraySizeCount > 0)
+                cbo.num = variable->arraySizes[0];
             cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility);
 
             if (variable->binding != 0xFFFFFFFF)
@@ -736,7 +743,9 @@ ShaderSetup(
         {
             ResourceTableLayoutShaderRWBuffer rwbo;
             rwbo.slot = variable->binding;
-            rwbo.num = variable->arraySizes[0];
+            rwbo.num = 1;
+            if (variable->arraySizeCount > 0)
+                rwbo.num = variable->arraySizes[0];
             rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility);
 
             if (variable->binding != 0xFFFFFFFF)
@@ -791,7 +800,9 @@ ShaderSetup(
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
             tex.visibility = ShaderVisibilityFromGPULang(variable->visibility);
-            tex.num = variable->arraySizes[0];
+            tex.num = 1;
+            if (variable->arraySizeCount > 0)
+                tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
 
             if (variable->binding != 0xFFFFFFFF)
@@ -814,7 +825,9 @@ ShaderSetup(
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
             tex.visibility = ShaderVisibilityFromGPULang(variable->visibility);
-            tex.num = variable->arraySizes[0];
+            tex.num = 1;
+            if (variable->arraySizeCount > 0)
+                tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
 
             if (variable->binding != 0xFFFFFFFF)
@@ -837,7 +850,9 @@ ShaderSetup(
             ResourceTableLayoutInputAttachment tex;
             tex.slot = variable->binding;
             tex.visibility = ShaderVisibility::PixelShaderVisibility;
-            tex.num = variable->arraySizes[0];
+            tex.num = 1;
+            if (variable->arraySizeCount > 0)
+                tex.num = variable->arraySizes[0];
 
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -1206,17 +1221,6 @@ CreateShader(const GPULangShaderCreateInfo& info)
         if (object->type == GPULang::Serialize::Type::ProgramType)
         {
             auto program = (GPULang::Deserialize::Program*)object;
-        }
-    }
-
-    // setup shader variations
-    const std::vector<AnyFX::ProgramBase*> programs = effect->GetPrograms();
-    if (!programs.empty())
-    {
-        for (size_t i = 0; i < programs.size(); i++)
-        {
-            // get program object from shader subsystem
-            AnyFX::VkProgram* program = static_cast<AnyFX::VkProgram*>(programs[i]);
 
             // allocate new program object and set it up
             Ids::Id32 programId = shaderProgramAlloc.Alloc();
@@ -1228,14 +1232,12 @@ CreateShader(const GPULangShaderCreateInfo& info)
             shaderProgramId.program = programId;
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
-
-        // set active variation
-        runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
-        runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
     }
+    // set active variation
+    runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
+    runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
 
-    // delete the AnyFX effect
-    delete effect;
+    delete info.loader;
 
 #if __NEBULA_HTTP__
     //res->debugState = res->CreateState();

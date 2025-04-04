@@ -23,6 +23,12 @@ struct Entry;
 enum class BatchGroup;
 };
 
+namespace MaterialTemplatesGPULang
+{
+struct Entry;
+enum class BatchGroup;
+};
+
 namespace Materials
 {
 
