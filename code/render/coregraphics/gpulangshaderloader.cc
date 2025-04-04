@@ -9,7 +9,7 @@
 namespace CoreGraphics
 {
 
-__ImplementClass(CoreGraphics::ShaderLoader, 'GPSL', Resources::ResourceLoader);
+__ImplementClass(CoreGraphics::GPULangShaderLoader, 'GPSL', Resources::ResourceLoader);
 
 //------------------------------------------------------------------------------
 /**
@@ -41,11 +41,12 @@ GPULangShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO
 
     Resources::ResourceLoader::ResourceInitOutput ret;
 
-    GPULang::Loader* loader = GPULang::Alloc<GPULang::Loader>();
+    GPULang::Loader* loader = new GPULang::Loader;
 
     // catch any potential error coming from AnyFX
     if (!loader->Load((const char*)srcData, srcDataSize))
     {
+        ret.id = CoreGraphics::InvalidShaderId;
         return ret;
     }
 

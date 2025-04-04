@@ -11,6 +11,7 @@
 #include "coregraphics/textureloader.h"
 #include "coregraphics/shaderloader.h"
 #include "coregraphics/meshloader.h"
+#include "coregraphics/gpulangshaderloader.h"
 #include "coreanimation/animationloader.h"
 #include "characters/skeletonloader.h"
 #include "models/modelloader.h"
@@ -115,6 +116,7 @@ GraphicsServer::Open()
     {
         // Setup shader server
         Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamLoader("gplb", CoreGraphics::GPULangShaderLoader::RTTI);
         this->shaderServer = CoreGraphics::ShaderServer::Create();
         this->shaderServer->Open();
 

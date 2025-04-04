@@ -141,7 +141,7 @@ if(N_RENDERER_VULKAN)
 endif()
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" ON)
-option(N_NEBULA_PROFILE_SHADER_BUILDS "Profile shader compilation" OFF)
+option(N_NEBULA_PROFILE_SHADER_BUILDS "Profile shader compilation" ON)
 
 option(USE_DOTNET "Build with .NET support" OFF)
 
@@ -195,7 +195,7 @@ macro(compile_gpulang_intern)
     set(nebula_shader ${ARGV1})
     if(SHADERC)
         if(N_NEBULA_DEBUG_SHADERS)
-            set(shader_debug "-debug -validate")
+            set(shader_debug "-debug")
         endif()
         
         if (N_NEBULA_PROFILE_SHADER_BUILDS)
@@ -399,7 +399,6 @@ macro(nebula_material_template_compile)
         SOURCES ${material_definition_files}
         DEPENDS ${NROOT}/fips-files/generators/materialtemplatec.py ${material_definition_files}
         VERBATIM)
-    add_dependencies(render materialtemplates)
     set_target_properties(materialtemplates PROPERTIES FOLDER "Material Definitions")
     source_group("materials\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
     source_group("materials\\Templates" FILES "${out_header}" "${out_source}" "${out_shader}")
@@ -407,6 +406,30 @@ macro(nebula_material_template_compile)
 
     target_include_directories(render PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
     add_dependencies(render materialtemplates)
+endmacro()
+
+macro(nebula_material_template_gpulang_compile)
+    set(out_header "materialtemplatesgpulang.h")
+    set(out_source "materialtemplatesgpulang.cc")
+    set(out_shader "material_interfaces.gpul")
+    set(out_shader_header "material_interfaces_gpulang.h")
+
+    set(abs_output_folder "${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang")
+    file(MAKE_DIRECTORY ${abs_output_folder})
+    add_custom_target(materialtemplates_gpulang
+        COMMAND ${PYTHON} ${NROOT}/fips-files/generators/materialtemplategpulangc.py ${material_definition_files} ${SHADERC} ${NROOT}/syswork/shaders/vk/gpulang "${abs_output_folder}"
+        BYPRODUCTS "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" "${abs_output_folder}/${out_shader_header}"
+        WORKING_DIRECTORY "${NROOT}"
+        SOURCES ${material_definition_files}
+        DEPENDS ${NROOT}/fips-files/generators/materialtemplategpulangc.py ${material_definition_files}
+        VERBATIM)
+    set_target_properties(materialtemplates_gpulang PROPERTIES FOLDER "Material Definitions")
+    source_group("materials\\gpulang\\Generated" FILES "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}" )
+    source_group("materials\\gpulang\\Templates" FILES "${out_header}" "${out_source}" "${out_shader}")
+    target_sources(render PRIVATE "${abs_output_folder}/${out_header}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_shader}")
+
+    target_include_directories(render PUBLIC "${CMAKE_BINARY_DIR}/material_templates/render")
+    add_dependencies(render materialtemplates_gpulang)
 endmacro()
 
 macro(nebula_framescript_add)
@@ -792,6 +815,7 @@ macro(nebula_end_app)
     endif()
     if (target_has_materials)
         nebula_material_template_compile()
+        nebula_material_template_gpulang_compile()
     endif()
     if (target_has_frame_script)
         nebula_framescript_compile()
@@ -833,6 +857,7 @@ macro(nebula_end_module)
     endif()
     if (target_has_materials)
         nebula_material_template_compile()
+        nebula_material_template_gpulang_compile()
     endif()
     if (target_has_frame_script)
         nebula_framescript_compile()
@@ -869,6 +894,7 @@ macro(nebula_end_lib)
     endif()
     if (target_has_materials)
         nebula_material_template_compile()
+        nebula_material_template_gpulang_compile()
     endif()
     if (target_has_frame_script)
         nebula_framescript_compile()
