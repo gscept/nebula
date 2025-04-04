@@ -23,6 +23,10 @@ namespace MaterialTemplates
 {
     struct MaterialTemplateTexture;
 }
+namespace MaterialTemplatesGPULang
+{
+struct MaterialTemplateTexture;
+}
 namespace Materials
 {
 
