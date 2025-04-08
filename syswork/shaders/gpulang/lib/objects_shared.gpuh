@@ -31,10 +31,10 @@ struct InstanceGroupData
 group(DYNAMIC_OFFSET_GROUP) uniform Instances : *mutable InstanceGroupData;
 
 // Joints are limited to 256 matrices
-struct Joint
+struct JointData
 {
-    Transform : f32x4x4;
+    Transform : [256]f32x4x4;
 };
-group(DYNAMIC_OFFSET_GROUP) uniform JointPalette : [256] *Joint;
+group(DYNAMIC_OFFSET_GROUP) uniform JointPalette : *JointData;
 
 #endif // OBJECTS_SHARED_GPUH

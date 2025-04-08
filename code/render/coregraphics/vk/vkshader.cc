@@ -663,7 +663,7 @@ ShaderSetup(
 
             ResourceTableLayoutSampler sampBinding;
             sampBinding.slot = sampler->binding;
-            sampBinding.visibility = CoreGraphics::ShaderVisibility::AllVisibility;
+            sampBinding.visibility = ShaderVisibilityFromGPULang(sampler->visibility);
             sampBinding.sampler = samp;
 
             if (sampler->binding != 0xFFFFFFFF)
