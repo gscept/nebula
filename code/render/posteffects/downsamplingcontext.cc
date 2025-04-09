@@ -5,9 +5,9 @@
 #include "frame/framesubgraph.h"
 #include "downsamplingcontext.h"
 
-#include "system_shaders/downsample/downsample_cs_light.h"
-#include "system_shaders/downsample/downsample_cs_depth.h"
-#include "system_shaders/downsample/depth_extract_cs.h"
+#include "render/system_shaders/downsample/downsample_cs_light.h"
+#include "render/system_shaders/downsample/downsample_cs_depth.h"
+#include "render/system_shaders/downsample/depth_extract_cs.h"
 
 #include "frame/default.h"
 

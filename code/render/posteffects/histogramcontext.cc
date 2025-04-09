@@ -11,8 +11,8 @@
 
 #include "graphics/globalconstants.h"
 
-#include "system_shaders/histogram_cs.h"
-#include "system_shaders/shared.h"
+#include "render/system_shaders/histogram_cs.h"
+#include "render/system_shaders/shared.h"
 #include "core/cvar.h"
 
 #include "frame/default.h"

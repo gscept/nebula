@@ -11,8 +11,8 @@
 #include "graphics/view.h"
 #include "ssrcontext.h"
 
-#include "system_shaders/ssr_cs.h"
-#include "system_shaders/ssr_resolve_cs.h"
+#include "render/system_shaders/ssr_cs.h"
+#include "render/system_shaders/ssr_resolve_cs.h"
 
 #include "frame/default.h"
 

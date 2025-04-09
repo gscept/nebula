@@ -423,7 +423,7 @@ class FullscreenEffectDefinition:
 
     def FormatExtern(self, file, parser):
         file.WriteLine("")
-        file.WriteLine('#include "{}.h"'.format(self.shader))
+        file.WriteLine('#include "render/{}.h"'.format(self.shader))
         file.WriteLine("CoreGraphics::PipelineId FullScreenEffect_{}_Pipeline;".format(self.name))
         file.WriteLine("CoreGraphics::BufferId FullScreenEffect_{}_Constants;".format(self.name))
         file.WriteLine("CoreGraphics::ResourceTableId FullScreenEffect_{}_ResourceTable;".format(self.name))
@@ -1244,7 +1244,7 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/buffer.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "coregraphics/pipeline.h"')
-        file.WriteLine('#include "system_shaders/shared.h"')
+        file.WriteLine('#include "render/system_shaders/shared.h"')
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
