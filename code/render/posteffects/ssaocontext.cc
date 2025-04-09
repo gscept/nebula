@@ -14,8 +14,8 @@
 #include "graphics/view.h"
 #include "ssaocontext.h"
 
-#include "system_shaders/hbao_cs.h"
-#include "system_shaders/hbaoblur_cs.h"
+#include "render/system_shaders/hbao_cs.h"
+#include "render/system_shaders/hbaoblur_cs.h"
 
 #include "frame/default.h"
 

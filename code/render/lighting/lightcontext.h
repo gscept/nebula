@@ -12,7 +12,7 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/texture.h"
 #include <array>
-#include <system_shaders/lights_cluster.h>
+#include <render/system_shaders/lights_cluster.h>
 
 namespace Frame
 {

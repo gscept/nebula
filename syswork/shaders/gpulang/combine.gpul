@@ -22,15 +22,14 @@ group(BATCH_GROUP) uniform CombineUniforms: *CombineData;
 /**
 */
 local_size_x(64)
-derivative_index_linear
 entry_point
 csCombine() void
 {
     const coord = f32x2(computeGetGlobalInvocationIndices().xy) * CombineUniforms.LowresResolution;
     const fullscaleCoord = i32x2(computeGetGlobalInvocationIndices().xy);
-    const fog = textureSample(Fog, LinearSampler, coord);
-    const reflections = textureSample(Reflections, LinearSampler, coord);
-    const ao = textureSample(AO, LinearSampler, coord).r;
+    const fog = textureSampleLod(Fog, LinearSampler, coord, 0);
+    const reflections = textureSampleLod(Reflections, LinearSampler, coord, 0);
+    const ao = textureSampleLod(AO, LinearSampler, coord, 0).r;
     const light = textureLoad(Lightning, fullscaleCoord);
 
     const res = light.rgb * (1 - (ao)) * fog.a

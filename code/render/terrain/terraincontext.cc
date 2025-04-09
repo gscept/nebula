@@ -23,9 +23,9 @@
 #include "resources/resourceserver.h"
 #include "materials/materialloader.h"
 
-#include "terrain/shaders/terrain.h"
-#include "terrain/shaders/terrain_mesh_generate.h"
-#include "terrain/shaders/terrain_tile_write.h"
+#include "render/terrain/shaders/terrain.h"
+#include "render/terrain/shaders/terrain_mesh_generate.h"
+#include "render/terrain/shaders/terrain_tile_write.h"
 
 #include "frame/default.h"
 

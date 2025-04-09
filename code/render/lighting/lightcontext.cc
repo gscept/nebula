@@ -22,10 +22,10 @@
 
 #include "graphics/globalconstants.h"
 
-#include "system_shaders/shared.h"
-#include "system_shaders/lights_cluster.h"
-#include "system_shaders/combine.h"
-#include "system_shaders/csmblur.h"
+#include "render/system_shaders/shared.h"
+#include "render/system_shaders/lights_cluster.h"
+#include "render/system_shaders/combine.h"
+#include "render/system_shaders/csmblur.h"
 
 #include "frame/default.h"
 #include "frame/shadows.h"
