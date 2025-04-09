@@ -9,7 +9,10 @@
 #include "graphics/graphicsserver.h"
 #include "bloomcontext.h"
 
-#include "system_shaders/bloom.h"
+#include "gpulang/render/system_shaders/bloom.h"
+//#include "system"
+//#include "gpulang/gpulang/bloom.h"
+//#include "system_shaders/bloom.h"
 
 #include "frame/default.h"
 namespace PostEffects
@@ -49,17 +52,17 @@ BloomContext::~BloomContext()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 BloomContext::Setup()
 {
     using namespace CoreGraphics;
 
     // setup shaders
-    bloomState.gpulangShader = ShaderGet("shd:gpulang/gpulang/bloom.gplb");
+    bloomState.gpulangShader = ShaderGet("shd:system_shaders/bloom.gplb");
     bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
-    bloomState.intermediateProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Intermediate"));
-    bloomState.mergeProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Merge"));
-    bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
+    bloomState.intermediateProgram = ShaderGetProgram(bloomState.gpulangShader, ShaderFeatureMask("Intermediate"));
+    bloomState.mergeProgram = ShaderGetProgram(bloomState.gpulangShader, ShaderFeatureMask("Merge"));
+    bloomState.resourceTable = ShaderCreateResourceTable(bloomState.gpulangShader, NEBULA_BATCH_GROUP);
 
     TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
 
@@ -101,7 +104,7 @@ BloomContext::Setup()
     }
     bloomState.numMips = mips;
 
-    Bloom::BloomUniforms uniforms;
+    Bloom::BloomUniforms::STRUCT uniforms;
     uniforms.Mips = mips;
     for (IndexT i = 0; i < mips; i++)
     {
@@ -112,15 +115,15 @@ BloomContext::Setup()
     }
     BufferUpdate(bloomState.constants, uniforms);
 
-    ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Table_Batch::Input_SLOT });
-    ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::Table_Batch::BloomOutput_SLOT });
+    ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
+    ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
     for (IndexT i = 0; i < mips; i++)
     {
-        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::Table_Batch::BloomIntermediate_SLOT, i });
+        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i });
     }
-    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Table_Batch::Intermediate_SLOT });
+    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::BloomIntermediate::BINDING });
 
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
+    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::BloomUniforms::BINDING });
     ResourceTableCommitChanges(bloomState.resourceTable);
 
     FrameScript_default::RegisterSubgraph_BloomIntermediate_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
@@ -201,7 +204,7 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
         bloomState.intermediateBloomBufferViews[i] = CreateTextureView(inf);
     }
 
-    Bloom::BloomUniforms uniforms;
+    Bloom::BloomUniforms::STRUCT uniforms;
     uniforms.Mips = mips;
     for (IndexT i = 0; i < mips; i++)
     {
@@ -212,21 +215,21 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
     }
     BufferUpdate(bloomState.constants, uniforms);
 
-    ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Table_Batch::Input_SLOT });
-    ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::Table_Batch::BloomOutput_SLOT });
+    ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
+    ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
     for (IndexT i = 0; i < mips; i++)
     {
-        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::Table_Batch::BloomIntermediate_SLOT, i });
+        ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i });
     }
-    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Table_Batch::Intermediate_SLOT });
-    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::Table_Batch::BloomUniforms_SLOT });
+    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING });
+    ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::BloomUniforms::BINDING });
     ResourceTableCommitChanges(bloomState.resourceTable);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 BloomContext::Create()
 {
     __CreatePluginContext();
@@ -239,7 +242,7 @@ BloomContext::Create()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 BloomContext::Discard()
 {
     DestroyResourceTable(bloomState.resourceTable);

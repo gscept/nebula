@@ -8,8 +8,8 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include <gi/shaders/probe_finalize.h>
-#include <gi/shaders/probe_update.h>
+#include <render/gi/shaders/probe_finalize.h>
+#include <render/gi/shaders/probe_update.h>
 
 #include "graphics/graphicscontext.h"
 namespace GI

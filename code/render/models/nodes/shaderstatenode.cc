@@ -8,7 +8,7 @@
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceserver.h"
 
-#include "system_shaders/objects_shared.h"
+#include "render/system_shaders/objects_shared.h"
 
 using namespace Util;
 using namespace Math;
