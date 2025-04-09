@@ -17,7 +17,7 @@
 #include "models/nodes/transformnode.h"
 #include "models/nodes/primitivenode.h"
 
-#include "system_shaders/vegetation.h"
+#include "render/system_shaders/vegetation.h"
 
 #include "frame/default.h"
 namespace Vegetation

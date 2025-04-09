@@ -13,12 +13,12 @@
 #include "materials/shaderconfig.h"
 #include "materials/materialloader.h"
 
-#include "raytracing/shaders/raytracetest.h"
-#include "raytracing/shaders/brdfhit.h"
-#include "raytracing/shaders/bsdfhit.h"
-#include "raytracing/shaders/gltfhit.h"
+#include "render/raytracing/shaders/raytracetest.h"
+#include "render/raytracing/shaders/brdfhit.h"
+#include "render/raytracing/shaders/bsdfhit.h"
+#include "render/raytracing/shaders/gltfhit.h"
 
-#include "raytracing/shaders/light_grid_cs.h"
+#include "render/raytracing/shaders/light_grid_cs.h"
 
 #include "frame/default.h"
 #include "lighting/lightcontext.h"

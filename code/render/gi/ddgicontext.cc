@@ -19,16 +19,16 @@
 #include "coregraphics/shaperenderer.h"
 
 
-#include "gi/shaders/probe_update.h"
-#include "gi/shaders/probe_finalize.h"
-#include "gi/shaders/gi_volume_cull.h"
-#include "gi/shaders/probe_relocate_and_classify.h"
+#include "render/gi/shaders/probe_update.h"
+#include "render/gi/shaders/probe_finalize.h"
+#include "render/gi/shaders/gi_volume_cull.h"
+#include "render/gi/shaders/probe_relocate_and_classify.h"
 #include "graphics/globalconstants.h"
 
 #ifndef PUBLIC_BUILD
-#include "gi/shaders/probe_debug.h"
+#include "render/gi/shaders/probe_debug.h"
 #endif
-#include <raytracing/shaders/raytracetest.h>
+#include <render/raytracing/shaders/raytracetest.h>
 
 #include "options.h"
 #include "core/cvar.h"

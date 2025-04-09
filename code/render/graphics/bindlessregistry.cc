@@ -3,7 +3,7 @@
 // (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "bindlessregistry.h"
-#include "system_shaders/shared.h"
+#include "render/system_shaders/shared.h"
 #include "globalconstants.h"
 namespace Graphics
 {

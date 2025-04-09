@@ -15,7 +15,7 @@
 
 #include "graphics/globalconstants.h"
 
-#include "system_shaders/decals_cluster.h"
+#include "render/system_shaders/decals_cluster.h"
 
 #include "frame/default.h"
 

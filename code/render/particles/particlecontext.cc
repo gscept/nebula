@@ -13,7 +13,7 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 
-#include "system_shaders/particle.h"
+#include "render/system_shaders/particle.h"
 
 using namespace Graphics;
 using namespace Models;

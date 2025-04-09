@@ -15,8 +15,8 @@
 #include "threading/lockfreequeue.h"
 #include "materials/material.h"
 
-#include "system_shaders/objects_shared.h"
-#include "system_shaders/particle.h"
+#include "render/system_shaders/objects_shared.h"
+#include "render/system_shaders/particle.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
