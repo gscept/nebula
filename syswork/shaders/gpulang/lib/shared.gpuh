@@ -25,9 +25,9 @@ group(TICK_GROUP) binding(0) uniform Textures2DMSArray : [MAX_TEXTURES]* texture
 group(TICK_GROUP) binding(0) uniform Textures3D : [MAX_TEXTURES]* texture3D;
 group(TICK_GROUP) binding(0) uniform TexturesCube : [MAX_TEXTURES]* textureCube;
 group(TICK_GROUP) binding(0) uniform TexturesCubeArray : [MAX_TEXTURES]* textureCubeArray;
-sampler_state Basic2DSampler{};
-sampler_state PointSampler { Filter = FilterMode.Nearest; Address = AddressMode.Clamp; };
-sampler_state LinearSampler { Filter = FilterMode.Nearest; Address = AddressMode.Clamp; };
+group(TICK_GROUP) sampler_state Basic2DSampler{};
+group(TICK_GROUP) sampler_state PointSampler { Filter = FilterMode.Nearest; Address = AddressMode.Clamp; };
+group(TICK_GROUP) sampler_state LinearSampler { Filter = FilterMode.Linear; Address = AddressMode.Clamp; };
  
 
 #define sample2D(handle, sampler, uv)						    textureSample(Textures2D[handle], sampler, uv)
@@ -170,21 +170,23 @@ struct ShadowViewParams
     ShadowTiles : [SHADOW_CASTER_COUNT / 4] i32x4;
     LightViewMatrix : [SHADOW_CASTER_COUNT] f32x4x4;
 };
+
+@Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform ShadowViewConstants : *ShadowViewParams;
 
-sampler_state ShadowSampler
+group(FRAME_GROUP) sampler_state ShadowSampler
 {
     CompareEnabled = true;
     AddressU = AddressMode.Clamp;
     AddressV = AddressMode.Clamp;
 };
 
-sampler_state PointLightTextureSampler
+group(FRAME_GROUP) sampler_state PointLightTextureSampler
 {
     Filter = FilterMode.MinMagLinearMipPoint;
 };
 
-sampler_state SpotlightTextureSampler
+group(FRAME_GROUP) sampler_state SpotlightTextureSampler
 {
     Filter = FilterMode.MinMagLinearMipPoint;
     AddressU = AddressMode.Border;
@@ -217,6 +219,8 @@ struct ClusterAABB
     minPoint : f32x4;
     featureFlags : u32;
 };
+
+@Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform ClusterAABBs : [] *mutable ClusterAABB; 
 
 // this is used to keep track of how many lights we have active
@@ -231,6 +235,8 @@ struct ClusterParams
     NumCells : u32x3;
     ZDistribution : f32;
 };
+
+@Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform ClusterUniforms : *ClusterParams;
 
 //------------------------------------------------------------------------------
@@ -320,6 +326,8 @@ struct LightParams
     NumAreaLights : u32;
     NumLightClusters : u32;
 };
+
+@Visibility("VS|CS|PS")
 group(FRAME_GROUP) uniform LightUniforms : *LightParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -332,6 +340,8 @@ struct LightIndexData
     AreaLightCountList : [NUM_CLUSTER_ENTRIES] u32;
     AreaLightIndexList : [NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER] u32;
 };
+
+@Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform LightIndexLists : *mutable LightIndexData;
 
 struct LightListData
@@ -344,6 +354,8 @@ struct LightListData
     AreaLights : [1024]AreaLight;
     AreaLightShadow : [16]AreaLightShadowExtension;
 };
+
+@Visibility("VS|CS|PS|RCS")
 group(FRAME_GROUP) uniform LightLists : *mutable LightListData;
 
 //------------------------------------------------------------------------------
@@ -385,6 +397,8 @@ struct DecalParams
     NormalBufferCopy : u32;
     StencilBuffer : u32;
 };
+
+@Visibility("CS|PS")
 group(FRAME_GROUP) uniform DecalUniforms : *DecalParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -395,6 +409,8 @@ struct DecalIndexData
     PBRDecalCountList : [NUM_CLUSTER_ENTRIES] u32;
     PBRDecalIndexList : [NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER] u32;
 };
+
+@Visibility("CS|PS")
 group(FRAME_GROUP) uniform DecalIndexLists : *mutable DecalIndexData;
 
 struct DecalListData
@@ -402,6 +418,8 @@ struct DecalListData
     EmissiveDecals : [128] EmissiveDecal;
     PBRDecals : [128] PBRDecal;
 };
+
+@Visibility("CS|PS")
 group(FRAME_GROUP) uniform DecalLists : *mutable DecalListData;
 
 //------------------------------------------------------------------------------
@@ -443,6 +461,8 @@ struct VolumeFogParams
     GlobalAbsorption : f32x3;
     GlobalTurbidity : f32;
 };
+
+@Visibility("CS|VS|PS")
 group(FRAME_GROUP) uniform VolumeFogUniforms : *VolumeFogParams;
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -453,6 +473,8 @@ struct FogIndexListData
     FogBoxCountList : [NUM_CLUSTER_ENTRIES] u32;
     FogBoxIndexList : [NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER] u32;
 };
+
+@Visibility("CS|VS|PS")
 group(FRAME_GROUP) uniform FogIndexLists : *mutable FogIndexListData;
 
 struct FogListData
@@ -460,6 +482,8 @@ struct FogListData
     FogSpheres : [128] FogSphere;
     FogBoxes : [128] FogBox;
 };
+
+@Visibility("CS|VS|PS")
 group(FRAME_GROUP) uniform FogLists : *mutable FogListData;
 
 //------------------------------------------------------------------------------
@@ -501,6 +525,7 @@ struct GIVolumeParams
     NumGIVolumes : u32;
     NumGIVolumeClusters : u32;
 };
+@Visibility("CS|PS")
 group(FRAME_GROUP) uniform GIVolumeUniforms : *GIVolumeParams;
 
 struct GIIndexListData
@@ -509,8 +534,16 @@ struct GIIndexListData
     GIVolumeIndexLists : [NUM_CLUSTER_ENTRIES * MAX_GI_VOLUMES_PER_CLUSTER]u32;
 };
 
+struct GIVolumeListData
+{
+    GIVolumes : [64]GIVolume;
+};
+
+@Visibility("CS|VS|PS")
 group(FRAME_GROUP) uniform GIIndexLists : *mutable GIIndexListData;
-group(FRAME_GROUP) uniform GIVolumeLists : [64]* mutable GIVolume;
+
+@Visibility("CS|VS|PS")
+group(FRAME_GROUP) uniform GIVolumeLists : *mutable GIVolumeListData;
 
 //------------------------------------------------------------------------------
 /**
@@ -535,12 +568,17 @@ group(PASS_GROUP) uniform InputAttachment14 : *pixelCache;
 group(PASS_GROUP) uniform InputAttachment15 : *pixelCache;
 group(PASS_GROUP) uniform DepthAttachment : *pixelCache;
 
-struct PassParameters
+struct RenderTargetParameters
 {
     Dimensions : f32x4;    // render target dimensions are size (xy) inversed size (zw)
     Scale : f32x2;         // dimensions / viewport
 };
 
-group(PASS_GROUP) uniform PassUniforms : [16]* PassParameters;
+struct PassParameters
+{
+    RenderTargets : [16]RenderTargetParameters;
+};
+
+group(PASS_GROUP) uniform PassUniforms : *PassParameters;
 
 #endif // SHARED_H

@@ -18,7 +18,7 @@ sampler_state InputSampler
 struct BloomData
 {
     Mips : i32;
-    Resolutions : [14][3]f32x4;
+    Resolutions : [14]f32x4;
 };
 uniform BloomUniforms : *BloomData;
 
@@ -133,7 +133,7 @@ csMerge() void
     // Only run waves on pixels within the target resolution
     var sum = f32x3(0);
     const pixelOutputMask = all(outputPixel < tileEndClamped);
-    const uv = (f32x2(outputPixel) + f32x2(0.5f)) / BloomUniforms.Resolutions[0][0].xy;
+    const uv = (f32x2(outputPixel) + f32x2(0.5f)) / BloomUniforms.Resolutions[0].xy;
     for (var i : i32 = 0; i < BloomUniforms.Mips; i++)
     {
         const inputPixel = i32x2(outputPixel) >> i;
