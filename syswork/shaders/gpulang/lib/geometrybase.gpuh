@@ -269,7 +269,7 @@ vsDepthStaticAlphaMask(
 entry_point
 psDepthOnly() void
 {
-    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const dither = hash12(seed);
     if (dither < ObjectUniforms.DitherFactor)
         discard;
@@ -281,7 +281,7 @@ psDepthOnly() void
 entry_point
 psDepthOnlyAlphaMask(in UV : f32x2) void
 {
-    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const dither = hash12(seed);
     if (dither < ObjectUniforms.DitherFactor)
         discard;
@@ -506,7 +506,7 @@ psUberAlphaTest(
     in UV : f32x2
 ) void
 {
-    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
     if (dither > 1.0f)
@@ -536,7 +536,7 @@ psUberVertexColor(
     in UV : f32x2
 ) void
 {
-    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
     if (dither > 1.0f)
@@ -565,7 +565,7 @@ psUberAlpha(
     in UV : f32x2
 ) void
 {
-    const seed = pixelGetCoordinates().xy * PassUniforms[0].Dimensions.zw;
+    const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
     if (dither > 1.0f)
