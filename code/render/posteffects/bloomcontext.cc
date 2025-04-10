@@ -67,7 +67,7 @@ BloomContext::Setup()
     TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
 
     BufferCreateInfo bufInfo;
-    bufInfo.byteSize = sizeof(Bloom::BloomUniforms);
+    bufInfo.byteSize = sizeof(Bloom::BloomUniforms::STRUCT);
     bufInfo.usageFlags = ConstantBuffer;
     bufInfo.mode = DeviceAndHost;
     bufInfo.queueSupport = ComputeQueueSupport;
@@ -117,11 +117,11 @@ BloomContext::Setup()
 
     ResourceTableSetTexture(bloomState.resourceTable, { FrameScript_default::Texture_LightBuffer(), Bloom::Input::BINDING });
     ResourceTableSetRWTexture(bloomState.resourceTable, { FrameScript_default::Texture_BloomBuffer(), Bloom::BloomOutput::BINDING });
+    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::Intermediate::BINDING });
     for (IndexT i = 0; i < mips; i++)
     {
         ResourceTableSetRWTexture(bloomState.resourceTable, { bloomState.intermediateBloomBufferViews[i], Bloom::BloomIntermediate::BINDING, i });
     }
-    ResourceTableSetTexture(bloomState.resourceTable, { bloomState.intermediateBloomTexture, Bloom::BloomIntermediate::BINDING });
 
     ResourceTableSetConstantBuffer(bloomState.resourceTable, { bloomState.constants, Bloom::BloomUniforms::BINDING });
     ResourceTableCommitChanges(bloomState.resourceTable);
@@ -138,7 +138,7 @@ BloomContext::Setup()
         , { FrameScript_default::TextureIndex::BloomIntermediate, PipelineStage::ComputeShaderWrite }
     });
 
-        FrameScript_default::RegisterSubgraph_BloomMerge_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
+    FrameScript_default::RegisterSubgraph_BloomMerge_Compute([](const CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         CmdSetShaderProgram(cmdBuf, bloomState.mergeProgram);
         CmdSetResourceTable(cmdBuf, bloomState.resourceTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);

@@ -578,7 +578,7 @@ GI(
         for (var i : i32 = 0; i < count; i++)
         {
             const lidx = GIIndexLists.GIVolumeIndexLists[clusterIndex * MAX_GI_VOLUMES_PER_CLUSTER + i];
-            const gi = bufferLoad(GIVolumeLists[lidx]);
+            const gi = GIVolumeLists.GIVolumes[lidx];
             const relativePosition = pos - gi.Offset;
             /// TODO: Rotate
             if (relativePosition.x > gi.Size.x || relativePosition.y > gi.Size.y || relativePosition.z > gi.Size.z)

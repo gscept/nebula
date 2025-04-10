@@ -661,9 +661,19 @@ ShaderSetup(
             SamplerId samp = CreateSampler(info);
             immutableSamplers.Add(samp);
 
+            uint32_t annotationBits = ShaderVisibility::AllVisibility;
+            for (size_t i = 0; i < sampler->annotationCount; i++)
+            {
+                const auto& annotation = sampler->annotations[i];
+                if (Util::String(annotation.name, annotation.nameLength) == "Visibility")
+                {
+                    annotationBits = ShaderVisibilityFromString(Util::String(annotation.data.s.string, annotation.data.s.length));
+                }
+            }
+
             ResourceTableLayoutSampler sampBinding;
             sampBinding.slot = sampler->binding;
-            sampBinding.visibility = ShaderVisibilityFromGPULang(sampler->visibility);
+            sampBinding.visibility = ShaderVisibilityFromGPULang(sampler->visibility) | annotationBits;
             sampBinding.sampler = samp;
 
             if (sampler->binding != 0xFFFFFFFF)
@@ -690,8 +700,18 @@ ShaderSetup(
         const GPULang::Deserialize::Variable* variable = loader->variables[i];
 
         // Skip variables without any visibility
-        if (variable->visibility.bits == 0x0)
-            continue;
+        //if (variable->visibility.bits == 0x0)
+            //continue;
+
+        uint32_t annotationBits = ShaderVisibility::AllVisibility;
+        for (size_t i = 0; i < variable->annotationCount; i++)
+        {
+            const auto& annotation = variable->annotations[i];
+            if (Util::String(annotation.name, annotation.nameLength) == "Visibility")
+            {
+                annotationBits = ShaderVisibilityFromString(Util::String(annotation.data.s.string, annotation.data.s.length));
+            }
+        }
 
         if (variable->bindingType == GPULang::BindingType::Buffer)
         {
@@ -700,8 +720,8 @@ ShaderSetup(
             cbo.num = 1;
             if (variable->arraySizeCount > 0)
                 cbo.num = variable->arraySizes[0];
-            cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility);
-
+            cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            uint32_t slotsUsed = 0;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -709,7 +729,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed[ConstantBufferSlots], cbo.visibility);
+                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -718,11 +738,11 @@ ShaderSetup(
 
             if (variable->group == NEBULA_DYNAMIC_OFFSET_GROUP || variable->group == NEBULA_INSTANCE_GROUP)
             {
-                cbo.dynamicOffset = true; numUniformDyn += slotsUsed[ConstantBufferSlots];
+                cbo.dynamicOffset = true; numUniformDyn += slotsUsed;
             }
             else
             {
-                cbo.dynamicOffset = false; numUniform += slotsUsed[ConstantBufferSlots];
+                cbo.dynamicOffset = false; numUniform += slotsUsed;
             }
 
             rinfo.constantBuffers.Append(cbo);
@@ -735,7 +755,7 @@ ShaderSetup(
             CoreGraphics::ResourcePipelinePushConstantRange range;
             range.offset = pushRangeOffset;
             range.size = variable->byteSize;
-            range.vis = ShaderVisibilityFromGPULang(variable->visibility); // only allow for fragment bit...
+            range.vis = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             constantRange[0] = range; // okay, this is hacky
             pushRangeOffset += variable->byteSize;
         }
@@ -746,8 +766,8 @@ ShaderSetup(
             rwbo.num = 1;
             if (variable->arraySizeCount > 0)
                 rwbo.num = variable->arraySizes[0];
-            rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility);
-
+            rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            uint32_t slotsUsed = 0;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -755,7 +775,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageStorageBuffers, slotsUsed[RWBufferSlots], rwbo.visibility);
+                    UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -764,11 +784,11 @@ ShaderSetup(
 
             if (variable->group == NEBULA_DYNAMIC_OFFSET_GROUP || variable->group == NEBULA_INSTANCE_GROUP)
             {
-                rwbo.dynamicOffset = true; numStorageDyn += slotsUsed[RWBufferSlots];
+                rwbo.dynamicOffset = true; numStorageDyn += slotsUsed;
             }
             else
             {
-                rwbo.dynamicOffset = false; numStorage += slotsUsed[RWBufferSlots];
+                rwbo.dynamicOffset = false; numStorage += slotsUsed;
             }
 
             rinfo.rwBuffers.Append(rwbo);
@@ -777,9 +797,9 @@ ShaderSetup(
         {
             ResourceTableLayoutSampler samp;
             samp.slot = variable->binding;
-            samp.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            samp.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             samp.sampler = CoreGraphics::InvalidSamplerId;
-
+            uint32_t slotsUsed = 0;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -787,7 +807,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageSamplers, slotsUsed[SamplerSlots], samp.visibility);
+                    UpdateOccupancy(numPerStageSamplers, slotsUsed, samp.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -799,11 +819,12 @@ ShaderSetup(
         {
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
-            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             tex.num = 1;
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
+            uint32_t slotsUsed = 0;
 
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -812,7 +833,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageSampledImages, slotsUsed[ImageSlots], tex.visibility);
+                    UpdateOccupancy(numPerStageSampledImages, slotsUsed, tex.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -824,12 +845,12 @@ ShaderSetup(
         {
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
-            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             tex.num = 1;
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
-
+            uint32_t slotsUsed = 0;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -837,7 +858,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageStorageImages, slotsUsed[ImageSlots], tex.visibility);
+                    UpdateOccupancy(numPerStageStorageImages, slotsUsed, tex.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -851,6 +872,8 @@ ShaderSetup(
             tex.slot = variable->binding;
             tex.visibility = ShaderVisibility::PixelShaderVisibility;
             tex.num = 1;
+            uint32_t slotsUsed = 0;
+
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
 
@@ -861,7 +884,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageInputAttachments, slotsUsed[PixelCacheSlots], tex.visibility);
+                    UpdateOccupancy(numPerStageInputAttachments, slotsUsed, tex.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -873,8 +896,9 @@ ShaderSetup(
         {
             ResourceTableLayoutAccelerationStructure bvh;
             bvh.slot = variable->binding;
-            bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility);
+            bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             bvh.num = variable->arraySizes[0];
+            uint32_t slotsUsed = 0;
 
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -883,7 +907,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageAccelerationStructures, slotsUsed[AccelerationStructureSlots], bvh.visibility);
+                    UpdateOccupancy(numPerStageAccelerationStructures, slotsUsed, bvh.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -900,7 +924,7 @@ ShaderSetup(
     n_assert(CoreGraphics::MaxResourceTableDynamicOffsetReadWriteBuffers >= numStorageDyn);
     n_assert(CoreGraphics::MaxResourceTableReadWriteBuffers >= numStorage);
         for (uint i = 0; i < NumShaders; i++)
-        n_assert(CoreGraphics::MaxPerStageReadWriteBuffers >= numPerStageUniformBuffers[i]);
+        n_assert(CoreGraphics::MaxPerStageReadWriteBuffers >= numPerStageStorageBuffers[i]);
 
         
     // skip the rest if we don't have any descriptor sets
