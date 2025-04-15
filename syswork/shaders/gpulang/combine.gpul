@@ -10,7 +10,7 @@
 uniform Fog : *texture2D;
 uniform Reflections : *texture2D;
 uniform AO : *texture2D;
-uniform Lightning : *mutable rgba16f texture2D;
+uniform Lighting : *mutable rgba16f texture2D;
 
 struct CombineData
 {
@@ -30,12 +30,12 @@ csCombine() void
     const fog = textureSampleLod(Fog, LinearSampler, coord, 0);
     const reflections = textureSampleLod(Reflections, LinearSampler, coord, 0);
     const ao = textureSampleLod(AO, LinearSampler, coord, 0).r;
-    const light = textureLoad(Lightning, fullscaleCoord);
+    const light = textureLoad(Lighting, fullscaleCoord);
 
     const res = light.rgb * (1 - (ao)) * fog.a
         //+ reflections.rgb * fog.a 
         + fog.rgb;
-    textureStore(Lightning, fullscaleCoord, f32x4(res, 1));
+    textureStore(Lighting, fullscaleCoord, f32x4(res, 1));
 }
 
 //------------------------------------------------------------------------------

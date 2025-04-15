@@ -34,7 +34,6 @@ vsMain(
     UV = uv;
 }
 
-
 enum RenderTargetOutput : i32
 {
     Color

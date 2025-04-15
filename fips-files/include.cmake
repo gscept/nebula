@@ -24,6 +24,8 @@ if(N_USE_COMPILETIME_PROJECT_ROOT)
 endif()
 
 include(create_resource)
+include(CMakeDependentOption)
+
 
 if(FIPS_WINDOWS)
     option(N_STATIC_BUILD "Use static runtime in windows builds" ON)
@@ -140,8 +142,10 @@ if(N_RENDERER_VULKAN)
     add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Vulkan)
 endif()
 
-option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" ON)
+option(N_NEBULA_DEBUG_SHADERS "Compile shaders without optimizations" ON)
 option(N_NEBULA_PROFILE_SHADER_BUILDS "Profile shader compilation" ON)
+option(N_NEBULA_SHADER_SYMBOLS "Compile shaders with symbols" ON)
+cmake_dependent_option(N_NEBULA_SHADER_SYMBOLS "Compile shaders with symbols" ON "N_NEBULA_DEBUG_SHADERS" ON)
 
 option(USE_DOTNET "Build with .NET support" OFF)
 
@@ -194,12 +198,16 @@ macro(compile_gpulang_intern)
     set(shd ${ARGV0})
     set(nebula_shader ${ARGV1})
     if(SHADERC)
-        if(N_NEBULA_DEBUG_SHADERS)
-            set(shader_debug "-debug")
+        if(NOT N_NEBULA_DEBUG_SHADERS)
+            set(shader_compiler_args "-optimize")
         endif()
         
         if (N_NEBULA_PROFILE_SHADER_BUILDS)
-            set(shader_profile "-profile")
+            set(shader_compiler_args ${shader_compiler_args} "-profile")
+        endif()
+
+        if (N_NEBULA_SHADER_SYMBOLS)
+            set(shader_compiler_args ${shader_compiler_args} "-symbols")
         endif()
 
         if (nebula_shader)
@@ -240,7 +248,7 @@ macro(compile_gpulang_intern)
         endif()
 
         add_custom_command(OUTPUT ${binaryOutput}
-            COMMAND ${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_debug} ${shader_profile} -g 3
+            COMMAND ${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_compiler_args} -g 3
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${GPULANGC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
