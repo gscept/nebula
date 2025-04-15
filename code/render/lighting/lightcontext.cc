@@ -24,7 +24,7 @@
 
 #include "render/system_shaders/shared.h"
 #include "render/system_shaders/lights_cluster.h"
-#include "render/system_shaders/combine.h"
+#include "gpulang/render/system_shaders/combine.h"
 #include "render/system_shaders/csmblur.h"
 
 #include "frame/default.h"
@@ -183,7 +183,7 @@ LightContext::Create()
     }
 
     // setup combine
-    combineState.combineShader = CoreGraphics::ShaderGet("shd:system_shaders/combine.fxb");
+    combineState.combineShader = CoreGraphics::ShaderGet("shd:system_shaders/combine.gplb");
     combineState.combineProgram = ShaderGetProgram(combineState.combineShader, CoreGraphics::ShaderFeatureMask("Combine"));
     combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
@@ -191,10 +191,10 @@ LightContext::Create()
     {
         combineState.resourceTables[i] = ShaderCreateResourceTable(combineState.combineShader, NEBULA_BATCH_GROUP, combineState.resourceTables.Size());
         //ResourceTableSetConstantBuffer(combineState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), 0 });
-        ResourceTableSetRWTexture(combineState.resourceTables[i], { FrameScript_default::Texture_LightBuffer(), Combine::Table_Batch::Lighting_SLOT, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::Table_Batch::AO_SLOT, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Table_Batch::Fog_SLOT, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Table_Batch::Reflections_SLOT, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(combineState.resourceTables[i], { FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableCommitChanges(combineState.resourceTables[i]);
     }
 
@@ -1292,12 +1292,12 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
-    Combine::CombineUniforms combineConsts;
+    Combine::CombineUniforms::STRUCT combineConsts;
     CoreGraphics::TextureDimensions lightDims = CoreGraphics::TextureGetDimensions(FrameScript_default::Texture_LightBuffer());
     combineConsts.LowresResolution[0] = 1.0f / lightDims.width;
     combineConsts.LowresResolution[1] = 1.0f / lightDims.height;
     offset = SetConstants(combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::Table_Batch::CombineUniforms_SLOT, 0, sizeof(Combine::CombineUniforms), offset });
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetConstantBuffer(bufferIndex), Combine::CombineUniforms::BINDING, 0, sizeof(Combine::CombineUniforms::STRUCT), offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 
@@ -1317,10 +1317,10 @@ LightContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
 
     for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
     {
-        ResourceTableSetRWTexture(combineState.resourceTables[i], { FrameScript_default::Texture_LightBuffer(), Combine::Table_Batch::Lighting_SLOT, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::Table_Batch::AO_SLOT, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Table_Batch::Fog_SLOT, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Table_Batch::Reflections_SLOT, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(combineState.resourceTables[i], { FrameScript_default::Texture_LightBuffer(), Combine::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_SSAOBuffer(), Combine::AO::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_VolumetricFogBuffer0(), Combine::Fog::BINDING, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { FrameScript_default::Texture_ReflectionBuffer(), Combine::Reflections::BINDING, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableCommitChanges(combineState.resourceTables[i]);
     }
 }
