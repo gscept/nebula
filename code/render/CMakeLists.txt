@@ -9,7 +9,7 @@ FIND_PROGRAM(SHADERC
        )
        
 FIND_PROGRAM(GPULANGC
-    NAMES gpulangcompiler.exe gpulangcompiler
+    NAMES gpulangc.exe gpulangc
     PATHS ${FIPS_DEPLOY_DIR}/gpulang/win64 ${FIPS_DEPLOY_DIR}/gpulang/linux
     NO_DEFAULT_PATH
 )
