@@ -62,7 +62,7 @@ group(TICK_GROUP) sampler_state LinearSampler { Filter = FilterMode.Linear; Addr
 // these parameters are updated once per application tick
 struct TickParams
 {
-    WindDirection : f32;
+    WindDirection : f32x4;
 
     WindWaveSize : f32;
     WindSpeed : f32;
@@ -91,11 +91,9 @@ struct TickParams
     GlobalLightShadowMapSize : f32x2;
     GlobalLightDirWorldspace : f32x4;
     GlobalLightColor : f32x4;
-    GlobalBackLightColor : f32x4;
     GlobalAmbientLightColor : f32x4;
     CSMShadowMatrix : f32x4x4;
 
-    GlobalBackLightOffset : f32;
     GlobalLightShadowBuffer : u32;
     TerrainShadowBuffer : u32;
     NumEnvMips : i32;
@@ -103,8 +101,8 @@ struct TickParams
     EnvironmentMap : u32;
 
     TerrainShadowMapSize : u32x2;
-    InvTerrainSize : u32x2;
-    TerrainShadowMapPixelSize : u32x2;
+    InvTerrainSize : f32x2;
+    TerrainShadowMapPixelSize : f32x2;
 
     // these params are for the Preetham sky model
     A : f32x4;
