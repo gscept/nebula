@@ -926,7 +926,7 @@ ShaderSetup(
         for (uint i = 0; i < NumShaders; i++)
         n_assert(CoreGraphics::MaxPerStageReadWriteBuffers >= numPerStageStorageBuffers[i]);
 
-        
+
     // skip the rest if we don't have any descriptor sets
     if (!layoutCreateInfos.IsEmpty())
     {
@@ -1242,6 +1242,33 @@ CreateShader(const GPULangShaderCreateInfo& info)
     */
     for (auto& [name, object] : info.loader->nameToObject)
     {
+        if (object->type == GPULang::Serialize::Type::VariableType)
+        {
+            auto variable = (GPULang::Deserialize::Variable*)object;
+
+            // If variable is a uniform buffer, store it in the reflection data
+            if (variable->bindingType == GPULang::BindingType::Buffer)
+            {
+                n_assert(variable->structType != nullptr);
+                VkReflectionInfo::UniformBuffer refl;
+                refl.binding = variable->binding;
+                refl.set = variable->group;
+                refl.name = Util::String(variable->name, variable->nameLength);
+                refl.byteSize = variable->structType->size;
+
+                if (variable->binding != 0xFFFFFFFF)
+                {
+                    n_assert(variable->binding < 64);
+                    reflectionInfo.uniformBuffersMask.Resize(Math::max(variable->group + 1, (uint)reflectionInfo.uniformBuffersMask.Size()), 0);
+                    reflectionInfo.uniformBuffersMask[variable->group] |= (1ull << (uint64)variable->binding);
+                }
+
+                reflectionInfo.uniformBuffers.Append(refl);
+                reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
+                reflectionInfo.uniformBuffersPerSet.Resize(Math::max(variable->group + 1, (uint)reflectionInfo.uniformBuffersPerSet.Size()), nullptr);
+                reflectionInfo.uniformBuffersPerSet[variable->group].Append(refl);
+            }
+        }
         if (object->type == GPULang::Serialize::Type::ProgramType)
         {
             auto program = (GPULang::Deserialize::Program*)object;
@@ -1257,6 +1284,17 @@ CreateShader(const GPULangShaderCreateInfo& info)
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
     }
+
+    for (auto& set : reflectionInfo.uniformBuffersPerSet)
+    {
+        set.SortWithFunc(
+            [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
+            {
+                return lhs.binding < rhs.binding;
+            }
+        );
+    }
+
     // set active variation
     runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
     runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);

@@ -11,7 +11,6 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/window.h"
 #include <array>
-#include "render/system_shaders/cluster_generate.h"
 
 namespace Clustering
 {
