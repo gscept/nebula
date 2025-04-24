@@ -3,9 +3,9 @@
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include <lib/std.gpuh>
+#include <lib/std.gpuh> 
 #include <lib/techniques.gpuh>
-#include <lib/util.gpuh>
+#include <lib/util.gpuh> 
 #include <lib/shared.gpuh>
 
 uniform ColorSource : *texture2D;
@@ -25,7 +25,7 @@ sampler_state LuminanceSampler
 render_state AverageLumState
 {
     Cull = CullFace.Back;
-    DepthTestEnabled = false;
+    DepthTestEnabled = false; 
     DepthWriteEnabled = false;
 };
 
@@ -33,10 +33,10 @@ render_state AverageLumState
 //------------------------------------------------------------------------------
 /**
 */
-entry_point
+entry_point 
 vsMain(
-    binding(0) in position : f32x3,
-    binding(2) in uv : f32x2,
+    binding(0) in position : f32x3, 
+    binding(2) in uv : f32x2, 
     out UV : f32x2
 ) void 
 {
