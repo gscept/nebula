@@ -1,37 +1,37 @@
 //------------------------------------------------------------------------------
-//  histogram_cs.fx
-//  (C) 2021 Individual contributors, see AUTHORS file
+//  histogram_cs.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/util.fxh"
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
 
 sampler2D ColorSource;
 
-rw_buffer HistogramBuffer [ string Visibility = "CS"; ]
+struct HistogramData
 {
-    // 
-    uint Histogram[256];
+    Histogram: [256] u32;
 };
+uniform HistogramBuffer : *mutable HistogramData;
 
-constant HistogramConstants [ string Visibility = "CS"; ]
+struct HistogramParams
 {
-    ivec2 WindowOffset;
-    ivec2 TextureSize;
-    int Mip;
-    float InvLogLuminanceRange;
-    float MinLogLuminance;
+    WindowOffset: i32x2;
+    TextureSize: i32x2;
+    Mip: i32;
+    InvLogLuminanceRange: f32;
+    MinLogLuminance: f32;
 };
+uniform HistogramConstants : *HistogramParams;
 
-groupshared int LocalHistogram[256];
+workgroup LocalHistogram : [256]i32;
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 256
-shader
-void
-csClear()
+local_size_x(256)
+entry_point
+csClear() void
 {
     Histogram[gl_LocalInvocationIndex] = 0;
 }
@@ -39,51 +39,53 @@ csClear()
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 256
-shader
-void
-csMain()
+local_size_x(256)
+entry_point
+csMain() void
 {
-    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    pixel += WindowOffset;
+    const histogramIndex = computeGetIndexInWorkgroup();
+    const pixel = ivec2(computeGetGlobalInvocationIndices().xy);
+    pixel += HistogramConstants.WindowOffset;
 
     // clear LDS histogram chunk, since we will execute 256 threads per workgroup, each thread could clear one value
-    LocalHistogram[gl_LocalInvocationIndex] = 0;
-    groupMemoryBarrier();
+    LocalHistogram[histogramIndex] = 0;
+    memoryBarrierWorkgroup();
 
     // don't sample from outside the texture
-    if (all(lessThan(pixel, TextureSize)))
+    if (all(pixel < TextureSize))
     {
-        vec4 color = texelFetch(ColorSource, pixel, Mip);
-        float luminance = dot(color.rgb, Luminance);
+        const color = textureFetch(ColorSource, pixel, Mip);
+        const luminance = dot(color.rgb, Luminance);
 
-        float logLuminance = 0.0f;
+        const logLuminance = 0.0f;
         if (luminance >= 1.0f)
         {
             logLuminance = clamp(((log2(luminance) - MinLogLuminance) * InvLogLuminanceRange), 0.0f, 1.0f);
         }
 
         // floor the value of luminance scaled to ubyte to find which bucket it belongs in
-        int bucket = int(floor(logLuminance * 255.0f));
-        atomicAdd(LocalHistogram[bucket], 1);
+        const bucket = i32(floor(logLuminance * 255.0f));
+        atomicAdd(LocalHistogram[bucket], 1, MemorySemantics.Relaxed);
     }
 
     // synchronize and add to global atomic
-    groupMemoryBarrier();
+    memoryBarrierWorkgroup();
 
     // same as with clear, each thread will contribute exactly one bucket to the global histogram
-    atomicAdd(Histogram[gl_LocalInvocationIndex], LocalHistogram[gl_LocalInvocationIndex]);
+    atomicAdd(Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.Relaxed);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-program HistogramCategorize [ string Mask = "HistogramCategorize"; ]
+@Mask("HistogramCategorize")
+program HistogramCategorize
 {
-    ComputeShader = csMain();
+    ComputeShader = csMain;
 };
 
-program HistogramClear [ string Mask = "HistogramClear"; ]
+@Mask("HistogramClear")
+program HistogramClear
 {
-    ComputeShader = csClear();
+    ComputeShader = csClear;
 };
