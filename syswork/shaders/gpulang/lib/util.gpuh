@@ -1,10 +1,10 @@
 //------------------------------------------------------------------------------
-//  util.fxh
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  util.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#ifndef UTIL_FXH
-#define UTIL_FXH
+#ifndef UTIL_GPUH
+#define UTIL_GPUH
 #include "lib/std.gpuh"
 
 const depthScale : f32 = 100.0f;
@@ -118,7 +118,7 @@ SampleCubic(uniform tex : *texture2D, uniform samp : *sampler, res : f32x4, pixe
 }
 
 #define USE_SRGB 1
-#if USE_SRGB
+#ifdef USE_SRGB
 #define EncodeHDR(x) x
 #define EncodeHDR4(x) x
 #define DecodeHDR(x) x
@@ -160,7 +160,7 @@ DecodeHDR4(rgba : f32x4) f32x4
 {
     return rgba * f32x4(2.0f, 2.0f, 2.0f, 2.0f);
 }
-#endif
+#endif // USE_SRGB
 
 //------------------------------------------------------------------------------
 /**
@@ -690,4 +690,4 @@ noise(p : f32x2) f32
 }
 
 //------------------------------------------------------------------------------
-#endif
+#endif UTIL_GPUH
