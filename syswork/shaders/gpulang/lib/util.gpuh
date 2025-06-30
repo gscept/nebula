@@ -263,7 +263,7 @@ unpack_2u16(value : u32) u32x2
     return u32x2(value & 0xFFFF, (value >> 16) & 0xFFFF);
 }
 
-#define PI 3.14159265
+#define PI 3.141592653589793238462643383279502884197169
 #define ONE_OVER_PI 1/PI
 #define PI_OVER_FOUR PI/4.0f
 #define PI_OVER_TWO PI/2.0f
