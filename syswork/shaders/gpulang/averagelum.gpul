@@ -29,7 +29,6 @@ render_state AverageLumState
     DepthWriteEnabled = false;
 };
 
-
 //------------------------------------------------------------------------------
 /**
 */
