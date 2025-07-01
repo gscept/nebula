@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include <lib/std.gpuh>
 #include <lib/geometrybase.gpuh>
-#include <lib/techniques.gpuh>
 
 struct EmissiveData
 {
@@ -46,10 +45,10 @@ psEmissive(in uv : f32x2) void
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(
-    Static,
-    "Static",
-    vsEmissive,
-    psEmissive,
-EmissiveState);
-
+@Mask("Static")
+program Static
+{
+    VertexShader = vsEmissive;
+    PixelShader = psEmissive;
+    RenderState = EmissiveState;
+}; 

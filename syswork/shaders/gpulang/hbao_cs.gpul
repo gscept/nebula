@@ -2,11 +2,9 @@
 //  hbao_cs.gpul
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 #include <lib/shared.gpuh>
-#include <lib/techniques.gpuh>
 
 struct HBAOData
 {
@@ -21,14 +19,10 @@ struct HBAOData
 group(BATCH_GROUP) uniform HBAOParams : *HBAOData;
 
 // Step size in number of pixels
-#ifndef STEP_SIZE
-#define STEP_SIZE 8
-#endif
+const STEP_SIZE = 8;
 
 // Number of shared-memory samples per direction
-#ifndef NUM_STEPS
-#define NUM_STEPS 8
-#endif
+const NUM_STEPS = 8;
 
 //sampler2D RandomMap;
 group(BATCH_GROUP) uniform HBAO0 : *mutable rg16f texture2D;
@@ -43,16 +37,15 @@ sampler_state ClampSampler
 };
 
 // Maximum kernel radius in number of pixels
-#define KERNEL_RADIUS (NUM_STEPS*STEP_SIZE)
+const KERNEL_RADIUS = NUM_STEPS * STEP_SIZE;
 
 // The last sample has weight = exp(-KERNEL_FALLOFF)
-#define KERNEL_FALLOFF 3.0f
+const KERNEL_FALLOFF = 3.0f;
 
 // Must match the HBAO_TILE_WIDTH value from AOAlgorithm
-#define HBAO_TILE_WIDTH 256
-const HBAOTileWidth = HBAO_TILE_WIDTH;
+const HBAO_TILE_WIDTH = 256;
 
-#define SHARED_MEM_SIZE (KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS)
+const SHARED_MEM_SIZE = KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS;
 workgroup SharedMemory : [SHARED_MEM_SIZE]f32x2;
 
 //----------------------------------------------------------------------------------
@@ -99,7 +92,7 @@ SharedMemoryLoad(centerId : i32, x : i32) f32x2
 LoadXZFromTexture(x : u32, y : u32) f32x2
 { 
     const uv = (f32x2(x, y) + 0.5f) * HBAOParams.InvAOResolution;
-    const z_eye = fetch2D(PerTickParams.DepthBuffer, ClampSampler, i32x2(x, y), 0).r;
+    const z_eye = fetch2D(PerTickParams.DepthBuffer, i32x2(x, y), 0).r;
     const viewSpace = PixelToView(uv, z_eye, ViewConstants.InvProjection);
     return f32x2(viewSpace.x, viewSpace.z);
 }
@@ -110,7 +103,7 @@ LoadXZFromTexture(x : u32, y : u32) f32x2
 LoadYZFromTexture(x : u32, y : u32) f32x2
 {
     const uv = (f32x2(x, y) + 0.5f) * HBAOParams.InvAOResolution;
-    const z_eye = fetch2D(PerTickParams.DepthBuffer, ClampSampler, i32x2(x, y), 0).r;
+    const z_eye = fetch2D(PerTickParams.DepthBuffer, i32x2(x, y), 0).r;
     const viewSpace = PixelToView(uv, z_eye, ViewConstants.InvProjection);
     return f32x2(viewSpace.y, viewSpace.z);
 }

@@ -1,5 +1,6 @@
+#pragma once
 //------------------------------------------------------------------------------
-//  mie-rayleigh.gpul
+//  mie-rayleigh.gpuh
 //
 //	Common functions used to calculate a Mie and Rayleigh sky scattering
 //
@@ -7,8 +8,9 @@
 //
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
+#ifndef PI
 #define PI 3.141592653589793238462643383279502884197169
+#endif
 
 //------------------------------------------------------------------------------
 /**

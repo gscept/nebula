@@ -452,7 +452,7 @@ LocalLights(
 {
     var light = f32x3(0, 0, 0);
     const flag = ClusterAABBs[clusterIndex].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
         const count = LightIndexLists.PointLightCountList[clusterIndex];
@@ -474,7 +474,7 @@ LocalLights(
             );
         }
     }
-    if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
     {
         const count = LightIndexLists.SpotLightCountList[clusterIndex];
         var shadowExt : SpotLightShadowExtension;
@@ -506,7 +506,7 @@ LocalLights(
         }
     }
 
-    if (CHECK_FLAG(flag, CLUSTER_AREALIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_AREALIGHT_BIT))
     {
         const count = LightIndexLists.AreaLightCountList[clusterIndex];
         var shadowExt : AreaLightShadowExtension;
@@ -518,7 +518,7 @@ LocalLights(
             if (li.shadowExtension != -1)
                 shadowExt = LightLists.AreaLightShadow[li.shadowExtension];
 
-            if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_RECT))
+            if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_RECT))
             {
                 light += CalculateRectLight(
                     li
@@ -527,10 +527,10 @@ LocalLights(
                     , normal
                     , material
                     , diffuseColor
-                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
+                    , CheckFlags(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
-            else if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_DISK))
+            else if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_DISK))
             {
                 light += CalculateDiskLight(
                     li
@@ -539,10 +539,10 @@ LocalLights(
                     , normal
                     , material
                     , diffuseColor
-                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
+                    , CheckFlags(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
-            else if (CHECK_FLAG(li.flags, AREA_LIGHT_SHAPE_TUBE))
+            else if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_TUBE))
             {
                 light += CalculateTubeLight(
                     li
@@ -551,7 +551,7 @@ LocalLights(
                     , normal
                     , material
                     , diffuseColor
-                    , CHECK_FLAG(li.flags, AREA_LIGHT_TWOSIDED)
+                    , CheckFlags(li.flags, AREA_LIGHT_TWOSIDED)
                 );
             }
         }
@@ -572,7 +572,7 @@ GI(
 {
     var accumulatedGi = f32x3(0, 0, 0);
     const flag = ClusterAABBs[clusterIndex].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_GI_VOLUME_BIT))
+    if (CheckFlags(flag, CLUSTER_GI_VOLUME_BIT))
     {
         const count = GIIndexLists.GIVolumeCountList[clusterIndex];
         for (var i : i32 = 0; i < count; i++)
@@ -734,7 +734,7 @@ LocalLightsAmbientTransmission(
 {
     var light = f32x3(0);
     const flag = ClusterAABBs[idx].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
         const count = LightIndexLists.PointLightCountList[idx];
@@ -756,7 +756,7 @@ LocalLightsAmbientTransmission(
             );
         }
     }
-    if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
     {
         const count = LightIndexLists.SpotLightCountList[idx];
         var shadowExt : SpotLightShadowExtension;

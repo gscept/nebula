@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
-#include <lib/techniques.gpuh>
 
 struct HBAOBlurData
 {
@@ -35,14 +34,13 @@ uniform HBAOY : *texture2D;
 uniform HBAORG : *mutable rg16f texture2D;
 uniform HBAOR : *mutable r16f texture2D;
 
-#define KERNEL_RADIUS 16
-#define KERNEL_RADIUS_FLOAT 16.0f
-#define HALF_KERNEL_RADIUS (KERNEL_RADIUS/2.0f)
+const KERNEL_RADIUS = 16;
+const KERNEL_RADIUS_FLOAT = 16.0f;
+const HALF_KERNEL_RADIUS = KERNEL_RADIUS / 2.0f;
 
-#define HBAO_TILE_WIDTH 256
-const HBAOBlurTileWidth : u32 = HBAO_TILE_WIDTH;
+const HBAO_TILE_WIDTH = 256;
 
-#define SHARED_MEM_SIZE (KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS)
+const SHARED_MEM_SIZE = KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS;
 workgroup SharedMemory : [SHARED_MEM_SIZE]f32x2;
 
 //------------------------------------------------------------------------------

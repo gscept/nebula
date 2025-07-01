@@ -110,17 +110,17 @@ void csDebug()
 
     uint flag = AABBs[idx].featureFlags; // add 0 so we can read the value
     vec4 color = vec4(0, 0, 0, 0);
-    if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         uint count = PointLightCountList[idx];
         color.r = count / float(NumPointLights);
     }
-    if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
     {
         uint count = SpotLightCountList[idx];
         color.g = count / float(NumSpotLights);
     }
-    if (CHECK_FLAG(flag, CLUSTER_AREALIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_AREALIGHT_BIT))
     {
         uint count = AreaLightCountList[idx];
         color.b = count / float(NumAreaLights);

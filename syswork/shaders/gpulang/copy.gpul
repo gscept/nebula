@@ -5,8 +5,6 @@
 
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
-#include <lib/techniques.gpuh>
-
 
 uniform CopyBuffer : *texture2D;
 sampler_state CopySampler
@@ -51,4 +49,10 @@ psMain(in uv : f32x2) void
 //------------------------------------------------------------------------------
 /**
 */
-PostEffect(vsMain, psMain, CopyState);
+@Mask("Alt0")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = CopyState;
+};

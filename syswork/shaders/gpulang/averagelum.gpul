@@ -2,9 +2,7 @@
 //  averagelum.gpul
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include <lib/std.gpuh> 
-#include <lib/techniques.gpuh>
 #include <lib/util.gpuh> 
 #include <lib/shared.gpuh>
 
@@ -65,4 +63,10 @@ psMain(in UV : f32x2) void
 //------------------------------------------------------------------------------
 /**
 */
-PostEffect(vsMain, psMain, AverageLumState);
+@Mask("Alt0")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = AverageLumState;
+};

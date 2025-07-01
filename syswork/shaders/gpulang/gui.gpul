@@ -5,11 +5,8 @@
 //
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include <lib/std.gpuh>
-#include <lib/techniques.gpuh>
 #include <lib/shared.gpuh>
-
 
 struct GUIData
 {
@@ -75,5 +72,18 @@ psMain(
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(Default, "Static", vsMain, psMain, DefaultGUIState);
-SimpleTechnique(Scissor, "Static|Alt0", vsMain, psMain, ScissorGUIState);
+@Mask("Static")
+program Default
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = DefaultGUIState;
+};
+
+@Mask("Static|Alt0")
+program Scissor
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = ScissorGUIState;
+};

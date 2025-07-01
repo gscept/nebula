@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include <lib/std.gpuh>
 #include <lib/geometrybase.gpuh>
-#include <lib/techniques.gpuh>
 #include <lib/standard_shading.gpuh>
 #include <lib/decals.gpuh>
 
