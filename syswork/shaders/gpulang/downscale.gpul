@@ -2,10 +2,8 @@
 //  downsample.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
-#include <lib/techniques.gpuh>
 
 uniform ColorSource : *texture2D;
 
@@ -54,4 +52,10 @@ psMain(in uv : f32x2) void
 //------------------------------------------------------------------------------
 /**
 */
-PostEffect(vsMain, psMain, DownscaleState);
+@Mask("Alt0")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = DownscaleState;
+};

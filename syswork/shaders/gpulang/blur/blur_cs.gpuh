@@ -12,22 +12,7 @@
 */
 #include <lib/shared.gpuh>
 #include <lib/techniques.gpuh>
-
-enum BlurKernelSize
-{
-    Size8,
-    Size16,
-    Size32,
-    Size64
-};
-
-enum ImageFormat
-{
-    Rgba16f,
-    Rgb16f,
-    Rg16f,
-    Rg32f
-};
+#include <blur_include.gpuh>
 
 generate
 <

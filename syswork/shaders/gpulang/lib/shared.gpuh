@@ -2,9 +2,7 @@
 //  shared.gpuh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef SHARED_GPUH
-#define SHARED_GPUH
+#pragma once
 
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
@@ -13,8 +11,8 @@ const MAX_TEXTURES = 65535;
 const NUM_CASCADES = 4;
 const SHADOW_CASTER_COUNT = 16;
 
-#define FLT_MAX     3.40282347E+38F
-#define FLT_MIN     -3.40282347E+38F
+const FLT_MAX = 3.40282347E+38f;
+const FLT_MIN = -3.40282347E+38f;
 
 group(TICK_GROUP) binding(0) uniform Textures1D : [MAX_TEXTURES]* texture1D;
 group(TICK_GROUP) binding(0) uniform Textures1DArray : [MAX_TEXTURES]* texture1DArray;
@@ -28,36 +26,98 @@ group(TICK_GROUP) binding(0) uniform TexturesCubeArray : [MAX_TEXTURES]* texture
 group(TICK_GROUP) sampler_state Basic2DSampler{};
 group(TICK_GROUP) sampler_state PointSampler { Filter = FilterMode.Nearest; AddressU = AddressMode.Clamp; AddressV = AddressMode.Clamp; };
 group(TICK_GROUP) sampler_state LinearSampler { Filter = FilterMode.Linear; AddressU = AddressMode.Clamp; AddressV = AddressMode.Clamp; };
- 
 
-#define sample2D(handle, sampler, uv)						    textureSample(Textures2D[handle], sampler, uv)
-#define sample2DLod(handle, sampler, uv, lod)				    textureSampleLod(Textures2D[handle], sampler, uv, lod)
-#define sample2DGrad(handle, sampler, uv, ddx, ddy)			    textureSampleGrad(Textures2D[handle], sampler, uv, ddx, ddy)
+sample2D(handle : u32, uniform samp : *sampler, uv : f32x2) f32x4
+{
+    return textureSample(Textures2D[handle], samp, uv);
+}
 
-#define sample2DMS(handle, sampler, uv)						    textureSample(Textures2DMS[handle], sampler, uv)
-#define sample2DMSLod(handle, sampler, uv, lod)				    textureSampleLod(Textures2DMS[handle], sampler, uv, lod)
-#define sample2DMSGrad(handle, sampler, uv, ddx, ddy)		    textureSampleGrad(Textures2D[handle], sampler, uv, ddx, ddy)
+sample2DLod(handle : u32, uniform samp : *sampler, uv : f32x2, lod : f32) f32x4
+{
+    return textureSampleLod(Textures2D[handle], samp, uv, lod);
+}
 
-#define sampleCube(handle, sampler, uvw)					    textureSample(TexturesCube[handle], sampler, uvw)
-#define sampleCubeLod(handle, sampler, uvw, lod)			    textureSampleLod(TexturesCube[handle], sampler, uvw, lod)
+sample2DGrad(handle : u32, uniform samp : *sampler, uv : f32x2, ddx : f32x2, ddy : f32x2) f32x4
+{
+    return textureSampleGrad(Textures2D[handle], samp, uv, ddx, ddy);
+}
 
-#define sample2DArray(handle, sampler, uvw)					    textureSample(Textures2DArray[handle], sampler, uvw)
-#define sample2DArrayGrad(handle, sampler, uvw, ddx, ddy)	    textureSampleGrad(Textures2DArray[handle], sampler, uvw, ddx, ddy)
-#define sample2DArrayLod(handle, sampler, uvw, lod)			    textureSampleLod(Textures2DArray[handle], sampler, uvw, lod)
+sample2DMS(handle : u32, uniform samp : *sampler, uv : f32x2) f32x4
+{
+    return textureSample(Textures2DMS[handle], samp, uv);
+}
 
-#define sample3D(handle, sampler, uvw)						    textureSample(Textures3D[handle], sampler, uvw)
-#define sample3DLod(handle, sampler, uvw, lod)				    textureSampleLod(Textures3D[handle], sampler, uvw, lod)
+sample2DMSLod(handle : u32, uniform samp : *sampler, uv : f32x2, lod : f32) f32x4
+{
+    return textureSampleLod(Textures2DMS[handle], samp, uv, lod);
+}
 
-#define sample2DArrayShadow(handle, sampler, uv, index, depth)	textureSampleCompare(Textures2DArray[handle], sampler, f32x3(uv, index), depth)
+sample2DArray(handle : u32, uniform samp : *sampler, uvw : f32x3) f32x4
+{
+    return textureSample(Textures2DArray[handle], samp, uvw);
+}
 
-#define fetch2D(handle, sampler, uv, lod)					    textureFetch(Textures2D[handle], uv, lod)
-#define fetch2DMS(handle, sampler, uv, lod)					    textureFetch(Textures2DMS[handle], uv, lod)
-#define fetchCube(handle, sampler, uvw, lod)				    textureFetch(Textures2DArray[handle], uvw, lod)
-#define fetch2DArray(handle, sampler, uvw, lod)				    textureFetch(Textures2DArray[handle], uvw, lod)
-#define fetch3D(handle, sampler, uvw, lod)					    textureFetch(Textures3D[handle], uvw, lod)
-#define fetchStencil(handle, sampler, uv, lod)				    (castToU32(textureFetch(Textures2D[handle], uv, lod).r))
+sample2DArrayLod(handle : u32, uniform samp : *sampler, uvw : f32x3, lod : f32) f32x4
+{
+    return textureSampleLod(Textures2DArray[handle], samp, uvw, lod);
+}
 
-#define query_lod2D(handle, sampler, uv)                        textureGetSampledMip(sampler2D(Textures2D[handle], sampler), uv)
+sample3D(handle : u32, uniform samp : *sampler, uvw : f32x3) f32x4
+{
+    return textureSample(Textures3D[handle], samp, uvw);
+}
+
+sample3DLod(handle : u32, uniform samp : *sampler, uvw : f32x3, lod : f32) f32x4
+{
+    return textureSampleLod(Textures3D[handle], samp, uvw, lod);
+}
+
+sampleCube(handle : u32, uniform samp : *sampler, uvw : f32x3) f32x4
+{
+    return textureSample(TexturesCube[handle], samp, uvw);
+}
+
+sampleCubeLod(handle : u32, uniform samp : *sampler, uvw : f32x3, lod : f32) f32x4
+{
+    return textureSampleLod(TexturesCube[handle], samp, uvw, lod);
+}
+
+sample2DArrayShadow(handle : u32, uniform samp : *sampler, uv : f32x2, index : f32, depth : f32) f32
+{
+    return textureSampleCompare(Textures2DArray[handle], samp, f32x3(uv, index), depth);
+}
+
+fetch2D(handle : u32, uv : f32x2, lod : f32) f32x4
+{
+    return textureFetch(Textures2D[handle], uv, lod);
+}
+
+fetch2DArray(handle : u32, uvw : f32x3, lod : f32) f32x4
+{
+    return textureFetch(Textures2DArray[handle], uvw, lod);
+}
+
+fetch2DMS(handle : u32, uv : f32x2, lod : f32) f32x4
+{
+    return textureFetch(Textures2DMS[handle], uv, lod);
+}
+
+fetch3D(handle : u32, uvw : f32x3, lod : f32) f32x4
+{
+    return textureFetch(Textures3D[handle], uvw, lod);
+}
+
+fetchStencil(handle : u32, uv : f32x2, lod : f32) u32
+{
+    // fetch stencil texture as a single channel texture
+    return castToU32(textureFetch(Textures2D[handle], uv, lod).r);
+}
+
+queryLod2D(handle : u32, uniform samp : *sampler, uv : f32x2) f32
+{
+    // query the mip level of a 2D texture at a given UV coordinate
+    return textureGetSampledMip(Textures2D[handle], samp, uv);
+}
 
 // these parameters are updated once per application tick
 struct TickParams
@@ -362,7 +422,7 @@ group(FRAME_GROUP) uniform LightLists : *mutable LightListData;
 */
 //------------------------------------------------------------------------------
 // increase if we need more decals in close proximity, for now, 128 is more than enough
-#define MAX_DECALS_PER_CLUSTER 128
+const MAX_DECALS_PER_CLUSTER = 128;
 
 struct PBRDecal
 {
@@ -447,7 +507,7 @@ struct FogBox
 };
 
 // increase if we need more decals in close proximity, for now, 128 is more than enough
-#define MAX_FOGS_PER_CLUSTER 128
+const MAX_FOGS_PER_CLUSTER = 128;
 
 // this is used to keep track of how many lights we have active
 struct VolumeFogParams
@@ -515,8 +575,7 @@ struct GIVolume
     IrradianceScale : f32;
     Options : u32;
 };
-
-#define MAX_GI_VOLUMES_PER_CLUSTER 4
+const MAX_GI_VOLUMES_PER_CLUSTER = 4;
 
 struct GIVolumeParams
 {
@@ -578,5 +637,3 @@ struct PassParameters
 };
 
 group(PASS_GROUP) uniform PassUniforms : *PassParameters;
-
-#endif // SHARED_H
