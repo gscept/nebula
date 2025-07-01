@@ -6,7 +6,6 @@
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 #include <lib/shared.gpuh>
-#include <lib/techniques.gpuh>
 #include <lib/shared.gpuh>
 #include <lib/preetham.gpuh>
 #include <lib/mie-rayleigh.gpuh>
