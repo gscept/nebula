@@ -6,6 +6,13 @@
 #include <lib/util.gpuh> 
 #include <lib/shared.gpuh>
 
+render_state AverageLumState
+{
+    Cull = CullFace.Back;
+    DepthTestEnabled = false; 
+    DepthWriteEnabled = false;
+};
+
 uniform ColorSource : *texture2D;
 uniform PreviousLum : *texture2D;
 
@@ -19,14 +26,6 @@ sampler_state LuminanceSampler
 {
     Filter = FilterMode.Point;
 };
-
-render_state AverageLumState
-{
-    Cull = CullFace.Back;
-    DepthTestEnabled = false; 
-    DepthWriteEnabled = false;
-};
-
 //------------------------------------------------------------------------------
 /**
 */
