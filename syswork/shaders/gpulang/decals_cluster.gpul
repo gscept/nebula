@@ -2,18 +2,6 @@
 //  decals_cluster.gpul
 //  (C) 2019 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-Bar() f32x4
-{
-    return f32x4(1,2,3,4);
-}
-
-Foo(norm : *f32x4) void
-{
-    const n = *norm;
-    const florb = dot(n.xyz, Bar().xyz); 
-}
-
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 #include <lib/shared.gpuh>
@@ -118,7 +106,7 @@ entry_point
 csDebug() void
 {
     const coord = i32x2(computeGetGlobalInvocationIndices().xy);
-    const depth = fetch2D(PerTickParams.DepthBuffer, PointSampler, coord, 0).r;
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
 
     // convert screen coord to view-space position
     const worldPos = PixelToWorld(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvView, ViewConstants.InvProjection);
@@ -130,12 +118,12 @@ csDebug() void
 
     const flag = ClusterAABBs[idx].featureFlags; // add 0 so we can read the value
     var color = f32x4(0);
-    if (CHECK_FLAG(flag, CLUSTER_PBR_DECAL_BIT))
+    if (CheckFlags(flag, CLUSTER_PBR_DECAL_BIT))
     {
         const count = DecalIndexLists.PBRDecalCountList[idx];
         color.r = count / f32(DecalUniforms.NumPBRDecals);
     }
-    if (CHECK_FLAG(flag, CLUSTER_EMISSIVE_DECAL_BIT))
+    if (CheckFlags(flag, CLUSTER_EMISSIVE_DECAL_BIT))
     {
         const count = DecalIndexLists.EmissiveDecalCountList[idx];
         color.g = count / f32(DecalUniforms.NumEmissiveDecals);
@@ -173,11 +161,11 @@ entry_point
 psRenderPBR(in UV : f32x2) void
 {
     const coord = i32x2(pixelGetCoordinates().xy);
-    const depth = fetch2D(PerTickParams.DepthBuffer, ScreenspaceSampler, coord, 0).r;
-    const stencil = fetchStencil(DecalUniforms.StencilBuffer, ScreenspaceSampler, coord, 0);
-    const normal = fetch2D(DecalUniforms.NormalBufferCopy, ScreenspaceSampler, coord, 0).rgb;
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+    const stencil = fetchStencil(DecalUniforms.StencilBuffer, coord, 0);
+    const normal = fetch2D(DecalUniforms.NormalBufferCopy, coord, 0).rgb;
 
-    if (CHECK_FLAG(stencil, STENCIL_BIT_CHARACTER))
+    if (CheckFlags(stencil, STENCIL_BIT_CHARACTER))
         discard;
 
     // convert screen coord to view-space position
@@ -208,7 +196,7 @@ psRenderPBR(in UV : f32x2) void
     }
 
     const flag = ClusterAABBs[idx].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_PBR_DECAL_BIT))
+    if (CheckFlags(flag, CLUSTER_PBR_DECAL_BIT))
     {
         const count = DecalIndexLists.PBRDecalCountList[idx];
         for (var i : i32 = 0; i < count; i++)
@@ -286,8 +274,8 @@ entry_point
 psRenderEmissive(in UV : f32x2) void
 {
     const coord = f32x2(UV.xy * ClusterUniforms.FramebufferDimensions);
-    const depth = fetch2D(PerTickParams.DepthBuffer, PointSampler, coord, 0).r;
-    const material = fetch2D(PerTickParams.SpecularBuffer, PointSampler, coord, 0).rgba;
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+    const material = fetch2D(PerTickParams.SpecularBuffer, coord, 0).rgba;
 
     // convert screen coord to view-space position
     const viewPos = PixelToView(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvProjection);
@@ -309,7 +297,7 @@ psRenderEmissive(in UV : f32x2) void
     var totWeight = 0.0f;
 
     const flag = ClusterAABBs[idx].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_EMISSIVE_DECAL_BIT))
+    if (CheckFlags(flag, CLUSTER_EMISSIVE_DECAL_BIT))
     {
         const count = DecalIndexLists.EmissiveDecalCountList[idx];
         for (var i : i32 = 0; i < count; i++)

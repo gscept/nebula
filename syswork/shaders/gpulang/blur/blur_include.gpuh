@@ -1,0 +1,27 @@
+#pragma once
+//------------------------------------------------------------------------------
+/**
+    blur_include.gpuh
+    (C) 2025 Individual contributors, see AUTHORS file
+
+    Include this file at the top of all other blur shaders. Contains symbols and types necessary to generate a blur shader.
+    This file is not meant to be used directly, but rather included in other shaders.
+    It defines the blur kernel size, image format, and other necessary parameters for the blur operation
+    based on the specified kernel size and image format.
+    The actual blur shader will be generated based on these parameters.
+*/
+enum BlurKernelSize
+{
+    Size8,
+    Size16,
+    Size32,
+    Size64
+};
+
+enum ImageFormat
+{
+    Rgba16f,
+    Rgb16f,
+    Rg16f,
+    Rg32f
+};

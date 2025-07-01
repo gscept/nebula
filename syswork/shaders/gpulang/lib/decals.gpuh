@@ -37,7 +37,7 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
     }
 
     const flag = ClusterAABBs[idx].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_PBR_DECAL_BIT))
+    if (CheckFlags(flag, CLUSTER_PBR_DECAL_BIT))
     {
         const count = DecalIndexLists.PBRDecalCountList[idx];
         for (var i : i32 = 0; i < count; i++)

@@ -6,7 +6,6 @@
 #include <lib/std.gpuh>
 #include <lib/shared.gpuh>
 #include <lib/objects_shared.gpuh>
-#include <lib/techniques.gpuh>
 #include <lib/util.gpuh>
 
 struct BillboardData
@@ -57,4 +56,10 @@ BillboardPS(
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(Render, "Static", BillboardVS, BillboardPS, BillboardState);
+@Mask("Static")
+program Render
+{
+    VertexShader = BillboardVS;
+    PixelShader = BillboardPS;
+    RenderState = BillboardState;
+};

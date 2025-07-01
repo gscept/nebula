@@ -6,7 +6,11 @@
 #ifndef CLUSTERING_GPUH
 #define CLUSTERING_GPUH
 
-#define CHECK_FLAG(bits, bit) ((bits & bit) == bit)
+CheckFlags(bits : u32, bit : u32) b8
+{
+    // Check if the bit is set in the bits
+    return (bits & bit) == bit;
+}
 
 //------------------------------------------------------------------------------
 /**

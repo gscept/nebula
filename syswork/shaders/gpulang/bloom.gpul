@@ -4,10 +4,8 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include <lib/shared.gpuh>
-#include <lib/techniques.gpuh>
 
-#define KERNEL_SIZE 16
-
+const KernelSize = 16;
 sampler_state InputSampler
 {
     Filter = FilterMode.Linear;
@@ -34,7 +32,7 @@ uniform BloomOutput : *mutable rgba16f texture2D;
 uniform Intermediate : *texture2D;
 uniform BloomIntermediate : [14]*mutable rgba16f texture2D;
 
-workgroup SampleLookup : [KERNEL_SIZE][KERNEL_SIZE]f32x3;
+workgroup SampleLookup : [KernelSize][KernelSize]f32x3;
 
 //------------------------------------------------------------------------------
 /**
@@ -70,8 +68,8 @@ SampleTentUpscale(center : i32x2) f32x3
 //------------------------------------------------------------------------------
 /**
 */
-local_size_x(KERNEL_SIZE)
-local_size_y(KERNEL_SIZE)
+local_size_x(KernelSize)
+local_size_y(KernelSize)
 local_size_z(1)
 entry_point
 csUpscale() void
@@ -80,8 +78,8 @@ csUpscale() void
     const groupIndex = computeGetWorkgroupIndices();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
-    const tileStart = groupIndex.xy * (KERNEL_SIZE - 2);
-    const tileEnd = tileStart + u32x2(KERNEL_SIZE - 2);
+    const tileStart = groupIndex.xy * (KernelSize - 2);
+    const tileEnd = tileStart + u32x2(KernelSize - 2);
 
     // The apron defines which pixels we will sample and load into LDS
     const apronStart = tileStart - u32x2(1);
@@ -162,4 +160,3 @@ program BloomMerge
 {
     ComputeShader = csMerge;
 };
-

@@ -75,7 +75,7 @@ LocalFogVolumes(
     , inout vec3 absorption)
 {
     uint flag = AABBs[idx].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_FOG_SPHERE_BIT))
+    if (CheckFlags(flag, CLUSTER_FOG_SPHERE_BIT))
     {
         // add turbidity for local fogs
         uint count = FogSphereCountList[idx];
@@ -96,7 +96,7 @@ LocalFogVolumes(
         }
     }
 
-    if (CHECK_FLAG(flag, CLUSTER_FOG_BOX_BIT))
+    if (CheckFlags(flag, CLUSTER_FOG_BOX_BIT))
     {
         // add turbidity for local fogs
         uint count = FogBoxCountList[idx];
@@ -136,7 +136,7 @@ LocalLightsFog(
 {
     vec3 light = vec3(0, 0, 0);
     uint flag = AABBs[idx].featureFlags;
-    if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
         uint count = PointLightCountList[idx];
@@ -151,7 +151,7 @@ LocalLightsFog(
             light += li.color * att;
         }
     }
-    if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
     {
         uint count = SpotLightCountList[idx];
         for (int i = 0; i < count; i++)
