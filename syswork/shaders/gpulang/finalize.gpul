@@ -43,10 +43,9 @@ render_state FinalizeState
     DepthWriteEnabled = false;
 };
 
-// depth of field samples
-#define MAXDOFSAMPLES 23
+const MaxDofSamples = 23;
 
-const DofSamples : [MAXDOFSAMPLES]f32x2 = [
+const DofSamples : [MaxDofSamples]f32x2 = [
         f32x2( 0.0, 0.0 ),
         f32x2( -0.326212, -0.40581  ),
         f32x2( -0.840144, -0.07358  ),
@@ -110,10 +109,10 @@ DepthOfField(depth : f32, uv : f32x2) f32x4
     
     // perform a gaussian blur around uv
     var sampleColor = f32x3(0.0f);
-    const dofWeight = 1.0f / MAXDOFSAMPLES;
+    const dofWeight = 1.0f / MaxDofSamples;
     const pixelSize = PassUniforms.RenderTargets[0].Dimensions.zw;
     const uvMul = focus * filterRadius * pixelSize.xy;
-    for (var i : i32 = 0; i < MAXDOFSAMPLES; i++)
+    for (var i : i32 = 0; i < MaxDofSamples; i++)
     {
         sampleColor += sample2DLod(FinalizeUniforms.ColorTexture, DefaultSampler, uv + (DofSamples[i] * uvMul), 0).rgb;
     }
@@ -161,4 +160,10 @@ psMain(in UV : f32x2) void
 //------------------------------------------------------------------------------
 /**
 */
-PostEffect(vsMain, psMain, FinalizeState);
+@Mask("Alt0")
+program Main
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = FinalizeState;
+};

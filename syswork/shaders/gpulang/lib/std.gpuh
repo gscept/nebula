@@ -1,10 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  std.gpuh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef STD_GPUH
-#define STD_GPUH
 
 /*
 	Groups are ordered based on frequency of change.
@@ -23,5 +21,3 @@ const BATCH_GROUP : u32 = 3u;
 const INSTANCE_GROUP : u32 = 4u;
 const SYSTEM_GROUP : u32 = 5u;
 const DYNAMIC_OFFSET_GROUP : u32 = 6u;
-
-#endif // STD_GPUH
