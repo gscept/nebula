@@ -11,7 +11,6 @@
   (C) 2025 Individual contributors, see AUTHORS file
 */
 #include <lib/shared.gpuh>
-#include <lib/techniques.gpuh>
 #include <blur_include.gpuh>
 
 generate

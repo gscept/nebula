@@ -2,17 +2,6 @@
 //  histogram_cs.gpul
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include <lib/std.gpuh>
-#include <lib/util.gpuh>
-
-uniform ColorSource : *texture2D;
-
-struct HistogramData
-{
-    Histogram: [256] u32;
-};
-uniform HistogramBuffer : *mutable HistogramData;
-
 struct HistogramParams
 {
     WindowOffset: i32x2;
@@ -24,6 +13,17 @@ struct HistogramParams
 uniform HistogramConstants : *HistogramParams;
 
 workgroup LocalHistogram : [256] u32;
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+
+uniform ColorSource : *texture2D;
+
+struct HistogramData
+{
+    Histogram: [256] u32;
+};
+uniform HistogramBuffer : *mutable HistogramData;
 
 //------------------------------------------------------------------------------
 /**
