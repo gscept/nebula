@@ -46,8 +46,19 @@ operator"" _GB(const unsigned long long val)
 #error "UNKNOWN PLATFORM"
 #endif
 
-extern thread_local char ThreadLocalMiniHeap[];
-extern thread_local size_t ThreadLocalMiniHeapIterator;
+struct ThreadLocalMiniHeap
+{
+    ThreadLocalMiniHeap();
+    ~ThreadLocalMiniHeap();
+    
+    void Realloc(size_t numBytes);
+
+    char* heap;
+    size_t iterator;
+    size_t capacity;
+};
+
+extern thread_local ThreadLocalMiniHeap N_ThreadLocalMiniHeap;
 
 //------------------------------------------------------------------------------
 /**
@@ -74,8 +85,19 @@ template<typename TYPE>
 TYPE*
 ArrayAllocStack(size_t size)
 {
-    TYPE* buffer = (TYPE*)(ThreadLocalMiniHeap + ThreadLocalMiniHeapIterator);
-    ThreadLocalMiniHeapIterator += size * sizeof(TYPE);
+    TYPE* buffer = (TYPE*)(N_ThreadLocalMiniHeap.heap + N_ThreadLocalMiniHeap.iterator);
+    N_ThreadLocalMiniHeap.iterator += size * sizeof(TYPE);
+    
+    // Bounds check. This can never be disabled, as we might go OOB, which can
+    // cause buffer overflows and other security issues.
+    if (N_ThreadLocalMiniHeap.iterator >= N_ThreadLocalMiniHeap.capacity)
+    {
+        // If you run into this error, you're using too much stack memory.
+        // Consider using a separate allocator!
+        n_error("ArrayAllocStack is out of bounds!");
+        return nullptr;
+    }
+    
     if constexpr (!std::is_trivially_constructible<TYPE>::value)
     {
         for (size_t i = 0; i < size; ++i)
@@ -110,7 +132,7 @@ template<typename TYPE>
 void
 ArrayFreeStack(size_t size, TYPE* buffer)
 {
-    char* topPtr = (ThreadLocalMiniHeap + ThreadLocalMiniHeapIterator - size * sizeof(TYPE));
+    char* topPtr = (N_ThreadLocalMiniHeap.heap + N_ThreadLocalMiniHeap.iterator - size * sizeof(TYPE));
     n_assert(buffer == (TYPE*)topPtr);
     if constexpr (!std::is_trivially_destructible<TYPE>::value)
     {
@@ -119,5 +141,5 @@ ArrayFreeStack(size_t size, TYPE* buffer)
             buffer[i].~TYPE();
         }
     }
-    ThreadLocalMiniHeapIterator -= size * sizeof(TYPE);
+    N_ThreadLocalMiniHeap.iterator -= size * sizeof(TYPE);
 }

@@ -1,0 +1,40 @@
+---
+platform: linux
+generator: Ninja
+build_tool: vscode
+build_type: Debug
+defines:
+    N_USE_VULKAN: ON
+    FIPS_RTTI: ON
+    FIPS_EXCEPTIONS: ON
+    TB_ENABLE_RTTI: ON
+    CMAKE_EXPORT_COMPILE_COMMANDS: ON
+vscode_exclude_from_workspace: 
+    [
+        #nebula-toolkit,
+        fips-curl,
+        fips-compressonator,
+        fips-sqlite3,
+        gliml,
+        fips-flatbuffers,
+        physx,
+        nebula-libs,
+        fips-zlib,
+        fips-soloud,
+        fips-stb,
+        fips-pybind11,
+        fips-imgui,
+        fips-cjson,
+        fips-stackwalker,
+        fips-devil,
+        fips-lua,
+        fips-libpng,
+        fips-libjpeg,
+        fips-anyfx,
+        fips-vulkanheaders,
+        fips-glew,
+        fips-glslang,
+        fips-glfw,
+        fips-turbobadger,
+        fips-nanobind
+    ]
