@@ -21,7 +21,10 @@ ThreadLocalMiniHeap::ThreadLocalMiniHeap() :
 */
 ThreadLocalMiniHeap::~ThreadLocalMiniHeap()
 {
-    Memory::Free(Memory::ScratchHeap, this->heap);   
+    if (this->heap != nullptr)
+    {
+        Memory::Free(Memory::ScratchHeap, this->heap);   
+    }
 }
 
 //------------------------------------------------------------------------------
