@@ -103,7 +103,7 @@ AssetBatcherApp::OnBeforeRunLocal()
     ioServer->IterateFolders("tool:syswork/data/flatbuffer/", "*.fbs", printname);
     IO::URI tablePath = "tool:syswork/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
-    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/", "proj:work/data/tables/physicsmaterials.json");
+    CompileFlatbuffer(Physics::Materials, "proj:work/data/tables/physicsmaterials.json","phys:");
 }
 
 //------------------------------------------------------------------------------

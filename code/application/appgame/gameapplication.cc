@@ -190,7 +190,6 @@ GameApplication::Close()
 
     this->CleanupGameFeatures();
     this->gameServer->RemoveGameFeature(this->baseGameFeature);
-    this->baseGameFeature->Release();
     this->baseGameFeature = nullptr;
 
     this->gameServer = nullptr;

@@ -315,6 +315,7 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =
     {
+        Dynui::ImguiContext::EndFrame,
         Clustering::ClusterContext::UpdateResources,
         ObserverContext::RunVisibilityTests,
         ObserverContext::GenerateDrawLists,

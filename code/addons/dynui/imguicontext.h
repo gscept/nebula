@@ -67,6 +67,9 @@ public:
     /// called before frame
     static void NewFrame(const Graphics::FrameContext& ctx);
 
+    /// called after frame
+    static void EndFrame(const Graphics::FrameContext& ctx);
+
     struct ImguiState
     {
         CoreGraphics::ShaderId uiShader;

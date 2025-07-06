@@ -621,7 +621,7 @@ ImguiContext::Create()
     state.normalFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", scaleFactor * 14, &config);
     state.smallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", scaleFactor * 12, &config);
     state.boldFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", scaleFactor * 12, &config);
-    state.itFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansItalic.ttf", scaleFactor * 12, &config);
+    state.itFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf", scaleFactor * 12, &config);
 #endif
 
     unsigned char* buffer;
@@ -920,6 +920,15 @@ ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
     ImGui::NewFrame();
 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiContext::EndFrame(const Graphics::FrameContext& ctx)
+{
+    ImGui::EndFrame();
 }
 
 } // namespace Dynui
