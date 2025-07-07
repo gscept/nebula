@@ -554,6 +554,12 @@ String
 PosixFSWrapper::GetHomeDirectory()
 {
     char buf[MAXPATHLEN];
+#if NEBULA_DEBUG
+#ifdef NEBULA_PROJECT_ROOT
+    String EmbeddedHome = NEBULA_PROJECT_ROOT;
+    return String("file:///") + EmbeddedHome;
+#endif
+#endif
 #ifdef __APPLE__
     CoreFoundation::CFBundleRef mainBundle = CoreFoundation::CFBundleGetMainBundle();
     CoreFoundation::CFURLRef bundleURL = CoreFoundation::CFBundleCopyBundleURL(mainBundle);

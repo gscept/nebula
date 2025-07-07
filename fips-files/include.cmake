@@ -14,7 +14,14 @@ option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 option(N_EDITOR "Build as an editor build" ON)
 option(N_USE_CHECKED_PHYSX "Use Checked PhysX in optimized builds" ON)
+option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into binary for development builds" ON)
 
+if(N_USE_COMPILETIME_PROJECT_ROOT)
+    if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")
+        FILE(READ "${CMAKE_BINARY_DIR}/project_root.txt" PRJ_ROOT)
+        add_definitions(-DNEBULA_PROJECT_ROOT=\"${PRJ_ROOT}\")
+    endif()
+endif()
 
 include(create_resource)
 

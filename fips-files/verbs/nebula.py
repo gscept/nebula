@@ -5,7 +5,7 @@ nebula toolkit [toolkit directory]
 cleannidl
 """
 
-from mod import log, util, settings
+from mod import log, util, settings, project, config
 import os
 import sys
 import shutil
@@ -81,6 +81,16 @@ else:
     import json
     from os.path import expanduser
 
+    def storeProjectPath(fips_dir, proj_dir, path) :
+        if os.path.isdir(path) :
+            proj = util.get_project_name_from_dir(proj_dir)
+            cfg = settings.get(proj_dir, 'config')
+            build_dir = util.get_build_dir(fips_dir,proj,cfg)       
+            with open(build_dir + '/project_root.txt', "w") as outfile :
+                workdir = path = os.path.abspath(path)
+                outfile.write(workdir)
+                outfile.close()
+
     def setKey(cfg_file, key, value) :
         """set nebula key"""
         if not os.path.isfile(cfg_file):
@@ -117,6 +127,8 @@ else:
                     if len(args) == 3 :
                         key = argToKey(args[1])
                         setKey(cfg_file, key, args[2])
+                        if key == 'workdir' :
+                            storeProjectPath(fips_dir, proj_dir, args[2])
                     else :
                         log.error("Expected setting and value")            
                 elif noun == 'get' :
