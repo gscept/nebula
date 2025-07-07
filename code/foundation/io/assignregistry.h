@@ -51,6 +51,8 @@ public:
     URI ResolveAssigns(const URI& uri) const;
     /// resolve any assigns in a string (must have URI form)
     Util::String ResolveAssignsInString(const Util::String& uriString) const;
+    /// prints all assigns and their paths to the console. Useful for debugging.
+    void PrintAll() const;
 
 private:
     /// setup standard system assigns (e.g. home:, etc...)
