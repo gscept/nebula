@@ -82,7 +82,7 @@ public:
     Variant(uint rhs);
     /// int64 constructor
     Variant(int64_t rhs);
-    /// uint64 constructor
+    /// uint64_t constructor
     Variant(uint64_t rhs);
     /// float constructor
     Variant(float rhs);
@@ -3352,13 +3352,13 @@ Variant::Size() const
     switch (this->type)
     {
     case Void:          return 0;
-    case Byte:          return sizeof(uint8);
-    case Short:         return sizeof(uint16);
-    case UShort:        return sizeof(uint16);
-    case Int:           return sizeof(uint32);
-    case UInt:          return sizeof(uint32);
-    case Int64:         return sizeof(uint64);
-    case UInt64:        return sizeof(uint64);
+    case Byte:          return sizeof(uint8_t);
+    case Short:         return sizeof(uint16_t);
+    case UShort:        return sizeof(uint16_t);
+    case Int:           return sizeof(uint32_t);
+    case UInt:          return sizeof(uint32_t);
+    case Int64:         return sizeof(uint64_t);
+    case UInt64:        return sizeof(uint64_t);
     case Float:         return sizeof(float);
     case Double:        return sizeof(double);
     case Bool:          return sizeof(bool);
@@ -3468,7 +3468,7 @@ Variant::TypeToString(Type t)
         case Int:           return "int";
         case UInt:          return "uint";
         case Int64:         return "int64";
-        case UInt64:        return "uint64";
+        case UInt64:        return "uint64_t";
         case Float:         return "float";
         case Double:        return "double";
         case Bool:          return "bool";
@@ -3510,7 +3510,7 @@ Variant::StringToType(const Util::String& str)
     else if ("int" == str)              return Int;
     else if ("uint" == str)             return UInt;
     else if ("int64" == str)            return Int64;
-    else if ("uint64" == str)           return UInt64;
+    else if ("uint64_t" == str)           return UInt64;
     else if ("float" == str)            return Float;
     else if ("double" == str)           return Double;
     else if ("bool" == str)             return Bool;

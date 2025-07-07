@@ -718,7 +718,7 @@ static PxShape* GetShapeCopy(PxShape* shape, Math::vec3 const& inScale)
         default:
             n_assert_fmt(false, "unsupported mesh type %d", type);
     }
-    const uint16 mats = shape->getNbMaterials();
+    const uint16_t mats = shape->getNbMaterials();
     physx::PxMaterial* mat[16];
     n_assert(mats < 16);
     shape->getMaterials((physx::PxMaterial **) &mat, 16, 0);

@@ -132,7 +132,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     // setup observerable entities
     const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
-    static Util::Array<uint32> nodes;
+    static Util::Array<uint32_t> nodes;
     nodes.Clear();
     nodes.Resize(observerResults[0].Size());
 
@@ -235,15 +235,15 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             allocator->Release();
 
             // calculate amount of models
-            uint32 numNodeInstances = totalJobs;
+            uint32_t numNodeInstances = totalJobs;
 
             if (numNodeInstances == 0)
                 return;
 
-            uint64 visibleCounter = 0;
-            Util::FixedArray<uint64, true> indexBuffer(numNodeInstances);
+            uint64_t visibleCounter = 0;
+            Util::FixedArray<uint64_t, true> indexBuffer(numNodeInstances);
             Util::FixedArray<Math::ClipStatus::Type, true> clipStatuses(numNodeInstances);
-            for (uint32 i = 0; i < numNodeInstances; i++)
+            for (uint32_t i = 0; i < numNodeInstances; i++)
             {
                 // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
                 n_assert(ids[i] < 0xFFFFFFFF);
@@ -253,11 +253,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             }
 
             // loop over each node and give them the appropriate weight
-            uint32 i = 0;
+            uint32_t i = 0;
             while (i < visibleCounter)
             {
                 n_assert(indexBuffer[i] < 0x00000000FFFFFFFF);
-                uint64 index = indexBuffer[i] & 0x00000000FFFFFFFF;
+                uint64_t index = indexBuffer[i] & 0x00000000FFFFFFFF;
                 Math::ClipStatus::Type clipStatus = clipStatuses[i];
 
                 // If not visible nor active, erase item from index list
@@ -276,7 +276,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 }
 
                 // Get sort id and combine with index to get full sort id
-                uint64 sortId = renderables->nodeSortId[index];
+                uint64_t sortId = renderables->nodeSortId[index];
                 indexBuffer[i] = sortId | index;
                 i++;
             }
@@ -285,16 +285,16 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 return; // early out
 
             // sort the index buffer
-            std::qsort(indexBuffer.Begin(), visibleCounter, sizeof(uint64), [](const void* a, const void* b)
+            std::qsort(indexBuffer.Begin(), visibleCounter, sizeof(uint64_t), [](const void* a, const void* b)
             {
-                uint64 arg1 = *static_cast<const uint64*>(a);
-                uint64 arg2 = *static_cast<const uint64*>(b);
+                uint64_t arg1 = *static_cast<const uint64_t*>(a);
+                uint64_t arg2 = *static_cast<const uint64_t*>(b);
                 return (arg1 > arg2) - (arg1 < arg2);
             });
 
             // Now resolve the indexbuffer into draw commands
-            uint32 numDraws = 0;
-            const uint32 numPackets = visibleCounter;
+            uint32_t numDraws = 0;
+            const uint32_t numPackets = visibleCounter;
             drawList->drawPackets.Reserve(numPackets);
 
             // Allocate single command which we can
@@ -302,12 +302,12 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             CoreGraphics::MeshId mesh = CoreGraphics::InvalidMeshId;
             Materials::MaterialId mat = Materials::InvalidMaterialId;
             static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
-            Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
+            Util::Tuple<uint32_t, uint32_t> drawModifiers = NullDrawModifiers;
             const MaterialTemplates::Entry* currentMaterialType = nullptr;
 
-            for (uint32 i = 0; i < numPackets; i++)
+            for (uint32_t i = 0; i < numPackets; i++)
             {
-                uint32 index = indexBuffer[i] & 0x00000000FFFFFFFF;
+                uint32_t index = indexBuffer[i] & 0x00000000FFFFFFFF;
 
                 // If new material, add a new entry into the lookup table
                 auto otherMaterialType = renderables->nodeMaterialTemplates[index];
@@ -687,7 +687,7 @@ ObservableContext::Alloc()
 void
 ObservableContext::Dealloc(Graphics::ContextEntityId id)
 {
-    uint32 numNodes = observableAllocator.Get<Observable_NumNodes>(id.id);
+    uint32_t numNodes = observableAllocator.Get<Observable_NumNodes>(id.id);
 
     ObservableState.visibilityResults.EraseRange(0, numNodes);
     // add as many atoms to each visibility result allocator

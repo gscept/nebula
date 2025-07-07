@@ -335,7 +335,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    uint64 offset = SetConstants(decalUniforms);
+    uint64_t offset = SetConstants(decalUniforms);
     ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 

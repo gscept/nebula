@@ -572,7 +572,7 @@ CreateShader(const ShaderCreateInfo& info)
         {
             n_assert(var->binding < 64);
             reflectionInfo.uniformBuffersMask.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersMask.Size()), 0);
-            reflectionInfo.uniformBuffersMask[var->set] |= (1ull << (uint64)var->binding);
+            reflectionInfo.uniformBuffersMask[var->set] |= (1ull << (uint64_t)var->binding);
         }
 
         reflectionInfo.uniformBuffers.Append(refl);
@@ -886,7 +886,7 @@ ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT c
 /**
 */
 const uint
-ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot)
+ShaderCalculateConstantBufferIndex(const uint64_t bindingMask, const IndexT slot)
 {
     if ((bindingMask & (1ull << slot)) == 0)
         return 0xFFFFFFFF;
@@ -1261,7 +1261,7 @@ ShaderGetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const Inde
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
 {
     const auto& masks = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffersMask;
@@ -1274,7 +1274,7 @@ ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i)
 {
     const VkReflectionInfo::UniformBuffer& var = shaderAlloc.Get<Shader_ReflectionInfo>(id.id).uniformBuffersPerSet[group][i];

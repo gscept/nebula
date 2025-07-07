@@ -127,7 +127,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 //------------------------------------------------------------------------------
 /**
 */
-uint64
+uint64_t
 VkSubContextHandler::AppendSubmissionTimeline(
     CoreGraphics::QueueType type
     , VkCommandBuffer cmds
@@ -139,7 +139,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 {
     Threading::CriticalScope _0(&this->submissionLock);
 
-    uint64 ret = GetNextTimelineIndex(type);
+    uint64_t ret = GetNextTimelineIndex(type);
 
     Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Emplace();
@@ -171,7 +171,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 //------------------------------------------------------------------------------
 /**
 */
-uint64
+uint64_t
 VkSubContextHandler::AppendSubmissionTimeline(
     CoreGraphics::QueueType type
     , Util::Array<VkCommandBuffer, 16> cmds
@@ -183,7 +183,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 {
     n_assert(!cmds.IsEmpty());
     Threading::CriticalScope _0(&this->submissionLock);
-    uint64 ret = GetNextTimelineIndex(type);
+    uint64_t ret = GetNextTimelineIndex(type);
 
     Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Emplace();
@@ -214,7 +214,7 @@ VkSubContextHandler::AppendSubmissionTimeline(
 //------------------------------------------------------------------------------
 /**
 */
-uint64
+uint64_t
 VkSubContextHandler::GetNextTimelineIndex(CoreGraphics::QueueType type)
 {
     return this->semaphoreSubmissionIds[type][this->currentQueue[type]] + 1;
@@ -275,7 +275,7 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 //------------------------------------------------------------------------------
 /**
 */
-uint64
+uint64_t
 VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds)
 {
     Threading::CriticalScope _0(&this->submissionLock);
@@ -395,7 +395,7 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
 /**
 */
 void
-VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
+VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64_t index)
 {
     // we can't really signal index UINT64_MAX, so skip it
     if (index != UINT64_MAX)
@@ -533,7 +533,7 @@ VkSubContextHandler::GetSemaphore(const CoreGraphics::QueueType type)
 //------------------------------------------------------------------------------
 /**
 */
-uint64
+uint64_t
 VkSubContextHandler::GetSemaphoreId(const CoreGraphics::QueueType type)
 {
     return this->semaphoreSubmissionIds[type][this->currentQueue[type]];

@@ -142,7 +142,7 @@ public:
         {
             Util::PinnedArray<0xFFFF, Math::mat4> origTransforms;
             Util::PinnedArray<0xFFFF, Math::mat4> nodeTransforms;
-            Util::PinnedArray<0xFFFF, uint32> nodeParents;
+            Util::PinnedArray<0xFFFF, uint32_t> nodeParents;
         } transformable;
 
         /// The bounding boxes are used by visibility and the states by rendering
@@ -153,8 +153,8 @@ public:
             Util::PinnedArray<0xFFFF, Util::Tuple<float, float>> nodeLodDistances;
             Util::PinnedArray<0xFFFF, float> nodeLods;
             Util::PinnedArray<0xFFFF, float> textureLods;
-            Util::PinnedArray<0xFFFF, uint32> nodeTransformIndex;
-            Util::PinnedArray<0xFFFF, uint64> nodeSortId;
+            Util::PinnedArray<0xFFFF, uint32_t> nodeTransformIndex;
+            Util::PinnedArray<0xFFFF, uint64_t> nodeSortId;
             Util::PinnedArray<0xFFFF, NodeInstanceFlags> nodeFlags;
             Util::PinnedArray<0xFFFF, Materials::MaterialId> nodeMaterials;
             Util::PinnedArray<0xFFFF, const MaterialTemplates::Entry*> nodeMaterialTemplates;
@@ -163,7 +163,7 @@ public:
             Util::PinnedArray<0xFFFF, Models::ModelNode*> nodes;
             Util::PinnedArray<0xFFFF, CoreGraphics::MeshId> nodeMeshes;
             Util::PinnedArray<0xFFFF, CoreGraphics::PrimitiveGroup> nodePrimitiveGroup;
-            Util::PinnedArray<0xFFFF, Util::Tuple<uint32, uint32>> nodeDrawModifiers;
+            Util::PinnedArray<0xFFFF, Util::Tuple<uint32_t, uint32_t>> nodeDrawModifiers;
 
             Util::PinnedArray<0xFFFF, void*> nodeSpecialData;
 #if NEBULA_GRAPHICS_DEBUG
@@ -218,7 +218,7 @@ private:
     };
     typedef Ids::IdAllocator<
         Resources::ResourceId,
-        Util::Array<uint32>,
+        Util::Array<uint32_t>,
         NodeInstanceRange,
         NodeInstanceRange,
         Util::Dictionary<Util::StringAtom, IndexT>,

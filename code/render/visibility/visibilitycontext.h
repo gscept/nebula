@@ -104,7 +104,7 @@ public:
 
     struct VisibilityModelCommand
     {
-        uint32 offset;
+        uint32_t offset;
         CoreGraphics::MeshId mesh;
         CoreGraphics::PrimitiveGroup primitiveGroup;
         Materials::MaterialId material;
@@ -116,15 +116,15 @@ public:
 
     struct VisibilityDrawCommand
     {
-        uint32 offset;
-        uint32 numInstances;
-        uint32 baseInstance;
+        uint32_t offset;
+        uint32_t numInstances;
+        uint32_t baseInstance;
     };
 
     struct VisibilityBatchCommand
     {
-        uint32 packetOffset;
-        uint32 numDrawPackets;
+        uint32_t packetOffset;
+        uint32_t numDrawPackets;
         Util::Array<VisibilityModelCommand, 256> models;
         Util::Array<VisibilityDrawCommand, 1024> draws;
     };
@@ -190,7 +190,7 @@ private:
     // observable corresponds to a single entity
     typedef Ids::IdAllocator<
         Graphics::GraphicsEntityId, // The entity id that this component is bound to
-        uint32                      // Node instance range
+        uint32_t                      // Node instance range
     > ObservableAllocator;
 
     static ObservableAllocator observableAllocator;

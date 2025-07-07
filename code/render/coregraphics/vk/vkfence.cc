@@ -89,7 +89,7 @@ FenceReset(const FenceId id)
 /**
 */
 bool 
-FenceWait(const FenceId id, const uint64 time)
+FenceWait(const FenceId id, const uint64_t time)
 {
     VkFence fence = fenceAllocator.Get<1>(id.id).fence;
     VkDevice dev = fenceAllocator.Get<0>(id.id);
@@ -101,7 +101,7 @@ FenceWait(const FenceId id, const uint64 time)
 /**
 */
 bool 
-FenceWaitAndReset(const FenceId id, const uint64 time)
+FenceWaitAndReset(const FenceId id, const uint64_t time)
 {
     VkFence fence = fenceAllocator.Get<1>(id.id).fence;
     VkDevice dev = fenceAllocator.Get<0>(id.id);

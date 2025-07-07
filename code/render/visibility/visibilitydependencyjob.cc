@@ -17,8 +17,8 @@ VisibilityDependencyJob(const Jobs::JobFuncContext& ctx)
 {
     N_SCOPE(VisibilityDependencyJob, Visibility);
     DependencyMode mode = *(DependencyMode*)ctx.uniforms[0];
-    uint32 numResults = ctx.inputSizes[0] / sizeof(Math::ClipStatus::Type);
-    IndexT bIndexInA = *(uint32*)ctx.uniforms[1];
+    uint32_t numResults = ctx.inputSizes[0] / sizeof(Math::ClipStatus::Type);
+    IndexT bIndexInA = *(uint32_t*)ctx.uniforms[1];
     for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
     {
         Math::ClipStatus::Type* aResults = (Math::ClipStatus::Type*)N_JOB_INPUT(ctx, sliceIdx, 0);
@@ -26,7 +26,7 @@ VisibilityDependencyJob(const Jobs::JobFuncContext& ctx)
 
         if (mode == DependencyMode_Masked)
         {
-            for (uint32 i = 0; i < numResults; i++)
+            for (uint32_t i = 0; i < numResults; i++)
             {
                 if (aResults[i] == Math::ClipStatus::Inside)
                     bResults[i] = Math::ClipStatus::Outside;
@@ -37,7 +37,7 @@ VisibilityDependencyJob(const Jobs::JobFuncContext& ctx)
             // if B is not visible from A, make sure B produces nothing
             if (!aResults[bIndexInA])
             {
-                for (uint32 i = 0; i < numResults; i++)
+                for (uint32_t i = 0; i < numResults; i++)
                 {
                     bResults[i] = Math::ClipStatus::Outside;
                 }

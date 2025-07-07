@@ -30,7 +30,7 @@ SetupMemoryPools(
     // setup a pool for every memory type
     CoreGraphics::Pools.Resize(VK_MAX_MEMORY_TYPES);
     bool deviceLocalFound = false, hostLocalFound = false, hostAndDeviceFound = false, hostCachedFound = false;
-    for (uint32 i = 0; i < props.memoryHeapCount; i++)
+    for (uint32_t i = 0; i < props.memoryHeapCount; i++)
     {
         CoreGraphics::MemoryHeap heap;
         heap.space = props.memoryHeaps[i].size;

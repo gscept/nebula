@@ -87,8 +87,8 @@ private:
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
         Util::Array<Math::mat4> transforms;
-        Util::Array<uint64> firstVertexOffset;
-        Util::Array<uint64> firstIndexOffset;
+        Util::Array<uint64_t> firstVertexOffset;
+        Util::Array<uint64_t> firstIndexOffset;
         Util::Array<CoreGraphics::IndexType::Code> indexType;
         Util::Array<float> lineThicknesses;
     } indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
@@ -97,7 +97,7 @@ private:
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
         Util::Array<Math::mat4> transforms;
-        Util::Array<uint64> firstVertexOffset;
+        Util::Array<uint64_t> firstVertexOffset;
         Util::Array<float> lineThicknesses;
     } unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 };

@@ -77,7 +77,7 @@ PassGetVkRenderPass(const CoreGraphics::PassId id)
 /**
 */
 const VkPipelineViewportStateCreateInfo&
-PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32 subpass)
+PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32_t subpass)
 {
     return passAllocator.Get<Pass_VkRuntimeInfo>(id.id).subpassPipelineInfo[subpass];
 }
@@ -140,9 +140,9 @@ GetSubpassInfo(
     , Util::FixedArray<VkSubpassDescription>& outDescs
     , Util::Array<VkSubpassDependency>& outDeps
     , Util::FixedArray<VkAttachmentDescription>& outAttachments
-    , Util::Array<uint32>& usedAttachmentCounts
+    , Util::Array<uint32_t>& usedAttachmentCounts
     , Util::FixedArray<VkPipelineViewportStateCreateInfo>& outPipelineInfos
-    , uint32& numUsedAttachmentsTotal)
+    , uint32_t& numUsedAttachmentsTotal)
 {
     subpassInfos.Clear();
     subpassInfos.Resize(loadInfo.subpasses.Size());
@@ -364,7 +364,7 @@ GetSubpassInfo(
         VK_ATTACHMENT_STORE_OP_STORE,
     };
 
-    numUsedAttachmentsTotal = (uint32)loadInfo.attachments.Size();
+    numUsedAttachmentsTotal = (uint32_t)loadInfo.attachments.Size();
     outAttachments.Resize(numUsedAttachmentsTotal);
     for (i = 0; i < loadInfo.attachments.Size(); i++)
     {
@@ -519,7 +519,7 @@ SetupPass(const PassId pid)
     subpassDescs.Resize(loadInfo.subpasses.Size());
     attachments.Resize(loadInfo.attachments.Size() + 1);
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
-    uint32 numUsedAttachmentsTotal = 0;
+    uint32_t numUsedAttachmentsTotal = 0;
 
     // run subpass info fetcher
     GetSubpassInfo(

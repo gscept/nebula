@@ -103,7 +103,7 @@ private:
 
     struct ParticleSystemRuntime
     {
-        uint32 renderableIndex;
+        uint32_t renderableIndex;
         Util::RingBuffer<Particle> particles;
         Math::mat4 transform;
         Math::bbox boundingBox;
@@ -116,7 +116,7 @@ private:
         Util::FixedArray<CoreGraphics::MeshId> meshPerFrame;
         CoreGraphics::MeshId mesh;
 
-        uint32 baseVertex, numParticles;
+        uint32_t baseVertex, numParticles;
     };
 
     enum

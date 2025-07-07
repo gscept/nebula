@@ -301,7 +301,7 @@ BufferGetType(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).size;
@@ -310,7 +310,7 @@ BufferGetSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetElementSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).elementSize;
@@ -319,7 +319,7 @@ BufferGetElementSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetByteSize(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id).byteSize;
@@ -328,7 +328,7 @@ BufferGetByteSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const uint64
+const uint64_t
 BufferGetUploadMaxSize()
 {
     return 65536;
@@ -388,7 +388,7 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 {
     const VkBufferLoadInfo& setup = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
 
-    uint64 remainingBytes = setup.byteSize;
+    uint64_t remainingBytes = setup.byteSize;
     uint numChunks = Math::divandroundup(setup.byteSize, BufferGetUploadMaxSize());
     int chunkOffset = 0;
     for (uint i = 0; i < numChunks; i++)
@@ -407,7 +407,7 @@ BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char patte
 /**
 */
 void
-BufferFlush(const BufferId id, uint64 offset, uint64 size)
+BufferFlush(const BufferId id, uint64_t offset, uint64_t size)
 {
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
@@ -418,7 +418,7 @@ BufferFlush(const BufferId id, uint64 offset, uint64 size)
 /**
 */
 void
-BufferInvalidate(const BufferId id, uint64 offset, uint64 size)
+BufferInvalidate(const BufferId id, uint64_t offset, uint64_t size)
 {
     const VkBufferLoadInfo& loadInfo = bufferAllocator.ConstGet<Buffer_LoadInfo>(id.id);
     n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);

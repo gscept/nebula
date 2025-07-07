@@ -33,7 +33,7 @@ VisibilitySystem::PrepareObservers(const Math::mat4* transforms, bool* orthoFlag
 /**
 */
 void
-VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
+VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32_t* ids, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
 {
     this->ent.boxes = boxes;
     this->ent.entities = entities;

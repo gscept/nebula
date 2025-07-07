@@ -83,7 +83,7 @@ private:
 
 struct BiomeSettings
 {
-    enum BiomeMaterialLayer : uint8
+    enum BiomeMaterialLayer : uint8_t
     {
         Flat,         // Material to use on flat surfaces
         Slope,        // Material to use on slanted surfaces
@@ -100,7 +100,7 @@ struct BiomeSettings
 struct BiomeSettingsBuilder
 {
 private:
-    enum BuilderBits : uint8
+    enum BuilderBits : uint8_t
     {
         NoBits = 0x0,
         SettingsBit = 0x1,
@@ -113,7 +113,7 @@ private:
         AllBits = (BiomeMask << 1) - 1
     };
 
-    uint8 bits = NoBits;
+    uint8_t bits = NoBits;
     BiomeSettings settings;
 
 public:
@@ -181,7 +181,7 @@ struct SubTextureUpdateJobUniforms
     uint physicalTileSize;
 };
 
-enum class SubTextureUpdateState : uint8
+enum class SubTextureUpdateState : uint8_t
 {
     NoChange,           // subtexture remains the same
     Deleted,            // subtexture went to 0 tiles

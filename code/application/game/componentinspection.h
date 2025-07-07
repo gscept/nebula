@@ -118,9 +118,9 @@ ComponentDrawFuncT(Game::Entity owner, ComponentId component, void* data, bool* 
 template<> void ComponentDrawFuncT<Game::Entity>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<bool>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<int>(Game::Entity, ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<int64>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int64_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<uint>(Game::Entity, ComponentId, void*, bool*);
-template<> void ComponentDrawFuncT<uint64>(Game::Entity, ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint64_t>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<float>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Util::StringAtom>(Game::Entity, ComponentId, void*, bool*);
 template<> void ComponentDrawFuncT<Math::mat4>(Game::Entity, ComponentId, void*, bool*);

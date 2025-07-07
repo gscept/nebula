@@ -27,15 +27,15 @@ struct TileCacheEntry
 {
     struct Entry
     {
-        uint64 tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
-        uint64 tileX : 11;                // must hold at least SubTextureMaxTiles
-        uint64 tileY : 11;                // same as above
-        uint64 subTextureIndex : 32;      // the index of the subtexture
+        uint64_t tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
+        uint64_t tileX : 11;                // must hold at least SubTextureMaxTiles
+        uint64_t tileY : 11;                // same as above
+        uint64_t subTextureIndex : 32;      // the index of the subtexture
     };
     union
     {
         Entry entry;
-        uint64 hash;
+        uint64_t hash;
     };
 
     bool operator>(const TileCacheEntry& rhs) const

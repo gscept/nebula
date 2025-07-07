@@ -91,7 +91,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         // Run through nodes and collect transform and renderable nodes
         NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
         NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
-        Util::Array<uint32>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+        Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
         Util::Array<Models::ModelNode*> transformNodes;
         Util::Array<Models::ModelNode*> renderNodes;
         Util::Array<uint32_t> nodeIds;
@@ -233,7 +233,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             auto sortCode = MaterialGetSortCode(sNode->material);
             assert(sortCode < 0xFFF0000000000000);
             //assert(sNode->HashCode() < 0x000FFFFF00000000);
-            uint64 sortId = ((uint64)sortCode << 52) | ((uint64)sNode->HashCode() << 32);
+            uint64_t sortId = ((uint64_t)sortCode << 52) | ((uint64_t)sNode->HashCode() << 32);
             NodeInstances.renderable.nodeSortId[index] = sortId;
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -268,7 +268,7 @@ ModelContext::Setup(
 )
 {
     const ContextEntityId cid = GetContextId(id);
-    Util::Array<uint32>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
+    Util::Array<uint32_t>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
     NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
     NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
 
@@ -325,7 +325,7 @@ ModelContext::Setup(
     // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
     auto sortCode = Materials::MaterialGetSortCode(material);
     assert(sortCode < 0xFFF0000000000000);
-    uint64 sortId = ((uint64)sortCode << 52);
+    uint64_t sortId = ((uint64_t)sortCode << 52);
     NodeInstances.renderable.nodeSortId.Append(sortId);
 }
 
@@ -609,7 +609,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     N_SCOPE(UpdateTransforms, Models);
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
-    const Util::Array<Util::Array<uint32>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
+    const Util::Array<Util::Array<uint32_t>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
     Util::Array<Math::bbox>& instanceBoxes = NodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
     Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
@@ -638,7 +638,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 return;
 
             const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[index];
-            const Util::Array<uint32>& roots = nodeInstanceRoots[index];
+            const Util::Array<uint32_t>& roots = nodeInstanceRoots[index];
             if (hasPending[index])
             {
                 // The pending transform is the root of the model
@@ -653,7 +653,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 // Update transforms
                 for (j = transformRange.begin + 1; j < transformRange.end; j++)
                 {
-                    uint32 parent = NodeInstances.transformable.nodeParents[j];
+                    uint32_t parent = NodeInstances.transformable.nodeParents[j];
                     n_assert(parent != UINT32_MAX);
                     Math::mat4 parentTransform = NodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
                     Math::mat4 orig = NodeInstances.transformable.origTransforms[j];

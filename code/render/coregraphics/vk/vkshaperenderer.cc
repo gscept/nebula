@@ -406,7 +406,7 @@ VkShapeRenderer::DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
             const Math::mat4& modelTransform = this->unindexed[j].transforms[i];
             const Math::vec4 color(1);
             const float lineThickness = this->unindexed[j].lineThicknesses[i];
-            const uint64& vertexOffset = this->unindexed[j].firstVertexOffset[i];
+            const uint64_t& vertexOffset = this->unindexed[j].firstVertexOffset[i];
 
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
@@ -441,8 +441,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
             const Math::mat4& modelTransform = this->indexed[j].transforms[i];
             const Math::vec4 color(1);
             const float lineThickness = this->unindexed[j].lineThicknesses[i];
-            const uint64& vertexOffset = this->indexed[j].firstVertexOffset[i];
-            const uint64& indexOffset = this->indexed[j].firstIndexOffset[i];
+            const uint64_t& vertexOffset = this->indexed[j].firstVertexOffset[i];
+            const uint64_t& indexOffset = this->indexed[j].firstIndexOffset[i];
 
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);

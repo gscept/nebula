@@ -24,7 +24,7 @@ typedef Ids::IdAllocator<
     VkDevice,
     VkSemaphore,
     CoreGraphics::SemaphoreType,
-    uint64
+    uint64_t
 > VkSemaphoreAllocator;
 extern VkSemaphoreAllocator semaphoreAllocator;
 

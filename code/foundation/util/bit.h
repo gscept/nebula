@@ -17,8 +17,8 @@ namespace Util
 //------------------------------------------------------------------------------
 /**
 */
-constexpr uint64 
-SetBit(uint64 mask, uint8 bit)
+constexpr uint64_t 
+SetBit(uint64_t mask, uint8_t bit)
 {
     return mask | (1ULL << bit);
 }
@@ -27,7 +27,7 @@ SetBit(uint64 mask, uint8 bit)
 /**
 */
 constexpr bool
-HasBit(uint64 mask, uint8 bit)
+HasBit(uint64_t mask, uint8_t bit)
 {
     return mask & (1ULL << bit);
 }
@@ -35,8 +35,8 @@ HasBit(uint64 mask, uint8 bit)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr uint32
-SetBit(uint32 mask, uint8 bit)
+constexpr uint32_t
+SetBit(uint32_t mask, uint8_t bit)
 {
     return mask | (1 << bit);
 }
@@ -45,7 +45,7 @@ SetBit(uint32 mask, uint8 bit)
 /**
 */
 constexpr bool
-HasBit(uint32 mask, uint8 bit)
+HasBit(uint32_t mask, uint8_t bit)
 {
     return mask & (1 << bit);
 }
@@ -53,8 +53,8 @@ HasBit(uint32 mask, uint8 bit)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr uint16
-SetBit(uint16 mask, uint8 bit)
+constexpr uint16_t
+SetBit(uint16_t mask, uint8_t bit)
 {
     return mask | (1 << bit);
 }
@@ -63,7 +63,7 @@ SetBit(uint16 mask, uint8 bit)
 /**
 */
 constexpr bool
-HasBit(uint16 mask, uint8 bit)
+HasBit(uint16_t mask, uint8_t bit)
 {
     return mask & (1 << bit);
 }
@@ -71,8 +71,8 @@ HasBit(uint16 mask, uint8 bit)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr int64
-SetBit(int64 mask, uint8 bit)
+constexpr int64_t
+SetBit(int64_t mask, uint8_t bit)
 {
     return mask | (1LL << bit);
 }
@@ -81,7 +81,7 @@ SetBit(int64 mask, uint8 bit)
 /**
 */
 constexpr bool
-HasBit(int64 mask, uint8 bit)
+HasBit(int64_t mask, uint8_t bit)
 {
     return mask & (1LL << bit);
 }
@@ -89,8 +89,8 @@ HasBit(int64 mask, uint8 bit)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr int32
-SetBit(int32 mask, uint8 bit)
+constexpr int32_t
+SetBit(int32_t mask, uint8_t bit)
 {
     return mask | (1 << bit);
 }
@@ -99,7 +99,7 @@ SetBit(int32 mask, uint8 bit)
 /**
 */
 constexpr bool
-HasBit(int32 mask, uint8 bit)
+HasBit(int32_t mask, uint8_t bit)
 {
     return mask & (1 << bit);
 }
@@ -107,8 +107,8 @@ HasBit(int32 mask, uint8 bit)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr int16
-SetBit(int16 mask, uint8 bit)
+constexpr int16_t
+SetBit(int16_t mask, uint8_t bit)
 {
     return mask | (1 << bit);
 }
@@ -117,7 +117,7 @@ SetBit(int16 mask, uint8 bit)
 /**
 */
 constexpr bool
-HasBit(int16 mask, uint8 bit)
+HasBit(int16_t mask, uint8_t bit)
 {
     return mask & (1 << bit);
 }
@@ -125,8 +125,8 @@ HasBit(int16 mask, uint8 bit)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr uint32
-CountBits(uint32 i)
+constexpr uint32_t
+CountBits(uint32_t i)
 {
     i = i - ((i >> 1) & 0x55555555);
     i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
@@ -156,8 +156,8 @@ PopCnt(uint value)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint64
-PopCnt(uint64 value)
+inline uint64_t
+PopCnt(uint64_t value)
 {
 	return _mm_popcnt_u64(value);
 }
@@ -181,7 +181,7 @@ FirstOne(uint value)
 /**
 */
 inline uint
-FirstOne(uint64 value)
+FirstOne(uint64_t value)
 {
 #if __WIN32__
     DWORD count = 0;
@@ -211,7 +211,7 @@ LastOne(uint value)
 /**
 */
 inline uint
-LastOne(uint64 value)
+LastOne(uint64_t value)
 {
 #if __WIN32__
     DWORD count = 0;

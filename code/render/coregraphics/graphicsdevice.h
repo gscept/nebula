@@ -33,9 +33,9 @@ extern bool NvidiaCheckpointsSupported;
 
 extern uint ReadWriteBufferAlignment;
 extern uint ConstantBufferAlignment;
-extern uint64 MaxConstantBufferSize;
+extern uint64_t MaxConstantBufferSize;
 extern uint MaxPushConstantSize;
-extern uint64 SparseAddressSize;
+extern uint64_t SparseAddressSize;
 
 extern uint MaxPerStageConstantBuffers;
 extern uint MaxPerStageReadWriteBuffers;
@@ -59,17 +59,17 @@ extern uint TimestampPeriod;
 /// Raytracing properties
 extern uint AccelerationStructureScratchAlignment;
 extern uint ShaderGroupAlignment;
-extern uint64 ShaderGroupSize;
+extern uint64_t ShaderGroupSize;
 extern uint MaxRecursionDepth;
 
 struct GraphicsDeviceCreateInfo
 {
-    uint64 globalConstantBufferMemorySize;
-    uint64 globalVertexBufferMemorySize;
-    uint64 globalIndexBufferMemorySize;
-    uint64 globalUploadMemorySize;
-    uint64 memoryHeaps[NumMemoryPoolTypes];
-    uint64 maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
+    uint64_t globalConstantBufferMemorySize;
+    uint64_t globalVertexBufferMemorySize;
+    uint64_t globalIndexBufferMemorySize;
+    uint64_t globalUploadMemorySize;
+    uint64_t memoryHeaps[NumMemoryPoolTypes];
+    uint64_t maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
     byte numBufferedFrames : 3;
     bool enableValidation : 1;      // enables validation layer and writes output to console
     struct Features
@@ -210,7 +210,7 @@ const CoreGraphics::CmdBufferId LockTransferHandoverSetupCommandBuffer();
 void UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf);
 
 /// Poll a submission for completion
-bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index);
+bool PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64_t index);
 
 /// Submit a command buffer, but doesn't necessarily execute it immediately
 SubmissionWaitEvent SubmitCommandBuffers(
@@ -228,9 +228,9 @@ void SubmitImmediateCommandBuffers();
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of memory and set data, return offset (thread safe)
-template<class TYPE> uint64 SetConstants(const TYPE& data);
+template<class TYPE> uint64_t SetConstants(const TYPE& data);
 /// Allocate range of memory and set data as an array of elements, return offset  (thread safe)
-template<class TYPE> uint64 SetConstants(const TYPE* data, SizeT elements);
+template<class TYPE> uint64_t SetConstants(const TYPE* data, SizeT elements);
 /// Set constants based on pre-allocated memory  (thread safe)
 template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE& data);
 /// Set constants based on pre-allocated memory  (thread safe)

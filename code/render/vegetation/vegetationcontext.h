@@ -75,7 +75,7 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    enum class VegetationType : uint8
+    enum class VegetationType : uint8_t
     {
         GrassType,      // use for grass and undergrowth
         MeshType        // use for rocks or other objects which might need meshes

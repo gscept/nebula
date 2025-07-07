@@ -39,8 +39,8 @@ struct BlasCreateInfo
     CoreGraphics::BufferId vbo, ibo;
     CoreGraphics::IndexType::Code indexType;
     CoreGraphics::VertexComponent::Format positionsFormat;
-    uint64 stride;
-    uint64 vertexOffset, indexOffset;
+    uint64_t stride;
+    uint64_t vertexOffset, indexOffset;
     CoreGraphics::PrimitiveGroup primGroup;
     AccelerationStructureBuildFlags flags;
 };

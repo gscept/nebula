@@ -94,10 +94,10 @@ private:
         BinIndex() : index(0) {};
         struct
         {
-            uint16 bin : 4;
-            uint16 bucket : 12;
+            uint16_t bin : 4;
+            uint16_t bucket : 12;
         };
-        uint16 index;
+        uint16_t index;
     };
 
     /// Get bin index from size

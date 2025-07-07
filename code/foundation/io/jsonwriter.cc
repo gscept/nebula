@@ -298,7 +298,7 @@ JsonWriter::Add(const uint64_t& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     n_assert(value < INT64_MAX);
-    pjson::value_variant val((int64)value);
+    pjson::value_variant val((int64_t)value);
     if (name.IsEmpty())
     {
         this->hierarchy.Peek()->add_value(val, alloc);

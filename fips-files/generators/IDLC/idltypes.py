@@ -21,7 +21,7 @@ def GetCppTypeString(attrType):
         return "Math::scalar"
     elif (T == "int64"):
         return "int64_t"
-    elif (T == "uint64"):
+    elif (T == "uint64_t"):
         return "uint64_t"
     elif (T == "double"):
         return "double"
@@ -75,7 +75,7 @@ def GetCsTypeString(attrType):
         return "float"
     elif (T == "int64"):
         return "Int64"
-    elif (T == "uint64"):
+    elif (T == "uint64_t"):
         return "UInt64"
     elif (T == "double"):
         return "double"
@@ -132,7 +132,7 @@ def GetArgumentType(attrType):
         return "Math::scalar"
     elif (T == "int64"):
         return "int64_t"
-    elif (T == "uint64"):
+    elif (T == "uint64_t"):
         return "uint64_t"
     elif (T == "double"):
         return "double"
@@ -186,7 +186,7 @@ def DefaultValue(attrType):
         return "Math::scalar(0)"
     elif (T == "int64"):
         return "int64_t(0)"
-    elif (T == "uint64"):
+    elif (T == "uint64_t"):
         return "uint64_t(0)"
     elif (T == "double"):
         return "double(0.0)"

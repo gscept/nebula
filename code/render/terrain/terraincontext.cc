@@ -125,9 +125,9 @@ struct SubTexture
 struct SubTextureCompressed
 {
     Math::float2 worldCoordinate;
-    uint32 : 32;
-    uint32 indirectionX : 12;
-    uint32 indirectionY : 12;
+    uint32_t : 32;
+    uint32_t indirectionX : 12;
+    uint32_t indirectionY : 12;
     uint mip : 8;
 };
 

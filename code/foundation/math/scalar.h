@@ -382,7 +382,7 @@ max(TYPE0 first, TYPE0 second, TYPEN... rest)
 
 //------------------------------------------------------------------------------
 /**
-    branchless max for uint32
+    branchless max for uint32_t
 */
 template<>
 __forceinline unsigned int
@@ -793,10 +793,10 @@ roundtopow2(unsigned int val)
 */
 struct randxorstate
 {
-    uint64 x[2];
+    uint64_t x[2];
 };
 
-__forceinline uint64
+__forceinline uint64_t
 randxor(randxorstate& state)
 {
     uint64_t t = state.x[0];

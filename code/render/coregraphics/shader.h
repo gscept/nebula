@@ -107,7 +107,7 @@ const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbInde
 /// create constant buffer from index
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostCached);
 /// Calculate buffer index using binding mask and slot
-const uint ShaderCalculateConstantBufferIndex(const uint64 bindingMask, const IndexT slot);
+const uint ShaderCalculateConstantBufferIndex(const uint64_t bindingMask, const IndexT slot);
 
 /// Get name of shader
 const Resources::ResourceName ShaderGetName(const ShaderId id);
@@ -150,9 +150,9 @@ const IndexT ShaderGetConstantBufferResourceSlot(const ShaderId id, const IndexT
 /// get group of constant buffer
 const IndexT ShaderGetConstantBufferResourceGroup(const ShaderId id, const IndexT i);
 /// Get mask of constant buffers
-const uint64 ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group);
+const uint64_t ShaderGetConstantBufferBindingMask(const ShaderId id, const IndexT group);
 /// Get size of constant buffer at binding point
-const uint64 ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i);
+const uint64_t ShaderGetConstantBufferSize(const ShaderId id, const IndexT group, const IndexT i);
 
 /// get slot of any shader resource
 const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name);
