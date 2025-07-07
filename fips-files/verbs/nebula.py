@@ -85,7 +85,8 @@ else:
         if os.path.isdir(path) :
             proj = util.get_project_name_from_dir(proj_dir)
             cfg = settings.get(proj_dir, 'config')
-            build_dir = util.get_build_dir(fips_dir,proj,cfg)       
+            build_dir = util.get_build_dir(fips_dir,proj,cfg)
+            os.makedirs(build_dir, exist_ok=True)
             with open(build_dir + '/project_root.txt', "w") as outfile :
                 workdir = path = os.path.abspath(path)
                 outfile.write(workdir)
