@@ -170,8 +170,8 @@ PosixGuid::FromBinary(const unsigned char* ptr, SizeT numBytes)
 IndexT
 PosixGuid::HashCode() const
 {
-    n_error("Must implement PosixGuid::HashCode()");
-    return 0;
+    const uint64_t* half = reinterpret_cast<const uint64_t*>(this->uuid);
+    return (IndexT)(half[0] ^ half[1]);
 }
 
 }; // namespace Posix
