@@ -423,24 +423,6 @@ ImguiContext::Create()
             });
     }
 
-    FrameScript_default::RegisterSubgraphPipelines_ImGUI_Pass([](const CoreGraphics::PassId pass, uint subpass)
-    {
-        CoreGraphics::InputAssemblyKey inputAssembly{ CoreGraphics::PrimitiveTopology::TriangleList, false };
-        if (state.editorPipeline != CoreGraphics::InvalidPipelineId)
-            CoreGraphics::DestroyGraphicsPipeline(state.editorPipeline);
-        state.pipeline = CoreGraphics::CreateGraphicsPipeline({ state.prog, pass, subpass, inputAssembly });
-    });
-
-    FrameScript_default::RegisterSubgraph_ImGUI_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
-    {
-#ifdef NEBULA_NO_DYNUI_ASSERTS
-        ImguiContext::RecoverImGuiContextErrors();
-#endif
-        //ImGui::Render();
-        //ImguiDrawFunction(cmdBuf, viewport, false);
-    });
-
-
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
     CoreGraphics::BufferCreateInfo vboInfo;
