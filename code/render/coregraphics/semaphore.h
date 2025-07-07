@@ -42,7 +42,7 @@ SemaphoreId CreateSemaphore(const SemaphoreCreateInfo& info);
 void DestroySemaphore(const SemaphoreId& semaphore);
 
 /// get semaphore index
-uint64 SemaphoreGetValue(const SemaphoreId& semaphore);
+uint64_t SemaphoreGetValue(const SemaphoreId& semaphore);
 /// signal semaphore
 void SemaphoreSignal(const SemaphoreId& semaphore);
 /// reset semaphore

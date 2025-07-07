@@ -740,9 +740,9 @@ bool NvidiaCheckpointsSupported = false;
 
 uint ReadWriteBufferAlignment = UINT_MAX;
 uint ConstantBufferAlignment = UINT_MAX;
-uint64 MaxConstantBufferSize = UINT_MAX;
+uint64_t MaxConstantBufferSize = UINT_MAX;
 uint MaxPushConstantSize = UINT_MAX;
-uint64 SparseAddressSize = UINT_MAX;
+uint64_t SparseAddressSize = UINT_MAX;
 
 uint MaxPerStageConstantBuffers = UINT_MAX;
 uint MaxPerStageReadWriteBuffers = UINT_MAX;
@@ -765,7 +765,7 @@ uint TimestampPeriod = UINT_MAX;
 
 uint AccelerationStructureScratchAlignment = UINT_MAX;
 uint ShaderGroupAlignment = UINT_MAX;
-uint64 ShaderGroupSize = UINT_MAX;
+uint64_t ShaderGroupSize = UINT_MAX;
 uint MaxRecursionDepth = UINT_MAX;
 
 using namespace Vulkan;
@@ -1663,7 +1663,7 @@ UnlockTransferHandoverSetupCommandBuffer(CoreGraphics::CmdBufferId cmdBuf)
 /**
 */
 bool
-PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64 index)
+PollSubmissionIndex(const CoreGraphics::QueueType queue, uint64_t index)
 {
     return state.queueHandler.Poll(queue, index);
 }
@@ -2311,11 +2311,11 @@ EnqueueUploadsFlushAndFree(const Util::Array<Memory::RangeAllocation>& allocatio
 /**
 */
 void
-ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64* data, const uint64& offset)
+ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64_t* data, const uint64_t& offset)
 {
     const SizeT timestampPeriod = state.deviceProps[state.currentDevice].properties.limits.timestampPeriod;
-    uint64 begin = data[marker.gpuBegin];
-    uint64 end = data[marker.gpuEnd];
+    uint64_t begin = data[marker.gpuBegin];
+    uint64_t end = data[marker.gpuEnd];
     marker.start = (begin - offset) * timestampPeriod;
     marker.duration = (end - begin) * timestampPeriod;
 
@@ -2357,10 +2357,10 @@ NewFrame()
         {
             CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
             CoreGraphics::BufferInvalidate(buf);
-            uint64* data = (uint64*)CoreGraphics::BufferMap(buf);
+            uint64_t* data = (uint64_t*)CoreGraphics::BufferMap(buf);
 
             const auto& markersPerBuffer = state.pendingMarkers[queue][state.currentBufferedFrameIndex].markers;
-            uint64 offset = UINT64_MAX;
+            uint64_t offset = UINT64_MAX;
 
             offset = Math::min(offset, data[state.pendingMarkers[queue][state.currentBufferedFrameIndex].baseOffset[0]]);
 

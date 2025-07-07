@@ -22,7 +22,7 @@ struct MaterialBuffer
     CoreGraphics::BufferCreateInfo hostBufferCreateInfo, deviceBufferCreateInfo;
     char* hostBufferData;
     CoreGraphics::BufferId hostBuffer, deviceBuffer;
-    uint64 deviceAddress;
+    uint64_t deviceAddress;
     Util::PinnedArray<0xFFFF, INTERFACE_TYPE> cpuBuffer;
     bool dirty;
 

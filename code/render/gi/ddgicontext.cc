@@ -790,7 +790,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
 
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    uint64 offset = CoreGraphics::SetConstants(giVolumeUniforms);
+    uint64_t offset = CoreGraphics::SetConstants(giVolumeUniforms);
     ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::Table_Frame::GIVolumeUniforms_SLOT, 0, sizeof(Shared::GIVolumeUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 

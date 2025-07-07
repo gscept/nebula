@@ -18,7 +18,7 @@
 #define NEBULA_ALL_LAYERS (-1)
 namespace CoreGraphics
 {
-typedef uint64 ConstantBufferOffset;
+typedef uint64_t ConstantBufferOffset;
 
 union InputAssemblyKey
 {

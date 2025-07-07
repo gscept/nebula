@@ -198,7 +198,7 @@ ComponentDrawFuncT<int>(Game::Entity owner, ComponentId component, void* data, b
 */
 template <>
 void
-ComponentDrawFuncT<int64>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<int64_t>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragInt("##input_data", (int*)data))
@@ -224,7 +224,7 @@ ComponentDrawFuncT<uint>(Game::Entity owner, ComponentId component, void* data, 
 */
 template <>
 void
-ComponentDrawFuncT<uint64>(Game::Entity owner, ComponentId component, void* data, bool* commit)
+ComponentDrawFuncT<uint64_t>(Game::Entity owner, ComponentId component, void* data, bool* commit)
 {
     ImGui::PushID(component.id + 0x125233 + reinterpret_cast<intptr_t>(data));
     if (ImGui::DragInt("##input_data", (int*)data, 1.0f, 0, 0xFFFFFFFF))

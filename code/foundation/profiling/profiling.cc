@@ -157,14 +157,14 @@ ProfilingClear()
 }
 
 Threading::CriticalSection counterLock;
-Util::Dictionary<const char*, uint64> counters;
-Util::Dictionary<const char*, Util::Pair<uint64, uint64>> budgetCounters;
+Util::Dictionary<const char*, uint64_t> counters;
+Util::Dictionary<const char*, Util::Pair<uint64_t, uint64_t>> budgetCounters;
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-ProfilingIncreaseCounter(const char* id, uint64 value)
+ProfilingIncreaseCounter(const char* id, uint64_t value)
 {
     counterLock.Enter();
     IndexT idx = counters.FindIndex(id);
@@ -181,7 +181,7 @@ ProfilingIncreaseCounter(const char* id, uint64 value)
 /**
 */
 void 
-ProfilingDecreaseCounter(const char* id, uint64 value)
+ProfilingDecreaseCounter(const char* id, uint64_t value)
 {
     counterLock.Enter();
     IndexT idx = counters.FindIndex(id);
@@ -193,7 +193,7 @@ ProfilingDecreaseCounter(const char* id, uint64 value)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Dictionary<const char*, uint64>&
+const Util::Dictionary<const char*, uint64_t>&
 ProfilingGetCounters()
 {
     return counters;
@@ -203,7 +203,7 @@ ProfilingGetCounters()
 /**
 */
 void
-ProfilingSetupBudgetCounter(const char* id, uint64 budget)
+ProfilingSetupBudgetCounter(const char* id, uint64_t budget)
 {
     counterLock.Enter();
 
@@ -219,7 +219,7 @@ ProfilingSetupBudgetCounter(const char* id, uint64 budget)
 /**
 */
 void
-ProfilingBudgetIncreaseCounter(const char* id, uint64 value)
+ProfilingBudgetIncreaseCounter(const char* id, uint64_t value)
 {
     IndexT idx = budgetCounters.FindIndex(id);
     n_assert(idx != InvalidIndex);
@@ -230,7 +230,7 @@ ProfilingBudgetIncreaseCounter(const char* id, uint64 value)
 /**
 */
 void
-ProfilingBudgetDecreaseCounter(const char* id, uint64 value)
+ProfilingBudgetDecreaseCounter(const char* id, uint64_t value)
 {
     IndexT idx = budgetCounters.FindIndex(id);
     n_assert(idx != InvalidIndex);
@@ -253,7 +253,7 @@ ProfilingBudgetResetCounter(const char* id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>&
+const Util::Dictionary<const char*, Util::Pair<uint64_t, uint64_t>>&
 ProfilingGetBudgetCounters()
 {
     return budgetCounters;

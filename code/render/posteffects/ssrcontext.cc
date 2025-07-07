@@ -173,7 +173,7 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     SsrCs::SSRBlock ssrBlock;
     viewToTextureSpaceMatrix.store(ssrBlock.ViewToTextureSpace);
-    uint64 ssrOffset = CoreGraphics::SetConstants(ssrBlock);
+    uint64_t ssrOffset = CoreGraphics::SetConstants(ssrBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 

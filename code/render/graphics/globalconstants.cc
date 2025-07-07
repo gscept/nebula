@@ -28,7 +28,7 @@ struct
         int bits;
     };
     DirtySet tickParamsDirty;
-    uint64 tickCboOffset, viewCboOffset, shadowViewCboOffset;
+    uint64_t tickCboOffset, viewCboOffset, shadowViewCboOffset;
 
     Shared::ViewConstants viewConstants;
     Shared::ShadowViewConstants shadowViewConstants;
@@ -200,7 +200,7 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType 
 /**
 */
 void
-GetOffsets(uint64& tickOffset, uint64& viewOffset, uint64& shadowOffset)
+GetOffsets(uint64_t& tickOffset, uint64_t& viewOffset, uint64_t& shadowOffset)
 {
     tickOffset = state.tickCboOffset;
     viewOffset = state.viewCboOffset;

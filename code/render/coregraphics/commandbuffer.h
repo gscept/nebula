@@ -196,7 +196,7 @@ void CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgram
 /// Set resource table
 void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, const Util::FixedArray<uint, true>& offsets = nullptr);
 /// Set resource table using raw offsets
-void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
+void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32_t numOffsets, uint32_t* offsets);
 /// Set push constants
 void CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data);
 /// Create (if necessary) and bind pipeline based on state thus far

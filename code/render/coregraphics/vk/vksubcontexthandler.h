@@ -42,12 +42,12 @@ public:
 
     struct TimelineSubmission
     {
-        Util::Array<uint64> signalIndices;
+        Util::Array<uint64_t> signalIndices;
         Util::Array<VkSemaphore> signalSemaphores;
         Util::Array<VkCommandBuffer> buffers;
         Util::Array<VkPipelineStageFlags> waitFlags;
         Util::Array<VkSemaphore> waitSemaphores;
-        Util::Array<uint64> waitIndices;
+        Util::Array<uint64_t> waitIndices;
     };
 
     struct TimelineSubmission2
@@ -56,12 +56,12 @@ public:
         const char* name = nullptr;
 #endif
         CoreGraphics::QueueType queue;
-        Util::Array<uint64, 16> signalIndices;
+        Util::Array<uint64_t, 16> signalIndices;
         Util::Array<VkSemaphore, 16> signalSemaphores;
         Util::Array<VkCommandBuffer, 16> buffers;
         Util::Array<VkPipelineStageFlags, 16> waitFlags;
         Util::Array<VkSemaphore, 16> waitSemaphores;
-        Util::Array<uint64, 16> waitIndices;
+        Util::Array<uint64_t, 16> waitIndices;
     };
 
     struct SubmissionList
@@ -73,7 +73,7 @@ public:
     struct SparseBindSubmission
     {
         VkBindSparseInfo bindInfo;
-        Util::Array<uint64, 16> signalIndices;
+        Util::Array<uint64_t, 16> signalIndices;
         Util::Array<VkSemaphore, 16> signalSemaphores;
         Util::FixedArray<VkSparseMemoryBind> opaqueMemoryBinds;
         Util::FixedArray<VkSparseImageMemoryBind> imageMemoryBinds;
@@ -82,7 +82,7 @@ public:
         Util::Array<VkSparseImageOpaqueMemoryBindInfo, 16> imageOpaqueBindInfos;
         Util::Array<VkSparseImageMemoryBindInfo, 16> imageMemoryBindInfos;
         Util::Array<VkSemaphore, 16> waitSemaphores;
-        Util::Array<uint64, 16> waitIndices;
+        Util::Array<uint64_t, 16> waitIndices;
     };
 
     /// setup subcontext handler
@@ -93,7 +93,7 @@ public:
     void SetToNextContext(const CoreGraphics::QueueType type);
 
     /// append submission to context to execute later, supports waiting for a queue
-    uint64 AppendSubmissionTimeline(
+    uint64_t AppendSubmissionTimeline(
         CoreGraphics::QueueType type
         , VkCommandBuffer cmds
         , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
@@ -103,7 +103,7 @@ public:
     );
 
     /// append submissions to context to execute later, supports waiting for a queue
-    uint64 AppendSubmissionTimeline(
+    uint64_t AppendSubmissionTimeline(
         CoreGraphics::QueueType type
         , Util::Array<VkCommandBuffer, 16> cmds
         , Util::Array<CoreGraphics::SubmissionWaitEvent, 8> waitEvents
@@ -112,17 +112,17 @@ public:
 #endif
     );
     /// Gets the next submission id for a specific queue
-    uint64 GetNextTimelineIndex(CoreGraphics::QueueType type);
+    uint64_t GetNextTimelineIndex(CoreGraphics::QueueType type);
     /// append a sparse image bind timeline operation
-    uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
+    uint64_t AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
     /// append a sparse buffer bind timeline operation
-    uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
+    uint64_t AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
     /// Append present signal
     void AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem);
     /// Flush submissions
     void FlushSubmissions(VkFence fence);
     /// wait for timeline index
-    void Wait(CoreGraphics::QueueType type, uint64 index);
+    void Wait(CoreGraphics::QueueType type, uint64_t index);
     /// check to see if timeline index has passed
     bool Poll(CoreGraphics::QueueType type, uint64_t index);
 
@@ -141,14 +141,14 @@ private:
     friend const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 
     VkSemaphore GetSemaphore(const CoreGraphics::QueueType type);
-    uint64 GetSemaphoreId(const CoreGraphics::QueueType type);
+    uint64_t GetSemaphoreId(const CoreGraphics::QueueType type);
     void IncrementSemaphoreId(const CoreGraphics::QueueType type);
 
     VkDevice device;
     Util::FixedArray<Util::Array<VkQueue>> queues;
     Util::FixedArray<uint> currentQueue;
     Util::FixedArray<Util::Array<VkSemaphore>> semaphores;
-    Util::FixedArray<Util::Array<uint64>> semaphoreSubmissionIds;
+    Util::FixedArray<Util::Array<uint64_t>> semaphoreSubmissionIds;
     Util::FixedArray<Util::Array<TimelineSubmission2, 16>> submissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
     Threading::CriticalSection submissionLock;

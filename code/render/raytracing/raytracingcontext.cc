@@ -680,7 +680,7 @@ RaytracingContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
     if (!entities.IsEmpty() && state.toplevelAccelerationStructure != CoreGraphics::InvalidTlasId)
     {
-        static Util::Array<uint32> nodes;
+        static Util::Array<uint32_t> nodes;
         nodes.Clear();
         nodes.Resize(entities.Size());
 
@@ -781,8 +781,8 @@ RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 
     LightsCluster::LightUniforms uniforms = Lighting::LightContext::GetLightUniforms();
     uniforms.NumLightClusters = NUM_GRID_CELLS*NUM_GRID_CELLS*NUM_GRID_CELLS;
-    uint64 offset = CoreGraphics::SetConstants(uniforms);
-    uint64 tickCbo, viewCbo, shadowCbo;
+    uint64_t offset = CoreGraphics::SetConstants(uniforms);
+    uint64_t tickCbo, viewCbo, shadowCbo;
     Graphics::GetOffsets(tickCbo, viewCbo, shadowCbo);
     ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::ViewConstants_SLOT, 0, sizeof(Shared::ViewConstants), viewCbo });
     ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(Shared::ShadowViewConstants), shadowCbo });

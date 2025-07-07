@@ -27,7 +27,7 @@ struct ResourceTableId;
 struct TextureView;
 ID_24_8_TYPE(PassId);
 
-enum class AttachmentFlagBits : uint16
+enum class AttachmentFlagBits : uint16_t
 {
     NoFlags = 0,
     Clear               = N_BIT(0),
@@ -88,7 +88,7 @@ struct PassCreateInfo
     PassCreateInfo() {};
 };
 
-enum class PassRecordMode : uint8
+enum class PassRecordMode : uint8_t
 {
     Record,
     ExecuteRecorded,

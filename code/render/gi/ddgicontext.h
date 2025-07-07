@@ -24,7 +24,7 @@ union DDGIOptions
         uint relocate : 1;              // Relocate probes to avoid them being stuck inside geometry
         uint lowPrecisionTextures : 1;  // Use more compact texture formats at the expense of quality
     } flags;
-    uint32 bits = 0x0;
+    uint32_t bits = 0x0;
 };
 
 class DDGIContext : public Graphics::GraphicsContext

@@ -758,7 +758,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 }
 
                 // Update skinning palette
-                uint64 offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size());
+                uint64_t offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size());
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }
 
@@ -805,7 +805,7 @@ CharacterContext::GetAnimSampleMask(const Util::StringAtom& name)
 /**
 */
 void 
-CharacterContext::OnRenderDebug(uint32 flags)
+CharacterContext::OnRenderDebug(uint32_t flags)
 {
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<Graphics::GraphicsEntityId>& modelContexts = characterContextAllocator.GetArray<EntityId>();

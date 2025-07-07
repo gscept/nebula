@@ -77,7 +77,7 @@ const VkRenderPassBeginInfo& PassGetVkRenderPassBeginInfo(const CoreGraphics::Pa
 /// get vk framebuffer info
 const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics::PassId id);
 /// get vk viewport info for subpass
-const VkPipelineViewportStateCreateInfo& PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32 subpass);
+const VkPipelineViewportStateCreateInfo& PassGetVkViewportInfo(const CoreGraphics::PassId id, uint32_t subpass);
 /// get number of pass attachments
 const SizeT PassGetVkNumAttachments(const CoreGraphics::PassId id);
 

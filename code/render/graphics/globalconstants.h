@@ -36,7 +36,7 @@ void UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstant
 void FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue);
 
 /// Get frame constant offsets
-void GetOffsets(uint64& tickOffset, uint64& viewOffset, uint64& shadowOffset);
+void GetOffsets(uint64_t& tickOffset, uint64_t& viewOffset, uint64_t& shadowOffset);
 
 /// Get tick params constant buffer
 const Shared::PerTickParams& GetTickParams();

@@ -405,7 +405,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     // get per-view resource tables
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
-    uint64 offset = SetConstants(fogUniforms);
+    uint64_t offset = SetConstants(fogUniforms);
     ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 

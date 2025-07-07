@@ -42,7 +42,7 @@ public:
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const uint& defVal, bool isDynamic);
     /// Constructor with default int64 value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const int64_t& defVal, bool isDynamic);
-    /// Constructor with default uint64 value
+    /// Constructor with default uint64_t value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const uint64_t& defVal, bool isDynamic);
     /// Constructor with default float value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const float& defVal, bool isDynamic);
@@ -244,13 +244,13 @@ AttributeDefinitionBase::GetSizeOfType() const
     switch (this->valueType)
     {
     case VoidType:          return 0;
-    case ByteType:          return sizeof(uint8);
-    case ShortType:         return sizeof(uint16);
-    case UShortType:        return sizeof(uint16);
-    case IntType:           return sizeof(uint32);
-    case UIntType:          return sizeof(uint32);
-    case Int64Type:         return sizeof(uint64);
-    case UInt64Type:        return sizeof(uint64);
+    case ByteType:          return sizeof(uint8_t);
+    case ShortType:         return sizeof(uint16_t);
+    case UShortType:        return sizeof(uint16_t);
+    case IntType:           return sizeof(uint32_t);
+    case UIntType:          return sizeof(uint32_t);
+    case Int64Type:         return sizeof(uint64_t);
+    case UInt64Type:        return sizeof(uint64_t);
     case FloatType:         return sizeof(float);
     case DoubleType:        return sizeof(double);
     case BoolType:          return sizeof(bool);

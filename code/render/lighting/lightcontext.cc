@@ -1288,7 +1288,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     clusterState.consts.NumAreaLights = numAreaLights;
     clusterState.consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     clusterState.consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(FrameScript_default::Texture_SSAOBuffer());
-    uint64 offset = SetConstants(clusterState.consts);
+    uint64_t offset = SetConstants(clusterState.consts);
     ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), offset });
     ResourceTableCommitChanges(frameResourceTable);
 

@@ -83,7 +83,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
                 if (index >= totalJobs)
                     return;
 
-                uint32 objectId = ids[index];
+                uint32_t objectId = ids[index];
 
                 if (AllBits(flags[objectId], (uint32_t)Models::NodeInstanceFlags::NodeInstance_AlwaysVisible))
                 {
