@@ -241,7 +241,7 @@ TBUIContext::Create()
         if (font)
         {
             font->RenderGlyphs(
-                " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~•·åäöÅÄÖ"
+                " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~â€¢Â·Ã¥Ã¤Ã¶Ã…Ã„Ã–"
             );
         }
         tb::TBWidgetsAnimationManager::Init();
