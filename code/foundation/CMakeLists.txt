@@ -16,7 +16,7 @@ nebula_begin_module(foundation)
     
     target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h)
     if(FIPS_LINUX)
-        fips_libs(uuid cjson stdc++fs)
+        fips_libs(uuid stdc++fs)
     endif()
     target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml nflatbuffer)

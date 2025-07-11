@@ -24,7 +24,6 @@ vscode_exclude_from_workspace:
         fips-stb,
         fips-pybind11,
         fips-imgui,
-        fips-cjson,
         fips-stackwalker,
         fips-devil,
         fips-lua,
