@@ -1,5 +1,8 @@
 //------------------------------------------------------------------------------
 //  posixsettings.cc
+//  This uses pjson directly instead of using any of the io wrappers as it has
+//  to work before anything being initialized
+//
 //  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
@@ -9,17 +12,17 @@
 #include "io/textreader.h"
 #include "io/ioserver.h"
 #include "system/posix/posixsettings.h"
-#include "cJSON.h"
+#include "pjson/pjson.h"
 
 namespace Posix
 {
 using namespace Core;
 using namespace Util;
 
-static cJSON*
+static pjson::document* 
 GetSettingsJson(const Util::String & path)
 {
-    cJSON* json = nullptr;
+    pjson::document* json = nullptr;
     if(IO::FSWrapper::FileExists(path))
     {
         // at this point we don't want to be depending on an instance of the ioserver so we use the wrapper instead
@@ -30,8 +33,19 @@ GetSettingsJson(const Util::String & path)
             char* buffer = (char*)Memory::Alloc(Memory::HeapType::ScratchHeap, size + 1);
             IO::FSWrapper::Read(file, (void*)buffer, size);
             buffer[size] = '\0';
-            json = cJSON_Parse(buffer);
-            Memory::Free(Memory::HeapType::ScratchHeap, buffer);
+            json = new pjson::document;
+            if (!json->deserialize_in_place(buffer))
+            {
+                const pjson::error_info & error = json->get_error();
+                Util::String position;
+                if(error.m_ofs < size)
+                {
+                    position.Set(((const char *)buffer) + error.m_ofs, 40);
+                }
+			    n_error("Failed to parse settings file: %s\n%s\nat: %s\n", path.AsCharPtr(), error.m_pError_message, position.AsCharPtr());
+                delete json;
+                return nullptr;
+            }
         }
     }
     return json; 
@@ -46,15 +60,15 @@ PosixSettings::Exists(const Util::String & vendor, const String& key, const Stri
     // build path to config
     Util::String path = GetUserDir() + "/.config/nebula/"+ vendor + ".cfg";
     bool found = false;
-    cJSON * js = GetSettingsJson(path);
-    if(js != NULL)
+    pjson::document* json = GetSettingsJson(path);
+    if(json != NULL)
     {
-        const cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
-        if(keys != NULL)
+        const pjson::value_variant* child = json->find_child_object(key.AsCharPtr());
+        if (child != nullptr && child->is_object())
         {
-            found = cJSON_HasObjectItem(keys, name.AsCharPtr());            
+            found = child->has_key(name.AsCharPtr());
         }
-        cJSON_Delete(js);        
+        delete json;
     }
     return found;
 }
@@ -67,6 +81,7 @@ PosixSettings::Exists(const Util::String & vendor, const String& key, const Stri
 bool
 PosixSettings::WriteString(const Util::String & vendor, const String& key, const String& name, const String& value)
 {  
+    bool success = false;
     Util::String home = GetUserDir();
     // build path to config
     if(!IO::FSWrapper::DirectoryExists(home + "/.config/nebula/"))
@@ -74,35 +89,51 @@ PosixSettings::WriteString(const Util::String & vendor, const String& key, const
         IO::FSWrapper::CreateDirectory(home + "/.config/nebula/");
     }
     Util::String path = home + "/.config/nebula/"+ vendor + ".cfg";    
-    cJSON * js = GetSettingsJson(path);
-    if(js != NULL)
+    pjson::document * json = GetSettingsJson(path);
+    if(json == NULL)
     {
-        cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
-        if(keys != NULL)
+        json = new pjson::document;
+        json->set_to_object();
+    }
+    
+    pjson::pool_allocator& alloc = json->get_allocator();
+    pjson::value_variant jsonValue(value.AsCharPtr(), alloc);
+
+    int keyIdx = json->find_key(key.AsCharPtr());
+    if (keyIdx == -1)
+    {
+        pjson::value_variant jsonKey;
+        jsonKey.set_to_object();
+        jsonKey.add_key_value(name.AsCharPtr(), jsonValue, alloc);
+        json->add_key_value(key.AsCharPtr(), jsonKey, alloc);
+    }
+    else
+    {
+        pjson::value_variant& jsonKey = json->get_value_at_index(keyIdx);
+        int nameIdx = jsonKey.find_key(name.AsCharPtr());
+        if (nameIdx == -1)
         {
-            if (cJSON_HasObjectItem(keys, name.AsCharPtr()))
-            {
-                cJSON_ReplaceItemInObject(keys, name.AsCharPtr(), cJSON_CreateString(value.AsCharPtr()));
-            }
-            else
-            {
-                cJSON_AddStringToObject(keys, name.AsCharPtr(), value.AsCharPtr());
-            }
-            char* buffer = cJSON_PrintUnformatted(js);
-            if (buffer != nullptr)
-            {
-                PosixFSWrapper::Handle file = PosixFSWrapper::OpenFile(path, IO::Stream::AccessMode::WriteAccess, IO::Stream::AccessPattern::Random);
-                if(file != nullptr)
-                {
-                    IO::FSWrapper::Write(file, buffer, strlen(buffer));
-                    IO::FSWrapper::CloseFile(file);
-                    cJSON_Delete(js);
-                    return true;
-                }
-            }
+            jsonKey.add_key_value(name.AsCharPtr(), jsonValue, alloc);
+        }
+        else
+        {
+            pjson::value_variant& jsonName = jsonKey.get_value_at_index(nameIdx);
+            jsonName.set(value.AsCharPtr(), alloc);
         }
     }
-    return false;
+    pjson::char_vec_t buffer;
+    if (json->serialize(buffer, true, false))
+    {
+        PosixFSWrapper::Handle file = PosixFSWrapper::OpenFile(path, IO::Stream::AccessMode::WriteAccess, IO::Stream::AccessPattern::Random);
+        if(file != nullptr)
+        {
+            IO::FSWrapper::Write(file, &buffer[0], buffer.size());
+            IO::FSWrapper::CloseFile(file);
+            success = true;
+        }
+    }
+    delete json;
+    return success;
 }
 
 //------------------------------------------------------------------------------
@@ -116,21 +147,18 @@ PosixSettings::ReadString(const Util::String & vendor, const String& key, const 
     // build path to config
     Util::String path = GetUserDir() + "/.config/nebula/"+ vendor + ".cfg";    
 
-    cJSON * js = GetSettingsJson(path);
-    if(js != NULL)
+    pjson::document* json = GetSettingsJson(path);
+    if(json != NULL)
     {
-        const cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
-        if(keys != NULL)
+        const pjson::value_variant* child = json->find_child_object(key.AsCharPtr());
+        if (child != nullptr && child->is_object())
         {
-            cJSON * val = cJSON_GetObjectItemCaseSensitive(keys, name.AsCharPtr());
-            if( val != NULL && cJSON_IsString(val))
-            {
-                Util::String ret(val->valuestring);
-                cJSON_Delete(js);                
-                return ret;
-            }
+            int childKey = child->find_key(name.AsCharPtr());
+            n_assert_fmt(childKey >= 0, "value %s not in settings file", name.AsCharPtr());
+            String value = child->get_value_at_index(childKey).as_string_ptr();
+            delete json;
+            return value;
         }
-        cJSON_Delete(js);        
     }
     
     n_error("failed to open settings file %s\n",path.AsCharPtr());

@@ -10,10 +10,6 @@ imports:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"
         group: misc
-    fips-cjson:
-        git: https://github.com/floooh/fips-cjson.git
-        cond: "FIPS_LINUX"
-        group: misc
     fips-imgui:
         git: https://github.com/gscept/fips-imgui.git
     fips-nanobind:
