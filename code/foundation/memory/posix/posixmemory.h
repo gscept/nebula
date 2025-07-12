@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <type_traits>
 #ifndef MEMORY_POSIXMEMORY_H
 #define MEMORY_POSIXMEMORY_H
 //------------------------------------------------------------------------------
@@ -196,7 +198,14 @@ MoveElements(const T* from, T* to, size_t numElements)
         n_assert(0 != from);
         n_assert(0 != to);
         n_assert(from != to);
-        memmove((void*)to, (const void*)from, numElements * sizeof(T));
+        if constexpr (std::is_trivially_move_assignable<T>::value && std::is_trivially_move_constructible<T>::value)
+        {
+            memmove((void*)to, (const void*)from, numElements * sizeof(T));
+        }
+        else
+        {
+            std::move(from, from + numElements, to);
+        }
     }
 }
 
@@ -213,10 +222,16 @@ CopyElements(const T* from, T* to, size_t numElements)
         n_assert(0 != from);
         n_assert(0 != to);
         n_assert(from != to);
-        memcpy(to, from, numElements * sizeof(T));
+        if constexpr (std::is_trivially_copyable<T>::value)
+        {
+            memcpy(to, from, numElements * sizeof(T));
+        }
+        else
+        {
+            std::copy(from, from + numElements, to);
+        }
     }
 }
-
 
 //------------------------------------------------------------------------------
 /**
