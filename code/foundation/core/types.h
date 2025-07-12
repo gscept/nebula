@@ -65,10 +65,11 @@ UnsetBits(const MASK mask, const BITS bit)
     return MASK(uint(mask) & ~uint(bit));
 }
 
-#define N_ARGB(a,r,g,b) ((uint)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
+#define N_ARGB(a,r,g,b) ((uint32_t)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
 #define N_RGBA(r,g,b,a) N_ARGB(a,r,g,b)
 #define N_XRGB(r,g,b)   N_ARGB(0xff,r,g,b)
-#define N_COLORVALUE(r,g,b,a) N_RGBA((uint)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
+#define N_COLORVALUE(r,g,b,a) N_RGBA((uint32_t)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
+#define N_IP_ADDR(a,b,c,d) (uint32_t)((((a)&0xff)<<24)|(((b)&0xff)<<16)|(((c)&0xff)<<8)|((d)&0xff))
 
 //------------------------------------------------------------------------------
 /**
