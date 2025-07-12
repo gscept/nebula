@@ -21,6 +21,8 @@ public:
     LinuxEvent(bool manualReset=false);
     /// Move constructor
     LinuxEvent(LinuxEvent&& ev);
+    /// copy constructor
+    LinuxEvent(const LinuxEvent& ev) = default;
     /// destructor
     ~LinuxEvent();
     /// signal the event
@@ -35,6 +37,9 @@ public:
     void Reset();
     /// Returns true if event is manually reset
     bool IsManual() const;
+
+    /// copy assignment operator
+    LinuxEvent& operator=(const LinuxEvent& ev) = default;
 
 private:
     // emulate windows event behaviour (*sigh*)
