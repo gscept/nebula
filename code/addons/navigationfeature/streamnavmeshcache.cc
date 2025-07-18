@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "streamnavmeshcache.h"
+#include "resources/resourceserver.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 
@@ -58,19 +59,22 @@ StreamNavMeshCache::GetLoadedMeshes()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceUnknownId StreamNavMeshCache::InitializeResource(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceLoader::ResourceInitOutput
+StreamNavMeshCache::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Stream>& stream)
 {
     n_assert(stream.isvalid());
     n_assert(stream->CanBeMapped());
+    Resources::ResourceLoader::ResourceInitOutput retVal;
+    retVal.id = InvalidNavMeshId;
     if (!stream->Open())
     {
-        return InvalidNavMeshId;
+        return retVal;
     }
    
     void* buf = stream->Map();
     if (buf == nullptr)
     {
-        return InvalidNavMeshId;
+        return retVal;
     }
 
     NavMeshId ret = { this->allocator.Alloc(), NavMeshIdType };
@@ -95,11 +99,13 @@ Resources::ResourceUnknownId StreamNavMeshCache::InitializeResource(const Ids::I
         if (DT_SUCCESS == navMesh->init(navData, navDataSize, 0))
         {
             navMeshQuery->init(navMesh, MAX_NAV_NODES);
-            return ret;
+            retVal.id = ret;
         }
         storedNavMesh->Unmap();
+        storedNavMesh->Close();
+        storedNavMesh = nullptr;
     }
-    return InvalidNavMeshId;
+    return retVal;
 }
 
 //------------------------------------------------------------------------------

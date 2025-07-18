@@ -49,7 +49,7 @@ NavigationFeatureUnit::OnActivate()
     Resources::ResourceServer::Instance()->RegisterStreamLoader("navmesh", Navigation::StreamNavMeshCache::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("nav", "export:navigation"));
 
-    Navigation::navMeshCache = Resources::GetStreamPool<Navigation::StreamNavMeshCache>();
+    Navigation::navMeshCache = Resources::GetStreamLoader<Navigation::StreamNavMeshCache>();
 }
 
 //------------------------------------------------------------------------------
@@ -81,6 +81,26 @@ NavigationFeatureUnit::OnRenderDebug()
         dtNavMesh* mesh = Navigation::navMeshCache->GetDetourMesh(id);
         Navigation::DebugDraw dd;
         duDebugDrawNavMesh(&dd, *mesh, 0);
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void RenderUI(Graphics::GraphicsEntityId camera)
+{
+    ImGui::Separator();
+    static bool showNavmesh = false;
+    if (ImGui::Checkbox("Render Navmeshes", &showNavmesh))
+    {
+        Util::Array<Navigation::NavMeshId> meshes = Navigation::navMeshCache->GetLoadedMeshes();
+        for (Navigation::NavMeshId id : meshes)
+        {
+            dtNavMesh* mesh = Navigation::navMeshCache->GetDetourMesh(id);
+            Navigation::DebugDraw dd;
+            duDebugDrawNavMesh(&dd, *mesh, 0);
+        }
     }
 }
 
