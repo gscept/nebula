@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Multiplayer::MultiplayerServer
+    @class Multiplayer::BaseMultiplayerServer
 
     @copyright
     (C) 2025 Individual contributors, see AUTHORS file
@@ -16,28 +16,38 @@ struct ISteamNetworkingSockets;
 //------------------------------------------------------------------------------
 namespace Multiplayer
 {
-class MultiplayerServer : public Core::RefCounted
+class BaseMultiplayerServer
 {
-    __DeclareClass(MultiplayerServer);
 public:
     /// constructor
-    MultiplayerServer();
+    BaseMultiplayerServer();
     /// destructor
-    virtual ~MultiplayerServer();
+    virtual ~BaseMultiplayerServer();
     /// open the server
-    bool Open();
+    virtual bool Open();
     /// close the server
-    void Close();
+    virtual void Close();
     /// return true if server is open
     bool IsOpen() const;
+    /// broadcast message to all clients
+    void Broadcast(void* buf, int size);
+
+    virtual bool OnClientIsConnecting(ClientConnection* connection);
+    virtual void OnClientConnected(ClientConnection* connection);
+    virtual void OnClientDisconnected(ClientConnection* connection);
+    virtual void OnMessageReceived(Timing::Time recvTime, uint32_t connectionId, byte* data, size_t size);
+
+    void SetClientGroupPollInterval(ClientGroup group, Timing::Time msBetweenTicks);
 
     void SyncAll();
 
     void OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* info);
     
+    Timing::Time GetSendTickInterval() const;
+
     SizeT maxMessagesPerFrame = 1024;
 
-private:
+protected:
     friend ClientConnection;
     /// add a client connection (called by the listener thread)
     void AddClientConnection(ClientConnection* connection);
@@ -49,20 +59,32 @@ private:
     bool isOpen;
     Util::HashTable<HSteamNetConnection, ClientConnection*, 128> clientConnections;
 
-    HSteamListenSocket listenSock;
-	HSteamNetPollGroup pollGroup;
 	ISteamNetworkingSockets* netInterface;
+    HSteamListenSocket listenSock;
+	HSteamNetPollGroup pollGroups[(int)ClientGroup::NumClientGroups];
+    Timing::Timer pollGroupTimers[(int)ClientGroup::NumClientGroups];
+    Timing::Time pollGroupIntervals[(int)ClientGroup::NumClientGroups];
+    
     Timing::Timer sendTimer;
-    double tickRate;
+    Timing::Time sendTickInterval;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool
-MultiplayerServer::IsOpen() const
+BaseMultiplayerServer::IsOpen() const
 {
     return this->isOpen;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+inline Timing::Time
+BaseMultiplayerServer::GetSendTickInterval() const
+{
+    return this->sendTickInterval;
 }
 
 } // namespace Multiplayer

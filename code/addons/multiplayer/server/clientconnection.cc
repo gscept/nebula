@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "clientconnection.h"
-#include "multiplayerserver.h"
+#include "basemultiplayerserver.h"
 #include "GameNetworkingSockets/steam/steamnetworkingsockets.h"
 #include "steam/isteamnetworkingutils.h"
 
@@ -31,11 +31,11 @@ ClientConnection::~ClientConnection()
 /**
 */
 void
-ClientConnection::Initialize(Ptr<MultiplayerServer> server, HSteamNetConnection connectionId)
+ClientConnection::Initialize(BaseMultiplayerServer* server, HSteamNetConnection connectionId)
 {
     this->server = server;
     this->connectionId = connectionId;
-    SteamNetworkingUtils()->SetConnectionConfigValueInt32(this->connectionId, k_ESteamNetworkingConfig_SendBufferSize, 40_KB );
+    SteamNetworkingUtils()->SetConnectionConfigValueInt32(this->connectionId, k_ESteamNetworkingConfig_SendBufferSize, 4_KB );
     SteamNetworkingUtils()->SetConnectionConfigValueInt32(this->connectionId, k_ESteamNetworkingConfig_RecvBufferSize, 4_KB );
 }
 
@@ -56,6 +56,15 @@ ClientConnection::Shutdown()
 {
     this->server->netInterface->CloseConnection(this->connectionId, 0, "Disconnected from server", true);
     this->connectionId = k_HSteamNetConnection_Invalid;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+ClientConnection::SetClientGroup(ClientGroup group)
+{
+    this->group = group;
 }
 
 } // namespace Multiplayer

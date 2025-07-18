@@ -1,21 +1,27 @@
 //------------------------------------------------------------------------------
-//  multiplayerclient.cc
+//  basemultiplayerclient.cc
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "multiplayerclient.h"
+#include "basemultiplayerclient.h"
+#include "basegamefeature/managers/timemanager.h"
+#include "components/multiplayer.h"
 #include "core/debug.h"
 #include "GameNetworkingSockets/steam/steamnetworkingsockets.h"
 #include "GameNetworkingSockets/steam/isteamnetworkingutils.h"
-#include "core/sysfunc.h"
+#include "game/api.h"
+#include "game/world.h"
+#include "multiplayer/client/clientprocessors.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "nflatbuffer/flatbufferinterface.h"
 #include "flat/addons/multiplayer/protocol.h"
 #include "multiplayer/multiplayerfeatureunit.h"
 #include "net/socket/ipaddress.h"
 #include "steam/steamnetworkingtypes.h"
+#include "components/multiplayer.h"
 
 namespace Multiplayer
 {
-__ImplementClass(Multiplayer::MultiplayerClient, 'MPCL', Core::RefCounted);
 
 using namespace Util;
 
@@ -23,7 +29,7 @@ using namespace Util;
 /**
 */
 // HACK: should probably be a singleton
-static MultiplayerClient* callbackInstance = nullptr;
+static BaseMultiplayerClient* callbackInstance = nullptr;
 static void
 SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_t* info)
 {
@@ -33,7 +39,7 @@ SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_
 //------------------------------------------------------------------------------
 /**
 */
-MultiplayerClient::MultiplayerClient()
+BaseMultiplayerClient::BaseMultiplayerClient()
     : isOpen(false)
 {
     // empty
@@ -42,7 +48,7 @@ MultiplayerClient::MultiplayerClient()
 //------------------------------------------------------------------------------
 /**
 */
-MultiplayerClient::~MultiplayerClient()
+BaseMultiplayerClient::~BaseMultiplayerClient()
 {
     n_assert(!this->IsOpen());
 }
@@ -51,7 +57,7 @@ MultiplayerClient::~MultiplayerClient()
 /**
 */
 bool
-MultiplayerClient::Open()
+BaseMultiplayerClient::Open()
 {
     n_assert(!this->isOpen);
     this->netInterface = SteamNetworkingSockets();
@@ -61,6 +67,7 @@ MultiplayerClient::Open()
         return false;
     }
     this->isOpen = true;
+
     return true;
 }
 
@@ -68,9 +75,12 @@ MultiplayerClient::Open()
 /**
 */
 void
-MultiplayerClient::Close()
+BaseMultiplayerClient::Close()
 {
     n_assert(this->isOpen);
+
+    ShutdownClientProcessors();
+
     this->isOpen = false;
 }
 
@@ -78,7 +88,7 @@ MultiplayerClient::Close()
 /**
 */
 bool
-MultiplayerClient::TryConnect()
+BaseMultiplayerClient::TryConnect()
 {
     if (this->connectionStatus != ConnectionStatus::Disconnected)
     {
@@ -128,8 +138,44 @@ MultiplayerClient::TryConnect()
 //--------------------------------------------------------------------------
 /**
 */
+void
+BaseMultiplayerClient::OnIsConnecting()
+{
+    // Override in subclass
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerClient::OnConnected()
+{
+    // Override in subclass
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerClient::OnDisconnected()
+{
+    // Override in subclass
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerClient::OnMessageReceived(SteamNetworkingMessage_t* msg)
+{
+    // Override in subclass
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
 ConnectionStatus
-MultiplayerClient::GetConnectionStatus() const
+BaseMultiplayerClient::GetConnectionStatus() const
 {
     return this->connectionStatus;
 }
@@ -138,7 +184,7 @@ MultiplayerClient::GetConnectionStatus() const
 /**
 */
 void
-MultiplayerClient::OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* info)
+BaseMultiplayerClient::OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* info)
 {
     // What's the state of the connection?
     switch ( info->m_info.m_eState )
@@ -167,6 +213,8 @@ MultiplayerClient::OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedC
                 n_printf("Disconnected by host (%s)", info->m_info.m_szEndDebug);
             }
 
+            this->OnDisconnected();
+
             // Clean up the connection.  This is important!
             // The connection is "closed" in the network sense, but
             // it has not been destroyed.  We must close it on our end, too
@@ -190,10 +238,13 @@ MultiplayerClient::OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedC
         case k_ESteamNetworkingConnectionState_Connecting:
             // We will get this callback when we start connecting.
             this->connectionStatus = ConnectionStatus::TryingToConnect;
+            this->connectionId = info->m_hConn;
+            this->OnIsConnecting();
             break;
 
         case k_ESteamNetworkingConnectionState_Connected:
             this->connectionStatus = ConnectionStatus::Connected;
+            this->OnConnected();
             n_printf("Connected to server successfully!\n");
             break;
 
@@ -206,10 +257,25 @@ MultiplayerClient::OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedC
 /**
 */
 void
-MultiplayerClient::SyncAll()
+BaseMultiplayerClient::SyncAll()
 {
-    this->PollIncomingMessages();
     this->PollConnectionChanges();
+
+    if (this->connectionStatus != ConnectionStatus::Connected)
+        return;
+
+    SteamNetConnectionRealTimeStatus_t status;
+    EResult res = this->netInterface->GetConnectionRealTimeStatus(this->connectionId, &status, 0, nullptr);
+    if (res == k_EResultNoConnection)
+    {
+        this->ping = 0.0;
+    }
+    else
+    {
+        this->ping = (double)status.m_nPing / 1000.0;
+    }
+
+    this->PollIncomingMessages();
     this->PushPendingMessages();
 }
 
@@ -217,7 +283,7 @@ MultiplayerClient::SyncAll()
 /**
 */
 void
-MultiplayerClient::PollIncomingMessages()
+BaseMultiplayerClient::PollIncomingMessages()
 {
     ISteamNetworkingMessage* incomingMsg[this->maxMessagesPerFrame];
     int numMsgs = this->netInterface->ReceiveMessagesOnConnection(this->connectionId, incomingMsg, this->maxMessagesPerFrame);
@@ -235,37 +301,21 @@ MultiplayerClient::PollIncomingMessages()
     {
         void* data = incomingMsg[i]->m_pData;
         int bytes = incomingMsg[i]->m_cbSize;
-
+        double recvTime = incomingMsg[i]->m_usecTimeReceived;
         if (data != nullptr && bytes > 0)
         {
-            Multiplayer::Protocol::Message const* protocolMessage = Multiplayer::Protocol::GetMessage(data);
-
-            switch (protocolMessage->data_type())
-            {
-                case Multiplayer::Protocol::Data::Data_Test:
-                {
-                    Multiplayer::Protocol::MsgTest const* test = protocolMessage->data_as_Test();
-                    Multiplayer::MultiplayerFeatureUnit::Instance()->temp_f = test->value();
-                    n_printf("Got message: %f\n", test->value());
-                    break;
-                }
-                case Multiplayer::Protocol::Data::Data_Connected:
-                {
-                    n_printf("Got message: CONNECTED\n");
-                    break;
-                }
-            }
+            this->OnMessageReceived(incomingMsg[i]);
             incomingMsg[i]->Release();
+            incomingMsg[i] = nullptr;
         }
     }
-    
 }
 
 //--------------------------------------------------------------------------
 /**
 */
 void
-MultiplayerClient::PollConnectionChanges()
+BaseMultiplayerClient::PollConnectionChanges()
 {
     callbackInstance = this;
     this->netInterface->RunCallbacks();
@@ -275,8 +325,39 @@ MultiplayerClient::PollConnectionChanges()
 /**
 */
 void
-MultiplayerClient::PushPendingMessages()
+BaseMultiplayerClient::PushPendingMessages()
 {
+    //SteamNetworkingMessage_t* netMsgs[4] = { nullptr, nullptr, nullptr, nullptr };
+//
+    /// TODO: do not make a new builder every time
+    //flatbuffers::FlatBufferBuilder builder(1024);
+    //flatbuffers::Offset<Protocol::MsgTest> msgTest;
+    //flatbuffers::Offset<Protocol::Message> message;
+    //
+    //for (int i = 0; i < 4; i++)
+    //{
+    //    builder.Reset();
+    //    static float f = 0.0f;
+    //    f += 0.01f;
+    //    msgTest = Protocol::CreateMsgTest(builder, f);
+    //    message = Protocol::CreateMessage(builder, Protocol::Data_Test, msgTest.Union());
+//
+    //    builder.Finish(message);
+    //    
+    //    uint8_t* buf = builder.GetBufferPointer();
+    //    int size = builder.GetSize();
+    //    
+    //    netMsgs[i] = SteamNetworkingUtils()->AllocateMessage(size);
+    //    
+    //    // TODO: Can we construct this inplace in the steamnetworkingmessage?
+    //    Memory::Copy(buf, netMsgs[i]->m_pData, size);
+    //    
+    //    netMsgs[i]->m_conn = this->connectionId;
+    //    netMsgs[i]->m_nFlags = 0;
+    //}
+    //
+    //int64* outMessageNumberOrResult = nullptr;
+    //this->netInterface->SendMessages(4, netMsgs, outMessageNumberOrResult);
 }
 
 } // namespace Multiplayer

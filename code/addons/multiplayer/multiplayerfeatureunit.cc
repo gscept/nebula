@@ -3,12 +3,19 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
+#include "basegamefeature/managers/timemanager.h"
+#include "game/api.h"
 #include "game/featureunit.h"
 #include "multiplayerfeatureunit.h"
+#include "game/world.h"
 #include "imgui.h"
 #include "GameNetworkingSockets/steam/steamnetworkingsockets.h"
 #include "GameNetworkingSockets/steam/isteamnetworkingutils.h"
-#include "multiplayer/client/multiplayerclient.h"
+#include "multiplayer/client/basemultiplayerclient.h"
+#include "multiplayer/components/multiplayer.h"
+#include "game/processor.h"
+#include "io/jsonreader.h"
+#include "io/jsonwriter.h"
 
 namespace Multiplayer
 {
@@ -84,26 +91,42 @@ MultiplayerFeatureUnit::~MultiplayerFeatureUnit()
 /**
 */
 void
+MultiplayerFeatureUnit::OnAttach()
+{
+    this->RegisterComponentType<Multiplayer::NetworkId>({.replicate=true});
+    this->RegisterComponentType<Multiplayer::NetworkTransform>({
+        .replicate=true, 
+        .OnInit=[](Game::World* world, Game::Entity entity, Multiplayer::NetworkTransform* netTransform)
+        {
+            //Game::TimeSource* timeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
+            //Game::Position pos = world->GetComponent<Game::Position>(entity);
+            //netTransform->positionExtrapolator.Reset(timeSource->time, timeSource->time, pos);
+        }
+    });
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 MultiplayerFeatureUnit::OnActivate()
 {
+    Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Util::StringAtom frameEvent = "OnNetworkUpdate"_atm;
+    world->GetFramePipeline().RegisterFrameEvent(250, frameEvent);
+
     InitSteamDatagramConnectionSockets();
     
-    //TEMP
-    if (this->args.GetBoolFlag("-server"))
+    if (this->server != nullptr)
     {
-        this->server = MultiplayerServer::Create();
-        bool multiplayerServerOpened = this->server->Open();
-        n_assert(multiplayerServerOpened == true);
+        this->server->Open();
     }
-    else if (this->args.GetBoolFlag("-client"))
+    if (this->client != nullptr)
     {
-        this->client = MultiplayerClient::Create();
-        bool multiplayerClientOpened = this->client->Open();
-        n_assert(multiplayerClientOpened == true);
+        this->client->Open();
     }
 
     FeatureUnit::OnActivate();
-    //END TEMP
 }
 
 //------------------------------------------------------------------------------
@@ -113,6 +136,15 @@ void
 MultiplayerFeatureUnit::OnDeactivate()
 {
     FeatureUnit::OnDeactivate();
+
+    if (this->server != nullptr)
+    {
+        this->server->Close();
+    }
+    if (this->client != nullptr)
+    {
+        this->client->Close();
+    }
 
     ShutdownSteamDatagramConnectionSockets();
 }
@@ -124,25 +156,6 @@ void
 MultiplayerFeatureUnit::OnBeginFrame()
 {
     Game::FeatureUnit::OnBeginFrame();
-
-    if (this->server != nullptr && this->server->IsOpen())
-    {
-        this->server->SyncAll();
-    }
-    
-    if (this->client != nullptr)
-    {
-        if (this->client->GetConnectionStatus() == Multiplayer::ConnectionStatus::Disconnected)
-        {
-            this->client->TryConnect();
-        }
-        
-        // Should not be else, or else if!
-        if (this->client->GetConnectionStatus() != Multiplayer::ConnectionStatus::Disconnected)
-        {
-            this->client->SyncAll();
-        }
-    }
 
     //ImGui::Begin("MultiplayerFeatureUnit");
     //ImGui::Text("const char *fmt, ...");
@@ -165,6 +178,25 @@ void
 MultiplayerFeatureUnit::OnEndFrame()
 {
     Game::FeatureUnit::OnEndFrame();
+    
+    if (this->server != nullptr && this->server->IsOpen())
+    {
+        this->server->SyncAll();
+    }
+    
+    if (this->client != nullptr)
+    {
+        if (this->client->GetConnectionStatus() == Multiplayer::ConnectionStatus::Disconnected)
+        {
+            this->client->TryConnect();
+        }
+        
+        // Should not be else, or else if!
+        if (this->client->GetConnectionStatus() != Multiplayer::ConnectionStatus::Disconnected)
+        {
+            this->client->SyncAll();
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -177,3 +209,17 @@ MultiplayerFeatureUnit::OnRenderDebug()
 }
 
 } // namespace Scripting
+
+//--------------------------------------------------------------------------
+namespace IO
+{
+template<> void JsonReader::Get<Math::Extrapolator<Math::vec3>>(Math::Extrapolator<Math::vec3>& ret, const char* attr)
+{
+    // Not serialized
+}
+
+template<> void JsonWriter::Add<Math::Extrapolator<Math::vec3>>(Math::Extrapolator<Math::vec3> const& value, Util::String const& attr)
+{
+    // Not serialized
+}
+} // namespace IO

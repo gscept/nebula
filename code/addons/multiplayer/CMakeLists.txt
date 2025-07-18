@@ -18,15 +18,27 @@ fips_dir(server)
     fips_files(
         clientconnection.cc
         clientconnection.h
-        multiplayerserver.cc
-        multiplayerserver.h
+        basemultiplayerserver.cc
+        basemultiplayerserver.h
+        serverprocessors.cc
+        serverprocessors.h
+        standardmultiplayerserver.cc
+        standardmultiplayerserver.h
     )
 fips_dir(client)
     fips_files(
-        multiplayerclient.cc
-        multiplayerclient.h
+        basemultiplayerclient.cc
+        basemultiplayerclient.h
+        clientprocessors.cc
+        clientprocessors.h
+        standardmultiplayerclient.cc
+        standardmultiplayerclient.h
     )
+fips_dir(components)
+		nebula_idl_compile(
+			multiplayer.json
+		)
 fips_dir(.)
 
-nebula_flatc(SYSTEM addons/multiplayer/protocol.fbs)
+nebula_flatc(SYSTEM addons/multiplayer/standardprotocol.fbs)
 nebula_end_module()

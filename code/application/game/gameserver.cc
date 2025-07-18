@@ -69,17 +69,17 @@ GameServer::Open()
     this->state.templateDatabase = MemDb::Database::Create();
     this->CreateWorld(WORLD_DEFAULT);
 
+    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
+    {
+        this->gameFeatures[i]->OnActivate();
+    }
+
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
             this->state.worlds[worldIndex]->Start();
         }
-    }
-
-    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
-    {
-        this->gameFeatures[i]->OnActivate();
     }
 
     return true;

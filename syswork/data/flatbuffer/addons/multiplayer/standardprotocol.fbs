@@ -1,0 +1,34 @@
+//------------------------------------------------------------------------------
+//
+//    Multiplayer standard protocol
+//
+//    (C) 2025 Individual contributors, see AUTHORS file
+include "foundation/math.fbs";
+
+namespace Multiplayer.StandardProtocol;
+
+table MsgSyncPosition
+{
+    network_id: uint32;
+    pos: Flat.Vec3 (native_inline);
+    vel: Flat.Vec3 (native_inline);
+    tick: uint64; // server tick number. Used for ordering incoming updates
+}
+
+table MsgReplicateObject
+{
+    blob : [ubyte];
+}
+
+union MessageData
+{
+    ReplicateObject: MsgReplicateObject,
+    SyncPosition: MsgSyncPosition
+}
+
+table Message
+{
+    data: MessageData;
+}
+
+root_type Message;

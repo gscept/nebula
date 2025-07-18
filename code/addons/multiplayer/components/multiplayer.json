@@ -1,0 +1,16 @@
+{
+  "namespace": "Multiplayer",
+  "includes": [
+    "math/vec3.h",
+    "math/extrapolator.h"
+  ],
+  "components": {
+    "NetworkTransform": {
+      "positionExtrapolator": "Math::Extrapolator<Math::vec3>",
+      "tickNumber": "uint64"
+    },
+    "NetworkId": {
+      "identifier": "uint"
+    }
+  }
+}

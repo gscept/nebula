@@ -26,7 +26,10 @@ FrameBatchJob(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             return;
 
         ProcessorJobInput const& input = context->inputs[index];
-        input.processor->callback(context->world, *input.view);
+        if (input.processor->active)
+        {
+            input.processor->callback(context->world, *input.view);
+        }
     }
 }
 
@@ -94,6 +97,15 @@ FrameEvent::AddProcessor(Processor* processor)
         n_assert(res);
         this->batches.Insert(i, batch);
     }
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+FrameEvent::RemoveProcessor(Processor* processor)
+{
+    n_error("Not implemented!");
 }
 
 //------------------------------------------------------------------------------
@@ -318,6 +330,9 @@ FrameEvent::Batch::ExecuteSequential(World* world)
     for (SizeT i = 0; i < this->processors.Size(); i++)
     {
         Processor* processor = this->processors[i];
+
+        if (!processor->active)
+            continue;
 
 #ifdef WITH_NEBULA_EDITOR
         if (Game::EditorState::HasInstance())
