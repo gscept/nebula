@@ -9,7 +9,7 @@
 
 namespace NavigationFeature
 {
-
+__ImplementClass(NavigationFeature::NavigationManager, 'NvMa', Game::Manager);
 __ImplementSingleton(NavigationManager)
 
 //------------------------------------------------------------------------------
@@ -17,7 +17,7 @@ __ImplementSingleton(NavigationManager)
 */
 NavigationManager::NavigationManager()
 {
-    // empty
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ NavigationManager::NavigationManager()
 */
 NavigationManager::~NavigationManager()
 {
-    // empty
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -155,44 +155,6 @@ void NavigationManager::InitUpdateAgentTransformProcessor()
 
     Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
 #endif
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Game::ManagerAPI
-NavigationManager::Create()
-{
-	n_assert(!NavigationManager::HasInstance());
-    NavigationManager::Singleton = new NavigationManager;
-
-    /*
-    Game::PropertyCreateInfo info;
-    info.name = "PhysicsActorId";
-    Navigation::ActorId defaultValue;
-    info.defaultValue = &defaultValue;
-    info.flags = Game::PropertyFlags::PROPERTYFLAG_MANAGED;
-    info.byteSize = sizeof(Physics::ActorId);
-    Singleton->pids.navigationActor = Game::CreateProperty(info);
-
-    Singleton->InitCreateAgentProcessor();
-    Singleton->InitUpdateAgentTransformProcessor();
-    */
-    Game::ManagerAPI api;
-    api.OnCleanup    = &OnCleanup;
-    api.OnDeactivate = &Destroy;
-    api.OnDecay      = &OnDecay;
-    return api;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-NavigationManager::Destroy()
-{
-    delete NavigationManager::Singleton;
-    NavigationManager::Singleton = nullptr;
 }
 
 //------------------------------------------------------------------------------

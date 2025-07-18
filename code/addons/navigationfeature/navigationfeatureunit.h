@@ -8,6 +8,7 @@
     (C) 2022 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
+#include "graphics/graphicsentity.h"
 
 //------------------------------------------------------------------------------
 namespace NavigationFeature
@@ -39,6 +40,9 @@ public:
 private:
 
 };
+
+/// render editor ui 
+void RenderUI(Graphics::GraphicsEntityId camera);
 
 } // namespace NavigationFeature
 //------------------------------------------------------------------------------

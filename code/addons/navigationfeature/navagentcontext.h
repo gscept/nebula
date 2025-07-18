@@ -14,7 +14,7 @@
 namespace Navigation
 {
 
-ID_16_16_NAMED_TYPE(CrowdAgentId, navmesh, instance);
+ID_32_24_8_NAMED_TYPE(CrowdAgentId, instance, navmeshId, generation, agentType);
 
 class AgentContext 
 {

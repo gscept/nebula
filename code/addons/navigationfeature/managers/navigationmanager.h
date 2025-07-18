@@ -15,16 +15,12 @@
 namespace NavigationFeature
 {
 
-class NavigationManager
+class NavigationManager : public Game::Manager
 {
+    __DeclareClass(NavigationManager)
     __DeclareSingleton(NavigationManager);
 public:
-    /// retrieve the api
-    static Game::ManagerAPI Create();
-
-    /// destroy entity manager
-    static void Destroy();
-
+    
     struct Pids
     {
         Game::ComponentId navigationActor;
@@ -38,9 +34,9 @@ private:
     void InitCreateAgentProcessor();
     void InitUpdateAgentTransformProcessor();
 
-    static void OnDecay();
+    void OnDecay() override;
 
-    static void OnCleanup(Game::World* world);
+    void OnCleanup(Game::World* world) override;
 };
 
 } // namespace NavigationFeature

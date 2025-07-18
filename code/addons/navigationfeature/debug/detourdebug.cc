@@ -92,21 +92,21 @@ DebugDraw::end()
 		case DU_DRAW_POINTS:
 		{
             CoreGraphics::RenderShape shape;
-            shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::PointList, (SizeT)points.size(), points.begin(), vec4(1.0f), this->flag);
+			shape.SetupPrimitives(points, CoreGraphics::PrimitiveTopology::PointList, this->flag);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 		}
 		break;
 		case DU_DRAW_LINES:
 		{
             CoreGraphics::RenderShape shape;
-            shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::LineList, (SizeT)points.size() / 2, points.begin(), vec4(1.0f), this->flag);
+            shape.SetupPrimitives(points, CoreGraphics::PrimitiveTopology::LineList, this->flag);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 		}
 		break;
 		case DU_DRAW_TRIS:
         {
             CoreGraphics::RenderShape shape;
-            shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::TriangleList, (SizeT)points.Size() / 3, &points[0], vec4(1.0f), CoreGraphics::RenderShape::Wireframe);// this->flag);
+            shape.SetupPrimitives(points, CoreGraphics::PrimitiveTopology::TriangleList, CoreGraphics::RenderShape::Wireframe);// this->flag);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 		}
 		break;
