@@ -2,9 +2,7 @@
 //  geometrybase.gpuh
 //  (C) 2012 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef GEOMETRYBASE_GPUH
-#define GEOMETRYBASE_GPUH
+#pragma once
 
 #include <lib/std.gpuh>
 #include <lib/skinning.gpuh>
@@ -593,5 +591,3 @@ psBillboard(in UV : f32x2) void
 
     pixelExportColor(diffColor, 0);
 }
-
-#endif

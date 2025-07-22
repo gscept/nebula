@@ -1,10 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  clustering.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef CLUSTERING_GPUH
-#define CLUSTERING_GPUH
 
 CheckFlags(bits : u32, bit : u32) b8
 {
@@ -58,8 +56,8 @@ TestAABBSphere(aabb : ClusterAABB, pos : f32x3, radius : f32) b8
     {
         const v = (pos)[i];
 
-        if (v < aabb.minPoint[i]) sqDist += pow(aabb.minPoint[i] - v, 2);
-        if (v > aabb.maxPoint[i]) sqDist += pow(v - aabb.maxPoint[i], 2);
+        if (v < aabb.minPoint[i]) sqDist += pow(aabb.minPoint[i] - v, 2.0f);
+        if (v > aabb.maxPoint[i]) sqDist += pow(v - aabb.maxPoint[i], 2.0f);
     }
     return sqDist <= radius * radius;
 }
@@ -169,5 +167,3 @@ TestAABBPerspectiveProjection(aabb : ClusterAABB, viewProjection : f32x4x4) b8
     }
     return mask == 0;
 }
-
-#endif // CLUSTERING_GPUH

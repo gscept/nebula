@@ -2,9 +2,7 @@
 //  defaultsamplers.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef DEFAULTSAMPLERS_GPUH
-#define DEFAULTSAMPLERS_GPUH
+#pragma once
 
 // samplers
 sampler_state GeometryTextureSampler
@@ -36,6 +34,3 @@ sampler_state EnvironmentSampler
 	AddressV = AddressMode.Repeat;
 	AddressW = AddressMode.Repeat;
 };
-
-#endif // DEFAULTSAMPLERS_GPUH
-
