@@ -43,7 +43,7 @@ enum RenderTargetOutput : i32
 entry_point
 psMain(in uv : f32x2) void
 {
-    pixelExportColor(textureSampleLod(CopyBuffer, CopySampler, uv, 0), RenderTargetOutput.Color); 
+    pixelExportColor(textureSampleLod(CopyBuffer, CopySampler, uv, 0), i32(RenderTargetOutput.Color)); 
 }
 
 //------------------------------------------------------------------------------

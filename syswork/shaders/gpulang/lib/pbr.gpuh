@@ -1,19 +1,17 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  pbr.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef PBR_GPUH
-#define PBR_GPUH
 #include <lib/std.gpuh>
 #include <lib/shared.gpuh>
 #include <lib/util.gpuh>
 
 // Definitions for the current setup of the material buffer
-#define MAT_METALLIC 0
-#define MAT_ROUGHNESS 1
-#define MAT_CAVITY 2
-#define MAT_EMISSIVE 3
+const MAT_METALLIC = 0u;
+const MAT_ROUGHNESS = 1u;
+const MAT_CAVITY = 2u;
+const MAT_EMISSIVE = 3u;
 
 //------------------------------------------------------------------------------
 /**
@@ -136,4 +134,4 @@ ConvertOSM(material : f32x4) f32x4
 }
 
 //------------------------------------------------------------------------------
-#endif
+

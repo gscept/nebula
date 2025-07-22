@@ -152,7 +152,7 @@ DDGIProbeWorldPosition(probeIndex : i32, origin : f32x3, rotation : f32x4, probe
 */
 DDGIDecodeProbeOffsets(probeOffsetTexcoord : i32x2, probeGridSpacing : f32x3, probeOffsets : u32) f32x3
 {
-    return fetch2D(probeOffsets, Basic2DSampler, probeOffsetTexcoord, 0).xyz * probeGridSpacing; 
+    return fetch2D(probeOffsets, probeOffsetTexcoord, 0).xyz * probeGridSpacing; 
 }
 
 //------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ EvaluateDDGIIrradiance(
                 probeIndex = adjacentProbeIndex;
             }
             const texelPosition = DDGIProbeTexelPosition(probeIndex, volume.GridCounts);
-            const state = castToI32(fetch2D(volume.States, Basic2DSampler, texelPosition, 0).x);
+            const state = castToI32(fetch2D(volume.States, texelPosition, 0).x);
             if (state == PROBE_STATE_INACTIVE)
                 continue;
         }

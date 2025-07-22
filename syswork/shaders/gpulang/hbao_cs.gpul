@@ -174,21 +174,21 @@ csMainX() void
     const        apronStart = tileStart - KERNEL_RADIUS;
     const          apronEnd = tileEnd   + KERNEL_RADIUS;
 
-    const x = apronStart + u32(computeGetLocalInvocationIndices().x);
+    const x = apronStart + u32(computeGetLocalThreadIndices().x);
     const y = u32(computeGetWorkgroupIndices().y);
 
     // Load f32x2 samples into shared memory
-    SharedMemory[computeGetLocalInvocationIndices().x] = LoadXZFromTexture(x,y);
-    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalInvocationIndices().x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
+    SharedMemory[computeGetLocalThreadIndices().x] = LoadXZFromTexture(x,y);
+    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
     memoryBarrierWorkgroup();
     executionBarrierWorkgroup();
 
-    const writePos = tileStart + u32(computeGetLocalInvocationIndices().x);
+    const writePos = tileStart + u32(computeGetLocalThreadIndices().x);
     const tileEndClamped = min(tileEnd, u32(HBAOParams.AOResolution.x));
     
     if (writePos < tileEndClamped)
     {
-        const centerId = i32(computeGetLocalInvocationIndices().x) + KERNEL_RADIUS;
+        const centerId = i32(computeGetLocalThreadIndices().x) + KERNEL_RADIUS;
         const ox = writePos; 
         const oy = computeGetWorkgroupIndices().y;
 
@@ -218,20 +218,20 @@ csMainY() void
     const          apronEnd = tileEnd   + KERNEL_RADIUS;
 
     const x = u32(computeGetWorkgroupIndices().y);
-    const y = apronStart + u32(computeGetLocalInvocationIndices().x);
+    const y = apronStart + u32(computeGetLocalThreadIndices().x);
 
     // Load vec2 samples into shared memory
-    SharedMemory[computeGetLocalInvocationIndices().x] = LoadYZFromTexture(x,y);
-    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalInvocationIndices().x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
+    SharedMemory[computeGetLocalThreadIndices().x] = LoadYZFromTexture(x,y);
+    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
     memoryBarrierWorkgroup();
     executionBarrierWorkgroup();
 
-    const writePos = tileStart + computeGetLocalInvocationIndices().x;
+    const writePos = tileStart + computeGetLocalThreadIndices().x;
     const tileEndClamped = min(tileEnd, u32(HBAOParams.AOResolution.y));
     
     if (writePos < tileEndClamped)
     {
-        const centerId = i32(computeGetLocalInvocationIndices().x) + KERNEL_RADIUS;
+        const centerId = i32(computeGetLocalThreadIndices().x) + KERNEL_RADIUS;
         const ox = computeGetWorkgroupIndices().y;
         const oy = writePos;
 

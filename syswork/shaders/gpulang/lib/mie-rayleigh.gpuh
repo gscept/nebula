@@ -8,9 +8,7 @@
 //
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#ifndef PI
-#define PI 3.141592653589793238462643383279502884197169
-#endif
+
 
 //------------------------------------------------------------------------------
 /**
@@ -80,7 +78,7 @@ CalculateAtmosphericScattering(p : f32x3, lp : f32x3) f32x3
 	lin *= lerp(f32x3(1.0f), pow(sunE * ((betaRTheta + betaMTheta) / (betaR + betaM)) * fex, f32x3(0.5f)), clamp(pow(1.0f - dot(f32x3(0, 1, 0), lp), 5.0f), 0.0f, 1.0f));
 
 	const sunAngleDiameterCos = cos(PerTickParams.SunDiscSize);
-	const sundisk = smoothStep(sunAngleDiameterCos, sunAngleDiameterCos + 0.00002, cosTheta);
+	const sundisk = smoothstep(sunAngleDiameterCos, sunAngleDiameterCos + 0.00002, cosTheta);
 	var l0 = f32x3(0.1f) * fex;
 	l0 += sunE * fex * sundisk;
 	var texColor = lin + l0;
