@@ -74,7 +74,7 @@ local_size_z(1)
 entry_point
 csUpscale() void
 {
-    const threadIndex = computeGetLocalInvocationIndices().xy;
+    const threadIndex = computeGetLocalThreadIndices().xy;
     const groupIndex = computeGetWorkgroupIndices();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
@@ -117,7 +117,7 @@ local_size_x(256)
 entry_point
 csMerge() void
 {
-    const threadIndex = computeGetLocalInvocationIndices().xy;
+    const threadIndex = computeGetLocalThreadIndices().xy;
     const groupIndex = computeGetWorkgroupIndices();
     
     // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius

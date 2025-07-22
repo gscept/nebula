@@ -1,10 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  util.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#ifndef UTIL_GPUH
-#define UTIL_GPUH
 #include "lib/std.gpuh"
 
 const depthScale : f32 = 100.0f;
@@ -117,50 +115,25 @@ SampleCubic(uniform tex : *texture2D, uniform samp : *sampler, res : f32x4, pixe
     return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
 }
 
-#define USE_SRGB 1
-#ifdef USE_SRGB
-#define EncodeHDR(x) x
-#define EncodeHDR4(x) x
-#define DecodeHDR(x) x
-#define DecodeHDR4(x) x
-#else
-//------------------------------------------------------------------------------
-/**
-    Scale down pseudo-HDR-value into RGB8.
-*/
-EncodeHDR(rgba : f32x4) f32x4
-{
-    return rgba * f32x4(0.5, 0.5, 0.5, 1.0);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Scale down pseudo-HDR-value into RGB8.
-*/
-EncodeHDR4(rgba : f32x4) f32x4
-{
-    return rgba * f32x4(0.5, 0.5, 0.5, 0.5);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Scale up pseudo-HDR-value encoded by EncodeHDR() in shaders.fx.
-*/
-DecodeHDR(rgba : f32x4) f32x4
-{
-    return rgba * f32x4(2.0f, 2.0f, 2.0f, 1.0f);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-    Scale up pseudo-HDR-value encoded by EncodeHDR() in shaders.fx.
-*/
-DecodeHDR4(rgba : f32x4) f32x4
-{
-    return rgba * f32x4(2.0f, 2.0f, 2.0f, 2.0f);
-}
-#endif // USE_SRGB
+const USE_SRGB = 1;
+generate
+<
+    if (declared<USE_SRGB>)
+    <
+        EncodeHDR(rgba : f32x4) f32x4 { return rgba; }
+        EncodeHDR4(rgba : f32x4) f32x4 { return rgba; }
+        DecodeHDR(rgba : f32x4) f32x4 { return rgba; }
+        DecodeHDR4(rgba : f32x4) f32x4 { return rgba; }
+    >
+    else
+    <
+        // If not using SRGB natively, decode and encode from and to SRGB values
+        EncodeHDR(rgba : f32x4) f32x4 { return rgba * f32x4(0.5, 0.5, 0.5, 1.0); }
+        EncodeHDR4(rgba : f32x4) f32x4 { return rgba * f32x4(0.5, 0.5, 0.5, 0.5); }
+        DecodeHDR(rgba : f32x4) f32x4 { return rgba * f32x4(2.0f, 2.0f, 2.0f, 1.0f); }
+        DecodeHDR4(rgba : f32x4) f32x4 { return rgba * f32x4(2.0f, 2.0f, 2.0f, 2.0f); }
+    >
+>;
 
 //------------------------------------------------------------------------------
 /**
@@ -263,10 +236,10 @@ unpack_2u16(value : u32) u32x2
     return u32x2(value & 0xFFFF, (value >> 16) & 0xFFFF);
 }
 
-#define PI 3.141592653589793238462643383279502884197169
-#define ONE_OVER_PI 1/PI
-#define PI_OVER_FOUR PI/4.0f
-#define PI_OVER_TWO PI/2.0f
+const PI = 3.141592653589793238462643383279502884197169;
+const ONE_OVER_PI = 1.0f / PI;
+const PI_OVER_TWO = PI / 2.0f;
+const PI_OVER_FOUR = PI / 4.0f;
 
 //-------------------------------------------------------------------------------------------------------------
 /**
@@ -524,7 +497,8 @@ IntersectLineWithPlane(lineStart : f32x3, lineEnd : f32x3, plane : f32x4) Inters
     note: from https://www.shadertoy.com/view/4djSRW
     This set suits the coords of of 0-1.0 ranges..
 */
-#define MOD3 f32x3(443.8975,397.2973, 491.1871)
+
+const MOD3 = f32x3(443.8975, 397.2973, 491.1871);
 
 //------------------------------------------------------------------------------
 /**
@@ -690,4 +664,3 @@ noise(p : f32x2) f32
 }
 
 //------------------------------------------------------------------------------
-#endif UTIL_GPUH

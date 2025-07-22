@@ -32,7 +32,8 @@ local_size_x(256)
 entry_point
 csClear() void
 {
-    HistogramBuffer.Histogram[computeGetIndexInWorkgroup()] = 0;
+    atomicStore(&LocalHistogram[computeGetIndexInWorkgroup()], 0u, MemorySemantics.Relaxed);
+    //HistogramBuffer.Histogram[computeGetIndexInWorkgroup()] = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -43,11 +44,11 @@ entry_point
 csMain() void
 {
     const histogramIndex = computeGetIndexInWorkgroup();
-    var pixel = i32x2(computeGetGlobalInvocationIndices().xy);
+    var pixel = i32x2(computeGetGlobalThreadIndices().xy);
     pixel += HistogramConstants.WindowOffset;
 
     // clear LDS histogram chunk, since we will execute 256 threads per workgroup, each thread could clear one value
-    LocalHistogram[histogramIndex] = 0;
+    atomicStore(&LocalHistogram[histogramIndex], 0u, MemorySemantics.Relaxed);
     memoryBarrierWorkgroup();
 
     // don't sample from outside the texture

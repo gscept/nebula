@@ -1,10 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  skinning.gpuh
 //  (C) 2025 Invidiual contributors
 //------------------------------------------------------------------------------
-
-#ifndef SKINNING_GPUH
-#define SKINNING_GPUH
 #include <lib/shared.gpuh>
 #include <lib/objects_shared.gpuh>
 
@@ -68,5 +66,3 @@ SkinnedNormalInstanced(inNormal : f32x3, weights : f32x4, indices : u32x4, ID : 
 				   JointPalette.Transform[indices[3]] * weights[3];
 	return joint * f32x4(inNormal, 0);
 }
-
-#endif

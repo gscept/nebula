@@ -1,8 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  shared.gpuh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#pragma once
 
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
@@ -40,16 +40,6 @@ sample2DLod(handle : u32, uniform samp : *sampler, uv : f32x2, lod : f32) f32x4
 sample2DGrad(handle : u32, uniform samp : *sampler, uv : f32x2, ddx : f32x2, ddy : f32x2) f32x4
 {
     return textureSampleGrad(Textures2D[handle], samp, uv, ddx, ddy);
-}
-
-sample2DMS(handle : u32, uniform samp : *sampler, uv : f32x2) f32x4
-{
-    return textureSample(Textures2DMS[handle], samp, uv);
-}
-
-sample2DMSLod(handle : u32, uniform samp : *sampler, uv : f32x2, lod : f32) f32x4
-{
-    return textureSampleLod(Textures2DMS[handle], samp, uv, lod);
 }
 
 sample2DArray(handle : u32, uniform samp : *sampler, uvw : f32x3) f32x4
@@ -107,15 +97,16 @@ fetch3D(handle : u32, uvw : f32x3, lod : f32) f32x4
     return textureFetch(Textures3D[handle], uvw, lod);
 }
 
+// Fetch stencil texture as a single channel texture
 fetchStencil(handle : u32, uv : f32x2, lod : f32) u32
 {
-    // fetch stencil texture as a single channel texture
     return castToU32(textureFetch(Textures2D[handle], uv, lod).r);
 }
 
-queryLod2D(handle : u32, uniform samp : *sampler, uv : f32x2) f32
-{
-    // query the mip level of a 2D texture at a given UV coordinate
+// Query the mip level of a 2D texture at a given UV coordinate
+// The return value is a 2D vector where x is the mip level and y is mip level offset from the base mip level
+queryLod2D(handle : u32, uniform samp : *sampler, uv : f32x2) f32x2
+{   
     return textureGetSampledMip(Textures2D[handle], samp, uv);
 }
 

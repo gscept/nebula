@@ -144,7 +144,7 @@ sampler_state InputSampler
 
 struct BlurData
 {
-    Viewport : f32x2;
+    Viewport : i32x2;
 };
 uniform BlurUniforms : *BlurData;
 
@@ -167,23 +167,23 @@ csMainX() void
 	const apronStart = i32(tileStart) - KernelRadius;
 	const   apronEnd = tileEnd + KernelRadius;
 
-    const x = max(0, min(apronStart + i32(computeGetLocalInvocationIndices().x), size.x - 1));
+    const x = max(0, min(apronStart + i32(computeGetLocalThreadIndices().x), size.x - 1));
     const y = i32(computeGetWorkgroupIndices().y);
     const z = computeGetWorkgroupIndices().z;
 
     if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
-        SharedMemory[computeGetLocalInvocationIndices().x] = Empty();
+        SharedMemory[computeGetLocalThreadIndices().x] = Empty();
     else
     {
         // load into workgroup saved memory, this allows us to use the original pixel even though
         // we might have replaced it with the result from this thread!
-        SharedMemory[computeGetLocalInvocationIndices().x] = Swizzle(Sample(InputImageX, f32x3(x,y,z), 0));
+        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageX, f32x3(x,y,z), 0));
     }
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
-	const writePos = tileStart + computeGetLocalInvocationIndices().x;
-	const tileEndClamped = min(tileEnd, u32(size.x));
+	const writePos = tileStart + computeGetLocalThreadIndices().x;
+	const tileEndClamped = min(tileEnd, size.x);
 
 	if (writePos < tileEndClamped)
 	{
@@ -191,7 +191,7 @@ csMainX() void
 
         for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
 		{
-            const j = max(0, min(i32(computeGetLocalInvocationIndices().x) + i, SharedMemSize - 1));
+            const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
         }
 
@@ -216,22 +216,22 @@ csMainY() void
 	const   apronEnd = tileEnd + KernelRadius;
 
     const x = i32(computeGetWorkgroupIndices().y);
-    const y = max(0, min(apronStart + i32(computeGetLocalInvocationIndices().x), size.y - 1));
+    const y = max(0, min(apronStart + i32(computeGetLocalThreadIndices().x), size.y - 1));
     const z = computeGetWorkgroupIndices().z;
 
     if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
-        SharedMemory[computeGetLocalInvocationIndices().x] = Empty();
+        SharedMemory[computeGetLocalThreadIndices().x] = Empty();
     else
     {
         // load into workgroup saved memory, this allows us to use the original pixel even though
         // we might have replaced it with the result from this thread!
-        SharedMemory[computeGetLocalInvocationIndices().x] = Swizzle(Sample(InputImageY, f32x3(x,y,z), 0));
+        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageY, f32x3(x,y,z), 0));
     }
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
-	const writePos = tileStart + computeGetLocalInvocationIndices().x;
-	const tileEndClamped = min(tileEnd, u32(size.y));
+	const writePos = tileStart + computeGetLocalThreadIndices().x;
+	const tileEndClamped = min(tileEnd, size.y);
 
 	if (writePos < tileEndClamped)
 	{
@@ -239,7 +239,7 @@ csMainY() void
 
         for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
 		{
-            const j = max(0, min(i32(computeGetLocalInvocationIndices().x) + i, SharedMemSize - 1));
+            const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
         }
 

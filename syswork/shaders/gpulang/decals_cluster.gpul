@@ -52,7 +52,7 @@ local_size(u32x3(64, 1, 1))
 entry_point
 csCull() void
 {
-    const index1D = computeGetGlobalInvocationIndices().x;
+    const index1D = computeGetGlobalThreadIndices().x;
 
     if (index1D > DecalUniforms.NumDecalClusters)
         return;
@@ -79,7 +79,7 @@ csCull() void
         flags |= CLUSTER_PBR_DECAL_BIT;
 
     // update emissive decals
-    numDecals = 0;
+    numDecals = 0u;
     for (var i : u32 = 0; i < DecalUniforms.NumEmissiveDecals; i++)
     {
         const decal = DecalLists.EmissiveDecals[i];
@@ -105,7 +105,7 @@ local_size(u32x3(64, 1, 1))
 entry_point
 csDebug() void
 {
-    const coord = i32x2(computeGetGlobalInvocationIndices().xy);
+    const coord = i32x2(computeGetGlobalThreadIndices().xy);
     const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
 
     // convert screen coord to view-space position

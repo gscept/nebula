@@ -25,8 +25,8 @@ local_size_x(64)
 entry_point
 csCombine() void
 {
-    const coord = f32x2(computeGetGlobalInvocationIndices().xy) * CombineUniforms.LowresResolution;
-    const fullscaleCoord = i32x2(computeGetGlobalInvocationIndices().xy);
+    const coord = f32x2(computeGetGlobalThreadIndices().xy) * CombineUniforms.LowresResolution;
+    const fullscaleCoord = i32x2(computeGetGlobalThreadIndices().xy);
     const fog = textureSampleLod(Fog, LinearSampler, coord, 0);
     const reflections = textureSampleLod(Reflections, LinearSampler, coord, 0);
     const ao = textureSampleLod(AO, LinearSampler, coord, 0).r;

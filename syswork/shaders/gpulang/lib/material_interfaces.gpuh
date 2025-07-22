@@ -6,8 +6,6 @@
     DO NOT EDIT
 */
 #include <lib/std.gpuh>
-#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)
-
 struct BasicMaterial 
 {
     AlbedoMap : u32;
@@ -15,7 +13,7 @@ struct BasicMaterial
     AlphaBlendFactor : f32;
 };
 
-MATERIAL_CB_BINDING uniform BasicConstants : *BasicMaterial;
+group(BATCH_GROUP) binding(52) uniform BasicConstants : *BasicMaterial;
 
 struct BRDFMaterial 
 {
@@ -30,7 +28,7 @@ struct BRDFMaterial
     NormalMap : u32;
 };
 
-MATERIAL_CB_BINDING uniform BRDFConstants : *BRDFMaterial;
+group(BATCH_GROUP) binding(52) uniform BRDFConstants : *BRDFMaterial;
 
 struct BSDFMaterial 
 {
@@ -46,7 +44,7 @@ struct BSDFMaterial
     Transmission : f32;
 };
 
-MATERIAL_CB_BINDING uniform BSDFConstants : *BSDFMaterial;
+group(BATCH_GROUP) binding(52) uniform BSDFConstants : *BSDFMaterial;
 
 struct UnlitMaterial 
 {
@@ -56,7 +54,7 @@ struct UnlitMaterial
     Brightness : f32;
 };
 
-MATERIAL_CB_BINDING uniform UnlitConstants : *UnlitMaterial;
+group(BATCH_GROUP) binding(52) uniform UnlitConstants : *UnlitMaterial;
 
 struct BlendAddMaterial 
 {
@@ -73,7 +71,7 @@ struct BlendAddMaterial
     UVAnim4 : f32x2;
 };
 
-MATERIAL_CB_BINDING uniform BlendAddConstants : *BlendAddMaterial;
+group(BATCH_GROUP) binding(52) uniform BlendAddConstants : *BlendAddMaterial;
 
 struct BillboardMaterial 
 {
@@ -82,7 +80,7 @@ struct BillboardMaterial
     ViewAligned : b8;
 };
 
-MATERIAL_CB_BINDING uniform BillboardConstants : *BillboardMaterial;
+group(BATCH_GROUP) binding(52) uniform BillboardConstants : *BillboardMaterial;
 
 struct SkyboxMaterial 
 {
@@ -94,7 +92,7 @@ struct SkyboxMaterial
     Brightness : f32;
 };
 
-MATERIAL_CB_BINDING uniform SkyboxConstants : *SkyboxMaterial;
+group(BATCH_GROUP) binding(52) uniform SkyboxConstants : *SkyboxMaterial;
 
 struct TerrainMaterial 
 {
@@ -103,21 +101,21 @@ struct TerrainMaterial
     LowresMaterialFallback : u32;
 };
 
-MATERIAL_CB_BINDING uniform TerrainConstants : *TerrainMaterial;
+group(BATCH_GROUP) binding(52) uniform TerrainConstants : *TerrainMaterial;
 
 struct ArealightMaterial 
 {
     EmissiveColor : f32x4;
 };
 
-MATERIAL_CB_BINDING uniform ArealightConstants : *ArealightMaterial;
+group(BATCH_GROUP) binding(52) uniform ArealightConstants : *ArealightMaterial;
 
 struct PlaceholderMaterial 
 {
     AlbedoMap : u32;
 };
 
-MATERIAL_CB_BINDING uniform PlaceholderConstants : *PlaceholderMaterial;
+group(BATCH_GROUP) binding(52) uniform PlaceholderConstants : *PlaceholderMaterial;
 
 #define MATERIAL_LIST_base \
         BasicMaterials : *BasicMaterial;\
@@ -146,12 +144,11 @@ struct GLTFMaterial
     normalScale : f32;
 };
 
-MATERIAL_CB_BINDING uniform GLTFConstants : *GLTFMaterial;
+group(BATCH_GROUP) binding(52) uniform GLTFConstants : *GLTFMaterial;
 
 #define MATERIAL_LIST_gltf \
         GLTFMaterials : *GLTFMaterial;\
 
-#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)
 const MaterialBindingSlot = 51u;
 const MaterialBufferSlot = 52u;
 struct MaterialBinding
@@ -159,5 +156,5 @@ struct MaterialBinding
     MATERIAL_LIST_base
     MATERIAL_LIST_gltf
 };
-MATERIAL_BINDING uniform MaterialPointers : *MaterialBinding;
+group(BATCH_GROUP) binding(51) uniform MaterialPointers : *MaterialBinding;
 
