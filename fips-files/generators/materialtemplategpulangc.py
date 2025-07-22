@@ -337,7 +337,7 @@ class MaterialInterfaceDefinition:
         ret += "struct {}Material \n{{\n{}}};\n".format(self.name, contents)
         ret += textures
         ret += "\n"
-        ret += "MATERIAL_CB_BINDING uniform {}Constants : *{}Material;\n".format(self.name, self.name)
+        ret += "group(BATCH_GROUP) binding(52) uniform {}Constants : *{}Material;\n".format(self.name, self.name)
         return ret
 
 
@@ -352,6 +352,7 @@ class MaterialTemplateGenerator:
         self.interfaceDict = {}
         self.batchGroupCounter = 0
         self.batchGroupDict = {}
+        self.materialLists = []
         self.name = ""
 
     #------------------------------------------------------------------------------
@@ -551,8 +552,8 @@ class MaterialTemplateGenerator:
         for i in self.interfaces:
             f.WriteLine(i.FormatShader())
             materialNames += "\t\t{}Materials : *{}Material;\\\n".format(i.name, i.name);
-
-        f.WriteLine("#define MATERIAL_LIST_{} {}".format(Path(self.name).stem, materialNames))
+            self.materialLists.append(i.name)
+        
 
     #------------------------------------------------------------------------------
     ##
@@ -568,7 +569,6 @@ class MaterialTemplateGenerator:
         f.DecreaseIndent()
         f.WriteLine("*/")
         f.WriteLine("#include <lib/std.gpuh>")
-        f.WriteLine("#define MATERIAL_CB_BINDING group(BATCH_GROUP) binding(52)")
         f.WriteLine("")
 
     #------------------------------------------------------------------------------
@@ -681,17 +681,16 @@ if __name__ == '__main__':
         sourceF.Close()
 
         # Finish shader
-        shaderF.WriteLine("#define MATERIAL_BINDING group(BATCH_GROUP) binding(51)")
         shaderF.WriteLine("const MaterialBindingSlot = 51u;")
         shaderF.WriteLine("const MaterialBufferSlot = 52u;")
 
         bindingsContent = ''
         for file in files:
             fileName = Path(file).stem
-            bindingsContent += "\tMATERIAL_LIST_{}\n".format(fileName)
+            bindingsContent += ",\n".join(["\t{}Materials : *{}Material".format(i, i) for i in generator.materialLists])
 
         shaderF.WriteLine("struct MaterialBinding\n{{\n{}}};".format(bindingsContent));
-        shaderF.WriteLine("MATERIAL_BINDING uniform MaterialPointers : *MaterialBinding;")
+        shaderF.WriteLine("group(BATCH_GROUP) binding(51) uniform MaterialPointers : *MaterialBinding;")
         generator.EndShader(shaderF)
         shaderF.Close()
 
