@@ -1,3 +1,4 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  lighting_functions.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
@@ -17,11 +18,13 @@ const AREA_LIGHT_SHAPE_DISK = 0x8u;
 const AREA_LIGHT_SHAPE_TUBE = 0x10u;
 const AREA_LIGHT_TWOSIDED = 0x20u;
 
-#define FlagSet(x, flags) ((x & flags) == flags)
+FlagSet(x : u32, flags : u32) b8
+{
+    return (x & flags) == flags;
+}
 
-
-#define SPECULAR_SCALE 13
-#define ROUGHNESS_TO_SPECPOWER(x) exp2(SPECULAR_SCALE * x + 1)
+const SPECULAR_SCALE = 13;
+ROUGHNESS_TO_SPECPOWER(x : f32) f32 { return exp2(SPECULAR_SCALE * x + 1); }
 
 //------------------------------------------------------------------------------
 /**
@@ -819,7 +822,7 @@ CalculateLight(
     const laneMask = subgroupGetLocalInvocationMask();
 
     // Get the execution mask for the wavefront
-    const execMask = subgroupBallot(true);
+    var execMask = subgroupBallot(true);
     const firstWaveIndex = subgroupRead(idx);
 
     // Check if all waves use the same index and do this super cheaply

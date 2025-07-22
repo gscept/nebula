@@ -61,7 +61,7 @@ csMainX() void
     // get full resolution and inverse full resolution
     const size = textureGetSize(HBAOX);
     
-    const localThreadIndices = computeGetLocalInvocationIndices();
+    const localThreadIndices = computeGetLocalThreadIndices();
     const workgroupIndices = computeGetWorkgroupIndices();
     
     // calculate offsets
@@ -77,7 +77,7 @@ csMainX() void
     executionBarrierWorkgroup();
     
     const writePos = tileStart + localThreadIndices.x;
-    const tileEndClamped = min(tileEnd, u32(size.x));
+    const tileEndClamped = min(tileEnd, i32(size.x));
     
     if (writePos < tileEndClamped)
     {
@@ -125,7 +125,7 @@ csMainY() void
     const size = textureGetSize(HBAOY);
     const inverseSize = 1.0f / f32x2(size);
     
-    const localThreadIndices = computeGetLocalInvocationIndices();
+    const localThreadIndices = computeGetLocalThreadIndices();
     const workgroupIndices = computeGetWorkgroupIndices();
     
     // calculate offsets
@@ -141,7 +141,7 @@ csMainY() void
     executionBarrierWorkgroup();
     
     const writePos = tileStart + localThreadIndices.x;
-    const tileEndClamped = min(tileEnd, u32(size.y));
+    const tileEndClamped = min(tileEnd, i32(size.y));
     
     if (writePos < tileEndClamped)
     {

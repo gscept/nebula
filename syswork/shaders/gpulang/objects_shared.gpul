@@ -1,23 +1,24 @@
 //------------------------------------------------------------------------------
-//  objects_shared.fx
+//  objects_shared.gpul
 //  (C) 2020 gscept
 //------------------------------------------------------------------------------
 
-#include "lib/objects_shared.fxh"
+#include "lib/objects_shared.gpuh"
 //------------------------------------------------------------------------------
 /** 
 */ 
-shader
+entry_point
 void
 vsMain(){}
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
+entry_point
 void
 psMain(){}
 
-program Empty [ string Mask = "Empty"; ]
+@Mask("Empty")
+program Empty
 {
 };

@@ -1,13 +1,12 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  shadowbase.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-
-#ifndef SHADOWBASE_GPUH
-#define SHADOWBASE_GPUH
-
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
 #include <lib/defaultsamplers.gpuh>
+#include <lib/skinning.gpuh>
 #include <lib/material_interfaces.gpuh>
 
 const DepthScaling = 5.0f;
@@ -37,7 +36,7 @@ vsStatic(
 {
 	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
 	UV = UnpackUV(uv);
 }
 
@@ -57,7 +56,7 @@ vsSkinned(
 	const skinnedPos = SkinnedPosition(position, weights, indices);
     ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
     UV = UnpackUV(uv);
 }
 
@@ -148,7 +147,7 @@ vsStaticPoint(
 {
     ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
 	UV = UnpackUV(uv);
 }
 
@@ -168,7 +167,7 @@ vsSkinnedPoint(
 	const skinnedPos = SkinnedPosition(position, weights, indices);
     ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
     vertexExportCoordinates(ProjPos);
-    vertexSetOutputLayer(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
 	UV = UnpackUV(uv);
 }
 
@@ -441,7 +440,7 @@ PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : 
     const offsets = f32x3(-2.5f, 2.5f, 0) * texelSize.xyx;
 
     const NumSamples = 2;
-    const Weight = 1 / f32(pow(NumSamples*2, 2));
+    const Weight = 1 / pow(NumSamples*2.0f, 2.0f);
     var totalShadow = 0.0f;
     for (var i : i32 = -NumSamples; i < NumSamples; i++)
     {
@@ -453,5 +452,3 @@ PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : 
     totalShadow *= Weight;
     return totalShadow;
 }
-
-#endif // SHADOWBASE_GPUH

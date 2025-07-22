@@ -1,9 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  objects_shared.gpuh
 //  (C) 2025 gscept
 //------------------------------------------------------------------------------
-#ifndef OBJECTS_SHARED_GPUH
-#define OBJECTS_SHARED_GPUH
 
 #include <lib/std.gpuh>
 
@@ -36,5 +35,3 @@ struct JointData
     Transform : [256]f32x4x4;
 };
 group(DYNAMIC_OFFSET_GROUP) uniform JointPalette : *JointData;
-
-#endif // OBJECTS_SHARED_GPUH

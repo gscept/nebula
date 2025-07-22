@@ -1,0 +1,148 @@
+//------------------------------------------------------------------------------
+//  lights_cluster.gpul
+//  (C) 2019 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/clustering.gpuh>
+#include <lib/lighting_functions.gpuh>
+
+uniform Lighting : *mutable rgba16f texture2D;
+uniform DebugOutput : *mutable rgba16f texture2D;
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(64)
+entry_point
+csCull() void 
+{
+    const index1D = computeGetGlobalInvocationIndices().x;
+
+    if (index1D > LightUniforms.NumLightClusters)
+        return;
+
+    const aabb = bufferLoad(ClusterAABBs[index1D]); 
+
+    var flags = 0u;
+
+    // update pointlights
+    var numLights = 0;
+    for (var i = 0; i < LightUniforms.NumPointLights; i++)
+    {
+        const light = LightLists.PointLights[i];
+        const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
+        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        {
+            LightIndexLists.PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+            numLights++;
+        }
+    }
+    LightIndexLists.PointLightCountList[index1D] = numLights;
+
+    // update feature flags if we have any lights
+    if (numLights > 0)
+        flags |= CLUSTER_POINTLIGHT_BIT;
+
+    // update spotlights
+    numLights = 0;
+    for (var i = 0; i < LightUniforms.NumSpotLights; i++)
+    {
+        const light = LightLists.SpotLights[i];
+        // first do fast discard sphere test
+        const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
+        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        {
+            // then do more refined cone test, if previous test passed
+            const viewSpaceForward = (ViewConstants.View * f32x4(light.forward, 0)).xyz;
+            if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
+            {
+                LightIndexLists.SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+                numLights++;
+            }
+        }       
+    }
+    LightIndexLists.SpotLightCountList[index1D] = numLights;
+
+    // update feature flags if we have any lights
+    if (numLights > 0)
+        flags |= CLUSTER_SPOTLIGHT_BIT;
+
+    numLights = 0;
+    for (var i = 0; i < LightUniforms.NumAreaLights; i++)
+    { 
+        const light = LightLists.AreaLights[i];
+        const viewSpaceCenter = (ViewConstants.View * f32x4(light.position, 1)).xyz;
+
+        //vec3 maxExtents = vec3(max(max(viewSpaceExtents.x, viewSpaceExtents.y), viewSpaceExtents.z));
+        const viewSpaceMin = viewSpaceCenter - light.bboxMin;
+        const viewSpaceMax = viewSpaceCenter + light.bboxMax;
+        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
+        {
+            LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+            numLights++;
+        }
+    }
+    LightIndexLists.AreaLightCountList[index1D] = numLights;
+
+    if (numLights > 0)
+        flags |= CLUSTER_AREALIGHT_BIT;
+
+    atomicOr(&ClusterAABBs[index1D].featureFlags, flags, MemorySemantics.Relaxed);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(64)
+entry_point
+csDebug() void
+{
+    const coord = i32x2(computeGetGlobalInvocationIndices().xy);
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+
+    // convert screen coord to view-space position
+    const worldPos = PixelToWorld(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, worldPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    const flag = ClusterAABBs[idx].featureFlags; // add 0 so we can read the value
+    var color = f32x4(0, 0, 0, 0);
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
+    {
+        const count = LightIndexLists.PointLightCountList[idx];
+        color.r = count / f32(LightUniforms.NumPointLights);
+    }
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
+    {
+        const count = LightIndexLists.SpotLightCountList[idx];
+        color.g = count / f32(LightUniforms.NumSpotLights);
+    }
+    if (CheckFlags(flag, CLUSTER_AREALIGHT_BIT))
+    {
+        const count = LightIndexLists.AreaLightCountList[idx];
+        color.b = count / f32(LightUniforms.NumAreaLights);
+    }
+    
+    textureStore(DebugOutput, i32x2(coord), color); 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Cull")
+program Cull
+{
+    ComputeShader = csCull;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Debug")
+program Debug
+{
+    ComputeShader = csDebug;
+};

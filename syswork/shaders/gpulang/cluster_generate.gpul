@@ -15,7 +15,7 @@ local_size_x(64)
 entry_point
 csClusterAABB() void
 {
-    const index1D = computeGetGlobalInvocationIndices().x;
+    const index1D = computeGetGlobalThreadIndices().x;
     const index3D = Unpack1DTo3D(index1D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
     if (index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z)
@@ -46,7 +46,7 @@ csClusterAABB() void
     aabb.maxPoint = f32x4(max(nearMin, max(nearMax, max(farMin, farMax))), 1);
     const extents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
     const radius = dot(extents, extents);
-    aabb.featureFlags = 0;
+    aabb.featureFlags = 0u;
     aabb.minPoint.w = radius;
     aabb.maxPoint.w = sqrt(radius);
     bufferStore(ClusterAABBs[index1D], aabb);
