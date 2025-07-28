@@ -38,3 +38,4 @@ imgui.ini
 /syswork/export
 /tests/export
 /intermediate/*
+.DS_Store
