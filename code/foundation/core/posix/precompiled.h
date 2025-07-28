@@ -28,8 +28,12 @@
 #include <limits.h>
 
 // sse intrinsics
+#if __SSE2__ || __SSE4_1__ || __AVX2__
 #include <emmintrin.h>
 #include <immintrin.h>
+#elif __aarc64__
+#include <arm_neon.h>
+#endif
 
 //------------------------------------------------------------------------------
 #endif

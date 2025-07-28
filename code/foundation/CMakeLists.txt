@@ -60,6 +60,7 @@ nebula_begin_module(foundation)
                 rtti.h
                 rttimacros.h
                 singleton.h
+                simd.h
                 sysfunc.h
                 types.h
                 weakptr.h
