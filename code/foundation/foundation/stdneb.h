@@ -13,7 +13,7 @@
 #include "util/compilerhelper.h"
 #if __WIN32__
 #include "core/win32/precompiled.h"
-#elif __linux__
+#elif __linux__ || __macos__
 #include "core/posix/precompiled.h"
 #else
 #error "precompiled.h not implemented on this platform"
