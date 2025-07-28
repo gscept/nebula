@@ -1,0 +1,9 @@
+---
+platform: osx
+generator: Xcode 
+build_tool: cmake
+build_type: Release
+defines:
+  N_USE_VULKAN: ON
+  FIPS_RTTI: ON
+  FIPS_EXCEPTIONS: ON
