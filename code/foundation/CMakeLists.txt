@@ -2,7 +2,7 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
-if(FIPS_LINUX)
+if(FIPS_LINUX OR FIPS_MACOS)
     FIND_PACKAGE(CURL)
 endif()
 
@@ -687,11 +687,12 @@ nebula_begin_module(foundation)
             posixbarrier.h
             posixcriticalsection.h
             posixevent.h
-            posixinterlocked.h
 
             posixthread.cc
             posixthread.h
         )
+        fips_dir(threading/gcc GROUP "threading/gcc")
+        fips_files(gccinterlocked.cc)
     endif()
 nebula_end_module()
 #FIXME cant add python include dir globally as it clashes with antlr4
