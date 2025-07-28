@@ -5,7 +5,7 @@
 
     A 3D vector.
 
-    Internally represented as a __m128 for performance and alignment reasons.
+    Internally represented as a f32x4 for performance and alignment reasons.
 
     @see Math::vector
     @see Math::point
@@ -15,10 +15,7 @@
 */
 #include "core/types.h"
 #include "math/scalar.h"
-#include <xmmintrin.h>
-#include <emmintrin.h>
-#include <smmintrin.h>
-#include <immintrin.h>
+#include "core/simd.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -26,15 +23,15 @@ namespace Math
 struct mat4;
 struct vec3;
 
-static const __m128 _id_x = _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f);
-static const __m128 _id_y = _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f);
-static const __m128 _id_z = _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f);
-static const __m128 _id_w = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f);
-static const __m128 _minus1 = _mm_setr_ps(-1.0f, -1.0f, -1.0f, -1.0f);
-static const __m128 _plus1 = _mm_setr_ps(1.0f, 1.0f, 1.0f, 1.0f);
-static const __m128 _zero = _mm_setr_ps(0.0f, 0.0f, 0.0f, 0.0f);
-static const __m128i _sign = _mm_setr_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
-static const __m128 _mask_xyz = _mm_castsi128_ps(_mm_setr_epi32( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 ));
+static const f32x4 _id_x = set_f32x4(1.0f, 0.0f, 0.0f, 0.0f);
+static const f32x4 _id_y = set_f32x4(0.0f, 1.0f, 0.0f, 0.0f);
+static const f32x4 _id_z = set_f32x4(0.0f, 0.0f, 1.0f, 0.0f);
+static const f32x4 _id_w = set_f32x4(0.0f, 0.0f, 0.0f, 1.0f);
+static const f32x4 _minus1 = set_f32x4(-1.0f, -1.0f, -1.0f, -1.0f);
+static const f32x4 _plus1 = set_f32x4(1.0f, 1.0f, 1.0f, 1.0f);
+static const f32x4 _zero = set_f32x4(0.0f, 0.0f, 0.0f, 0.0f);
+static const i32x4 _sign = set_i32x4(0x80000000, 0x80000000, 0x80000000, 0x80000000);
+static const f32x4 _mask_xyz = cast_i32x4_to_f32x4(set_i32x4( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 ));
 
 struct NEBULA_ALIGN16 vec3
 {
@@ -50,10 +47,10 @@ public:
     /// copy constructor
     vec3(const vec3& rhs) = default;
     /// construct from SSE 128 byte float array
-    vec3(const __m128& rhs);
+    vec3(const f32x4& rhs);
 
     /// assign an vmVector4
-    void operator=(const __m128& rhs);
+    void operator=(const f32x4& rhs);
     /// inplace add
     void operator+=(const vec3& rhs);
     /// inplace sub
@@ -95,7 +92,7 @@ public:
             // we can access __w to check it, but we don't actually use it
             float x, y, z, __w;
         };
-        __m128 vec;
+        f32x4 vec;
         float v[3];
     };
 };
@@ -106,7 +103,7 @@ public:
 __forceinline
 vec3::vec3(scalar x, scalar y, scalar z)
 {
-    this->vec = _mm_setr_ps(x, y, z, 0);
+    this->vec = set_f32x4(x, y, z, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -124,25 +121,25 @@ vec3::vec3(float3 f3)
 __forceinline
 vec3::vec3(scalar v)
 {
-    this->vec = _mm_setr_ps(v, v, v, 0.0f);
+    this->vec = set_f32x4(v, v, v, 0.0f);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline
-vec3::vec3(const __m128& rhs)
+vec3::vec3(const f32x4& rhs)
 {
-    this->vec = _mm_insert_ps(rhs, _id_w, 0b111000);
+    this->vec = set_last_f32x4(rhs, 0);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline void
-vec3::operator=(const __m128& rhs)
+vec3::operator=(const f32x4& rhs)
 {
-    this->vec = _mm_insert_ps(rhs, _id_w, 0b111000);
+    this->vec = set_last_f32x4(rhs, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -151,8 +148,7 @@ vec3::operator=(const __m128& rhs)
 __forceinline bool
 vec3::operator==(const vec3& rhs) const
 {
-    __m128 vTemp = _mm_cmpeq_ps(this->vec, rhs.vec);
-    return ((_mm_movemask_ps(vTemp)==0x0f) != 0);
+    return compare_equal_f32x4(this->vec, rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -161,8 +157,7 @@ vec3::operator==(const vec3& rhs) const
 __forceinline bool
 vec3::operator!=(const vec3 &rhs) const
 {
-    __m128 vTemp = _mm_cmpeq_ps(this->vec, rhs.vec);
-    return ((_mm_movemask_ps(vTemp)==0x0f) == 0);
+    return !compare_equal_f32x4(this->vec, rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -172,8 +167,7 @@ vec3::operator!=(const vec3 &rhs) const
 __forceinline void
 vec3::load(const scalar* ptr)
 {
-    this->vec = _mm_load_ps(ptr);
-    this->vec = _mm_and_ps(this->vec, _mask_xyz);
+    this->vec = load_aligned_f32x3(ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -183,8 +177,7 @@ vec3::load(const scalar* ptr)
 __forceinline void
 vec3::loadu(const scalar* ptr)
 {
-    this->vec = _mm_loadu_ps(ptr);
-    this->vec = _mm_and_ps(this->vec, _mask_xyz);
+    this->vec = load_unaligned_f32x3(ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -194,9 +187,7 @@ vec3::loadu(const scalar* ptr)
 __forceinline void
 vec3::store(scalar* ptr) const
 {
-    __m128 vv = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
-    _mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
-    _mm_store_ss(&ptr[2], vv);
+    store_f32x3(this->vec, ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -206,11 +197,7 @@ vec3::store(scalar* ptr) const
 __forceinline void
 vec3::storeu(scalar* ptr) const
 {
-    __m128 t1 = _mm_permute_ps(this->vec, _MM_SHUFFLE(1, 1, 1, 1));
-    __m128 t2 = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
-    _mm_store_ss(&ptr[0], this->vec);
-    _mm_store_ss(&ptr[1], t1);
-    _mm_store_ss(&ptr[2], t2);
+    store_f32x3(this->vec, ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -228,7 +215,7 @@ vec3::stream(scalar* ptr) const
 __forceinline vec3
 operator-(const vec3& lhs)
 {
-    return vec3(_mm_xor_ps(_mm_castsi128_ps(_sign), lhs.vec));
+    return vec3(flip_sign(lhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -238,8 +225,8 @@ operator-(const vec3& lhs)
 __forceinline vec3
 operator*(const vec3& lhs, scalar t)
 {
-    __m128 temp = _mm_set1_ps(t);
-    return _mm_mul_ps(lhs.vec, temp);
+    f32x4 temp = _mm_set1_ps(t);
+    return mul_f32x4(lhs.vec, temp);
 }
 
 //------------------------------------------------------------------------------
@@ -249,7 +236,7 @@ operator*(const vec3& lhs, scalar t)
 __forceinline vec3
 operator*(const vec3& lhs, const vec3& rhs)
 {
-    return _mm_mul_ps(lhs.vec, rhs.vec);
+    return mul_f32x4(lhs.vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -269,7 +256,7 @@ operator/(const vec3& lhs, scalar t)
 __forceinline void
 vec3::operator*=(const vec3& rhs)
 {
-    this->vec = _mm_mul_ps(this->vec, rhs.vec);
+    this->vec = mul_f32x4(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -278,7 +265,7 @@ vec3::operator*=(const vec3& rhs)
 __forceinline void
 vec3::operator/=( const vec3& rhs )
 {
-    this->vec = _mm_div_ps(this->vec, rhs.vec);
+    this->vec = div_f32x4(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -287,7 +274,7 @@ vec3::operator/=( const vec3& rhs )
 __forceinline void
 vec3::operator+=(const vec3 &rhs)
 {
-    this->vec = _mm_add_ps(this->vec, rhs.vec);
+    this->vec = add_f32x4(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -296,7 +283,7 @@ vec3::operator+=(const vec3 &rhs)
 __forceinline void
 vec3::operator-=(const vec3 &rhs)
 {
-    this->vec = _mm_sub_ps(this->vec, rhs.vec);
+    this->vec = sub_f32x4(this->vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -305,8 +292,8 @@ vec3::operator-=(const vec3 &rhs)
 __forceinline void
 vec3::operator*=(scalar s)
 {
-    __m128 temp = _mm_set1_ps(s);
-    this->vec = _mm_mul_ps(this->vec, temp);
+    f32x4 temp = splat_f32x4(s);
+    this->vec = mul_f32x4(this->vec, temp);
 }
 
 //------------------------------------------------------------------------------
@@ -315,7 +302,7 @@ vec3::operator*=(scalar s)
 __forceinline vec3
 operator+(const vec3& lhs, const vec3 &rhs)
 {
-    return _mm_add_ps(lhs.vec, rhs.vec);
+    return add_f32x4(lhs.vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -324,7 +311,7 @@ operator+(const vec3& lhs, const vec3 &rhs)
 __forceinline vec3
 operator-(const vec3& lhs, const vec3& rhs)
 {
-    return _mm_sub_ps(lhs.vec, rhs.vec);
+    return sub_f32x4(lhs.vec, rhs.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -333,7 +320,7 @@ operator-(const vec3& lhs, const vec3& rhs)
 __forceinline void
 vec3::set(scalar x, scalar y, scalar z)
 {
-    this->vec = _mm_setr_ps(x, y, z, 0);
+    this->vec = set_f32x4(x, y, z, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -362,7 +349,8 @@ vec3::operator[](const int index) const
 __forceinline scalar
 length(const vec3& v)
 {
-    return _mm_cvtss_f32(_mm_sqrt_ss(_mm_dp_ps(v.vec, v.vec, 0x71)));
+    scalar dot = dot_f32x3(v.vec, v.vec);
+    return sqrt(dot);
 }
 
 //------------------------------------------------------------------------------
@@ -371,7 +359,7 @@ length(const vec3& v)
 __forceinline scalar
 lengthsq(const vec3& v)
 {
-    return _mm_cvtss_f32(_mm_dp_ps(v.vec, v.vec, 0x71));
+    return dot_f32x3(v.vec, v.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -380,7 +368,7 @@ lengthsq(const vec3& v)
 __forceinline vec3
 reciprocal(const vec3& v)
 {
-    return _mm_div_ps(_plus1, v.vec);   
+    return div_f32x4(_plus1, v.vec)
 }
 
 //------------------------------------------------------------------------------
@@ -389,7 +377,7 @@ reciprocal(const vec3& v)
 __forceinline vec3
 reciprocalapprox(const vec3& v)
 {
-    return _mm_rcp_ps(v.vec);
+    return rcp_f32x4(v.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -398,7 +386,7 @@ reciprocalapprox(const vec3& v)
 __forceinline vec3
 multiply(const vec3& v0, const vec3& v1)
 {
-    return _mm_mul_ps(v0.vec, v1.vec);
+    return mul_f32x4(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -407,11 +395,7 @@ multiply(const vec3& v0, const vec3& v1)
 __forceinline vec3
 multiplyadd( const vec3& v0, const vec3& v1, const vec3& v2 )
 {
-#if NEBULA_MATH_FMA
-    return _mm_fmadd_ps(v0.vec, v1.vec, v2.vec);
-#else
-    return _mm_add_ps(_mm_mul_ps(v0.vec, v1.vec),v2.vec);
-#endif
+    return fma_f32x4(v0.vec, v1.vec, v2.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -420,7 +404,7 @@ multiplyadd( const vec3& v0, const vec3& v1, const vec3& v2 )
 __forceinline vec3 
 divide(const vec3& v0, const vec3& v1)
 {
-    return _mm_div_ps(v0.vec, v1.vec);
+    return div_f32x4(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -430,7 +414,7 @@ __forceinline vec3
 abs(const vec3& v)
 {
     unsigned int val = 0x7fffffff;
-    __m128 temp = _mm_set1_ps(*(float*)&val);
+    f32x4 temp = _mm_set1_ps(*(float*)&val);
     return _mm_and_ps(v.vec, temp);
 }
 
@@ -440,7 +424,7 @@ abs(const vec3& v)
 __forceinline vec3
 cross(const vec3& v0, const vec3& v1)
 {
-    __m128 tmp0, tmp1, tmp2, tmp3, result;
+    f32x4 tmp0, tmp1, tmp2, tmp3, result;
     tmp0 = _mm_shuffle_ps( v0.vec, v0.vec, _MM_SHUFFLE(3,0,2,1) );
     tmp1 = _mm_shuffle_ps( v1.vec, v1.vec, _MM_SHUFFLE(3,1,0,2) );
     tmp2 = _mm_shuffle_ps( v0.vec, v0.vec, _MM_SHUFFLE(3,1,0,2) );
@@ -456,7 +440,7 @@ cross(const vec3& v0, const vec3& v1)
 __forceinline scalar
 dot(const vec3& v0, const vec3& v1)
 {
-    return _mm_cvtss_f32(_mm_dp_ps(v0.vec, v1.vec, 0x71));
+    return dot_f32x3(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -466,10 +450,10 @@ dot(const vec3& v0, const vec3& v1)
 __forceinline vec3
 barycentric(const vec3& v0, const vec3 &v1, const vec3 &v2, scalar f, scalar g)
 {
-    __m128 R1 = _mm_sub_ps(v1.vec,v0.vec);
-    __m128 SF = _mm_set_ps1(f);
-    __m128 R2 = _mm_sub_ps(v2.vec,v0.vec);
-    __m128 SG = _mm_set_ps1(g);
+    f32x4 R1 = _mm_sub_ps(v1.vec,v0.vec);
+    f32x4 SF = _mm_set_ps1(f);
+    f32x4 R2 = _mm_sub_ps(v2.vec,v0.vec);
+    f32x4 SG = _mm_set_ps1(g);
     R1 = _mm_mul_ps(R1,SF);
     R2 = _mm_mul_ps(R2,SG);
     R1 = _mm_add_ps(R1,v0.vec);
@@ -486,10 +470,10 @@ catmullrom(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& v3, scala
     scalar s2 = s * s;
     scalar s3 = s * s2;
 
-    __m128 P0 = _mm_set_ps1((-s3 + 2.0f * s2 - s) * 0.5f);
-    __m128 P1 = _mm_set_ps1((3.0f * s3 - 5.0f * s2 + 2.0f) * 0.5f);
-    __m128 P2 = _mm_set_ps1((-3.0f * s3 + 4.0f * s2 + s) * 0.5f);
-    __m128 P3 = _mm_set_ps1((s3 - s2) * 0.5f);
+    f32x4 P0 = _mm_set_ps1((-s3 + 2.0f * s2 - s) * 0.5f);
+    f32x4 P1 = _mm_set_ps1((3.0f * s3 - 5.0f * s2 + 2.0f) * 0.5f);
+    f32x4 P2 = _mm_set_ps1((-3.0f * s3 + 4.0f * s2 + s) * 0.5f);
+    f32x4 P3 = _mm_set_ps1((s3 - s2) * 0.5f);
 
     P0 = _mm_mul_ps(P0, v0.vec);
     P1 = _mm_mul_ps(P1, v1.vec);
@@ -510,13 +494,13 @@ hermite(const vec3& v1, const vec3& t1, const vec3& v2, const vec3& t2, scalar s
     scalar s2 = s * s;
     scalar s3 = s * s2;
 
-    __m128 P0 = _mm_set_ps1(2.0f * s3 - 3.0f * s2 + 1.0f);
-    __m128 T0 = _mm_set_ps1(s3 - 2.0f * s2 + s);
-    __m128 P1 = _mm_set_ps1(-2.0f * s3 + 3.0f * s2);
-    __m128 T1 = _mm_set_ps1(s3 - s2);
+    f32x4 P0 = _mm_set_ps1(2.0f * s3 - 3.0f * s2 + 1.0f);
+    f32x4 T0 = _mm_set_ps1(s3 - 2.0f * s2 + s);
+    f32x4 P1 = _mm_set_ps1(-2.0f * s3 + 3.0f * s2);
+    f32x4 T1 = _mm_set_ps1(s3 - s2);
 
-    __m128 vResult = _mm_mul_ps(P0, v1.vec);
-    __m128 vTemp = _mm_mul_ps(T0, t1.vec);
+    f32x4 vResult = _mm_mul_ps(P0, v1.vec);
+    f32x4 vTemp = _mm_mul_ps(T0, t1.vec);
     vResult = _mm_add_ps(vResult,vTemp);
     vTemp = _mm_mul_ps(P1, v2.vec);
     vResult = _mm_add_ps(vResult,vTemp);
@@ -532,20 +516,20 @@ __forceinline scalar
 angle(const vec3& v0, const vec3& v1)
 {
 
-    __m128 l0 = _mm_mul_ps(v0.vec, v0.vec);
+    f32x4 l0 = _mm_mul_ps(v0.vec, v0.vec);
     l0 = _mm_add_ps(_mm_shuffle_ps(l0, l0, _MM_SHUFFLE(0, 0, 0, 0)),
         _mm_add_ps(_mm_shuffle_ps(l0, l0, _MM_SHUFFLE(1, 1, 1, 1)), _mm_shuffle_ps(l0, l0, _MM_SHUFFLE(2, 2, 2, 2))));
 
-    __m128 l1 = _mm_mul_ps(v1.vec, v1.vec);
+    f32x4 l1 = _mm_mul_ps(v1.vec, v1.vec);
     l1 = _mm_add_ps(_mm_shuffle_ps(l1, l1, _MM_SHUFFLE(0, 0, 0, 0)),
         _mm_add_ps(_mm_shuffle_ps(l1, l1, _MM_SHUFFLE(1, 1, 1, 1)), _mm_shuffle_ps(l1, l1, _MM_SHUFFLE(2, 2, 2, 2))));
 
-    __m128 l = _mm_shuffle_ps(l0, l1, _MM_SHUFFLE(0, 0, 0, 0));
+    f32x4 l = _mm_shuffle_ps(l0, l1, _MM_SHUFFLE(0, 0, 0, 0));
     l = _mm_rsqrt_ps(l);
     l = _mm_mul_ss(_mm_shuffle_ps(l, l, _MM_SHUFFLE(0, 0, 0, 0)), _mm_shuffle_ps(l, l, _MM_SHUFFLE(1, 1, 1, 1)));
 
 
-    __m128 dot = _mm_mul_ps(v0.vec, v1.vec);
+    f32x4 dot = _mm_mul_ps(v0.vec, v1.vec);
     dot = _mm_add_ps(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(0, 0, 0, 0)),
         _mm_add_ps(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(1, 1, 1, 1)),
             _mm_add_ps(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(2, 2, 2, 2)), _mm_shuffle_ps(dot, dot, _MM_SHUFFLE(3, 3, 3, 3)))));
@@ -566,7 +550,7 @@ angle(const vec3& v0, const vec3& v1)
 __forceinline vec3
 lerp(const vec3& v0, const vec3& v1, scalar s)
 {
-    return v0 + ((v1-v0) * s);
+    return fma_f32x4(sub_f32x4(v0.vec, v1.vec), splat_f32x4(s), v0.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -575,7 +559,7 @@ lerp(const vec3& v0, const vec3& v1, scalar s)
 __forceinline vec3
 maximize(const vec3& v0, const vec3& v1)
 {
-    return _mm_max_ps(v0.vec, v1.vec);
+    return max_f32x4(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -584,7 +568,7 @@ maximize(const vec3& v0, const vec3& v1)
 __forceinline vec3
 minimize(const vec3& v0, const vec3& v1)
 {
-    return _mm_min_ps(v0.vec, v1.vec);
+    return min_f32x4(v0.vec, v1.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -593,8 +577,8 @@ minimize(const vec3& v0, const vec3& v1)
 __forceinline vec3
 clamp(const vec3& clamp, const vec3& min, const vec3& max)
 {
-    __m128 temp = _mm_max_ps(min.vec, clamp.vec);
-    temp = _mm_min_ps(temp, max.vec);
+    f32x4 temp = max_f32x4(min.vec, clamp.vec);
+    temp = min_f32x4(temp, max.vec);
     return vec3(temp);
 }
 
@@ -605,8 +589,8 @@ __forceinline vec3
 normalize(const vec3& v)
 {
     if (v == vec3(0)) return v;
-    __m128 t = _mm_div_ps(v.vec, _mm_sqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x77)));
-    return _mm_insert_ps(t, v.vec, 0xF0);
+    f32x4 t = div_f32x4(v.vec, sqrt_f32x4(dot_f32x3(v.vec, v.vec)));
+    return vec3(t);
 }
 
 //------------------------------------------------------------------------------
@@ -616,9 +600,9 @@ __forceinline vec3
 normalizeapprox(const vec3& v)
 {
     if (v == vec3(0)) return v;
-    __m128 t = _mm_rsqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x7f));
-    t = _mm_or_ps(t, _id_w);
-    return _mm_mul_ps(v.vec, t);
+    f32x4 t = rsqrt_f32x4(dot_f32x3(v.vec, v.vec));
+    set_last_f32x4(t, 0);
+    return mul_f32x4(v.vec, t);
 }
 
 //------------------------------------------------------------------------------
@@ -627,12 +611,12 @@ normalizeapprox(const vec3& v)
 __forceinline vec3
 reflect(const vec3& normal, const vec3& incident)
 {
-    __m128 res = _mm_mul_ps(incident.vec, normal.vec);
-    res = _mm_add_ps(_mm_shuffle_ps(res, res, _MM_SHUFFLE(0,0,0,0)),
-        _mm_add_ps(_mm_shuffle_ps(res, res, _MM_SHUFFLE(1,1,1,1)), _mm_shuffle_ps(res, res, _MM_SHUFFLE(2,2,2,2))));
-    res = _mm_add_ps(res, res);
-    res = _mm_mul_ps(res, normal.vec);
-    res = _mm_sub_ps(incident.vec,res);
+    f32x4 res = mul_f32x4(incident.vec, normal.vec);
+    res = add_f32x4(shuffle_f32x4(res, res, 0, 0, 0, 0),
+        add_f32x4(shuffle_f32x4(res, res, 1, 1, 1, 1), shuffle_f32x4(res, res, 2, 2, 2, 2)));
+    res = add_f32x4(res, res);
+    res = mul_f32x4(res, normal.vec);
+    res = sub_f32x4(incident.vec,res);
     return res;
 }
 
@@ -642,7 +626,7 @@ reflect(const vec3& normal, const vec3& incident)
 __forceinline bool
 less_any(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res != 7;
 }
@@ -653,7 +637,7 @@ less_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 less_all(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res == 0;
 }
@@ -664,7 +648,7 @@ less_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 lessequal_any(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res != 0x7;
 }
@@ -675,7 +659,7 @@ lessequal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 lessequal_all(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res == 0;
 }
@@ -686,7 +670,7 @@ lessequal_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 greater_any(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res != 0;
 }
@@ -697,7 +681,7 @@ greater_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 greater_all(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res == 0x7;
 }
@@ -708,7 +692,7 @@ greater_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 greaterequal_any(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res != 0;
 }
@@ -719,7 +703,7 @@ greaterequal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 greaterequal_all(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res == 0x7;
 }
@@ -730,7 +714,7 @@ greaterequal_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 equal_any(const vec3& v0, const vec3& v1)
 {
-    __m128 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
+    f32x4 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
     int res = _mm_movemask_ps(vTemp) & 7;
     return res != 0;
 }
@@ -741,9 +725,9 @@ equal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 nearequal(const vec3& v0, const vec3& v1, float epsilon)
 {
-    __m128 eps = _mm_setr_ps(epsilon, epsilon, epsilon, 0.0f);
-    __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
-    __m128 temp = _mm_setzero_ps();
+    f32x4 eps = _mm_setr_ps(epsilon, epsilon, epsilon, 0.0f);
+    f32x4 delta = _mm_sub_ps(v0.vec, v1.vec);
+    f32x4 temp = _mm_setzero_ps();
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
     temp = _mm_cmple_ps(temp, eps);
@@ -757,8 +741,8 @@ nearequal(const vec3& v0, const vec3& v1, float epsilon)
 __forceinline bool
 nearequal(const vec3& v0, const vec3& v1, const vec3& epsilon)
 {
-    __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
-    __m128 temp = _mm_setzero_ps();
+    f32x4 delta = _mm_sub_ps(v0.vec, v1.vec);
+    f32x4 temp = _mm_setzero_ps();
     temp = _mm_sub_ps(temp, delta);
     temp = _mm_max_ps(temp, delta);
     temp = _mm_cmple_ps(temp, epsilon.vec);
@@ -801,7 +785,7 @@ splat(const vec3& v, uint element)
 {
     n_assert(element < 3 && element >= 0);
 
-    __m128 res;
+    f32x4 res;
     switch (element)
     {
     case 0:
@@ -824,7 +808,7 @@ splat(const vec3& v, uint element)
 __forceinline vec3
 splat_x(const vec3& v)
 {
-    __m128 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    f32x4 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(0, 0, 0, 0));
     res = _mm_and_ps(res, _mask_xyz);
     return res;
 }
@@ -835,7 +819,7 @@ splat_x(const vec3& v)
 __forceinline vec3
 splat_y(const vec3& v)
 {
-    __m128 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    f32x4 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(1, 1, 1, 1));
     res = _mm_and_ps(res, _mask_xyz);
     return res;
 }
@@ -846,7 +830,7 @@ splat_y(const vec3& v)
 __forceinline vec3
 splat_z(const vec3& v)
 {
-    __m128 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
+    f32x4 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
     res = _mm_and_ps(res, _mask_xyz);
     return res;
 }
@@ -857,19 +841,19 @@ splat_z(const vec3& v)
 __forceinline vec3
 permute(const vec3& v0, const vec3& v1, unsigned int i0, unsigned int i1, unsigned int i2)
 {
-    static __m128i three = _mm_set_epi32(3,3,3,3);
+    static i32x4 three = _mm_set_epi32(3,3,3,3);
 
     NEBULA_ALIGN16 unsigned int elem[4] = { i0, i1, i2, 7 };
-    __m128i vControl = _mm_load_si128(reinterpret_cast<const __m128i*>(&elem[0]));
+    i32x4 vControl = _mm_load_si128(reinterpret_cast<const __m128i*>(&elem[0]));
 
-    __m128i vSelect = _mm_cmpgt_epi32(vControl, three);
+    i32x4 vSelect = _mm_cmpgt_epi32(vControl, three);
     vControl = _mm_and_si128(vControl, three);
 
-    __m128 shuffled1 = _mm_permutevar_ps(v0.vec, vControl);
-    __m128 shuffled2 = _mm_permutevar_ps(v1.vec, vControl);
+    f32x4 shuffled1 = _mm_permutevar_ps(v0.vec, vControl);
+    f32x4 shuffled2 = _mm_permutevar_ps(v1.vec, vControl);
 
-    __m128 masked1 = _mm_andnot_ps(_mm_castsi128_ps(vSelect), shuffled1);
-    __m128 masked2 = _mm_and_ps(_mm_castsi128_ps(vSelect), shuffled2);
+    f32x4 masked1 = _mm_andnot_ps(_mm_castsi128_ps(vSelect), shuffled1);
+    f32x4 masked2 = _mm_and_ps(_mm_castsi128_ps(vSelect), shuffled2);
 
     return _mm_or_ps(masked1, masked2);
 }
@@ -890,8 +874,8 @@ select(const vec3& v0, const vec3& v1, const uint i0, const uint i1, const uint 
 __forceinline vec3
 select(const vec3& v0, const vec3& v1, const vec3& control)
 {
-    __m128 v0masked = _mm_andnot_ps(control.vec, v0.vec);
-    __m128 v1masked = _mm_and_ps(v1.vec, control.vec);
+    f32x4 v0masked = _mm_andnot_ps(control.vec, v0.vec);
+    f32x4 v1masked = _mm_and_ps(v1.vec, control.vec);
     return _mm_or_ps(v0masked, v1masked);
 }
 

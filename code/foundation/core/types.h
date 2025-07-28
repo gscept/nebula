@@ -32,6 +32,7 @@ typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
 typedef unsigned char  ubyte;
+typedef char byte;
 
 typedef uintptr_t uintptr;
 typedef ptrdiff_t ptrdiff;
@@ -126,17 +127,12 @@ typedef unsigned char byte;
 #error "Unsupported platform!"
 #endif
 
-#if __MAYA__
-#define ThreadLocal
-#elif __WIN32__
+#if __WIN32__
 #define ThreadLocal __declspec(thread)
 #elif __linux__
 #define ThreadLocal __thread
-#if (__OSX__ || __APPLE__)
-// thread locals are not allowed on osx, so we define thread local as nothing to prevent problems
-#undef ThreadLocal
-#define ThreadLocal
-#endif
+#elif (__OSX__ || __APPLE__)
+#define ThreadLocal thread_local
 #else
 #error "Unsupported platform!"
 #endif
