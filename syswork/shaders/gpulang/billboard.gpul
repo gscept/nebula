@@ -2,7 +2,6 @@
 //  billboard.gpul
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include <lib/std.gpuh>
 #include <lib/shared.gpuh>
 #include <lib/objects_shared.gpuh>

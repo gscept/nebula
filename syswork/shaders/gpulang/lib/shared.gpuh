@@ -3,7 +3,6 @@
 //  shared.gpuh
 //  (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 
