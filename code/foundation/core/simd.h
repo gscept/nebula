@@ -15,6 +15,7 @@
 #include <immintrin.h>
 typedef f32x4 __m128;
 typedef i32x4 __m128i;
+typedef u32x4 __m128i;
 
 static const f32x4 _mask_xyz = cast_i32x4_to_f32x4(set_i32x4( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 ));
 
@@ -68,11 +69,82 @@ set_last_f32x4(f32x4 v, float val)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline bool
+__forceinline u32x4
 compare_equal_f32x4(f32x4 a, f32x4 b)
 {
-    f32x4 vTemp = _mm_cmpeq_ps(this->vec, rhs.vec);
-    return ((_mm_movemask_ps(vTemp)==0x0f) != 0);
+    return _mm_castps_si128(_mm_cmpeq_ps(a, b));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_greater_equal_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_castps_si128(_mm_cmpge_ps(a, b));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_greater_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_castps_si128(_mm_cmpgt_ps(a, b));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_less_equal_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_castps_si128(_mm_cmple_ps(a, b));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_less_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_castps_si128(_mm_cmplt_ps(a, b));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+all_u32x4(u32x4 a)
+{
+    return _mm_movemask_epi8(a) == 0xF;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+all_u32x3(u32x4 a)
+{
+    return _mm_movemask_epi8(a) == 0x7;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+any_u32x4(u32x4 a)
+{
+    return _mm_movemask_epi8(a) != 0x0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+any_u32x3(u32x4 a)
+{
+    return (_mm_movemask_epi8(a) & 0x7) != 0x0;
 }
 
 //------------------------------------------------------------------------------
@@ -120,6 +192,15 @@ store_f32x4(f32x4 vec, scalar* ptr)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline void
+store_f32(f32x4 vec, scalar* ptr)
+{
+    _mm_store_ss(ptt, vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline f32x4
 flip_sign_f32x4(f32x4 vec)
 {
@@ -133,6 +214,15 @@ __forceinline f32x4
 mul_f32x4(f32x4 a, f32x4 b)
 {
     return _mm_mul_ps(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
+mul_first_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_mul_ss(a, b);
 }
 
 //------------------------------------------------------------------------------
@@ -196,6 +286,17 @@ dot_f32x3(f32x4 a, f32x4 b)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline f32x4
+abs_f32x4(f32x4 a)
+{
+    unsigned int val = 0x7fffffff;
+    f32x4 temp = _mm_set1_ps(*(float*)&val);
+    return _mm_and_ps(a, temp);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline scalar
 get_first_f32x4(f32x4 a)
 {
@@ -245,9 +346,27 @@ max_f32x4(f32x4 a, f32x4 b)
 /**
 */
 __forceinline f32x4
+max_first_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_max_ss(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
 min_f32x4(f32x4 a, f32x4 b)
 {
     return _mm_min_ps(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
+min_first_f32x4(f32x4 a, f32x4 b)
+{
+    return _mm_min_ss(a, b);
 }
 
 //------------------------------------------------------------------------------
@@ -260,10 +379,21 @@ shuffle_f32x4(f32x4 a, f32x4 b, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1)
     return _mm_shuffle_ps(a, b, mask);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
+convert_u32x4_to_f32x4(u32x4 a)
+{
+    // assumes u32x4 is never anything but a comparison
+    return _mm_castsi128_ps(a);
+}
+
 #elif __aarch64__
 #include <arm_neon.h>
 typedef f32x4 float32x4_t;
 typedef i32x4 int32x4_t;
+typedef u32x4 uint32x4_t;
 
 //------------------------------------------------------------------------------
 /**
@@ -313,10 +443,54 @@ set_last_f32x4(f32x4 v, float val)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline bool
+__forceinline u32x4
 compare_equal_f32x4(f32x4 a, f32x4 b)
 {
-    uint32x4_t cmp = vceqq_f32(a, b);
+    return vceqq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_greater_equal_f32x4(f32x4 a, f32x4 b)
+{
+    return vcgeq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_greater_f32x4(f32x4 a, f32x4 b)
+{
+    return vcgtq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_less_equal_f32x4(f32x4 a, f32x4 b)
+{
+    return vcleq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline u32x4
+compare_less_f32x4(f32x4 a, f32x4 b)
+{
+    return vcltq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+all_u32x4(u32x4 cmp)
+{
     uint32x2_t low = vget_low_u32(cmp);
     uint32x2_t high = vget_high_u32(cmp);
 
@@ -325,6 +499,52 @@ compare_equal_f32x4(f32x4 a, f32x4 b)
 
     return res == 0xFFFFFFFF;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+all_u32x3(u32x4 cmp)
+{
+    uint32x2_t low = vget_low_u32(cmp);
+    uint32x2_t high = vget_high_u32(cmp);
+
+    uint32x2_t and1 = vand_u32(low, vdup_n_u32(vgetq_lane_u32(cmp, 2)));
+    uint32_t res = vget_lane_u32(and1, 0) & vget_lane_u32(and1, 1);
+
+    return res == 0xFFFFFFFF;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+any_u32x4(u32x4 cmp)
+{
+    uint32x2_t low = vget_low_u32(cmp);
+    uint32x2_t high = vget_high_u32(cmp);
+
+    uint32x2_t and1 = vand_u32(low, high);
+    uint32_t res = vget_lane_u32(and1, 0) & vget_lane_u32(and1, 1);
+
+    return res != 0x0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline bool
+any_u32x3(u32x4 cmp)
+{
+    uint32x2_t low = vget_low_u32(cmp);
+    uint32x2_t high = vget_high_u32(cmp);
+
+    uint32x2_t and1 = vand_u32(low, vdup_n_u32(vgetq_lane_u32(cmp, 2)));
+    uint32_t res = vget_lane_u32(and1, 0) & vget_lane_u32(and1, 1);
+
+    return res == 0x0;
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -369,6 +589,15 @@ store_f32x4(f32x4 vec, scalar* ptr)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline void
+store_f32(f32x4 vec, scalar* ptr)
+{
+    ptr[0] = vgetq_lane_f32(vec, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline f32x4
 flip_sign_f32x4(f32x4 vec)
 {
@@ -383,6 +612,16 @@ __forceinline f32x4
 mul_f32x4(f32x4 a, f32x4 b)
 {
     return vmulq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
+mul_first_f32x4(f32x4 a, f32x4 b)
+{
+    float first = vget_lane_f32(a, 0) * vget_lane_f32(b, 0);
+    return vsetq_lane_f32(first, a, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -459,6 +698,15 @@ dot_f32x3(f32x4 a, f32x4 b)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline f32x4
+abs_f32x4(f32x4 a)
+{
+    return vabsq_f32(a);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline scalar
 get_first_f32x4(f32x4 a)
 {
@@ -511,9 +759,33 @@ max_f32x4(f32x4 a, f32x4 b)
 /**
 */
 __forceinline f32x4
+max_first_f32x4(f32x4 a, f32x4 b)
+{
+    float a0 = vget_lane_f32(a, 0);
+    float b0 = vget_lane_f32(b, 0);
+    float largest = a0 < b0 ? b0 : a0;
+    return vsetq_lane_f32(largest, a, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
 min_f32x4(f32x4 a, f32x4 b)
 {
     return vminq_f32(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
+min_first_f32x4(f32x4 a, f32x4 b)
+{
+    float a0 = vget_lane_f32(a, 0);
+    float b0 = vget_lane_f32(b, 0);
+    float smallest = a0 > b0 ? b0 : a0;
+    return vsetq_lane_f32(smallest, a, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -528,6 +800,15 @@ shuffle_f32x4(f32x4 a, f32x4 b, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1)
         , vget_lane_f32(b, b0)
         , vget_lane_f32(b, b1)
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline f32x4
+convert_u32x4_to_f32x4(u32x4 a)
+{
+    return vcvtq_f32_u32(a);
 }
 
 #endif
