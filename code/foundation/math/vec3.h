@@ -148,7 +148,7 @@ vec3::operator=(const f32x4& rhs)
 __forceinline bool
 vec3::operator==(const vec3& rhs) const
 {
-    return compare_equal_f32x4(this->vec, rhs);
+    return all_u32x3(compare_equal_f32x4(this->vec, rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ vec3::operator==(const vec3& rhs) const
 __forceinline bool
 vec3::operator!=(const vec3 &rhs) const
 {
-    return !compare_equal_f32x4(this->vec, rhs);
+    return !all_u32x3(compare_equal_f32x4(this->vec, rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -413,9 +413,7 @@ divide(const vec3& v0, const vec3& v1)
 __forceinline vec3
 abs(const vec3& v)
 {
-    unsigned int val = 0x7fffffff;
-    f32x4 temp = _mm_set1_ps(*(float*)&val);
-    return _mm_and_ps(v.vec, temp);
+    return abs_f32x4(v.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -425,12 +423,12 @@ __forceinline vec3
 cross(const vec3& v0, const vec3& v1)
 {
     f32x4 tmp0, tmp1, tmp2, tmp3, result;
-    tmp0 = _mm_shuffle_ps( v0.vec, v0.vec, _MM_SHUFFLE(3,0,2,1) );
-    tmp1 = _mm_shuffle_ps( v1.vec, v1.vec, _MM_SHUFFLE(3,1,0,2) );
-    tmp2 = _mm_shuffle_ps( v0.vec, v0.vec, _MM_SHUFFLE(3,1,0,2) );
-    tmp3 = _mm_shuffle_ps( v1.vec, v1.vec, _MM_SHUFFLE(3,0,2,1) );
-    result = _mm_mul_ps( tmp0, tmp1 );
-    result = _mm_sub_ps( result, _mm_mul_ps( tmp2, tmp3 ) );
+    tmp0 = shuffle_f32x4( v0.vec, v0.vec, 3,0,2,1 );
+    tmp1 = shuffle_f32x4( v1.vec, v1.vec, 3,1,0,2 );
+    tmp2 = shuffle_f32x4( v0.vec, v0.vec, 3,1,0,2 );
+    tmp3 = shuffle_f32x4( v1.vec, v1.vec, 3,0,2,1 );
+    result = mul_f32x4( tmp0, tmp1 );
+    result = sub_f32x4( result, mul_f32x4( tmp2, tmp3 ) );
     return result;
 }
 
@@ -450,14 +448,14 @@ dot(const vec3& v0, const vec3& v1)
 __forceinline vec3
 barycentric(const vec3& v0, const vec3 &v1, const vec3 &v2, scalar f, scalar g)
 {
-    f32x4 R1 = _mm_sub_ps(v1.vec,v0.vec);
-    f32x4 SF = _mm_set_ps1(f);
-    f32x4 R2 = _mm_sub_ps(v2.vec,v0.vec);
-    f32x4 SG = _mm_set_ps1(g);
-    R1 = _mm_mul_ps(R1,SF);
-    R2 = _mm_mul_ps(R2,SG);
-    R1 = _mm_add_ps(R1,v0.vec);
-    R1 = _mm_add_ps(R1,R2);
+    f32x4 R1 = sub_f32x4(v1.vec,v0.vec);
+    f32x4 SF = splat_f32x4(f);
+    f32x4 R2 = sub_f32x4(v2.vec,v0.vec);
+    f32x4 SG = splat_f32x4(g);
+    R1 = mul_f32x4(R1,SF);
+    R2 = mul_f32x4(R2,SG);
+    R1 = add_f32x4(R1,v0.vec);
+    R1 = add_f32x4(R1,R2);
     return R1;
 }
 
@@ -470,18 +468,18 @@ catmullrom(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& v3, scala
     scalar s2 = s * s;
     scalar s3 = s * s2;
 
-    f32x4 P0 = _mm_set_ps1((-s3 + 2.0f * s2 - s) * 0.5f);
-    f32x4 P1 = _mm_set_ps1((3.0f * s3 - 5.0f * s2 + 2.0f) * 0.5f);
-    f32x4 P2 = _mm_set_ps1((-3.0f * s3 + 4.0f * s2 + s) * 0.5f);
-    f32x4 P3 = _mm_set_ps1((s3 - s2) * 0.5f);
+    f32x4 P0 = splat_f32x4((-s3 + 2.0f * s2 - s) * 0.5f);
+    f32x4 P1 = splat_f32x4((3.0f * s3 - 5.0f * s2 + 2.0f) * 0.5f);
+    f32x4 P2 = splat_f32x4((-3.0f * s3 + 4.0f * s2 + s) * 0.5f);
+    f32x4 P3 = splat_f32x4((s3 - s2) * 0.5f);
 
-    P0 = _mm_mul_ps(P0, v0.vec);
-    P1 = _mm_mul_ps(P1, v1.vec);
-    P2 = _mm_mul_ps(P2, v2.vec);
-    P3 = _mm_mul_ps(P3, v3.vec);
-    P0 = _mm_add_ps(P0,P1);
-    P2 = _mm_add_ps(P2,P3);
-    P0 = _mm_add_ps(P0,P2);
+    P0 = mul_f32x4(P0, v0.vec);
+    P1 = mul_f32x4(P1, v1.vec);
+    P2 = mul_f32x4(P2, v2.vec);
+    P3 = mul_f32x4(P3, v3.vec);
+    P0 = add_f32x4(P0,P1);
+    P2 = add_f32x4(P2,P3);
+    P0 = add_f32x4(P0,P2);
     return P0;
 }
 
@@ -494,18 +492,18 @@ hermite(const vec3& v1, const vec3& t1, const vec3& v2, const vec3& t2, scalar s
     scalar s2 = s * s;
     scalar s3 = s * s2;
 
-    f32x4 P0 = _mm_set_ps1(2.0f * s3 - 3.0f * s2 + 1.0f);
-    f32x4 T0 = _mm_set_ps1(s3 - 2.0f * s2 + s);
-    f32x4 P1 = _mm_set_ps1(-2.0f * s3 + 3.0f * s2);
-    f32x4 T1 = _mm_set_ps1(s3 - s2);
+    f32x4 P0 = splat_f32x4(2.0f * s3 - 3.0f * s2 + 1.0f);
+    f32x4 T0 = splat_f32x4(s3 - 2.0f * s2 + s);
+    f32x4 P1 = splat_f32x4(-2.0f * s3 + 3.0f * s2);
+    f32x4 T1 = splat_f32x4(s3 - s2);
 
-    f32x4 vResult = _mm_mul_ps(P0, v1.vec);
-    f32x4 vTemp = _mm_mul_ps(T0, t1.vec);
-    vResult = _mm_add_ps(vResult,vTemp);
-    vTemp = _mm_mul_ps(P1, v2.vec);
-    vResult = _mm_add_ps(vResult,vTemp);
-    vTemp = _mm_mul_ps(T1, t2.vec);
-    vResult = _mm_add_ps(vResult,vTemp);
+    f32x4 vResult = mul_f32x4(P0, v1.vec);
+    f32x4 vTemp = mul_f32x4(T0, t1.vec);
+    vResult = add_f32x4(vResult,vTemp);
+    vTemp = mul_f32x4(P1, v2.vec);
+    vResult = add_f32x4(vResult,vTemp);
+    vTemp = mul_f32x4(T1, t2.vec);
+    vResult = add_f32x4(vResult,vTemp);
     return vResult;
 }
 
@@ -515,32 +513,31 @@ hermite(const vec3& v1, const vec3& t1, const vec3& v2, const vec3& t2, scalar s
 __forceinline scalar
 angle(const vec3& v0, const vec3& v1)
 {
+    f32x4 l0 = mul_f32x4(v0.vec, v0.vec);
+    l0 = add_f32x4(shuffle_f32x4(l0, l0, 0, 0, 0, 0),
+           add_f32x4(shuffle_f32x4(l0, l0, 1, 1, 1, 1), shuffle_f32x4(l0, l0, 2, 2, 2, 2)));
 
-    f32x4 l0 = _mm_mul_ps(v0.vec, v0.vec);
-    l0 = _mm_add_ps(_mm_shuffle_ps(l0, l0, _MM_SHUFFLE(0, 0, 0, 0)),
-        _mm_add_ps(_mm_shuffle_ps(l0, l0, _MM_SHUFFLE(1, 1, 1, 1)), _mm_shuffle_ps(l0, l0, _MM_SHUFFLE(2, 2, 2, 2))));
+    f32x4 l1 = mul_f32x4(v1.vec, v1.vec);
+    l1 = add_f32x4(shuffle_f32x4(l1, l1, 0, 0, 0, 0),
+           add_f32x4(shuffle_f32x4(l1, l1, 1, 1, 1, 1), shuffle_f32x4(l1, l1, 2, 2, 2, 2)));
 
-    f32x4 l1 = _mm_mul_ps(v1.vec, v1.vec);
-    l1 = _mm_add_ps(_mm_shuffle_ps(l1, l1, _MM_SHUFFLE(0, 0, 0, 0)),
-        _mm_add_ps(_mm_shuffle_ps(l1, l1, _MM_SHUFFLE(1, 1, 1, 1)), _mm_shuffle_ps(l1, l1, _MM_SHUFFLE(2, 2, 2, 2))));
-
-    f32x4 l = _mm_shuffle_ps(l0, l1, _MM_SHUFFLE(0, 0, 0, 0));
-    l = _mm_rsqrt_ps(l);
-    l = _mm_mul_ss(_mm_shuffle_ps(l, l, _MM_SHUFFLE(0, 0, 0, 0)), _mm_shuffle_ps(l, l, _MM_SHUFFLE(1, 1, 1, 1)));
+    f32x4 l = shuffle_f32x4(l0, l1, 0, 0, 0, 0);
+    l = rsqrt_f32x4(l);
+    l = mul_first_f32x4(shuffle_f32x4(l, l, 0, 0, 0, 0), shuffle_f32x4(l, l, 1, 1, 1, 1));
 
 
-    f32x4 dot = _mm_mul_ps(v0.vec, v1.vec);
-    dot = _mm_add_ps(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(0, 0, 0, 0)),
-        _mm_add_ps(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(1, 1, 1, 1)),
-            _mm_add_ps(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(2, 2, 2, 2)), _mm_shuffle_ps(dot, dot, _MM_SHUFFLE(3, 3, 3, 3)))));
+    f32x4 dot = mul_f32x4(v0.vec, v1.vec);
+    dot = add_f32x4(shuffle_f32x4(dot, dot, 0, 0, 0, 0),
+            add_f32x4(shuffle_f32x4(dot, dot, 1, 1, 1, 1),
+              add_f32x4(shuffle_f32x4(dot, dot, 2, 2, 2, 2), shuffle_f32x4(dot, dot, 3, 3, 3, 3))));
 
-    dot = _mm_mul_ss(dot, l);
+    dot = mul_first_f32x4(dot, l);
 
-    dot = _mm_max_ss(dot, _minus1);
-    dot = _mm_min_ss(dot, _plus1);
+    dot = max_first_f32x4(dot, _minus1);
+    dot = min_first_f32x4(dot, _plus1);
 
     scalar cangle;
-    _mm_store_ss(&cangle, dot);
+    store_f32(&cangle, dot);
     return acos(cangle);
 }
 
@@ -601,8 +598,7 @@ normalizeapprox(const vec3& v)
 {
     if (v == vec3(0)) return v;
     f32x4 t = rsqrt_f32x4(dot_f32x3(v.vec, v.vec));
-    set_last_f32x4(t, 0);
-    return mul_f32x4(v.vec, t);
+    return mul_f32x4(v.vec, set_last_f32x4(t, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -626,9 +622,7 @@ reflect(const vec3& normal, const vec3& incident)
 __forceinline bool
 less_any(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res != 7;
+    return any_u32x3(compare_less_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -637,9 +631,7 @@ less_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 less_all(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res == 0;
+    return all_u32x3(compare_less_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -648,9 +640,7 @@ less_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 lessequal_any(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res != 0x7;
+    return any_u32x3(compare_less_equal_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -659,9 +649,7 @@ lessequal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 lessequal_all(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res == 0;
+    return all_u32x3(compare_less_equal_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -670,9 +658,7 @@ lessequal_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 greater_any(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res != 0;
+    return any_u32x3(compare_greater_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -681,9 +667,7 @@ greater_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 greater_all(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res == 0x7;
+    return all_u32x3(compare_greater_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -692,9 +676,7 @@ greater_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 greaterequal_any(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res != 0;
+    return any_u32x3(compare_greater_equal_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -703,9 +685,7 @@ greaterequal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 greaterequal_all(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res == 0x7;
+    return all_u32x3(compare_greater_equal_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -714,9 +694,7 @@ greaterequal_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 equal_any(const vec3& v0, const vec3& v1)
 {
-    f32x4 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
-    int res = _mm_movemask_ps(vTemp) & 7;
-    return res != 0;
+    return any_u32x3(compare_equal_f32x4(v0.vec, v1.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -725,14 +703,12 @@ equal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 nearequal(const vec3& v0, const vec3& v1, float epsilon)
 {
-    f32x4 eps = _mm_setr_ps(epsilon, epsilon, epsilon, 0.0f);
-    f32x4 delta = _mm_sub_ps(v0.vec, v1.vec);
-    f32x4 temp = _mm_setzero_ps();
-    temp = _mm_sub_ps(temp, delta);
-    temp = _mm_max_ps(temp, delta);
-    temp = _mm_cmple_ps(temp, eps);
-    temp = _mm_and_ps(temp, _mask_xyz);
-    return (_mm_movemask_ps(temp) == 0x7) != 0;
+    f32x4 eps = set_f32x4(epsilon, epsilon, epsilon, 0.0f);
+    f32x4 delta = sub_f32x4(v0.vec, v1.vec);
+    f32x4 temp = splat_f32x4(0);
+    temp = sub_f32x4(temp, delta);
+    temp = max_f32x4(temp, delta);
+    return all_u32x3(compare_less_equal_f32x4(temp, eps));
 }
 
 //------------------------------------------------------------------------------
@@ -741,13 +717,11 @@ nearequal(const vec3& v0, const vec3& v1, float epsilon)
 __forceinline bool
 nearequal(const vec3& v0, const vec3& v1, const vec3& epsilon)
 {
-    f32x4 delta = _mm_sub_ps(v0.vec, v1.vec);
-    f32x4 temp = _mm_setzero_ps();
-    temp = _mm_sub_ps(temp, delta);
-    temp = _mm_max_ps(temp, delta);
-    temp = _mm_cmple_ps(temp, epsilon.vec);
-    temp = _mm_and_ps(temp, _mask_xyz);
-    return (_mm_movemask_ps(temp) == 0x7) != 0;
+    f32x4 delta = sub_f32x4(v0.vec, v1.vec);
+    f32x4 temp = splat_f32x4(0);
+    temp = sub_f32x4(temp, delta);
+    temp = max_f32x4(temp, delta);
+    return all_u32x3(compare_less_equal_f32x4(temp, epsilon.vec))
 }
 
 //------------------------------------------------------------------------------
@@ -756,7 +730,7 @@ nearequal(const vec3& v0, const vec3& v1, const vec3& epsilon)
 __forceinline vec3
 less(const vec3& v0, const vec3& v1)
 {
-    return _mm_min_ps(_mm_cmplt_ps(v0.vec, v1.vec), _plus1);
+    return min_f32x4(convert_u32x4_to_f32x4(compare_less_f32x4(v0.vec, v1.vec)), _plus1);
 }
 
 //------------------------------------------------------------------------------
@@ -765,7 +739,7 @@ less(const vec3& v0, const vec3& v1)
 __forceinline vec3
 greater(const vec3& v0, const vec3& v1)
 {
-    return _mm_min_ps(_mm_cmpgt_ps(v0.vec, v1.vec), _plus1);
+    return min_f32x4(convert_u32x4_to_f32x4(compare_greater_f32x4(v0.vec, v1.vec)), _plus1);
 }
 
 //------------------------------------------------------------------------------
@@ -774,7 +748,7 @@ greater(const vec3& v0, const vec3& v1)
 __forceinline vec3
 equal(const vec3& v0, const vec3& v1)
 {
-    return _mm_min_ps(_mm_cmpeq_ps(v0.vec, v1.vec), _plus1);
+    return min_f32x4(convert_u32x4_to_f32x4(compare_equal_f32x4(v0.vec, v1.vec)), _plus1);
 }
 
 //------------------------------------------------------------------------------
@@ -789,17 +763,16 @@ splat(const vec3& v, uint element)
     switch (element)
     {
     case 0:
-        res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(0, 0, 0, 0));
+        res = shuffle_f32x4(v.vec, v.vec, 0, 0, 0, 0);
         break;
     case 1:
-        res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(1, 1, 1, 1));
+        res = shuffle_f32x4(v.vec, v.vec, 1, 1, 1, 1);
         break;
     case 2:
-        res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
+        res = shuffle_f32x4(v.vec, v.vec, 2, 2, 2, 2);
         break;
     }
-    res = _mm_and_ps(res, _mask_xyz);
-    return res;
+    return set_last_f32x4(res, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -808,9 +781,8 @@ splat(const vec3& v, uint element)
 __forceinline vec3
 splat_x(const vec3& v)
 {
-    f32x4 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(0, 0, 0, 0));
-    res = _mm_and_ps(res, _mask_xyz);
-    return res;
+    f32x4 res = shuffle_f32x4(v.vec, v.vec, 0, 0, 0, 0);
+    return set_last_f32x4(res, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -819,9 +791,8 @@ splat_x(const vec3& v)
 __forceinline vec3
 splat_y(const vec3& v)
 {
-    f32x4 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(1, 1, 1, 1));
-    res = _mm_and_ps(res, _mask_xyz);
-    return res;
+    f32x4 res = shuffle_f32x4(v.vec, v.vec, 1, 1, 1, 1);
+    return set_last_f32x4(res, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -830,9 +801,8 @@ splat_y(const vec3& v)
 __forceinline vec3
 splat_z(const vec3& v)
 {
-    f32x4 res = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
-    res = _mm_and_ps(res, _mask_xyz);
-    return res;
+    f32x4 res = shuffle_f32x4(v.vec, v.vec, 2, 2, 2, 2);
+    return set_last_f32x4(res, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -864,7 +834,7 @@ permute(const vec3& v0, const vec3& v1, unsigned int i0, unsigned int i1, unsign
 __forceinline vec3
 select(const vec3& v0, const vec3& v1, const uint i0, const uint i1, const uint i2)
 {
-    //FIXME this should be converted to something similiar as XMVectorSelect
+    //FIXME this should be converted to something similar as XMVectorSelect
     return permute(v0, v1, i0, i1, i2);
 }
 
