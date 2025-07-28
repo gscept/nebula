@@ -16,7 +16,6 @@
 #include "core/debug.h"
 #include "threading/interlocked.h"
 #include "memory/posix/posixmemoryconfig.h"
-#include <malloc.h>
 #include <string.h>
 #include <sys/mman.h>
 
@@ -30,7 +29,11 @@ extern int volatile HeapTypeAllocSize[NumHeapTypes];
 #endif
 
 #define StackAlloc(size) alloca(size);
-#define StackFree(ptr) 
+#define StackFree(ptr)
+
+#if __APPLE__
+#define explicit_bzero bzero;
+#endif
 
 //------------------------------------------------------------------------------
 /**

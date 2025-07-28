@@ -63,7 +63,7 @@ namespace System
 {
 class SystemInfo : public Win32::Win32SystemInfo {};
 }
-#elif __linux__
+#elif __linux__ || __APPLE__
 #include "system/posix/posixsysteminfo.h"
 namespace System
 {

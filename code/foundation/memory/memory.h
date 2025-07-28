@@ -10,6 +10,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
+#include "core/types.h"
 
 //------------------------------------------------------------------------------
 /**
