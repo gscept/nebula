@@ -65,6 +65,10 @@ public:
     bool operator==(const mat4& rhs) const;
     /// inequality operator
     bool operator!=(const mat4& rhs) const;
+    /// row element accessor
+    vec4& operator[](size_t const i);
+    /// readonly row element accessor
+    vec4 const& operator[](size_t const i) const;
 
     /// load content from 16-byte-aligned memory
     void load(const scalar* ptr);
@@ -106,6 +110,7 @@ public:
     void scale(const vec3& v);
     /// scale matrix
     void scale(const float x, const float y, const float z);
+
 
     /// we use aliasing to represent the matrix in may different ways
     union
@@ -194,6 +199,30 @@ __forceinline bool
 mat4::operator!=(const mat4& rhs) const
 {
     return !(*this == rhs);
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::operator[](size_t const i) const
+{
+#if NEBULA_BOUNDS_CHECK
+    n_assert(i < 4);
+#endif
+    return this->r[i];
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::operator[](size_t const i)
+{
+#if NEBULA_BOUNDS_CHECK
+    n_assert(i < 4);
+#endif
+    return this->r[i];
 }
 
 //------------------------------------------------------------------------------
