@@ -11,7 +11,7 @@
 #include "GameNetworkingSockets/steam/steamnetworkingtypes.h"
 #include "timing/timer.h"
 
-struct ISteamNetworkingSockets;
+class ISteamNetworkingSockets;
 
 //------------------------------------------------------------------------------
 namespace Multiplayer
