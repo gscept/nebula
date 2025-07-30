@@ -132,25 +132,24 @@ StandardMultiplayerServer::OnClientDisconnected(ClientConnection* connection)
 void 
 StandardMultiplayerServer::OnMessageReceived(Timing::Time recvTime, uint32_t connectionId, byte* data, size_t size)
 {
-    StandardProtocol::Message const* protocolMessage = StandardProtocol::GetMessage(data);
-
-    switch (protocolMessage->data_type())
-    {
-        //case StandardProtocol::Data::Data_Test:
-        //{
-        //    StandardProtocol::MsgTest const* test = protocolMessage->data_as_Test();
-        //    MultiplayerFeatureUnit::Instance()->temp_f = test->value();
-        //    n_printf("Got message: %f\n", test->value());
-        //    break;
-        //}
-        //case StandardProtocol::Data::Data_Connected:
-        //{
-        //    n_printf("Got message: CONNECTED\n");
-        //    break;
-        //}
-        default:
-            break;
-    }
+    //StandardProtocol::Message const* protocolMessage = StandardProtocol::GetMessage(data);
+    //switch (protocolMessage->data_type())
+    //{
+    //    //case StandardProtocol::Data::Data_Test:
+    //    //{
+    //    //    StandardProtocol::MsgTest const* test = protocolMessage->data_as_Test();
+    //    //    MultiplayerFeatureUnit::Instance()->temp_f = test->value();
+    //    //    n_printf("Got message: %f\n", test->value());
+    //    //    break;
+    //    //}
+    //    //case StandardProtocol::Data::Data_Connected:
+    //    //{
+    //    //    n_printf("Got message: CONNECTED\n");
+    //    //    break;
+    //    //}
+    //    default:
+    //        break;
+    //}
 }
 
 } // namespace Multiplayer
