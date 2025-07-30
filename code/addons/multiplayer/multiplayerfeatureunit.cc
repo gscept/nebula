@@ -93,9 +93,8 @@ MultiplayerFeatureUnit::~MultiplayerFeatureUnit()
 void
 MultiplayerFeatureUnit::OnAttach()
 {
-    this->RegisterComponentType<Multiplayer::NetworkId>({.replicate=true});
+    this->RegisterComponentType<Multiplayer::NetworkId>();
     this->RegisterComponentType<Multiplayer::NetworkTransform>({
-        .replicate=true, 
         .OnInit=[](Game::World* world, Game::Entity entity, Multiplayer::NetworkTransform* netTransform)
         {
             //Game::TimeSource* timeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);

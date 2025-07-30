@@ -14,7 +14,7 @@
 #include "multiplayer/client/clientprocessors.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "nflatbuffer/flatbufferinterface.h"
-#include "flat/addons/multiplayer/protocol.h"
+#include "flat/addons/multiplayer/standardprotocol.h"
 #include "multiplayer/multiplayerfeatureunit.h"
 #include "net/socket/ipaddress.h"
 #include "steam/steamnetworkingtypes.h"

@@ -11,7 +11,7 @@
 #include "clientprocessors.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "nflatbuffer/flatbufferinterface.h"
-#include "flat/addons/multiplayer/protocol.h"
+#include "flat/addons/multiplayer/standardprotocol.h"
 
 namespace Multiplayer
 {

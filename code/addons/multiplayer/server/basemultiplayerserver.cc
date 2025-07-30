@@ -13,7 +13,7 @@
 #include "memdb/database.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "nflatbuffer/flatbufferinterface.h"
-#include "flat/addons/multiplayer/protocol.h"
+#include "flat/addons/multiplayer/standardprotocol.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flatbuffer_builder.h"
 #include "steam/isteamnetworkingutils.h"
