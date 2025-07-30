@@ -285,8 +285,8 @@ BaseMultiplayerClient::SyncAll()
 void
 BaseMultiplayerClient::PollIncomingMessages()
 {
-    ISteamNetworkingMessage* incomingMsg[this->maxMessagesPerFrame];
-    int numMsgs = this->netInterface->ReceiveMessagesOnConnection(this->connectionId, incomingMsg, this->maxMessagesPerFrame);
+    ISteamNetworkingMessage* incomingMsg[MaxMessagesPerFrame];
+    int numMsgs = this->netInterface->ReceiveMessagesOnConnection(this->connectionId, incomingMsg, MaxMessagesPerFrame);
     if (numMsgs == 0)
     {
         return;
@@ -296,7 +296,7 @@ BaseMultiplayerClient::PollIncomingMessages()
         n_error("Error checking for messages");
     }
 
-    n_assert(numMsgs <= this->maxMessagesPerFrame && incomingMsg);
+    n_assert(numMsgs <= MaxMessagesPerFrame && incomingMsg);
     for (int i = 0; i < numMsgs; i++)
     {
         void* data = incomingMsg[i]->m_pData;

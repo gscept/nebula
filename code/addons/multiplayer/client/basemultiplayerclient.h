@@ -52,7 +52,7 @@ public:
 
     void OnNetConnectionStatusChanged(SteamNetConnectionStatusChangedCallback_t* info);
     
-    SizeT maxMessagesPerFrame = 1024;
+    constexpr static SizeT MaxMessagesPerFrame = 1024;
 
 protected:
     void PollIncomingMessages();

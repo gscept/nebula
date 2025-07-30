@@ -148,6 +148,8 @@ StandardMultiplayerServer::OnMessageReceived(Timing::Time recvTime, uint32_t con
         //    n_printf("Got message: CONNECTED\n");
         //    break;
         //}
+        default:
+            break;
     }
 }
 
