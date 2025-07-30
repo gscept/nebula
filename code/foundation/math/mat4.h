@@ -65,6 +65,10 @@ public:
     bool operator==(const mat4& rhs) const;
     /// inequality operator
     bool operator!=(const mat4& rhs) const;
+    /// row element accessor
+    vec4& operator[](size_t const i);
+    /// readonly row element accessor
+    vec4 const& operator[](size_t const i) const;
 
     /// load content from 16-byte-aligned memory
     void load(const scalar* ptr);
@@ -106,6 +110,7 @@ public:
     void scale(const vec3& v);
     /// scale matrix
     void scale(const float x, const float y, const float z);
+
 
     /// we use aliasing to represent the matrix in may different ways
     union
@@ -194,6 +199,30 @@ __forceinline bool
 mat4::operator!=(const mat4& rhs) const
 {
     return !(*this == rhs);
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4 const&
+mat4::operator[](size_t const i) const
+{
+#if NEBULA_BOUNDS_CHECK
+    n_assert(i < 4);
+#endif
+    return this->r[i];
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4&
+mat4::operator[](size_t const i)
+{
+#if NEBULA_BOUNDS_CHECK
+    n_assert(i < 4);
+#endif
+    return this->r[i];
 }
 
 //------------------------------------------------------------------------------
@@ -773,8 +802,8 @@ ortholh(scalar w, scalar h, scalar zn, scalar zf)
     scalar dist = 1.0f / (zf - zn);
     m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
-    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(0.0f, 0.0, -dist * zn, 1.0f);
+    m.r[2] = vec4(0.0f, 0.0f, 2.0f * dist, 0.0f);
+    m.r[3] = vec4(0.0f, 0.0, -dist * (zf + zn), 1.0f);
     return m;
 }
 
@@ -788,8 +817,8 @@ orthorh(scalar w, scalar h, scalar zn, scalar zf)
     scalar dist = 1.0f / (zn - zf);
     m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
-    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(0.0f, 0.0, dist * zn, 1.0f);
+    m.r[2] = vec4(0.0f, 0.0f, 2.0f * dist, 0.0f);
+    m.r[3] = vec4(0.0f, 0.0, dist * (zf + zn), 1.0f);
     return m;
 }
 
@@ -805,8 +834,8 @@ orthooffcenterlh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
     scalar dist = 1.0f / (zf - zn);
     m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
-    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(-(l+r) * divwidth, - (b+t) * divheight, -dist *  zn, 1.0f);
+    m.r[2] = vec4(0.0f, 0.0f, 2.0f * dist, 0.0f);
+    m.r[3] = vec4(-(l+r) * divwidth, - (b+t) * divheight, -dist *  (zf + zn), 1.0f);
     return m;
 }
 
@@ -822,8 +851,8 @@ orthooffcenterrh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
     scalar dist = 1.0f / (zn - zf);
     m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
-    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-    m.r[3] = vec4(-(l+r) * divwidth, - (b+t) * divheight, dist *  zn, 1.0f);
+    m.r[2] = vec4(0.0f, 0.0f, 2.0f * dist, 0.0f);
+    m.r[3] = vec4(-(l+r) * divwidth, - (b+t) * divheight, dist * (zf + zn), 1.0f);
     return m;
 }
 

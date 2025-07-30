@@ -85,6 +85,8 @@ public:
     scalar& operator[](const int index);
     /// read-only access to indexed component
     scalar operator[](const int index) const;
+    /// implicit vec3 conversion operator
+    operator vec3() const { return Math::vec3(this->x, this->y, this->z); }
 
     union
     {

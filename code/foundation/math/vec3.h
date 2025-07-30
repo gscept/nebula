@@ -43,6 +43,8 @@ public:
     vec3() = default;
     /// construct from values
     vec3(scalar x, scalar y, scalar z);
+    /// construct from float3
+    vec3(float3 f3);
     /// construct from single value
     explicit vec3(scalar v);
     /// copy constructor
@@ -105,6 +107,15 @@ __forceinline
 vec3::vec3(scalar x, scalar y, scalar z)
 {
     this->vec = _mm_setr_ps(x, y, z, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+vec3::vec3(float3 f3)
+{
+    this->vec = _mm_setr_ps(f3.x, f3.y, f3.z, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -222,6 +233,7 @@ operator-(const vec3& lhs)
 
 //------------------------------------------------------------------------------
 /**
+    Component-wise multiply with scalar.
 */
 __forceinline vec3
 operator*(const vec3& lhs, scalar t)
@@ -232,11 +244,23 @@ operator*(const vec3& lhs, scalar t)
 
 //------------------------------------------------------------------------------
 /**
+    Component-wise multiply with another vector.
 */
 __forceinline vec3
 operator*(const vec3& lhs, const vec3& rhs)
 {
     return _mm_mul_ps(lhs.vec, rhs.vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Component-wise divide by scalar.
+*/
+__forceinline vec3
+operator/(const vec3& lhs, scalar t)
+{
+    __m128 temp = _mm_set1_ps(t);
+    return _mm_div_ps(lhs.vec, temp);
 }
 
 //------------------------------------------------------------------------------
