@@ -56,6 +56,11 @@ MoveCharacters(Game::World* world, Game::Position& position, Game::Velocity& vel
     if (collision.IsSet(Physics::CharacterCollisionBits::Down))
     {
         velocity.y = 0;
+        character.isGrounded = true;
+    }
+    else
+    {
+        character.isGrounded = false;
     }
 
     Math::vec3 previousPosition = position;
