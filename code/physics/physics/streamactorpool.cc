@@ -510,11 +510,11 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
                 AddCollider(geometry, material, shape->transform, "Sphere", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
                 }
                 break;
-                case ColliderType_Cube:
+                case ColliderType_Box:
                 {
                     Math::vector extents = collider->data.AsBoxCollider()->extents;
                     physx::PxGeometryHolder geometry = PxBoxGeometry(Neb2PxVec(extents));
-                AddCollider(geometry, material, shape->transform, "Cube", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                AddCollider(geometry, material, shape->transform, "Box", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
                 }
                 break;
                 case ColliderType_Plane:

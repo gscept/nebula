@@ -2,10 +2,12 @@
 //  physicsinterface.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+#include "core/cvar.h"
 #include "foundation/stdneb.h"
 #include "PxConfig.h"
 #include "PxPhysicsAPI.h"
 #include "physicsinterface.h"
+#include "physics/debugui.h"
 #include "physics/utils.h"
 #include "physics/actorcontext.h"
 #include "math/scalar.h"
@@ -16,6 +18,7 @@
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "nflatbuffer/flatbufferinterface.h"
+#include "util/color.h"
 
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
 #define PHYSX_THREADS 4
@@ -58,7 +61,7 @@ void LoadMaterialTable(const IO::URI& materialTable);
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 Setup()
 {
     state.Setup();
@@ -70,14 +73,14 @@ Setup()
     // fallback material
     state.FallbackMaterial.material = state.physics->createMaterial(0.7f, 0.7f, 0.3f);
     state.FallbackMaterial.density = 1.0f;
-    state.FallbackMaterial.name = Util::StringAtom("_fallback");  
+    state.FallbackMaterial.name = Util::StringAtom("_fallback");
     state.FallbackMaterial.serialId = state.FallbackMaterial.name.StringHashCode();
 
     LoadMaterialTable("sysphys:physicsmaterials.pmat");
     LoadMaterialTable("phys:physicsmaterials.pmat");
 
     //FIXME this should be somewhere in a toolkit component instead
-    Flat::FlatbufferInterface::Init();
+    Flat::FlatbufferInterface::Init();    
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +111,8 @@ CreateScene()
     state.activeSceneIds.Append(idx);
     state.activeScenes.Append(Scene());
     Scene & scene = state.activeScenes[idx];
-    scene.dispatcher = PxDefaultCpuDispatcherCreate(PHYSX_THREADS);
+    //scene.dispatcher = PxDefaultCpuDispatcherCreate(PHYSX_THREADS);
+    scene.dispatcher = PxDefaultCpuDispatcherCreate(0);
 
     PxSceneDesc sceneDesc(state.physics->getTolerancesScale());
     sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
@@ -120,9 +124,10 @@ CreateScene()
     sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
 
     sceneDesc.userData = (void*)(uintptr_t)idx;
-    scene.scene = state.physics->createScene(sceneDesc);    
-    scene.scene->setSimulationEventCallback(&state);    
-    scene.controllerManager= PxCreateControllerManager(*scene.scene);       
+    scene.scene = state.physics->createScene(sceneDesc);
+    scene.scene->setSimulationEventCallback(&state);
+    scene.controllerManager= PxCreateControllerManager(*scene.scene);
+    
 #ifdef NEBULA_DEBUG
     scene.scene->getScenePvdClient()->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_CONTACTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES );
 #endif
@@ -179,7 +184,8 @@ GetScene(IndexT idx)
 //------------------------------------------------------------------------------
 /**
 */
-void SetEventCallback(EventCallbackType callback, IndexT sceneId)
+void
+SetEventCallback(EventCallbackType callback, IndexT sceneId)
 {
     Scene &scene = GetScene(sceneId);
     scene.eventCallback = callback;
@@ -188,7 +194,8 @@ void SetEventCallback(EventCallbackType callback, IndexT sceneId)
 //------------------------------------------------------------------------------
 /**
 */
-void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
+void
+SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
 {
     Scene& scene = GetScene(sceneId);
     scene.updateFunction = callback;
@@ -197,8 +204,10 @@ void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
 //------------------------------------------------------------------------------
 /**
 */
-void RenderDebug()
+void
+RenderDebug()
 {
+    DrawPhysicsDebug(); 
 }
 
 //------------------------------------------------------------------------------
@@ -209,7 +218,7 @@ LoadMaterialTable(const IO::URI & materialTable)
 {
     const IO::URI materialtable(materialTable);
     Util::String materialsString;
-    
+
     if (IO::IoServer::Instance()->ReadFile(materialtable, materialsString))
     {
         Physics::MaterialsT materials;
@@ -255,7 +264,7 @@ SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
 //------------------------------------------------------------------------------
 /**
 */
-IndexT 
+IndexT
 SetPhysicsMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restitution, float density)
 {
     n_assert(state.physics);
@@ -364,7 +373,7 @@ CreateActorInstance(Physics::ActorResourceId id, Math::transform const & trans, 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 DestroyActorInstance(Physics::ActorId id)
 {
     Physics::actorPool->DiscardActorInstance(id);

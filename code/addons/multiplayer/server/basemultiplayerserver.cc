@@ -41,7 +41,7 @@ SvSteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallbac
 */
 BaseMultiplayerServer::BaseMultiplayerServer()
     : isOpen(false),
-    sendTickInterval(0.1)
+    sendTickInterval(1.0/15)
 {
     for (int i = 0; i < (int)ClientGroup::NumClientGroups; i++)
     {

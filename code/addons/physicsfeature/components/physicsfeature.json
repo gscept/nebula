@@ -3,15 +3,36 @@
 	"includes": [
 		"physicsinterface.h",
 		"game/api.h"
-	]
+	],
 	"enums": {
 		"ActorType": {
 			"Static": 0,
 			"Kinematic": 1,
-			"Dynamic": 2,
+			"Dynamic": 2
+		},
+		"Shape": {
+			"Sphere": 0,
+			"Box": 1,
+			"Capsule": 2,
+			"Plane": 3,
+			"Mesh": 4,
+			"HeightField": 5
 		}
 	},
+	
 	"components": {
+		"Character": {
+			"characterId": {
+				"type": "Physics::CharacterId",
+				"default": -1,
+				"hideInInspector": true
+			},
+			"displacement": {
+				"type": "vec3",
+				"default": [0, 0, 0],
+				"description": "The displacement for the next physics frame."
+			}
+		},
 		"PhysicsActor": {
 			"actorId": {
 				"type": "uint",

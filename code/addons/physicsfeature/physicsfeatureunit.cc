@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "physicsfeature/physicsfeatureunit.h"
+#include "physics/debugui.h"
 #include "physicsinterface.h"
 #include "basegamefeature/managers/timemanager.h"
 #include "physicsfeature/managers/physicsmanager.h"
@@ -42,6 +43,7 @@ PhysicsFeatureUnit::OnAttach()
 {
     this->RegisterComponentType<PhysicsActor>({ .decay = true, .OnInit = &PhysicsManager::InitPhysicsActor });
     this->RegisterComponentType<IsKinematic>();
+    this->RegisterComponentType<Character>({ .decay = true });
 }
 
 //------------------------------------------------------------------------------
@@ -51,6 +53,8 @@ void
 PhysicsFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
+
+    this->cl_debug_draw_physics = Core::CVarGet("cl_debug_draw_physics");
 
     Game::TimeSourceCreateInfo timeSourceInfo;
     timeSourceInfo.hash = TIMESOURCE_PHYSICS;
@@ -194,6 +198,17 @@ PhysicsFeatureUnit::OnDecay()
 void 
 PhysicsFeatureUnit::OnRenderDebug()
 {
+    int drawPhysics = Core::CVarReadInt(this->cl_debug_draw_physics);
+    if (this->debugDrawPhysicsLastValue != drawPhysics)
+    {
+        Physics::EnableDebugDrawing(drawPhysics);
+    }
+
+    this->debugDrawPhysicsLastValue = drawPhysics;
+
+    if (!drawPhysics)
+        return;
+
     Physics::RenderDebug();
 }
 

@@ -8,7 +8,10 @@
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "ids/id.h"
+#include "ids/idallocator.h"
 #include "timing/time.h"
+#include "util/bitfield.h"
+#include "util/color.h"
 #include "util/delegate.h"
 #include "util/set.h"
 #include "util/arraystack.h"
@@ -38,6 +41,16 @@ enum ActorType
     Dynamic,
 };
 
+enum CharacterCollisionBits
+{
+    Sides	= 0, // Character is colliding to the sides.
+    Up		= 1, // Character has collision above.
+    Down    = 2, // Character has collision below.
+    CharacterCollisionBitsMax
+};
+
+using CharacterCollision = Util::BitField<CharacterCollisionBitsMax>;
+
 struct Material
 {
     physx::PxMaterial * material;
@@ -51,6 +64,13 @@ struct ActorId
     Ids::Id32 id;
     ActorId() : id(Ids::InvalidId32) {}
     ActorId(uint32_t i) : id(i) {}
+};
+
+struct CharacterId
+{
+    Ids::Id32 id;
+    CharacterId() : id(Ids::InvalidId32) {}
+    CharacterId(uint32_t i) : id(i) {}
 };
 
 struct ConstraintId
@@ -72,6 +92,17 @@ struct Actor
     physx::PxActor* actor;
     ActorId id;
     ActorResourceId res;
+    uint64_t userData;
+#ifdef NEBULA_DEBUG
+    Util::String debugName;
+#endif
+};
+
+struct Character
+{
+    physx::PxController* controller;
+    Physics::ColliderType type;
+    CharacterId id;
     uint64_t userData;
 #ifdef NEBULA_DEBUG
     Util::String debugName;
@@ -108,6 +139,60 @@ struct ContactEvent
 };
 
 using EventCallbackType = void (*) (const Util::Array<ContactEvent>&);
+
+struct CharacterCreateInfo
+{
+    struct CapsuleInfo
+    {
+        /// Radius of this capsule.
+        float radius;
+        /// Height of this capsule. The total height will be `height + 2 * radius`.
+        float height; 
+        /// If set to `false`, the capsule will climb over surfaces according to
+        /// impact normal. If set to `true`, climbing will be limited according to
+        /// the step offset.
+        bool constrainClimbing;
+    };
+    struct BoxInfo
+    {
+        /// Half the width, height and depth of the characters AABB collider.
+        Math::float3 halfExtents;
+    };
+    
+    /// Determines the type of collider that the character will use.
+    /// If set to Box, you need to fill out the CharacterCreateInfo::box information.
+    /// If set to Capsule, you need to fill out the CharacterCreateInfo::capsule information.
+    Physics::ColliderType type = Physics::ColliderType_Capsule;
+
+    /// The maximum slope which the character can walk up. Defined as cosine of desired limit angle.
+    float slopeLimit = 0.707f;
+    
+    /// Should the character slide down slopes?
+    bool slideOnSlopes = false;
+    
+    /// The contact offset used by the controller.
+	/// Specifies a skin around the object within which contacts will be generated.
+	/// Use it to avoid numerical precision issues.
+    float contactOffset = 0.1f;
+
+    /// The maximum height of an obstacle which the character can climb.
+    float stepOffset = 0.5f;
+
+    /// Optional physics material to use.
+    /// @see Physics::SetPhysicsMaterial
+    /// @see Physics::LookupMaterial
+    IndexT materialId = InvalidIndex;
+    
+    union {
+        /// AABB information. Make sure to set type to Box if using this.
+        BoxInfo box;
+        /// Capsule information. Make sure to set type to Capsule if using this.
+        CapsuleInfo capsule = {0.5f, 0.8, false};
+    };
+
+    /// Can be used to store application side information in the character.
+    uint64_t userData = 0;
+};
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
 /// instead of static getters, might be removed later on
@@ -149,7 +234,6 @@ void DestroyScene(IndexT scene);
 ///
 Physics::Scene& GetScene(IndexT idx = 0);
 
-
 ///
 void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId = 0);
 ///
@@ -177,5 +261,6 @@ SizeT GetNrMaterials();
 ActorId CreateActorInstance(Physics::ActorResourceId id, Math::transform const& trans, Physics::ActorType type, uint64_t userData, IndexT scene = 0);
 ///
 void DestroyActorInstance(Physics::ActorId id);
+
 }
 //------------------------------------------------------------------------------

@@ -17,87 +17,114 @@
 #include "nflatbuffer/flatbufferinterface.h"
 #include "io/safefilestream.h"
 #include "io/textwriter.h"
-
+#include "core/cvar.h"
 
 using namespace physx;
 
-namespace
+namespace Physics
 {
+
+// enable/disable physics visualization
+Core::CVar* cl_debug_draw_physics               = Core::CVarCreate(Core::CVarType::CVar_Int, "cl_debug_draw_physics", "0", "Set to 1 will enable physics debug drawing");
+
+// visualization parameters
+Core::CVar* cl_physics_draw_scale               = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale", "1.0", "Visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_points        = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_points", "1.0", "Point visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_lines         = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_lines", "1.0", "Line visualization drawing scale.");
+Core::CVar* cl_physics_draw_scale_triangles     = Core::CVarCreate(Core::CVar_Float, "cl_physics_draw_scale_triangles", "1.0", "Triangle visualization drawing scale.");
+Core::CVar* cl_physics_draw_world_axes          = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_world_axes", "0", "Visualize the world axes. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_body_axes           = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_axes", "0", "Visualize a bodies axes. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_body_mass_axes      = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_mass_axes", "0", "Visualize a body's mass axes. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_body_lin_velocity   = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_lin_velocity", "0", "Visualize the bodies linear velocity. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_body_ang_velocity   = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_body_ang_velocity", "0", "Visualize the bodies angular velocity. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_contact_point       = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_contact_point", "0", " Visualize contact points. Will enable contact information. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_contact_normal      = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_contact_normal", "0", "Visualize contact normals. Will enable contact information. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_contact_error       = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_contact_error", "0", " Visualize contact errors. Will enable contact information. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_contact_force       = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_contact_force", "0", "Visualize Contact forces. Will enable contact information. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_actor_axes          = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_actor_axes", "0", "Visualize actor axes. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_aabbs     = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_aabbs", "0", "Visualize bounds (AABBs in world space). Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_shapes    = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_shapes", "1", "Shape visualization. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_axes      = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_axes", "0", "Shape axis visualization. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_compounds = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_compounds", "0", "Compound visualization (compound AABBs in world space). Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_fnormals  = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_fnormals", "0", "Mesh & convex face normals. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_edges     = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_edges", "0", "Active edges for meshes. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_static    = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_static", "0", "Static pruning structures. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_collision_dynamic   = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_collision_dynamic", "0", "Dynamic pruning structures. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_joint_local_frames  = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_joint_local_frames", "0", "Visualize joint local axes. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_joint_limits        = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_joint_limits", "0", "Visualize joint limits. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_cull_box            = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_cull_box", "0", "Visualize culling box. Needs cl_debug_draw_physics set to 1.");
+Core::CVar* cl_physics_draw_mbp_regions         = Core::CVarCreate(Core::CVar_Int, "cl_physics_draw_mbp_regions", "0", "MBP regions. Needs cl_debug_draw_physics set to 1.");
+
 struct DebugState
 {
-    DebugState()
-    {
-        flags.Add("World Axes",true);
-        flagsMap.Add("World Axes",PxVisualizationParameter::eWORLD_AXES);
-        flags.Add("Body Axes",true);
-        flagsMap.Add("Body Axes",PxVisualizationParameter::eBODY_AXES);
-        flags.Add("Mass Axes",true);
-        flagsMap.Add("Mass Axes",PxVisualizationParameter::eBODY_MASS_AXES);
-        flags.Add("Linear Velocity",true);
-        flagsMap.Add("Linear Velocity",PxVisualizationParameter::eBODY_LIN_VELOCITY);
-        flags.Add("Ang Velocity",true);
-        flagsMap.Add("Ang Velocity",PxVisualizationParameter::eBODY_ANG_VELOCITY);
-        flags.Add("Contact",true);
-        flagsMap.Add("Contact",PxVisualizationParameter::eCONTACT_POINT);
-        flags.Add("Contact Normal",true);
-        flagsMap.Add("Contact Normal",PxVisualizationParameter::eCONTACT_NORMAL);
-        flags.Add("Contact Error",true);
-        flagsMap.Add("Contact Error",PxVisualizationParameter::eCONTACT_ERROR);
-        flags.Add("Contact Force",true);
-        flagsMap.Add("Contact Force",PxVisualizationParameter::eCONTACT_FORCE);
-        flags.Add("Actor Axes",true);
-        flagsMap.Add("Actor Axes",PxVisualizationParameter::eACTOR_AXES);
-        flags.Add("Collision AABB",false);
-        flagsMap.Add("Collision AABB",PxVisualizationParameter::eCOLLISION_AABBS);
-        flags.Add("Collision Shape",false);
-        flagsMap.Add("Collision Shape",PxVisualizationParameter::eCOLLISION_SHAPES);
-        flags.Add("Collision Compounds",true);
-        flagsMap.Add("Collision Compounds",PxVisualizationParameter::eCOLLISION_COMPOUNDS);
-        flags.Add("Collision Facenormals",false);
-        flagsMap.Add("Collision Facenormals",PxVisualizationParameter::eCOLLISION_FNORMALS);
-        flags.Add("Collision Edges",false);
-        flagsMap.Add("Collision Edges",PxVisualizationParameter::eCOLLISION_EDGES);
-        flags.Add("Collision Dynamic",true);
-        flagsMap.Add("Collision Dynamic",PxVisualizationParameter::eCOLLISION_DYNAMIC);
-        flags.Add("Collision Static",true);
-        flagsMap.Add("Collision Static",PxVisualizationParameter::eCOLLISION_STATIC);
-        flags.Add("Joint Frames",true);
-        flagsMap.Add("Joint Frames",PxVisualizationParameter::eJOINT_LOCAL_FRAMES);
-        flags.Add("Joint Limits",true);
-        flagsMap.Add("Joint Limits",PxVisualizationParameter::eJOINT_LIMITS);
-        flags.Add("Culling",true);
-        flagsMap.Add("Culling",PxVisualizationParameter::eCULL_BOX);
-        flags.Add("MBP Regions",true);
-        flagsMap.Add("MBP Regions",PxVisualizationParameter::eMBP_REGIONS);
-    }
-
-    void ApplyAllFlags()
-    {
-        for (auto& scene : Physics::state.activeScenes)
-        {
-            for (auto& entry : this->flags)
-            {
-                scene.scene->setVisualizationParameter(this->flagsMap[entry.Key()], entry.Value()? 1.0f : 0.0f);
-            }
-        }
-    }
-
-    float scale = 1.0f;
-    Util::Dictionary<Util::String, bool> flags;
-    Util::Dictionary<Util::String, physx::PxVisualizationParameter::Enum> flagsMap;
     bool enabled = false;
+    DebugDrawInterface drawInterface;
 };
 DebugState dstate;
 
-void ApplyToScenes(PxVisualizationParameter::Enum flag, float value)
+//--------------------------------------------------------------------------
+/**
+*/
+void
+SetDebugDrawInterface(DebugDrawInterface const& interface)
 {
-    for (auto& scene : Physics::state.activeScenes)
+    dstate.drawInterface = interface;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+UpdateDebugDrawingParameters()
+{
+    for (int sceneIndex = 0; sceneIndex < state.activeScenes.Size(); sceneIndex++)
     {
-        scene.scene->setVisualizationParameter(flag, value);
+        PxScene* scene = state.activeScenes[sceneIndex].scene;
+        float drawingScale = Core::CVarReadFloat(cl_physics_draw_scale);
+        scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, dstate.enabled ? drawingScale : 0.0f);
+
+        const float VIS_SCALE = 1.0f;
+
+        scene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_world_axes));
+        scene->setVisualizationParameter(PxVisualizationParameter::eBODY_AXES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_body_axes));
+        scene->setVisualizationParameter(PxVisualizationParameter::eBODY_MASS_AXES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_body_mass_axes));
+        scene->setVisualizationParameter(PxVisualizationParameter::eBODY_LIN_VELOCITY, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_body_lin_velocity));
+        scene->setVisualizationParameter(PxVisualizationParameter::eBODY_ANG_VELOCITY, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_body_ang_velocity));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_POINT, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_contact_point));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_contact_normal));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_ERROR, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_contact_error));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_FORCE, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_contact_force));
+        scene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_actor_axes));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_AABBS, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_aabbs));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_shapes));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_AXES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_axes));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_COMPOUNDS, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_compounds));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_FNORMALS, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_fnormals));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_EDGES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_edges));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_STATIC, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_static));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_DYNAMIC, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_collision_dynamic));
+        scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LOCAL_FRAMES, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_joint_local_frames));
+        scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_joint_limits));
+        scene->setVisualizationParameter(PxVisualizationParameter::eCULL_BOX, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_cull_box));
+        scene->setVisualizationParameter(PxVisualizationParameter::eMBP_REGIONS, VIS_SCALE * (bool)Core::CVarReadInt(cl_physics_draw_mbp_regions));
     }
 }
 
-void ApplyBounds(PxBounds3 const& box)
+//--------------------------------------------------------------------------
+/**
+*/
+void
+EnableDebugDrawing(bool enabled)
+{
+    dstate.enabled = enabled;
+    UpdateDebugDrawingParameters();
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+ApplyBounds(PxBounds3 const& box)
 {
     for (auto& scene : Physics::state.activeScenes)
     {
@@ -105,60 +132,118 @@ void ApplyBounds(PxBounds3 const& box)
     }
 }
 
-Math::vec4 Px2Colour(PxU32 col)
+//--------------------------------------------------------------------------
+/**
+*/
+void
+DebugVisualizeScene(PxScene* scene)
 {
-    const float div = 1.0f / 255.0f;
-    return Math::vec4(div * (col >> 24), div * ((col & 0x00FF0000) >> 16), div * ((col & 0x0000FF00) >> 8), div * (col & 0xFF));
-}
-void RenderScene(PxScene* scene)
-{
+    if (scene == nullptr)
+        return;
+
     const PxRenderBuffer& rb = scene->getRenderBuffer();
-    for (PxU32 i = 0, j = rb.getNbLines(); i < j; i++)
+
+    // TODO: make these cvars
+    const float DRAW_POINT_SIZE = Core::CVarReadFloat(cl_physics_draw_scale_points);
+    const float DRAW_LINE_WIDTH = Core::CVarReadFloat(cl_physics_draw_scale_lines);
+    const float DRAW_TRI_WIDTH = Core::CVarReadFloat(cl_physics_draw_scale_triangles);
+
+    if (dstate.drawInterface.DrawPoint != nullptr)
     {
-        const PxDebugLine& line = rb.getLines()[i];
-        Im3d::Im3dContext::DrawLine(Math::line(Px2NebPoint(line.pos0),Px2NebPoint(line.pos1)), 1.0f,Px2Colour(line.color0), Im3d::RenderFlag::AlwaysOnTop);
+        for(PxU32 i=0; i < rb.getNbPoints(); i++)
+        {
+            const PxDebugPoint& point = rb.getPoints()[i];
+            dstate.drawInterface.DrawPoint(Px2NebVec(point.pos), Util::Color(point.color), DRAW_POINT_SIZE);
+        }
     }
-    for (PxU32 i = 0, j = rb.getNbPoints(); i < j; i++)
+
+    if (dstate.drawInterface.DrawLine != nullptr)
     {
-        const PxDebugPoint& p = rb.getPoints()[i];
-        Im3d::Im3dContext::DrawPoint(Px2NebVec(p.pos), 10.0f, Px2Colour(p.color));
+        for(PxU32 i=0; i < rb.getNbLines(); i++)
+        {
+            const PxDebugLine& line = rb.getLines()[i];
+            dstate.drawInterface.DrawLine(Px2NebVec(line.pos0), Px2NebVec(line.pos1), Util::Color(line.color0), Util::Color(line.color1), DRAW_LINE_WIDTH);
+        }
     }
-     for (PxU32 i = 0, j = rb.getNbTriangles(); i < j; i++)
+
+    if (dstate.drawInterface.DrawTriangle != nullptr)
     {
-        const PxDebugTriangle& t = rb.getTriangles()[i];
-        Im3d::Im3dContext::DrawLine(Math::line(Px2NebPoint(t.pos0),Px2NebPoint(t.pos1)), 1.0f,Px2Colour(t.color0), Im3d::RenderFlag::AlwaysOnTop);
-        Im3d::Im3dContext::DrawLine(Math::line(Px2NebPoint(t.pos1),Px2NebPoint(t.pos2)), 1.0f,Px2Colour(t.color1), Im3d::RenderFlag::AlwaysOnTop);
-        Im3d::Im3dContext::DrawLine(Math::line(Px2NebPoint(t.pos2),Px2NebPoint(t.pos0)), 1.0f,Px2Colour(t.color2), Im3d::RenderFlag::AlwaysOnTop);
+        for(PxU32 i=0; i < rb.getNbTriangles(); i++)
+        {
+            const PxDebugTriangle& tri = rb.getTriangles()[i];
+            dstate.drawInterface.DrawTriangle(Px2NebVec(tri.pos0), Px2NebVec(tri.pos1), Px2NebVec(tri.pos2), Util::Color(tri.color0), Util::Color(tri.color1), Util::Color(tri.color2), DRAW_TRI_WIDTH);
+        }
     }
 }
-void RenderPhysicsDebug()
+
+//--------------------------------------------------------------------------
+/**
+*/
+bool
+CheckAndResetModified(Core::CVar* cvar)
 {
+    bool modified = Core::CVarModified(cvar);
+    Core::CVarSetModified(cvar, false);
+    return modified;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+DrawPhysicsDebug()
+{
+    bool modified = false;
+    modified |= CheckAndResetModified(cl_physics_draw_scale);
+    modified |= CheckAndResetModified(cl_physics_draw_scale_points);
+    modified |= CheckAndResetModified(cl_physics_draw_scale_lines);
+    modified |= CheckAndResetModified(cl_physics_draw_scale_triangles);
+    modified |= CheckAndResetModified(cl_physics_draw_world_axes);
+    modified |= CheckAndResetModified(cl_physics_draw_body_axes);
+    modified |= CheckAndResetModified(cl_physics_draw_body_mass_axes);
+    modified |= CheckAndResetModified(cl_physics_draw_body_lin_velocity);
+    modified |= CheckAndResetModified(cl_physics_draw_body_ang_velocity);
+    modified |= CheckAndResetModified(cl_physics_draw_contact_point);
+    modified |= CheckAndResetModified(cl_physics_draw_contact_normal);
+    modified |= CheckAndResetModified(cl_physics_draw_contact_error);
+    modified |= CheckAndResetModified(cl_physics_draw_contact_force);
+    modified |= CheckAndResetModified(cl_physics_draw_actor_axes);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_aabbs);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_shapes);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_axes);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_compounds);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_fnormals);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_edges);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_static);
+    modified |= CheckAndResetModified(cl_physics_draw_collision_dynamic);
+    modified |= CheckAndResetModified(cl_physics_draw_joint_local_frames);
+    modified |= CheckAndResetModified(cl_physics_draw_joint_limits);
+    modified |= CheckAndResetModified(cl_physics_draw_cull_box);
+    modified |= CheckAndResetModified(cl_physics_draw_mbp_regions);
+
+    if (modified)
+    {
+        UpdateDebugDrawingParameters();
+    }
+
     for (auto& scene : Physics::state.activeScenes)
     {
-        RenderScene(scene.scene);
+        DebugVisualizeScene(scene.scene);
     }
 }
 
-}
-
-namespace Physics
-{
-
-void RenderUI(Graphics::GraphicsEntityId camera)
+//--------------------------------------------------------------------------
+/**
+*/
+void
+RenderUI(Graphics::GraphicsEntityId camera)
 {
     RenderMaterialsUI();
     ImGui::Separator();
-    if (ImGui::Checkbox("Debug Rendering", &dstate.enabled))
+    if (ImGui::Checkbox("Draw physics visualization", &dstate.enabled))
     {
-        if (!dstate.enabled)
-        {
-            ApplyToScenes(PxVisualizationParameter::eSCALE, 0.0f);
-        }
-        else
-        {
-            ApplyToScenes(PxVisualizationParameter::eSCALE, 1.0f);
-            dstate.ApplyAllFlags();
-        }
+        Core::CVarWriteInt(cl_debug_draw_physics, (int)dstate.enabled);
+        UpdateDebugDrawingParameters();
     }
     if(dstate.enabled)
     {
@@ -174,25 +259,54 @@ void RenderUI(Graphics::GraphicsEntityId camera)
 
         ImGui::BeginChild("Debug Flags");
         ImGui::PushItemWidth(100.0f);
-        ImGui::DragFloat("Scale", &dstate.scale, 0.1f, 0.01f, 10.0f);
-        ImGui::PopItemWidth();
-        
-        ApplyToScenes(PxVisualizationParameter::eSCALE, dstate.scale);
-        for (auto& entry : dstate.flags)
+        float drawingScale = Core::CVarReadFloat(cl_physics_draw_scale);
+        if (ImGui::DragFloat("Scale", &drawingScale, 0.1f, 0.01f, 10.0f))
         {
-            ImGui::Checkbox(entry.Key().AsCharPtr(), &entry.Value());
-            ApplyToScenes(dstate.flagsMap[entry.Key()], entry.Value()?1.0f : 0.0f);
+            Core::CVarWriteFloat(cl_physics_draw_scale, drawingScale);
         }
+        ImGui::PopItemWidth();
+
+        auto ParameterCheckBox = [](const char* label, Core::CVar* cvar) {
+            bool value = (bool)Core::CVarReadInt(cvar);
+            if (ImGui::Checkbox(label, &value))
+            {
+                Core::CVarWriteInt(cvar, (int)value);
+                UpdateDebugDrawingParameters();
+            }
+        };
+
+        ParameterCheckBox("World axes", cl_physics_draw_world_axes);
+        ParameterCheckBox("Body axes", cl_physics_draw_body_axes);
+        ParameterCheckBox("Body mass axes", cl_physics_draw_body_mass_axes);
+        ParameterCheckBox("Body lin velocity", cl_physics_draw_body_lin_velocity);
+        ParameterCheckBox("Body ang velocity", cl_physics_draw_body_ang_velocity);
+        ParameterCheckBox("Contact point", cl_physics_draw_contact_point);
+        ParameterCheckBox("Contact normal", cl_physics_draw_contact_normal);
+        ParameterCheckBox("Contact error", cl_physics_draw_contact_error);
+        ParameterCheckBox("Contact force", cl_physics_draw_contact_force);
+        ParameterCheckBox("Actor axes", cl_physics_draw_actor_axes);
+        ParameterCheckBox("Collision aabbs", cl_physics_draw_collision_aabbs);
+        ParameterCheckBox("Collision shapes", cl_physics_draw_collision_shapes);
+        ParameterCheckBox("Collision axes", cl_physics_draw_collision_axes);
+        ParameterCheckBox("Collision compounds", cl_physics_draw_collision_compounds);
+        ParameterCheckBox("Collision fnormals", cl_physics_draw_collision_fnormals);
+        ParameterCheckBox("Collision edges", cl_physics_draw_collision_edges);
+        ParameterCheckBox("Collision static", cl_physics_draw_collision_static);
+        ParameterCheckBox("Collision dynamic", cl_physics_draw_collision_dynamic);
+        ParameterCheckBox("Joint local frames", cl_physics_draw_joint_local_frames);
+        ParameterCheckBox("Joint limits", cl_physics_draw_joint_limits);
+        ParameterCheckBox("Cull box", cl_physics_draw_cull_box);
+        ParameterCheckBox("Mbp regions", cl_physics_draw_mbp_regions);
+
         ImGui::EndChild();
     }
-    if (dstate.enabled)
-    {
-        RenderPhysicsDebug();
-    }
- 
 }
 
-void RenderMaterialsUI()
+//--------------------------------------------------------------------------
+/**
+*/
+void
+RenderMaterialsUI()
 {
     ImGui::Text("Physics Materials");
     static bool hasSelection = false;

@@ -8,6 +8,7 @@
 */
 
 #include "PxConfig.h"
+#include "characterkinematic/PxExtended.h"
 #include "foundation/PxVec3.h"
 #include "math/vector.h"
 #include "foundation/PxVec4.h"
@@ -21,6 +22,15 @@ inline physx::PxVec3
 Neb2PxVec(const Math::vector& vec)
 {
     return physx::PxVec3(vec.x, vec.y, vec.z);
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+inline physx::PxExtendedVec3
+Neb2PxExtentedVec3(const Math::vec3& vec)
+{
+    return physx::PxExtendedVec3(vec.x, vec.y, vec.z);
 }
 
 //------------------------------------------------------------------------------

@@ -13,6 +13,8 @@ fips_dir(physics)
 fips_files( 
             actorcontext.cc
             actorcontext.h
+            charactercontext.cc
+            charactercontext.h
             streamactorpool.cc
             streamactorpool.h
             callbacks.cc

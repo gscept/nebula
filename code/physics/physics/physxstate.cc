@@ -203,6 +203,11 @@ PhysxState::CreateActor(ActorType type, Math::mat4 const& transform)
 {
     Math::vec3 outScale; Math::quat outRotation; Math::vec3 outTranslation;
     Math::decompose(transform, outScale, outRotation, outTranslation);
+    if (Math::nearequal(outScale, Math::_plus1, 0.00001f))
+    {
+        // decompose sometimes gets rounding errors that can mess up a uniform scale.
+        outScale = Math::_plus1;
+    }
     n_assert2(outScale == Math::_plus1, "Cant scale physics actors");
     return CreateActor(type, outTranslation, outRotation);
 }

@@ -107,6 +107,10 @@ public:
     /// Create a component. This queues the component in a command buffer to be added later
     template <typename TYPE>
     TYPE* AddComponent(Entity entity);
+    /// Add a component to an entity. This queues the component in a command buffer to be added later
+    /// This version of AddComponent allows you to set the values of the component before the component is initialized.
+    template <typename TYPE>
+    void AddComponent(Entity entity, TYPE const& component);
     /// Queues a component to be added to the entity in a command buffer.
     void* AddComponent(Entity entity, ComponentId component);
 
@@ -444,6 +448,45 @@ World::AddComponent(Entity entity)
     }
 
     return data;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename TYPE>
+inline void
+World::AddComponent(Entity entity, TYPE const& component)
+{
+#if NEBULA_DEBUG
+    n_assert2(
+        !this->pipeline.IsRunningAsync(), "Adding component to entities while in an async processor is currently not supported!"
+    );
+#endif
+    Game::ComponentId id = Game::GetComponentId<TYPE>();
+#if NEBULA_DEBUG
+    n_assert(MemDb::AttributeRegistry::TypeSize(id) == sizeof(TYPE));
+    //n_assert(!this->HasComponent<TYPE>(entity));
+#endif
+    TYPE* data = this->componentStageAllocator.Alloc<TYPE>();
+    Memory::Copy(&component, data, sizeof(TYPE));
+
+    AddStagedComponentCommand cmd = {
+        .entity = entity,
+        .componentId = id,
+        .dataSize = sizeof(TYPE),
+        .data = data,
+    };
+    this->addStagedQueue.Append(cmd);
+
+    MemDb::Attribute* attr = MemDb::AttributeRegistry::GetAttribute(id);
+    ComponentInterface* cInterface;
+    cInterface = static_cast<ComponentInterface*>(attr);
+
+    if (cInterface->Init != nullptr)
+    {
+        // run initialization function if it exists.
+        cInterface->Init(this, entity, data);
+    }
 }
 
 template <>
