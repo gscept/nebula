@@ -66,9 +66,9 @@ DebugState dstate;
 /**
 */
 void
-SetDebugDrawInterface(DebugDrawInterface const& interface)
+SetDebugDrawInterface(DebugDrawInterface const& drawInterface)
 {
-    dstate.drawInterface = interface;
+    dstate.drawInterface = drawInterface;
 }
 
 //--------------------------------------------------------------------------

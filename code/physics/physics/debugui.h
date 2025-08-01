@@ -29,4 +29,5 @@ void RenderUI(Graphics::GraphicsEntityId camera);
 void RenderMaterialsUI();
 
 void DrawPhysicsDebug();
-};
+
+}
