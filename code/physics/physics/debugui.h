@@ -20,7 +20,7 @@ struct DebugDrawInterface
     std::function<void(Math::vec3 p0, Math::vec3 p1, Math::vec3 p2, Util::Color color0, Util::Color color1, Util::Color color2, float triLineWidth)> DrawTriangle = nullptr;
 };
 
-void SetDebugDrawInterface(DebugDrawInterface const& interface);
+void SetDebugDrawInterface(DebugDrawInterface const& drawInterface);
 
 void EnableDebugDrawing(bool enabled);
 
