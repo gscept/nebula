@@ -11,6 +11,7 @@
 #include "physics/actorcontext.h"
 #include "game/api.h"
 #include "components/physicsfeature.h"
+#include "managers/charactermanager.h"
 
 #define USE_SYNC_UPDATE 0
 
@@ -62,6 +63,7 @@ PhysicsFeatureUnit::OnActivate()
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
     this->AttachManager(PhysicsManager::Create());
+    this->AttachManager(CharacterManager::Create());
 
     Physics::Setup();
 

@@ -10,6 +10,8 @@ fips_files(
 		fips_files(
 			physicsmanager.h
 			physicsmanager.cc
+			charactermanager.h
+			charactermanager.cc
 		)
 	fips_dir(components)
 		nebula_idl_compile(

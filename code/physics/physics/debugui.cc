@@ -143,7 +143,6 @@ DebugVisualizeScene(PxScene* scene)
 
     const PxRenderBuffer& rb = scene->getRenderBuffer();
 
-    // TODO: make these cvars
     const float DRAW_POINT_SIZE = Core::CVarReadFloat(cl_physics_draw_scale_points);
     const float DRAW_LINE_WIDTH = Core::CVarReadFloat(cl_physics_draw_scale_lines);
     const float DRAW_TRI_WIDTH = Core::CVarReadFloat(cl_physics_draw_scale_triangles);
@@ -153,7 +152,7 @@ DebugVisualizeScene(PxScene* scene)
         for(PxU32 i=0; i < rb.getNbPoints(); i++)
         {
             const PxDebugPoint& point = rb.getPoints()[i];
-            dstate.drawInterface.DrawPoint(Px2NebVec(point.pos), Util::Color(point.color), DRAW_POINT_SIZE);
+            dstate.drawInterface.DrawPoint(Px2NebVec(point.pos), Util::Color::ARGB(point.color), DRAW_POINT_SIZE);
         }
     }
 
@@ -162,7 +161,7 @@ DebugVisualizeScene(PxScene* scene)
         for(PxU32 i=0; i < rb.getNbLines(); i++)
         {
             const PxDebugLine& line = rb.getLines()[i];
-            dstate.drawInterface.DrawLine(Px2NebVec(line.pos0), Px2NebVec(line.pos1), Util::Color(line.color0), Util::Color(line.color1), DRAW_LINE_WIDTH);
+            dstate.drawInterface.DrawLine(Px2NebVec(line.pos0), Px2NebVec(line.pos1), Util::Color::ARGB(line.color0), Util::Color::ARGB(line.color1), DRAW_LINE_WIDTH);
         }
     }
 
@@ -171,7 +170,7 @@ DebugVisualizeScene(PxScene* scene)
         for(PxU32 i=0; i < rb.getNbTriangles(); i++)
         {
             const PxDebugTriangle& tri = rb.getTriangles()[i];
-            dstate.drawInterface.DrawTriangle(Px2NebVec(tri.pos0), Px2NebVec(tri.pos1), Px2NebVec(tri.pos2), Util::Color(tri.color0), Util::Color(tri.color1), Util::Color(tri.color2), DRAW_TRI_WIDTH);
+            dstate.drawInterface.DrawTriangle(Px2NebVec(tri.pos0), Px2NebVec(tri.pos1), Px2NebVec(tri.pos2), Util::Color::ARGB(tri.color0), Util::Color::ARGB(tri.color1), Util::Color::ARGB(tri.color2), DRAW_TRI_WIDTH);
         }
     }
 }

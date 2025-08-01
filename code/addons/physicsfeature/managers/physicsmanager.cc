@@ -99,21 +99,11 @@ void
 PhysicsManager::OnDecay()
 {
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
+    Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<PhysicsActor>());
+    PhysicsFeature::PhysicsActor* data = (PhysicsFeature::PhysicsActor*)decayBuffer.buffer;
+    for (int i = 0; i < decayBuffer.size; i++)
     {
-        Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<PhysicsActor>());
-        PhysicsFeature::PhysicsActor* data = (PhysicsFeature::PhysicsActor*)decayBuffer.buffer;
-        for (int i = 0; i < decayBuffer.size; i++)
-        {
-            Physics::DestroyActorInstance(data[i].actorId);
-        }
-    }
-    {
-        Game::ComponentDecayBuffer const decayBuffer = world->GetDecayBuffer(Game::GetComponentId<Character>());
-        PhysicsFeature::Character* data = (PhysicsFeature::Character*)decayBuffer.buffer;
-        for (int i = 0; i < decayBuffer.size; i++)
-        {
-            Physics::CharacterContext::DestroyCharacter(data[i].characterId);
-        }
+        Physics::DestroyActorInstance(data[i].actorId);
     }
 }
 
@@ -190,51 +180,26 @@ PhysicsManager::OnCleanup(Game::World* world)
     n_assert(PhysicsManager::HasInstance());
 
     // TODO: cleanup should just call decay on everything...
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
+    filterInfo.inclusive[0] = Game::GetComponentId<PhysicsActor>();
+    filterInfo.access[0] = Game::AccessMode::WRITE;
+    filterInfo.numInclusive = 1;
+
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+    Game::Dataset data = world->Query(filter);
+    for (int v = 0; v < data.numViews; v++)
     {
-        Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId<PhysicsActor>();
-        filterInfo.access[0] = Game::AccessMode::WRITE;
-        filterInfo.numInclusive = 1;
+        Game::Dataset::View const& view = data.views[v];
+        Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
 
-        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-        Game::Dataset data = world->Query(filter);
-        for (int v = 0; v < data.numViews; v++)
+        for (IndexT i = 0; i < view.numInstances; ++i)
         {
-            Game::Dataset::View const& view = data.views[v];
-            Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Physics::ActorId const& actorid = actors[i];
-                Physics::DestroyActorInstance(actorid);
-            }
+            Physics::ActorId const& actorid = actors[i];
+            Physics::DestroyActorInstance(actorid);
         }
-
-        Game::DestroyFilter(filter);
-    }
-    {
-        Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId<Character>();
-        filterInfo.access[0] = Game::AccessMode::WRITE;
-        filterInfo.numInclusive = 1;
-
-        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-        Game::Dataset data = world->Query(filter);
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::View const& view = data.views[v];
-            Physics::Character* const characters = (Physics::Character*)view.buffers[0];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Physics::Character const& character = characters[i];
-                Physics::CharacterContext::DestroyCharacter(character.id);
-            }
-        }
-
-        Game::DestroyFilter(filter);
     }
 
+    Game::DestroyFilter(filter);
 }
 
 } // namespace PhysicsFeature
