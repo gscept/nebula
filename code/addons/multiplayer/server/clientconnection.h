@@ -8,6 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "GameNetworkingSockets/steam/steamnetworkingtypes.h"
+#include "timing/time.h"
 
 namespace Multiplayer
 {
@@ -50,11 +51,19 @@ public:
     ///
     ClientGroup GetClientGroup() const;
     ///
-    uint32_t GetConnectionId() const;    
+    uint32_t GetConnectionId() const;
+
+    /// Gets the estimated current packet roundtrip time (server->client->server).
+    Timing::Time GetCurrentPing() const;
+
+    uint64_t GetUserData() const;
+
+    void SetUserData(uint64_t);
 protected:
     BaseMultiplayerServer* server;
     ClientGroup group = ClientGroup::DontCare;
     HSteamNetConnection connectionId = k_HSteamNetConnection_Invalid;
+    uint64_t userData;
 };
 
 //--------------------------------------------------------------------------
@@ -73,6 +82,21 @@ inline ClientGroup
 ClientConnection::GetClientGroup() const
 {
     return this->group;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+inline uint64_t
+ClientConnection::GetUserData() const
+{
+    return this->userData;
+}
+
+inline void
+ClientConnection::SetUserData(uint64_t data)
+{
+    this->userData = data;
 }
 
 } // namespace Multiplayer

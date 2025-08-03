@@ -35,6 +35,8 @@ public:
     virtual void Close();
     /// return true if client is open
     bool IsOpen() const;
+    ///
+    void Send(void* buf, int size);
 
     bool TryConnect();
 

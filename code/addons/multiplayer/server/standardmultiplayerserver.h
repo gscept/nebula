@@ -22,7 +22,9 @@ public:
     bool OnClientIsConnecting(ClientConnection* connection) override;
     void OnClientConnected(ClientConnection* connection) override;
     void OnClientDisconnected(ClientConnection* connection) override;
-    void OnMessageReceived(Timing::Time recvTime, uint32_t connectionId, byte* data, size_t size) override;
+    void OnMessageReceived(ClientConnection* connection, Timing::Time recvTime, byte* data, size_t size) override;
+    void OnTick() override;
+    void OnFrame() override;
 };
     
 } // namespace Multiplayer

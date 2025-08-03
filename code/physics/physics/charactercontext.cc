@@ -82,7 +82,7 @@ CharacterContext::CreateCharacter(Math::vec3 const& position, CharacterCreateInf
 #if NEBULA_DEBUG
         n_error("Character type is not Box or Capsule! Nebula currently only support these two types.");
 #else
-        n_assert(info.type == Physics::ColliderType_Cube || info.type == Physics::ColliderType_Cube);
+        n_assert(info.type == Physics::ColliderType_Box || info.type == Physics::Capsule);
 #endif        
         return CharacterId(0xFFFFFFFF);
     }
@@ -117,7 +117,11 @@ CharacterContext::CreateCharacter(Math::vec3 const& position, CharacterCreateInf
 void
 CharacterContext::DestroyCharacter(CharacterId id)
 {
-    n_assert(controllerIdPool.IsValid(id.id));
+    if (!controllerIdPool.IsValid(id.id))
+    {
+        return;
+    }
+
     Character& character = controllers[Ids::Index(id.id)];
     character.controller->release();
     character.controller = nullptr;
@@ -205,6 +209,7 @@ CharacterContext::GetCharacterFootPosition(CharacterId id)
 CharacterCollision
 CharacterContext::MoveCharacter(CharacterId id, Math::vector const& displacement, float minDist, float timeSinceLastMove)
 {
+    
     n_assert(controllerIdPool.IsValid(id.id));
     Character& character = controllers[Ids::Index(id.id)];
     

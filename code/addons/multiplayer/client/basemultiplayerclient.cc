@@ -80,8 +80,33 @@ BaseMultiplayerClient::Close()
     n_assert(this->isOpen);
 
     ShutdownClientProcessors();
+    char* reason = nullptr;
+#if NEBULA_DEBUG
+    reason = "Client closed the connection willingly.";
+#endif
 
+    n_printf("Closing!\n");
+    this->netInterface->CloseConnection(this->connectionId, 0, reason, true);
     this->isOpen = false;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerClient::Send(void* buf, int size)
+{
+    ISteamNetworkingMessage** netMsgs = new ISteamNetworkingMessage*[1];
+    netMsgs[0] = SteamNetworkingUtils()->AllocateMessage(size);
+        
+    // TODO: Can we construct this inplace in the steamnetworkingmessage?
+    Memory::Copy(buf, netMsgs[0]->m_pData, size);
+
+    netMsgs[0]->m_conn = this->connectionId;
+    netMsgs[0]->m_nFlags = 0; 
+    
+    int64* outMessageNumberOrResult = nullptr;
+    this->netInterface->SendMessages(1, netMsgs, outMessageNumberOrResult);
 }
 
 //--------------------------------------------------------------------------

@@ -30,6 +30,7 @@ public:
 
         AppObtainFocus,         // application window obtained focus (or minimized, etc)
         AppLoseFocus,           // application window lost focus
+        AppClose,               // application window closed
         Reset,                  // InputServer::Reset() has been called
         KeyDown,                // a key has been pressed
         KeyUp,                  // a key has been released
@@ -245,6 +246,7 @@ InputEvent::TypeToString(Type t)
         case InvalidType:               return "InvalidTyp";
         case AppObtainFocus:            return "AppObtainFocus";
         case AppLoseFocus:              return "AppLoseFocus";
+        case AppClose:                  return "AppClose";
         case Reset:                     return "Reset";
         case KeyDown:                   return "KeyDown";
         case KeyUp:                     return "KeyUp";

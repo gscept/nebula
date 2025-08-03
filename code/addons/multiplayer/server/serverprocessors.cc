@@ -36,16 +36,13 @@ SyncPositions(Game::World* world,
               NetworkTransform& netTransform,
               Game::Position& pos)
 {
-    if (!context->processors[0]->active)
-        return;
-
     context->builder.Clear();
     flatbuffers::Offset<StandardProtocol::MsgSyncPosition> msgPos;
     flatbuffers::Offset<StandardProtocol::Message> message;
     
     netTransform.tickNumber++;
     // Reusing position extrapolators last packet pos, to save some memory.
-    Math::vec3 instantVelocity = (pos - netTransform.positionExtrapolator.lastPacketPos) * (1.0f / context->server->GetSendTickInterval());
+    Math::vec3 instantVelocity = (pos - netTransform.positionExtrapolator.lastPacketPos) * (1.0f / context->server->GetTickInterval());
     netTransform.positionExtrapolator.lastPacketPos = pos;
 
     msgPos = StandardProtocol::CreateMsgSyncPosition(context->builder, netId.identifier, (Flat::Vec3*)&pos, (Flat::Vec3*)&instantVelocity, netTransform.tickNumber);

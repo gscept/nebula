@@ -67,4 +67,20 @@ ClientConnection::SetClientGroup(ClientGroup group)
     this->group = group;
 }
 
+//--------------------------------------------------------------------------
+/**
+*/
+Timing::Time
+ClientConnection::GetCurrentPing() const
+{
+    SteamNetConnectionRealTimeStatus_t status;
+    EResult res = this->server->netInterface->GetConnectionRealTimeStatus(this->connectionId, &status, 0, nullptr);
+    if (res == k_EResultNoConnection)
+    {
+        return 0.0f;
+    }
+    
+    return (double)status.m_nPing / 1000.0;
+}
+
 } // namespace Multiplayer

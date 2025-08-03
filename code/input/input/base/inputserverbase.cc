@@ -238,6 +238,7 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
                 break;
 
             case InputEvent::AppLoseFocus:
+            case InputEvent::AppClose:
             case InputEvent::Reset:
                 this->ReleaseMouseCapture(this->mouseCaptureHandler);
                 break;
@@ -266,6 +267,7 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
                 break;
 
             case InputEvent::AppLoseFocus:
+            case InputEvent::AppClose:
             case InputEvent::Reset:
                 this->ReleaseKeyboardCapture(this->keyboardCaptureHandler);
                 break;
@@ -290,6 +292,11 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
         case InputEvent::AppObtainFocus:
             this->hasFocus = true;
             break;
+
+        case InputEvent::AppClose:
+            this->SetQuitRequested(true);
+            break;
+            
         default: break;
     }
 

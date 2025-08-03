@@ -41,7 +41,7 @@ SvSteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallbac
 */
 BaseMultiplayerServer::BaseMultiplayerServer()
     : isOpen(false),
-    sendTickInterval(1.0/15)
+    tickInterval(1.0/15.0)
 {
     for (int i = 0; i < (int)ClientGroup::NumClientGroups; i++)
     {
@@ -127,7 +127,7 @@ BaseMultiplayerServer::Open()
     
     SetupServerProcessors(this);
 
-    this->sendTimer.Start();
+    this->tickTimer.Start();
     this->isOpen = true;
     return true;
 }
@@ -193,7 +193,7 @@ BaseMultiplayerServer::Broadcast(void* buf, int size)
         // TODO: Can we construct this inplace in the steamnetworkingmessage?
         Memory::Copy(buf, netMsgs[i]->m_pData, size);
 
-        netMsgs[i]->m_conn = (*(this->clientConnections.Begin().val))->GetConnectionId();
+        netMsgs[i]->m_conn = (*(it.val))->GetConnectionId();
         // HACK: Unreliable for now
         netMsgs[i]->m_nFlags = 0; 
         i++;
@@ -236,7 +236,7 @@ BaseMultiplayerServer::OnClientDisconnected(ClientConnection* connection)
 /**
 */
 void
-BaseMultiplayerServer::OnMessageReceived(Timing::Time recvTime, uint32_t connectionId, byte* data, size_t size)
+BaseMultiplayerServer::OnMessageReceived(ClientConnection* connection, Timing::Time recvTime, byte* data, size_t size)
 {
     // Override in subclass
 }
@@ -377,11 +377,44 @@ BaseMultiplayerServer::OnNetConnectionStatusChanged(SteamNetConnectionStatusChan
 /**
 */
 void
+BaseMultiplayerServer::OnTick()
+{
+    // Override in subclass
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+BaseMultiplayerServer::OnFrame()
+{
+    // Override in subclass
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
 BaseMultiplayerServer::SyncAll()
 {
     this->PollIncomingMessages();
     this->PollConnectionChanges();
-    this->PushPendingMessages();
+
+    // - Frame -
+    // Happens "every frame"
+    this->OnFrame();
+
+    // - Tick -
+    // Happens only after tickInterval amount of seconds has passed, and after "Frame"
+
+    if (this->tickTimer.GetTime() < this->tickInterval)
+    {
+        return;
+    }
+
+    this->tickTimer.Reset();
+
+    this->OnTick();
 }
 
 //--------------------------------------------------------------------------
@@ -423,7 +456,7 @@ BaseMultiplayerServer::PollIncomingMessages()
 
             if (data != nullptr && bytes > 0)
             {
-                this->OnMessageReceived(recvTime, incomingMsg[i]->m_conn, (byte*)data, bytes);
+                this->OnMessageReceived(this->clientConnections[incomingMsg[i]->m_conn], recvTime, (byte*)data, bytes);
                 incomingMsg[i]->Release();
             }
         }
@@ -439,58 +472,6 @@ BaseMultiplayerServer::PollConnectionChanges()
 {
     callbackServerInstance = this;
     this->netInterface->RunCallbacks();
-}
-
-//--------------------------------------------------------------------------
-/**
-*/
-void
-BaseMultiplayerServer::PushPendingMessages()
-{
-    if (this->clientConnections.IsEmpty())
-        return;
-
-    if (this->sendTimer.GetTime() < this->sendTickInterval)
-    {
-        SetServerProcessorsActive(false);
-        return;
-    }
-
-    this->sendTimer.Reset();
-
-    SetServerProcessorsActive(true);
-
-    //SteamNetworkingMessage_t* netMsgs[4] = { nullptr, nullptr, nullptr, nullptr };
-//
-    //// TODO: do not make a new builder every time
-    //flatbuffers::FlatBufferBuilder builder(1024);
-    //flatbuffers::Offset<Protocol::MsgTest> msgTest;
-    //flatbuffers::Offset<Protocol::Message> message;
-    //
-    //for (int i = 0; i < 4; i++)
-    //{
-    //    builder.Reset();
-    //    static float f = 0.0f;
-    //    f += 0.01f;
-    //    msgTest = Protocol::CreateMsgTest(builder, f);
-    //    message = Protocol::CreateMessage(builder, Protocol::Data_Test, msgTest.Union());
-//
-    //    builder.Finish(message);
-    //    
-    //    uint8_t* buf = builder.GetBufferPointer();
-    //    int size = builder.GetSize();
-    //    
-    //    netMsgs[i] = SteamNetworkingUtils()->AllocateMessage(size);
-    //    
-    //    // TODO: Can we construct this inplace in the steamnetworkingmessage?
-    //    Memory::Copy(buf, netMsgs[i]->m_pData, size);
-    //    
-    //    netMsgs[i]->m_conn = (*(this->clientConnections.Begin().val))->connectionId;
-    //    netMsgs[i]->m_nFlags = 0;
-    //}
-    //
-    //int64* outMessageNumberOrResult = nullptr;
-    //this->netInterface->SendMessages(4, netMsgs, outMessageNumberOrResult);
 }
 
 } // namespace Multiplayer

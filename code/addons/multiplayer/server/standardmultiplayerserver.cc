@@ -130,7 +130,7 @@ StandardMultiplayerServer::OnClientDisconnected(ClientConnection* connection)
 /**
 */
 void 
-StandardMultiplayerServer::OnMessageReceived(Timing::Time recvTime, uint32_t connectionId, byte* data, size_t size)
+StandardMultiplayerServer::OnMessageReceived(ClientConnection* connection, Timing::Time recvTime, byte* data, size_t size)
 {
     //StandardProtocol::Message const* protocolMessage = StandardProtocol::GetMessage(data);
     //switch (protocolMessage->data_type())
@@ -150,6 +150,24 @@ StandardMultiplayerServer::OnMessageReceived(Timing::Time recvTime, uint32_t con
     //    default:
     //        break;
     //}
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+StandardMultiplayerServer::OnFrame()
+{
+    SetServerProcessorsActive(false);
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+void
+StandardMultiplayerServer::OnTick()
+{
+    SetServerProcessorsActive(true);
 }
 
 } // namespace Multiplayer

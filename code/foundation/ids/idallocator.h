@@ -42,10 +42,9 @@ public:
     IdAllocator(Ids::Id32 maxid = 0xFFFFFFFF) : maxId(maxid) {};
     
     /// Allocate an object. 
+    /// @note   This purposefully hides the default allocation method and should not be virtual!
     Ids::Id32 Alloc()
     {
-        /// @note   This purposefully hides the default allocation method and should definetly not be virtual!
-        
         Ids::Id32 index;
         if (this->freeIds.Size() > 0)
         {
