@@ -829,7 +829,7 @@ World::ExecuteAddComponentCommands()
         Entity currentEntity = currentCmd->entity;
         auto* firstCmdOfEntity = currentCmd;
         SizeT numEntityCmds = 0;
-        while (currentCmd->entity == currentEntity && currentCmd != end)
+        while (currentCmd != end && currentCmd->entity == currentEntity)
         {
             numEntityCmds++;
             currentCmd++;
