@@ -80,7 +80,7 @@ BaseMultiplayerClient::Close()
     n_assert(this->isOpen);
 
     ShutdownClientProcessors();
-    char* reason = nullptr;
+    const char* reason = nullptr;
 #if NEBULA_DEBUG
     reason = "Client closed the connection willingly.";
 #endif
