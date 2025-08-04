@@ -135,6 +135,50 @@ ActorContext::CreateCapsule(float radius, float halfHeight, IndexT materialId, A
     return AllocateActorId(newActor);
 }
 
+//--------------------------------------------------------------------------
+/**
+*/
+ActorId
+ActorContext::CreateConvexHull(float* vertices, int numVertices, IndexT materialId, ActorType type, Math::mat4 const& transform, IndexT sceneId)
+{
+    Scene& scene = Physics::GetScene(sceneId);
+
+    PxRigidActor* newActor = state.CreateActor(type, transform);
+
+    Material const& material = Physics::GetMaterial(materialId);
+
+    PxConvexMeshDesc convexDesc;
+    convexDesc.points.count  = numVertices / 3;
+    convexDesc.points.stride = sizeof(float) * 3;
+    convexDesc.points.data   = vertices;
+    convexDesc.flags         = PxConvexFlag::eCOMPUTE_CONVEX | PxConvexFlag::eFAST_INERTIA_COMPUTATION;
+
+    PxTolerancesScale scale;
+    PxCookingParams cookingParams(scale);
+
+#ifdef NEBULA_DEBUG
+    // mesh should be validated before cooking without the mesh cleaning
+    //bool convexMeshValid = PxValidateConvexMesh(cookingParams, convexDesc);
+    //n_assert(convexMeshValid);
+#endif
+
+    PxDefaultMemoryOutputStream buf;
+    if(!PxCookConvexMesh(cookingParams, convexDesc, buf))
+        return NULL;
+
+    PxConvexMesh* convexMesh = PxCreateConvexMesh(cookingParams, convexDesc, state.physics->getPhysicsInsertionCallback());
+
+    PxShape* shape = PxRigidActorExt::createExclusiveShape(*newActor, PxConvexMeshGeometry(convexMesh), *material.material);
+
+    if (type != ActorType::Static)
+    {
+        PxRigidBodyExt::updateMassAndInertia(*static_cast<PxRigidDynamic*>(newActor), material.density);
+    }
+    scene.scene->addActor(*newActor);
+    return AllocateActorId(newActor);
+
+}
+
 //------------------------------------------------------------------------------
 /**
 */

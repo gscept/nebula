@@ -125,8 +125,6 @@ BaseMultiplayerServer::Open()
     }   
     n_printf("MultiplayerServer listening on port %d\n", serverLocalAddr.m_port);
     
-    SetupServerProcessors(this);
-
     this->tickTimer.Start();
     this->isOpen = true;
     return true;

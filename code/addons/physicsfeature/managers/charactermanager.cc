@@ -63,6 +63,12 @@ MoveCharacters(Game::World* world, Game::Position& position, Game::Velocity& vel
         character.isGrounded = false;
     }
 
+    // Stop vertical velocity if the character bonks their head
+    if (collision.IsSet(Physics::CharacterCollisionBits::Up) && velocity.y > 0)
+    {
+        velocity.y = 0;
+    }
+
     Math::vec3 previousPosition = position;
 
     Physics::Character& c = Physics::CharacterContext::GetCharacter(character.characterId);
@@ -95,7 +101,7 @@ CharacterManager::OnActivate()
     time = Game::Time::GetTimeSource(TIMESOURCE_PHYSICS);
     Game::World* world = Game::GetWorld(WORLD_DEFAULT);
 
-    Game::ProcessorBuilder(world, "CharacterManager.MoveCharacters").Func(MoveCharacters).Excluding<Game::Static>().Build();
+    Game::ProcessorBuilder(world, "CharacterManager.MoveCharacters").Func(MoveCharacters).Excluding<Game::Static, PhysicsFeature::IsKinematic>().Build();
 }
 
 //------------------------------------------------------------------------------
