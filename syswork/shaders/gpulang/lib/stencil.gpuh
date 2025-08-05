@@ -1,8 +1,8 @@
+#pragma once
 //------------------------------------------------------------------------------
 //  stencil.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
 const STENCIL_BIT_SKIN : u32 = 0x1;			// for subsurface pixels
 const STENCIL_BIT_CHARACTER : u32 = 0x2;
 const STENCIL_BIT_DYNAMIC : u32 = 0x4;		// for dynamic objects

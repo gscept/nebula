@@ -46,11 +46,11 @@ vsGLTFStatic(
 ) void
 {
     const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
-    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    vertexExportCoordinates(ViewConstants.ViewProjection* modelSpace);
     UV = UnpackUV(uv);
 
-    Tangent     = f32x4((ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz, tangent.w);
-    Normal      = (ObjectUniforms.Model * f32x4(normal, 0)).xyz;
+    Tangent = f32x4((ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz, tangent.w);
+    Normal = (ObjectUniforms.Model * f32x4(normal, 0)).xyz;
     WorldSpacePos = modelSpace.xyz;
 }
 
@@ -66,21 +66,21 @@ vsGLTFSkinned(
     binding(7) in weights : f32x4,
     binding(8) in indices : u32x4,
     out Tangent : f32x4,
-    out Normal : f32x3,    
+    out Normal : f32x3,
     out UV : f32x2,
     out WorldSpacePos : f32x3
 ) void
 {
-    const skinnedPos      = SkinnedPosition(position, weights, indices);
-    const skinnedNormal   = SkinnedNormal(normal, weights, indices);
-    const skinnedTangent  = SkinnedNormal(tangent.xyz, weights, indices);
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+    const skinnedNormal = SkinnedNormal(normal, weights, indices);
+    const skinnedTangent = SkinnedNormal(tangent.xyz, weights, indices);
 
     const modelSpace = ObjectUniforms.Model * skinnedPos;
-    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
-    
-    UV            = UnpackUV(uv);
-    Tangent 	  = f32x4(normalize((ObjectUniforms.Model * skinnedTangent).xyz), tangent.w);
-    Normal 		  = normalize((ObjectUniforms.Model * skinnedNormal).xyz);
+    vertexExportCoordinates(ViewConstants.ViewProjection* modelSpace);
+
+    UV = UnpackUV(uv);
+    Tangent = f32x4(normalize((ObjectUniforms.Model * skinnedTangent).xyz), tangent.w);
+    Normal = normalize((ObjectUniforms.Model * skinnedNormal).xyz);
     WorldSpacePos = modelSpace.xyz;
 }
 
@@ -107,15 +107,15 @@ psGLTF(
     material[MAT_CAVITY] = occlusion.r;
     material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
     const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Tangent.w, normals));
-    
+
     const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
     const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
-    
+
     var light = f32x3(0, 0, 0);
     light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
     //light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;
-    
+
     pixelExportColor(PackColor(light.rgb, baseColor.a), UberShaderOutput.Albedo);
     pixelExportColor(f32x4(N, 0), UberShaderOutput.Normals);
     pixelExportColor(f32x4(F0, material[MAT_ROUGHNESS]), UberShaderOutput.Material);
@@ -124,10 +124,38 @@ psGLTF(
 //------------------------------------------------------------------------------
 //  Techniques
 //------------------------------------------------------------------------------
-SimpleTechnique(GLTFStaticDepthAlphaMask, "Static|Depth|AlphaMask", vsDepthStaticAlphaMask, psGLTFDepthOnlyAlphaMask, DepthState);
-SimpleTechnique(GLTFStaticDepthAlphaMaskDoubleSided, "Static|Depth|AlphaMask|DoubleSided", vsDepthStaticAlphaMask, psGLTFDepthOnlyAlphaMask, DepthStateDoubleSided);
-SimpleTechnique(GLTFSkinnedDepthAlphaMask, "Skinned|Depth|AlphaMask", vsDepthSkinnedAlphaMask, psGLTFDepthOnlyAlphaMask, DepthState);
-SimpleTechnique(GLTFSkinnedDepthAlphaMaskDoubleSided, "Skinned|Depth|AlphaMask|DoubleSided", vsDepthSkinnedAlphaMask, psGLTFDepthOnlyAlphaMask, DepthStateDoubleSided);
+
+@Mask("Static|Depth|AlphaMask")
+program GLTFStaticDepthAlphaMask
+{
+    VertexShader = vsDepthStaticAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthState;
+};
+
+@Mask("Static|Depth|AlphaMask|DoubleSided")
+program GLTFStaticDepthAlphaMaskDoubleSided
+{
+    VertexShader = vsDepthStaticAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+};
+
+@Mask("Skinned|Depth|AlphaMask")
+program GLTFSkinnedDepthAlphaMask
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthState;
+};
+
+@Mask("Skinned|Depth|AlphaMask|DoubleSided")
+program GLTFSkinnedDepthAlphaMaskDoubleSided
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+};
 
 @Mask("Static")
 program GLTFStatic
