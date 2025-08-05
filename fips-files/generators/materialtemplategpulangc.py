@@ -337,7 +337,7 @@ class MaterialInterfaceDefinition:
         ret += "struct {}Material \n{{\n{}}};\n".format(self.name, contents)
         ret += textures
         ret += "\n"
-        ret += "group(BATCH_GROUP) binding(52) uniform {}Constants : *{}Material;\n".format(self.name, self.name)
+        ret += "group(BATCH_GROUP) binding(MaterialBufferSlot) uniform {}Constants : *{}Material;\n".format(self.name, self.name)
         return ret
 
 
@@ -626,6 +626,8 @@ if __name__ == '__main__':
         shaderF = IDLC.filewriter.FileWriter()
         shaderF.Open(outShaderPath)
         generator.BeginShader(shaderF)
+        shaderF.WriteLine("const MaterialBindingSlot = 51u;")
+        shaderF.WriteLine("const MaterialBufferSlot = 52u;")
 
         for file in files:
             path = Path(file).stem
@@ -681,16 +683,11 @@ if __name__ == '__main__':
         sourceF.Close()
 
         # Finish shader
-        shaderF.WriteLine("const MaterialBindingSlot = 51u;")
-        shaderF.WriteLine("const MaterialBufferSlot = 52u;")
 
-        bindingsContent = ''
-        for file in files:
-            fileName = Path(file).stem
-            bindingsContent += ",\n".join(["\t{}Materials : *{}Material".format(i, i) for i in generator.materialLists])
 
-        shaderF.WriteLine("struct MaterialBinding\n{{\n{}}};".format(bindingsContent));
-        shaderF.WriteLine("group(BATCH_GROUP) binding(51) uniform MaterialPointers : *MaterialBinding;")
+        bindingsContent = "\n".join(["\t{}Materials : *{}Material;".format(i, i) for i in generator.materialLists])
+        shaderF.WriteLine("struct MaterialBinding\n{{\n{}\n}};\n".format(bindingsContent));
+        shaderF.WriteLine("group(BATCH_GROUP) binding(MaterialBindingSlot) uniform MaterialPointers : *MaterialBinding;")
         generator.EndShader(shaderF)
         shaderF.Close()
 
