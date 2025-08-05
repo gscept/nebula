@@ -87,14 +87,14 @@ generate
     if (ImageIsArray)
     <
         alias textureType as texture2DArray;
-        Sample(uniform image : *textureType, coords : f32x3, lod : i32) f32x4 { return textureFetch(image, coords, 0); }
-        Store(uniform image : *mutable textureType, coord : f32x3, value : f32x4) void { textureStore(image, coord, value); }
+        alias coordType as i32x3;
+        Coord(x : i32, y : i32, z : i32) i32x3 { return i32x3(x, y, z); }
     >
     else
     <
         alias textureType as texture2D;
-        Sample(uniform image : *textureType, coords : f32x3, lod : i32) f32x4 { return textureFetch(image, coords.xy, lod); }
-        Store(uniform image : *mutable textureType, coord : f32x3, value : f32x4) void { textureStore(image, coord.xy, value); }
+        alias coordType as i32x2;
+        Coord(x : i32, y : i32, z : i32) i32x2 { return i32x2(x, y); }
     >
 
     if (ImageFormatType == ImageFormat.Rgba16f)
@@ -104,15 +104,19 @@ generate
         Swizzle(val : f32x4) f32x4 { return val; }
         Expand(val : f32x4) f32x4 { return val; }
         Empty() f32x4 { return f32x4(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, lod); }
+        Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x4;
     >
     else if (ImageFormatType == ImageFormat.Rgb16f)
     <
-        uniform BlurImageX : *mutable rgb16f textureType;
-        uniform BlurImageY : *mutable rgb16f textureType;
+        uniform BlurImageX : *mutable rgba16f textureType;
+        uniform BlurImageY : *mutable rgba16f textureType;
         Swizzle(val : f32x4) f32x3 { return val.xyz; }
         Expand(val : f32x3) f32x4 { return f32x4(val, 0); }
         Empty() f32x3 { return f32x3(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x3;
     >
     else if (ImageFormatType == ImageFormat.Rg16f)
@@ -122,6 +126,8 @@ generate
         Swizzle(val : f32x4) f32x2 { return val.xy; }
         Expand(val : f32x2) f32x4 { return f32x4(val, 0, 0); }
         Empty() f32x2 { return f32x2(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rg16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x2;
     >
     else if (ImageFormatType == ImageFormat.Rg32f)
@@ -131,6 +137,8 @@ generate
         Swizzle(val : f32x4) f32x2 { return val.xy; }
         Expand(val : f32x2) f32x4 { return f32x4(val, 0, 0); }
         Empty() f32x2 { return f32x2(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rg32f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x2;
     >
 >;
@@ -177,7 +185,7 @@ csMainX() void
     {
         // load into workgroup saved memory, this allows us to use the original pixel even though
         // we might have replaced it with the result from this thread!
-        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageX, f32x3(x,y,z), 0));
+        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageX, Coord(x,y,z), 0u));
     }
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
@@ -195,7 +203,7 @@ csMainX() void
             blurTotal += weights[i] * SharedMemory[j];
         }
 
-        Store(BlurImageX, f32x3(writePos, y, z), Expand(blurTotal));
+        Store(BlurImageX, Coord(writePos, y, z), Expand(blurTotal));
 	}
 }
 
@@ -225,7 +233,7 @@ csMainY() void
     {
         // load into workgroup saved memory, this allows us to use the original pixel even though
         // we might have replaced it with the result from this thread!
-        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageY, f32x3(x,y,z), 0));
+        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageY, Coord(x,y,z), 0));
     }
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
@@ -243,6 +251,6 @@ csMainY() void
             blurTotal += weights[i] * SharedMemory[j];
         }
 
-        Store(BlurImageY, f32x3(writePos, y, z), Expand(blurTotal));
+        Store(BlurImageY, Coord(writePos, y, z), Expand(blurTotal));
 	}
 }
