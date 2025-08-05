@@ -133,7 +133,7 @@ LtcSolveCubic(Coefficient : f32x4) f32x3
         const D_a = -2.0 * B * Delta.x + Delta.y;
 
         // Take the cubic root of a normalized complex number
-        const Theta = atan(sqrt(Discriminant), -D_a) / 3.0f;
+        const Theta = atan2(sqrt(Discriminant), -D_a) / 3.0f;
 
         const x_1a = 2.0 * sqrt(-C_a) * cos(Theta);
         const x_3a = 2.0 * sqrt(-C_a) * cos(Theta + (2.0f / 3.0f) * pi);
@@ -154,7 +154,7 @@ LtcSolveCubic(Coefficient : f32x4) f32x3
         const D_d = -D * Delta.y + 2.0f * C * Delta.z;
 
         // Take the cubic root of a normalized complex number
-        const Theta = atan(D * sqrt(Discriminant), -D_d) / 3.0f;
+        const Theta = atan2(D * sqrt(Discriminant), -D_d) / 3.0f;
 
         const x_1d = 2.0f * sqrt(-C_d) * cos(Theta);
         const x_3d = 2.0f * sqrt(-C_d) * cos(Theta + (2.0f / 3.0f) * pi);
