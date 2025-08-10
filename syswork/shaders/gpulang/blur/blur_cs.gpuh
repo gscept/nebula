@@ -1,12 +1,12 @@
 //------------------------------------------------------------------------------
 /**
-	blur_cs.gpuh
+    blur_cs.gpuh
 
-	Blurring kernel used for 2D and 2D array textures. Implements a double pass X-Y blur with a defined kernel size.
-	First pass samples from a render-able texture (Alt0) and works in the X-axis.
-	The second pass resamples from the same texture and blurs in the Y-axis.
+    Blurring kernel used for 2D and 2D array textures. Implements a double pass X-Y blur with a defined kernel size.
+    First pass samples from a render-able texture (Alt0) and works in the X-axis.
+    The second pass resamples from the same texture and blurs in the Y-axis.
 
-	Include this header and then define if you want an RGBA16F, RG16F or RG32F image as input.
+    Include this header and then define if you want an RGBA16F, RG16F or RG32F image as input.
 
   (C) 2025 Individual contributors, see AUTHORS file
 */
@@ -145,9 +145,9 @@ generate
 
 sampler_state InputSampler
 {
-	Filter = FilterMode.Point;
-	AddressU = AddressMode.Clamp;
-	AddressV = AddressMode.Clamp;
+    Filter = FilterMode.Point;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
 };
 
 struct BlurData
@@ -166,14 +166,14 @@ local_size(u32x3(SharedMemSize, 1, 1))
 entry_point
 csMainX() void
 {
-	// get full resolution and inverse full resolution
-	const size = BlurUniforms.Viewport;
+    // get full resolution and inverse full resolution
+    const size = BlurUniforms.Viewport;
 
-	// calculate offsets
-	const  tileStart = i32(computeGetWorkgroupIndices().x) * BlurTileWidth;
-	const    tileEnd = tileStart + BlurTileWidth;
-	const apronStart = i32(tileStart) - KernelRadius;
-	const   apronEnd = tileEnd + KernelRadius;
+    // calculate offsets
+    const  tileStart = i32(computeGetWorkgroupIndices().x) * BlurTileWidth;
+    const    tileEnd = tileStart + BlurTileWidth;
+    const apronStart = i32(tileStart) - KernelRadius;
+    const   apronEnd = tileEnd + KernelRadius;
 
     const x = max(0, min(apronStart + i32(computeGetLocalThreadIndices().x), size.x - 1));
     const y = i32(computeGetWorkgroupIndices().y);
@@ -190,15 +190,15 @@ csMainX() void
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
-	const writePos = tileStart + computeGetLocalThreadIndices().x;
-	const tileEndClamped = min(tileEnd, size.x);
+    const writePos = tileStart + computeGetLocalThreadIndices().x;
+    const tileEndClamped = min(tileEnd, size.x);
 
-	if (writePos < tileEndClamped)
-	{
-		var blurTotal = Empty();
+    if (writePos < tileEndClamped)
+    {
+        var blurTotal = Empty();
 
         for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
-		{
+        {
             const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
         }
@@ -214,14 +214,14 @@ local_size_x(SharedMemSize)
 entry_point
 csMainY() void
 {
-	// get full resolution and inverse full resolution
+    // get full resolution and inverse full resolution
     const size = BlurUniforms.Viewport;
 
-	// calculate offsets
-	const  tileStart = i32(computeGetWorkgroupIndices().x) * BlurTileWidth;
-	const    tileEnd = tileStart + BlurTileWidth;
-	const apronStart = i32(tileStart) - KernelRadius;
-	const   apronEnd = tileEnd + KernelRadius;
+    // calculate offsets
+    const  tileStart = i32(computeGetWorkgroupIndices().x) * BlurTileWidth;
+    const    tileEnd = tileStart + BlurTileWidth;
+    const apronStart = i32(tileStart) - KernelRadius;
+    const   apronEnd = tileEnd + KernelRadius;
 
     const x = i32(computeGetWorkgroupIndices().y);
     const y = max(0, min(apronStart + i32(computeGetLocalThreadIndices().x), size.y - 1));
@@ -238,15 +238,15 @@ csMainY() void
     executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
 
-	const writePos = tileStart + computeGetLocalThreadIndices().x;
-	const tileEndClamped = min(tileEnd, size.y);
+    const writePos = tileStart + computeGetLocalThreadIndices().x;
+    const tileEndClamped = min(tileEnd, size.y);
 
-	if (writePos < tileEndClamped)
-	{
-		var blurTotal = Empty();
+    if (writePos < tileEndClamped)
+    {
+        var blurTotal = Empty();
 
         for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
-		{
+        {
             const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
         }

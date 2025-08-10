@@ -18,7 +18,7 @@ local_size_x(64)
 entry_point
 csCull() void 
 {
-    const index1D = computeGetGlobalInvocationIndices().x;
+    const index1D = computeGetGlobalThreadIndices().x;
 
     if (index1D > LightUniforms.NumLightClusters)
         return;
@@ -28,8 +28,8 @@ csCull() void
     var flags = 0u;
 
     // update pointlights
-    var numLights = 0;
-    for (var i = 0; i < LightUniforms.NumPointLights; i++)
+    var numLights = 0u;
+    for (var i = 0u; i < LightUniforms.NumPointLights; i++)
     {
         const light = LightLists.PointLights[i];
         const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
@@ -46,8 +46,8 @@ csCull() void
         flags |= CLUSTER_POINTLIGHT_BIT;
 
     // update spotlights
-    numLights = 0;
-    for (var i = 0; i < LightUniforms.NumSpotLights; i++)
+    numLights = 0u;
+    for (var i = 0u; i < LightUniforms.NumSpotLights; i++)
     {
         const light = LightLists.SpotLights[i];
         // first do fast discard sphere test
@@ -69,8 +69,8 @@ csCull() void
     if (numLights > 0)
         flags |= CLUSTER_SPOTLIGHT_BIT;
 
-    numLights = 0;
-    for (var i = 0; i < LightUniforms.NumAreaLights; i++)
+    numLights = 0u;
+    for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     { 
         const light = LightLists.AreaLights[i];
         const viewSpaceCenter = (ViewConstants.View * f32x4(light.position, 1)).xyz;
@@ -99,7 +99,7 @@ local_size_x(64)
 entry_point
 csDebug() void
 {
-    const coord = i32x2(computeGetGlobalInvocationIndices().xy);
+    const coord = i32x2(computeGetGlobalThreadIndices().xy);
     const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
 
     // convert screen coord to view-space position

@@ -2,8 +2,6 @@
 //  @file ddgi.gpuh
 //  @copyright (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#ifndef DDGI_GPUH
-#define DDGI_GPUH
 #include <lib/shared.gpuh>
 
 const PROBE_STATE_INACTIVE = 0;
@@ -443,5 +441,3 @@ EvaluateDDGIIrradiance(
     
     return irradiance;
 }
-
-#endif // DDGI_FXH

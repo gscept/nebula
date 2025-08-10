@@ -1,4 +1,3 @@
-#pragma once
 //------------------------------------------------------------------------------
 //  lighting_functions.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
@@ -386,20 +385,13 @@ CalculateGlobalLight(
     const NL = saturate(dot(PerTickParams.GlobalLightDirWorldspace.xyz, worldSpaceNormal));
     if (NL <= 0) { return f32x3(0); }
 
-#ifdef CSM_DEBUG
-    var csmDebug : f32x4;
-#endif
 
     var shadowFactor = 1.0f;
     if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         // CSM transform takes us from world space to light view space
         const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(worldSpacePosition, 1);
-        shadowFactor = CSMPS(shadowPos,	PerTickParams.GlobalLightShadowBuffer
-#ifdef CSM_DEBUG
-        , csmDebug  
-#endif
-        );
+        shadowFactor = CSMPS(shadowPos,	PerTickParams.GlobalLightShadowBuffer);
 
         if (PerTickParams.EnableTerrainShadows == 1)
         {
@@ -426,9 +418,6 @@ CalculateGlobalLight(
     const radiance = PerTickParams.GlobalLightColor.xyz;
     var irradiance = (brdf * radiance) * saturate(NL) + PerTickParams.GlobalAmbientLightColor.xyz;
 
-#ifdef CSM_DEBUG
-    irradiance *= csmDebug.rgb;
-#endif
     return irradiance * shadowFactor;
 }
 
@@ -696,28 +685,16 @@ CalculateGlobalLightAmbientTransmission(
 
     if ((NL + TNL) <= 0) { return f32x3(0); }
 
-#ifdef CSM_DEBUG
-    var csmDebug : f32x4;
-#endif
 
     var shadowFactor = 1.0f;
     if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(pos, 1); // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos, PerTickParams.GlobalLightShadowBuffer
-#ifdef CSM_DEBUG
-            , csmDebug
-#endif
-        
-        );
+        shadowFactor = CSMPS(shadowPos, PerTickParams.GlobalLightShadowBuffer);
         shadowFactor = lerp(1.0f, shadowFactor, PerTickParams.GlobalLightShadowIntensity);
     }
 
     var radiance = PerTickParams.GlobalLightColor.xyz * saturate(NL + TNL);
-
-#ifdef CSM_DEBUG
-    radiance *= csmDebug.rgb;
-#endif
     return radiance * shadowFactor * albedo.rgb;
 }
 
@@ -796,7 +773,6 @@ LocalLightsAmbientTransmission(
     return light;
 }
 
-#define USE_SCALARIZATION_LOOP 0
 //------------------------------------------------------------------------------
 /**
 */
@@ -817,42 +793,42 @@ CalculateLight(
     const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
     light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
 
-#if USE_SCALARIZATION_LOOP
-    // Get the mask for the invocation
-    const laneMask = subgroupGetLocalInvocationMask();
-
-    // Get the execution mask for the wavefront
-    var execMask = subgroupBallot(true);
-    const firstWaveIndex = subgroupRead(idx);
-
-    // Check if all waves use the same index and do this super cheaply
-    if (subgroupBallot(firstWaveIndex == idx) == execMask)
-    {
-        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
-        light += GI(firstWaveIndex, viewVec, worldSpacePos, normal, albedo);
-    }
-    else
-    {
-        // Scalarization loop
-        while ((laneMask & execMask) != u32x4(0))
-        {
-            const scalarIdx = subgroupRead(idx);
-            const currentMask = subgroupBallot(scalarIdx == idx);
-            execMask &= ~currentMask;
-
-            // If this wave uses the cell we loaded into SGPR, use it
-            // this will effectively scalarize the light lists
-            if (scalarIdx == idx)
-            {
-                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
-                light += GI(scalarIdx, viewVec, worldSpacePos, normal, albedo);
-            }
-        }
-    }
-#else
+//#if USE_SCALARIZATION_LOOP
+//    // Get the mask for the invocation
+//    const laneMask = subgroupGetLocalInvocationMask();
+//
+//    // Get the execution mask for the wavefront
+//    var execMask = subgroupBallot(true);
+//    const firstWaveIndex = subgroupRead(idx);
+//
+//    // Check if all waves use the same index and do this super cheaply
+//    if (subgroupBallot(firstWaveIndex == idx) == execMask)
+//    {
+//        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+//        light += GI(firstWaveIndex, viewVec, worldSpacePos, normal, albedo);
+//    }
+//    else
+//    {
+//        // Scalarization loop
+//        while ((laneMask & execMask) != u32x4(0))
+//        {
+//            const scalarIdx = subgroupRead(idx);
+//            const currentMask = subgroupBallot(scalarIdx == idx);
+//            execMask &= ~currentMask;
+//
+//            // If this wave uses the cell we loaded into SGPR, use it
+//            // this will effectively scalarize the light lists
+//            if (scalarIdx == idx)
+//            {
+//                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+//                light += GI(scalarIdx, viewVec, worldSpacePos, normal, albedo);
+//            }
+//        }
+//    }
+//#else
     light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
     light += GI(idx, viewVec, worldSpacePos, normal, albedo);
-#endif
+//#endif
 
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];

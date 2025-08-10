@@ -560,7 +560,6 @@ class MaterialTemplateGenerator:
     #
     def BeginShader(self, f):
         f.WriteLine("// Material Interface #version:{}#".format(self.version))
-        f.WriteLine("#pragma once")
         f.WriteLine("//------------------------------------------------------------------------------")
         f.WriteLine("/**")
         f.IncreaseIndent()
@@ -706,4 +705,4 @@ if __name__ == '__main__':
     except FileNotFoundError:
         pass
 
-    subprocess.run([shaderC, "-i", outShaderPath, "-I", shaderInclude, "-I", outDir, "-o", shaderBinaryOutput, "-h", shaderHeaderOutput, "-t", "shader"])
+    subprocess.run([shaderC, outShaderPath, "-I", shaderInclude, "-I", outDir, "-o", shaderBinaryOutput, "-h", shaderHeaderOutput, "-t", "shader"])

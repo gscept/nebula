@@ -3,9 +3,6 @@
 //  (C) 2025 Individual contributors, See LICENSE file
 //------------------------------------------------------------------------------
 
-#ifndef DECALS_GPUH
-#define DECALS_GPUH
-
 sampler_state DecalSampler
 {
     Filter = FilterMode.MinMagMipLinear;
@@ -104,4 +101,3 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
     *material.xyz = (1.0f - totWeight) * mat.xyz + totMaterial.xyz * totWeight;
 }
 
-#endif

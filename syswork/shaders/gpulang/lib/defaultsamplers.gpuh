@@ -2,8 +2,6 @@
 //  defaultsamplers.gpuh
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#pragma once
-
 // samplers
 sampler_state GeometryTextureSampler
 {
