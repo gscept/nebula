@@ -1,4 +1,3 @@
-#pragma once
 //------------------------------------------------------------------------------
 //  shared.gpuh
 //  (C) 2024 Individual contributors, see AUTHORS file
@@ -76,28 +75,28 @@ sample2DArrayShadow(handle : u32, uniform samp : *sampler, uv : f32x2, index : f
     return textureSampleCompare(Textures2DArray[handle], samp, f32x3(uv, index), depth);
 }
 
-fetch2D(handle : u32, uv : f32x2, lod : f32) f32x4
+fetch2D(handle : u32, uv : u32x2, lod : u32) f32x4
 {
     return textureFetch(Textures2D[handle], uv, lod);
 }
 
-fetch2DArray(handle : u32, uvw : f32x3, lod : f32) f32x4
+fetch2DArray(handle : u32, uvw : u32x3, lod : u32) f32x4
 {
     return textureFetch(Textures2DArray[handle], uvw, lod);
 }
 
-fetch2DMS(handle : u32, uv : f32x2, lod : f32) f32x4
+fetch2DMS(handle : u32, uv : u32x2, lod : u32) f32x4
 {
     return textureFetch(Textures2DMS[handle], uv, lod);
 }
 
-fetch3D(handle : u32, uvw : f32x3, lod : f32) f32x4
+fetch3D(handle : u32, uvw : u32x3, lod : u32) f32x4
 {
     return textureFetch(Textures3D[handle], uvw, lod);
 }
 
 // Fetch stencil texture as a single channel texture
-fetchStencil(handle : u32, uv : f32x2, lod : f32) u32
+fetchStencil(handle : u32, uv : u32x2, lod : u32) u32
 {
     return castToU32(textureFetch(Textures2D[handle], uv, lod).r);
 }

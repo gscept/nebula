@@ -15,6 +15,9 @@ option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live
 option(N_EDITOR "Build as an editor build" ON)
 option(N_USE_CHECKED_PHYSX "Use Checked PhysX in optimized builds" ON)
 option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into binary for development builds" ON)
+option(N_PROFILE_SHADER_BUILDS "Profile shader compilation" OFF)
+option(N_SHADER_SYMBOLS "Generate debug symbols for shader builds, disables optimizations" OFF)
+option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
     if(EXISTS "${CMAKE_BINARY_DIR}/project_root.txt")
@@ -142,11 +145,6 @@ if(N_RENDERER_VULKAN)
     add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Vulkan)
 endif()
 
-option(N_NEBULA_DEBUG_SHADERS "Compile shaders without optimizations" ON)
-option(N_NEBULA_PROFILE_SHADER_BUILDS "Profile shader compilation" ON)
-option(N_NEBULA_SHADER_SYMBOLS "Compile shaders with symbols" ON)
-cmake_dependent_option(N_NEBULA_SHADER_SYMBOLS "Compile shaders with symbols" ON "N_NEBULA_DEBUG_SHADERS" ON)
-
 option(USE_DOTNET "Build with .NET support" OFF)
 
 IF (USE_DOTNET)
@@ -198,17 +196,15 @@ macro(compile_gpulang_intern)
     set(shd ${ARGV0})
     set(nebula_shader ${ARGV1})
     if(SHADERC)
-        set(shader_compiler_args)
-        if(NOT N_NEBULA_DEBUG_SHADERS)
-            set(shader_compiler_args "-optimize")
-        endif()
-        
-        if (N_NEBULA_PROFILE_SHADER_BUILDS)
+        unset(shader_compiler_args CACHE) # remove from cache if it exists
+        if (N_PROFILE_SHADER_BUILDS)
             set(shader_compiler_args ${shader_compiler_args} "-profile")
         endif()
 
-        if (N_NEBULA_SHADER_SYMBOLS)
+        if (N_SHADER_SYMBOLS)
             set(shader_compiler_args ${shader_compiler_args} "-symbols")
+        else()
+            set(shader_compiler_args ${shader_compiler_args} "-optimize")
         endif()
 
         if (nebula_shader)
@@ -233,7 +229,7 @@ macro(compile_gpulang_intern)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
-            execute_process(COMMAND ${GPULANGC} -M -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h)
+            execute_process(COMMAND ${GPULANGC} -M ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials -o ${depoutput} -h ${headerOutput}.h)
         endif()
 
         # sadly this doesnt work for some reason
@@ -249,7 +245,7 @@ macro(compile_gpulang_intern)
         endif()
 
         add_custom_command(OUTPUT ${binaryOutput}
-            COMMAND ${GPULANGC} -i ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_compiler_args} -g 3
+            COMMAND ${GPULANGC} ${shd} -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${binaryOutput} -h ${headerOutput} ${shader_compiler_args} -g 3
             MAIN_DEPENDENCY ${shd}
             DEPENDS ${GPULANGC} ${deps}
             WORKING_DIRECTORY ${FIPS_PROJECT_DIR}

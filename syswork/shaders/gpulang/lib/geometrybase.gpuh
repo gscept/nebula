@@ -2,8 +2,6 @@
 //  geometrybase.gpuh
 //  (C) 2012 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#pragma once
-
 #include <lib/std.gpuh>
 #include <lib/skinning.gpuh>
 #include <lib/util.gpuh>
@@ -13,7 +11,7 @@
 #include <lib/pbr.gpuh>
 #include <lib/stencil.gpuh>
 
-#include <lib/material_interfaces.gpuh>
+#include <material_interfaces.gpul>
 
 //#define PN_TRIANGLES
 render_state StandardState

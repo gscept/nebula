@@ -3,11 +3,6 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#ifndef CSM_GPUH
-#define CSM_GPUH
-
-//#define CSM_DEBUG
-
 #include <lib/shadowbase.gpuh>
 #include <lib/std.gpuh>
 
@@ -30,9 +25,6 @@ const DebugColors : [8]f32x4 =
 CSMPS(
 	  TexShadow : f32x4
 	, Texture : u32
-#ifdef CSM_DEBUG
-	, Debug : *f32x4
-#endif
 ) f32
 {
 	var texCoordShadow = f32x4(0.0f);
@@ -55,10 +47,6 @@ CSMPS(
 		}
 	}
 
-#ifdef CSM_DEBUG
-	*Debug = DebugColors[cascadeIndex];
-#endif
-
 	// if we have no matching cascade, return with a fully lit pixel
 	if (!cascadeFound)
 	{
@@ -69,5 +57,3 @@ CSMPS(
 	const occlusion = PCFShadowArray(Texture, texCoordShadow.z, texCoordShadow.xy, cascadeIndex, PerTickParams.GlobalLightShadowMapSize.xy);
 	return occlusion;
 }
-
-#endif

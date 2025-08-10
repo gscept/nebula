@@ -3,9 +3,6 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#ifndef STANDARD_SHADING_GPUH
-#define STANDARD_SHADING_GPUH 
-
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 #include <lib/shared.gpuh>
@@ -14,7 +11,7 @@
 #include <lib/geometrybase.gpuh>
 #include <lib/clustering.gpuh>
 #include <lib/lighting_functions.gpuh>
-#include <lib/material_interfaces.gpuh>
+#include <material_interfaces.gpul>
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											FINALIZE COLOR
@@ -62,4 +59,3 @@ psStandard(
     pixelExportColor(PackColor(light.rgb, albedo.a), 0);
 }
 
-#endif
