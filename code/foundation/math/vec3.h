@@ -148,7 +148,7 @@ vec3::operator=(const f32x4& rhs)
 __forceinline bool
 vec3::operator==(const vec3& rhs) const
 {
-    return all_u32x3(compare_equal_f32x4(this->vec, rhs));
+    return all_u32x3(compare_equal_f32x4(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ vec3::operator==(const vec3& rhs) const
 __forceinline bool
 vec3::operator!=(const vec3 &rhs) const
 {
-    return !all_u32x3(compare_equal_f32x4(this->vec, rhs));
+    return !all_u32x3(compare_equal_f32x4(this->vec, rhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -215,7 +215,7 @@ vec3::stream(scalar* ptr) const
 __forceinline vec3
 operator-(const vec3& lhs)
 {
-    return vec3(flip_sign(lhs.vec));
+    return vec3(flip_sign_f32x4(lhs.vec));
 }
 
 //------------------------------------------------------------------------------
@@ -368,7 +368,7 @@ lengthsq(const vec3& v)
 __forceinline vec3
 reciprocal(const vec3& v)
 {
-    return div_f32x4(_plus1, v.vec)
+    return div_f32x4(_plus1, v.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -537,7 +537,7 @@ angle(const vec3& v0, const vec3& v1)
     dot = min_first_f32x4(dot, _plus1);
 
     scalar cangle;
-    store_f32(&cangle, dot);
+    store_f32(dot, &cangle);
     return acos(cangle);
 }
 
@@ -586,7 +586,8 @@ __forceinline vec3
 normalize(const vec3& v)
 {
     if (v == vec3(0)) return v;
-    f32x4 t = div_f32x4(v.vec, sqrt_f32x4(dot_f32x3(v.vec, v.vec)));
+    
+    f32x4 t = div_f32x4(v.vec, set_f32x4(sqrt(dot_f32x3(v.vec, v.vec))));
     return vec3(t);
 }
 
@@ -597,7 +598,7 @@ __forceinline vec3
 normalizeapprox(const vec3& v)
 {
     if (v == vec3(0)) return v;
-    f32x4 t = rsqrt_f32x4(dot_f32x3(v.vec, v.vec));
+    f32x4 t = f32x4(1.0f / sqrt(dot_f32x3(v.vec, v.vec)));
     return mul_f32x4(v.vec, set_last_f32x4(t, 0));
 }
 
@@ -721,7 +722,7 @@ nearequal(const vec3& v0, const vec3& v1, const vec3& epsilon)
     f32x4 temp = splat_f32x4(0);
     temp = sub_f32x4(temp, delta);
     temp = max_f32x4(temp, delta);
-    return all_u32x3(compare_less_equal_f32x4(temp, epsilon.vec))
+    return all_u32x3(compare_less_equal_f32x4(temp, epsilon.vec));
 }
 
 //------------------------------------------------------------------------------

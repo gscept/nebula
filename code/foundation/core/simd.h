@@ -8,22 +8,23 @@
     (C) 2025 Individual contributors, see AUTHORS file
 */
 
-#if __SSE2__ || __SSE4_1__ || __AVX2__
+#if NEBULA_SIMD_X64
 #include <xmmintrin.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
 #include <immintrin.h>
-typedef f32x4 __m128;
-typedef i32x4 __m128i;
-typedef u32x4 __m128i;
+typedef __m128 f32x4;
+typedef __m128i i32x4;
+typedef __m128i u32x4;
 
+f32x4 cast_i32x4_to_f32x4(i32x4 x);
 static const f32x4 _mask_xyz = cast_i32x4_to_f32x4(set_i32x4( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 ));
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline f32x4
-set_f32x4(x, y, z, w)
+set_f32x4(float x, float y, float z, float w)
 {
     return _mm_setr_ps(x,y,z,w);
 }
@@ -32,7 +33,7 @@ set_f32x4(x, y, z, w)
 /**
 */
 __forceinline i32x4
-set_i32x4(x, y, z, w)
+set_i32x4(int32_t x, int32_t y, int32_t z, int32_t w)
 {
     return _mm_setr_epi32(x,y,z,w);
 }
@@ -50,9 +51,9 @@ splat_f32x4(float x)
 /**
 */
 __forceinline f32x4
-cast_i32x4_to_f32x4(x)
+cast_i32x4_to_f32x4(i32x4 x)
 {
-    return _mm_castsi128_ps(x)
+    return _mm_castsi128_ps(x);
 }
 
 //------------------------------------------------------------------------------
@@ -63,7 +64,7 @@ set_last_f32x4(f32x4 v, float val)
 {
     f32x4 vec = _mm_set_ss(val);
     constexpr int imm8 = (0 << 4) | (0 << 2) | 3;
-    return _mm_insert_ps(v, val_vec, imm8);
+    return _mm_insert_ps(v, vec, imm8);
 }
 
 //------------------------------------------------------------------------------
@@ -151,7 +152,7 @@ any_u32x3(u32x4 a)
 /**
 */
 __forceinline f32x4
-load_unaligned_f32x3(const scalar* ptr)
+load_unaligned_f32x3(const float* ptr)
 {
     f32x4 vec = _mm_loadu_ps(ptr);
     return _mm_and_ps(vec, _mask_xyz);
@@ -161,7 +162,7 @@ load_unaligned_f32x3(const scalar* ptr)
 /**
 */
 __forceinline f32x4
-load_aligned_f32x3(const scalar* ptr)
+load_aligned_f32x3(const float* ptr)
 {
     f32x4 vec = _mm_load_ps(ptr);
     return _mm_and_ps(vec, _mask_xyz);
@@ -171,7 +172,7 @@ load_aligned_f32x3(const scalar* ptr)
 /**
 */
 __forceinline void
-store_f32x3(f32x4 vec, scalar* ptr)
+store_f32x3(f32x4 vec, float* ptr)
 {
     f32x4 t1 = _mm_permute_ps(vec, _MM_SHUFFLE(1, 1, 1, 1));
     f32x4 t2 = _mm_permute_ps(vec, _MM_SHUFFLE(2, 2, 2, 2));
@@ -184,18 +185,18 @@ store_f32x3(f32x4 vec, scalar* ptr)
 /**
 */
 __forceinline void
-store_f32x4(f32x4 vec, scalar* ptr)
+store_f32x4(f32x4 vec, float* ptr)
 {
-    _mm_store_ps(ptt, vec);
+    _mm_store_ps(ptr, vec);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline void
-store_f32(f32x4 vec, scalar* ptr)
+store_f32(f32x4 vec, float* ptr)
 {
-    _mm_store_ss(ptt, vec);
+    _mm_store_ss(ptr, vec);
 }
 
 //------------------------------------------------------------------------------
@@ -204,7 +205,8 @@ store_f32(f32x4 vec, scalar* ptr)
 __forceinline f32x4
 flip_sign_f32x4(f32x4 vec)
 {
-    return _mm_xor_ps(_mm_castsi128_ps(_sign), lhs.vec);
+    static const __m128i _sign = _mm_setr_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
+    return _mm_xor_ps(_mm_castsi128_ps(_sign), vec);
 }
 
 //------------------------------------------------------------------------------
@@ -244,7 +246,7 @@ fma_f32x4(f32x4 a, f32x4 b, f32x4 c)
 __forceinline f32x4
 div_f32x4(f32x4 a, f32x4 b)
 {
-    return _mm_div_ps(this->vec, rhs.vec);
+    return _mm_div_ps(a, b);
 }
 
 //------------------------------------------------------------------------------
@@ -253,7 +255,7 @@ div_f32x4(f32x4 a, f32x4 b)
 __forceinline f32x4
 add_f32x4(f32x4 a, f32x4 b)
 {
-    return _mm_add_ps(this->vec, rhs.vec);
+    return _mm_add_ps(a, b);
 }
 
 //------------------------------------------------------------------------------
@@ -271,16 +273,16 @@ sub_f32x4(f32x4 a, f32x4 b)
 __forceinline f32x4
 dot_f32x4(f32x4 a, f32x4 b)
 {
-    return _mm_dp_ps(v.vec, v.vec, 0xFF);
+    return _mm_dp_ps(a, b, 0xFF);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline scalar
+__forceinline float
 dot_f32x3(f32x4 a, f32x4 b)
 {
-    return _mm_cvtss_f32(_mm_dp_ps(v.vec, v.vec, 0x71));
+    return _mm_cvtss_f32(_mm_dp_ps(a, b, 0x71));
 }
 
 //------------------------------------------------------------------------------
@@ -297,7 +299,7 @@ abs_f32x4(f32x4 a)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline scalar
+__forceinline float
 get_first_f32x4(f32x4 a)
 {
     return _mm_cvtss_f32(a);
@@ -375,7 +377,7 @@ min_first_f32x4(f32x4 a, f32x4 b)
 __forceinline f32x4
 shuffle_f32x4(f32x4 a, f32x4 b, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1)
 {
-    uint8_t mask = ((b1 << 6) | (b0 << 4) | (a1 << 2) | a0)
+    uint8_t mask = ((b1 << 6) | (b0 << 4) | (a1 << 2) | a0);
     return _mm_shuffle_ps(a, b, mask);
 }
 
@@ -389,11 +391,11 @@ convert_u32x4_to_f32x4(u32x4 a)
     return _mm_castsi128_ps(a);
 }
 
-#elif __aarch64__
+#elif NEBULA_SIMD_AARCH64
 #include <arm_neon.h>
-typedef f32x4 float32x4_t;
-typedef i32x4 int32x4_t;
-typedef u32x4 uint32x4_t;
+typedef float32x4_t f32x4;
+typedef int32x4_t i32x4;
+typedef uint32x4_t u32x4;
 
 //------------------------------------------------------------------------------
 /**
@@ -601,7 +603,7 @@ store_f32(f32x4 vec, scalar* ptr)
 __forceinline f32x4
 flip_sign_f32x4(f32x4 vec)
 {
-    uint32x4_t sign_mask = vdupq_n_u32(0x80000000);
+    static const uint32x4_t sign_mask = vdupq_n_u32(0x80000000);
     return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(vec), sign_mask));
 }
 
