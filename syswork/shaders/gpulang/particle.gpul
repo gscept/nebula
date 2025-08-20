@@ -1,19 +1,18 @@
 //------------------------------------------------------------------------------
-//  particle.fx
+//  particle.gpul
 //  (C) 2013 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/particles.fxh"
-#include "lib/shared.fxh"
-#include "lib/objects_shared.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
-#include "lib/defaultsamplers.fxh"
-#include "lib/clustering.fxh"
-#include "lib/lighting_functions.fxh"
+#include "lib/std.gpuh"
+#include "lib/particles.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/objects_shared.gpuh"
+#include "lib/util.gpuh"
+#include "lib/defaultsamplers.gpuh"
+#include "lib/clustering.gpuh"
+#include "lib/lighting_functions.gpuh"
 
-#include <material_interfaces.fx>
+#include <material_interfaces.gpul>
 
 // samplers
 sampler_state ParticleSampler

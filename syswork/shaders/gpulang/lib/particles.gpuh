@@ -1,0 +1,91 @@
+//------------------------------------------------------------------------------
+//  particles.gpuh
+//  (C) 2013 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+
+struct CornerVertex
+{
+    worldPos : f32x4;
+    worldNormal : f32x3;
+    worldTangent : f32x3;
+    worldBinormal : f32x3;
+    UV : f32x2;
+};
+
+struct ParticleEmitterData
+{
+    EmitterTransform : f32x4x4;
+
+    NumAnimPhases : i32;
+    AnimFramesPerSecond : f32;
+};
+
+group(DYNAMIC_OFFSET_GROUP) uniform ParticleEmitter : *ParticleEmitterData;
+
+/**
+    ComputeCornerVertex
+    Computes the expanded vertex position for the current corner. Takes
+    rotation into account.
+*/
+ComputeCornerVertex(
+                    in corner : f32x2,
+                    in position : f32x4,
+                    in stretchPos : f32x4,
+                    in uvMinMax : f32x4,
+                    in rotate : f32x2,
+                    in size : f32) CornerVertex
+{
+
+    var outputVert : CornerVertex;
+
+    // compute 2d extruded corner position
+    var extrude = ((corner * 2.0) - 1.0) * size;
+
+    // rotate particle sprite
+    const rotMatrix = f32x2x2(
+        rotate.y, -rotate.x,
+        rotate.x, rotate.y
+    );
+    extrude = extrude * rotMatrix;
+
+    // transform to world space
+    const worldExtrude = ParticleEmitter.EmitterTransform * f32x4(extrude, 0.0, 0.0);
+
+    // depending on corner, use position or stretchPos as center point
+    // also compute uv coordinates (v: texture tiling, x: anim phases)
+    const du = fract(floor(ViewConstants.Time_Random_Luminance_X.x * ParticleEmitter.AnimFramesPerSecond) / ParticleEmitter.NumAnimPhases);
+    if (corner.x != 0)
+    {
+        outputVert.UV.x = (uvMinMax.z / ParticleEmitter.NumAnimPhases) + du;
+    }
+    else
+    {
+        outputVert.UV.x = (uvMinMax.x / ParticleEmitter.NumAnimPhases) + du;
+    }
+
+    if (corner.y != 0)
+    {
+        outputVert.worldPos = position + worldExtrude;
+        outputVert.UV.y = uvMinMax.w;
+    }
+    else
+    {
+        outputVert.worldPos = stretchPos + worldExtrude;
+        outputVert.UV.y = uvMinMax.y;
+    }
+
+    // setup normal, tangent, binormal in world space
+    const viewTangent  = rotMatrix * f32x2(-1.0, 0.0);
+    const viewBinormal = rotMatrix * f32x2(0.0, 1.0);
+
+    const emitterRotation = f32x3x3(ParticleEmitter.EmitterTransform[0].xyz,
+                                     ParticleEmitter.EmitterTransform[1].xyz,
+                                     ParticleEmitter.EmitterTransform[2].xyz);  
+    outputVert.worldNormal   = ParticleEmitter.EmitterTransform[2].xyz;
+    outputVert.worldTangent  = emitterRotation * f32x3(viewTangent, 0);
+    outputVert.worldBinormal = emitterRotation * f32x3(viewBinormal, 0);
+    return outputVert;
+}
