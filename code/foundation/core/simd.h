@@ -18,6 +18,7 @@ typedef __m128i i32x4;
 typedef __m128i u32x4;
 
 f32x4 cast_i32x4_to_f32x4(i32x4 x);
+i32x4 set_i32x4(int32_t x, int32_t y, int32_t z, int32_t w);
 static const f32x4 _mask_xyz = cast_i32x4_to_f32x4(set_i32x4( 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0 ));
 
 //------------------------------------------------------------------------------
@@ -374,12 +375,12 @@ min_first_f32x4(f32x4 a, f32x4 b)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline f32x4
-shuffle_f32x4(f32x4 a, f32x4 b, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1)
-{
-    uint8_t mask = ((b1 << 6) | (b0 << 4) | (a1 << 2) | a0);
-    return _mm_shuffle_ps(a, b, mask);
-}
+#define shuffle_f32x4(a, b, a0, a1, b0, b1) (_mm_shuffle_ps(a, b, _MM_SHUFFLE(b1, b0, a1, a0)))
+//__forceinline f32x4
+//shuffle_f32x4(f32x4 a, f32x4 b, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1)
+//{
+//    return _mm_shuffle_ps(a, b, _MM_SHUFFLE(b1, b0, a1, a0));
+//}
 
 //------------------------------------------------------------------------------
 /**
