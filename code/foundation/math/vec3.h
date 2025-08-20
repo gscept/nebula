@@ -587,7 +587,7 @@ normalize(const vec3& v)
 {
     if (v == vec3(0)) return v;
     
-    f32x4 t = div_f32x4(v.vec, set_f32x4(sqrt(dot_f32x3(v.vec, v.vec))));
+    f32x4 t = div_f32x4(v.vec, splat_f32x4(sqrt(dot_f32x3(v.vec, v.vec))));
     return vec3(t);
 }
 
@@ -598,7 +598,7 @@ __forceinline vec3
 normalizeapprox(const vec3& v)
 {
     if (v == vec3(0)) return v;
-    f32x4 t = f32x4(1.0f / sqrt(dot_f32x3(v.vec, v.vec)));
+    f32x4 t = splat_f32x4(1.0f / sqrt(dot_f32x3(v.vec, v.vec)));
     return mul_f32x4(v.vec, set_last_f32x4(t, 0));
 }
 
