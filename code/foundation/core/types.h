@@ -32,7 +32,6 @@ typedef unsigned int   uint;
 typedef unsigned short ushort;
 typedef unsigned char  uchar;
 typedef unsigned char  ubyte;
-typedef char byte;
 
 typedef uintptr_t uintptr;
 typedef ptrdiff_t ptrdiff;
