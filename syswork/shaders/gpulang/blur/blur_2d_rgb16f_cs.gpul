@@ -3,8 +3,10 @@
 //
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-
-#define IMAGE_IS_RGB16F 1
+#include <blur/blur_include.gpuh>
+const BlurKernel = BlurKernelSize.Size8;
+const ImageFormatType = ImageFormat.Rgba16f;
+const ImageIsArray : b8 = false;
 #include "blur_cs.gpuh"
 
 //------------------------------------------------------------------------------
