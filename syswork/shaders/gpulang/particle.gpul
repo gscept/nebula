@@ -78,79 +78,76 @@ render_state UnlitParticleStateBlendAdd
 //------------------------------------------------------------------------------
 /**
 */
-#define numAlphaLayers 4
-const vec2 stippleMasks[numAlphaLayers] = {
-        vec2(0,0), 
-        vec2(1,0), 
-        vec2(0,1),
-        vec2(1,1)
-        };
+const stippleMasks : [4]f32x2 = [
+        f32x2(0,0), 
+        f32x2(1,0), 
+        f32x2(0,1),
+        f32x2(1,1)
+        ];
 
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsUnlit(
-    [slot=0] in vec2 corner,
-    [slot=1] in vec4 position,
-    [slot=2] in vec4 stretchPos,
-    [slot=3] in vec4 color,
-    [slot=4] in vec4 uvMinMax,
-    [slot=5] in vec4 rotSize,
-    out vec4 ViewSpacePos,
-    out vec4 Color,
-    out vec2 UV)
+    binding(0) in corner : f32x2,
+    binding(1) in position : f32x4,
+    binding(2) in stretchPos : f32x4,
+    binding(3) in color : f32x4,
+    binding(4) in uvMinMax : f32x4,
+    binding(5) in rotSize : f32x4,
+    out ViewSpacePos : : f32x4,
+    out Color : : f32x4,
+    out UV : f32x2) void
 {
     CornerVertex cornerVert = ComputeCornerVertex(
                                         corner,
                                         position,
                                         stretchPos,
                                         uvMinMax,
-                                        vec2(rotSize.x, rotSize.y),
+                                        f32x2(rotSize.x, rotSize.y),
                                         rotSize.z);
                                         
     UV = cornerVert.UV;
-    gl_Position = ViewProjection * cornerVert.worldPos;
-    ViewSpacePos = View * cornerVert.worldPos;
+    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
     Color = color;
+    vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsLit(
-    [slot=0] in vec2 corner,
-    [slot=1] in vec4 position,
-    [slot=2] in vec4 stretchPos,
-    [slot=3] in vec4 color,
-    [slot=4] in vec4 uvMinMax,
-    [slot=5] in vec4 rotSize,
-    out vec4 ViewSpacePos, 
-    out vec3 Normal,
-    out vec3 Tangent,
-    out vec3 WorldEyeVec,
-    out vec4 Color,
-    out vec2 UV) 
+    binding(0) in corner: f32x2,
+    binding(1) in position : f32x4,
+    binding(2) in stretchPos : f32x4,
+    binding(3) in color : f32x4,
+    binding(4) in uvMinMax : f32x4,
+    binding(5) in rotSize : f32x4,
+    out ViewSpacePos, : f32x4
+    out Normal : f32x3,
+    out Tangent : f32x3,
+    out WorldEyeVec : f32x3,
+    out Color : f32x4,
+    out UV : f32x2) void
 {
     CornerVertex cornerVert = ComputeCornerVertex(
                                         corner,
                                         position,
                                         stretchPos,
                                         uvMinMax,
-                                        vec2(rotSize.x, rotSize.y),
+                                        f32x2(rotSize.x, rotSize.y),
                                         rotSize.z);
                                         
     Normal = cornerVert.worldNormal;
     Tangent = cornerVert.worldTangent;
     UV = cornerVert.UV;
-    WorldEyeVec = normalize(EyePos - cornerVert.worldPos).xyz;
-    ViewSpacePos = View * cornerVert.worldPos;
-    gl_Position = ViewProjection * cornerVert.worldPos;
+    WorldEyeVec = normalize(ViewConstants.EyePos - cornerVert.worldPos).xyz;
+    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
     Color = color;
+    vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
 }
 
 //------------------------------------------------------------------------------
@@ -158,18 +155,18 @@ vsLit(
 */
 shader
 void
-psUnlit(in vec4 ViewSpacePosition,
-    in vec4 Color,
-    in vec2 UV,
-    [color0] out vec4 FinalColor) 
+psUnlit(in ViewSpacePosition : f32x4,
+    in Color : f32x4,
+    in UV : f32x2,
+    [color0] out FinalColor : f32x4)
 {
-    vec2 pixelSize = RenderTargetParameter[0].Dimensions.zw;
-    vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 diffColor = sample2D(_Unlit.AlbedoMap, ParticleSampler, UV);
+    const pixelSize = RenderTargetParameter[0].Dimensions.zw;
+    const screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
+    const diffColor = sample2D(_Unlit.AlbedoMap, ParticleSampler, UV);
     
-    vec4 color = diffColor * vec4(Color.rgb, 0);
-    float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
-    float AlphaMod = saturate(abs(depth - gl_FragCoord.z) * (FocalLengthNearFar.w - FocalLengthNearFar.z));
+    var color = diffColor * f32x4(Color.rgb, 0);
+    const depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
+    const AlphaMod = saturate(abs(depth - gl_FragCoord.z) * (FocalLengthNearFar.w - FocalLengthNearFar.z));
     color.a = diffColor.a * Color.a * AlphaMod;
     FinalColor = color;
 }
