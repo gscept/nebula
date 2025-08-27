@@ -121,7 +121,9 @@ CreateScene()
     sceneDesc.flags.raise(PxSceneFlag::eENABLE_ACTIVE_ACTORS);
 	// we probably want to make this configurable, lets enable it for now
     sceneDesc.staticKineFilteringMode = PxPairFilteringMode::eKEEP;
-    sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKEEP;
+    
+    // Resolving contacts between two kinematic objects is invalid. Just kill for now
+    sceneDesc.kineKineFilteringMode = PxPairFilteringMode::eKILL;
 
     sceneDesc.userData = (void*)(uintptr_t)idx;
     scene.scene = state.physics->createScene(sceneDesc);

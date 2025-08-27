@@ -82,7 +82,7 @@ CharacterContext::CreateCharacter(Math::vec3 const& position, CharacterCreateInf
 #if NEBULA_DEBUG
         n_error("Character type is not Box or Capsule! Nebula currently only support these two types.");
 #else
-        n_assert(info.type == Physics::ColliderType_Box || info.type == Physics::Capsule);
+        n_assert(info.type == Physics::ColliderType_Box || info.type == Physics::ColliderType_Capsule);
 #endif        
         return CharacterId(0xFFFFFFFF);
     }
