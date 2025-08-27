@@ -38,7 +38,8 @@ List<LinuxThread*> LinuxThread::ThreadList;
 LinuxThread::LinuxThread() :
     priority(Normal),
     stackSize(0),
-    threadState(Initial)
+    threadState(Initial),
+    thread(0)
 {
     CPU_ZERO(&this->affinity);
     // register with thread list
