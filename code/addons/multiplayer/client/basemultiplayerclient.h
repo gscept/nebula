@@ -40,6 +40,8 @@ public:
 
     bool TryConnect();
 
+    void SetHostIp(uint32_t ip);
+
     virtual void OnIsConnecting();
     virtual void OnConnected();
     virtual void OnDisconnected();
@@ -60,6 +62,8 @@ protected:
     void PollIncomingMessages();
     void PollConnectionChanges();
     void PushPendingMessages();
+
+    uint32_t hostIp;
 
     double ping;
 
@@ -88,6 +92,15 @@ inline Timing::Time
 BaseMultiplayerClient::GetCurrentPing() const
 {
     return this->ping;
+}
+
+//--------------------------------------------------------------------------
+/**
+*/
+inline void
+BaseMultiplayerClient::SetHostIp(uint32_t ip)
+{
+    this->hostIp = ip;
 }
 
 } // namespace Multiplayer

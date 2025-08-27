@@ -10,7 +10,7 @@
       "tickNumber": "uint64"
     },
     "NetworkId": {
-      "identifier": "uint"
+      "identifier": "uint32"
     }
   }
 }

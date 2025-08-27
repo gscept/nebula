@@ -40,7 +40,8 @@ SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_
 /**
 */
 BaseMultiplayerClient::BaseMultiplayerClient()
-    : isOpen(false)
+    : isOpen(false),
+    hostIp(N_IP_ADDR(127, 0, 0, 1))
 {
     // empty
 }
@@ -132,8 +133,8 @@ BaseMultiplayerClient::TryConnect()
     SteamNetworkingIPAddr serverAddr;
     serverAddr.Clear();
     // TODO: Implement support for casting ip to uint32_t address and uint16_t port
-    //Net::IpAddress ipAddress = Net::IpAddress()
-    serverAddr.SetIPv4(N_IP_ADDR(127, 0, 0, 1), NEBULA_DEFAULT_PORT);
+    //Net::IpAddress ipAddress = Net::IpAddress();
+    serverAddr.SetIPv4(this->hostIp, NEBULA_DEFAULT_PORT);
 
     // Start connecting
     char address[SteamNetworkingIPAddr::k_cchMaxString];

@@ -41,7 +41,7 @@ SvSteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallbac
 */
 BaseMultiplayerServer::BaseMultiplayerServer()
     : isOpen(false),
-    tickInterval(1.0/15.0)
+    tickInterval(NEBULA_DEFAULT_TICK_RATE)
 {
     for (int i = 0; i < (int)ClientGroup::NumClientGroups; i++)
     {
@@ -75,29 +75,6 @@ BaseMultiplayerServer::Open()
         n_error("Failed to initialize SteamNetworkingSockets!\n");
         return false;
     }
-
-#ifndef PUBLIC_BUILD
-    if (false) // poor connection
-    {
-        SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Send, 100);
-        SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Recv, 100);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, 2);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketJitter_Send_Avg, 30);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketJitter_Send_Pct, 100);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketJitter_Send_Max, 100);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketReorder_Send, 10);
-    }
-    else // good connection
-    {
-        SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Send, 25);
-        SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_FakePacketLag_Recv, 25);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketLoss_Send, 0.5);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketJitter_Send_Avg, 5);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketJitter_Send_Pct, 100);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketJitter_Send_Max, 30);
-        SteamNetworkingUtils()->SetGlobalConfigValueFloat(k_ESteamNetworkingConfig_FakePacketReorder_Send, 0.5);
-    }
-#endif
 
     SteamNetworkingIPAddr serverLocalAddr;
     serverLocalAddr.Clear();

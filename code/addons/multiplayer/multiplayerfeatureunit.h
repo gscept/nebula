@@ -14,6 +14,8 @@
 namespace Multiplayer
 {
 
+const double NEBULA_DEFAULT_TICK_RATE = 1.0/8.0;
+
 class MultiplayerFeatureUnit : public Game::FeatureUnit
 {
     __DeclareClass(MultiplayerFeatureUnit)

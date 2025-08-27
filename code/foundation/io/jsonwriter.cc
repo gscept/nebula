@@ -19,12 +19,12 @@ namespace IO
 __ImplementClass(IO::JsonWriter, 'JSOW', IO::StreamWriter);
 
 using namespace Util;
-    
+
 //------------------------------------------------------------------------------
 /**
 */
-JsonWriter::JsonWriter() :
-    document(0)
+JsonWriter::JsonWriter()
+    : document(0)
 {
     // empty
 }
@@ -47,13 +47,13 @@ bool
 JsonWriter::Open()
 {
     n_assert(0 == this->document);
-    
+
     if (StreamWriter::Open())
-    {       
+    {
         this->document = new pjson::document;
         this->document->set_to_object();
         this->hierarchy.Push(this->document);
-        this->nameHierarchy.Push(Util::String());        
+        this->nameHierarchy.Push(Util::String());
         return true;
     }
     return false;
@@ -75,7 +75,7 @@ JsonWriter::Close()
 
     delete this->document;
     this->document = 0;
-        
+
     // close the stream
     StreamWriter::Close();
 }
@@ -84,11 +84,11 @@ JsonWriter::Close()
 /**
 */
 void
-JsonWriter::BeginArray(const char * name)
+JsonWriter::BeginArray(const char* name)
 {
     n_assert(this->IsOpen());
-    pjson::value_variant * node = new pjson::value_variant(pjson::cJSONValueTypeArray);
-    Util::String sName = name;   
+    pjson::value_variant* node = new pjson::value_variant(pjson::cJSONValueTypeArray);
+    Util::String sName = name;
     this->hierarchy.Push(node);
     this->nameHierarchy.Push(sName);
 }
@@ -97,11 +97,11 @@ JsonWriter::BeginArray(const char * name)
 /**
 */
 void
-JsonWriter::BeginObject(const char * name)
+JsonWriter::BeginObject(const char* name)
 {
     n_assert(this->IsOpen());
-    pjson::value_variant * node = new pjson::value_variant(pjson::cJSONValueTypeObject);
-    Util::String sName = name; 
+    pjson::value_variant* node = new pjson::value_variant(pjson::cJSONValueTypeObject);
+    Util::String sName = name;
     this->hierarchy.Push(node);
     this->nameHierarchy.Push(sName);
 }
@@ -112,12 +112,12 @@ JsonWriter::BeginObject(const char * name)
 void
 JsonWriter::End()
 {
-    n_assert(this->IsOpen());    
+    n_assert(this->IsOpen());
 
     Util::String name = this->nameHierarchy.Pop();
-    pjson::value_variant * entry = this->hierarchy.Pop();
+    pjson::value_variant* entry = this->hierarchy.Pop();
     if (name.IsEmpty())
-    {        
+    {
         if (this->hierarchy.Peek()->is_null())
         {
             this->hierarchy.Peek()->set_to_array();
@@ -139,9 +139,10 @@ JsonWriter::End()
 //------------------------------------------------------------------------------
 /**
 */
-void JsonWriter::Add(const char * value, const Util::String & name)
+void
+JsonWriter::Add(const char* value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value, alloc);
     if (name.IsEmpty())
     {
@@ -156,9 +157,11 @@ void JsonWriter::Add(const char * value, const Util::String & name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::String & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Util::String& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value.AsCharPtr(), alloc);
     if (name.IsEmpty())
     {
@@ -166,14 +169,16 @@ template<> void JsonWriter::Add(const Util::String & value, const Util::String &
     }
     else
     {
-       this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::StringAtom& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const Util::StringAtom& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value.Value(), alloc);
@@ -190,27 +195,12 @@ template<> void JsonWriter::Add(const Util::StringAtom& value, const Util::Strin
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::FourCC& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const Util::FourCC& value, const Util::String& name)
 {
-	auto& alloc = this->document->get_allocator();
-	pjson::value_variant val(value.AsString().AsCharPtr(), alloc);
-	if (name.IsEmpty())
-	{
-		this->hierarchy.Peek()->add_value(val, alloc);
-	}
-	else
-	{
-		this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<> void JsonWriter::Add(const bool & value, const Util::String & name)
-{
-    auto & alloc = this->document->get_allocator();
-    pjson::value_variant val(value);
+    auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(value.AsString().AsCharPtr(), alloc);
     if (name.IsEmpty())
     {
         this->hierarchy.Peek()->add_value(val, alloc);
@@ -224,7 +214,9 @@ template<> void JsonWriter::Add(const bool & value, const Util::String & name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const char& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const bool& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value);
@@ -241,7 +233,9 @@ template<> void JsonWriter::Add(const char& value, const Util::String& name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const uchar& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const char& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value);
@@ -258,9 +252,11 @@ template<> void JsonWriter::Add(const uchar& value, const Util::String& name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const int & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const uchar& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value);
     if (name.IsEmpty())
     {
@@ -275,9 +271,30 @@ template<> void JsonWriter::Add(const int & value, const Util::String & name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const unsigned int & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const int& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(value);
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+JsonWriter::Add(const unsigned int& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(value);
     if (name.IsEmpty())
     {
@@ -312,9 +329,11 @@ JsonWriter::Add(const uint64_t& value, const Util::String& name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const float & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const float& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(static_cast<double>(value));
     if (name.IsEmpty())
     {
@@ -329,7 +348,28 @@ template<> void JsonWriter::Add(const float & value, const Util::String & name)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Math::vec3& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const double& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(static_cast<double>(value));
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+JsonWriter::Add(const Math::vec3& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
@@ -355,33 +395,9 @@ template<> void JsonWriter::Add(const Math::vec3& value, const Util::String& nam
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Math::vec4 & value , const Util::String & name)
-{
-    auto & alloc = this->document->get_allocator();
-    pjson::value_variant val(pjson::cJSONValueTypeArray);
-    {
-        alignas(16) float v[4];
-        value.store(v);
-        for (int i = 0; i < 4; i++)
-        {
-            pjson::value_variant valf(v[i]);
-            val.add_value(valf, alloc);
-        }
-    }
-    if (name.IsEmpty())
-    {
-        this->hierarchy.Peek()->add_value(val, alloc);
-    }
-    else
-    {
-        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<> void JsonWriter::Add(const Util::Color& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const Math::vec4& value, const Util::String& name)
 {
     auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
@@ -407,35 +423,67 @@ template<> void JsonWriter::Add(const Util::Color& value, const Util::String& na
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Math::quat& value, const Util::String& name)
+template <>
+void
+JsonWriter::Add(const Util::Color& value, const Util::String& name)
 {
-	auto& alloc = this->document->get_allocator();
-	pjson::value_variant val(pjson::cJSONValueTypeArray);
-	{
-		alignas(16) float v[4];
-		value.store(v);
-		for (int i = 0; i < 4; i++)
-		{
-			pjson::value_variant valf(v[i]);
-			val.add_value(valf, alloc);
-		}
-	}
-	if (name.IsEmpty())
-	{
-		this->hierarchy.Peek()->add_value(val, alloc);
-	}
-	else
-	{
-		this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
-	}
+    auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(pjson::cJSONValueTypeArray);
+    {
+        alignas(16) float v[4];
+        value.store(v);
+        for (int i = 0; i < 4; i++)
+        {
+            pjson::value_variant valf(v[i]);
+            val.add_value(valf, alloc);
+        }
+    }
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Math::vec2& value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Math::quat& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
+    pjson::value_variant val(pjson::cJSONValueTypeArray);
+    {
+        alignas(16) float v[4];
+        value.store(v);
+        for (int i = 0; i < 4; i++)
+        {
+            pjson::value_variant valf(v[i]);
+            val.add_value(valf, alloc);
+        }
+    }
+    if (name.IsEmpty())
+    {
+        this->hierarchy.Peek()->add_value(val, alloc);
+    }
+    else
+    {
+        this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+void
+JsonWriter::Add(const Math::vec2& value, const Util::String& name)
+{
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
     {
         pjson::value_variant valf(value.x);
@@ -456,9 +504,11 @@ template<> void JsonWriter::Add(const Math::vec2& value, const Util::String & na
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Math::mat4 & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Math::mat4& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
     {
         alignas(16) float v[16];
@@ -482,9 +532,11 @@ template<> void JsonWriter::Add(const Math::mat4 & value, const Util::String & n
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Math::transform44 & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Math::transform44& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
     {
         float v[36];
@@ -508,7 +560,9 @@ template<> void JsonWriter::Add(const Math::transform44 & value, const Util::Str
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::Variant& value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Util::Variant& value, const Util::String& name)
 {
     switch (value.GetType())
     {
@@ -545,7 +599,9 @@ template<> void JsonWriter::Add(const Util::Variant& value, const Util::String &
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::Guid& value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Util::Guid& value, const Util::String& name)
 {
     this->Add(value.AsString(), name);
 }
@@ -553,11 +609,13 @@ template<> void JsonWriter::Add(const Util::Guid& value, const Util::String & na
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::Array<int> & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Util::Array<int>& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
-    {                
+    {
         for (auto i : value)
         {
             pjson::value_variant valf(i);
@@ -577,9 +635,11 @@ template<> void JsonWriter::Add(const Util::Array<int> & value, const Util::Stri
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonWriter::Add(const Util::Array<Util::String> & value, const Util::String & name)
+template <>
+void
+JsonWriter::Add(const Util::Array<Util::String>& value, const Util::String& name)
 {
-    auto & alloc = this->document->get_allocator();
+    auto& alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
     {
         for (auto i : value)
@@ -597,6 +657,5 @@ template<> void JsonWriter::Add(const Util::Array<Util::String> & value, const U
         this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
     }
 }
-
 
 } // namespace IO

@@ -15,6 +15,10 @@ def GetCppTypeString(attrType):
         return "int"
     elif (T == "uint"):
         return "uint"
+    elif (T == "int32"):
+        return "int32_t"
+    elif (T == "uint32"):
+        return "uint32_t"
     elif (T == "float"):
         return "float"
     elif (T == "scalar"):
@@ -68,6 +72,10 @@ def GetCsTypeString(attrType):
     elif (T == "int"):
         return "int"
     elif (T == "uint"):
+        return "uint"
+    elif (T == "int32"):
+        return "int"
+    elif (T == "uint32"):
         return "uint"
     elif (T == "float"):
         return "float"
@@ -126,6 +134,10 @@ def GetArgumentType(attrType):
         return "int"
     elif (T == "uint"):
         return "uint"
+    elif (T == "int32"):
+        return "int32_t"
+    elif (T == "uint32"):
+        return "uint32_t"
     elif (T == "float"):
         return "float"
     elif (T == "scalar"):
@@ -178,8 +190,12 @@ def DefaultValue(attrType):
         return "ushort(0)"
     elif (T == "int"):
         return "int(0)"
+    elif (T == "int32"):
+        return "int32_t(0)"
     elif (T == "uint"):
-        return "uint(0)"
+        return "uint32_t(0)"
+    elif (T == "uint32"):
+        return "uint32_t(0)"
     elif (T == "float"):
         return "float(0)"
     elif (T == "scalar"):
