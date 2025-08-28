@@ -12,13 +12,11 @@
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
 #include "components/physicsfeature.h"
-#include "graphicsfeature/graphicsfeatureunit.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
-#include "graphicsfeature/components/model.h"
 
 namespace PhysicsFeature
 {

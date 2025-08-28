@@ -6,7 +6,6 @@
     @copyright
     (C) 2020-2025 Individual contributors, see AUTHORS file
 */
-#include "graphics/graphicsentity.h"
 #include "util/color.h"
 #include <functional>
 
@@ -24,7 +23,7 @@ void SetDebugDrawInterface(DebugDrawInterface const& drawInterface);
 
 void EnableDebugDrawing(bool enabled);
 
-void RenderUI(Graphics::GraphicsEntityId camera);
+void RenderUI(Math::mat4 const& cameraViewTransform);
 
 void RenderMaterialsUI();
 

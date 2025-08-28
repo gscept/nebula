@@ -12,6 +12,7 @@
 #include "physics/debugui.h"
 #include "editor/ui/windowserver.h"
 #include "editor/ui/windows/scene.h"
+#include "graphics/cameracontext.h"
 
 using namespace Editor;
 
@@ -53,7 +54,7 @@ Physics::Run(SaveMode save)
     {
         return;
     }
-    ::Physics::RenderUI(this->defaultCamera);
+    ::Physics::RenderUI(Graphics::CameraContext::GetView(this->defaultCamera));
 }
 
 } // namespace Presentation

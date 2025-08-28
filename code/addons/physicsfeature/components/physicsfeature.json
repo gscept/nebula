@@ -46,7 +46,7 @@
 			},
 			"resource": {
 				"type": "resource",
-				"default": "mdl:"
+				"default": "sysphys:box.actor"
 			},
 			"actorType": {
 				"type": "PhysicsFeature::ActorType",

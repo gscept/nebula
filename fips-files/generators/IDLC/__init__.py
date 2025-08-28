@@ -121,15 +121,6 @@ class IDLCodeGenerator:
                 
             IDLDocument.EndNamespaceOverride(f, self.document, "IO")
 
-        if hasMessages:
-            IDLDocument.AddInclude(f, "nanobind/nanobind.h")
-            IDLDocument.BeginNamespace(f, self.document)
-
-            if hasMessages:
-                IDLProtocol.WriteMessageImplementation(f, self.document)
-
-            IDLDocument.EndNamespace(f, self.document)
-
         f.Close()
 
     #------------------------------------------------------------------------------

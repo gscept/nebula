@@ -12,7 +12,6 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "physics/utils.h"
 #include "imgui.h"
-#include "graphics/cameracontext.h"
 #include "flat/physics/material.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "io/safefilestream.h"
@@ -235,7 +234,7 @@ DrawPhysicsDebug()
 /**
 */
 void
-RenderUI(Graphics::GraphicsEntityId camera)
+RenderUI(Math::mat4 const& cameraViewTransform)
 {
     RenderMaterialsUI();
     ImGui::Separator();
@@ -250,7 +249,7 @@ RenderUI(Graphics::GraphicsEntityId camera)
         ImGui::PushItemWidth(100.0f);
         ImGui::DragFloat("Viewing Distance", &viewRange, 1.0f, 1.0f, 100.0f);
         ImGui::PopItemWidth();
-        Math::mat4 trans =  Math::inverse(Graphics::CameraContext::GetView(camera));
+        Math::mat4 trans =  Math::inverse(cameraViewTransform);
 
         Math::point center = trans.get_w() - trans.get_z() * viewRange;
         PxBounds3 bound = PxBounds3::centerExtents(Neb2PxPnt(center), PxVec3(viewRange));

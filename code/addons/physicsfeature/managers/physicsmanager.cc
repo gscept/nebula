@@ -10,13 +10,11 @@
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
 #include "components/physicsfeature.h"
-#include "graphicsfeature/graphicsfeatureunit.h"
 #include "basegamefeature/components/basegamefeature.h"
 #include "basegamefeature/components/position.h"
 #include "basegamefeature/components/orientation.h"
 #include "basegamefeature/components/scale.h"
 #include "basegamefeature/components/velocity.h"
-#include "graphicsfeature/components/model.h"
 
 namespace PhysicsFeature
 {
@@ -52,26 +50,13 @@ PhysicsManager::InitPhysicsActor(Game::World* world, Game::Entity entity, Physic
         return;
     }
 
-    auto res = actor->resource;
-    if (res == "mdl:")
-    {
-        n_assert(world->HasComponent<GraphicsFeature::Model>(entity));
-        Util::String modelRes = world->GetComponent<GraphicsFeature::Model>(entity).resource.Value();
-        Util::String fileName = modelRes.ExtractFileName();
-        fileName.StripFileExtension();
-        res = Util::String::Sprintf(
-            "phys:%s/%s.actor", modelRes.ExtractLastDirName().AsCharPtr(), fileName.AsCharPtr()
-        );
-        actor->resource = res;
-    }
-
     Math::transform worldTransform = Math::transform(
         world->GetComponent<Game::Position>(entity),
         world->GetComponent<Game::Orientation>(entity),
         world->GetComponent<Game::Scale>(entity)
     );
 
-    Resources::ResourceId resId = Resources::CreateResource(res, "PHYS", nullptr, nullptr, true);
+    Resources::ResourceId resId = Resources::CreateResource(actor->resource, "PHYS", nullptr, nullptr, true);
     Physics::ActorId actorid =
         Physics::CreateActorInstance(resId, worldTransform, (Physics::ActorType)actor->actorType, Ids::Id64(entity));
     actor->actorId = actorid.id;

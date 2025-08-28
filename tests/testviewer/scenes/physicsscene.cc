@@ -24,6 +24,7 @@
 #include "graphics/graphicsserver.h"
 #include "physics/debugui.h"
 #include "viewerapp.h"
+#include "graphics/cameracontext.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -302,7 +303,7 @@ void RenderUI()
     }
     ImGui::EndChild();
     ImGui::End();
-    Physics::RenderUI(camera);
+    Physics::RenderUI(CameraContext::GetView(camera));
 };
 
 } // namespace ExampleSceneData

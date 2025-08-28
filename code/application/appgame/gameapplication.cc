@@ -6,6 +6,7 @@
 
 #include "appgame/gameapplication.h"
 
+#include "core/sysfunc.h"
 #include "options.h"
 #include "core/debug/corepagehandler.h"
 #include "threading/debug/threadpagehandler.h"
@@ -20,7 +21,6 @@
 #include "input/inputserver.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "nflatbuffer/flatbufferinterface.h"
-
 #include "profiling/profiling.h"
 
 namespace App
@@ -221,6 +221,9 @@ GameApplication::Close()
 
     Application::Close();
 }
+
+
+
 
 //------------------------------------------------------------------------------
 /**
