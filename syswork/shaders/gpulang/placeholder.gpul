@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
-//  placeholder.fx
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  placeholder.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
 #include <lib/std.gpuh>
