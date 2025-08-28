@@ -1,0 +1,71 @@
+//------------------------------------------------------------------------------
+//  placeholder.fx
+//  (C) 2013 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/skinning.gpuh>
+
+#include <material_interfaces.gpul>
+
+//------------------------------------------------------------------------------
+/**
+*/
+
+entry_point
+vsMain(
+    binding(0) in position : f32x3,
+    binding(1) in normal : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMainSkinned(
+    binding(0) in position : f32x3,
+    binding(1) in normal : f32x3,
+    binding(2) in uv : f32x2,
+    binding(3) in weights : f32x4,
+    binding(4) in indices : u32x4,
+    out UV : f32x2) void
+{
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * skinnedPos);
+    UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(in uv : f32x2) void
+{
+    pixelExportColor(sample2D(PlaceholderConstants.AlbedoMap, Basic2DSampler, uv), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Static
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+};
+
+@Mask("Skinned")
+program Skinned
+{
+    VertexShader = vsMainSkinned;
+    PixelShader = psMain;
+};
