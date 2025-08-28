@@ -1,0 +1,130 @@
+//------------------------------------------------------------------------------
+//  picking.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/skinning.gpuh>
+
+#include <material_interfaces.gpul>
+
+render_state PickingState
+{
+    Cull = CullFace.Back;
+};
+
+render_state BillboardPickingState
+{
+    Cull = CullFace.None;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStatic(
+    binding(0) in  position : f32x3,
+    binding(1) in  normal : f32x3,
+    binding(2) in  uv : f32x2,
+    binding(3) in  tangent : f32x3,
+    binding(4) in  binormal : f32x3,
+    out UV : f32x2) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsBillboard(
+    binding(0) in  position : f32x2,
+    binding(2) in  uv : f32x2,
+    out UV : f32x2) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 0, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsSkinned(
+    binding(0) in  position : f32x3,
+    binding(1) in  normal : f32x4,
+    binding(2) in  uv : f32x2,
+    binding(3) in  tangent : f32x4,
+    binding(4) in  binormal : f32x4,
+    binding(7) in  weights : f32x4,
+    binding(8) in  indices : u32x4,
+    out UV : f32x2) void
+{
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * skinnedPos);
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticInst(
+    binding(0) in  position : f32x3,
+    binding(1) in  normal : f32x3,
+    binding(2) in  uv : f32x2,
+    binding(3) in  tangent : f32x3,
+    binding(4) in  binormal : f32x3,
+    out UV : f32x2) void
+{
+    const id = vertexGetInstanceIndex();
+    vertexExportCoordinates(ViewConstants.ViewProjection * Instances.ModelArray[id] * f32x4(position, 1));
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+early_depth
+entry_point
+psStatic() void
+{
+    pixelExportColor(ObjectUniforms.ObjectId, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Static 
+{
+    VertexShader = vsStatic;
+    PixelShader = psStatic;
+    RenderState = PickingState;
+};
+
+@Mask("Billboard")
+program Billboard
+{
+    VertexShader = vsBillboard;
+    PixelShader = psStatic;
+    RenderState = BillboardPickingState;
+};
+
+@Mask("Skinned")
+program Skinned
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStatic;
+    RenderState = PickingState;
+};
+
+@Mask("StaticInstanced")
+program StaticInstanced
+{
+    VertexShader = vsStaticInst;
+    PixelShader = psStatic;
+    RenderState = PickingState;
+};
