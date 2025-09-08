@@ -527,7 +527,6 @@ World::ManageEntities()
 
     // Delete all remaining invalid instances
     Ptr<MemDb::Database> const& db = this->db;
-
     if (db.isvalid())
     {
         db->ForEachTable(
@@ -1544,6 +1543,10 @@ World::RenderDebug()
                         }
                         ImGui::Unindent();
                     }
+#ifdef NEBULA_ENABLE_PROFILING
+                    ImGui::SameLine();
+                    ImGui::Text(" | [ %0.3fms ]", (float)(processor->timer.GetTime() * 1000.0));
+#endif
                 }
                 ImGui::Unindent();
             }
@@ -1589,105 +1592,110 @@ World::RenderDebug()
 
     static bool listInactive = false;
     ImGui::Checkbox("List inactive instances", &listInactive);
-    ImGui::Text("Entity map:");
-    ImGui::BeginChild(
-        "ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar
-    );
+    static bool showEntities = false;
+    ImGui::Checkbox("Show Entity List", &showEntities);
+    if (showEntities)
     {
-        for (uint entityIndex = 0; entityIndex < this->entityMap.Size(); entityIndex++)
+        ImGui::Text("Entity map:");
+        ImGui::BeginChild(
+            "ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar
+        );
         {
-            Game::EntityMapping entityMapping = this->entityMap[entityIndex];
-            
-            if (!listInactive && (entityMapping.table == MemDb::InvalidTableId || entityMapping.instance == MemDb::InvalidRow))
-                continue;
-
-            ImGui::BeginGroup();
-            ImGui::Text("[%i] ", entityIndex);
-            ImGui::SameLine();
-            ImGui::TextColored(
-                {1, 0.3f, 0, 1},
-                "tid:%i, partition: %i, index: %i",
-                entityMapping.table,
-                entityMapping.instance.partition,
-                entityMapping.instance.index
-            );
-            if (entityMapping.table != MemDb::TableId::Invalid())
+            for (uint entityIndex = 0; entityIndex < this->entityMap.Size(); entityIndex++)
             {
-                ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
-                ImGui::EndGroup();
-                if (ImGui::IsItemHovered())
+                Game::EntityMapping entityMapping = this->entityMap[entityIndex];
+                
+                if (!listInactive && (entityMapping.table == MemDb::InvalidTableId || entityMapping.instance == MemDb::InvalidRow))
+                    continue;
+
+                ImGui::BeginGroup();
+                ImGui::Text("[%i] ", entityIndex);
+                ImGui::SameLine();
+                ImGui::TextColored(
+                    {1, 0.3f, 0, 1},
+                    "tid:%i, partition: %i, index: %i",
+                    entityMapping.table,
+                    entityMapping.instance.partition,
+                    entityMapping.instance.index
+                );
+                if (entityMapping.table != MemDb::TableId::Invalid())
                 {
-                    ImGui::BeginTooltip();
                     ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
-                    MemDb::TableId const table = entityMapping.table;
-                    MemDb::RowId const row = entityMapping.instance;
-
-                    void* ownerBuffer = this->GetInstanceBuffer(table, row.partition, Game::Entity::Traits::fixed_column_index);
-                    ownerBuffer = (byte*)ownerBuffer + (row.index * sizeof(Game::Entity));
-                    Game::Entity owner = *(Game::Entity*)ownerBuffer;
-
-                    ImGui::TextDisabled("Entity: %llu", (uint64_t)owner);
-                    ImGui::TextDisabled("Entity.world: %llu", (uint64_t)owner.world);
-                    ImGui::TextDisabled("Entity.reserved: %llu", (uint64_t)owner.reserved);
-                    ImGui::TextDisabled("Entity.generation: %llu", (uint64_t)owner.generation);
-                    ImGui::TextDisabled("Entity.index: %llu", (uint64_t)owner.index);
-
-                    bool prevDebugState = Game::ComponentInspection::Instance()->debug;
-                    Game::ComponentInspection::Instance()->debug = true;
-                    auto const& components = this->db->GetTable(table).GetAttributes();
-                    for (auto component : components)
+                    ImGui::EndGroup();
+                    if (ImGui::IsItemHovered())
                     {
-                        Game::ComponentInterface* cInterface =
-                            (Game::ComponentInterface*)MemDb::AttributeRegistry::GetAttribute(component);
-                        if (cInterface->GetNumFields() == 0)
+                        ImGui::BeginTooltip();
+                        ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
+                        MemDb::TableId const table = entityMapping.table;
+                        MemDb::RowId const row = entityMapping.instance;
+
+                        void* ownerBuffer = this->GetInstanceBuffer(table, row.partition, Game::Entity::Traits::fixed_column_index);
+                        ownerBuffer = (byte*)ownerBuffer + (row.index * sizeof(Game::Entity));
+                        Game::Entity owner = *(Game::Entity*)ownerBuffer;
+
+                        ImGui::TextDisabled("Entity: %llu", (uint64_t)owner);
+                        ImGui::TextDisabled("Entity.world: %llu", (uint64_t)owner.world);
+                        ImGui::TextDisabled("Entity.reserved: %llu", (uint64_t)owner.reserved);
+                        ImGui::TextDisabled("Entity.generation: %llu", (uint64_t)owner.generation);
+                        ImGui::TextDisabled("Entity.index: %llu", (uint64_t)owner.index);
+
+                        bool prevDebugState = Game::ComponentInspection::Instance()->debug;
+                        Game::ComponentInspection::Instance()->debug = true;
+                        auto const& components = this->db->GetTable(table).GetAttributes();
+                        for (auto component : components)
                         {
-                            // Type is flag type, just print the name, and then continue
-                            ImGui::Text("_flag_: %s", MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
+                            Game::ComponentInterface* cInterface =
+                                (Game::ComponentInterface*)MemDb::AttributeRegistry::GetAttribute(component);
+                            if (cInterface->GetNumFields() == 0)
+                            {
+                                // Type is flag type, just print the name, and then continue
+                                ImGui::Text("_flag_: %s", MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
+                                ImGui::Separator();
+                                continue;
+                            }
+                            else
+                            {
+                                ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
+                            }
+                            SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
+                            void* data = this->GetInstanceBuffer(table, row.partition, component);
+                            data = (byte*)data + (row.index * typeSize);
+
+                            const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders |
+                                                        ImGuiTableFlags_RowBg | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+                            ImGui::PushID(row.index + 0xF23);
+                            if (ImGui::BeginTable(MemDb::AttributeRegistry::GetAttribute(component)->name.Value(), 2, flags))
+                            {
+                                ImGui::TableSetupColumn("FieldName", ImGuiTableColumnFlags_WidthFixed);
+                                ImGui::TableSetupColumn("FieldValue", ImGuiTableColumnFlags_WidthStretch);
+
+                                ImGui::TableNextRow();
+                                bool commitChange = false;
+                                
+                                Game::ComponentInspection::DrawInspector(owner, component, data, &commitChange);
+                                ImGui::EndTable();
+                                ImGui::Spacing();
+                                ImGui::Spacing();
+                                ImGui::Spacing();
+                            }
+                            ImGui::PopID();
+
                             ImGui::Separator();
-                            continue;
                         }
-                        else
-                        {
-                            ImGui::Text(MemDb::AttributeRegistry::GetAttribute(component)->name.Value());
-                        }
-                        SizeT const typeSize = MemDb::AttributeRegistry::TypeSize(component);
-                        void* data = this->GetInstanceBuffer(table, row.partition, component);
-                        data = (byte*)data + (row.index * typeSize);
-
-                        const ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders |
-                                                      ImGuiTableFlags_RowBg | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                        ImGui::PushID(row.index + 0xF23);
-                        if (ImGui::BeginTable(MemDb::AttributeRegistry::GetAttribute(component)->name.Value(), 2, flags))
-                        {
-                            ImGui::TableSetupColumn("FieldName", ImGuiTableColumnFlags_WidthFixed);
-                            ImGui::TableSetupColumn("FieldValue", ImGuiTableColumnFlags_WidthStretch);
-
-                            ImGui::TableNextRow();
-                            bool commitChange = false;
-                            
-                            Game::ComponentInspection::DrawInspector(owner, component, data, &commitChange);
-                            ImGui::EndTable();
-                            ImGui::Spacing();
-                            ImGui::Spacing();
-                            ImGui::Spacing();
-                        }
-                        ImGui::PopID();
-
-                        ImGui::Separator();
+                        Game::ComponentInspection::Instance()->debug = prevDebugState;
+                        ImGui::EndTooltip();
                     }
-                    Game::ComponentInspection::Instance()->debug = prevDebugState;
-                    ImGui::EndTooltip();
                 }
+                else
+                {
+                    ImGui::EndGroup();
+                    ImGui::TextDisabled("- ");
+                }
+                ImGui::Separator();
             }
-            else
-            {
-                ImGui::EndGroup();
-                ImGui::TextDisabled("- ");
-            }
-            ImGui::Separator();
         }
+        ImGui::EndChild();
     }
-    ImGui::EndChild();
 }
 
 //------------------------------------------------------------------------------

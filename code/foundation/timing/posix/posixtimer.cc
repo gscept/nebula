@@ -56,7 +56,9 @@ void
 PosixTimer::Stop()
 {
     n_assert(this->running);
-    this->stopTime = clock();
+    timespec times;
+    n_assert(clock_gettime(CLOCK_MONOTONIC,&times) == 0);
+    this->stopTime = ToTime(times);
     this->running = false;
 }
 
