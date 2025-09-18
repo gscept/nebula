@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  geometrybase.gpuh
-//  (C) 2012 Individual contributors, see AUTHORS file
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include <lib/std.gpuh>
 #include <lib/skinning.gpuh>
@@ -425,7 +425,7 @@ vsSkinned(
     binding(8) in indices : u32x4,
     out Tangent : f32x3,
     out Normal : f32x3,
-    out no_interpolate Sign : f32,
+    out Sign : f32,
     out UV : f32x2,
     out WorldSpacePos : f32x3
 ) void

@@ -21,7 +21,7 @@
 @Mask("Spot|Static")
 program Spotlight
 {
-    VertexShader = vsStatic;
+    VertexShader = vsStaticShadow;
     PixelShader = psShadow;
     RenderState = ShadowState;
 };
@@ -29,7 +29,7 @@ program Spotlight
 @Mask("Spot|Alpha")
 program SpotlightAlpha
 {
-    VertexShader = vsStatic;
+    VertexShader = vsStaticShadow;
     PixelShader = psShadowAlpha;
     RenderState = ShadowState;
 };
@@ -37,7 +37,7 @@ program SpotlightAlpha
 @Mask("Spot|Skinned")
 program SpotlightSkinned
 {
-    VertexShader = vsSkinned;
+    VertexShader = vsSkinnedShadow;
     PixelShader = psShadow;
     RenderState = ShadowState;
 };
@@ -45,7 +45,7 @@ program SpotlightSkinned
 @Mask("Spot|Skinned|Alpha")
 program SpotlightSkinnedAlpha
 {
-    VertexShader = vsSkinned;
+    VertexShader = vsSkinnedShadow;
     PixelShader = psShadowAlpha;
     RenderState = ShadowState;
 };

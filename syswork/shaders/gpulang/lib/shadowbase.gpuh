@@ -26,7 +26,7 @@ render_state ShadowState
 /**
 */
 entry_point
-vsStatic(
+vsStaticShadow(
 	binding(0) in position : f32x3,
 	binding(2) in uv : i32x2,
 	out UV : f32x2,
@@ -43,7 +43,7 @@ vsStatic(
 /**
 */
 entry_point
-vsSkinned(
+vsSkinnedShadow(
 	binding(0) in position : f32x3,
 	binding(2) in uv : i32x2,
 	binding(7) in weights : f32x4,

@@ -1,31 +1,116 @@
 //------------------------------------------------------------------------------
-//  skinned.fx
-//  (C) 2012 Individual contributors, see AUTHORS file
+//  skinned.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/geometrybase.fxh"
-#include "lib/standard_shading.fxh"
-#include "lib/techniques.fxh"
-#include "lib/skinning.fxh"
+#include <lib/std.gpuh>
+#include <lib/geometrybase.gpuh>
+#include <lib/standard_shading.gpuh>
+#include <lib/skinning.gpuh>
 
 //------------------------------------------------------------------------------
 //  Depth prepass methods
 //------------------------------------------------------------------------------
-SimpleTechnique(SkinnedDepth, "Skinned|Depth", vsDepthSkinned(), psDepthOnly(), DepthState);
-SimpleTechnique(SkinnedDepthDoubleSided, "Skinned|Depth|DoubleSided", vsDepthSkinned(), psDepthOnly(), DepthStateDoubleSided);
-SimpleTechnique(SkinnedDepthAlphaMask, "Skinned|Depth|AlphaMask", vsDepthSkinnedAlphaMask(), psDepthOnlyAlphaMask(), DepthState);
-SimpleTechnique(SkinnedDepthAlphaMaskDoubleSided, "Skinned|Depth|AlphaMask|DoubleSided", vsDepthSkinnedAlphaMask(), psDepthOnlyAlphaMask(), DepthStateDoubleSided);
+@Mask("Skinned|Depth")
+program SkinnedDepth
+{
+    VertexShader = vsDepthSkinned;
+    PixelShader = psDepthOnly;
+    RenderState = DepthState;
+};
+
+@Mask("Skinned|Depth|DoubleSided")
+program SkinnedDepthDoubleSided 
+{
+    VertexShader = vsDepthSkinned;
+    PixelShader = psDepthOnly;
+    RenderState = DepthStateDoubleSided; 
+};
+
+@Mask("Skinned|Depth|AlphaMask")
+program SkinnedDepthAlphaMask
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psDepthOnlyAlphaMask;
+    RenderState = DepthState;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+};
+
+@Mask("Skinned|Depth|AlphaMask|DoubleSided")
+program SkinnedDepthAlphaMaskDoubleSided
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+}; 
 
 //------------------------------------------------------------------------------
 //  Standard methods
 //------------------------------------------------------------------------------
+@Mask("Skinned")
+program Skinned
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+};
+
+@Mask("Skinned|AlphaTest")
+program SkinnedAlphaTest
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Alpha;
+};
+
+//------------------------------------------------------------------------------
+//  IBL + PBR methods
+//------------------------------------------------------------------------------
+
+@Mask("Skinned|Environment")
+program SkinnedEnvironment
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+};
+
+@Mask("Skinned|Environment|AlphaTest")
+program SkinnedEnvironmentAlphaTest
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Alpha;
+};
+
+//------------------------------------------------------------------------------
+//  Alpha methods
+//------------------------------------------------------------------------------
+@Mask("Skinned|Alpha")
+program SkinnedAlpha
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+};
+
+@Mask("Skinned|Alpha|Environment")
+program SkinnedAlphaEnvironment
+{
+    VertexShader = vsSkinned;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+};
+/*
 SimpleTechnique(
     Skinned, 
     "Skinned", 
     vsSkinned(), 
     psStandard(
-        calcColor = SimpleColor,
+        calcColor = SimpleColor, 
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
         calcEnv = NoEnvironment,
@@ -104,3 +189,4 @@ SimpleTechnique(
         finalizeColor = FinalizeAlpha
     ),
     AlphaState);
+*/

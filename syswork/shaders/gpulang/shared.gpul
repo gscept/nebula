@@ -1,23 +1,23 @@
 //------------------------------------------------------------------------------
-//  shared.fx
-//  (C) 2014 LTU Skellefteå
+//  shared.gpul
+//  (C) 2025 LTU Skellefteå
 //------------------------------------------------------------------------------
 
-#include "lib/shared.fxh"
+#include <lib/shared.gpuh>
 //------------------------------------------------------------------------------
 /** 
 */ 
-shader
-void
-vsMain(){}
+entry_point
+vsMain() void {}
+
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
-psMain(){}
+entry_point
+psMain() void {} 
 
-program Empty [ string Mask = "Empty"; ]
+@Mask("Empty")
+program Empty
 {
 };

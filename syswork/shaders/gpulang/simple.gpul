@@ -1,0 +1,136 @@
+//------------------------------------------------------------------------------
+//  simple.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/util.gpuh>
+
+struct SimpleData
+{
+    ShapeModel: f32x4x4;
+    MatDiffuse: f32x4;
+};
+group(BATCH_GROUP) inline Simple: *SimpleData;
+
+render_state WireframeState
+{
+    Cull = CullFace.None;    
+    BlendEnabled[0] = true; 
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    Rasterize = RasterizationMode.Line;
+    //MultisampleEnabled = true;
+};
+
+render_state DepthEnabledState
+{
+    Cull = CullFace.None;    
+    BlendEnabled[0] = true; 
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    //MultisampleEnabled = true;
+};
+
+render_state DepthDisabledState
+{
+    Cull = CullFace.None;    
+    BlendEnabled[0] = true; 
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+    //MultisampleEnabled = true;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMainPrimitives(
+    binding(0) in position : f32x3, 
+    binding(5) in color : f32x4, 
+    out Color : f32x4) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * Simple.ShapeModel * f32x4(position, 1));
+    Color = color;
+}
+    
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMainPrimitives(in color : f32x4) void
+{
+    pixelExportColor(color * Simple.MatDiffuse, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMainShape(
+    binding(0) in position : f32x3) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * Simple.ShapeModel * f32x4(position, 1));
+}
+    
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMainShape() void
+{
+    pixelExportColor(Simple.MatDiffuse, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Colored")
+program DefaultPrim 
+{
+    VertexShader = vsMainPrimitives;
+    PixelShader = psMainPrimitives;
+    RenderState = DepthDisabledState;
+};
+
+@Mask("Colored|Alt0")
+program DepthPrim 
+{
+    VertexShader = vsMainPrimitives;
+    PixelShader = psMainPrimitives;
+    RenderState = DepthEnabledState;
+};
+@Mask("Colored|Alt1")
+program WireframePrim 
+{
+    VertexShader = vsMainPrimitives;
+    PixelShader = psMainPrimitives;
+    RenderState = WireframeState;
+};
+
+@Mask("Static")
+program DefaultShape 
+{
+    VertexShader = vsMainShape;
+    PixelShader = psMainShape;
+    RenderState = DepthDisabledState;
+};
+@Mask("Static|Alt0")
+program DepthShape 
+{
+    VertexShader = vsMainShape;
+    PixelShader = psMainShape;
+    RenderState = DepthEnabledState;
+};
+@Mask("Static|Alt1")
+program WireframeShape 
+{
+    VertexShader = vsMainShape;
+    PixelShader = psMainShape;
+    RenderState = WireframeState;
+};

@@ -1,0 +1,276 @@
+//------------------------------------------------------------------------------
+//  shapes.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/util.gpuh"
+
+// put variables in push-constant block
+struct ShapeConstants
+{
+    ShapeModel : f32x4x4;
+    ShapeColor : f32x4;
+    LineWidth : f32;
+};
+
+@Visibility("VS|GS|PS")
+inline ShapeUniforms : *ShapeConstants;
+
+render_state WireframeState
+{
+    Cull = CullFace.None;
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    //MultisampleEnabled = true;
+};
+
+render_state DepthEnabledState
+{
+    Cull = CullFace.None;
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = true;
+};
+
+render_state DepthDisabledState
+{
+    Cull = CullFace.None;
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+    //MultisampleEnabled = true;
+};
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMesh(
+    binding(0) in  position : f32x3,
+    binding(2) in  uv : f32x2,
+    binding(1) in  normal : f32x3,
+    binding(3) in  tangent : f32x3,
+    out Color : f32x4) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * ShapeConstants.ShapeModel * f32x4(position, 1));
+    Color = ShapeConstants.ShapeColor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsPrimitives(
+    binding(0) in position : f32x3,
+    binding(5) in color : f32x4,
+    out Color : f32x4) void
+{
+    vertexExportCoordinates(ViewConstants.ViewProjection * ShapeConstants.ShapeModel * f32x4(position, 1));
+    Color = color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+
+input_topology(InputTopology.Lines)
+output_topology(OutputTopology.Triangles)
+max_output_vertices(3)
+entry_point
+gsLines(
+    in colors : [2]f32x4,
+    out EdgeDistance : f32,
+    out Color : f32x4) void
+{
+    const tri = geometryGetLine();
+    const p0 = tri.p0.position.xy / tri.p0.position.w;
+    const p1 = tri.p1.position.xy / tri.p1.position.w;
+    // Unproject points
+
+    // This is the line between the previous point and the first point
+    var line0 = (p1 - p0);
+    
+    // Aspect correct the lines
+    line0 = normalize(line0.yx * f32x2(-PassUniforms.RenderTargets[0].Dimensions.y * PassUniforms.RenderTargets[0].Dimensions.z, 1));
+
+    // Scale by line width and inversed resolution
+    line0 *= PassUniforms.RenderTargets[0].Dimensions.zw * ShapeConstants.LineWidth;
+
+    // Emit triangle strip 
+    Color = colors[0];
+    EdgeDistance = -ShapeConstants.LineWidth;
+    geometryExportVertex(f32x4((p0 - line0) * tri.p0.position.w, tri.p0.position.zw));
+
+    Color = colors[0];
+    EdgeDistance = ShapeConstants.LineWidth;
+    geometryExportVertex(f32x4((p0 + line0) * tri.p0.position.w, tri.p0.position.zw));
+
+    Color = colors[1];
+    EdgeDistance = -ShapeConstants.LineWidth;
+    geometryExportVertex(f32x4((p1 - line0) * tri.p1.position.w, tri.p1.position.zw));
+
+    Color = colors[1];
+    EdgeDistance = ShapeConstants.LineWidth;
+    geometryExportVertex(f32x4((p1 + line0) * tri.p1.position.w, tri.p1.position.zw));
+    geometryExportPrimitive();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+input_topology(InputTopology.Triangles)
+output_topology(OutputTopology.Triangles)
+max_output_vertices(3)
+entry_point
+gsTriangles(
+    in colors : [3]f32x4,
+    out Color : f32x4,
+    out Distance : f32x3
+) void
+{
+    const tri = geometryGetTriangle();
+    Color = colors[0];
+    Distance = f32x3(1, 0, 0);
+    geometryExportVertex(tri.p0.position);
+
+    Color = colors[1];
+    Distance = f32x3(0, 1, 0);
+    geometryExportVertex(tri.p1.position);
+
+    Color = colors[2];
+    Distance = f32x3(0, 0, 1);
+    geometryExportVertex(tri.p2.position);
+    geometryExportPrimitive();
+    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/ 
+evalMinDistanceToEdges(heights : f32x3) f32
+{
+    const ddxHeights = ddx(heights);
+    const ddyHeights = ddy(heights);
+    const ddHeights2 = ddxHeights * ddxHeights + ddyHeights * ddyHeights;
+
+    const pixHeights2 = heights * heights / ddHeights2;
+
+    const dist = sqrt(min(min(pixHeights2.x, pixHeights2.y), pixHeights2.z));
+
+    return dist;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psTriangles(
+    in color : f32x4,
+    in distance : f32x3) void
+{
+    var dist = evalMinDistanceToEdges(distance);
+    const halfLineWidth = 0.5f * ShapeConstants.LineWidth;
+    if (dist > halfLineWidth + 1.0f)
+        discard;
+
+    dist = clamp((dist - (halfLineWidth - 1.0f)), 0, 2.0f);
+    dist *= dist;
+    const alpha = exp2(-2 * dist);
+    pixelExportColor(f32x4(color.rgb, color.a * alpha), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psLines(
+    in no_perspective edgeDistance : f32,
+    in color : f32x4) void
+{
+    var d = abs(edgeDistance) / ShapeConstants.LineWidth;
+    d = smoothstep(1.0, 1.0 - (2.0f / ShapeConstants.LineWidth), d);
+    pixelExportColor(f32x4(color.rgb, color.a * d), 0);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMain(in color : f32x4) void
+{
+    pixelExportColor(color, 0);
+}
+
+@Mask("Mesh|Wireframe|Triangles")
+program MeshWireframeTriangles 
+{
+    VertexShader = vsMesh;
+    GeometryShader = gsTriangles;
+    PixelShader = psTriangles;
+    RenderState = DepthEnabledState;
+};
+
+@Mask("Mesh|Wireframe|Lines")
+program MeshWireframeLines
+{
+    VertexShader = vsMesh;
+    GeometryShader = gsLines;
+    PixelShader = psLines;
+    RenderState = DepthEnabledState;
+};
+@Mask("Primitives|Wireframe|Triangles")
+program PrimitivesWireframeTriangles
+{
+    VertexShader = vsPrimitives;
+    GeometryShader = gsTriangles;
+    PixelShader = psTriangles;
+    RenderState = DepthEnabledState;
+};
+
+@Mask("Primitives|Wireframe|Lines")
+program PrimitivesWireframeLines
+{
+    VertexShader = vsPrimitives;
+    GeometryShader = gsLines;
+    PixelShader = psLines;
+    RenderState = DepthEnabledState;
+};
+
+@Mask("Mesh")
+program Mesh
+{
+    VertexShader = vsMesh;
+    PixelShader = psMain;
+    RenderState = DepthEnabledState;
+};
+
+@Mask("Primitives")
+program Primitives
+{
+    VertexShader = vsPrimitives;
+    PixelShader = psMain;
+    RenderState = DepthEnabledState;
+};
+
+@Mask("Mesh|NoDepth")
+program MeshNoDepth
+{
+    VertexShader = vsMesh;
+    PixelShader = psMain;
+    RenderState = DepthDisabledState;
+};
+
+@Mask("Primitives|NoDepth")
+program PrimitivesNoDepth
+{
+    VertexShader = vsPrimitives;
+    PixelShader = psMain;
+    RenderState = DepthDisabledState;
+};
