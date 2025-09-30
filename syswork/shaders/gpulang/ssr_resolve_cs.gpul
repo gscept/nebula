@@ -3,71 +3,68 @@
 //  (C) 2020 Fredrik Lindahl
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
-#include "lib/shared.fxh"
-#include "lib/pbr.fxh"
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/pbr.gpuh"
 
 //texture2D LightBuffer;
-texture2D TraceBuffer;
+uniform TraceBuffer : *texture2D;
+uniform ReflectionBuffer : *mutable rgba16f texture2D;
 //read image2D TraceBuffer;
-
-write rgba16f image2D ReflectionBuffer;
 
 sampler_state LinearState
 {
     //Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
-    Filter = Linear;
-    BorderColor = Transparent;
-    AddressU = Border;
-    AddressV = Border;
+    Filter = FilterMode.Linear;
+    Border = Color.Transparent;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
 };
 
 sampler_state NoFilterState
 {
     //Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
-    Filter = Point;
-    BorderColor = Transparent;
-    AddressU = Border;
-    AddressV = Border;
+    Filter = FilterMode.Point;
+    Border = Color.Transparent;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 32
-[local_size_y] = 32
-shader
-void
-csMain()
+threads_x(32)
+threads_y(32)
+entry_point
+csMain() void
 {
-    ivec2 location = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 screenSize = imageSize(ReflectionBuffer);
+    const location = i32x2(computeGetGlobalThreadIndices().xy);
+    const screenSize = textureGetSize(ReflectionBuffer);
     if (location.x >= screenSize.x || location.y > screenSize.y)
         return;
 
-    vec2 invScreenSize = vec2(1.0/screenSize.x, 1.0/screenSize.y);
+    const invScreenSize = f32x2(1.0/screenSize.x, 1.0/screenSize.y);
 
-    vec2 UV = location * invScreenSize;
+    const UV = location * invScreenSize;
 
-    vec3 rayResult = texelFetch(sampler2D(TraceBuffer, NoFilterState), location / 2, 0).xyz;
-    vec3 color = vec3(0);//sample2DLod(LightBuffer, LinearState, UV, 0).xyz;
+    const rayResult = textureFetch(TraceBuffer, location / 2, 0).xyz;
+    var color = f32x3(0);//sample2DLod(LightBuffer, LinearState, UV, 0).xyz;
     if (rayResult.r >= 0.0f)
     {
-        vec4 albedo = vec4(0);//sample2DLod(AlbedoBuffer, LinearState, UV, 0);
-        vec4 material = vec4(0);//sample2DLod(SpecularBuffer, LinearState, UV, 0);
+        const albedo = f32x4(0);//sample2DLod(AlbedoBuffer, LinearState, UV, 0);
+        const material = f32x4(0);//sample2DLod(SpecularBuffer, LinearState, UV, 0);
 
-        vec3 F0 = vec3(0.04);
+        var F0 = f32x3(0.04);
         F0 = CalculateF0(albedo.rgb, material[0], F0);
 
-        vec3 F = FresnelSchlickGloss(F0, max(rayResult.b, 0.0), material[1]);
+        const F = FresnelSchlickGloss(F0, max(rayResult.b, 0.0), material[1]);
 
         //vec3 fresnel;
         //vec3 brdf;
         //CalculateBRDF(1, cosTheta, cosTheta, 1, material[1], F0, fresnel, brdf);
 
-        vec3 reflection = vec3(0);//sample2DLod(LightBuffer, LinearState, rayResult.xy, 0).xyz;
+        const reflection = f32x3(0);//sample2DLod(LightBuffer, LinearState, rayResult.xy, 0).xyz;
         
         //vec3 kD = vec3(1.0f) - F;
         //kD *= 1.0f - material[0];
@@ -75,13 +72,14 @@ csMain()
         color += (reflection * F) * material[2];
     }
     
-    imageStore(ReflectionBuffer, location, color.xyzx);
+    textureStore(ReflectionBuffer, location, color.xyzx);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-program SSR [ string Mask = "Alt0"; ]
+@Mask("Alt0")
+program SSR
 {
-    ComputeShader = csMain();
+    ComputeShader = csMain;
 };
