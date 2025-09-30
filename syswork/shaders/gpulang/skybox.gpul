@@ -1,82 +1,79 @@
 //------------------------------------------------------------------------------
-//  skybox.fx
+//  skybox.gpul
 //  (C) 2012-2021 Individual contributors, See LICENSE file
 //------------------------------------------------------------------------------
-#include <lib/std.fxh>
-#include <lib/shared.fxh>
-#include <lib/objects_shared.fxh>
-#include <lib/util.fxh>
-#include <lib/techniques.fxh>
-#include <lib/preetham.fxh>
-#include <lib/mie-rayleigh.fxh>
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/util.gpuh>
+#include <lib/preetham.gpuh>
+#include <lib/mie-rayleigh.gpuh>
 
-#include <material_interfaces.fx>
+#include <material_interfaces.gpul>
 
-group(BATCH_GROUP) shared constant SkyBlock
+struct SkyData
 {
     // declare two textures, one main texture and one blend texture together with a wrapping sampler
-    textureHandle SkyLayer1;
-    textureHandle SkyLayer2;
-    float Contrast;
-    float Brightness;
-    float SkyBlendFactor;
-    float SkyRotationFactor;
+    SkyLayer1 : u32;
+    SkyLayer2 : u32;
+    Contrast : f32;
+    Brightness : f32;
+    SkyBlendFactor : f32;
+    SkyRotationFactor : f32;
 };
+group(BATCH_GROUP) uniform SkyBlock : *SkyData;
 
 sampler_state SkySampler
 {
-    AddressU = Wrap;
-    AddressV = Wrap;
-    AddressW = Wrap;
-    Filter = MinMagLinearMipPoint;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+    AddressW = AddressMode.Clamp;
+    Filter = FilterMode.MinMagLinearMipPoint;
 };
 
 render_state SkyboxState
 {
-    CullMode = Front;
-    DepthEnabled = true;
-    DepthWrite = false;
-    DepthFunc = Equal;
+    Cull = CullFace.Front;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Equal;
 };
 
 //------------------------------------------------------------------------------
 /**
     Sky box vertex shader
 */
-shader
-void
+entry_point
 vsMain(
-    [slot=0] in vec3 position,
-    [slot=2] in ivec2 uv,
-    [slot=1] in vec3 normal,
-    [slot=3] in vec3 tangent,
-    out vec3 UV,
-    out vec3 Direction)
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x3,
+    out UV : f32x3,
+    out Direction : f32x3) void
 {
-    vec3 tempPos = normalize(position);
-    gl_Position = Projection * vec4(tempPos, 1);
-    float animationSpeed = Time_Random_Luminance_X.x * SkyRotationFactor;
-    mat3 rotMat = mat3( cos(animationSpeed), 0, sin(animationSpeed),
+    const tempPos = normalize(position);
+    const animationSpeed = ViewConstants.Time_Random_Luminance_X.x * SkyBlock.SkyRotationFactor;
+    const rotMat = f32x3x3( cos(animationSpeed), 0, sin(animationSpeed),
                         0, 1, 0,
                         -sin(animationSpeed), 0, cos(animationSpeed));
 
-    float3 viewSample = (InvView * vec4(tempPos, 0)).xyz;
+    const viewSample = (ViewConstants.InvView * f32x4(tempPos, 0)).xyz;
     Direction = viewSample;
     UV = viewSample * rotMat;
+    vertexExportCoordinates(ViewConstants.Projection * f32x4(tempPos, 1));
 }
 
 //------------------------------------------------------------------------------
 /**
     Skybox pixel shader
 */
-shader
-void
-psMain(in vec3 UV,
-    in vec3 Direction,
-    [color0] out vec4 Color)
+entry_point
+psMain(in UV : f32x3,
+    in Direction : f32x3) void
 {
-    vec3 dir = normalize(Direction);
-    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    const dir = normalize(Direction);
+    const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
     
     // rotate uvs around center with constant speed
     /*
@@ -87,11 +84,17 @@ psMain(in vec3 UV,
     color *= Brightness;
     */
 
-    Color = vec4(atmo, 1);
-    gl_FragDepth = 1.0f;
+    pixelExportColor(f32x4(atmo, 1), 0);
+    pixelSetDepth(1.0f);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(Default, "Static", vsMain(), psMain(), SkyboxState);
+@Mask("Static")
+program Default
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = SkyboxState;
+};

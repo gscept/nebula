@@ -81,9 +81,7 @@ ComputeCornerVertex(
     const viewTangent  = rotMatrix * f32x2(-1.0, 0.0);
     const viewBinormal = rotMatrix * f32x2(0.0, 1.0);
 
-    const emitterRotation = f32x3x3(ParticleEmitter.EmitterTransform[0].xyz,
-                                     ParticleEmitter.EmitterTransform[1].xyz,
-                                     ParticleEmitter.EmitterTransform[2].xyz);  
+    const emitterRotation = GetRotation(ParticleEmitter.EmitterTransform);
     outputVert.worldNormal   = ParticleEmitter.EmitterTransform[2].xyz;
     outputVert.worldTangent  = emitterRotation * f32x3(viewTangent, 0);
     outputVert.worldBinormal = emitterRotation * f32x3(viewBinormal, 0);
