@@ -120,7 +120,7 @@ struct InstanceUniforms
     sincos : f32x2;
     random : f32;   // use for wind sway
     lodIsBillboard : b8;
-    lodDebug : u32;
+    lodDebug : i32;
 };
 
 struct InstanceUniformArray
@@ -274,7 +274,7 @@ csGenerateDraws() void
                 instanceUniform.sincos.y = randomOffset.y;
                 instanceUniform.textureIndex = textureIndex;
 
-                instanceUniform.lodDebug = 0u;
+                instanceUniform.lodDebug = 0;
 
                 InstanceGrassArguments.uniforms[entry] = instanceUniform;
 
@@ -325,10 +325,10 @@ csGenerateDraws() void
                 InstanceMeshUniforms[entry] = instanceUniform;
 
                 var command : DrawIndexedCommand;
-                command.indexCount = meshInfo.lodIndexCount[lod];
-                command.instanceCount = 1;
-                command.startIndex = meshInfo.lodIndexOffsets[lod];
-                command.offsetVertex = meshInfo.lodVertexOffsets[lod];
+                command.indexCount = u32(meshInfo.lodIndexCount[lod]);
+                command.instanceCount = 1u;
+                command.startIndex = u32(meshInfo.lodIndexOffsets[lod]);
+                command.offsetVertex = u32(meshInfo.lodVertexOffsets[lod]);
                 command.startInstance = entry;  // pretend to use instancing
                 MeshDraws[entry + i * MAX_MESH_INFOS] = command;
             }
@@ -478,7 +478,7 @@ vsDrawMesh(
     , out Lod : u32
 ) void
 {
-    const instanceUniforms = InstanceMeshUniforms[gl_InstanceIndex];
+    const instanceUniforms = InstanceMeshUniforms[vertexGetInstanceIndex()];
     const displacement = f32x3(sin(position.y * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
