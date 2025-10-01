@@ -1,80 +1,87 @@
 //------------------------------------------------------------------------------
-//  unlit.fx
-//  (C) 2012 Individual contributors, see AUTHORS file
+//  unlit.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include <lib/std.fxh>
-#include <lib/shared.fxh>
-#include <lib/objects_shared.fxh>
-#include <lib/util.fxh>
-#include <lib/techniques.fxh>
-#include <lib/defaultsamplers.fxh>
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/util.gpuh>
+#include <lib/defaultsamplers.gpuh>
 
-#include <material_interfaces.fx>
+#include <material_interfaces.gpul>
 
-float Brightness = 0.0f;
+const Brightness = 0.0f;
 
 render_state UnlitOpaqueState
 {
-    CullMode = Back;
+    Cull = CullFace.Back;
 };
 
 render_state UnlitAlphaState
 {
     BlendEnabled[0] = true;
-    SrcBlend[0] = SrcAlpha;
-    DstBlend[0] = OneMinusSrcAlpha;
-    CullMode = Back;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    Cull = CullFace.Back;
 };
-
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsMain(
-    [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
-    [slot=2] in vec2 uv,
-    [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
-    out vec2 UV) 
+    binding(0) in position : f32x3,
+    binding(1) in normal : f32x3,
+    binding(2) in uv : f32x2,
+    binding(3) in tangent : f32x3,
+    binding(4) in binormal : f32x3,
+    out UV : f32x2) void
 {
-    gl_Position = ViewProjection * Model * vec4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * ObjectUniforms.Model * f32x4(position, 1));
     UV = uv;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
-psMain(in vec2 UV,
-    [color0] out vec4 Albedo) 
+entry_point
+psMain(in UV : f32x2)  void
 {
-    vec4 diffColor = sample2D(_Unlit.AlbedoMap, GeometryTextureSampler, UV.xy);
-    float alpha = diffColor.a;
-    if (alpha < _Unlit.AlphaSensitivity) discard;
-    Albedo = diffColor * Brightness;
+    const diffColor = textureSample(Textures2D[UnlitConstants.AlbedoMap], GeometryTextureSampler, UV.xy);
+    const alpha = diffColor.a;
+    if (alpha < UnlitConstants.AlphaSensitivity) 
+        discard;
+    pixelExportColor(diffColor * Brightness, 0);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
-psMainAlpha(in vec2 UV,
-    [color0] out vec4 Albedo) 
+entry_point
+psMainAlpha(in UV : f32x2) void
 {
-    vec4 diffColor = sample2D(_Unlit.AlbedoMap, GeometryTextureSampler, UV.xy);
-    float alpha = diffColor.a;
-    if (alpha < _Unlit.AlphaSensitivity) discard;
-    Albedo = diffColor * _Unlit.AlphaBlendFactor * Brightness;
+    const diffColor = textureSample(Textures2D[UnlitConstants.AlbedoMap], GeometryTextureSampler, UV.xy);
+    const alpha = diffColor.a;
+    if (alpha < UnlitConstants.AlphaSensitivity) discard;
+    pixelExportColor(diffColor * UnlitConstants.AlphaBlendFactor * Brightness, 0);
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(Static, "Static", vsMain(), psMain(), UnlitOpaqueState);
-SimpleTechnique(Alpha, "Alpha", vsMain(), psMainAlpha(), UnlitAlphaState);
+@Mask("Static")
+program Static
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = UnlitOpaqueState;
+};
+
+@Mask("Alpha")
+program Alpha
+{
+    VertexShader = vsMain;
+    PixelShader = psMainAlpha;
+    RenderState = UnlitAlphaState;
+};

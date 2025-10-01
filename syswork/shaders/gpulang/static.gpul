@@ -6,7 +6,6 @@
 #include "lib/std.gpuh"
 #include "lib/geometrybase.gpuh"
 #include "lib/standard_shading.gpuh"
-#include "lib/techniques.gpuh"
 
 //------------------------------------------------------------------------------
 //  Depth prepass methods
@@ -87,109 +86,88 @@ program StaticInstancedAlphaMask
 //------------------------------------------------------------------------------
 //  IBL + PBR methods
 //------------------------------------------------------------------------------
-SimpleTechnique(
-    StaticEnvironment, 
-    "Static|Environment", 
-    vsStatic(),
-    psStandard(
-        calcColor = SimpleColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = IBL,
-        finalizeColor = FinalizeOpaque
-    ),
-    DefaultState);
-    
-SimpleTechnique(
-    StaticEnvironmentAlphaMask, 
-    "Static|Environment|AlphaMask", 
-    vsStatic(),
-    psStandard(
-        calcColor = AlphaMaskSimpleColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = IBL,
-        finalizeColor = FinalizeOpaque
-    ),
-    DefaultState);
-    
-SimpleTechnique(
-    StaticEnvironmentInstanced, 
-    "Static|Environment|Instanced", 
-    vsStaticInstanced(),
-    psStandard(
-        calcColor = SimpleColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = IBL,
-        finalizeColor = FinalizeOpaque
-    ),
-    DefaultState);
-    
-SimpleTechnique(
-    StaticEnvironmentInstancedAlphaMask, 
-    "Static|Environment|Instanced|AlphaMask", 
-    vsStaticInstanced(),
-    psStandard(
-        calcColor = AlphaMaskSimpleColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = IBL,
-        finalizeColor = FinalizeOpaque
-    ),
-    DefaultState);
+
+@Mask("Static|Environment")
+program StaticEnvironment
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+
+@Mask("Static|AlphaMask|Environment")
+program StaticEnvironmentAlphaMask
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+
+@Mask("Static|Instanced|Environment")
+program StaticEnvironmentInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+
+@Mask("Static|AlphaMask|Instanced|Environment")
+program StaticEnvironmentInstancedAlphaMask
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
     
 //------------------------------------------------------------------------------
 //  Alpha methods
 //------------------------------------------------------------------------------
-SimpleTechnique(
-    StaticAlpha, 
-    "Static|Alpha", 
-    vsStatic(), 
-    psStandard(
-        calcColor = AlphaMaskAlphaColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = NoEnvironment,
-        finalizeColor = FinalizeAlpha
-    ),
-    AlphaState);
-    
-SimpleTechnique(
-    StaticAlphaEnvironment, 
-    "Static|Alpha|Environment", 
-    vsStatic(), 
-    psStandard(
-        calcColor = AlphaMaskAlphaColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = IBL,
-        finalizeColor = FinalizeAlpha
-    ),
-    AlphaState);
-    
-SimpleTechnique(
-    StaticAlphaInstanced, 
-    "Static|Alpha|Instanced", 
-    vsStaticInstanced(), 
-    psStandard(
-        calcColor = AlphaMaskAlphaColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = NoEnvironment,
-        finalizeColor = FinalizeAlpha
-    ),
-    AlphaState);
-    
-SimpleTechnique(
-    StaticAlphaInstancedEnvironment, 
-    "Static|Alpha|Instanced|Environment", 
-    vsStaticInstanced(), 
-    psStandard(
-        calcColor = AlphaMaskAlphaColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor,
-        calcEnv = IBL,
-        finalizeColor = FinalizeAlpha
-    ),
-    AlphaState);
+
+
+@Mask("Static|Environment")
+program StaticAlpha
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};
+
+@Mask("Static|AlphaMask|Environment")
+program StaticAlphaEnvironment
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};
+
+@Mask("Static|Instanced|Environment")
+program StaticAlphaInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};
+
+@Mask("Static|AlphaMask|Instanced|Environment")
+program StaticAlphaEnvironmentInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};

@@ -1,23 +1,22 @@
 //------------------------------------------------------------------------------
-//  stencil.fx
-//  (C) 2020 Individual contributors, see AUTHORS file
+//  stencil.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include <lib/stencil.fxh>
+#include <lib/stencil.gpuh>
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
-vsMain() {}
+entry_point
+vsMain() void {}
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
-psMain() {}
+entry_point
+psMain() void {}
 
-program Empty[string Mask = "Empty";]
+@Mask("Empty")
+program Empty
 {
 };

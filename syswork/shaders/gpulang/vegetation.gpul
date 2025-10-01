@@ -1,153 +1,168 @@
 //------------------------------------------------------------------------------
-//  vegetation.fx
-//  (C) 2020 Individual contributors, see AUTHORS file
+//  vegetation.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/shared.fxh"
-#include "lib/util.fxh"
-#include "lib/techniques.fxh"
-#include "lib/indirectdraw.fxh"
-#include "lib/math.fxh"
-#include "lib/pbr.fxh"
-#include "lib/standard_shading.fxh"
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/util.gpuh"
+#include "lib/indirectdraw.gpuh"
+#include "lib/math.gpuh"
+#include "lib/pbr.gpuh"
+#include "lib/standard_shading.gpuh"
 
 //#define LOD_DEBUG 1
-const int MAX_GRASS_TYPES = 4;
-const int MAX_MESH_TYPES = 4;
+const MAX_GRASS_TYPES = 4;
+const MAX_MESH_TYPES = 4;
 
-group(SYSTEM_GROUP) constant VegetationGenerateUniforms [ string Visibility = "CS"; ]
+struct VegetationGenerationData
 {
-    vec4 CameraPosition;
-    vec4 CameraForward;
-    vec2 WorldSize;
-    vec2 InvWorldSize;
-    vec2 GenerateQuadSize;
-    vec2 GenerateDirection;
-    float DensityFactor;
-    vec2 HeightMapSize;
-    float MinHeight;
-    float MaxHeight;
-    textureHandle HeightMap;
+    CameraPosition : f32x4;
+    CameraForward : f32x4;
+    WorldSize : f32x2;
+    InvWorldSize : f32x2;
+    GenerateQuadSize : f32x2;
+    GenerateDirection : f32x2;
+    DensityFactor : f32;
+    HeightMapSize: f32x2;
+    MinHeight : f32;
+    MaxHeight : f32;
+    HeightMap: u32;
 
-    float MaxRange;
-    float Fov;
-    int NumGrassBlades;
-    int NumGrassTypes;
-    int NumMeshTypes;
+    MaxRange : f32;
+    Fov : f32;
+    NumGrassBlades : i32;
+    NumGrassTypes : i32;
+    NumMeshTypes : i32; 
 };
 
-const int MAX_MESH_INFOS = 8;
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform VegetationGenerateUniforms : *VegetationGenerationData;
+
+
+const MAX_MESH_INFOS = 8;
 struct MeshInfo
 {
-    int numLods;
-    int vertexCount;
-    int indexCount;
-    float distribution;
-    float slopeThreshold;
-    float heightThreshold;
-    ivec4 lodIndexOffsets;          // hold max 4 lods
-    ivec4 lodVertexOffsets;
-    ivec4 lodIndexCount;
-    ivec4 lodVertexCount;
-    vec4 lodDistances;
-    uint textureIndex;
-    bool used;
+    numLods : i32;
+    vertexCount : i32;
+    indexCount : i32;
+    distribution : f32;
+    slopeThreshold : f32;
+    heightThreshold : f32;
+    lodIndexOffsets : i32x4;          // hold max 4 lods
+    lodVertexOffsets : i32x4;
+    lodIndexCount : i32x4;
+    lodVertexCount : i32x4;
+    lodDistances : f32x4;
+    textureIndex : u32;
+    used : b8;
 };
 
-group(SYSTEM_GROUP) constant MeshInfoUniforms [ string Visibility = "CS"; ]
-{
-    MeshInfo MeshInfos[MAX_MESH_INFOS];
-};
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform MeshInfos : [MAX_MESH_INFOS]* MeshInfo;
 
-const int MAX_GRASS_INFOS = 8;
+const MAX_GRASS_INFOS = 8;
 struct GrassInfo
 {
-    float distribution;
-    float slopeThreshold;
-    float heightThreshold;
-    uint textureIndex;
-    bool used;
+    distribution : f32;
+    slopeThreshold : f32;
+    heightThreshold : f32;
+    textureIndex : u32;
+    used : b8;
 };
 
-group(SYSTEM_GROUP) constant GrassInfoUniforms [ string Visibility = "CS"; ]
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform GrassInfos : [MAX_GRASS_INFOS]* GrassInfo;
+
+const MAX_VEGETATION_LAYERS = 8;
+
+struct VegetationMaterial
 {
-    GrassInfo GrassInfos[MAX_GRASS_INFOS];
+    VegetationAlbedo : [MAX_VEGETATION_LAYERS / 4]i32x4;
+    VegetationNormal : [MAX_VEGETATION_LAYERS / 4]i32x4;
+    VegetationMaterial : [MAX_VEGETATION_LAYERS / 4]i32x4;
+    VegetationMasks: [MAX_VEGETATION_LAYERS / 4]i32x4;
 };
 
-const int MAX_VEGETATION_LAYERS = 8;
-group(SYSTEM_GROUP) constant VegetationMaterialUniforms[string Visibility = "CS|PS";]
+@Visibility("CS|PS")
+group(SYSTEM_GROUP) uniform VegetationMaterialUniforms : *VegetationMaterial;
+
+sampleAlbedo(index: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
-    ivec4 VegetationAlbedo[MAX_VEGETATION_LAYERS / 4];
-    ivec4 VegetationNormal[MAX_VEGETATION_LAYERS / 4];
-    ivec4 VegetationMaterial[MAX_VEGETATION_LAYERS / 4];
-    ivec4 VegetationMasks[MAX_VEGETATION_LAYERS / 4];
-};
+    return textureSample(Textures2D[VegetationMaterialUniforms.VegetationAlbedo[index / 4][index % 4]], samp, uv);
+}
 
-#define sampleAlbedo(index, sampler, uv)                    sample2D(VegetationAlbedo[index / 4][index % 4], sampler, uv)
-#define sampleNormal(index, sampler, uv)                    sample2D(VegetationNormal[index / 4][index % 4], sampler, uv)
-#define sampleMaterial(index, sampler, uv)                  sample2D(VegetationMaterial[index / 4][index % 4], sampler, uv)
-#define sampleMask(type, sampler, uv)					    sample2DLod(VegetationMasks[type / 4][type % 4], sampler, uv, 0)
-
-group(SYSTEM_GROUP) rw_buffer		IndirectGrassDrawBuffer [ string Visibility = "CS"; ]
+sampleNormal(index: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
-    DrawIndexedCommand GrassDraw;
-};
+    return textureSample(Textures2D[VegetationMaterialUniforms.VegetationNormal[index / 4][index % 4]], samp, uv);
+}
 
-group(SYSTEM_GROUP) rw_buffer		IndirectMeshDrawBuffer [ string Visibility = "CS"; ]
+sampleMaterial(index: u32, uniform samp: *sampler, uv: f32x2) f32x4
 {
-    DrawIndexedCommand MeshDraws[];
-};
+    return textureSample(Textures2D[VegetationMaterialUniforms.VegetationMaterial[index / 4][index % 4]], samp, uv);
+}
+
+sampleMask(type: u32, uniform samp: *sampler, uv: f32x2) f32x4
+{
+    return textureSampleLod(Textures2D[VegetationMaterialUniforms.VegetationMasks[type / 4][type % 4]], samp, uv, 0);
+}
+
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform IndirectGrassDrawBuffer : *mutable DrawIndexedCommand;
+
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform IndirectMeshDrawBuffer : []* mutable DrawIndexedCommand;
 
 struct InstanceUniforms
 {
-    vec3 position;
-    uint textureIndex;
-    vec2 sincos;
-    float random;   // use for wind sway
-    bool lodIsBillboard;
-#if LOD_DEBUG
-    uint lod;
-#endif
+    position : f32x3;
+    textureIndex : u32;
+    sincos : f32x2;
+    random : f32;   // use for wind sway
+    lodIsBillboard : b8;
+    lodDebug : u32;
 };
 
-group(BATCH_GROUP) rw_buffer       InstanceGrassArguments [ string Visibility = "CS|VS"; ]
+struct InstanceUniformArray
 {
-    InstanceUniforms InstanceGrassUniforms[];
+    uniforms: []InstanceUniforms;
 };
 
-group(BATCH_GROUP) rw_buffer       InstanceMeshArguments [ string Visibility = "CS|VS"; ]
+@Visibility("CS|VS")
+group(BATCH_GROUP) uniform InstanceGrassArguments : *mutable InstanceUniformArray;
+
+@Visibility("CS|VS")
+group(BATCH_GROUP) uniform InstanceMeshArguments : *mutable InstanceUniformArray;
+
+struct DrawCountData
 {
-    InstanceUniforms InstanceMeshUniforms[];
+    NumMeshDraws : [MAX_MESH_INFOS/4]u32x4;
+    NumGrassDraws : u32;
 };
 
-group(SYSTEM_GROUP) rw_buffer       DrawCount [ string Visibility = "CS"; ]
-{
-    uvec4 NumMeshDraws[MAX_MESH_INFOS / 4];
-    uint NumGrassDraws;
-};
+@Visibility("CS")
+group(SYSTEM_GROUP) uniform DrawCount : *mutable DrawCountData;
 
 group(SYSTEM_GROUP) sampler_state TextureSampler
 {
-    Filter = Linear;
+    Filter = FilterMode.Linear;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-vec3
-CalculateNormalFromHeight(vec2 pixel, ivec3 offset, vec2 scale)
+CalculateNormalFromHeight(pixel : f32x2, offset : i32x3, scale : f32x2) f32x3
 {
-    float hl = sample2DLod(HeightMap, TextureSampler, (pixel + offset.xz) * scale, 0).r;
-    float hr = sample2DLod(HeightMap, TextureSampler, (pixel + offset.yz) * scale, 0).r;
-    float ht = sample2DLod(HeightMap, TextureSampler, (pixel + offset.zx) * scale, 0).r;
-    float hb = sample2DLod(HeightMap, TextureSampler, (pixel + offset.zy) * scale, 0).r;
-    vec3 normal = vec3(0, 0, 0);
+    const hl = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.xz) * scale, 0).r;
+    const hr = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.yz) * scale, 0).r;
+    const ht = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.zx) * scale, 0).r;
+    const hb = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, (pixel + offset.zy) * scale, 0).r;
+    var normal = f32x3(0, 0, 0);
     normal.x = (hl - hr);
     normal.y = 2.0f;
     normal.z = (ht - hb);
-    normal *= vec3((MaxHeight - MinHeight), 1, (MaxHeight - MinHeight));
-    normal += vec3(MinHeight, 0, MinHeight);
+    normal *= f32x3((VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight), 1, (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight));
+    normal += f32x3(VegetationGenerateUniforms.MinHeight, 0, VegetationGenerateUniforms.MinHeight);
     normal = normalize(normal);
     return normal;
 }
@@ -155,31 +170,29 @@ CalculateNormalFromHeight(vec2 pixel, ivec3 offset, vec2 scale)
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 1
-shader
-void
-csClearDraws()
+threads_x(1)
+entry_point
+csClearDraws() void
 {
-    NumGrassDraws = 0;
-    for (uint i = 0; i < MAX_MESH_INFOS; i++)
-        NumMeshDraws[i] = uvec4(0,0,0,0);
+    DrawCount.NumGrassDraws = 0u;
+    for (var i = 0u; i < MAX_MESH_INFOS; i++)
+        DrawCount.NumMeshDraws[i] = u32x4(0,0,0,0);
 
-    DrawIndexedCommand command;
-    command.indexCount = 6 * NumGrassBlades;
-    command.instanceCount = 0;
-    command.startIndex = 0;
-    command.offsetVertex = 0;
-    command.startInstance = 0;
-    GrassDraw = command;
+    var command : DrawIndexedCommand;
+    command.indexCount = 6u * VegetationGenerateUniforms.NumGrassBlades;
+    command.instanceCount = 0u;
+    command.startIndex = 0u;
+    command.offsetVertex = 0u;
+    command.startInstance = 0u;
+    bufferStore(IndirectGrassDrawBuffer, command);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-vec2
-SnapToGrid(vec2 worldPos, vec2 gridSize)
+SnapToGrid(worldPos : f32x2, gridSize : f32x2) f32x2
 {
-    vec2 fractionalPart = fmod(worldPos, gridSize);
+    const fractionalPart = worldPos % gridSize;
     return worldPos - fractionalPart;
 }
 
@@ -187,106 +200,105 @@ SnapToGrid(vec2 worldPos, vec2 gridSize)
 /**
     This shader outputs the draws to be consumed later
 */
-[local_size_x] = 64
-shader
-void
-csGenerateDraws()
+threads_x(64)
+entry_point
+csGenerateDraws() void
 {
-    vec2 cameraPos = CameraPosition.xz;
-    vec2 cameraQuad = GenerateQuadSize;
+    const cameraPos = VegetationGenerateUniforms.CameraPosition.xz;
+    const cameraQuad = VegetationGenerateUniforms.GenerateQuadSize;
 
-    float scaleFactor = DensityFactor;
+    const scaleFactor = VegetationGenerateUniforms.DensityFactor;
     // calculate this fragments position around the camera
-    vec2 worldPos = cameraPos - cameraQuad * 0.5f * scaleFactor + gl_GlobalInvocationID.xy * scaleFactor;
-    //vec2 worldPos = cameraPos - sin(gl_GlobalInvocationID.x)
+    var worldPos = cameraPos - cameraQuad * 0.5f * scaleFactor + computeGetGlobalThreadIndices().xy * scaleFactor;
+    //vec2 worldPos = cameraPos - sin(computeGetGlobalThreadIndices().x)
 
     // clamp world position to world grid so we don't move the patches with the camera
     //worldPos = floor(worldPos);
-    worldPos = SnapToGrid(worldPos, vec2(scaleFactor));
+    worldPos = SnapToGrid(worldPos, f32x2(scaleFactor));
 
     // add some random offset to each patch to avoid a perfect grid pattern
-    float random = hash12(worldPos);
-    vec2 randomOffset = vec2(sin(random * 3.14), cos(random * 3.14));
+    const random = hash12(worldPos);
+    const randomOffset = f32x2(sin(random * 3.14), cos(random * 3.14));
     worldPos += randomOffset;
 
     // calculate texture sampling position for masks and such
-    vec2 samplePos = (WorldSize * 0.5f + worldPos) * InvWorldSize;
-    float dist = dot(cameraPos - worldPos, cameraPos - worldPos);
+    const samplePos = (VegetationGenerateUniforms.WorldSize * 0.5f + worldPos) * VegetationGenerateUniforms.InvWorldSize;
+    const dist = dot(cameraPos - worldPos, cameraPos - worldPos);
 
     // cut-off circle
-    if (dist < MaxRange)
+    if (dist < VegetationGenerateUniforms.MaxRange)
     {
         // load height map
-        float height = sample2DLod(HeightMap, TextureSampler, samplePos, 0).r;
-        height = MinHeight + height * (MaxHeight - MinHeight);
+        var height = textureSampleLod(Textures2D[VegetationGenerateUniforms.HeightMap], TextureSampler, samplePos, 0).r;
+        height = VegetationGenerateUniforms.MinHeight + height * (VegetationGenerateUniforms.MaxHeight - VegetationGenerateUniforms.MinHeight);
 
-        vec3 pos = vec3(worldPos.x, height, worldPos.y);
-        vec3 cameraToPos = CameraPosition.xyz - pos;
-        float angle = dot(normalize(cameraToPos), CameraForward.xyz);
+        const pos = f32x3(worldPos.x, height, worldPos.y);
+        const cameraToPos = VegetationGenerateUniforms.CameraPosition.xyz - pos;
+        const angle = dot(normalize(cameraToPos), VegetationGenerateUniforms.CameraForward.xyz);
 
-        if (angle < Fov)
+        if (angle < VegetationGenerateUniforms.Fov)
             return;
 
-        vec2 pixel = samplePos * HeightMapSize;
-        vec2 invHeightMapSize = 1.0f / HeightMapSize;
+        const pixel = samplePos * VegetationGenerateUniforms.HeightMapSize;
+        const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
 
-        ivec3 offset = ivec3(-1, 1, 0.0f);
-        vec3 normal = CalculateNormalFromHeight(pixel, offset, invHeightMapSize);
+        const offset = i32x3(-1, 1, 0);
+        const normal = CalculateNormalFromHeight(pixel, offset, invHeightMapSize);
 
         // go through grass types and generate uniforms
-        uint textureIndex = 0;
-        for (int i = 0; i < NumGrassTypes; i++)
+        const textureIndex = 0u;
+        for (var i = 0; i < VegetationGenerateUniforms.NumGrassTypes; i++)
         {
-            GrassInfo grassInfo = GrassInfos[i];
+            const grassInfo = *GrassInfos[i];
 
             if (!grassInfo.used)
                 continue;
 
-            float mask = sampleMask(i, PointSampler, samplePos).r;
+            const mask = sampleMask(i, PointSampler, samplePos).r;
 
             // calculate rules
-            bool heightCutoff = height < grassInfo.heightThreshold;
-            bool angleCutoff = dot(normal, vec3(0, 1, 0)) > grassInfo.slopeThreshold;
+            const heightCutoff = height < grassInfo.heightThreshold;
+            const angleCutoff = dot(normal, f32x3(0, 1, 0)) > grassInfo.slopeThreshold;
 
             if ((random > grassInfo.distribution)
                 && heightCutoff 
                 && angleCutoff)
             {
-                uint entry = atomicAdd(NumGrassDraws, 1);
+                const entry = atomicAdd(&DrawCount.NumGrassDraws, 1u, MemorySemantics.Release);
 
-                InstanceUniforms instanceUniform;
+                var instanceUniform : InstanceUniforms;
                 instanceUniform.position.xz = worldPos;
                 instanceUniform.position.y = height;
                 instanceUniform.random = random;
                 instanceUniform.sincos.x = randomOffset.x;
                 instanceUniform.sincos.y = randomOffset.y;
                 instanceUniform.textureIndex = textureIndex;
-#if LOD_DEBUG
-                instanceUniform.lod = 0;
-#endif
-                InstanceGrassUniforms[entry] = instanceUniform;
 
-                atomicAdd(GrassDraw.instanceCount, 1);
+                instanceUniform.lodDebug = 0u;
+
+                InstanceGrassArguments.uniforms[entry] = instanceUniform;
+
+                atomicAdd(&IndirectGrassDrawBuffer.instanceCount, 1u, MemorySemantics.Release);
             }
 
             textureIndex++;
         }
 
         // go through mesh types and generate uniforms and draws
-        for (int i = 0; i < NumMeshTypes; i++)
+        for (var i = 0; i < VegetationGenerateUniforms.NumMeshTypes; i++)
         {
-            MeshInfo meshInfo = MeshInfos[i];
+            const meshInfo = *MeshInfos[i];
 
             if (!meshInfo.used)
                 continue;
 
             // calculate rules
-            bool heightCutoff = height < meshInfo.heightThreshold;
-            bool angleCutoff = dot(normal, vec3(0, 1, 0)) > meshInfo.slopeThreshold;
+            const heightCutoff = height < meshInfo.heightThreshold;
+            const angleCutoff = dot(normal, f32x3(0, 1, 0)) > meshInfo.slopeThreshold;
 
-            float mask = sampleMask(i, PointSampler, samplePos).r;
-            int lod = meshInfo.numLods - 1;
-            for (int j = 0; j < meshInfo.numLods; j++)
+            const mask = sampleMask(i, PointSampler, samplePos).r;
+            const lod = meshInfo.numLods - 1;
+            for (var j = 0; j < meshInfo.numLods; j++)
             {
                 if (meshInfo.lodDistances[j] > dot(cameraToPos, cameraToPos))
                 {
@@ -297,9 +309,9 @@ csGenerateDraws()
 
             if (random > meshInfo.distribution && heightCutoff && angleCutoff)
             {
-                uint entry = atomicAdd(NumMeshDraws[i / 4][i % 4], 1);
+                const entry = atomicAdd(&DrawCount.NumMeshDraws[i / 4][i % 4], 1u, MemorySemantics.Release);
 
-                InstanceUniforms instanceUniform;
+                var instanceUniform : InstanceUniforms;
                 instanceUniform.position.xz = worldPos;
                 instanceUniform.position.y = height;
                 instanceUniform.random = random;
@@ -307,12 +319,12 @@ csGenerateDraws()
                 instanceUniform.sincos.y = randomOffset.y;
                 instanceUniform.textureIndex = textureIndex;
                 instanceUniform.lodIsBillboard = false;// lod == (meshInfo.numLods - 1);
-#if LOD_DEBUG
-                instanceUniform.lod = lod;
-#endif
+
+                instanceUniform.lodDebug = lod;
+
                 InstanceMeshUniforms[entry] = instanceUniform;
 
-                DrawIndexedCommand command;
+                var command : DrawIndexedCommand;
                 command.indexCount = meshInfo.lodIndexCount[lod];
                 command.instanceCount = 1;
                 command.startIndex = meshInfo.lodIndexOffsets[lod];
@@ -329,22 +341,21 @@ csGenerateDraws()
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsDrawGrass(
-    [slot=0] in vec3 position
-    , [slot=1] in vec3 normal
-    , [slot=2] in vec2 uv
-    , out vec3 Normal
-    , out vec3 Tangent
-    , out vec2 UV
-    , out flat uint InstanceTexture
-    , out vec3 WorldSpacePos
-    )
+    binding(0) in position : f32x3
+    , binding(1) in normal : f32x3
+    , binding(2) in uv : f32x2
+    , out Normal : f32x3
+    , out Tangent : f32x3
+    , out UV : f32x2
+    , out InstanceTexture : u32
+    , out WorldSpacePos : f32x3
+) void
 {
-    InstanceUniforms instanceUniforms = InstanceGrassUniforms[gl_InstanceIndex];
-    float windWeight = position.y * instanceUniforms.random;
-    vec3 displacement = vec3(sin(windWeight * Time_Random_Luminance_X.x), 0, cos(windWeight * Time_Random_Luminance_X.x));
+    const instanceUniforms = InstanceGrassArguments[vertexGetInstanceIndex()];
+    const windWeight = position.y * instanceUniforms.random;
+    const displacement = f32x3(sin(windWeight * Time_Random_Luminance_X.x), 0, cos(windWeight * Time_Random_Luminance_X.x));
 
     UV = uv;
     Normal = normal;
@@ -361,17 +372,16 @@ vsDrawGrass(
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 psDrawGrassZ(
-    in vec3 normal
-    , in vec3 tangent
-    , in vec2 uv
-    , in flat uint instanceTexture
-    , in vec3 worldSpacePos
-)
+    in normal : f32x3
+    , in tangent : f32x3
+    , in uv : f32x2
+    , in instanceTexture : u32
+    , in worldSpacePos : f32x3
+) void
 {
-    vec4 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
+    const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
 
     if (albedo.a < 0.5f) // alpha cut-off
         discard;
@@ -380,66 +390,62 @@ psDrawGrassZ(
 //------------------------------------------------------------------------------
 /**
 */
-[early_depth]
-shader
-void
+early_depth
+entry_point
 psDrawGrass(
-    in vec3 normal
-    , in vec3 tangent
-    , in vec2 uv
-    , in flat uint instanceTexture
-    , in vec3 worldSpacePos
-    , [color0] out vec4 Color
-)
+    in normal : f32x3
+    , in tangent : f32x3
+    , in uv : f32x2
+    , in instanceTexture : u32
+    , in worldSpacePos : f32x3
+) void
 {
-    vec3 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;
+    const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;
     
-    vec3 geometryNormal = normal;
+   var geometryNormal = normal;
 
     // flip normal if other side
     if (!gl_FrontFacing)
         geometryNormal *= -1.0f;
 
-    vec3 binormal = cross(geometryNormal, tangent);
-    mat3 tbn = mat3(tangent, binormal, geometryNormal);
-    vec4 normalSample = sampleNormal(instanceTexture, TextureSampler, uv);
+    const binormal = cross(geometryNormal, tangent);
+    const tbn = f32x3x3(tangent, binormal, geometryNormal);
+    const normalSample = sampleNormal(instanceTexture, TextureSampler, uv);
 
     geometryNormal.xy = (normalSample.ag * 2.0f) - 1.0f;
     geometryNormal.z = saturate(sqrt(1.0f - dot(geometryNormal.xy, geometryNormal.xy)));
     geometryNormal = tbn * geometryNormal;
 
-    vec4 material = sampleMaterial(instanceTexture, TextureSampler, uv);
-    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
+    const material = sampleMaterial(instanceTexture, TextureSampler, uv);
+    const light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
 
-    //Color = vec4(debugCoord.xy, 0, 1);
-    Color = vec4(light.rgb, 1);
+    pixelExportColor(f32x4(light.rgb, 1), 0);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsDrawMeshVColor(
-    [slot = 0] in vec3 position
-    , [slot = 1] in vec3 normal
-    , [slot = 2] in vec2 uv
-    , [slot = 3] in vec3 tangent
-    , [slot = 5] in vec4 color
-    , out vec3 Normal
-    , out vec3 Tangent
-    , out vec2 UV
-    , out flat uint InstanceTexture
-    , out vec3 WorldSpacePos
-)
+    binding(0) in position : f32x3
+    , binding(1) in normal : f32x3
+    , binding(2) in uv : f32x2
+    , binding(3) in tangent : f32x3
+    , binding(5) in color : f32x4
+    , out Normal : f32x3
+    , out Tangent : f32x3
+    , out UV : f32x2
+    , out InstanceTexture : u32
+    , out WorldSpacePos : f32x3
+) void
 {
-    InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceIndex];
-    vec3 displacement = vec3(sin(color.r * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * Time_Random_Luminance_X.x * instanceUniforms.random));
-    mat3 rotation = mat3(
+    const instanceUniforms = InstanceMeshUniforms[vertexGetInstanceIndex()];
+    const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * Time_Random_Luminance_X.x * instanceUniforms.random));
+    const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    vec3 rotatedPos = rotation * (position + displacement * 0.1f);
+    const rotatedPos = rotation * (position + displacement * 0.1f);
     
 
     UV = uv;
@@ -450,38 +456,35 @@ vsDrawMeshVColor(
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
 
     if (!instanceUniforms.lodIsBillboard)
-        gl_Position = Projection * View * vec4(WorldSpacePos, 1);
+        vertexExportCoordinate(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
     else
-        gl_Position = Projection * vec4(WorldSpacePos, 1);
+        vertexExportCoordinate(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsDrawMesh(
-    [slot = 0] in vec3 position
-    , [slot = 2] in vec2 uv
-    , [slot = 1] in vec3 normal
-    , [slot = 3] in vec3 tangent
-    , out vec3 Normal
-    , out vec3 Tangent
-    , out vec2 UV
-    , out flat uint InstanceTexture
-    , out vec3 WorldSpacePos
-#ifdef LOD_DEBUG
-    , out flat uint Lod
-#endif
-    )
+    binding(0) in position : f32x3
+    , binding(2) in uv : f32x2
+    , binding(1) in normal : f32x3
+    , binding(3) in tangent : f32x3
+    , out Normal : f32x3
+    , out Tangent : f32x3
+    , out UV : f32x2
+    , out InstanceTexture : u32
+    , out WorldSpacePos : f32x3
+    , out Lod : u32
+) void
 {
-    InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceIndex];
-    vec3 displacement = vec3(sin(position.y * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * Time_Random_Luminance_X.x * instanceUniforms.random));
-    mat3 rotation = mat3(
+    const instanceUniforms = InstanceMeshUniforms[gl_InstanceIndex];
+    const displacement = f32x3(sin(position.y * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
+    const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
         -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
-    vec3 rotatedPos = rotation * (position + displacement * 0.1f);
+    const rotatedPos = rotation * (position + displacement * 0.1f);
 
 
     UV = uv;
@@ -491,29 +494,26 @@ vsDrawMesh(
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.025f;
 
-#ifdef LOD_DEBUG
-    Lod = instanceUniforms.lod;
-#endif
+    Lod = instanceUniforms.lodDebug;
     if (!instanceUniforms.lodIsBillboard)
-        gl_Position = Projection * View * vec4(WorldSpacePos, 1);
+        vertexExportCoordinate(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
     else
-        gl_Position = Projection * vec4(WorldSpacePos, 1);
+        vertexExportCoordinate(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 psDrawMeshZ(
-    in vec3 normal
-    , in vec3 tangent
-    , in vec2 uv
-    , in flat uint instanceTexture
-    , in vec3 worldSpacePos
-)
+    in normal : f32x3
+    , in tangent : f32x3
+    , in uv : f32x2
+    , in instanceTexture : u32
+    , in worldSpacePos : f32x3
+) void
 {
-    vec4 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
+    const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
 
     if (albedo.a < 0.5f) // alpha cut-off
         discard;
@@ -522,54 +522,49 @@ psDrawMeshZ(
 //------------------------------------------------------------------------------
 /**
 */
-[early_depth]
-shader
-void
+early_depth
+entry_point
 psDrawMesh(
-    in vec3 normal
-    , in vec3 tangent
-    , in vec2 uv
-    , in flat uint instanceTexture
-    , in vec3 worldSpacePos
-#ifdef LOD_DEBUG
-    , in flat uint lod
-#endif
-    , [color0] out vec4 Color)
+    in normal : f32x3
+    , in tangent : f32x3
+    , in uv : f32x2
+    , in no_perspective instanceTexture : u32
+    , in worldSpacePos : f32x3
+    , in no_perspective lod : u32
+) void
 {
-    vec3 albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;
+    const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;
     
-    vec3 geometryNormal = normal;
+    var geometryNormal = normal;
 
-#ifdef LOD_DEBUG
-    vec4 colors[] =
+    /*
+    const debugColors[] =
     {
-        vec4(1,0,0,0)
-        , vec4(0, 1, 0, 0)
-        , vec4(0, 0, 1, 0)
-        , vec4(1, 1, 0, 0)
-        , vec4(0, 1, 1, 0)
-        , vec4(1, 0, 1, 0)
+        f32x4(1,0,0,0)
+        , f32x4(0, 1, 0, 0)
+        , f32x4(0, 0, 1, 0)
+        , f32x4(1, 1, 0, 0)
+        , f32x4(0, 1, 1, 0)
+        , f32x4(1, 0, 1, 0)
     };
-    Color = colors[lod % 6];
-    return;
-#endif
+    */
 
     // flip normal if other side
     if (!gl_FrontFacing)
         geometryNormal *= -1.0f;
 
-    vec3 binormal = cross(geometryNormal, tangent);
-    mat3 tbn = mat3(tangent, binormal, geometryNormal);
-    vec4 normalSample = sampleNormal(instanceTexture, TextureSampler, uv);
+    const binormal = cross(geometryNormal, tangent);
+    const tbn = f32x3x3(tangent, binormal, geometryNormal);
+    const normalSample = sampleNormal(instanceTexture, TextureSampler, uv);
 
     geometryNormal.xy = (normalSample.ag * 2.0f) - 1.0f;
     geometryNormal.z = saturate(sqrt(1.0f - dot(geometryNormal.xy, geometryNormal.xy)));
     geometryNormal = tbn * geometryNormal;
 
-    vec4 material = sampleMaterial(instanceTexture, TextureSampler, uv);
+    const material = sampleMaterial(instanceTexture, TextureSampler, uv);
 
     //vec3 light = vec3(0, 0, 0); 
-    vec3 light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
+    const light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
     /*
     vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);  
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
@@ -586,7 +581,7 @@ psDrawMesh(
     */
 
     //Color = vec4(debugCoord.xy, 0, 1);
-    Color = vec4(light.rgb, 1);
+    pixelExportColor(f32x4(light.rgb, 1), 0);
 }
 
 
@@ -603,43 +598,86 @@ render_state GrassState
 
 
     */
-    CullMode = None;
-    DepthWrite = false;
-    DepthFunc = Equal;
+    Cull = CullFace.None;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Equal;
 };
 
 render_state GrassZState
 {
-    CullMode = None;
-    DepthFunc = Less;
+    Cull = CullFace.None;
+    DepthTestFunction = CompareMode.Less;
 };
 
 render_state MeshState
 {
-    CullMode = None;
-    DepthWrite = false;
-    DepthFunc = Equal;
+    Cull = CullFace.None;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Equal;
 };
 
 render_state MeshZState
 {
-    CullMode = None;
-    DepthFunc = Less;
+    Cull = CullFace.None;
+    DepthTestFunction = CompareMode.Less;
 };
 
-
-SimpleTechnique(VegetationMeshDrawVColorZ, "VegetationMeshDrawVColorZ", vsDrawMeshVColor(), psDrawMeshZ(), MeshZState);
-SimpleTechnique(VegetationMeshDrawVColor, "VegetationMeshDrawVColor", vsDrawMeshVColor(), psDrawMesh(), MeshState);
-SimpleTechnique(VegetationMeshDrawZ, "VegetationMeshDrawZ", vsDrawMesh(), psDrawMeshZ(), MeshZState);
-SimpleTechnique(VegetationMeshDraw, "VegetationMeshDraw", vsDrawMesh(), psDrawMesh(), MeshState);
-
-SimpleTechnique(VegetationGrassDrawZ, "VegetationGrassDrawZ", vsDrawGrass(), psDrawGrassZ(), GrassZState);
-SimpleTechnique(VegetationGrassDraw, "VegetationGrassDraw", vsDrawGrass(), psDrawGrass(), GrassState);
-program VegetationClear[ string Mask = "VegetationClear"; ]
+@Mask("VegetationMeshDrawVColorZ")
+program VegetationMeshDrawVColorZ
 {
-    ComputeShader = csClearDraws();
+    VertexShader = vsDrawMeshVColor;
+    PixelShader = psDrawMeshZ;
+    RenderState = MeshZState;
 };
-program VegetationGenerateDraws [ string Mask = "VegetationGenerateDraws"; ]
+
+@Mask("VegetationMeshDrawVColor")
+program VegetationMeshDrawVColor
 {
-    ComputeShader = csGenerateDraws();
+    VertexShader = vsDrawMeshVColor;
+    PixelShader = psDrawMesh;
+    RenderState = MeshState;
+};
+
+@Mask("VegetationMeshDrawZ")
+program VegetationMeshDrawZ
+{
+    VertexShader = vsDrawMesh;
+    PixelShader = psDrawMeshZ;
+    RenderState = MeshZState;
+};
+
+@Mask("VegetationMeshDraw")
+program VegetationMeshDraw
+{
+    VertexShader = vsDrawMesh;
+    PixelShader = psDrawMesh;
+    RenderState = MeshState;
+};
+
+@Mask("VegetationGrassDrawZ")
+program VegetationGrassDrawZ
+{
+    VertexShader = vsDrawGrass;
+    PixelShader = psDrawGrassZ;
+    RenderState = GrassZState;
+};
+
+@Mask("VegetationGrassDraw")
+program VegetationGrassDraw
+{
+    VertexShader = vsDrawGrass;
+    PixelShader = psDrawGrass;
+    RenderState = GrassState;
+};
+
+@Mask("VegetationClear")
+program VegetationClear
+{
+    ComputeShader = csClearDraws;
+};
+
+@Mask("VegetationGenerateDraws")
+program VegetationGenerateDraws
+{
+    ComputeShader = csGenerateDraws;
 };

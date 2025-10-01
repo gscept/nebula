@@ -1,72 +1,77 @@
 //------------------------------------------------------------------------------
-//  text.fx
+//  text.gpul
 //
 //  Basic text shader
 //
-//  (C) 2013 Individual contributors, see AUTHORS file
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "lib/std.fxh"
-#include "lib/techniques.fxh"
-#include "lib/shared.fxh"
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
 
-group(BATCH_GROUP) texture2D Texture;
+group(BATCH_GROUP) uniform Texture: *texture2D;
 
 /// Declaring used textures
-group(BATCH_GROUP) push constant Text
+struct TextData
 {
-    mat4 TextProjectionModel;
+    TextProjectionModel : f32x4x4;
 };
+group(BATCH_GROUP) inline Text : *TextData;
 
 group(BATCH_GROUP) sampler_state TextureSampler
 {
-    Filter = Linear;
+    Filter = FilterMode.Linear;
 };
 
 render_state TextState
 {
     BlendEnabled[0] = true;
-    SrcBlend[0] = SrcAlpha;
-    DstBlend[0] = OneMinusSrcAlpha;
-    DepthWrite = false;
-    DepthEnabled = false;
-    CullMode = None;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = false;
+    Cull = CullFace.None;
     ScissorEnabled = true;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 vsMain(
-    [slot=0] in vec2 position,
-    [slot=1] in vec2 uv,
-    [slot=2] in vec4 color,
-    out vec2 UV,
-    out vec4 Color) 
+    binding(0) in position : f32x2,
+    binding(1) in uv : f32x2,
+    binding(2) in color : f32x4,
+    out UV : f32x2,
+    out Color : f32x4
+) void
 {
-    vec4 pos = vec4(position, 0, 1);    
-    gl_Position = Text.TextProjectionModel * pos;
+    const pos = f32x4(position, 0, 1);    
     Color = color;
     UV = uv;
+    vertexExportCoordinates(Text.TextProjectionModel * pos);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-shader
-void
+entry_point
 psMain(
-    in vec2 UV,
-    in vec4 Color,
-    [color0] out vec4 FinalColor) 
+    in UV : f32x2,
+    in Color : f32x4
+) void
 {
-    vec4 texColor = texture(sampler2D(Texture, TextureSampler), UV).rrrr;
-    FinalColor = texColor * Color;
+    const texColor = textureSample(Texture, TextureSampler, UV).rrrr;
+    pixelExportColor(texColor * Color, 0);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(Default, "Static", vsMain(), psMain(), TextState);
+@Mask("Static")
+program Default
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = TextState;
+};
