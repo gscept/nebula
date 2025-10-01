@@ -297,7 +297,7 @@ csGenerateDraws() void
             const angleCutoff = dot(normal, f32x3(0, 1, 0)) > meshInfo.slopeThreshold;
 
             const mask = sampleMask(i, PointSampler, samplePos).r;
-            const lod = meshInfo.numLods - 1;
+            var lod = meshInfo.numLods - 1;
             for (var j = 0; j < meshInfo.numLods; j++)
             {
                 if (meshInfo.lodDistances[j] > dot(cameraToPos, cameraToPos))
@@ -322,7 +322,7 @@ csGenerateDraws() void
 
                 instanceUniform.lodDebug = lod;
 
-                InstanceMeshUniforms[entry] = instanceUniform;
+                InstanceMeshArguments.uniforms[entry] = instanceUniform;
 
                 var command : DrawIndexedCommand;
                 command.indexCount = u32(meshInfo.lodIndexCount[lod]);
@@ -330,7 +330,7 @@ csGenerateDraws() void
                 command.startIndex = u32(meshInfo.lodIndexOffsets[lod]);
                 command.offsetVertex = u32(meshInfo.lodVertexOffsets[lod]);
                 command.startInstance = entry;  // pretend to use instancing
-                MeshDraws[entry + i * MAX_MESH_INFOS] = command;
+                bufferStore(IndirectMeshDrawBuffer[entry + i * MAX_MESH_INFOS], command);
             }
 
             textureIndex++;
@@ -353,20 +353,20 @@ vsDrawGrass(
     , out WorldSpacePos : f32x3
 ) void
 {
-    const instanceUniforms = InstanceGrassArguments[vertexGetInstanceIndex()];
+    const instanceUniforms = InstanceGrassArguments.uniforms[vertexGetInstanceIndex()];
     const windWeight = position.y * instanceUniforms.random;
-    const displacement = f32x3(sin(windWeight * Time_Random_Luminance_X.x), 0, cos(windWeight * Time_Random_Luminance_X.x));
+    const displacement = f32x3(sin(windWeight * ViewConstants.Time_Random_Luminance_X.x), 0, cos(windWeight * ViewConstants.Time_Random_Luminance_X.x));
 
     UV = uv;
     Normal = normal;
-    Tangent = normalize(vec3(position.x, 0.0f, position.z));
+    Tangent = normalize(f32x3(position.x, 0.0f, position.z));
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = position + instanceUniforms.position + displacement * 0.2f;
 
     if (!instanceUniforms.lodIsBillboard)
-        gl_Position = Projection * View * vec4(WorldSpacePos, 1);
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
     else
-        gl_Position = Projection * vec4(WorldSpacePos, 1);
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
@@ -405,7 +405,7 @@ psDrawGrass(
    var geometryNormal = normal;
 
     // flip normal if other side
-    if (!gl_FrontFacing)
+    if (!pixelGetFrontFacing())
         geometryNormal *= -1.0f;
 
     const binormal = cross(geometryNormal, tangent);
@@ -417,7 +417,7 @@ psDrawGrass(
     geometryNormal = tbn * geometryNormal;
 
     const material = sampleMaterial(instanceTexture, TextureSampler, uv);
-    const light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
+    const light = CalculateLight(worldSpacePos, pixelGetCoordinates().xyz, albedo, material, geometryNormal);
 
     pixelExportColor(f32x4(light.rgb, 1), 0);
 }
@@ -439,8 +439,8 @@ vsDrawMeshVColor(
     , out WorldSpacePos : f32x3
 ) void
 {
-    const instanceUniforms = InstanceMeshUniforms[vertexGetInstanceIndex()];
-    const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * Time_Random_Luminance_X.x * instanceUniforms.random));
+    const instanceUniforms = InstanceMeshArguments.uniforms[vertexGetInstanceIndex()];
+    const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
@@ -456,9 +456,9 @@ vsDrawMeshVColor(
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
 
     if (!instanceUniforms.lodIsBillboard)
-        vertexExportCoordinate(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
     else
-        vertexExportCoordinate(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
@@ -475,11 +475,11 @@ vsDrawMesh(
     , out UV : f32x2
     , out InstanceTexture : u32
     , out WorldSpacePos : f32x3
-    , out Lod : u32
+    , out Lod : i32
 ) void
 {
-    const instanceUniforms = InstanceMeshUniforms[vertexGetInstanceIndex()];
-    const displacement = f32x3(sin(position.y * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
+    const instanceUniforms = InstanceMeshArguments.uniforms[vertexGetInstanceIndex()];
+    const displacement = f32x3(sin(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,
@@ -496,9 +496,9 @@ vsDrawMesh(
 
     Lod = instanceUniforms.lodDebug;
     if (!instanceUniforms.lodIsBillboard)
-        vertexExportCoordinate(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
     else
-        vertexExportCoordinate(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+        vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
