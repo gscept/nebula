@@ -75,6 +75,11 @@ sample2DArrayShadow(handle : u32, uniform samp : *sampler, uv : f32x2, index : f
     return textureSampleCompare(Textures2DArray[handle], samp, f32x3(uv, index), depth);
 }
 
+sample2DArrayShadowLod(handle : u32, uniform samp : *sampler, uv : f32x2, index : f32, depth : f32, lod : f32) f32
+{
+    return textureSampleLodCompare(Textures2DArray[handle], samp, f32x3(uv, index), lod, depth);
+}
+
 fetch2D(handle : u32, uv : u32x2, lod : u32) f32x4
 {
     return textureFetch(Textures2D[handle], uv, lod);

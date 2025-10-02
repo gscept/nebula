@@ -530,7 +530,7 @@ psDrawMesh(
     , in uv : f32x2
     , in no_perspective instanceTexture : u32
     , in worldSpacePos : f32x3
-    , in no_perspective lod : u32
+    , in no_perspective lod : i32
 ) void
 {
     const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;
@@ -550,7 +550,7 @@ psDrawMesh(
     */
 
     // flip normal if other side
-    if (!gl_FrontFacing)
+    if (!pixelGetFrontFacing())
         geometryNormal *= -1.0f;
 
     const binormal = cross(geometryNormal, tangent);
@@ -564,18 +564,18 @@ psDrawMesh(
     const material = sampleMaterial(instanceTexture, TextureSampler, uv);
 
     //vec3 light = vec3(0, 0, 0); 
-    const light = CalculateLight(worldSpacePos, gl_FragCoord.xyz, albedo, material, geometryNormal);
+    const light = CalculateLight(worldSpacePos, pixelGetCoordinates().xyz, albedo, material, geometryNormal);
     /*
     vec3 viewVec = normalize(EyePos.xyz - worldSpacePos.xyz);  
     vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
     vec3 viewNormal = (View * vec4(geometryNormal.xyz, 0)).xyz;
 
-    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, viewSpacePos.z, InvZScale, InvZBias);
+    uint3 index3D = CalculateClusterIndex(pixelGetCoordinates().xy / BlockSize, viewSpacePos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
     vec3 light = vec3(0, 0, 0);
     light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, geometryNormal.xyz, worldSpacePos);
-    light += LocalLights(idx, albedo.rgb, material, F0, viewSpacePos, viewNormal, gl_FragCoord.z);
+    light += LocalLights(idx, albedo.rgb, material, F0, viewSpacePos, viewNormal, pixelGetCoordinates().z);
     //light += IBL(albedo, F0, normal, viewVec, material);
     light += albedo.rgb * material[MAT_EMISSIVE];
     */
@@ -583,7 +583,6 @@ psDrawMesh(
     //Color = vec4(debugCoord.xy, 0, 1);
     pixelExportColor(f32x4(light.rgb, 1), 0);
 }
-
 
 
 //------------------------------------------------------------------------------

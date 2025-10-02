@@ -31,8 +31,44 @@ CSMPS(
 	var cascadeFound = false;
 
     TexShadow = TexShadow / TexShadow.wwww;
-    const uvDdx = ddx(TexShadow.xy);
-    const uvDdy = ddy(TexShadow.xy);
+
+	var cascadeIndex : i32 = 0;
+	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)
+	{
+		texCoordShadow = mad(TexShadow, ShadowViewConstants.CascadeScale[cascadeIndex], ShadowViewConstants.CascadeOffset[cascadeIndex]);
+
+		if ( min( texCoordShadow.x, texCoordShadow.y ) >= 0.0f
+		  && max( texCoordShadow.x, texCoordShadow.y ) <= 1.0f )
+		{
+			cascadeFound = true;
+			break;
+		}
+	}
+
+	// if we have no matching cascade, return with a fully lit pixel
+	if (!cascadeFound)
+	{
+		return 1.0f;
+	}
+
+	// calculate texture coordinate in shadow space
+	const occlusion = PCFShadowArray(Texture, texCoordShadow.z, texCoordShadow.xy, cascadeIndex, PerTickParams.GlobalLightShadowMapSize.xy);
+	return occlusion;
+}
+
+//------------------------------------------------------------------------------
+/**
+	CSM shadow sampling entry point
+*/
+CSMCS(
+	  TexShadow : f32x4
+	, Texture : u32
+) f32
+{
+	var texCoordShadow = f32x4(0.0f);
+	var cascadeFound = false;
+
+    TexShadow = TexShadow / TexShadow.wwww;
 
 	var cascadeIndex : i32 = 0;
 	for(; cascadeIndex < NUM_CASCADES; ++cascadeIndex)

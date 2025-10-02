@@ -59,7 +59,11 @@ GetInvertedOcclusionSpotLight(
     const shadowUv = f32x3(lightSpaceUv, Index);
 
     // calculate average of 4 closest pixels
-    const shadowSample = sample2DArray(Texture, SpotlightTextureSampler, shadowUv).rg;
+    var shadowSample = f32x2(0.0f);
+    if (gplIsComputeShader)
+        shadowSample = sample2DArrayLod(Texture, SpotlightTextureSampler, shadowUv, 0).rg;
+    else
+        shadowSample = sample2DArray(Texture, SpotlightTextureSampler, shadowUv).rg;
 
     // get pixel size of shadow projection texture
     return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.000001f);

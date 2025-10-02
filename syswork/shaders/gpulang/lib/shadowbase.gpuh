@@ -445,7 +445,10 @@ PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : 
     {
         for (var j : i32 = -NumSamples; j < NumSamples; j++)
         {
-            totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx);
+			if (gplIsComputeShader)
+				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx, 0);
+			else
+				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx);
         }
     }
     totalShadow *= Weight;
