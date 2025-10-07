@@ -1260,7 +1260,7 @@ CreateShader(const GPULangShaderCreateInfo& info)
                 {
                     n_assert(variable->binding < 64);
                     reflectionInfo.uniformBuffersMask.Resize(Math::max(variable->group + 1, (uint)reflectionInfo.uniformBuffersMask.Size()), 0);
-                    reflectionInfo.uniformBuffersMask[variable->group] |= (1ull << (uint64)variable->binding);
+                    reflectionInfo.uniformBuffersMask[variable->group] |= (1ull << (uint64_t)(variable->binding));
                 }
 
                 reflectionInfo.uniformBuffers.Append(refl);

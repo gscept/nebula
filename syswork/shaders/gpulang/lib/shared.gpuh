@@ -9,9 +9,6 @@ const MAX_TEXTURES = 65535;
 const NUM_CASCADES = 4;
 const SHADOW_CASTER_COUNT = 16;
 
-const FLT_MAX = 3.40282347E+38f;
-const FLT_MIN = -3.40282347E+38f;
-
 group(TICK_GROUP) binding(0) uniform Textures1D : [MAX_TEXTURES]* texture1D;
 group(TICK_GROUP) binding(0) uniform Textures1DArray : [MAX_TEXTURES]* texture1DArray;
 group(TICK_GROUP) binding(0) uniform Textures2D : [MAX_TEXTURES]* texture2D;

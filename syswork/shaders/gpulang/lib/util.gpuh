@@ -246,10 +246,10 @@ unpack_2u16(value : u32) u32x2
     return u32x2(value & 0xFFFF, (value >> 16) & 0xFFFF);
 }
 
-const PI = 3.141592653589793238462643383279502884197169;
-const ONE_OVER_PI = 1.0f / PI;
-const PI_OVER_TWO = PI / 2.0f;
-const PI_OVER_FOUR = PI / 4.0f;
+no_reflect const PI = 3.141592653589793238462643383279502884197169;
+no_reflect const ONE_OVER_PI = 1.0f / PI;
+no_reflect const PI_OVER_TWO = PI / 2.0f;
+no_reflect const PI_OVER_FOUR = PI / 4.0f;
 
 //-------------------------------------------------------------------------------------------------------------
 /**

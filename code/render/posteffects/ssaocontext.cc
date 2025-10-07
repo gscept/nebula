@@ -183,7 +183,7 @@ SSAOContext::Setup()
     FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));
     FrameScript_default::RegisterSubgraph_HBAOX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAOTileWidth);
+        uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAO_TILE_WIDTH);
         uint numGroupsY2 = ssaoState.vars.height;
 
         // Compute AO in X
@@ -198,7 +198,7 @@ SSAOContext::Setup()
     FrameScript_default::RegisterSubgraph_HBAOY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX2 = ssaoState.vars.width;
-        uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAOTileWidth);
+        uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAO_TILE_WIDTH);
 
         // Compute AO in Y
         CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionHBAO);
@@ -211,7 +211,7 @@ SSAOContext::Setup()
 
     FrameScript_default::RegisterSubgraph_HBAOBlurX_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
-        uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAOTileWidth);
+        uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAO_TILE_WIDTH);
         uint numGroupsY2 = ssaoState.vars.height;
 
         // Compute AO in X
@@ -226,7 +226,7 @@ SSAOContext::Setup()
     FrameScript_default::RegisterSubgraph_HBAOBlurY_Compute([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
         uint numGroupsX2 = ssaoState.vars.width;
-        uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAOTileWidth);
+        uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAO_TILE_WIDTH);
 
         // Compute AO in X
         CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionBlur, false);
@@ -307,7 +307,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     hbaoParams.UVToViewA[1] = ssaoState.vars.uvToViewA.y;
     hbaoParams.UVToViewB[0] = ssaoState.vars.uvToViewB.x;
     hbaoParams.UVToViewB[1] = ssaoState.vars.uvToViewB.y;
-    uint64 hbaoOffset = CoreGraphics::SetConstants(hbaoParams);
+    uint64_t hbaoOffset = CoreGraphics::SetConstants(hbaoParams);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
