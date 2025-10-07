@@ -447,13 +447,13 @@ ShaderSetup(
 /**
 */
 CoreGraphics::SamplerFilter
-SamplerFilterFromGPULang(GPULang::Filter filter)
+SamplerFilterFromGPULang(GPULang::Serialization::Filter filter)
 {
     switch (filter)
     {
-        case GPULang::Filter::PointFilter:
+        case GPULang::Serialization::Filter::PointFilter:
             return CoreGraphics::SamplerFilter::NearestFilter;
-        case GPULang::Filter::LinearFilter:
+        case GPULang::Serialization::Filter::LinearFilter:
             return CoreGraphics::SamplerFilter::LinearFilter;
     }
     n_error("Invalid GPULang filter mode");
@@ -464,13 +464,13 @@ SamplerFilterFromGPULang(GPULang::Filter filter)
 /**
 */
 CoreGraphics::SamplerMipMode
-SamplerMipFilterFromGPULang(GPULang::Filter filter)
+SamplerMipFilterFromGPULang(GPULang::Serialization::Filter filter)
 {
     switch (filter)
     {
-        case GPULang::Filter::PointFilter:
+        case GPULang::Serialization::Filter::PointFilter:
             return CoreGraphics::SamplerMipMode::NearestMipMode;
-        case GPULang::Filter::LinearFilter:
+        case GPULang::Serialization::Filter::LinearFilter:
             return CoreGraphics::SamplerMipMode::LinearMipMode;
     }
     n_error("Invalid GPULang filter mode");
@@ -481,25 +481,25 @@ SamplerMipFilterFromGPULang(GPULang::Filter filter)
 /**
 */
 CoreGraphics::SamplerCompareOperation
-SamplerCompareOpFromGPULang(GPULang::CompareMode mode)
+SamplerCompareOpFromGPULang(GPULang::Serialization::CompareMode mode)
 {
     switch (mode)
     {
-        case GPULang::CompareMode::NeverCompare:
+        case GPULang::Serialization::CompareMode::NeverCompare:
             return CoreGraphics::SamplerCompareOperation::NeverCompare;
-        case GPULang::CompareMode::LessCompare:
+        case GPULang::Serialization::CompareMode::LessCompare:
             return CoreGraphics::SamplerCompareOperation::LessCompare;
-        case GPULang::CompareMode::EqualCompare:
+        case GPULang::Serialization::CompareMode::EqualCompare:
             return CoreGraphics::SamplerCompareOperation::EqualCompare;
-        case GPULang::CompareMode::LessEqualCompare:
+        case GPULang::Serialization::CompareMode::LessEqualCompare:
             return CoreGraphics::SamplerCompareOperation::LessOrEqualCompare;
-        case GPULang::CompareMode::GreaterCompare:
+        case GPULang::Serialization::CompareMode::GreaterCompare:
             return CoreGraphics::SamplerCompareOperation::GreaterCompare;
-        case GPULang::CompareMode::NotEqualCompare:
+        case GPULang::Serialization::CompareMode::NotEqualCompare:
             return CoreGraphics::SamplerCompareOperation::NotEqualCompare;
-        case GPULang::CompareMode::GreaterEqualCompare:
+        case GPULang::Serialization::CompareMode::GreaterEqualCompare:
             return CoreGraphics::SamplerCompareOperation::GreaterOrEqualCompare;
-        case GPULang::CompareMode::AlwaysCompare:
+        case GPULang::Serialization::CompareMode::AlwaysCompare:
             return CoreGraphics::SamplerCompareOperation::AlwaysCompare;
     }
     n_error("Invalid GPULang compare mode");
@@ -510,17 +510,17 @@ SamplerCompareOpFromGPULang(GPULang::CompareMode mode)
 /**
 */
 CoreGraphics::SamplerAddressMode
-SamplerAddressModeFromGPULang(GPULang::AddressMode address)
+SamplerAddressModeFromGPULang(GPULang::Serialization::AddressMode address)
 {
     switch (address)
     {
-        case GPULang::AddressMode::RepeatAddressMode:
+        case GPULang::Serialization::AddressMode::RepeatAddressMode:
             return CoreGraphics::SamplerAddressMode::RepeatAddressMode;
-        case GPULang::AddressMode::MirrorAddressMode:
+        case GPULang::Serialization::AddressMode::MirrorAddressMode:
             return CoreGraphics::SamplerAddressMode::MirroredRepeatAddressMode;
-        case GPULang::AddressMode::ClampAddressMode:
+        case GPULang::Serialization::AddressMode::ClampAddressMode:
             return CoreGraphics::SamplerAddressMode::ClampToEdgeAddressMode;
-        case GPULang::AddressMode::BorderAddressMode:
+        case GPULang::Serialization::AddressMode::BorderAddressMode:
             return CoreGraphics::SamplerAddressMode::ClampToBorderAddressMode;
     }
     n_error("Invalid GPULang address mode");
@@ -531,15 +531,15 @@ SamplerAddressModeFromGPULang(GPULang::AddressMode address)
 /**
 */
 CoreGraphics::SamplerBorderMode
-SamplerBorderModeFromGPULang(GPULang::BorderColor color)
+SamplerBorderModeFromGPULang(GPULang::Serialization::BorderColor color)
 {
     switch (color)
     {
-    case GPULang::BorderColor::TransparentBorder:
+    case GPULang::Serialization::BorderColor::TransparentBorder:
         return CoreGraphics::SamplerBorderMode::FloatTransparentBlackBorder;
-    case GPULang::BorderColor::BlackBorder:
+    case GPULang::Serialization::BorderColor::BlackBorder:
         return CoreGraphics::SamplerBorderMode::FloatOpaqueBlackBorder;
-    case GPULang::BorderColor::WhiteBorder:
+    case GPULang::Serialization::BorderColor::WhiteBorder:
         return CoreGraphics::SamplerBorderMode::FloatOpaqueWhiteBorder;
     }
     n_error("Invalid GPULang border color");
@@ -713,7 +713,7 @@ ShaderSetup(
             }
         }
 
-        if (variable->bindingType == GPULang::BindingType::Buffer)
+        if (variable->bindingType == GPULang::Serialization::BindingType::Buffer)
         {
             ResourceTableLayoutConstantBuffer cbo;
             cbo.slot = variable->binding;
@@ -748,7 +748,7 @@ ShaderSetup(
             rinfo.constantBuffers.Append(cbo);
             n_assert(variable->byteSize <= CoreGraphics::MaxConstantBufferSize);
         }
-        else if (variable->bindingType == GPULang::BindingType::Inline)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::Inline)
         {
             n_assert(variable->byteSize <= maxPushConstantBytes);
             maxPushConstantBytes -= variable->byteSize;
@@ -759,7 +759,7 @@ ShaderSetup(
             constantRange[0] = range; // okay, this is hacky
             pushRangeOffset += variable->byteSize;
         }
-        else if (variable->bindingType == GPULang::BindingType::MutableBuffer)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::MutableBuffer)
         {
             ResourceTableLayoutShaderRWBuffer rwbo;
             rwbo.slot = variable->binding;
@@ -793,7 +793,7 @@ ShaderSetup(
 
             rinfo.rwBuffers.Append(rwbo);
         }
-        else if (variable->bindingType == GPULang::BindingType::Sampler)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::Sampler)
         {
             ResourceTableLayoutSampler samp;
             samp.slot = variable->binding;
@@ -815,7 +815,7 @@ ShaderSetup(
             numsets = Math::max(numsets, variable->group + 1);
             rinfo.samplers.Append(samp);
         }
-        else if (variable->bindingType == GPULang::BindingType::Image)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::Image)
         {
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
@@ -841,7 +841,7 @@ ShaderSetup(
             numsets = Math::max(numsets, variable->group + 1);
             rinfo.textures.Append(tex);
         }
-        else if (variable->bindingType == GPULang::BindingType::MutableImage)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::MutableImage)
         {
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
@@ -866,7 +866,7 @@ ShaderSetup(
             numsets = Math::max(numsets, variable->group + 1);
             rinfo.rwTextures.Append(tex);
         }
-        else if (variable->bindingType == GPULang::BindingType::PixelCache)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::PixelCache)
         {
             ResourceTableLayoutInputAttachment tex;
             tex.slot = variable->binding;
@@ -892,7 +892,7 @@ ShaderSetup(
             numsets = Math::max(numsets, variable->group + 1);
             rinfo.inputAttachments.Append(tex);
         }
-        else if (variable->bindingType == GPULang::BindingType::AccelerationStructure)
+        else if (variable->bindingType == GPULang::Serialization::BindingType::AccelerationStructure)
         {
             ResourceTableLayoutAccelerationStructure bvh;
             bvh.slot = variable->binding;
@@ -1247,7 +1247,7 @@ CreateShader(const GPULangShaderCreateInfo& info)
             auto variable = (GPULang::Deserialize::Variable*)object;
 
             // If variable is a uniform buffer, store it in the reflection data
-            if (variable->bindingType == GPULang::BindingType::Buffer)
+            if (variable->bindingType == GPULang::Serialization::BindingType::Buffer)
             {
                 n_assert(variable->structType != nullptr);
                 VkReflectionInfo::UniformBuffer refl;

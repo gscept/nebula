@@ -454,18 +454,18 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
 /**
 */
 VkStencilOp
-StencilOpFromGPULang(GPULang::StencilOp op)
+StencilOpFromGPULang(GPULang::Serialization::StencilOp op)
 {
     switch (op)
     {
-        case GPULang::StencilOp::StencilKeepOp: return VkStencilOp::VK_STENCIL_OP_KEEP;
-        case GPULang::StencilOp::StencilZeroOp: return VkStencilOp::VK_STENCIL_OP_ZERO;
-        case GPULang::StencilOp::StencilReplaceOp: return VkStencilOp::VK_STENCIL_OP_REPLACE;
-        case GPULang::StencilOp::StencilIncrementClampOp: return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_CLAMP;
-        case GPULang::StencilOp::StencilDecrementClampOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_CLAMP;
-        case GPULang::StencilOp::StencilInvertOp: return VkStencilOp::VK_STENCIL_OP_INVERT;
-        case GPULang::StencilOp::StencilIncrementWrapOp: return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_WRAP;
-        case GPULang::StencilOp::StencilDecrementWrapOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_WRAP;
+        case GPULang::Serialization::StencilOp::StencilKeepOp: return VkStencilOp::VK_STENCIL_OP_KEEP;
+        case GPULang::Serialization::StencilOp::StencilZeroOp: return VkStencilOp::VK_STENCIL_OP_ZERO;
+        case GPULang::Serialization::StencilOp::StencilReplaceOp: return VkStencilOp::VK_STENCIL_OP_REPLACE;
+        case GPULang::Serialization::StencilOp::StencilIncrementClampOp: return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+        case GPULang::Serialization::StencilOp::StencilDecrementClampOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+        case GPULang::Serialization::StencilOp::StencilInvertOp: return VkStencilOp::VK_STENCIL_OP_INVERT;
+        case GPULang::Serialization::StencilOp::StencilIncrementWrapOp: return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_WRAP;
+        case GPULang::Serialization::StencilOp::StencilDecrementWrapOp: return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_WRAP;
     }
     n_error("Invalid GPULang stencil op");
     return VkStencilOp::VK_STENCIL_OP_KEEP;
@@ -475,18 +475,18 @@ StencilOpFromGPULang(GPULang::StencilOp op)
 /**
 */
 VkCompareOp
-CompareOpFromGPULang(GPULang::CompareMode mode)
+CompareOpFromGPULang(GPULang::Serialization::CompareMode mode)
 {
     switch (mode)
     {
-        case GPULang::CompareMode::NeverCompare: return VK_COMPARE_OP_NEVER;
-        case GPULang::CompareMode::LessCompare: return VK_COMPARE_OP_LESS;
-        case GPULang::CompareMode::EqualCompare: return VK_COMPARE_OP_EQUAL;
-        case GPULang::CompareMode::LessEqualCompare: return VK_COMPARE_OP_LESS_OR_EQUAL;
-        case GPULang::CompareMode::GreaterCompare: return VK_COMPARE_OP_GREATER;
-        case GPULang::CompareMode::NotEqualCompare: return VK_COMPARE_OP_NOT_EQUAL;
-        case GPULang::CompareMode::GreaterEqualCompare: return VK_COMPARE_OP_GREATER_OR_EQUAL;
-        case GPULang::CompareMode::AlwaysCompare: return VK_COMPARE_OP_ALWAYS;
+        case GPULang::Serialization::CompareMode::NeverCompare: return VK_COMPARE_OP_NEVER;
+        case GPULang::Serialization::CompareMode::LessCompare: return VK_COMPARE_OP_LESS;
+        case GPULang::Serialization::CompareMode::EqualCompare: return VK_COMPARE_OP_EQUAL;
+        case GPULang::Serialization::CompareMode::LessEqualCompare: return VK_COMPARE_OP_LESS_OR_EQUAL;
+        case GPULang::Serialization::CompareMode::GreaterCompare: return VK_COMPARE_OP_GREATER;
+        case GPULang::Serialization::CompareMode::NotEqualCompare: return VK_COMPARE_OP_NOT_EQUAL;
+        case GPULang::Serialization::CompareMode::GreaterEqualCompare: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        case GPULang::Serialization::CompareMode::AlwaysCompare: return VK_COMPARE_OP_ALWAYS;
     }
     n_error("Invalid GPULang compare mode");
     return VK_COMPARE_OP_ALWAYS;
@@ -496,13 +496,13 @@ CompareOpFromGPULang(GPULang::CompareMode mode)
 /**
 */
 VkPolygonMode
-PolygonModeFromGPULang(GPULang::PolygonMode mode)
+PolygonModeFromGPULang(GPULang::Serialization::RasterizationMode mode)
 {
     switch (mode)
     {
-        case GPULang::PolygonMode::FillMode: return VK_POLYGON_MODE_FILL;
-        case GPULang::PolygonMode::LineMode: return VK_POLYGON_MODE_LINE;
-        case GPULang::PolygonMode::PointMode: return VK_POLYGON_MODE_POINT;
+        case GPULang::Serialization::RasterizationMode::FillMode: return VK_POLYGON_MODE_FILL;
+        case GPULang::Serialization::RasterizationMode::LineMode: return VK_POLYGON_MODE_LINE;
+        case GPULang::Serialization::RasterizationMode::PointMode: return VK_POLYGON_MODE_POINT;
     }
     n_error("Invalid GPULang polygon mode");
     return VK_POLYGON_MODE_FILL;
@@ -512,12 +512,12 @@ PolygonModeFromGPULang(GPULang::PolygonMode mode)
 /**
 */
 VkFrontFace
-PolygonModeFromGPULang(GPULang::WindingOrderMode mode)
+PolygonModeFromGPULang(GPULang::Serialization::WindingOrderMode mode)
 {
     switch (mode)
     {
-        case GPULang::WindingOrderMode::ClockwiseMode: return VK_FRONT_FACE_CLOCKWISE;
-        case GPULang::WindingOrderMode::CounterClockwiseMode: return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        case GPULang::Serialization::WindingOrderMode::ClockwiseMode: return VK_FRONT_FACE_CLOCKWISE;
+        case GPULang::Serialization::WindingOrderMode::CounterClockwiseMode: return VK_FRONT_FACE_COUNTER_CLOCKWISE;
     }
     n_error("Invalid GPULang winding order mode");
     return VK_FRONT_FACE_CLOCKWISE;
@@ -527,26 +527,26 @@ PolygonModeFromGPULang(GPULang::WindingOrderMode mode)
 /**
 */
 VkLogicOp
-LogicOpFromGPULang(GPULang::LogicOp op)
+LogicOpFromGPULang(GPULang::Serialization::LogicOp op)
 {
     switch (op)
     {
-        case GPULang::LogicOp::LogicClearOp: return VK_LOGIC_OP_CLEAR;
-        case GPULang::LogicOp::LogicAndOp: return VK_LOGIC_OP_AND;
-        case GPULang::LogicOp::LogicAndReverseOp: return VK_LOGIC_OP_AND_REVERSE;
-        case GPULang::LogicOp::LogicCopyOp: return VK_LOGIC_OP_COPY;
-        case GPULang::LogicOp::LogicAndInvertedOp: return VK_LOGIC_OP_AND_INVERTED;
-        case GPULang::LogicOp::LogicNoOp: return VK_LOGIC_OP_NO_OP;
-        case GPULang::LogicOp::LogicXorOp: return VK_LOGIC_OP_XOR;
-        case GPULang::LogicOp::LogicOrOp: return VK_LOGIC_OP_OR;
-        case GPULang::LogicOp::LogicNorOp: return VK_LOGIC_OP_NOR;
-        case GPULang::LogicOp::LogicEquivalentOp: return VK_LOGIC_OP_EQUIVALENT;
-        case GPULang::LogicOp::LogicInvertOp: return VK_LOGIC_OP_INVERT;
-        case GPULang::LogicOp::LogicOrReverseOp: return VK_LOGIC_OP_OR_REVERSE;
-        case GPULang::LogicOp::LogicCopyInvertedOp: return VK_LOGIC_OP_COPY_INVERTED;
-        case GPULang::LogicOp::LogicOrInvertedOp: return VK_LOGIC_OP_OR_INVERTED;
-        case GPULang::LogicOp::LogicNandOp: return VK_LOGIC_OP_NAND;
-        case GPULang::LogicOp::LogicSetOp: return VK_LOGIC_OP_SET;
+        case GPULang::Serialization::LogicOp::LogicClearOp: return VK_LOGIC_OP_CLEAR;
+        case GPULang::Serialization::LogicOp::LogicAndOp: return VK_LOGIC_OP_AND;
+        case GPULang::Serialization::LogicOp::LogicAndReverseOp: return VK_LOGIC_OP_AND_REVERSE;
+        case GPULang::Serialization::LogicOp::LogicCopyOp: return VK_LOGIC_OP_COPY;
+        case GPULang::Serialization::LogicOp::LogicAndInvertedOp: return VK_LOGIC_OP_AND_INVERTED;
+        case GPULang::Serialization::LogicOp::LogicNoOp: return VK_LOGIC_OP_NO_OP;
+        case GPULang::Serialization::LogicOp::LogicXorOp: return VK_LOGIC_OP_XOR;
+        case GPULang::Serialization::LogicOp::LogicOrOp: return VK_LOGIC_OP_OR;
+        case GPULang::Serialization::LogicOp::LogicNorOp: return VK_LOGIC_OP_NOR;
+        case GPULang::Serialization::LogicOp::LogicEquivalentOp: return VK_LOGIC_OP_EQUIVALENT;
+        case GPULang::Serialization::LogicOp::LogicInvertOp: return VK_LOGIC_OP_INVERT;
+        case GPULang::Serialization::LogicOp::LogicOrReverseOp: return VK_LOGIC_OP_OR_REVERSE;
+        case GPULang::Serialization::LogicOp::LogicCopyInvertedOp: return VK_LOGIC_OP_COPY_INVERTED;
+        case GPULang::Serialization::LogicOp::LogicOrInvertedOp: return VK_LOGIC_OP_OR_INVERTED;
+        case GPULang::Serialization::LogicOp::LogicNandOp: return VK_LOGIC_OP_NAND;
+        case GPULang::Serialization::LogicOp::LogicSetOp: return VK_LOGIC_OP_SET;
     }
 
     n_error("Invalid GPULang logic op");
@@ -557,29 +557,29 @@ LogicOpFromGPULang(GPULang::LogicOp op)
 /**
 */
 VkBlendFactor
-BlendFactorFromGPULang(GPULang::BlendFactor factor)
+BlendFactorFromGPULang(GPULang::Serialization::BlendFactor factor)
 {
     switch (factor)
     {
-        case GPULang::BlendFactor::ZeroFactor: return VK_BLEND_FACTOR_ZERO;
-        case GPULang::BlendFactor::OneFactor: return VK_BLEND_FACTOR_ONE;
-        case GPULang::BlendFactor::SourceColorFactor: return VK_BLEND_FACTOR_SRC_COLOR;
-        case GPULang::BlendFactor::OneMinusSourceColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-        case GPULang::BlendFactor::DestinationColorFactor: return VK_BLEND_FACTOR_DST_COLOR;
-        case GPULang::BlendFactor::OneMinusDestinationColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-        case GPULang::BlendFactor::SourceAlphaFactor: return VK_BLEND_FACTOR_SRC_ALPHA;
-        case GPULang::BlendFactor::OneMinusSourceAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        case GPULang::BlendFactor::DestinationAlphaFactor: return VK_BLEND_FACTOR_DST_ALPHA;
-        case GPULang::BlendFactor::OneMinusDestinationAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-        case GPULang::BlendFactor::ConstantColorFactor: return VK_BLEND_FACTOR_CONSTANT_COLOR;
-        case GPULang::BlendFactor::OneMinusConstantColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-        case GPULang::BlendFactor::ConstantAlphaFactor: return VK_BLEND_FACTOR_CONSTANT_ALPHA;
-        case GPULang::BlendFactor::OneMinusConstantAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-        case GPULang::BlendFactor::SourceAlphaSaturateFactor: return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
-        case GPULang::BlendFactor::Source1ColorFactor: return VK_BLEND_FACTOR_SRC1_COLOR;
-        case GPULang::BlendFactor::OneMinusSource1ColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-        case GPULang::BlendFactor::Source1AlphaFactor: return VK_BLEND_FACTOR_SRC1_ALPHA;
-        case GPULang::BlendFactor::OneMinusSource1AlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+        case GPULang::Serialization::BlendFactor::ZeroFactor: return VK_BLEND_FACTOR_ZERO;
+        case GPULang::Serialization::BlendFactor::OneFactor: return VK_BLEND_FACTOR_ONE;
+        case GPULang::Serialization::BlendFactor::SourceColorFactor: return VK_BLEND_FACTOR_SRC_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusSourceColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+        case GPULang::Serialization::BlendFactor::DestinationColorFactor: return VK_BLEND_FACTOR_DST_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusDestinationColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+        case GPULang::Serialization::BlendFactor::SourceAlphaFactor: return VK_BLEND_FACTOR_SRC_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusSourceAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        case GPULang::Serialization::BlendFactor::DestinationAlphaFactor: return VK_BLEND_FACTOR_DST_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusDestinationAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+        case GPULang::Serialization::BlendFactor::ConstantColorFactor: return VK_BLEND_FACTOR_CONSTANT_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusConstantColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+        case GPULang::Serialization::BlendFactor::ConstantAlphaFactor: return VK_BLEND_FACTOR_CONSTANT_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusConstantAlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+        case GPULang::Serialization::BlendFactor::SourceAlphaSaturateFactor: return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+        case GPULang::Serialization::BlendFactor::Source1ColorFactor: return VK_BLEND_FACTOR_SRC1_COLOR;
+        case GPULang::Serialization::BlendFactor::OneMinusSource1ColorFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+        case GPULang::Serialization::BlendFactor::Source1AlphaFactor: return VK_BLEND_FACTOR_SRC1_ALPHA;
+        case GPULang::Serialization::BlendFactor::OneMinusSource1AlphaFactor: return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
     }
     n_error("Invalid GPULang blend factor");
     return VK_BLEND_FACTOR_ZERO; // Handle invalid cases gracefully
@@ -589,18 +589,36 @@ BlendFactorFromGPULang(GPULang::BlendFactor factor)
 /**
 */
 VkBlendOp
-BlendOpFromGPULang(GPULang::BlendOp op)
+BlendOpFromGPULang(GPULang::Serialization::BlendOp op)
 {
     switch (op)
     {
-        case GPULang::BlendOp::AddOp: return VK_BLEND_OP_ADD;
-        case GPULang::BlendOp::SubtractOp: return VK_BLEND_OP_SUBTRACT;
-        case GPULang::BlendOp::ReverseSubtractOp: return VK_BLEND_OP_REVERSE_SUBTRACT;
-        case GPULang::BlendOp::MinOp: return VK_BLEND_OP_MIN;
-        case GPULang::BlendOp::MaxOp: return VK_BLEND_OP_MAX;
+        case GPULang::Serialization::BlendOp::AddOp: return VK_BLEND_OP_ADD;
+        case GPULang::Serialization::BlendOp::SubtractOp: return VK_BLEND_OP_SUBTRACT;
+        case GPULang::Serialization::BlendOp::ReverseSubtractOp: return VK_BLEND_OP_REVERSE_SUBTRACT;
+        case GPULang::Serialization::BlendOp::MinOp: return VK_BLEND_OP_MIN;
+        case GPULang::Serialization::BlendOp::MaxOp: return VK_BLEND_OP_MAX;
     }
     n_error("Invalid GPULang blend op");
     return VK_BLEND_OP_ADD;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkCullModeFlags
+CullModeFromGPULang(GPULang::Serialization::CullMode mode)
+{
+    switch (mode)
+    {
+        case GPULang::Serialization::CullMode::BackMode: return VK_CULL_MODE_BACK_BIT;
+        case GPULang::Serialization::CullMode::FrontMode:return VK_CULL_MODE_FRONT_BIT;
+        case GPULang::Serialization::CullMode::FrontAndBackMode: return VK_CULL_MODE_FRONT_AND_BACK;
+        case GPULang::Serialization::CullMode::NoCullMode: return VK_CULL_MODE_NONE;
+    }
+
+    n_error("Invalid GPULang cull mode");
+    return VK_CULL_MODE_BACK_BIT;
 }
 
 //------------------------------------------------------------------------------
@@ -781,8 +799,8 @@ VkShaderProgramSetupAsGraphics(GPULang::Deserialize::Program* program, const Res
     };
     runtime.rasterizerInfo.depthClampEnable = program->renderState->depthClampEnabled;
     runtime.rasterizerInfo.rasterizerDiscardEnable = program->renderState->noPixels;
-    runtime.rasterizerInfo.polygonMode = PolygonModeFromGPULang(program->renderState->polygonMode);
-    runtime.rasterizerInfo.cullMode = program->renderState->cullMode;
+    runtime.rasterizerInfo.polygonMode = PolygonModeFromGPULang(program->renderState->rasterizationMode);
+    runtime.rasterizerInfo.cullMode = CullModeFromGPULang(program->renderState->cullMode);
     runtime.rasterizerInfo.frontFace = PolygonModeFromGPULang(program->renderState->windingOrderMode);
     runtime.rasterizerInfo.depthBiasEnable = program->renderState->depthBiasEnabled;
     runtime.rasterizerInfo.depthBiasConstantFactor = program->renderState->depthBiasFactor;
