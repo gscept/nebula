@@ -47,22 +47,22 @@ enum ShaderStages
 /**
 */
 void
-UpdateOccupancy(uint32_t* occupancyList, uint32_t& slotsUsed, const CoreGraphics::ShaderVisibility vis)
+UpdateOccupancy(uint32_t* occupancyList, bool& slotUsed, const CoreGraphics::ShaderVisibility vis)
 {
-    if (AllBits(vis, CoreGraphics::VertexShaderVisibility))             { occupancyList[VertexShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::HullShaderVisibility))               { occupancyList[HullShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::DomainShaderVisibility))             { occupancyList[DomainShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::GeometryShaderVisibility))           { occupancyList[GeometryShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::PixelShaderVisibility))              { occupancyList[PixelShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::TaskShaderVisibility))               { occupancyList[TaskShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::MeshShaderVisibility))               { occupancyList[MeshShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::ComputeShaderVisibility))            { occupancyList[ComputeShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::RayGenerationShaderVisibility))      { occupancyList[RayGenerationShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::RayAnyHitShaderVisibility))          { occupancyList[RayAnyHitShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::RayClosestHitShaderVisibility))      { occupancyList[RayClosestHitShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::RayMissShaderVisibility))            { occupancyList[RayMissShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::RayIntersectionShaderVisibility))    { occupancyList[RayIntersectionShader]++; slotsUsed++; }
-    if (AllBits(vis, CoreGraphics::CallableShaderVisibility))           { occupancyList[CallableShader]++; slotsUsed++; }
+    if (AllBits(vis, CoreGraphics::VertexShaderVisibility))             { occupancyList[VertexShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::HullShaderVisibility))               { occupancyList[HullShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::DomainShaderVisibility))             { occupancyList[DomainShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::GeometryShaderVisibility))           { occupancyList[GeometryShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::PixelShaderVisibility))              { occupancyList[PixelShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::TaskShaderVisibility))               { occupancyList[TaskShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::MeshShaderVisibility))               { occupancyList[MeshShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::ComputeShaderVisibility))            { occupancyList[ComputeShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::RayGenerationShaderVisibility))      { occupancyList[RayGenerationShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::RayAnyHitShaderVisibility))          { occupancyList[RayAnyHitShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::RayClosestHitShaderVisibility))      { occupancyList[RayClosestHitShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::RayMissShaderVisibility))            { occupancyList[RayMissShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::RayIntersectionShaderVisibility))    { occupancyList[RayIntersectionShader]++; slotUsed = true; }
+    if (AllBits(vis, CoreGraphics::CallableShaderVisibility))           { occupancyList[CallableShader]++; slotUsed = true; }
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ ShaderSetup(
             cbo.num = block->bindingLayout.descriptorCount;
             cbo.visibility = AllVisibility;
             cbo.dynamicOffset = false;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
             if (block->HasAnnotation("Visibility"))
             {
                 cbo.visibility = ShaderVisibilityFromString(block->GetAnnotationString("Visibility").c_str());
@@ -159,7 +159,7 @@ ShaderSetup(
             if (block->binding != 0xFFFFFFFF && !bindingTable[block->binding])
             {
                 bindingTable[block->binding] = true;
-                UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
+                UpdateOccupancy(numPerStageUniformBuffers, slotUsed, cbo.visibility);
             }
             UpdateValueDescriptorSet(cbo.dynamicOffset, numUniform, numUniformDyn, block->set);
 
@@ -203,7 +203,7 @@ ShaderSetup(
         rwbo.num = binding.descriptorCount;
         rwbo.visibility = AllVisibility;
         rwbo.dynamicOffset = false;
-        uint32_t slotsUsed = 0;
+        bool slotUsed = false;
 
         if (buffer->HasAnnotation("Visibility"))
         {
@@ -213,7 +213,7 @@ ShaderSetup(
         if (!bindingTable[buffer->binding])
         {
             bindingTable[buffer->binding] = true;
-            UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
+            UpdateOccupancy(numPerStageStorageBuffers, slotUsed, rwbo.visibility);
         }
         UpdateValueDescriptorSet(rwbo.dynamicOffset, numStorage, numStorageDyn, buffer->set);
 
@@ -270,8 +270,8 @@ ShaderSetup(
             if (sampler->HasAnnotation("Visibility"))
             {
                 smla.visibility = ShaderVisibilityFromString(sampler->GetAnnotationString("Visibility").c_str());
-                uint32_t dummy;
-                UpdateOccupancy(numPerStageSamplers, dummy, smla.visibility);
+                bool slotUsed = false;
+                UpdateOccupancy(numPerStageSamplers, slotUsed, smla.visibility);
             }
             else
             {
@@ -332,8 +332,8 @@ ShaderSetup(
             if (variable->HasAnnotation("Visibility"))
             {
                 tex.visibility = ShaderVisibilityFromString(variable->GetAnnotationString("Visibility").c_str());
-                uint32_t dummy = 0;
-                UpdateOccupancy(storageImage ? numPerStageStorageImages : numPerStageSampledImages, dummy, tex.visibility);
+                bool slotUsed = false;
+                UpdateOccupancy(storageImage ? numPerStageStorageImages : numPerStageSampledImages, slotUsed, tex.visibility);
             }
 
             if (remainingTextures < (uint32_t)variable->arraySizes[0])
@@ -680,10 +680,15 @@ ShaderSetup(
             {
                 bool occupiesNewBinding = !bindingTable[sampler->binding];
                 bindingTable[sampler->binding] = true;
+                bool slotUsed = false;
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed[SamplerSlots], sampBinding.visibility);
+                    UpdateOccupancy(numPerStageUniformBuffers, slotUsed, sampBinding.visibility);
+                }
+                if (slotUsed)
+                {
+                    slotsUsed[SamplerSlots] += slotUsed ? 1 : 0;
                 }
             }
             resourceSlotMapping.Add(sampler->name, sampler->binding);
@@ -721,7 +726,7 @@ ShaderSetup(
             if (variable->arraySizeCount > 0)
                 cbo.num = variable->arraySizes[0];
             cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -729,7 +734,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageUniformBuffers, slotsUsed, cbo.visibility);
+                    UpdateOccupancy(numPerStageUniformBuffers, slotUsed, cbo.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -738,11 +743,11 @@ ShaderSetup(
 
             if (variable->group == NEBULA_DYNAMIC_OFFSET_GROUP || variable->group == NEBULA_INSTANCE_GROUP)
             {
-                cbo.dynamicOffset = true; numUniformDyn += slotsUsed;
+                cbo.dynamicOffset = true; numUniformDyn += slotUsed ? 1 : 0;
             }
             else
             {
-                cbo.dynamicOffset = false; numUniform += slotsUsed;
+                cbo.dynamicOffset = false; numUniform += slotUsed ? 1 : 0;
             }
 
             rinfo.constantBuffers.Append(cbo);
@@ -767,7 +772,7 @@ ShaderSetup(
             if (variable->arraySizeCount > 0)
                 rwbo.num = variable->arraySizes[0];
             rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -775,7 +780,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageStorageBuffers, slotsUsed, rwbo.visibility);
+                    UpdateOccupancy(numPerStageStorageBuffers, slotUsed, rwbo.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -784,11 +789,11 @@ ShaderSetup(
 
             if (variable->group == NEBULA_DYNAMIC_OFFSET_GROUP || variable->group == NEBULA_INSTANCE_GROUP)
             {
-                rwbo.dynamicOffset = true; numStorageDyn += slotsUsed;
+                rwbo.dynamicOffset = true; numStorageDyn += slotUsed ? 1 : 0;
             }
             else
             {
-                rwbo.dynamicOffset = false; numStorage += slotsUsed;
+                rwbo.dynamicOffset = false; numStorage += slotUsed ? 1 : 0;
             }
 
             rinfo.rwBuffers.Append(rwbo);
@@ -799,7 +804,7 @@ ShaderSetup(
             samp.slot = variable->binding;
             samp.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             samp.sampler = CoreGraphics::InvalidSamplerId;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -807,7 +812,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageSamplers, slotsUsed, samp.visibility);
+                    UpdateOccupancy(numPerStageSamplers, slotUsed, samp.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -824,7 +829,8 @@ ShaderSetup(
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
+
 
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -833,7 +839,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageSampledImages, slotsUsed, tex.visibility);
+                    UpdateOccupancy(numPerStageSampledImages, slotUsed, tex.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -850,7 +856,7 @@ ShaderSetup(
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
             tex.immutableSampler = CoreGraphics::InvalidSamplerId;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
             {
                 bool occupiesNewBinding = !bindingTable[variable->binding];
@@ -858,7 +864,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageStorageImages, slotsUsed, tex.visibility);
+                    UpdateOccupancy(numPerStageStorageImages, slotUsed, tex.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -872,7 +878,7 @@ ShaderSetup(
             tex.slot = variable->binding;
             tex.visibility = ShaderVisibility::PixelShaderVisibility;
             tex.num = 1;
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
 
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
@@ -884,7 +890,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageInputAttachments, slotsUsed, tex.visibility);
+                    UpdateOccupancy(numPerStageInputAttachments, slotUsed, tex.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
@@ -898,7 +904,7 @@ ShaderSetup(
             bvh.slot = variable->binding;
             bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             bvh.num = variable->arraySizes[0];
-            uint32_t slotsUsed = 0;
+            bool slotUsed = false;
 
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -907,7 +913,7 @@ ShaderSetup(
 
                 if (occupiesNewBinding)
                 {
-                    UpdateOccupancy(numPerStageAccelerationStructures, slotsUsed, bvh.visibility);
+                    UpdateOccupancy(numPerStageAccelerationStructures, slotUsed, bvh.visibility);
                 }
             }
             resourceSlotMapping.Add(variable->name, variable->binding);
