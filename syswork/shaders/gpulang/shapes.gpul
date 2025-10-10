@@ -47,6 +47,7 @@ render_state DepthDisabledState
     DepthWriteEnabled = false;
     //MultisampleEnabled = true;
 };
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -58,8 +59,8 @@ vsMesh(
     binding(3) in  tangent : f32x3,
     out Color : f32x4) void
 {
-    vertexExportCoordinates(ViewConstants.ViewProjection * ShapeConstants.ShapeModel * f32x4(position, 1));
-    Color = ShapeConstants.ShapeColor;
+    vertexExportCoordinates(ViewConstants.ViewProjection * ShapeUniforms.ShapeModel * f32x4(position, 1));
+    Color = ShapeUniforms.ShapeColor;
 }
 
 //------------------------------------------------------------------------------
@@ -71,7 +72,7 @@ vsPrimitives(
     binding(5) in color : f32x4,
     out Color : f32x4) void
 {
-    vertexExportCoordinates(ViewConstants.ViewProjection * ShapeConstants.ShapeModel * f32x4(position, 1));
+    vertexExportCoordinates(ViewConstants.ViewProjection * ShapeUniforms.ShapeModel * f32x4(position, 1));
     Color = color;
 }
 
@@ -100,23 +101,23 @@ gsLines(
     line0 = normalize(line0.yx * f32x2(-PassUniforms.RenderTargets[0].Dimensions.y * PassUniforms.RenderTargets[0].Dimensions.z, 1));
 
     // Scale by line width and inversed resolution
-    line0 *= PassUniforms.RenderTargets[0].Dimensions.zw * ShapeConstants.LineWidth;
+    line0 *= PassUniforms.RenderTargets[0].Dimensions.zw * ShapeUniforms.LineWidth;
 
     // Emit triangle strip 
     Color = colors[0];
-    EdgeDistance = -ShapeConstants.LineWidth;
+    EdgeDistance = -ShapeUniforms.LineWidth;
     geometryExportVertex(f32x4((p0 - line0) * tri.p0.position.w, tri.p0.position.zw));
 
     Color = colors[0];
-    EdgeDistance = ShapeConstants.LineWidth;
+    EdgeDistance = ShapeUniforms.LineWidth;
     geometryExportVertex(f32x4((p0 + line0) * tri.p0.position.w, tri.p0.position.zw));
 
     Color = colors[1];
-    EdgeDistance = -ShapeConstants.LineWidth;
+    EdgeDistance = -ShapeUniforms.LineWidth;
     geometryExportVertex(f32x4((p1 - line0) * tri.p1.position.w, tri.p1.position.zw));
 
     Color = colors[1];
-    EdgeDistance = ShapeConstants.LineWidth;
+    EdgeDistance = ShapeUniforms.LineWidth;
     geometryExportVertex(f32x4((p1 + line0) * tri.p1.position.w, tri.p1.position.zw));
     geometryExportPrimitive();
 }
@@ -175,7 +176,7 @@ psTriangles(
     in distance : f32x3) void
 {
     var dist = evalMinDistanceToEdges(distance);
-    const halfLineWidth = 0.5f * ShapeConstants.LineWidth;
+    const halfLineWidth = 0.5f * ShapeUniforms.LineWidth;
     if (dist > halfLineWidth + 1.0f)
         discard;
 
@@ -193,8 +194,8 @@ psLines(
     in no_perspective edgeDistance : f32,
     in color : f32x4) void
 {
-    var d = abs(edgeDistance) / ShapeConstants.LineWidth;
-    d = smoothstep(1.0, 1.0 - (2.0f / ShapeConstants.LineWidth), d);
+    var d = abs(edgeDistance) / ShapeUniforms.LineWidth;
+    d = smoothstep(1.0, 1.0 - (2.0f / ShapeUniforms.LineWidth), d);
     pixelExportColor(f32x4(color.rgb, color.a * d), 0);
 }
 
