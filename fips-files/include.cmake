@@ -15,8 +15,9 @@ option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live
 option(N_EDITOR "Build as an editor build" ON)
 option(N_USE_CHECKED_PHYSX "Use Checked PhysX in optimized builds" ON)
 option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into binary for development builds" ON)
-option(N_PROFILE_SHADER_BUILDS "Profile shader compilation" OFF)
+option(N_SHADER_PROFILE_BUILDS "Profile shader compilation, slows down compilation time" OFF)
 option(N_SHADER_SYMBOLS "Generate debug symbols for shader builds, disables optimizations" OFF)
+option(N_SHADER_VALIDATION "Validate the shader output, slows down cimpilation time" ON)
 option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
@@ -24,6 +25,20 @@ if(N_USE_COMPILETIME_PROJECT_ROOT)
         FILE(READ "${CMAKE_BINARY_DIR}/project_root.txt" PRJ_ROOT)
         add_definitions(-DNEBULA_PROJECT_ROOT=\"${PRJ_ROOT}\")
     endif()
+endif()
+
+if (N_SHADER_PROFILE_BUILDS)
+    set(shader_compiler_args ${shader_compiler_args} "-p")
+endif()
+
+if (N_SHADER_SYMBOLS)
+    set(shader_compiler_args ${shader_compiler_args} "-s")
+else()
+    set(shader_compiler_args ${shader_compiler_args} "-Ox")
+endif()
+
+if (N_SHADER_VALIDATION)
+    set(shader_compiler_args ${shader_compiler_args} "-v")
 endif()
 
 include(create_resource)
@@ -210,15 +225,7 @@ macro(compile_gpulang_intern)
     set(nebula_shader ${ARGV1})
     if(SHADERC)
         unset(shader_compiler_args CACHE) # remove from cache if it exists
-        if (N_PROFILE_SHADER_BUILDS)
-            set(shader_compiler_args ${shader_compiler_args} "-profile")
-        endif()
 
-        if (N_SHADER_SYMBOLS)
-            set(shader_compiler_args ${shader_compiler_args} "-symbols")
-        else()
-            set(shader_compiler_args ${shader_compiler_args} "-optimize")
-        endif()
 
         if (nebula_shader)
             set(foldername system_shaders/${CurDir})
