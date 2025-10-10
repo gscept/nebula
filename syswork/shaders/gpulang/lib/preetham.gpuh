@@ -20,7 +20,7 @@ perez(cosTheta : f32, gamma : f32, cosGamma : f32, A : f32x3, B : f32x3, C : f32
 //------------------------------------------------------------------------------
 /**
 */
-YxyToXYZ( in Yxy : f32x3 ) f32x3
+YxyToXYZ(Yxy : f32x3) f32x3
 {
 	const Y = Yxy.r;
 	const x = Yxy.g;

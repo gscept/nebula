@@ -31,12 +31,12 @@ group(DYNAMIC_OFFSET_GROUP) uniform ParticleEmitter : *ParticleEmitterData;
     rotation into account.
 */
 ComputeCornerVertex(
-                    in corner : f32x2,
-                    in position : f32x4,
-                    in stretchPos : f32x4,
-                    in uvMinMax : f32x4,
-                    in rotate : f32x2,
-                    in size : f32) CornerVertex
+                    corner : f32x2,
+                    position : f32x4,
+                    stretchPos : f32x4,
+                    uvMinMax : f32x4,
+                    rotate : f32x2,
+                    size : f32) CornerVertex
 {
 
     var outputVert : CornerVertex;

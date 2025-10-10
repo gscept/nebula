@@ -63,7 +63,7 @@ struct HitResult
     texcoord: f32x2;
 };
 
-TraceScreenSpaceRay(in rayOrigin : f32x3, in rayDirection : f32x3) HitResult
+TraceScreenSpaceRay(rayOrigin : f32x3, rayDirection : f32x3) HitResult
 {
     var ret : HitResult;
     ret.hit = false;
