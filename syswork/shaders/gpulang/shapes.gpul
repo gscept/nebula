@@ -90,8 +90,8 @@ gsLines(
     out Color : f32x4) void
 {
     const tri = geometryGetLine();
-    const p0 = tri.p0.position.xy / tri.p0.position.w;
-    const p1 = tri.p1.position.xy / tri.p1.position.w;
+    const p0 = tri.position[0].xy / tri.position[0].w;
+    const p1 = tri.position[1].xy / tri.position[1].w;
     // Unproject points
 
     // This is the line between the previous point and the first point
@@ -106,19 +106,19 @@ gsLines(
     // Emit triangle strip 
     Color = colors[0];
     EdgeDistance = -ShapeUniforms.LineWidth;
-    geometryExportVertex(f32x4((p0 - line0) * tri.p0.position.w, tri.p0.position.zw));
+    geometryExportVertex(f32x4((p0 - line0) * tri.position[0].w, tri.position[0].zw));
 
     Color = colors[0];
     EdgeDistance = ShapeUniforms.LineWidth;
-    geometryExportVertex(f32x4((p0 + line0) * tri.p0.position.w, tri.p0.position.zw));
+    geometryExportVertex(f32x4((p0 + line0) * tri.position[0].w, tri.position[0].zw));
 
     Color = colors[1];
     EdgeDistance = -ShapeUniforms.LineWidth;
-    geometryExportVertex(f32x4((p1 - line0) * tri.p1.position.w, tri.p1.position.zw));
+    geometryExportVertex(f32x4((p1 - line0) * tri.position[1].w, tri.position[1].zw));
 
     Color = colors[1];
     EdgeDistance = ShapeUniforms.LineWidth;
-    geometryExportVertex(f32x4((p1 + line0) * tri.p1.position.w, tri.p1.position.zw));
+    geometryExportVertex(f32x4((p1 + line0) * tri.position[1].w, tri.position[1].zw));
     geometryExportPrimitive();
 }
 
@@ -138,15 +138,15 @@ gsTriangles(
     const tri = geometryGetTriangle();
     Color = colors[0];
     Distance = f32x3(1, 0, 0);
-    geometryExportVertex(tri.p0.position);
+    geometryExportVertex(tri.position[0]);
 
     Color = colors[1];
     Distance = f32x3(0, 1, 0);
-    geometryExportVertex(tri.p1.position);
+    geometryExportVertex(tri.position[1]);
 
     Color = colors[2];
     Distance = f32x3(0, 0, 1);
-    geometryExportVertex(tri.p2.position);
+    geometryExportVertex(tri.position[2]);
     geometryExportPrimitive();
     
 }

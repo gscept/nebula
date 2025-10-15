@@ -55,11 +55,11 @@ struct MeshInfo
     lodVertexCount : i32x4;
     lodDistances : f32x4;
     textureIndex : u32;
-    used : b8;
+    used : u32;
 };
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform MeshInfos : [MAX_MESH_INFOS]* MeshInfo;
+group(SYSTEM_GROUP) uniform MeshInfos : [MAX_MESH_INFOS]* mutable MeshInfo;
 
 const MAX_GRASS_INFOS = 8;
 struct GrassInfo
@@ -68,11 +68,11 @@ struct GrassInfo
     slopeThreshold : f32;
     heightThreshold : f32;
     textureIndex : u32;
-    used : b8;
+    used : u32;
 };
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform GrassInfos : [MAX_GRASS_INFOS]* GrassInfo;
+group(SYSTEM_GROUP) uniform GrassInfos : [MAX_GRASS_INFOS]* mutable GrassInfo;
 
 const MAX_VEGETATION_LAYERS = 8;
 
@@ -119,20 +119,17 @@ struct InstanceUniforms
     textureIndex : u32;
     sincos : f32x2;
     random : f32;   // use for wind sway
-    lodIsBillboard : b8;
-    lodDebug : i32;
+    lodFlags : u32;
 };
 
-struct InstanceUniformArray
-{
-    uniforms: []InstanceUniforms;
-};
+const LOD_DEBUG = 0x1u;
+const LOD_BILLBOARD = 0x2u;
 
 @Visibility("CS|VS")
-group(BATCH_GROUP) uniform InstanceGrassArguments : *mutable InstanceUniformArray;
+group(BATCH_GROUP) uniform InstanceGrassArguments : *[] mutable InstanceUniforms;
 
 @Visibility("CS|VS")
-group(BATCH_GROUP) uniform InstanceMeshArguments : *mutable InstanceUniformArray;
+group(BATCH_GROUP) uniform InstanceMeshArguments : []* mutable InstanceUniforms;
 
 struct DrawCountData
 {
@@ -249,7 +246,7 @@ csGenerateDraws() void
         const textureIndex = 0u;
         for (var i = 0; i < VegetationGenerateUniforms.NumGrassTypes; i++)
         {
-            const grassInfo = *GrassInfos[i];
+            const grassInfo = bufferLoad(GrassInfos[i]);
 
             if (!grassInfo.used)
                 continue;
@@ -274,9 +271,9 @@ csGenerateDraws() void
                 instanceUniform.sincos.y = randomOffset.y;
                 instanceUniform.textureIndex = textureIndex;
 
-                instanceUniform.lodDebug = 0;
+                instanceUniform.lodFlags = 0x0u;
 
-                InstanceGrassArguments.uniforms[entry] = instanceUniform;
+                bufferStore(InstanceGrassArguments, entry, instanceUniform);
 
                 atomicAdd(&IndirectGrassDrawBuffer.instanceCount, 1u, MemorySemantics.Release);
             }
@@ -287,7 +284,7 @@ csGenerateDraws() void
         // go through mesh types and generate uniforms and draws
         for (var i = 0; i < VegetationGenerateUniforms.NumMeshTypes; i++)
         {
-            const meshInfo = *MeshInfos[i];
+            const meshInfo = bufferLoad(MeshInfos[i]);
 
             if (!meshInfo.used)
                 continue;
@@ -318,11 +315,9 @@ csGenerateDraws() void
                 instanceUniform.sincos.x = randomOffset.x;
                 instanceUniform.sincos.y = randomOffset.y;
                 instanceUniform.textureIndex = textureIndex;
-                instanceUniform.lodIsBillboard = false;// lod == (meshInfo.numLods - 1);
+                instanceUniform.lodFlags |= !LOD_BILLBOARD;// lod == (meshInfo.numLods - 1);
 
-                instanceUniform.lodDebug = lod;
-
-                InstanceMeshArguments.uniforms[entry] = instanceUniform;
+                bufferStore(InstanceMeshArguments[entry], instanceUniform);
 
                 var command : DrawIndexedCommand;
                 command.indexCount = u32(meshInfo.lodIndexCount[lod]);
@@ -353,7 +348,7 @@ vsDrawGrass(
     , out WorldSpacePos : f32x3
 ) void
 {
-    const instanceUniforms = InstanceGrassArguments.uniforms[vertexGetInstanceIndex()];
+    const instanceUniforms = bufferLoad(InstanceGrassArguments, vertexGetInstanceIndex());
     const windWeight = position.y * instanceUniforms.random;
     const displacement = f32x3(sin(windWeight * ViewConstants.Time_Random_Luminance_X.x), 0, cos(windWeight * ViewConstants.Time_Random_Luminance_X.x));
 
@@ -363,10 +358,10 @@ vsDrawGrass(
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = position + instanceUniforms.position + displacement * 0.2f;
 
-    if (!instanceUniforms.lodIsBillboard)
-        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
-    else
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
         vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    else
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
@@ -439,7 +434,7 @@ vsDrawMeshVColor(
     , out WorldSpacePos : f32x3
 ) void
 {
-    const instanceUniforms = InstanceMeshArguments.uniforms[vertexGetInstanceIndex()];
+    const instanceUniforms = bufferLoad(InstanceMeshArguments[vertexGetInstanceIndex()]);
     const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
@@ -455,10 +450,10 @@ vsDrawMeshVColor(
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
 
-    if (!instanceUniforms.lodIsBillboard)
-        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
-    else
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
         vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    else
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------
@@ -478,7 +473,7 @@ vsDrawMesh(
     , out Lod : i32
 ) void
 {
-    const instanceUniforms = InstanceMeshArguments.uniforms[vertexGetInstanceIndex()];
+    const instanceUniforms = bufferLoad(InstanceMeshArguments[vertexGetInstanceIndex()]);
     const displacement = f32x3(sin(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
@@ -494,11 +489,11 @@ vsDrawMesh(
     InstanceTexture = instanceUniforms.textureIndex;
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.025f;
 
-    Lod = instanceUniforms.lodDebug;
-    if (!instanceUniforms.lodIsBillboard)
-        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
-    else
+    Lod = 0;
+    if (instanceUniforms.lodFlags & LOD_BILLBOARD)
         vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    else
+        vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
 }
 
 //------------------------------------------------------------------------------

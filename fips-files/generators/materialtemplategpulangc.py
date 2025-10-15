@@ -56,9 +56,14 @@ def TypeToString(type, edit, val):
             typeStr = 'Vec2'
             accessorStr = 'f2'
             valueStr = 'Math::float2{{{}}}'.format(vecStr)
+        
     elif type == "float":
         typeStr = 'Scalar'
         accessorStr = 'f'
+        valueStr = '{}'.format(val)
+    elif type == "int":
+        typeStr = 'Int'
+        accessorStr = 'i'
         valueStr = '{}'.format(val)
     elif type == "bool":
         typeStr = 'Bool'
@@ -151,6 +156,8 @@ class MaterialTemplateDefinition:
                 # Validate default value
                 if varType == "float":
                     Assert(type(varDef) is float, self.name, "Variable '{}' is of type 'float' but initialized as '{}'".format(varName, type(varDef)))
+                elif varType == "int":
+                    Assert(type(varDef) is int, self.name, "Variable '{}' is of type 'int' but initialized as '{}'".format(varName, type(varDef)))
                 elif varType == "vec2":
                     Assert(len(varDef) == 2, self.name, "Type 'vec2' requires 2 values")
                     for v in varDef:
@@ -246,7 +253,7 @@ class MaterialTemplateDefinition:
                 table = ''
                 
                 lookup = 0
-                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2" or var.type == "float" or var.type == "bool":
+                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2" or var.type == "float" or var.type == "bool" or var.type == "int":
                     lookup = constLookup
                     constLookup += 1
                     numConstants += 1
@@ -317,11 +324,12 @@ class MaterialInterfaceDefinition:
         texCounter = 64 - 16;
         
         typeTranslation = {
+            "int": "i32",
             "float": "f32",
             "vec2": "f32x2",
             "vec3": "f32x3",
             "vec4": "f32x4",
-            "bool": "b8",
+            "bool": "u32",
             "texture2D": "texture2D",
             "textureHandle": "u32"
         }
