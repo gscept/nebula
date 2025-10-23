@@ -59,7 +59,7 @@ entry_point
 csMainX() void
 {
     // get full resolution and inverse full resolution
-    const size = textureGetSize(HBAOX);
+    const size = textureGetSizeMip(HBAOX, 0u);
     
     const localThreadIndices = computeGetLocalThreadIndices();
     const workgroupIndices = computeGetWorkgroupIndices();
@@ -122,7 +122,7 @@ entry_point
 csMainY() void
 {
     // get full resolution and inverse full resolution
-    const size = textureGetSize(HBAOY);
+    const size = textureGetSizeMip(HBAOY, 0u);
     const inverseSize = 1.0f / f32x2(size);
     
     const localThreadIndices = computeGetLocalThreadIndices();

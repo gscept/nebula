@@ -23,7 +23,7 @@ csCull() void
     if (index1D > LightUniforms.NumLightClusters)
         return;
 
-    const aabb = bufferLoad(ClusterAABBs[index1D]); 
+    const aabb = bufferLoad(ClusterAABBs, index1D); 
 
     var flags = 0u;
 
@@ -89,7 +89,7 @@ csCull() void
     if (numLights > 0)
         flags |= CLUSTER_AREALIGHT_BIT;
 
-    atomicOr(&ClusterAABBs[index1D].featureFlags, flags, MemorySemantics.Relaxed);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ csDebug() void
     const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, worldPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
-    const flag = ClusterAABBs[idx].featureFlags; // add 0 so we can read the value
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags; // add 0 so we can read the value
     var color = f32x4(0, 0, 0, 0);
     if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {

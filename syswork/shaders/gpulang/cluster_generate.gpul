@@ -49,7 +49,7 @@ csClusterAABB() void
     aabb.featureFlags = 0u;
     aabb.minPoint.w = radius;
     aabb.maxPoint.w = sqrt(radius);
-    bufferStore(ClusterAABBs[index1D], aabb);
+    bufferStore(ClusterAABBs, index1D, aabb);
     //ClusterAABBs[index1D] = aabb;
 }
 

@@ -59,7 +59,7 @@ struct MeshInfo
 };
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform MeshInfos : [MAX_MESH_INFOS]* mutable MeshInfo;
+group(SYSTEM_GROUP) uniform MeshInfos : *[MAX_MESH_INFOS] mutable MeshInfo;
 
 const MAX_GRASS_INFOS = 8;
 struct GrassInfo
@@ -72,7 +72,7 @@ struct GrassInfo
 };
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform GrassInfos : [MAX_GRASS_INFOS]* mutable GrassInfo;
+group(SYSTEM_GROUP) uniform GrassInfos : *[MAX_GRASS_INFOS] mutable GrassInfo;
 
 const MAX_VEGETATION_LAYERS = 8;
 
@@ -111,7 +111,7 @@ sampleMask(type: u32, uniform samp: *sampler, uv: f32x2) f32x4
 group(SYSTEM_GROUP) uniform IndirectGrassDrawBuffer : *mutable DrawIndexedCommand;
 
 @Visibility("CS")
-group(SYSTEM_GROUP) uniform IndirectMeshDrawBuffer : []* mutable DrawIndexedCommand;
+group(SYSTEM_GROUP) uniform IndirectMeshDrawBuffer : *[] mutable DrawIndexedCommand;
 
 struct InstanceUniforms
 {
@@ -129,7 +129,7 @@ const LOD_BILLBOARD = 0x2u;
 group(BATCH_GROUP) uniform InstanceGrassArguments : *[] mutable InstanceUniforms;
 
 @Visibility("CS|VS")
-group(BATCH_GROUP) uniform InstanceMeshArguments : []* mutable InstanceUniforms;
+group(BATCH_GROUP) uniform InstanceMeshArguments : *[] mutable InstanceUniforms;
 
 struct DrawCountData
 {
@@ -246,7 +246,7 @@ csGenerateDraws() void
         const textureIndex = 0u;
         for (var i = 0; i < VegetationGenerateUniforms.NumGrassTypes; i++)
         {
-            const grassInfo = bufferLoad(GrassInfos[i]);
+            const grassInfo = bufferLoad(GrassInfos, i);
 
             if (!grassInfo.used)
                 continue;
@@ -284,7 +284,7 @@ csGenerateDraws() void
         // go through mesh types and generate uniforms and draws
         for (var i = 0; i < VegetationGenerateUniforms.NumMeshTypes; i++)
         {
-            const meshInfo = bufferLoad(MeshInfos[i]);
+            const meshInfo = bufferLoad(MeshInfos, i);
 
             if (!meshInfo.used)
                 continue;
@@ -317,7 +317,7 @@ csGenerateDraws() void
                 instanceUniform.textureIndex = textureIndex;
                 instanceUniform.lodFlags |= !LOD_BILLBOARD;// lod == (meshInfo.numLods - 1);
 
-                bufferStore(InstanceMeshArguments[entry], instanceUniform);
+                bufferStore(InstanceMeshArguments, entry, instanceUniform);
 
                 var command : DrawIndexedCommand;
                 command.indexCount = u32(meshInfo.lodIndexCount[lod]);
@@ -325,7 +325,7 @@ csGenerateDraws() void
                 command.startIndex = u32(meshInfo.lodIndexOffsets[lod]);
                 command.offsetVertex = u32(meshInfo.lodVertexOffsets[lod]);
                 command.startInstance = entry;  // pretend to use instancing
-                bufferStore(IndirectMeshDrawBuffer[entry + i * MAX_MESH_INFOS], command);
+                bufferStore(IndirectMeshDrawBuffer, entry + i * MAX_MESH_INFOS, command);
             }
 
             textureIndex++;
@@ -372,7 +372,7 @@ psDrawGrassZ(
     in normal : f32x3
     , in tangent : f32x3
     , in uv : f32x2
-    , in instanceTexture : u32
+    , in no_interpolate instanceTexture : u32
     , in worldSpacePos : f32x3
 ) void
 {
@@ -391,7 +391,7 @@ psDrawGrass(
     in normal : f32x3
     , in tangent : f32x3
     , in uv : f32x2
-    , in instanceTexture : u32
+    , in no_interpolate instanceTexture : u32
     , in worldSpacePos : f32x3
 ) void
 {
@@ -434,7 +434,7 @@ vsDrawMeshVColor(
     , out WorldSpacePos : f32x3
 ) void
 {
-    const instanceUniforms = bufferLoad(InstanceMeshArguments[vertexGetInstanceIndex()]);
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
     const displacement = f32x3(sin(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
@@ -473,7 +473,7 @@ vsDrawMesh(
     , out Lod : i32
 ) void
 {
-    const instanceUniforms = bufferLoad(InstanceMeshArguments[vertexGetInstanceIndex()]);
+    const instanceUniforms = bufferLoad(InstanceMeshArguments, vertexGetInstanceIndex());
     const displacement = f32x3(sin(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(position.y * ViewConstants.Time_Random_Luminance_X.x * instanceUniforms.random));
     const rotation = f32x3x3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
@@ -504,7 +504,7 @@ psDrawMeshZ(
     in normal : f32x3
     , in tangent : f32x3
     , in uv : f32x2
-    , in instanceTexture : u32
+    , in no_interpolate instanceTexture : u32
     , in worldSpacePos : f32x3
 ) void
 {
@@ -523,9 +523,9 @@ psDrawMesh(
     in normal : f32x3
     , in tangent : f32x3
     , in uv : f32x2
-    , in no_perspective instanceTexture : u32
+    , in no_interpolate instanceTexture : u32
     , in worldSpacePos : f32x3
-    , in no_perspective lod : i32
+    , in no_interpolate lod : i32
 ) void
 {
     const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv).rgb;

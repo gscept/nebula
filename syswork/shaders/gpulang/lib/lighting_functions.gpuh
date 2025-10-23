@@ -447,7 +447,8 @@ LocalLights(
 ) f32x3
 {
     var light = f32x3(0, 0, 0);
-    const flag = ClusterAABBs[clusterIndex].featureFlags;
+    const aabb = bufferLoad(ClusterAABBs, clusterIndex);
+    const flag = aabb.featureFlags;
     if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
@@ -567,7 +568,8 @@ GI(
 ) f32x3
 {
     var accumulatedGi = f32x3(0, 0, 0);
-    const flag = ClusterAABBs[clusterIndex].featureFlags;
+    const aabb = bufferLoad(ClusterAABBs, clusterIndex);
+    const flag = aabb.featureFlags;
     if (CheckFlags(flag, CLUSTER_GI_VOLUME_BIT))
     {
         const count = GIIndexLists.GIVolumeCountList[clusterIndex];
@@ -717,7 +719,8 @@ LocalLightsAmbientTransmission(
 ) f32x3
 {
     var light = f32x3(0);
-    const flag = ClusterAABBs[idx].featureFlags;
+    const aabb = bufferLoad(ClusterAABBs, idx);
+    const flag = aabb.featureFlags;
     if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights

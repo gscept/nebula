@@ -270,7 +270,7 @@ struct ClusterAABB
 };
 
 @Visibility("VS|CS|PS|RCS")
-group(FRAME_GROUP) uniform ClusterAABBs : [] *mutable ClusterAABB; 
+group(FRAME_GROUP) uniform ClusterAABBs : *[] mutable ClusterAABB;
 
 // this is used to keep track of how many lights we have active
 struct ClusterParams

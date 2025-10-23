@@ -266,7 +266,7 @@ log_conv(x0 : f32, x : f32, y0 : f32, y : f32) f32
 */
 GetPixelSize(uniform tex : *texture2D) f32x2
 {
-    var size : f32x2 = textureGetSize(tex);
+    var size : f32x2 = textureGetSizeMip(tex, 0u);
     size = f32x2(1.0f) / size;
     return size;
 }
@@ -277,7 +277,7 @@ GetPixelSize(uniform tex : *texture2D) f32x2
 */
 GetScaledUVs(uvs : f32x2, uniform tex : *texture2D, dimensions : f32x2) f32x2
 {
-    const texSize : f32x2 = textureGetSize(tex);
+    const texSize : f32x2 = textureGetSizeMip(tex, 0u);
     uvs = uvs * (dimensions / texSize);
     return uvs;
 }
@@ -288,7 +288,7 @@ GetScaledUVs(uvs : f32x2, uniform tex : *texture2D, dimensions : f32x2) f32x2
 */
 GetUV(pixel : i32x2, uniform tex : *texture2D) f32x2
 {
-    var size : f32x2 = textureGetSize(tex);
+    var size : f32x2 = textureGetSizeMip(tex, 0u);
     size = pixel / size;
     return size;
 }
@@ -299,7 +299,7 @@ GetUV(pixel : i32x2, uniform tex : *texture2D) f32x2
 */
 GetPixel(uv : f32x2, uniform tex : *texture2D) i32x2
 {
-    var size : i32x2 = textureGetSize(tex);
+    var size : i32x2 = textureGetSizeMip(tex, 0u);
     size = i32x2(uv * size);
     return size;
 }
@@ -310,7 +310,7 @@ GetPixel(uv : f32x2, uniform tex : *texture2D) i32x2
 */
 GetTextureRatio(uniform tex : *texture2D, pixelSize : f32x2) f32x2
 {
-    const size : i32x2 = textureGetSize(tex);
+    const size : i32x2 = textureGetSizeMip(tex, 0u);
     const currentTextureSize : f32x2 = f32x2(1.0f) / size;
     return size / currentTextureSize;
 }

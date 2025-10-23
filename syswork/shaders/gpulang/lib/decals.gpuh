@@ -33,7 +33,8 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
         viewPosDerivativeY = f32x2(0.0f);
     }
 
-    const flag = ClusterAABBs[idx].featureFlags;
+    const aabb = bufferLoad(ClusterAABBs, idx);
+    const flag = aabb.featureFlags;
     if (CheckFlags(flag, CLUSTER_PBR_DECAL_BIT))
     {
         const count = DecalIndexLists.PBRDecalCountList[idx];
@@ -62,9 +63,9 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
                 {
                     // calculate tbn
                     const d_tangent = decal.tangent;
-                    const binormal = cross(d_tangent, normal);
-                    const tangent = cross(binormal, normal);
-                    const tbn = f32x3x3(tangent, binormal, *normal);
+                    const binormal = cross(d_tangent, norm);
+                    const tangent = cross(binormal, norm);
+                    const tbn = f32x3x3(tangent, binormal, norm);
 
                     // calculate normal map in TBN space
                     var tNormal = f32x3(0, 0, 0);

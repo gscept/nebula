@@ -32,7 +32,7 @@ local_size_x(256)
 entry_point
 csClear() void
 {
-    atomicStore(&LocalHistogram[computeGetIndexInWorkgroup()], 0u, MemorySemantics.Relaxed);
+    atomicStore(&LocalHistogram[computeGetIndexInWorkgroup()], 0u, MemorySemantics.Release);
     //HistogramBuffer.Histogram[computeGetIndexInWorkgroup()] = 0;
 }
 
@@ -48,7 +48,7 @@ csMain() void
     pixel += HistogramConstants.WindowOffset;
 
     // clear LDS histogram chunk, since we will execute 256 threads per workgroup, each thread could clear one value
-    atomicStore(&LocalHistogram[histogramIndex], 0u, MemorySemantics.Relaxed);
+    atomicStore(&LocalHistogram[histogramIndex], 0u, MemorySemantics.Release);
     memoryBarrierWorkgroup();
 
     // don't sample from outside the texture
@@ -65,14 +65,14 @@ csMain() void
 
         // floor the value of luminance scaled to ubyte to find which bucket it belongs in
         const bucket = i32(floor(logLuminance * 255.0f));
-        atomicAdd(&LocalHistogram[bucket], 1u, MemorySemantics.Relaxed);
+        atomicAdd(&LocalHistogram[bucket], 1u, MemorySemantics.Release);
     }
 
     // synchronize and add to global atomic
     memoryBarrierWorkgroup();
 
     // same as with clear, each thread will contribute exactly one bucket to the global histogram
-    atomicAdd(&HistogramBuffer.Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.Relaxed);
+    atomicAdd(&HistogramBuffer.Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.Release);
 }
 
 //------------------------------------------------------------------------------

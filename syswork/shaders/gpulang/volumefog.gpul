@@ -24,7 +24,7 @@ csCull() void
     if (index1D > VolumeFogUniforms.NumVolumeFogClusters)
         return;
 
-    const aabb = bufferLoad(ClusterAABBs[index1D]);
+    const aabb = bufferLoad(ClusterAABBs, index1D);
 
     var flags = 0u;
 
@@ -62,7 +62,7 @@ csCull() void
     if (numFogs > 0)
         flags |= CLUSTER_FOG_BOX_BIT;
 
-    atomicOr(&ClusterAABBs[index1D].featureFlags, flags, MemorySemantics.Release);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
 }
 
 struct FogContribution
@@ -84,7 +84,7 @@ LocalFogVolumes(
     var ret : FogContribution;
     ret.density = density;
     ret.absorption = absorption;
-    const flag = ClusterAABBs[idx].featureFlags;
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
     if (CheckFlags(flag, CLUSTER_FOG_SPHERE_BIT))
     {
         // add turbidity for local fogs
@@ -147,7 +147,7 @@ LocalLightsFog(
 ) f32x3
 {
     var light = f32x3(0, 0, 0);
-    const flag = ClusterAABBs[idx].featureFlags;
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
     if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {
         // shade point lights
@@ -193,7 +193,7 @@ LocalLightsFog(
                 var shadowLookup = shadowProjLightPos.xy * f32x2(0.5f, -0.5f) + 0.5f;
                 shadowLookup.y = 1 - shadowLookup.y;
                 const receiverDepth = shadowProjLightPos.z;
-                shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, li.shadowExtension, shadowExt.shadowMap);
+                shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, u32(li.shadowExtension), shadowExt.shadowMap);
                 shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
             }
 
