@@ -4,8 +4,7 @@
 //  (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#define FORMAT r11g11b10f
-#define IMAGE_DATA_TYPE vec3
-#define IMAGE_DATA_SWIZZLE xyz
-#define IMAGE_DATA_EXPAND xyzx
-#include "downsample_cs.fxh" 
+#include "downsample_include.gpuh"
+const ImageFormatType = ImageFormat.R11g11b10f;
+const Kernel = KernelMethod.Avg;
+#include "downsample_cs.gpuh" 

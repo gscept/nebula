@@ -55,8 +55,8 @@ TestAABBSphere(aabb : ClusterAABB, pos : f32x3, radius : f32) b8
     {
         const v = (pos)[i];
 
-        if (v < aabb.minPoint[i]) sqDist += pow(aabb.minPoint[i] - v, 2.0f);
-        if (v > aabb.maxPoint[i]) sqDist += pow(v - aabb.maxPoint[i], 2.0f);
+        if v < aabb.minPoint[i] { sqDist += pow(aabb.minPoint[i] - v, 2.0f); }
+        if v > aabb.maxPoint[i] { sqDist += pow(v - aabb.maxPoint[i], 2.0f); }
     }
     return sqDist <= radius * radius;
 }
@@ -114,8 +114,7 @@ TestAABBOrthoProjection(aabb : ClusterAABB, viewProjection : f32x4x4) b8
         points[i] = points[i] * viewProjection;
 
         // Simply check if interlaps overlap with the unit cube
-        if (all((points[i].xyz > f32x3(-1.0)) == (points[i].xyz < f32x3(1.0))))
-            return true;
+        if all((points[i].xyz > f32x3(-1.0)) == (points[i].xyz < f32x3(1.0))) { return true; }
     }    
     return false;
 }

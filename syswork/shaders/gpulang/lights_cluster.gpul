@@ -20,8 +20,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > LightUniforms.NumLightClusters)
-        return;
+    if index1D > LightUniforms.NumLightClusters { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D); 
 
@@ -42,8 +41,7 @@ csCull() void
     LightIndexLists.PointLightCountList[index1D] = numLights;
 
     // update feature flags if we have any lights
-    if (numLights > 0)
-        flags |= CLUSTER_POINTLIGHT_BIT;
+    if numLights > 0 { flags |= CLUSTER_POINTLIGHT_BIT; }
 
     // update spotlights
     numLights = 0u;
@@ -66,8 +64,7 @@ csCull() void
     LightIndexLists.SpotLightCountList[index1D] = numLights;
 
     // update feature flags if we have any lights
-    if (numLights > 0)
-        flags |= CLUSTER_SPOTLIGHT_BIT;
+    if numLights > 0 { flags |= CLUSTER_SPOTLIGHT_BIT; }
 
     numLights = 0u;
     for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
@@ -86,8 +83,7 @@ csCull() void
     }
     LightIndexLists.AreaLightCountList[index1D] = numLights;
 
-    if (numLights > 0)
-        flags |= CLUSTER_AREALIGHT_BIT;
+    if numLights > 0 { flags |= CLUSTER_AREALIGHT_BIT; }
 
     atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
 }

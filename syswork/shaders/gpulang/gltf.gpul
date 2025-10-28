@@ -26,8 +26,7 @@ entry_point
 psGLTFDepthOnlyAlphaMask(in UV : f32x2) void
 {
     const baseColor = sample2D(GLTFConstants.baseColorTexture, MaterialSampler, UV);
-    if (baseColor.a <= GLTFConstants.alphaCutoff)
-        discard;
+    if (baseColor.a <= GLTFConstants.alphaCutoff) { discard; }
 }
 
 //------------------------------------------------------------------------------

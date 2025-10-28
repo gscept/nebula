@@ -87,9 +87,9 @@ fetch2DArray(handle : u32, uvw : u32x3, lod : u32) f32x4
     return textureFetch(Textures2DArray[handle], uvw, lod);
 }
 
-fetch2DMS(handle : u32, uv : u32x2, lod : u32) f32x4
+fetch2DMS(handle : u32, uv : u32x2, samp : u32) f32x4
 {
-    return textureFetch(Textures2DMS[handle], uv, lod);
+    return textureFetch(Textures2DMS[handle], uv, samp);
 }
 
 fetch3D(handle : u32, uvw : u32x3, lod : u32) f32x4

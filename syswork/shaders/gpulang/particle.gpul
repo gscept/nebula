@@ -263,8 +263,7 @@ psLit(in ViewSpacePosition : f32x4,
     const particleDepth = pixelCoord.z;
     const AlphaMod = saturate(abs(depth - particleDepth) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
     const finalAlpha = albedo.a * Color.a * AlphaMod;
-    if (finalAlpha < 0.001f)
-        discard;
+    if (finalAlpha < 0.001f) { discard; }
 
     var tNormal = f32x3(0,0,0);
     tNormal.xy = (sample2D(BSDFConstants.NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;

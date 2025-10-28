@@ -81,8 +81,7 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
             }
 
             // no need to go on if the pixel is saturated with decals
-            if (totWeight >= 1.0f)
-                break;
+            if totWeight >= 1.0f { break; }
         }
     }
 

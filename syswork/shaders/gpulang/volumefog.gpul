@@ -21,8 +21,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > VolumeFogUniforms.NumVolumeFogClusters)
-        return;
+    if index1D > VolumeFogUniforms.NumVolumeFogClusters { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D);
 
@@ -42,9 +41,8 @@ csCull() void
     FogIndexLists.FogSphereCountList[index1D] = numFogs;
 
     // update feature flags if we have any lights
-    if (numFogs > 0)
-        flags |= CLUSTER_FOG_SPHERE_BIT;
-
+    if numFogs > 0 { flags |= CLUSTER_FOG_SPHERE_BIT; }
+        
     // update fog boxes
     numFogs = 0u;
     for (var i = 0u; i < VolumeFogUniforms.NumFogBoxes; i++)
@@ -59,9 +57,8 @@ csCull() void
     FogIndexLists.FogBoxCountList[index1D] = numFogs;
 
     // update feature flags if we have any lights
-    if (numFogs > 0)
-        flags |= CLUSTER_FOG_BOX_BIT;
-
+    if numFogs > 0 { flags |= CLUSTER_FOG_BOX_BIT; }
+        
     atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
 }
 
@@ -172,8 +169,10 @@ LocalLightsFog(
             var shadowExt : SpotLightShadowExtension;
             const li = LightLists.SpotLights[lidx];
 
-            if (li.shadowExtension != -1)
+            if li.shadowExtension != -1 
+            {
                 shadowExt = LightLists.SpotLightShadow[li.shadowExtension];
+            }
 
             // calculate attentuation and angle falloff, and just multiply by color
             var lightDir = (li.position.xyz - viewPos);
@@ -234,8 +233,7 @@ csRender() void
     var depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], upscaleCoord, 0).r;
     const seed = coord * (ClusterUniforms.InvFramebufferDimensions);
 
-    if (depth == 1)
-        depth = 0.999998f;
+    if depth == 1 { depth = 0.999998f; }
 
     // find last point to march
     const viewPos = PixelToView(seed, depth, ViewConstants.InvProjection);

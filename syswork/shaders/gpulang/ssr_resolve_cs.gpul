@@ -41,8 +41,7 @@ csMain() void
 {
     const location = i32x2(computeGetGlobalThreadIndices().xy);
     const screenSize = textureGetSize(ReflectionBuffer);
-    if (location.x >= screenSize.x || location.y > screenSize.y)
-        return;
+    if location.x >= screenSize.x || location.y > screenSize.y { return; }
 
     const invScreenSize = f32x2(1.0/screenSize.x, 1.0/screenSize.y);
 

@@ -61,9 +61,13 @@ GetInvertedOcclusionSpotLight(
     // calculate average of 4 closest pixels
     var shadowSample = f32x2(0.0f);
     if (gplIsComputeShader)
+    {
         shadowSample = sample2DArrayLod(Texture, SpotlightTextureSampler, shadowUv, 0).rg;
+    }
     else
+    {
         shadowSample = sample2DArray(Texture, SpotlightTextureSampler, shadowUv).rg;
+    }
 
     // get pixel size of shadow projection texture
     return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.000001f);
@@ -229,8 +233,7 @@ CalculateRectLight(
 {
     const lightDir = (li.position.xyz - pos);
     const attenuation = FalloffWindow(li.range, lightDir);
-    if (attenuation < 0.0001)
-        return f32x3(0);
+    if (attenuation < 0.0001) { return f32x3(0); }
 
     // Calculate LTC LUT uv
     const NV = saturate(dot(normal, viewVec));
@@ -281,8 +284,8 @@ CalculateDiskLight(
 {
     const lightDir = (li.position.xyz - pos);
     const attenuation = FalloffWindow(li.range, lightDir);
-    if (attenuation < 0.0001)
-        return f32x3(0);
+    if (attenuation < 0.0001) { return f32x3(0); }
+        
 
     // Calculate LTC LUT uv
     const NV = saturate(dot(normal, viewVec));
@@ -334,8 +337,7 @@ CalculateTubeLight(
 {
     const lightDir = (li.position.xyz - pos);
     const attenuation = FalloffWindow(li.range, lightDir);
-    if (attenuation < 0.0001)
-        return f32x3(0);
+    if (attenuation < 0.0001) { return f32x3(0); }
 
     // Calculate LTC LUT uv
     const NV = saturate(dot(normal, viewVec));
@@ -471,7 +473,7 @@ LocalLights(
             );
         }
     }
-    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
+    if CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT)
     {
         const count = LightIndexLists.SpotLightCountList[clusterIndex];
         var shadowExt : SpotLightShadowExtension;
@@ -485,9 +487,13 @@ LocalLights(
 
             // if we have extensions, load them from their respective buffers
             if (li.shadowExtension != -1)
+            {
                 shadow = CalculateSpotLightShadow(li, LightLists.SpotLightShadow[li.shadowExtension], pos);
-            if (li.projectionExtension != -1)
+            }
+            if (li.projectionExtension != -1)  
+            {
                 projection = CalculateSpotLightProjection(li, LightLists.SpotLightProjection[li.projectionExtension], pos);
+            }
 
             light += CalculateSpotLight(
                 li,
@@ -513,7 +519,9 @@ LocalLights(
             const li = LightLists.AreaLights[lidx];
 
             if (li.shadowExtension != -1)
+            {
                 shadowExt = LightLists.AreaLightShadow[li.shadowExtension];
+            }
 
             if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_RECT))
             {
@@ -579,16 +587,19 @@ GI(
             const gi = GIVolumeLists.GIVolumes[lidx];
             const relativePosition = pos - gi.Offset;
             /// TODO: Rotate
-            if (relativePosition.x > gi.Size.x || relativePosition.y > gi.Size.y || relativePosition.z > gi.Size.z)
-                continue;
+            if relativePosition.x > gi.Size.x || relativePosition.y > gi.Size.y || relativePosition.z > gi.Size.z { continue; }
                 
             const edgeDistance = gi.Size - abs(relativePosition);
             const edgeMinDistance = min(min(edgeDistance.x, edgeDistance.y), edgeDistance.z);
             var weight = 0.0f;
             if (gi.Blend == 0.0f)
+            {
                 weight = (edgeMinDistance < gi.BlendCutoff) ? 0.0f : 1.0f;
-            else
+            }
+            else   
+            {
                 weight = clamp((edgeMinDistance - gi.BlendCutoff) / gi.Blend, 0.0f, 1.0f);
+            }
             
             const surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
             //light += vec3(1,0,0);
@@ -759,9 +770,13 @@ LocalLightsAmbientTransmission(
 
             // if we have extensions, load them from their respective buffers
             if (li.shadowExtension != -1)
+            {
                 shadow = CalculateSpotLightShadow(li, LightLists.SpotLightShadow[li.shadowExtension], viewPos.xyz);
+            }
             if (li.projectionExtension != -1)
+            {
                 projection = CalculateSpotLightProjection(li, LightLists.SpotLightProjection[li.projectionExtension], viewPos.xyz);
+            }
 
             light += CalculateSpotLightAmbientTransmission(
                 li,

@@ -210,8 +210,7 @@ psShadowAlpha(
  void
 {
 	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < BasicConstants.AlphaSensitivity)
-        discard;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
 }
 
 //------------------------------------------------------------------------------
@@ -237,8 +236,7 @@ psESMAlpha(
 ) void
 {
 	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < BasicConstants.AlphaSensitivity) 
-        discard;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
     pixelExportColor((ProjPos.z / ProjPos.w) * DepthScaling, 0);
 }
 
@@ -273,8 +271,7 @@ psVSMAlpha(
 ) void
 {
 	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < BasicConstants.AlphaSensitivity) 
-        discard;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
 
 	const depth = ProjPos.z / ProjPos.w;
 	const moment1 = depth;
@@ -319,8 +316,7 @@ psVSMAlphaPoint(
 ) void
 {
 	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < BasicConstants.AlphaSensitivity) 
-        discard;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
 
 	const depth = ProjPos.z / ProjPos.w;
 	const moment1 = depth;
@@ -373,7 +369,7 @@ Variance(
 ChebyshevUpperBound(moments : f32x2, t : f32, tolerance : f32) f32
 {
 	// One-tailed inequality valid if t > Moments.x
-	if (t <= moments.x) return 1.0f;
+	if (t <= moments.x) { return 1.0f; }
 
 	// Compute variance.
 	var variance = moments.y - (moments.x* moments.x);
@@ -446,9 +442,13 @@ PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : 
         for (var j : i32 = -NumSamples; j < NumSamples; j++)
         {
 			if (gplIsComputeShader)
+            {
 				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx, 0);
+            }
 			else
+            {
 				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx);
+            }
         }
     }
     totalShadow *= Weight;

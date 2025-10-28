@@ -49,8 +49,7 @@ psMain(in UV : f32x2)  void
 {
     const diffColor = textureSample(Textures2D[UnlitConstants.AlbedoMap], GeometryTextureSampler, UV.xy);
     const alpha = diffColor.a;
-    if (alpha < UnlitConstants.AlphaSensitivity) 
-        discard;
+    if (alpha < UnlitConstants.AlphaSensitivity) { discard; }
     pixelExportColor(diffColor * Brightness, 0);
 }
 
@@ -62,7 +61,7 @@ psMainAlpha(in UV : f32x2) void
 {
     const diffColor = textureSample(Textures2D[UnlitConstants.AlbedoMap], GeometryTextureSampler, UV.xy);
     const alpha = diffColor.a;
-    if (alpha < UnlitConstants.AlphaSensitivity) discard;
+    if (alpha < UnlitConstants.AlphaSensitivity) { discard; }
     pixelExportColor(diffColor * UnlitConstants.AlphaBlendFactor * Brightness, 0);
 }
 

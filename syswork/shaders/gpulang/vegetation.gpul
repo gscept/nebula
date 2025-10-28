@@ -233,8 +233,7 @@ csGenerateDraws() void
         const cameraToPos = VegetationGenerateUniforms.CameraPosition.xyz - pos;
         const angle = dot(normalize(cameraToPos), VegetationGenerateUniforms.CameraForward.xyz);
 
-        if (angle < VegetationGenerateUniforms.Fov)
-            return;
+        if angle < VegetationGenerateUniforms.Fov { return; }
 
         const pixel = samplePos * VegetationGenerateUniforms.HeightMapSize;
         const invHeightMapSize = 1.0f / VegetationGenerateUniforms.HeightMapSize;
@@ -248,8 +247,7 @@ csGenerateDraws() void
         {
             const grassInfo = bufferLoad(GrassInfos, i);
 
-            if (!grassInfo.used)
-                continue;
+            if !grassInfo.used { continue; }
 
             const mask = sampleMask(i, PointSampler, samplePos).r;
 
@@ -286,8 +284,7 @@ csGenerateDraws() void
         {
             const meshInfo = bufferLoad(MeshInfos, i);
 
-            if (!meshInfo.used)
-                continue;
+            if !meshInfo.used { continue; }
 
             // calculate rules
             const heightCutoff = height < meshInfo.heightThreshold;
@@ -359,9 +356,13 @@ vsDrawGrass(
     WorldSpacePos = position + instanceUniforms.position + displacement * 0.2f;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
         vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    }
     else
+    {
         vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -378,8 +379,7 @@ psDrawGrassZ(
 {
     const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
 
-    if (albedo.a < 0.5f) // alpha cut-off
-        discard;
+    if albedo.a < 0.5f { discard; }
 }
 
 //------------------------------------------------------------------------------
@@ -400,8 +400,7 @@ psDrawGrass(
    var geometryNormal = normal;
 
     // flip normal if other side
-    if (!pixelGetFrontFacing())
-        geometryNormal *= -1.0f;
+    if !pixelGetFrontFacing() { geometryNormal *= -1.0f; }
 
     const binormal = cross(geometryNormal, tangent);
     const tbn = f32x3x3(tangent, binormal, geometryNormal);
@@ -451,9 +450,13 @@ vsDrawMeshVColor(
     WorldSpacePos = instanceUniforms.position + rotatedPos * 0.05f;
 
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
         vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    }
     else
+    {
         vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -491,9 +494,13 @@ vsDrawMesh(
 
     Lod = 0;
     if (instanceUniforms.lodFlags & LOD_BILLBOARD)
+    {
         vertexExportCoordinates(ViewConstants.Projection * f32x4(WorldSpacePos, 1));
+    }
     else
+    {
         vertexExportCoordinates(ViewConstants.Projection * ViewConstants.View * f32x4(WorldSpacePos, 1));
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -510,8 +517,7 @@ psDrawMeshZ(
 {
     const albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
 
-    if (albedo.a < 0.5f) // alpha cut-off
-        discard;
+    if albedo.a < 0.5f { discard; }
 }
 
 //------------------------------------------------------------------------------
@@ -545,8 +551,8 @@ psDrawMesh(
     */
 
     // flip normal if other side
-    if (!pixelGetFrontFacing())
-        geometryNormal *= -1.0f;
+    if !pixelGetFrontFacing() { geometryNormal *= -1.0f; }
+        
 
     const binormal = cross(geometryNormal, tangent);
     const tbn = f32x3x3(tangent, binormal, geometryNormal);

@@ -198,8 +198,7 @@ RaymarchScreenSpace(rayOrigin : f32x3, rayDirection : f32x3) HitResult
 {
     var ret : HitResult;
     ret.hit = false;
-    if (rayOrigin.z < -distanceCutoff)
-        return ret;
+    if (rayOrigin.z < -distanceCutoff) { return ret; }
 
     var reflection = (rayDirection * rayOffset) + rayOrigin;
     var rayLength = length(((rayDirection * marchingStepSize) * maxMarchingSteps) + reflection);
@@ -254,8 +253,7 @@ csMain() void
     const relativeResolution = 0.5f;
     const location = i32x2(computeGetGlobalThreadIndices().xy);
     const screenSize = textureGetSize(TraceBuffer);
-    if (location.x >= screenSize.x || location.y > screenSize.y)
-        return;
+    if location.x >= screenSize.x || location.y > screenSize.y { return; }
 
     const invScreenSize = f32x2(1.0f/screenSize.x, 1.0f/screenSize.y);
 

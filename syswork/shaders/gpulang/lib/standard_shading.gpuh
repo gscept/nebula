@@ -24,10 +24,8 @@ enum PackColorMethods
 link_defined PackColorMethod  = PackColorMethods.Solid;
 PackColor(color : f32x3, alpha : f32) f32x4
 {
-    if (PackColorMethod == PackColorMethods.Solid)
-        return f32x4(color, 1.0f);
-    else if (PackColorMethod == PackColorMethods.Transparent)
-        return f32x4(color, alpha);
+    if PackColorMethod == PackColorMethods.Solid { return f32x4(color, 1.0f); }
+    else if PackColorMethod == PackColorMethods.Transparent { return f32x4(color, alpha); }
     return f32x4(color, 1.0f);
 }
 

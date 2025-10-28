@@ -46,8 +46,7 @@ BillboardPS(
 {
     const diffColor = sample2D(Billboard.AlbedoMap, BillboardSampler, UV) * Billboard.Color;
     const alpha = diffColor.w;
-    if (alpha < 0.5f) 
-        discard;
+    if (alpha < 0.5f) { discard; }
         
     pixelExportColor(EncodeHDR(diffColor), 0);
 }

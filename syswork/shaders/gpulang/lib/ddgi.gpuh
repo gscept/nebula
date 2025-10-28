@@ -361,8 +361,7 @@ EvaluateDDGIIrradiance(
             }
             const texelPosition = DDGIProbeTexelPosition(probeIndex, volume.GridCounts);
             const state = castToI32(fetch2D(volume.States, texelPosition, 0).x);
-            if (state == PROBE_STATE_INACTIVE)
-                continue;
+            if (state == PROBE_STATE_INACTIVE) { continue; }
         }
         
         const worldPosToAdjacentProbe = normalize(adjacentProbeWorldPosition - worldPosition);
@@ -429,15 +428,13 @@ EvaluateDDGIIrradiance(
         accumulatedWeights += weight;
     }
     
-    if (accumulatedWeights == 0.0f)
-        return f32x3(0);
+    if (accumulatedWeights == 0.0f) { return f32x3(0); }
         
     irradiance *= (1.0f / accumulatedWeights);
     irradiance *= irradiance;
     irradiance *= PI * 2.0f;
     
-    if ((options & LOW_PRECISION_IRRADIANCE_OPTION) != 0)
-        irradiance *= 1.0989f; 
+    if ((options & LOW_PRECISION_IRRADIANCE_OPTION) != 0) { irradiance *= 1.0989f; }
     
     return irradiance;
 }

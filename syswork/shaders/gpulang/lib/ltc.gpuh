@@ -69,8 +69,7 @@ LtcRectIntegrate(
     const dir = corners[0] - p;
     const lightNormal = cross(corners[1] - corners[0], corners[3] - corners[0]);
     const behind = dot(dir, lightNormal) < 0.0f;
-    if (behind && !twoSided)
-        return 0.0f;
+    if (behind && !twoSided) { return 0.0f; }
 
     L[0] = normalize(L[0]);
     L[1] = normalize(L[1]);
@@ -140,9 +139,13 @@ LtcSolveCubic(Coefficient : f32x4) f32x3
 
         var xl : f32;
         if ((x_1a + x_3a) > 2.0f * B)
+        {
             xl = x_1a;
+        }
         else
+        {
             xl = x_3a;
+        }
 
         xlc = f32x2(xl - B, A);
     }
@@ -161,9 +164,13 @@ LtcSolveCubic(Coefficient : f32x4) f32x3
 
         var xs : f32;
         if (x_1d + x_3d < 2.0f * C)
+        {
             xs = x_1d;
+        }
         else
+        {
             xs = x_3d;
+        }
 
         xsc = f32x2(-D, xs + C);
     }
@@ -177,9 +184,13 @@ LtcSolveCubic(Coefficient : f32x4) f32x3
     var Root = f32x3(xsc.x / xsc.y, xmc.x / xmc.y, xlc.x / xlc.y);
 
     if (Root.x < Root.y && Root.x < Root.z)
+    {
         Root.xyz = Root.yxz;
+    }
     else if (Root.z < Root.x && Root.z < Root.y)
+    {
         Root.xyz = Root.xzy;
+    }
 
     return Root;
 }
@@ -218,8 +229,7 @@ LtcDiskIntegrate(
         v2 = minv * v2;
     }
 
-    if (!twoSided && dot(cross(v1, v2), c) < 0.0f)
-        return 0.0f;
+    if (!twoSided && dot(cross(v1, v2), c) < 0.0f) { return 0.0f; }
 
     // Compute ellipsis eigen vectors
     var a, b : f32;
@@ -347,9 +357,9 @@ LtcLineIntegrate(
     const tangent = normalize(p2o - p1o);
 
     var p1d, p2d = p1o, p2o;
-    if (p1o.z <= 0.0 && p2o.z <= 0.0) return 0.0;
-    if (p1o.z < 0.0) p1d = (+p1o * p2o.z - p2o * p1o.z) / (+p2o.z - p1o.z);
-    if (p2o.z < 0.0) p2d = (-p1o * p2o.z + p2o * p1o.z) / (-p2o.z + p1o.z);
+    if (p1o.z <= 0.0 && p2o.z <= 0.0) { return 0.0; }
+    if (p1o.z < 0.0) { p1d = (+p1o * p2o.z - p2o * p1o.z) / (+p2o.z - p1o.z); }
+    if (p2o.z < 0.0) { p2d = (-p1o * p2o.z + p2o * p1o.z) / (-p2o.z + p1o.z); }
 
     const l1 = dot(p1d, tangent);
     const l2 = dot(p2d, tangent);

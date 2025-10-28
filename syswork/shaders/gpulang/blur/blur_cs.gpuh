@@ -14,31 +14,31 @@
 #include <blur_include.gpuh>
 
 generate
-<
+{
     // Configure some defaults
-    if (!declared<BlurKernel>)
-    <
+    if !declared<BlurKernel>
+    {
         const BlurKernel = BlurKernelSize.Size8;
-    >
-    if (!declared<ImageFormatType>)
-    <
+    }
+    if !declared<ImageFormatType>
+    {
         const ImageFormatType = ImageFormat.Rgba16f;
-    >
-    if (!declared<ImageIsArray>)
-    <
+    }
+    if !declared<ImageIsArray>
+    {
         const ImageIsArray : b8 = false;
-    >
+    }
 
-    if (BlurKernel == BlurKernelSize.Size8)
-    <
+    if BlurKernel == BlurKernelSize.Size8
+    {
         const KernelRadius = 8;
         const weights : []f32 = [
             0.000229	,0.005977	,0.060598	,0.241732	
             ,0.382928	,0.241732	,0.060598	,0.005977	,0.000229
         ];
-    >
-    else if (BlurKernel == BlurKernelSize.Size16)
-    <
+    }
+    else if BlurKernel == BlurKernelSize.Size16
+    {
         const KernelRadius = 16;
         const weights : []f32 = [
             0.014076	,0.022439	,0.033613	,0.047318	
@@ -46,9 +46,9 @@ generate
            ,0.102934	,0.099783	,0.090898	,0.077812	
            ,0.062595	,0.047318	,0.033613	,0.022439	,0.014076
         ];
-    >
-    else if (BlurKernel == BlurKernelSize.Size32)
-    <
+    }
+    else if BlurKernel == BlurKernelSize.Size32
+    {
         const KernelRadius = 32;
         const weights : []f32 = [
             0.000485	,0.000899	,0.001603	,0.002745	
@@ -60,9 +60,9 @@ generate
            ,0.022263	,0.015864	,0.010863	,0.007147	
            ,0.004519	,0.002745	,0.001603	,0.000899	,0.000485
         ];
-    >
-    else if (BlurKernel == BlurKernelSize.Size64)
-    <
+    }
+    else if BlurKernel == BlurKernelSize.Size64
+    {
         const KernelRadius = 64;
         const weights : []f32 = [
             0.00024		,0.000328	,0.000445	,0.000598	,0.000795	
@@ -79,26 +79,26 @@ generate
            ,0.002841	,0.002246	,0.001759	,0.001363	,0.001046	
            ,0.000795	,0.000598	,0.000445	,0.000328	,0.00024
         ];
-    >
+    }
 
     const BlurTileWidth = 64 - KernelRadius * 2;
     const SharedMemSize = KernelRadius * BlurTileWidth * KernelRadius;
 
-    if (ImageIsArray)
-    <
+    if ImageIsArray
+    {
         alias textureType as texture2DArray;
         alias coordType as i32x3;
         Coord(x : i32, y : i32, z : i32) i32x3 { return i32x3(x, y, z); }
-    >
+    }
     else
-    <
+    {
         alias textureType as texture2D;
         alias coordType as i32x2;
         Coord(x : i32, y : i32, z : i32) i32x2 { return i32x2(x, y); }
-    >
+    }
 
-    if (ImageFormatType == ImageFormat.Rgba16f)
-    <
+    if ImageFormatType == ImageFormat.Rgba16f
+    {
         uniform BlurImageX : *mutable rgba16f textureType;
         uniform BlurImageY : *mutable rgba16f textureType;
         Swizzle(val : f32x4) f32x4 { return val; }
@@ -107,9 +107,9 @@ generate
         Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, lod); }
         Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x4;
-    >
-    else if (ImageFormatType == ImageFormat.Rgb16f)
-    <
+    }
+    else if ImageFormatType == ImageFormat.Rgb16f
+    {
         uniform BlurImageX : *mutable rgba16f textureType;
         uniform BlurImageY : *mutable rgba16f textureType;
         Swizzle(val : f32x4) f32x3 { return val.xyz; }
@@ -118,9 +118,9 @@ generate
         Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
         Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x3;
-    >
-    else if (ImageFormatType == ImageFormat.Rg16f)
-    <
+    }
+    else if ImageFormatType == ImageFormat.Rg16f
+    {
         uniform BlurImageX : *mutable rg16f textureType;
         uniform BlurImageY : *mutable rg16f textureType;
         Swizzle(val : f32x4) f32x2 { return val.xy; }
@@ -129,9 +129,9 @@ generate
         Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
         Store(uniform image : *mutable rg16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x2;
-    >
-    else if (ImageFormatType == ImageFormat.Rg32f)
-    <
+    }
+    else if ImageFormatType == ImageFormat.Rg32f
+    {
         uniform BlurImageX : *mutable rg32f textureType;
         uniform BlurImageY : *mutable rg32f textureType;
         Swizzle(val : f32x4) f32x2 { return val.xy; }
@@ -140,8 +140,8 @@ generate
         Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
         Store(uniform image : *mutable rg32f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x2;
-    >
->;
+    }
+};
 
 sampler_state InputSampler
 {
@@ -180,7 +180,9 @@ csMainX() void
     const z = computeGetWorkgroupIndices().z;
 
     if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
+    {
         SharedMemory[computeGetLocalThreadIndices().x] = Empty();
+    }
     else
     {
         // load into workgroup saved memory, this allows us to use the original pixel even though
@@ -228,7 +230,9 @@ csMainY() void
     const z = computeGetWorkgroupIndices().z;
 
     if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
+    {
         SharedMemory[computeGetLocalThreadIndices().x] = Empty();
+    }
     else
     {
         // load into workgroup saved memory, this allows us to use the original pixel even though

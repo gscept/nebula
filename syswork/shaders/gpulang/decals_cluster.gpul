@@ -54,8 +54,7 @@ csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > DecalUniforms.NumDecalClusters)
-        return;
+    if (index1D > DecalUniforms.NumDecalClusters) { return; }
 
     const aabb = bufferLoad(ClusterAABBs, index1D);
 
@@ -75,8 +74,7 @@ csCull() void
     DecalIndexLists.PBRDecalCountList[index1D] = numDecals;
 
     // update feature flags if we have any decals
-    if (numDecals > 0)
-        flags |= CLUSTER_PBR_DECAL_BIT;
+    if (numDecals > 0) { flags |= CLUSTER_PBR_DECAL_BIT; }
 
     // update emissive decals
     numDecals = 0u;
@@ -92,8 +90,7 @@ csCull() void
     DecalIndexLists.EmissiveDecalCountList[index1D] = numDecals;
 
     // update feature flags if we have any decals
-    if (numDecals > 0)
-        flags |= CLUSTER_EMISSIVE_DECAL_BIT;
+    if (numDecals > 0) { flags |= CLUSTER_EMISSIVE_DECAL_BIT; }
 
     // This is a shorthand for the above
     atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
@@ -166,8 +163,7 @@ psRenderPBR(in UV : f32x2) void
     const stencil = fetchStencil(DecalUniforms.StencilBuffer, coord, 0);
     const normal = fetch2D(DecalUniforms.NormalBufferCopy, coord, 0).rgb;
 
-    if (CheckFlags(stencil, STENCIL_BIT_CHARACTER))
-        discard;
+    if (CheckFlags(stencil, STENCIL_BIT_CHARACTER)) { discard; }
 
     // convert screen coord to view-space position
     const viewPos = PixelToView(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvProjection);
@@ -242,8 +238,7 @@ psRenderPBR(in UV : f32x2) void
             }
 
             // no need to go on if the pixel is saturated with decals
-            if (totWeight >= 1.0f)
-                break;
+            if (totWeight >= 1.0f) { break; }
         }
     }
 
@@ -324,8 +319,7 @@ psRenderEmissive(in UV : f32x2) void
             }
 
             // no need to go on if the pixel is saturated with decals
-            if (totWeight >= 1.0f)
-                break;
+            if (totWeight >= 1.0f)  { break; }
         }
     }
 

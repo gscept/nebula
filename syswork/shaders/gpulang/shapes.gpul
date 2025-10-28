@@ -177,8 +177,7 @@ psTriangles(
 {
     var dist = evalMinDistanceToEdges(distance);
     const halfLineWidth = 0.5f * ShapeUniforms.LineWidth;
-    if (dist > halfLineWidth + 1.0f)
-        discard;
+    if (dist > halfLineWidth + 1.0f) { discard; }
 
     dist = clamp((dist - (halfLineWidth - 1.0f)), 0, 2.0f);
     dist *= dist;

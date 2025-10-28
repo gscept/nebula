@@ -1,0 +1,482 @@
+//------------------------------------------------------------------------------
+//  downsample_cs.gpuh
+//  Parallel reduction downsample shader, based on https://github.com/GPUOpen-Effects/FidelityFX-SPD/blob/master/ffx-spd/ffx_spd.h
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+
+const KernelSize = 256u;
+const SharedMemSize = 16u;
+
+struct DownsampleData
+{
+    Dimensions : i32x2;
+    Mips : u32;
+    NumGroups : u32;
+};
+uniform DownsampleUniforms : *DownsampleData;
+
+generate
+{
+    if !declared<ImageIsArray>
+    {
+        const ImageIsArray : b8 = false;
+    }
+
+    if !declared<Kernel>
+    {
+        const Kernel : u32 = KernelMethod.Avg;
+    }
+
+    if !declared<ImageFormatType>
+    {
+        const ImageFormatType = ImageFormat.R32f;
+    }
+
+    if ImageFormatType == ImageFormat.R32f
+    {
+        alias dataType as f32;
+    }
+    else if ImageFormatType == ImageFormat.R11g11b10f
+    {
+        alias dataType as f32x3;
+    }
+
+    if Kernel == KernelMethod.Avg
+    {
+        Reduce(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType) dataType { return (p0 + p1 + p2 + p3) * 0.25f; }
+    }
+    else if Kernel == KernelMethod.Max
+    {
+        Reduce(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType) dataType { return max(max(max(p0, p1), p2), p3); }
+    }
+    else if Kernel == KernelMethod.Min
+    {
+        Reduce(p0 : dataType, p1 : dataType, p2 : dataType, p3 : dataType) dataType { return min(min(min(p0, p1), p2), p3); }
+    }
+
+    if ImageFormatType == ImageFormat.R32f
+    {
+        uniform Input : *mutable r32f texture2D;
+        uniform Output : [13]* mutable r32f texture2D;
+        
+
+        if ImageIsArray
+        {
+            Sample2x2(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).x;
+                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).x;
+                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).x;
+                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).x;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Sample2x2Output(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).x;
+                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).x;
+                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).x;
+                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).x;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
+            {
+                textureStore(Output[mip], min(Dimensions, texel), value.x);
+            }
+        }
+        else
+        {
+            Sample2x2(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel)).x;
+                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).x;
+                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).x;
+                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).x;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Sample2x2Output(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel)).x;
+                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).x;
+                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).x;
+                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).x;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
+            {
+                textureStore(Output[mip], i32x3(min(DownsampleUniforms.Dimensions, texel), slice), value);
+            }
+        }
+        workgroup SharedMemory : [SharedMemSize][SharedMemSize]f32;
+    }
+    else if ImageFormatType == ImageFormat.R11g11b10f
+    {
+        uniform Input : *mutable r11g11b10f texture2D;
+        uniform Output : [13]* mutable r11g11b10f texture2D;
+
+        if ImageIsArray
+        {
+            Sample2x2(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).xyz;
+                samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
+                samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
+                samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Sample2x2Output(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).xyz;
+                samples[1] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
+                samples[2] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
+                samples[3] = textureLoad(Output[5], i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
+            {
+                textureStore(Output[mip], i32x3(min(Dimensions, texel), slice), f32x4(value, 0, 0, 0));
+            }
+        }
+        else
+        {
+            Sample2x2(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel)).xyz;
+                samples[1] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).xyz;
+                samples[2] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).xyz;
+                samples[3] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).xyz;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Sample2x2Output(texel: i32x2, slice: u32) dataType 
+            {
+                var samples: [4]dataType;
+                samples[0] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel)).xyz;
+                samples[1] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0))).xyz;
+                samples[2] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1))).xyz;
+                samples[3] = textureLoad(Output[5], min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1))).xyz;
+                return Reduce(samples[0], samples[1], samples[2], samples[3]);
+            }
+
+            Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
+            {
+                textureStore(Output[mip], min(DownsampleUniforms.Dimensions, texel), f32x4(value, 0));
+            }
+        }
+
+        workgroup SharedMemory : [SharedMemSize][SharedMemSize]f32x3;
+    }
+};
+workgroup Counter : u32;
+
+struct CounterData
+{
+    counter : u32;
+};
+@Visibility("CS")
+uniform Counters : *[] mutable CounterData;
+
+//------------------------------------------------------------------------------
+/**
+*/
+LDSLoad(x : u32, y : u32) dataType
+{
+    return SharedMemory[x][y];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+LDSStore(x : u32, y : u32, value : dataType) void
+{
+    SharedMemory[x][y] = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Use quad wave intrinsics to reduce by reading from neighbouring threads
+*/
+ReduceQuad(pixel : dataType) dataType
+{
+    const p0 = pixel;
+    const p1 = subgroupSwapHorizontal(pixel);
+    const p2 = subgroupSwapVertical(pixel);
+    const p3 = subgroupSwapDiagonal(pixel);
+    return Reduce(p0, p1, p2, p3);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Downsample mip 0 and 1
+*/
+Mips0_1(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mips : u32, slice : u32) void
+{
+    // we are taking 4 samples per thread
+    var pixels : [4]dataType;
+
+    // the indexing logic is as such:
+    // we sample in a 8x8 grid, so the grid offset is the workGroupId * 8 * 8 = workGroupId * 64
+    // the offset within the 8x8 grid is the x and y coordinate, multiplied by 2 since each sample is done in a 2x2 quad
+    // each of the 4 samples are offset by half the grid size to account for upper left, upper right, lower left, lower right
+    // the destination pixel then naturally is half of that (offset: 32, grid offset is 16 and index multiplier is 1)
+
+    // every thread is offset by a 8x8 grid, so the offset is the group index * 64
+    // then the offset within that grid is every other pixel, which is incremented by 32
+    var sourceTexelIndex = workGroupId * 64 + i32x2(x * 2, y * 2);
+    var targetTexelIndex = workGroupId * 32 + i32x2(x, y);
+    pixels[0] = Sample2x2(sourceTexelIndex, slice);
+    Save(targetTexelIndex, pixels[0], 0, slice);
+
+    sourceTexelIndex = workGroupId * 64 + i32x2(x * 2 + 32, y * 2);
+    targetTexelIndex = workGroupId * 32 + i32x2(x + 16, y);
+    pixels[1] = Sample2x2(sourceTexelIndex, slice);
+    Save(targetTexelIndex, pixels[1], 0, slice);
+
+    sourceTexelIndex = workGroupId * 64 + i32x2(x * 2, y * 2 + 32);
+    targetTexelIndex = workGroupId * 32 + i32x2(x, y + 16);
+    pixels[2] = Sample2x2(sourceTexelIndex, slice);
+    Save(targetTexelIndex, pixels[2], 0, slice);
+
+    sourceTexelIndex = workGroupId * 64 + i32x2(x * 2 + 32, y * 2 + 32);
+    targetTexelIndex = workGroupId * 32 + i32x2(x + 16, y + 16);
+    pixels[3] = Sample2x2(sourceTexelIndex, slice);
+    Save(targetTexelIndex, pixels[3], 0, slice);
+
+    // in case we don't have more than 1 mip in the chain, abort early
+    if (mips <= 1) 
+    {
+        return;
+    }
+
+    // now all we have to do is to reduce the same pixels using subgroup intrinsics to get neighbouring thread values!
+    pixels[0] = ReduceQuad(pixels[0]);
+    pixels[1] = ReduceQuad(pixels[1]);
+    pixels[2] = ReduceQuad(pixels[2]);
+    pixels[3] = ReduceQuad(pixels[3]);
+
+    // only store value for every fourth pixel
+    if ((localIndex % 4) == 0)
+    {
+        // now the grid offset is going to be 16, the stride multiplier / 2 and stride offset 8
+        // also store the value in shared memory for the next mips
+        var gridOffset = i32x2(x / 2, y / 2);
+        targetTexelIndex = workGroupId * 16 + gridOffset;
+        Save(targetTexelIndex, pixels[0], 1, slice);
+        LDSStore(gridOffset.x, gridOffset.y, pixels[0]);
+
+        gridOffset = i32x2(x / 2 + 8, y / 2);
+        targetTexelIndex = workGroupId * 16 + gridOffset;
+        Save(targetTexelIndex, pixels[1], 1, slice);
+        LDSStore(gridOffset.x, gridOffset.y, pixels[1]);
+
+        gridOffset = i32x2(x / 2, y / 2 + 8);
+        targetTexelIndex = workGroupId * 16 + gridOffset;
+        Save(targetTexelIndex, pixels[2], 1, slice);
+        LDSStore(gridOffset.x, gridOffset.y, pixels[2]);
+
+        gridOffset = i32x2(x / 2 + 8, y / 2 + 8);
+        targetTexelIndex = workGroupId * 16 + gridOffset;
+        Save(targetTexelIndex, pixels[3], 1, slice);
+        LDSStore(gridOffset.x, gridOffset.y, pixels[3]);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Mip2_8(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
+{
+    var pixel = LDSLoad(x, y);
+    pixel = ReduceQuad(pixel);
+
+    if ((localIndex % 4) == 0)
+    {
+        const targetTexelIndex = workGroupId * 8 + i32x2(x/2, y/2);
+        Save(targetTexelIndex, pixel, mip, slice);
+        LDSStore(x + (y/2) % 2, y, pixel);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Mip3_9(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
+{
+    if (localIndex < 64)
+    {
+        var pixel = LDSLoad(x * 2 + y % 2, y * 2);
+        pixel = ReduceQuad(pixel);
+
+        if ((localIndex % 4) == 0)
+        {
+            const targetTexelIndex = workGroupId * 4 + i32x2(x / 2, y / 2);
+            Save(targetTexelIndex, pixel, mip, slice);
+            LDSStore(x * 2 + y / 2, y * 2, pixel);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Mip4_10(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
+{
+    if (localIndex < 16)
+    {
+        var pixel = LDSLoad(x * 4 + y, y * 4);
+        pixel = ReduceQuad(pixel);
+
+        if ((localIndex % 4) == 0)
+        {
+            const targetTexelIndex = workGroupId * 2 + i32x2(x / 2, y / 2);
+            Save(targetTexelIndex, pixel, mip, slice);
+            LDSStore(x / 2 + y, 0, pixel);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Mip5_11(workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
+{
+    if (localIndex < 4)
+    {
+        var pixel = LDSLoad(localIndex, 0);
+        pixel = ReduceQuad(pixel);
+
+        if ((localIndex % 4) == 0)
+        {
+            const targetTexelIndex = workGroupId;
+            Save(targetTexelIndex, pixel, mip, slice);
+
+            // for mip 5 and 11, don't save to LDS
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Mips2_5_and_8_11(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, mips : u32, slice : u32) void
+{
+    if (mips <= mip) { return; }
+    memoryBarrierWorkgroup();
+    memoryBarrierTexture();
+    Mip2_8(x, y, workGroupId, localIndex, mip, slice);
+
+    if (mips <= mip + 1) { return; }
+    memoryBarrierWorkgroup();
+    memoryBarrierTexture();
+    Mip3_9(x, y, workGroupId, localIndex, mip + 1, slice);
+
+    if (mips <= mip + 2) { return; }
+    memoryBarrierWorkgroup();
+    memoryBarrierTexture();
+    Mip4_10(x, y, workGroupId, localIndex, mip + 2, slice);
+
+    if (mips <= mip + 3) { return; }
+    memoryBarrierWorkgroup();
+    memoryBarrierTexture();
+    Mip5_11(workGroupId, localIndex, mip + 3, slice);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Mips6_7(x : u32, y : u32, mips : u32, slice : u32) void
+{
+    var sourceTexelIndex = i32x2(x * 4 + 0, y * 4 + 0);
+    var targetTexelIndex = i32x2(x * 2 + 0, y * 2 + 0);
+    const p0 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p0, 6, slice);
+
+    sourceTexelIndex = i32x2(x * 4 + 2, y * 4 + 0);
+    targetTexelIndex = i32x2(x * 2 + 1, y * 2 + 0);
+    const p1 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p1, 6, slice);
+
+    sourceTexelIndex = i32x2(x * 4 + 0, y * 4 + 2);
+    targetTexelIndex = i32x2(x * 2 + 0, y * 2 + 1);
+    const p2 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p2, 6, slice);
+
+    sourceTexelIndex = i32x2(x * 4 + 2, y * 4 + 2);
+    targetTexelIndex = i32x2(x * 2 + 1, y * 2 + 1);
+    const p3 = Sample2x2Output(sourceTexelIndex, slice);
+    Save(targetTexelIndex, p3, 6, slice);
+
+    // skip mip 7 if we don't have one
+    if (mips <= 7) { return; }
+
+    const pixel = Reduce(p0, p1, p2, p3);
+    Save(i32x2(x, y), pixel, 7, slice);
+    LDSStore(x, y, pixel);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(KernelSize)
+entry_point
+csMain() void
+{
+    const groupId = i32x2(computeGetWorkgroupIndices().xy);
+    const localIndex = computeGetIndexInWorkgroup();
+    const sliceIndex = i32(computeGetWorkgroupIndices().z);
+    const gridIndex = MortonCurve8x8(localIndex % 64);
+    const x = gridIndex.x + 8 * ((localIndex >> 6) % 2);
+    const y = gridIndex.y + 8 * (localIndex >> 7);
+
+    // reduce mips 0 and 1
+    Mips0_1(x, y, groupId, localIndex, DownsampleUniforms.Mips, sliceIndex);
+
+    // when that is done, we have the pixels in LDS and can sample from there efficiently
+    Mips2_5_and_8_11(x, y, groupId, localIndex, 2, DownsampleUniforms.Mips, sliceIndex);
+
+    if DownsampleUniforms.Mips <= 6 { return; }
+
+    // filter out the last work group by incrementing an atomic counter 
+    // and allowing only the last work group to proceed, we only want 
+    // one work group to do mips 6-11
+    uniform counterPtr = bufferPtr(Counters, sliceIndex).&counter;
+    if localIndex == 0 {
+        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.Acquire);
+    }
+
+    memoryBarrierWorkgroup();
+    memoryBarrierTexture();
+    if Counter != (DownsampleUniforms.NumGroups - 1) { return; }
+    *counterPtr = 0u;
+
+    // reduce mips 6 and 7
+    Mips6_7(x, y, DownsampleUniforms.Mips, sliceIndex);
+
+    // same as with mips 0 and 1, we store pixels from 6_7 to LDS so we can reduce the rest
+    // directly from LDS
+    Mips2_5_and_8_11(x, y, i32x2(0, 0), localIndex, 8, DownsampleUniforms.Mips, sliceIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Downsample")
+program Downsample
+{
+    ComputeShader = csMain;
+};

@@ -4,8 +4,7 @@
 //  (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#define FORMAT r32f
-#define IMAGE_DATA_TYPE float
-#define IMAGE_DATA_SWIZZLE x
-#define IMAGE_DATA_EXPAND xxxx
-#include "downsample_cs.fxh"
+#include "downsample_include.gpuh"
+const Kernel = KernelMethod.Avg;
+const ImageFormatType = ImageFormat.R32f;
+#include "downsample_cs.gpuh"

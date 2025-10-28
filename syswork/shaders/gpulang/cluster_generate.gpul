@@ -18,8 +18,7 @@ csClusterAABB() void
     const index1D = computeGetGlobalThreadIndices().x;
     const index3D = Unpack1DTo3D(index1D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
-    if (index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z)
-        return;
+    if index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z { return; }
 
     // Calculate near and far plane in the XY plane, offset at our Z offset
     const nearPlane  = f32x4(0, 0, 1.0f, -ViewConstants.FocalLengthNearFar.z * pow(ClusterUniforms.ZDistribution, index3D.z / f32(ClusterUniforms.NumCells.z)));

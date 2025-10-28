@@ -107,8 +107,7 @@ MaskColor(albedo : f32x4, cutoff : f32) f32x4
     {
         if (gplIsPixelShader)
         {
-            if (albedo.a <= cutoff)
-                discard;
+            if (albedo.a <= cutoff) { discard; }
         }
         return f32x4(albedo.rgb, 1.0f);
     }
@@ -116,8 +115,7 @@ MaskColor(albedo : f32x4, cutoff : f32) f32x4
     {
         if (gplIsPixelShader)
         {
-            if (albedo.a <= cutoff)
-                discard;
+            if (albedo.a <= cutoff) { discard; }
         }
         return albedo;
     }
@@ -267,8 +265,7 @@ psDepthOnly() void
 {
     const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const dither = hash12(seed);
-    if (dither < ObjectUniforms.DitherFactor)
-        discard;
+    if (dither < ObjectUniforms.DitherFactor) { discard; }
 }
 
 //------------------------------------------------------------------------------
@@ -279,12 +276,10 @@ psDepthOnlyAlphaMask(in UV : f32x2) void
 {
     const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const dither = hash12(seed);
-    if (dither < ObjectUniforms.DitherFactor)
-        discard;
+    if (dither < ObjectUniforms.DitherFactor) { discard; }
 
     const baseColor = sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV);
-    if (baseColor.a <= BRDFConstants.AlphaSensitivity)
-        discard;
+    if (baseColor.a <= BRDFConstants.AlphaSensitivity) { discard; }
 }
 
 //------------------------------------------------------------------------------
@@ -505,8 +500,7 @@ psUberAlphaTest(
     const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
-    if (dither > 1.0f)
-        discard;
+    if (dither > 1.0f) { discard; }
 
     const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), BRDFConstants.AlphaSensitivity) * BRDFConstants.MatAlbedoIntensity;
     if (albedo.a < BRDFConstants.AlphaSensitivity) { discard; }
@@ -535,8 +529,7 @@ psUberVertexColor(
     const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
-    if (dither > 1.0f)
-        discard;
+    if (dither > 1.0f) { discard; }
 
     const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), BRDFConstants.AlphaSensitivity) * BRDFConstants.MatAlbedoIntensity;
     if (albedo.a < BRDFConstants.AlphaSensitivity) { discard; }
@@ -564,8 +557,7 @@ psUberAlpha(
     const seed = pixelGetCoordinates().xy * PassUniforms.RenderTargets[0].Dimensions.zw;
     const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
     const dither = (rnd.z + rnd.x + rnd.y) * ObjectUniforms.DitherFactor;
-    if (dither > 1.0f)
-        discard;
+    if (dither > 1.0f) { discard; }
 
     const albedo = 		MaskColor(sample2D(BRDFConstants.AlbedoMap, MaterialSampler, UV), 1.0f) * BRDFConstants.MatAlbedoIntensity;
     const material = 	UnpackMaterialMap(sample2D(BRDFConstants.ParameterMap, MaterialSampler, UV));

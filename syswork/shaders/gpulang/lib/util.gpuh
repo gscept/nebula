@@ -127,23 +127,23 @@ SampleCubic(uniform tex : *texture2D, uniform samp : *sampler, res : f32x4, pixe
 
 const USE_SRGB = 1;
 generate
-<
-    if (declared<USE_SRGB>)
-    <
+{
+    if declared<USE_SRGB>
+    {
         EncodeHDR(rgba : f32x4) f32x4 { return rgba; }
         EncodeHDR4(rgba : f32x4) f32x4 { return rgba; }
         DecodeHDR(rgba : f32x4) f32x4 { return rgba; }
         DecodeHDR4(rgba : f32x4) f32x4 { return rgba; }
-    >
+    }
     else
-    <
+    {
         // If not using SRGB natively, decode and encode from and to SRGB values
         EncodeHDR(rgba : f32x4) f32x4 { return rgba * f32x4(0.5, 0.5, 0.5, 1.0); }
         EncodeHDR4(rgba : f32x4) f32x4 { return rgba * f32x4(0.5, 0.5, 0.5, 0.5); }
         DecodeHDR(rgba : f32x4) f32x4 { return rgba * f32x4(2.0f, 2.0f, 2.0f, 1.0f); }
         DecodeHDR4(rgba : f32x4) f32x4 { return rgba * f32x4(2.0f, 2.0f, 2.0f, 2.0f); }
-    >
->;
+    }
+};
 
 //------------------------------------------------------------------------------
 /**
