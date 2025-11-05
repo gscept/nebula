@@ -640,6 +640,7 @@ ENDIF()
             add_shaders(
                 terrain_include.fxh terrain.fx terrain_tile_write.fx terrain_mesh_generate.fx
             )
+            compile_gpulang(terrain_include.gpuh terrain.gpul terrain_tile_write.gpul terrain_mesh_generate.gpul)
 
         fips_dir(vegetation)
             fips_files(

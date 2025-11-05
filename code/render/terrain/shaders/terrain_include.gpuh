@@ -1,0 +1,465 @@
+//------------------------------------------------------------------------------
+//  @file terrain_include.fxh
+//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/pbr.gpuh"
+#include "lib/clustering.gpuh"
+#include "lib/lighting_functions.gpuh"
+const MAX_MATERIAL_TEXTURES = 16;
+const MAX_BIOMES = 16;
+const MAX_TILES_PER_FRAME = 256;
+
+//------------------------------------------------------------------------------
+/**
+            GENERIC PARAMS
+*/
+//------------------------------------------------------------------------------
+struct TerrainSystemUniformData
+{
+    MinLODDistance : f32;
+    MaxLODDistance : f32;
+    MinTessellation : f32;
+    MaxTessellation : f32;
+
+    NumBiomes : u32;
+    Debug : u32;
+    VirtualLodDistance : f32;
+  
+    TerrainPosBuffer : u32;
+    IndirectionBuffer : u32;
+    AlbedoPhysicalCacheBuffer : u32;
+    NormalPhysicalCacheBuffer : u32;
+    MaterialPhysicalCacheBuffer : u32;
+    AlbedoLowresBuffer : u32;
+    NormalLowresBuffer : u32;
+    MaterialLowresBuffer : u32;
+
+    BiomeRules : [MAX_BIOMES]f32x4;
+};
+
+@Visibility("VS|HS|DS|PS|CS")
+group(SYSTEM_GROUP) uniform TerrainSystemUniforms: *TerrainSystemUniformData;
+group(SYSTEM_GROUP) uniform TerrainShadowMap : *mutable rg16 texture2D;
+
+struct MaterialLayerData
+{
+    MaterialAlbedos : [MAX_BIOMES]i32x4;    
+    MaterialNormals : [MAX_BIOMES]i32x4;    
+    MaterialPBRs : [MAX_BIOMES]i32x4;    
+    MaterialMasks : [MAX_BIOMES]i32x4;    
+    MaterialWeights : [MAX_BIOMES]i32x4;    
+};
+
+@Visibility("PS|CS")
+group(SYSTEM_GROUP) uniform MaterialLayers : *MaterialLayerData;
+
+SampleBiomeAlbedo(biome: u32, uniform samp : *sampler, uv : f32x2, layer: u32) f32x4 { return sample2DLod(MaterialLayers.MaterialAlbedos[biome][layer], samp, uv, 0); }
+SampleBiomeNormal(biome: u32, uniform samp : *sampler, uv : f32x2, layer: u32) f32x4 { return sample2DLod(MaterialLayers.MaterialNormals[biome][layer], samp, uv, 0); }
+SampleBiomeMaterial(biome: u32, uniform samp : *sampler, uv : f32x2, layer: u32) f32x4 { return sample2DLod(MaterialLayers.MaterialPBRs[biome][layer], samp, uv, 0); }
+SampleBiomeMask(biome: u32, uniform samp : *sampler, uv : f32x2) f32x4 { return sample2DLod(MaterialLayers.MaterialMasks[biome / 4][biome % 4], samp, uv, 0); }
+SampleBiomeMaskLod(biome: u32, uniform samp : *sampler, uv : f32x2, lod : f32) f32x4 { return sample2DLod(MaterialLayers.MaterialMasks[biome / 4][biome % 4], samp, uv, lod); }
+FetchBiomeMask(biome: u32, uniform samp: *sampler, uv: i32x2, lod: u32) f32x4 { return fetch2D(MaterialLayers.MaterialMasks[biome / 4][biome % 4], uv, lod); }
+
+struct TerrainInstanceData
+{
+    Transform : f32x4x4;
+
+    MinHeight : f32;
+    MaxHeight : f32;
+    WorldSizeX : f32;
+    WorldSizeZ : f32;
+
+    DataBufferSize : f32x2;
+
+    NumTilesX : u32;
+    NumTilesY : u32;
+    TileWidth : u32;
+    TileHeight : u32;
+
+    VirtualTerrainSubTextureSize : u32x2;
+    VirtualTerrainNumSubTextures : u32x2;
+
+    PhysicalInvPaddedTextureSize : f32;
+    PhysicalTileSize : u32;
+    PhysicalTilePaddedSize : u32;
+    PhysicalTilePadding : u32;
+
+    VirtualTerrainTextureSize : u32x4;
+    VirtualTerrainPageSize : u32x2;
+    VirtualTerrainNumPages : u32x2;
+    VirtualTerrainNumMips : u32;
+
+    LowresResolution : u32x2;
+    LowresNumMips : u32;
+    LowresFadeStart : f32;
+    LowresFadeDistance : f32;
+
+    IndirectionResolution : u32x2;
+    IndirectionNumMips : u32;
+
+    HeightMap : u32;
+    DecisionMap : u32;
+
+    VirtualPageBufferNumPages : u32;
+    VirtualPageBufferMipOffsets : [4]u32x4;
+    VirtualPageBufferMipSizes : [4]u32x4;
+};
+
+@Visibility("VS|HS|DS|PS|CS")
+group(BATCH_GROUP) uniform TerrainInstanceUniforms : *TerrainInstanceData;
+
+struct TerrainSubTexture
+{
+    worldCoordinate : f32x2;
+    // Contains 
+    //          indirection offset x as first 12 bits 
+    //          indirection offset y as next 12 bits
+    //          maxMip as the next 4 bits
+    //          leaving 4 unused
+    packed0 : u32;
+};
+
+@Visibility("PS|CS")
+group(SYSTEM_GROUP) uniform TerrainSubTextures : *[] mutable TerrainSubTexture;
+
+const MAX_PAGE_UPDATES = 4096;
+
+struct PageUpdateListData
+{
+    Entry : [MAX_PAGE_UPDATES]u32x4;
+    PageStatuses : [MAX_PAGE_UPDATES]u32;
+    NumEntries : i32;
+};
+@Visibility("PS|CS")
+group(SYSTEM_GROUP) uniform PageUpdateList : *mutable PageUpdateListData;
+
+struct PageStatus
+{
+    bits : u32;
+};
+group(SYSTEM_GROUP) uniform PageStatuses : *[] mutable PageStatus;
+
+struct TerrainPatchData
+{
+    PosOffset : f32x2;
+    UvOffset : f32x2;
+};
+group(SYSTEM_GROUP) uniform TerrainPatches : *[]mutable TerrainPatchData;
+
+group(SYSTEM_GROUP) sampler_state TextureSampler
+{
+    Filter = FilterMode.Linear;
+};
+
+group(SYSTEM_GROUP) sampler_state AnisoSampler
+{
+    Filter = FilterMode.Linear;
+    MaxAnisotropy = 4u;
+};
+
+//------------------------------------------------------------------------------
+/**
+    TILE WRITE PARAMS
+*/
+//------------------------------------------------------------------------------
+group(BATCH_GROUP) uniform AlbedoCacheOutputBC : *mutable rgba32f texture2D;
+group(BATCH_GROUP) uniform NormalCacheOutputBC : *mutable rgba32f texture2D;
+group(BATCH_GROUP) uniform MaterialCacheOutputBC : *mutable rgba32f texture2D;
+
+group(BATCH_GROUP) uniform AlbedoLowresOutput : *mutable rgba8 texture2D;
+group(BATCH_GROUP) uniform NormalLowresOutput : *mutable rgba8 texture2D;
+group(BATCH_GROUP) uniform MaterialLowresOutput : *mutable rgba8 texture2D;
+
+struct TileWrite
+{
+    WriteOffset_MetersPerTile : u32x2;
+    WorldOffset : f32x2;
+};
+group(BATCH_GROUP) uniform TileWrites : *[MAX_TILES_PER_FRAME] TileWrite;
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateNormalFromHeight(uv : f32x2, offset : f32x3) f32x3
+{
+    const hl = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.xz, 0).r;
+    const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.yz, 0).r;
+    const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.zx, 0).r;
+    const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv + offset.zy, 0).r;
+    var normal = f32x3(0, 0, 0);
+    normal.x = (hl - hr);
+    normal.y = 2.0f;
+    normal.z = (ht - hb);
+    normal *= f32x3((TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight), 1, (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight));
+    normal += f32x3(TerrainInstanceUniforms.MinHeight, 0, TerrainInstanceUniforms.MinHeight);
+    normal = normalize(normal);
+    return normal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateNormalFromHeight(pixel : f32x2, offset : i32x3, scale : f32x2) f32x3
+{
+    const hl = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.xz) * scale, 0).r;
+    const hr = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.yz) * scale, 0).r;
+    const ht = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.zx) * scale, 0).r;
+    const hb = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, (pixel + offset.zy) * scale, 0).r;
+    var normal = f32x3(0, 0, 0);
+    normal.x = (hl - hr);
+    normal.y = 2.0f;
+    normal.z = (ht - hb);
+    normal *= f32x3((TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight), 1, (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight));
+    normal += f32x3(TerrainInstanceUniforms.MinHeight, 0, TerrainInstanceUniforms.MinHeight);
+    normal = normalize(normal);
+    return normal;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+SlopeBlending(angle : f32, worldNormalY : f32) f32
+{
+    return 1.0f - saturate(worldNormalY - angle) * (1.0f / (1.0f - angle));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+HeightBlend(worldY : f32, height : f32, falloff : f32) f32
+{
+    return saturate((worldY - (height - falloff * 0.5f)) / falloff);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SampleSlopeRule(
+    i : u32,
+    baseArrayIndex : u32,
+    angle : f32,
+    mask : f32,
+    uv : f32x2,
+    outAlbedo : *f32x3,
+    outMaterial : *f32x4,
+    outNormal : *f32x3
+) void
+{
+    /*
+    Array slots:
+        0 - flat surface
+        1 - slope surface
+        2 - height surface
+        3 - height slope surface
+    */
+    *outAlbedo = SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
+    *outAlbedo += SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
+    *outMaterial = SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex) * mask * (1.0f - angle);
+    *outMaterial += SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1) * mask * angle;
+    *outNormal = SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
+    *outNormal += SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Pack data entry
+*/
+PackPageDataEntry(status: u32, subTextureIndex: u32, mip: u32, maxMip: u32, subTextureTileX: u32, subTextureTileY : u32) u32x4
+{
+    var ret : u32x4;
+    ret.x = (status & 0x3) | (subTextureIndex << 2);
+    ret.y = (mip & 0xF) | ((maxMip & 0xF) << 4) | ((subTextureTileX & 0xFF) << 8) | ((subTextureTileY & 0xFF) << 16);
+
+    // Delete these
+    ret.z = subTextureTileX;
+    ret.w = subTextureTileY;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Pack data entry
+*/
+PageDataSetStatus(data : u32x4, status : u32) u32x4
+{
+    var ret = data;
+    ret.x &= ~0x3;
+    ret.x |= (status & 0x3);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackSubTexture(subTex : TerrainSubTexture, worldOffset : *u32x2, indirectionOffset: *u32x2, mip: *u32, mipBias: *u32, tiles: *u32) void
+{
+    *indirectionOffset = u32x2(subTex.packed0 & 0xFFF, (subTex.packed0 >> 12) & 0xFFF);
+    *mip = (subTex.packed0 >> 24) & 0xF;
+    *mipBias = (subTex.packed0 >> 28) & 0xF;
+    *tiles = 1 << *mip;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Pack data entry
+*/
+PageDataGetStatus(data : u32x4) u32
+{
+    return data.x & 0x3;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculate the values needed to insert and extract tile data
+*/
+CalculateTileCoords(mip : u32, maxTiles : u32, relativePos : f32x2, subTextureIndirectionOffset : u32x2, pageCoord : *u32x2, subTextureTile : *u32x2, tilePosFract : *f32x2) void
+{
+    // calculate the amount of meters a single tile is, this is adjusted by the mip and the number of tiles at max lod
+    const metersPerTile : f32x2 = TerrainInstanceUniforms.VirtualTerrainSubTextureSize / f32(maxTiles >> mip);
+
+    // calculate subtexture tile index by dividing the relative position by the amount of meters there are per tile
+    const tilePos = relativePos / metersPerTile;
+    *tilePosFract = fract(tilePos);
+    *subTextureTile = u32x2(tilePos);
+
+    // the actual page within that tile is the indirection offset of the whole
+    // subtexture, plus the sub texture tile index
+    *pageCoord = (subTextureIndirectionOffset >> mip) + *subTextureTile;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+PackIndirection(mip : u32, physicalOffsetX : u32, physicalOffsetY : u32) f32
+{
+    const res = (mip & 0xF) | ((physicalOffsetX & 0x3FFF) << 4) | ((physicalOffsetY & 0x3FFF) << 18);
+    return castToF32(res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackIndirection(indirection : u32) u32x3
+{
+    var ret : u32x3;
+
+    /* IndirectionEntry is formatted as such:
+        uint mip : 4;
+        uint physicalOffsetX : 14;
+        uint physicalOffsetY : 14;
+    */
+
+    ret.z = indirection & 0xF;
+    ret.x = (indirection >> 4) & 0x3FFF;
+    ret.y = (indirection >> 18) & 0x3FFF;
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FetchIndirection(coords : i32x2, mip : u32, bias: u32) u32x3 
+{ 
+    return UnpackIndirection(castToU32(fetch2D(TerrainSystemUniforms.IndirectionBuffer, coords, i32(mip + bias)).x)); 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SampleTerrain(
+    biome : u32
+    , tbn : f32x3x3
+    , angle : f32
+    , heightCutoff : f32
+    , mask : f32
+    , tilingFactor : f32x2
+    , worldPos : f32x3
+    , triplanarWeights : f32x3
+    , outAlbedo : *f32x3
+    , outMaterial : *f32x4
+    , outNormal : *f32x3
+) void
+{
+    if mask > 0.0f
+    {
+        var blendNormal = f32x3(0, 0, 0);
+        var blendAlbedo = f32x3(0, 0, 0);
+        var blendMaterial = f32x4(0, 0, 0, 0);
+        if heightCutoff == 0.0f
+        {
+            var albedo = f32x3(0, 0, 0);
+            var normal = f32x3(0, 0, 0);
+            var material = f32x4(0, 0, 0, 0);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.x;
+            blendMaterial += material * triplanarWeights.x;
+            blendNormal += normal * triplanarWeights.x;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.y;
+            blendMaterial += material * triplanarWeights.y;
+            blendNormal += normal * triplanarWeights.y;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.z;
+            blendMaterial += material * triplanarWeights.z;
+            blendNormal += normal * triplanarWeights.z;
+
+            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
+            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
+            *outNormal += (tbn * blendNormal) * mask;
+            *outAlbedo += blendAlbedo * mask;   
+            *outMaterial += blendMaterial * mask;
+        }
+        else
+        {
+            var albedo = f32x3(0, 0, 0);
+            var normal = f32x3(0, 0, 0);
+            var material = f32x4(0, 0, 0, 0);
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.yz / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.x * heightCutoff;
+            blendMaterial += material * triplanarWeights.x * heightCutoff;
+            blendNormal += normal * triplanarWeights.x * heightCutoff;
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xz / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.y * heightCutoff;
+            blendMaterial += material * triplanarWeights.y * heightCutoff;
+            blendNormal += normal * triplanarWeights.y * heightCutoff;
+
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xy / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.z * heightCutoff;
+            blendMaterial += material * triplanarWeights.z * heightCutoff;
+            blendNormal += normal * triplanarWeights.z * heightCutoff;
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
+            blendMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
+            blendMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
+
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, &albedo, &material, &normal);
+            blendAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
+            blendMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
+            blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
+
+            blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
+            blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
+
+            *outNormal += (tbn * blendNormal) * mask;
+            *outAlbedo += blendAlbedo * mask;   
+            *outMaterial += blendMaterial * mask;
+        }
+    }
+}

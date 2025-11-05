@@ -1,8 +1,9 @@
 //------------------------------------------------------------------------------
-//  downsample_cs_max.fx
+//  downsample_cs_max.gpul
 //  Downsample compute shader using a max filter
-//  (C) 2021 Individual contributors, see AUTHORS file
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#define KERNEL_MAX
-#include "downsample_cs.fxh" 
+#include "downsample_include.gpuh"
+const Kernel = KernelMethod.Max;
+#include "downsample_cs.gpuh" 

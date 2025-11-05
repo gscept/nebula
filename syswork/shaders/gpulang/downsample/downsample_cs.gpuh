@@ -87,7 +87,7 @@ generate
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], min(Dimensions, texel), value.x);
+                textureStore(Output[mip], i32x3(min(DownsampleUniforms.Dimensions, texel), slice), value.x);
             }
         }
         else
@@ -114,7 +114,7 @@ generate
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], i32x3(min(DownsampleUniforms.Dimensions, texel), slice), value);
+                textureStore(Output[mip], min(DownsampleUniforms.Dimensions, texel), value);
             }
         }
         workgroup SharedMemory : [SharedMemSize][SharedMemSize]f32;
@@ -129,7 +129,7 @@ generate
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel), slice)).xyz;
+                samples[0] = textureLoad(Input, ).xyz;
                 samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
                 samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
                 samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
