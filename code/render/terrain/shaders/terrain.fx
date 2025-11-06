@@ -28,7 +28,7 @@ vsTerrain(
     vec2 UV = UnpackUV(uv) + terrainPatch.UvOffset;
 
     float vertexDistance = distance( Position.xyz, EyePos.xyz);
-    float factor = 1.0f - saturate((TerrainSystemUniforms.MinLODDistance - vertexDistance) / (TerrainSystemUniforms.MinLODDistance - TerrainSystemUniforms.MaxLODDistance));
+    float factor = 1.0f - saturate((MinLODDistance - vertexDistance) / (MinLODDistance - MaxLODDistance));
     float decision = 1.0f - sample2D(DecisionMap, TextureSampler, UV).r;
     Tessellation = MinTessellation + factor * (MaxTessellation - MinTessellation) * decision;
 

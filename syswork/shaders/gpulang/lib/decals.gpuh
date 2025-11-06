@@ -14,7 +14,7 @@ sampler_state DecalSampler
 //------------------------------------------------------------------------------
 /**
 */
-ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : *f32x4, normal : *f32x3, material : *f32x4) void
+ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : *f32x3, normal : *f32x3, material : *f32x4) void
 {
     var totAlbedo = f32x3(0);
     var totNormal = f32x3(0);
@@ -96,8 +96,8 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
     const mat = *material;
     
     // write outputs, make sure to include the total weight so we can do a proper blending
-    *albedo.xyz = (1.0f - totWeight) * alb.xyz + (totAlbedo * totWeight);
+    *albedo = (1.0f - totWeight) * alb + (totAlbedo * totWeight);
     *normal = totNormal;
-    *material.xyz = (1.0f - totWeight) * mat.xyz + totMaterial.xyz * totWeight;
+    *material = (1.0f - totWeight) * mat + totMaterial * totWeight;
 }
 

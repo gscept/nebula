@@ -18,6 +18,7 @@ struct MaterialTemplateValue
     {
         Bool,
         Scalar,
+        Int,
         Vec2,
         Vec3,
         Vec4,
@@ -27,6 +28,7 @@ struct MaterialTemplateValue
     {
         bool b;
         float f;
+        int i;
         Math::float2 f2;
         Math::float3 f3;
         Math::float4 f4;
@@ -102,6 +104,7 @@ namespace MaterialTemplatesGPULang
         {
             Bool,
             Scalar,
+            Int,
             Vec2,
             Vec3,
             Vec4,
@@ -111,6 +114,7 @@ namespace MaterialTemplatesGPULang
         {
             bool b;
             float f;
+            int i;
             Math::float2 f2;
             Math::float3 f3;
             Math::float4 f4;

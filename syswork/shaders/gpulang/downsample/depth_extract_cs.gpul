@@ -1,27 +1,28 @@
 //------------------------------------------------------------------------------
-//  depth_extract_cs.fxh
+//  depth_extract_cs.gpul
 //  Read depth
-//  (C) 2021 Individual contributors, see AUTHORS file
+//  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-sampler2D ZBufferInput;
-write r32f image2D DepthOutput;
+uniform ZBufferInput: *texture2D;
+uniform DepthOutput: *mutable r32f texture2D;
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
-shader
-void
-csMain()
+threads_x(64)
+entry_point
+csMain() void
 {
-    float depth = texelFetch(ZBufferInput, ivec2(gl_GlobalInvocationID.xy), 0).r;
-    imageStore(DepthOutput, ivec2(gl_GlobalInvocationID.xy), vec4(depth));
+    const threadIndices = computeGetGlobalThreadIndices();
+    const depth = textureFetch(ZBufferInput, i32x2(threadIndices.xy), 0).r;
+    textureStore(DepthOutput, i32x2(threadIndices.xy), f32x4(depth));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-program Extract [ string Mask = "Extract"; ]
+@Mask("Extract")
+program Extract
 {
-    ComputeShader = csMain();
+    ComputeShader = csMain;
 };

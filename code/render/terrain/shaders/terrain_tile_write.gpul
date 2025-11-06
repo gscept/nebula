@@ -204,7 +204,7 @@ csWriteTile() void
     AlbedoCacheResult[localThreads.x][localThreads.y] = totalAlbedo;
     NormalCacheResult[localThreads.x][localThreads.y] = (totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f);
     MaterialCacheResult[localThreads.x][localThreads.y] = totalMaterial;
-    executionBarrierWorkgroup();
+    memoryBarrierWorkgroup();
 
     // only perform write for each invocation in a 8x8 work group
     if (localThreads.x < 2 && localThreads.y < 2)
@@ -298,7 +298,7 @@ csWriteLowres() void
     AlbedoCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = totalAlbedo;
     NormalCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = (totalNormal.xy + vec2(1, 1)) * vec2(0.5f);
     MaterialCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = totalMaterial;
-    barrier();
+    memoryBarrierWorkgroup();
 
     // only perform write for each invocation in a 8x8 work group
     if (gl_LocalInvocationID.x < 2 && gl_LocalInvocationID.y < 2)
