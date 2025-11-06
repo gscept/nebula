@@ -17,7 +17,7 @@ generate
 {
     // Configure some defaults
     if !declared<BlurKernel>
-    {
+    { 
         const BlurKernel = BlurKernelSize.Size8;
     }
     if !declared<ImageFormatType>
@@ -82,7 +82,7 @@ generate
     }
 
     const BlurTileWidth = 64 - KernelRadius * 2;
-    const SharedMemSize = KernelRadius * BlurTileWidth * KernelRadius;
+    const SharedMemSize = KernelRadius + BlurTileWidth + KernelRadius;
 
     if ImageIsArray
     {

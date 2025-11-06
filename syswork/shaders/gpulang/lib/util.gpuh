@@ -484,8 +484,8 @@ MortonCurve8x8(idx : u32) u32x2
 */
 struct IntersectionResult
 {
-    intersects : b8;
     point : f32x3;
+    intersects : b8;
 };
 IntersectLineWithPlane(lineStart : f32x3, lineEnd : f32x3, plane : f32x4) IntersectionResult
 {
