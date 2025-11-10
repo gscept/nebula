@@ -74,7 +74,6 @@ psMain(in UV : f32x3,
 {
     const dir = normalize(Direction);
     const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
-    
     // rotate uvs around center with constant speed
     /*
     vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;

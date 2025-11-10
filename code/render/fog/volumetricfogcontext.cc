@@ -13,8 +13,8 @@
 #include "imgui.h"
 #include "graphics/globalconstants.h"
 
-#include "render/system_shaders/volumefog.h"
-#include "render/system_shaders/blur/blur_2d_rgba16f_cs.h"
+#include "gpulang/render/system_shaders/volumefog.h"
+#include "gpulang/render/system_shaders/blur/blur_2d_rgba16f_cs.h"
 
 #include "frame/default.h"
 namespace Fog
@@ -83,19 +83,19 @@ VolumetricFogContext::Create()
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    fogState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/volumefog.fxb");
+    fogState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/volumefog.gplb");
 
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "FogIndexListsBuffer";
     rwbInfo.size = 1;
-    rwbInfo.elementSize = sizeof(Volumefog::FogIndexLists);
+    rwbInfo.elementSize = sizeof(Volumefog::FogIndexLists::STRUCT);
     rwbInfo.mode = BufferAccessMode::DeviceLocal;
     rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     fogState.clusterFogIndexLists = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "FogLists";
-    rwbInfo.elementSize = sizeof(Volumefog::FogLists);
+    rwbInfo.elementSize = sizeof(Volumefog::FogLists::STRUCT);
     fogState.clusterFogLists = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "FogListsStagingBuffer";
@@ -122,14 +122,14 @@ VolumetricFogContext::Create()
         ResourceTableCommitChanges(frameResourceTable);
     }
 
-    blurState.blurShader = CoreGraphics::ShaderGet("shd:system_shaders/blur/blur_2d_rgba16f_cs.fxb");
+    blurState.blurShader = CoreGraphics::ShaderGet("shd:system_shaders/blur/blur_2d_rgba16f_cs.gplb");
     blurState.blurXProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurX"));
     blurState.blurYProgram = ShaderGetProgram(blurState.blurShader, CoreGraphics::ShaderFeatureMask("BlurY"));
     blurState.blurXTable.Resize(CoreGraphics::GetNumBufferedFrames());
     blurState.blurYTable.Resize(CoreGraphics::GetNumBufferedFrames());
 
     CoreGraphics::BufferCreateInfo bufInfo;
-    bufInfo.byteSize = sizeof(Blur2dRgba16fCs::BlurUniforms);
+    bufInfo.byteSize = sizeof(Blur2dRgba16fCs::BlurUniforms::STRUCT);
     bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
     bufInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     blurState.blurConstants = CoreGraphics::CreateBuffer(bufInfo);
@@ -148,7 +148,7 @@ VolumetricFogContext::Create()
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
-        CmdCopy(cmdBuf, fogState.stagingClusterFogLists.buffers[bufferIndex], { from }, fogState.clusterFogLists, { to }, sizeof(Volumefog::FogLists));
+        CmdCopy(cmdBuf, fogState.stagingClusterFogLists.buffers[bufferIndex], { from }, fogState.clusterFogLists, { to }, sizeof(Volumefog::FogLists::STRUCT));
     }, {
         { FrameScript_default::BufferIndex::ClusterFogList, CoreGraphics::PipelineStage::TransferWrite }
     });
@@ -190,7 +190,7 @@ VolumetricFogContext::Create()
         CmdSetResourceTable(cmdBuf, blurState.blurXTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer0();
-        Blur2dRgba16fCs::BlurUniforms blurUniforms;
+        Blur2dRgba16fCs::BlurUniforms::STRUCT blurUniforms;
         blurUniforms.Viewport[0] = viewport.width() * scaleX;
         blurUniforms.Viewport[1] = viewport.height() * scaleY;
         CoreGraphics::BufferUpdate(blurState.blurConstants, blurUniforms);
@@ -209,7 +209,7 @@ VolumetricFogContext::Create()
         CmdSetResourceTable(cmdBuf, blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
 
         auto [scaleX, scaleY] = FrameScript_default::TextureRelativeScale_VolumetricFogBuffer1();
-        Blur2dRgba16fCs::BlurUniforms blurUniforms;
+        Blur2dRgba16fCs::BlurUniforms::STRUCT blurUniforms;
         blurUniforms.Viewport[0] = viewport.width() * scaleX;
         blurUniforms.Viewport[1] = viewport.height() * scaleY;
         CoreGraphics::BufferUpdate(blurState.blurConstants, blurUniforms);
@@ -361,7 +361,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
             Math::bbox box(transform);
             box.pmin.store3(fog.bboxMin);
             box.pmax.store3(fog.bboxMax);
-            inverse(transform).store(fog.invTransform);
+            inverse(transform).store(&fog.invTransform[0][0]);
             numFogBoxVolumes++;
             break;
         }
@@ -384,14 +384,14 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     // update list of point lights
     if (numFogBoxVolumes > 0 || numFogSphereVolumes > 0)
     {
-        Volumefog::FogLists fogList;
+        Volumefog::FogLists::STRUCT fogList;
         Memory::CopyElements(fogState.fogBoxes, fogList.FogBoxes, numFogBoxVolumes);
         Memory::CopyElements(fogState.fogSpheres, fogList.FogSpheres, numFogSphereVolumes);
         CoreGraphics::BufferUpdate(fogState.stagingClusterFogLists.buffers[bufferIndex], fogList);
         CoreGraphics::BufferFlush(fogState.stagingClusterFogLists.buffers[bufferIndex]);
     }
 
-    Volumefog::VolumeFogUniforms fogUniforms;
+    Volumefog::VolumeFogUniforms::STRUCT fogUniforms;
     fogUniforms.NumFogBoxes = numFogBoxVolumes;
     fogUniforms.NumFogSpheres = numFogSphereVolumes;
     fogUniforms.NumVolumeFogClusters = Clustering::ClusterContext::GetNumClusters();
@@ -399,7 +399,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     fogState.color.store(fogUniforms.GlobalAbsorption);
     fogUniforms.DownscaleFog = 4;
 
-    ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Volumefog::Table_Batch::Lighting_SLOT, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Volumefog::Lighting::BINDING, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
 
     // get per-view resource tables
@@ -410,12 +410,12 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables
-    ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::Table_Batch::InputImageX_SLOT, 0, CoreGraphics::InvalidSamplerId, false }); // ping
-    ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::Table_Batch::BlurImageX_SLOT, 0, CoreGraphics::InvalidSamplerId }); // pong
-    ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::Table_Batch::InputImageY_SLOT, 0, CoreGraphics::InvalidSamplerId }); // ping
-    ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::Table_Batch::BlurImageY_SLOT, 0, CoreGraphics::InvalidSamplerId }); // pong
-    ResourceTableSetConstantBuffer(blurState.blurXTable[bufferIndex], { blurState.blurConstants, Blur2dRgba16fCs::Table_Batch::BlurUniforms_SLOT });
-    ResourceTableSetConstantBuffer(blurState.blurYTable[bufferIndex], { blurState.blurConstants, Blur2dRgba16fCs::Table_Batch::BlurUniforms_SLOT });
+    ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::InputImageX::BINDING, 0, CoreGraphics::InvalidSamplerId, false }); // ping
+    ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::BlurImageX::BINDING, 0, CoreGraphics::InvalidSamplerId }); // pong
+    ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::InputImageY::BINDING, 0, CoreGraphics::InvalidSamplerId }); // ping
+    ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::BlurImageY::BINDING, 0, CoreGraphics::InvalidSamplerId }); // pong
+    ResourceTableSetConstantBuffer(blurState.blurXTable[bufferIndex], { blurState.blurConstants, Blur2dRgba16fCs::BlurUniforms::BINDING });
+    ResourceTableSetConstantBuffer(blurState.blurYTable[bufferIndex], { blurState.blurConstants, Blur2dRgba16fCs::BlurUniforms::BINDING });
     ResourceTableCommitChanges(blurState.blurXTable[bufferIndex]);
     ResourceTableCommitChanges(blurState.blurYTable[bufferIndex]);
 }

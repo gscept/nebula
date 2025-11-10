@@ -275,7 +275,7 @@ class MaterialTemplateDefinition:
             for p in self.passes:
                 func += '\t{\n'
                 func += '\t\t/* Pass {} */\n'.format(p.batch)
-                func += '\t\tCoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:{}.fxb");\n'.format(p.shader)
+                func += '\t\tCoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:{}.gplb");\n'.format(p.shader)
                 func += '\t\tCoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram({}, CoreGraphics::ShaderFeatureMask("{}"));\n'.format('shader', p.variation)
                 func += '\t\tIndexT bufferSlot = InvalidIndex;\n'
                 func += '\t\tif (this->entry.bufferName != nullptr) bufferSlot = CoreGraphics::ShaderGetResourceSlot({}, this->entry.bufferName);\n'.format('shader')

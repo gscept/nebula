@@ -113,9 +113,9 @@ gsMain(
     Color = color[0];
     geometryExportVertex(f32x4((pos0 - tng0) * line.position[0].w, line.position[0].zw));
         
-    Color = color[0];
     EdgeDistance = size[0];
     Size = size[0];
+    Color = color[0];
     geometryExportVertex(f32x4((pos0 + tng0) * line.position[0].w, line.position[0].zw));
         
     // line end
@@ -124,9 +124,9 @@ gsMain(
     Color = color[1];
     geometryExportVertex(f32x4((pos1 - tng1) * line.position[1].w, line.position[1].zw));
         
-    Color = color[1];
-    Size = size[1];
     EdgeDistance = size[1];
+    Size = size[1];
+    Color = color[1];
     geometryExportVertex(f32x4((pos1 + tng1) * line.position[1].w, line.position[1].zw));
     geometryExportPrimitive();
 }
@@ -157,7 +157,7 @@ psMainLines(
     var d = abs(edgeDistance) / size;
     d = smoothstep(1.0, 1.0 - (Antialiasing / size), d);
     finalColor.a *= d;
-    pixelExportColor(color, 0);
+    pixelExportColor(finalColor, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ psMainPoints(
     var d = length(pixelGetSubpixelPosition().xy - f32x2(0.5));
     d = smoothstep(0.5, 0.5 - (Antialiasing / size), d);    
     finalColor.a *= d;
-    pixelExportColor(color, 0);
+    pixelExportColor(finalColor, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ program Lines
 };
 
 @Mask("StaticDepth|Lines")
-program Lines
+program LinesDepth
 {
     VertexShader = vsMainLines;
     GeometryShader = gsMain;

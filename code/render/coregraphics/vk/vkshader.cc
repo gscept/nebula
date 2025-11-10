@@ -760,7 +760,7 @@ ShaderSetup(
             CoreGraphics::ResourcePipelinePushConstantRange range;
             range.offset = pushRangeOffset;
             range.size = variable->byteSize;
-            range.vis = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            range.vis = AllGraphicsVisibility;// ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
             constantRange[0] = range; // okay, this is hacky
             pushRangeOffset += variable->byteSize;
         }

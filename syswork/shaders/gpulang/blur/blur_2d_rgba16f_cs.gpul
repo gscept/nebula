@@ -13,13 +13,13 @@ const ImageIsArray : b8 = false;
 //------------------------------------------------------------------------------
 /**
 */
-@Mask("Alt0")
+@Mask("BlurX")
 program BlurX
 {
     ComputeShader = csMainX;
 };
 
-@Mask("Alt1")
+@Mask("BlurY")
 program BlurY
 {
     ComputeShader = csMainY;

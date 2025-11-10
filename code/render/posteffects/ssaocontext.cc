@@ -171,7 +171,7 @@ SSAOContext::Setup()
     ssaoState.r2Var = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_R2);
     ssaoState.aoResolutionVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_AORESOLUTION);
     ssaoState.invAOResolutionVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_INVAORESOLUTION);
-    ssaoState.strengthVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_STRENGHT);
+    ssaoState.strengthVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_STRENGTH);
     ssaoState.tanAngleBiasVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_TANANGLEBIAS);
 
     // setup blur params

@@ -22,6 +22,7 @@
 #if WITH_NEBULA_EDITOR
 #include "frame/editorframe.h"
 #endif
+#include "gpulang/dynui/imgui/shaders/imgui.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -362,16 +363,16 @@ ImguiContext::Create()
     state.dockOverViewport = false;
 
     // allocate imgui shader
-    state.uiShader = CoreGraphics::ShaderGet("shd:imgui/shaders/imgui.fxb");
+    state.uiShader = CoreGraphics::ShaderGet("shd:imgui/shaders/imgui.gplb");
     state.prog = CoreGraphics::ShaderGetProgram(state.uiShader, CoreGraphics::ShaderFeatureMask("Static"));
 
     state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 
-    state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
-    state.packedTextureInfo = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
-    state.rangeMinConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMin");
-    state.rangeMaxConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMax");
-    state.colorMaskConstant = CoreGraphics::ShaderGetConstantBinding(state.uiShader, "ColorMask");
+    state.textProjectionConstant = offsetof(Imgui::ImGuiData, TextProjectionModel); //CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
+    state.packedTextureInfo = offsetof(Imgui::ImGuiData, PackedTextureInfo); // CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
+    state.rangeMinConstant = offsetof(Imgui::ImGuiData, RangeMin); //CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMin");
+    state.rangeMaxConstant = offsetof(Imgui::ImGuiData, RangeMax); // CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMax");
+    state.colorMaskConstant = offsetof(Imgui::ImGuiData, ColorMask); // CoreGraphics::ShaderGetConstantBinding(state.uiShader, "ColorMask");
 
     state.inputHandler = ImguiInputHandler::Create();
     Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, state.inputHandler.upcast<Input::InputHandler>());

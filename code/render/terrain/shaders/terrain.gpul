@@ -584,7 +584,7 @@ program TerrainPageClearUpdateBuffer
 };
 
 @Mask("TerrainShadows")
-program TerrainShadows
+program TerrainShadowProg
 {
     ComputeShader = csTerrainShadows;
 };

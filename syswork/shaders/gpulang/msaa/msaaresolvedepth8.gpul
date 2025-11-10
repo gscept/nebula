@@ -13,7 +13,7 @@ const Format = ImageFormat.R32f;
 /**
 */
 @Mask("Resolve")
-program Resolve
+program Prog
 {
     ComputeShader = main;
 };

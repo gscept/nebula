@@ -813,8 +813,13 @@ VkShaderProgramSetupAsGraphics(GPULang::Deserialize::Program* program, const Res
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         nullptr,
         0,
+        (VkSampleCountFlagBits)program->renderState->samples,
+        program->renderState->sampleShadingEnabled,
+        program->renderState->minSampleShading,
+        nullptr, // FIX
+        program->renderState->alphaToCoverageEnabled,
+        program->renderState->alphaToOneEnabled
     };
-    //vkRenderState->SetupMultisample(&runtime.multisampleInfo);
 
     runtime.depthStencilInfo =
     {

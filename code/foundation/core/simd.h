@@ -64,8 +64,7 @@ __forceinline f32x4
 set_last_f32x4(f32x4 v, float val)
 {
     f32x4 vec = _mm_set_ss(val);
-    constexpr int imm8 = (0 << 4) | (0 << 2) | 3;
-    return _mm_insert_ps(v, vec, imm8);
+    return _mm_insert_ps(v, vec, 0b00110000);
 }
 
 //------------------------------------------------------------------------------
