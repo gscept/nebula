@@ -14,6 +14,9 @@ def run(fips_dir, proj_dir, args) :
     log.info("[BOOTSTRAP]: " + log.BLUE + "-- AnyFX --" + log.DEF)
     subprocess.call(proj_dir + "/fips anyfx setup force quiet", shell=True)
 
+    log.info("[BOOTSTRAP]: " + log.BLUE + "-- GPULang --" + log.DEF)
+    subprocess.call(proj_dir + "/fips gpulang setup force quiet", shell=True)
+
     # Get config build type
     # cfg = config.load(fips_dir, proj_dir, settings.get(proj_dir, 'config'))
     # build_type = cfg[0]['build_type'].lower()
