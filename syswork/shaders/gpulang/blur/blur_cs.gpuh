@@ -255,6 +255,6 @@ csMainY() void
             blurTotal += weights[i] * SharedMemory[j];
         }
 
-        Store(BlurImageY, Coord(writePos, y, z), Expand(blurTotal));
+        Store(BlurImageY, Coord(x, writePos, z), Expand(blurTotal));
 	}
 }
