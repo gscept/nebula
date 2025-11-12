@@ -19,6 +19,8 @@ threads_x(64)
 entry_point
 csCull() void 
 {
+    
+
     const index1D = computeGetGlobalThreadIndices().x;
 
     if index1D > VolumeFogUniforms.NumVolumeFogClusters { return; }
@@ -62,11 +64,6 @@ csCull() void
     atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
 }
 
-struct FogContribution
-{
-    density : f32;
-    absorption : f32x3;
-};
 
 //------------------------------------------------------------------------------
 /**
@@ -74,13 +71,12 @@ struct FogContribution
 LocalFogVolumes(
     idx : u32
     , viewPos : f32x3
-    , density : f32
-    , absorption : f32x3
-) FogContribution
+    , density : *f32
+    , absorption : *f32x3
+) void
 {
-    var ret : FogContribution;
-    ret.density = density;
-    ret.absorption = absorption;
+    var totalDensity = *density;
+    var totalAbsorption = *absorption;
     const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
     if (CheckFlags(flag, CLUSTER_FOG_SPHERE_BIT))
     {
@@ -97,8 +93,8 @@ LocalFogVolumes(
 
             if (falloff > fog.falloff)
             {
-                ret.density += fog.turbidity;
-                ret.absorption *= fog.absorption;
+                totalDensity += fog.turbidity;
+                totalAbsorption *= fog.absorption;
             }
         }
     }
@@ -123,14 +119,14 @@ LocalFogVolumes(
                 // todo, calculate distance field
                 if (falloff > fog.falloff)
                 {
-                    ret.density += fog.turbidity;
-                    ret.absorption *= fog.absorption;
+                    totalDensity += fog.turbidity;
+                    totalAbsorption *= fog.absorption;
                 }
             }
         }
     }
-
-    return ret;
+    *density = totalDensity;
+    *absorption = totalAbsorption;
 }
 
 
@@ -155,7 +151,8 @@ LocalLightsFog(
             const li = LightLists.PointLights[lidx];
             
             const lightDir = (li.position.xyz - viewPos);
-            const lightDirLength = length(lightDir);
+            if dot(lightDir, lightDir) < 0.0001f { continue; }        
+            const lightDirLength = length(lightDir) + 0.0001f;
             const att = InvSquareFalloff(li.range, lightDirLength, lightDir);
             light += li.color * att;
         }
@@ -176,7 +173,8 @@ LocalLightsFog(
 
             // calculate attentuation and angle falloff, and just multiply by color
             var lightDir = (li.position.xyz - viewPos);
-            const lightDirLen = length(lightDir);
+            if dot(lightDir, lightDir) < 0.0001f { continue; }        
+            const lightDirLen = length(lightDir) + 0.0001f;
             const att = InvSquareFalloff(li.range, lightDirLen, lightDir);
             lightDir = lightDir * (1 / lightDirLen);
 
@@ -304,8 +302,8 @@ csRender() void
 
         // sample local fog volumes
         var localParticleDensity = 0.0f;
-        const localAbsorption = VolumeFogUniforms.GlobalAbsorption;
-        LocalFogVolumes(idx, samplePos, localParticleDensity, localAbsorption);
+        var localAbsorption = VolumeFogUniforms.GlobalAbsorption;
+        LocalFogVolumes(idx, samplePos, &localParticleDensity, &localAbsorption);
 
         // local particle density is the result of our volumes + global particle density increment
         localParticleDensity = (localParticleDensity + globalParticleDensity) * oneDivFogSteps;

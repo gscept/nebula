@@ -104,7 +104,7 @@ generate
         Swizzle(val : f32x4) f32x4 { return val; }
         Expand(val : f32x4) f32x4 { return val; }
         Empty() f32x4 { return f32x4(0); }
-        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, lod); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
         Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
         workgroup SharedMemory : [SharedMemSize]f32x4;
     }
@@ -162,7 +162,7 @@ uniform InputImageY : *textureType;
 //------------------------------------------------------------------------------
 /**
 */
-local_size(u32x3(SharedMemSize, 1, 1))
+threads_x(SharedMemSize)
 entry_point
 csMainX() void
 {
@@ -189,8 +189,8 @@ csMainX() void
         // we might have replaced it with the result from this thread!
         SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageX, Coord(x,y,z), 0u));
     }
-    executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
+    executionBarrier();
 
     const writePos = tileStart + computeGetLocalThreadIndices().x;
     const tileEndClamped = min(tileEnd, size.x);
@@ -212,7 +212,7 @@ csMainX() void
 //------------------------------------------------------------------------------
 /**
 */
-local_size_x(SharedMemSize)
+threads_x(SharedMemSize)
 entry_point
 csMainY() void
 {
@@ -239,8 +239,8 @@ csMainY() void
         // we might have replaced it with the result from this thread!
         SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageY, Coord(x,y,z), 0));
     }
-    executionBarrierWorkgroup();
     memoryBarrierWorkgroup();
+    executionBarrier();
 
     const writePos = tileStart + computeGetLocalThreadIndices().x;
     const tileEndClamped = min(tileEnd, size.y);
