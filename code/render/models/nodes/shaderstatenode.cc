@@ -8,7 +8,7 @@
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceserver.h"
 
-#include "render/system_shaders/objects_shared.h"
+#include "gpulang/render/system_shaders/objects_shared.h"
 
 using namespace Util;
 using namespace Math;
@@ -40,7 +40,7 @@ Util::FixedArray<CoreGraphics::ResourceTableId>
 ShaderStateNode::CreateResourceTables()
 {
     if (baseShader == CoreGraphics::InvalidShaderId)
-        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/objects_shared.fxb"_atm);
+        baseShader = CoreGraphics::ShaderGet("shd:system_shaders/objects_shared.gplb"_atm);
 
     Util::FixedArray<CoreGraphics::ResourceTableId> ret(CoreGraphics::GetNumBufferedFrames());
 
@@ -48,7 +48,7 @@ ShaderStateNode::CreateResourceTables()
     {
         CoreGraphics::BufferId cbo = CoreGraphics::GetConstantBuffer(i);
         CoreGraphics::ResourceTableId table = CoreGraphics::ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        CoreGraphics::ResourceTableSetConstantBuffer(table, { cbo, ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
+        CoreGraphics::ResourceTableSetConstantBuffer(table, { cbo, ObjectsShared::ObjectUniforms::BINDING, 0, sizeof(ObjectsShared::ObjectUniforms::STRUCT), 0, false, true });
         CoreGraphics::ResourceTableCommitChanges(table);
         ret[i] = table;
     }

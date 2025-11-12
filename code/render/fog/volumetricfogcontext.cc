@@ -12,6 +12,7 @@
 #include "frame/framecode.h"
 #include "imgui.h"
 #include "graphics/globalconstants.h"
+#include "core/cvar.h"
 
 #include "gpulang/render/system_shaders/volumefog.h"
 #include "gpulang/render/system_shaders/blur/blur_2d_rgba16f_cs.h"
@@ -44,7 +45,7 @@ struct
     Volumefog::FogBox fogBoxes[128];
     Volumefog::FogSphere fogSpheres[128];
 
-    bool showUI = false;
+    Core::CVar* r_show_fog_params;
 } fogState;
 
 struct
@@ -116,9 +117,9 @@ VolumetricFogContext::Create()
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::Table_Frame::FogIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::Table_Frame::FogLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogIndexLists, Shared::FogIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { fogState.clusterFogLists, Shared::FogLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
@@ -220,6 +221,8 @@ VolumetricFogContext::Create()
         { FrameScript_default::TextureIndex::VolumetricFogBuffer0, CoreGraphics::PipelineStage::ComputeShaderWrite }
         , { FrameScript_default::TextureIndex::VolumetricFogBuffer1, CoreGraphics::PipelineStage::ComputeShaderRead }
     });
+
+    fogState.r_show_fog_params = Core::CVarCreate(Core::CVar_Int, "r_show_fog_params", "0", "Show/hide fog parameters debug ui");
 }
 
 //------------------------------------------------------------------------------
@@ -406,7 +409,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint64_t offset = SetConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::VolumeFogUniforms_SLOT, 0, sizeof(Shared::VolumeFogUniforms), offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::VolumeFogUniforms::BINDING, 0, sizeof(Shared::VolumeFogUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables
@@ -426,11 +429,12 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 void
 VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-    if (fogState.showUI)
+    int showUI = Core::CVarReadInt(fogState.r_show_fog_params);
+    if (showUI)
     {
         float col[3];
         fogState.color.storeu(col);
-        Shared::PerTickParams tickParams = Graphics::GetTickParams();
+        Shared::PerTickParams::STRUCT tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Volumetric Fog Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);

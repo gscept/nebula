@@ -3,7 +3,6 @@
 // (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "bindlessregistry.h"
-#include "render/system_shaders/shared.h"
 #include "globalconstants.h"
 namespace Graphics
 {
@@ -52,31 +51,31 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     {
     case CoreGraphics::Texture1D:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::Textures1D_SLOT;
+        var = Shared::Textures1D::BINDING;
         break;
     case CoreGraphics::Texture1DArray:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::Textures1DArray_SLOT;
+        var = Shared::Textures1DArray::BINDING;
         break;
     case CoreGraphics::Texture2D:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::Textures2D_SLOT;
+        var = Shared::Textures2D::BINDING;
         break;
     case CoreGraphics::Texture2DArray:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::Textures2DArray_SLOT;
+        var = Shared::Textures2DArray::BINDING;
         break;
     case CoreGraphics::Texture3D:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::Textures3D_SLOT;
+        var = Shared::Textures3D::BINDING;
         break;
     case CoreGraphics::TextureCube:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::TexturesCube_SLOT;
+        var = Shared::TexturesCube::BINDING;
         break;
     case CoreGraphics::TextureCubeArray:
         n_assert(!state.texturePool.IsFull());
-        var = Shared::Table_Tick::TexturesCubeArray_SLOT;
+        var = Shared::TexturesCubeArray::BINDING;
         break;
     default:
         n_error("Should not happen");
@@ -112,25 +111,25 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     switch (type)
     {
     case CoreGraphics::Texture1D:
-        var = Shared::Table_Tick::Textures1D_SLOT;
+        var = Shared::Textures1D::BINDING;
         break;
     case CoreGraphics::Texture1DArray:
-        var = Shared::Table_Tick::Textures1DArray_SLOT;
+        var = Shared::Textures1DArray::BINDING;
         break;
     case CoreGraphics::Texture2D:
-        var = Shared::Table_Tick::Textures2D_SLOT;
+        var = Shared::Textures2D::BINDING;
         break;
     case CoreGraphics::Texture2DArray:
-        var = Shared::Table_Tick::Textures2DArray_SLOT;
+        var = Shared::Textures2DArray::BINDING;
         break;
     case CoreGraphics::Texture3D:
-        var = Shared::Table_Tick::Textures3D_SLOT;
+        var = Shared::Textures3D::BINDING;
         break;
     case CoreGraphics::TextureCube:
-        var = Shared::Table_Tick::TexturesCube_SLOT;
+        var = Shared::TexturesCube::BINDING;
         break;
     case CoreGraphics::TextureCubeArray:
-        var = Shared::Table_Tick::TexturesCubeArray_SLOT;
+        var = Shared::TexturesCubeArray::BINDING;
         break;
     default: n_error("unhandled enum"); break;
     }
@@ -163,32 +162,32 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     switch (type)
     {
     case CoreGraphics::Texture1D:
-        var = Shared::Table_Tick::Textures1D_SLOT;
+        var = Shared::Textures1D::BINDING;
         fallback = CoreGraphics::White1D;
         break;
     case CoreGraphics::Texture1DArray:
-        var = Shared::Table_Tick::Textures1DArray_SLOT;
+        var = Shared::Textures1DArray::BINDING;
         fallback = CoreGraphics::White1DArray;
         break;
     case CoreGraphics::Texture2D:
         fallback = CoreGraphics::White2D;
-        var = Shared::Table_Tick::Textures2D_SLOT;
+        var = Shared::Textures2D::BINDING;
         break;
     case CoreGraphics::Texture2DArray:
         fallback = CoreGraphics::White2DArray;
-        var = Shared::Table_Tick::Textures2DArray_SLOT;
+        var = Shared::Textures2DArray::BINDING;
         break;
     case CoreGraphics::Texture3D:
         fallback = CoreGraphics::White3D;
-        var = Shared::Table_Tick::Textures3D_SLOT;
+        var = Shared::Textures3D::BINDING;
         break;
     case CoreGraphics::TextureCube:
         fallback = CoreGraphics::WhiteCube;
-        var = Shared::Table_Tick::TexturesCube_SLOT;
+        var = Shared::TexturesCube::BINDING;
         break;
     case CoreGraphics::TextureCubeArray:
         fallback = CoreGraphics::WhiteCubeArray;
-        var = Shared::Table_Tick::TexturesCubeArray_SLOT;
+        var = Shared::TexturesCubeArray::BINDING;
         break;
     default: n_error("unhandled enum"); break;
     }    

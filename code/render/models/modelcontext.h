@@ -101,9 +101,9 @@ public:
     /// Get node index based on name
     static IndexT GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
     /// Setup material instance context
-    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplates::BatchGroup batch);
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplatesGPULang::BatchGroup batch);
     /// Setup material instance context
-    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplates::BatchGroup batch);
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplatesGPULang::BatchGroup batch);
     /// Allocate constant memory for instance constants in this frame
     static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const Materials::BatchIndex batch);
     /// Allocate constant memory for instance constants in this frame
@@ -157,7 +157,7 @@ public:
             Util::PinnedArray<0xFFFF, uint64_t> nodeSortId;
             Util::PinnedArray<0xFFFF, NodeInstanceFlags> nodeFlags;
             Util::PinnedArray<0xFFFF, Materials::MaterialId> nodeMaterials;
-            Util::PinnedArray<0xFFFF, const MaterialTemplates::Entry*> nodeMaterialTemplates;
+            Util::PinnedArray<0xFFFF, const MaterialTemplatesGPULang::Entry*> nodeMaterialTemplates;
             Util::PinnedArray<0xFFFF, NodeInstanceState> nodeStates;
             Util::PinnedArray<0xFFFF, Models::NodeType> nodeTypes;
             Util::PinnedArray<0xFFFF, Models::ModelNode*> nodes;

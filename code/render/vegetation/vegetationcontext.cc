@@ -286,7 +286,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     vegetationState.materialUniformsBuffer = CoreGraphics::CreateBuffer(materialUniformInfo);
     memset(&vegetationState.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms));
 
-    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.fxb");
+    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.gplb");
     vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
     vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGenerateDraws"));
     vegetationState.vegetationGrassZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationGrassDrawZ"));

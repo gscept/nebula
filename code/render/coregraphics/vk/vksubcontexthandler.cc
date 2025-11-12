@@ -308,12 +308,25 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkBuff
 /**
 */
 void
-VkSubContextHandler::AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem)
+VkSubContextHandler::AppendSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore sem)
 {
     Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
     TimelineSubmission2& sub = submissionsForQueue.Back();
     sub.signalIndices.Append(0);
     sub.signalSemaphores.Append(sem);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VkSubContextHandler::AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem)
+{
+    Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[type];
+    TimelineSubmission2& sub = submissionsForQueue.Back();
+    sub.waitIndices.Append(0);
+    sub.waitSemaphores.Append(sem);
+    sub.waitFlags.Append(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 }
 
 //------------------------------------------------------------------------------

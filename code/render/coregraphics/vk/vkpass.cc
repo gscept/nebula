@@ -11,7 +11,7 @@
 #include "vktextureview.h"
 #include "coregraphics/pass.h"
 
-#include "render/system_shaders/shared.h"
+#include "gpulang/render/system_shaders/shared.h"
 
 using namespace CoreGraphics;
 namespace Vulkan
@@ -574,9 +574,9 @@ SetupPass(const PassId pid)
     if (runtimeInfo.passDescriptorSet == ResourceTableId::Invalid())
     {
         // setup uniform buffer for render target information
-        ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.fxb"_atm);
-        runtimeInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock", CoreGraphics::BufferAccessMode::DeviceAndHost);
-        runtimeInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetParameter");
+        ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.gplb"_atm);
+        runtimeInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassUniforms", CoreGraphics::BufferAccessMode::DeviceAndHost);
+        runtimeInfo.renderTargetDimensionsVar = offsetof(Shared::PassUniforms::STRUCT, RenderTargets);// ShaderGetConstantBinding(sid, "RenderTargets");
 
         CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
         runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ Util::String::Sprintf("Pass %s Descriptors", loadInfo.name.Value()).AsCharPtr(), tableLayout, 8 });
@@ -589,7 +589,7 @@ SetupPass(const PassId pid)
         write.index = 0;
         write.dynamicOffset = false;
         write.texelBuffer = false;
-        write.slot = ShaderGetResourceSlot(sid, "PassBlock");
+        write.slot = ShaderGetResourceSlot(sid, "PassUniforms");
         ResourceTableSetConstantBuffer(runtimeInfo.passDescriptorSet, write);
 
         // setup input attachments
@@ -603,7 +603,7 @@ SetupPass(const PassId pid)
                 write.tex = loadInfo.attachments[i];
                 write.isDepth = false;
                 write.sampler = InvalidSamplerId;
-                write.slot = Shared::Table_Pass::InputAttachment0_SLOT + j;
+                write.slot = Shared::InputAttachment0::BINDING + j;
                 write.index = 0;
                 ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
             }

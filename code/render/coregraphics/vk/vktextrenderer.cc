@@ -139,7 +139,7 @@ VkTextRenderer::Open()
     this->glyphTexture = CreateTexture(texInfo);
 
     // create shader instance
-    const ShaderId shd = CoreGraphics::ShaderGet("shd:system_shaders/text.fxb");
+    const ShaderId shd = CoreGraphics::ShaderGet("shd:system_shaders/text.gplb");
     this->program = ShaderGetProgram(shd, CoreGraphics::ShaderFeatureMask("Static"));
     this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 1);
     // get variable

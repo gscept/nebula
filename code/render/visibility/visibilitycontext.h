@@ -131,7 +131,7 @@ public:
 
     struct VisibilityDrawList
     {
-        Util::HashTable<const MaterialTemplates::Entry*, VisibilityBatchCommand> visibilityTable;
+        Util::HashTable<const MaterialTemplatesGPULang::Entry*, VisibilityBatchCommand> visibilityTable;
         Util::Array<Models::ShaderStateNode::DrawPacket*> drawPackets;
     };
 

@@ -5,7 +5,7 @@
 #include "foundation/stdneb.h"
 #include "framescripts.h"
 #include "visibility/visibilitycontext.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 
 namespace Frame
 {
@@ -14,15 +14,15 @@ namespace Frame
 /**
 */
 void
-DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
+DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::BatchGroup batch, const Graphics::GraphicsEntityId id, const IndexT bufferIndex)
 {
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[(uint)batch];
+    const Util::Array<MaterialTemplatesGPULang::Entry*>& types = MaterialTemplatesGPULang::Configs[(uint)batch];
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            MaterialTemplates::Entry* type = types[typeIdx];
+            MaterialTemplatesGPULang::Entry* type = types[typeIdx];
             IndexT idx = drawList->visibilityTable.FindIndex(type);
             if (idx != InvalidIndex)
             {
@@ -108,16 +108,16 @@ DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup 
 /**
 */
 void
-DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplates::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
+DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, MaterialTemplatesGPULang::BatchGroup batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance, const IndexT bufferIndex)
 {
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-    const Util::Array<MaterialTemplates::Entry*>& types = MaterialTemplates::Configs[(uint)batch];
+    const Util::Array<MaterialTemplatesGPULang::Entry*>& types = MaterialTemplatesGPULang::Configs[(uint)batch];
 
     if (types.Size() != 0 && (drawList != nullptr))
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            MaterialTemplates::Entry* type = types[typeIdx];
+            MaterialTemplatesGPULang::Entry* type = types[typeIdx];
             IndexT idx = drawList->visibilityTable.FindIndex(type);
             if (idx != InvalidIndex)
             {

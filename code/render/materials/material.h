@@ -54,7 +54,7 @@ struct MaterialBindlessBufferBinding
 #endif
 
 /// Create material
-MaterialId CreateMaterial(const MaterialTemplates::Entry* entry);
+MaterialId CreateMaterial(const MaterialTemplatesGPULang::Entry* entry);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 
@@ -84,9 +84,9 @@ void MaterialSetLowestLod(const MaterialId mat, float lod);
 void MaterialApply(const MaterialId id, const CoreGraphics::CmdBufferId buf, IndexT index);
 
 /// Get material shader config
-const MaterialTemplates::Entry* MaterialGetTemplate(const MaterialId mat);
+const MaterialTemplatesGPULang::Entry* MaterialGetTemplate(const MaterialId mat);
 /// Get batch index from code
-const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplates::BatchGroup batch);
+const Materials::BatchIndex MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplatesGPULang::BatchGroup batch);
 /// Get sort code
 uint64_t MaterialGetSortCode(const MaterialId mat);
 
@@ -152,7 +152,7 @@ typedef Ids::IdAllocator<
     Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
     Util::FixedArray<Util::Array<MaterialConstant>>,                                // constants
     IndexT,                                                                         // global material buffer binding (based on ShaderConfig::PrototypeHash)
-    const MaterialTemplates::Entry*                                                 // template
+    const MaterialTemplatesGPULang::Entry*                                                 // template
 #ifdef WITH_NEBULA_EDITOR
     , Util::Array<Resources::ResourceId>
     , MaterialBindlessBufferBinding

@@ -48,7 +48,7 @@ View::UpdateConstants()
         // update camera
         auto settings = CameraContext::GetSettings(this->camera);
 
-        Shared::ViewConstants constants = Graphics::GetViewConstants();
+        Shared::ViewConstants::STRUCT constants = Graphics::GetViewConstants();
         Math::mat4 view = CameraContext::GetView(this->camera);
         Math::mat4 proj = CameraContext::GetProjection(this->camera);
         proj.row1 = -proj.row1;
@@ -58,12 +58,12 @@ View::UpdateConstants()
         Math::mat4 invViewProj = Math::inverse(viewProj);
 
         // update block structure
-        view.store(constants.View);
-        proj.store(constants.Projection);
-        viewProj.store(constants.ViewProjection);
-        invView.store(constants.InvView);
-        invProj.store(constants.InvProjection);
-        invViewProj.store(constants.InvViewProjection);
+        view.store(&constants.View[0][0]);
+        proj.store(&constants.Projection[0][0]);
+        viewProj.store(&constants.ViewProjection[0][0]);
+        invView.store(&constants.InvView[0][0]);
+        invProj.store(&constants.InvProjection[0][0]);
+        invViewProj.store(&constants.InvViewProjection[0][0]);
         invView.position.store(constants.EyePos);
 
         constants.FocalLengthNearFar[0] = settings.GetFocalLength().x;

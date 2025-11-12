@@ -303,7 +303,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             Materials::MaterialId mat = Materials::InvalidMaterialId;
             static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
             Util::Tuple<uint32_t, uint32_t> drawModifiers = NullDrawModifiers;
-            const MaterialTemplates::Entry* currentMaterialType = nullptr;
+            const MaterialTemplatesGPULang::Entry* currentMaterialType = nullptr;
 
             for (uint32_t i = 0; i < numPackets; i++)
             {

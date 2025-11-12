@@ -481,11 +481,11 @@ CompareOpFromGPULang(GPULang::Serialization::CompareMode mode)
     {
         case GPULang::Serialization::CompareMode::NeverCompare: return VK_COMPARE_OP_NEVER;
         case GPULang::Serialization::CompareMode::LessCompare: return VK_COMPARE_OP_LESS;
-        case GPULang::Serialization::CompareMode::EqualCompare: return VK_COMPARE_OP_EQUAL;
         case GPULang::Serialization::CompareMode::LessEqualCompare: return VK_COMPARE_OP_LESS_OR_EQUAL;
         case GPULang::Serialization::CompareMode::GreaterCompare: return VK_COMPARE_OP_GREATER;
-        case GPULang::Serialization::CompareMode::NotEqualCompare: return VK_COMPARE_OP_NOT_EQUAL;
         case GPULang::Serialization::CompareMode::GreaterEqualCompare: return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        case GPULang::Serialization::CompareMode::NotEqualCompare: return VK_COMPARE_OP_NOT_EQUAL;
+        case GPULang::Serialization::CompareMode::EqualCompare: return VK_COMPARE_OP_EQUAL;
         case GPULang::Serialization::CompareMode::AlwaysCompare: return VK_COMPARE_OP_ALWAYS;
     }
     n_error("Invalid GPULang compare mode");

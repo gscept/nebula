@@ -126,6 +126,7 @@ struct GraphicsDeviceState
 
     Util::FixedArray<CoreGraphics::FenceId> presentFences;
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
+    Util::FixedArray<CoreGraphics::SemaphoreId> backbufferFinishedSemaphores;
 
     uint globalConstantBufferMaxValue;
     Util::FixedArray<CoreGraphics::BufferId> globalConstantBuffer;

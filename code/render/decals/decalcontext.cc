@@ -15,7 +15,7 @@
 
 #include "graphics/globalconstants.h"
 
-#include "render/system_shaders/decals_cluster.h"
+#include "gpulang/render/system_shaders/decals_cluster.h"
 
 #include "frame/default.h"
 
@@ -72,7 +72,7 @@ DecalContext::Create()
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    decalState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/decals_cluster.fxb");
+    decalState.classificationShader = CoreGraphics::ShaderGet("shd:system_shaders/decals_cluster.gplb");
 
     decalState.cullProgram = ShaderGetProgram(decalState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
     decalState.renderPBRProgram = ShaderGetProgram(decalState.classificationShader, CoreGraphics::ShaderFeatureMask("RenderPBR"));
@@ -83,14 +83,14 @@ DecalContext::Create()
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "DecalIndexListsBuffer";
     rwbInfo.size = 1;
-    rwbInfo.elementSize = sizeof(DecalsCluster::DecalIndexLists);
+    rwbInfo.elementSize = sizeof(DecalsCluster::DecalIndexLists::STRUCT);
     rwbInfo.mode = BufferAccessMode::DeviceLocal;
     rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     decalState.clusterDecalIndexLists = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "DecalLists";
-    rwbInfo.elementSize = sizeof(DecalsCluster::DecalLists);
+    rwbInfo.elementSize = sizeof(DecalsCluster::DecalLists::STRUCT);
     decalState.clusterDecalsList = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "DecalListsStagingBuffer";
@@ -102,9 +102,9 @@ DecalContext::Create()
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalIndexLists, Shared::DecalIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { decalState.clusterDecalsList, Shared::DecalLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::DecalUniforms::BINDING, 0, sizeof(Shared::DecalUniforms::STRUCT), 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
@@ -115,7 +115,7 @@ DecalContext::Create()
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
-        CmdCopy(cmdBuf, decalState.stagingClusterDecalsList.buffers[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists));
+        CmdCopy(cmdBuf, decalState.stagingClusterDecalsList.buffers[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists::STRUCT));
     }, {
         { FrameScript_default::BufferIndex::ClusterDecalList, CoreGraphics::PipelineStage::TransferWrite }
     });
@@ -300,7 +300,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
             pbrDecal.normal = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Normal>(typeIds[i]));
             pbrDecal.material = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Material>(typeIds[i]));
             Math::mat4 inverse = Math::inverse(transforms[i]);
-            inverse.store(pbrDecal.invModel);
+            inverse.store(&pbrDecal.invModel[0][0]);
             transforms[i].z_axis.store3(pbrDecal.direction);
             Math::vec4 tangent = normalize(-transforms[i].x_axis);
             tangent.store3(pbrDecal.tangent);
@@ -324,7 +324,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     }
 
     // setup uniforms
-    DecalsCluster::DecalUniforms decalUniforms;
+    DecalsCluster::DecalUniforms::STRUCT decalUniforms;
     decalUniforms.NumDecalClusters = Clustering::ClusterContext::GetNumClusters();
     decalUniforms.NumPBRDecals = numPbrDecals;
     decalUniforms.NumEmissiveDecals = numEmissiveDecals;
@@ -336,13 +336,13 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint64_t offset = SetConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::Table_Frame::DecalUniforms_SLOT, 0, sizeof(Shared::DecalUniforms), offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { GetConstantBuffer(bufferIndex), Shared::DecalUniforms::BINDING, 0, sizeof(Shared::DecalUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     // update list of point lights
     if (numPbrDecals > 0 || numEmissiveDecals > 0)
     {
-        DecalsCluster::DecalLists decalList;
+        DecalsCluster::DecalLists::STRUCT decalList;
         Memory::CopyElements(decalState.pbrDecals, decalList.PBRDecals, numPbrDecals);
         Memory::CopyElements(decalState.emissiveDecals, decalList.EmissiveDecals, numEmissiveDecals);
         CoreGraphics::BufferUpdate(decalState.stagingClusterDecalsList.buffers[bufferIndex], decalList);

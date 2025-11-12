@@ -23,7 +23,7 @@ struct
 {
     CoreGraphics::ShaderProgramId intermediateProgram;
     CoreGraphics::ShaderProgramId mergeProgram;
-    CoreGraphics::ShaderId shader, gpulangShader;
+    CoreGraphics::ShaderId shader;
 
     CoreGraphics::ResourceTableId resourceTable;
     CoreGraphics::BufferId constants;
@@ -58,11 +58,10 @@ BloomContext::Setup()
     using namespace CoreGraphics;
 
     // setup shaders
-    bloomState.gpulangShader = ShaderGet("shd:system_shaders/bloom.gplb");
-    bloomState.shader = ShaderGet("shd:system_shaders/bloom.fxb");
-    bloomState.intermediateProgram = ShaderGetProgram(bloomState.gpulangShader, ShaderFeatureMask("Intermediate"));
-    bloomState.mergeProgram = ShaderGetProgram(bloomState.gpulangShader, ShaderFeatureMask("Merge"));
-    bloomState.resourceTable = ShaderCreateResourceTable(bloomState.gpulangShader, NEBULA_BATCH_GROUP);
+    bloomState.shader = ShaderGet("shd:system_shaders/bloom.gplb");
+    bloomState.intermediateProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Intermediate"));
+    bloomState.mergeProgram = ShaderGetProgram(bloomState.shader, ShaderFeatureMask("Merge"));
+    bloomState.resourceTable = ShaderCreateResourceTable(bloomState.shader, NEBULA_BATCH_GROUP);
 
     TextureDimensions dims = TextureGetDimensions(FrameScript_default::Texture_BloomBuffer());
 

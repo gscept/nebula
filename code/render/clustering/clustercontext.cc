@@ -96,7 +96,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     BufferCreateInfo rwb3Info;
     rwb3Info.name = "ClusterAABBBuffer";
     rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
-    rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
+    rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
     rwb3Info.mode = BufferAccessMode::DeviceLocal;
     rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
     rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
@@ -213,7 +213,7 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         CoreGraphics::BufferCreateInfo rwb3Info;
         rwb3Info.name = "ClusterAABBBuffer";
         rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
-        rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
+        rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
         rwb3Info.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
         rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
         rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;

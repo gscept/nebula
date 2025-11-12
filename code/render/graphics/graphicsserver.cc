@@ -624,6 +624,7 @@ GraphicsServer::EndFrame()
     );
     CoreGraphics::DeferredDestroyCmdBuffer(cmdBuf);
 
+
     // Finish submuissions
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);
 }

@@ -376,23 +376,19 @@ Mip5_11(workGroupId : i32x2, localIndex : u32, mip : u32, slice : u32) void
 Mips2_5_and_8_11(x : u32, y : u32, workGroupId : i32x2, localIndex : u32, mip : u32, mips : u32, slice : u32) void
 {
     if (mips <= mip) { return; }
-    memoryBarrierWorkgroup();
-    memoryBarrierTexture();
+    executionBarrierWorkgroup();
     Mip2_8(x, y, workGroupId, localIndex, mip, slice);
 
     if (mips <= mip + 1) { return; }
-    memoryBarrierWorkgroup();
-    memoryBarrierTexture();
+    executionBarrierWorkgroup();
     Mip3_9(x, y, workGroupId, localIndex, mip + 1, slice);
 
     if (mips <= mip + 2) { return; }
-    memoryBarrierWorkgroup();
-    memoryBarrierTexture();
+    executionBarrierWorkgroup();
     Mip4_10(x, y, workGroupId, localIndex, mip + 2, slice);
 
     if (mips <= mip + 3) { return; }
-    memoryBarrierWorkgroup();
-    memoryBarrierTexture();
+    executionBarrierWorkgroup();
     Mip5_11(workGroupId, localIndex, mip + 3, slice);
 }
 
@@ -459,8 +455,7 @@ csMain() void
         Counter = atomicAdd(counterPtr, 1u, MemorySemantics.Acquire);
     }
 
-    memoryBarrierWorkgroup();
-    memoryBarrierTexture();
+    executionBarrierWorkgroup();
     if Counter != (DownsampleUniforms.NumGroups - 1) { return; }
     *counterPtr = 0u;
 

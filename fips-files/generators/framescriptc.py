@@ -394,7 +394,7 @@ class BatchDefinition:
         pass
 
     def FormatSource(self, file):
-        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplates::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
+        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
     
     def FormatSetup(self, file):
         pass
@@ -435,7 +435,7 @@ class FullscreenEffectDefinition:
         file.WriteLine("{")
         file.IncreaseIndent()
 
-        file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.fxb");'.format(self.shader))
+        file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.gplb");'.format(self.shader))
         file.WriteLine('CoreGraphics::ShaderProgramId prog = CoreGraphics::ShaderGetProgram(shad, CoreGraphics::ShaderFeatureMask("{}"));'.format(self.mask))
         file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
         file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
@@ -1244,7 +1244,6 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/buffer.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "coregraphics/pipeline.h"')
-        file.WriteLine('#include "render/system_shaders/shared.h"')
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
@@ -1331,7 +1330,7 @@ class FrameScriptGenerator:
         file.WriteLine("*/")
         file.WriteLine("")
         file.WriteLine('#include "{}.h"'.format(self.name))
-        file.WriteLine('#include "materials/materialtemplates.h"')
+        file.WriteLine('#include "materials/gpulang/materialtemplatesgpulang.h"')
         file.WriteLine('#include "materials/materialloader.h"')
         file.WriteLine('#include "graphics/globalconstants.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')

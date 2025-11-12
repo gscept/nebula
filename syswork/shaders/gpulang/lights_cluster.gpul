@@ -50,11 +50,11 @@ csCull() void
         const light = LightLists.SpotLights[i];
         // first do fast discard sphere test
         const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
-        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        //if (TestAABBSphere(aabb, viewSpacePos, light.range))
         {
             // then do more refined cone test, if previous test passed
             const viewSpaceForward = (ViewConstants.View * f32x4(light.forward, 0)).xyz;
-            if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
+            //if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
             {
                 LightIndexLists.SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
                 numLights++;
@@ -85,7 +85,7 @@ csCull() void
 
     if numLights > 0 { flags |= CLUSTER_AREALIGHT_BIT; }
 
-    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Acquire);
 }
 
 //------------------------------------------------------------------------------

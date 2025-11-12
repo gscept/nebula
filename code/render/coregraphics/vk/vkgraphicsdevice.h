@@ -40,6 +40,8 @@ VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 VkCommandBuffer GetMainBuffer(const CoreGraphics::QueueType queue);
 /// get final rendering semaphore
 VkSemaphore GetRenderingSemaphore();
+/// get final rendering semaphore
+VkSemaphore GetBackbufferSemaphore();
 /// get the present fence
 VkFence GetPresentFence();
 

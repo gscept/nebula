@@ -36,7 +36,7 @@ uniform HBAOR : *mutable r16f texture2D;
 
 const KERNEL_RADIUS = 16;
 const KERNEL_RADIUS_FLOAT = 16.0f;
-const HALF_KERNEL_RADIUS = KERNEL_RADIUS / 2.0f;
+const HALF_KERNEL_RADIUS = KERNEL_RADIUS / 2;
 
 const HBAO_TILE_WIDTH = 256;
 

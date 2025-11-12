@@ -11,18 +11,6 @@
 
 #include <material_interfaces.gpul>
 
-struct SkyData
-{
-    // declare two textures, one main texture and one blend texture together with a wrapping sampler
-    SkyLayer1 : u32;
-    SkyLayer2 : u32;
-    Contrast : f32;
-    Brightness : f32;
-    SkyBlendFactor : f32;
-    SkyRotationFactor : f32;
-};
-group(BATCH_GROUP) uniform SkyBlock : *SkyData;
-
 sampler_state SkySampler
 {
     AddressU = AddressMode.Clamp;
@@ -53,14 +41,14 @@ vsMain(
     out Direction : f32x3) void
 {
     const tempPos = normalize(position);
-    const animationSpeed = ViewConstants.Time_Random_Luminance_X.x * SkyBlock.SkyRotationFactor;
+    const animationSpeed = 0.0f;//ViewConstants.Time_Random_Luminance_X.x * SkyBlock.SkyRotationFactor;
     const rotMat = f32x3x3( cos(animationSpeed), 0, sin(animationSpeed),
                         0, 1, 0,
                         -sin(animationSpeed), 0, cos(animationSpeed));
 
     const viewSample = (ViewConstants.InvView * f32x4(tempPos, 0)).xyz;
     Direction = viewSample;
-    UV = viewSample * rotMat;
+    UV = viewSample;
     vertexExportCoordinates(ViewConstants.Projection * f32x4(tempPos, 1));
 }
 

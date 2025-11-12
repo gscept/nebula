@@ -15,8 +15,8 @@
 #include "threading/lockfreequeue.h"
 #include "materials/material.h"
 
-#include "render/system_shaders/objects_shared.h"
-#include "render/system_shaders/particle.h"
+#include "gpulang/render/system_shaders/objects_shared.h"
+#include "gpulang/render/system_shaders/particle.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -186,10 +186,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
             if (sNode->GetType() == Models::ParticleSystemNodeType)
             {
-                state.instancingConstantsIndex = ::Particle::Table_DynamicOffset::InstancingBlock_SLOT;
-                state.objectConstantsIndex = ::Particle::Table_DynamicOffset::ObjectBlock_SLOT;
-                state.skinningConstantsIndex = ::Particle::Table_DynamicOffset::JointBlock_SLOT;
-                state.particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT;
+                state.instancingConstantsIndex = ::Particle::Instances::BINDING;
+                state.objectConstantsIndex = ::Particle::ObjectUniforms::BINDING;
+                state.skinningConstantsIndex = ::Particle::JointPalette::BINDING;
+                state.particleConstantsIndex = ::Particle::ParticleEmitter::BINDING;
 
                 state.resourceTableOffsets.Resize(4);
                 state.resourceTableOffsets[state.objectConstantsIndex] = 0;
@@ -200,9 +200,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             }
             else
             {
-                state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
-                state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
-                state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
+                state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
+                state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
+                state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
                 state.particleConstantsIndex = InvalidIndex;
 
                 state.resourceTableOffsets.Resize(3);
@@ -290,9 +290,9 @@ ModelContext::Setup(
 
     NodeInstanceState state;
     state.materialInstance = CreateMaterialInstance(material);
-    state.instancingConstantsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock_SLOT;
-    state.objectConstantsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock_SLOT;
-    state.skinningConstantsIndex = ObjectsShared::Table_DynamicOffset::JointBlock_SLOT;
+    state.instancingConstantsIndex = ObjectsShared::Instances::BINDING;
+    state.objectConstantsIndex = ObjectsShared::ObjectUniforms::BINDING;
+    state.skinningConstantsIndex = ObjectsShared::JointPalette::BINDING;
     state.particleConstantsIndex = InvalidIndex;
     state.resourceTables = Models::ShaderStateNode::CreateResourceTables();
 
@@ -451,7 +451,7 @@ ModelContext::GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::Stri
 /**
 */
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplates::BatchGroup batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const MaterialTemplatesGPULang::BatchGroup batch)
 {
     // This is a bit hacky, but we really need to only do this once per node and batch.
     // What we do is that we get the batch index from the batch lookup map, and the variable indexes
@@ -481,7 +481,7 @@ ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, 
 /**
 */
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplates::BatchGroup batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const MaterialTemplatesGPULang::BatchGroup batch)
 {
     return SetupMaterialInstanceContext(id, 0, batch);
 }
@@ -758,8 +758,8 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
     // Create a set of default joints
     static Util::FixedArray<Math::mat4> defaultJoints(256);
-    ObjectsShared::JointBlock joints;
-    memcpy(joints.JointPalette, defaultJoints.Begin(), sizeof(ObjectsShared::JointBlock::JointPalette));
+    ObjectsShared::JointPalette::STRUCT joints;
+    memcpy(&joints, defaultJoints.Begin(), sizeof(ObjectsShared::JointPalette::STRUCT));
     uint defaultJointsOffset = CoreGraphics::SetConstants(joints);
 
     Jobs2::JobDispatch(
@@ -787,9 +787,9 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                                            .nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
 
                 // Allocate object constants
-                ObjectsShared::ObjectBlock block;
-                transform.store(block.Model);
-                inverse(transform).store(block.InvModel);
+                ObjectsShared::ObjectUniforms::STRUCT block;
+                transform.store(&block.Model[0][0]);
+                inverse(transform).store(&block.InvModel[0][0]);
                 block.DitherFactor = NodeInstances.renderable.nodeLods[j];
                 block.ObjectId = j;
 

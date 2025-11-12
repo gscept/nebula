@@ -276,6 +276,7 @@ SwapchainSwap(const SwapchainId id)
 
     // get present fence and be sure it is finished before getting the next image
     VkFence fence = Vulkan::GetPresentFence();
+    VkSemaphore sem = Vulkan::GetBackbufferSemaphore();
     VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
     if (res == VK_ERROR_DEVICE_LOST)
         Vulkan::DeviceLost();
@@ -284,7 +285,7 @@ SwapchainSwap(const SwapchainId id)
     n_assert(res == VK_SUCCESS);
 
     // get the next image
-    res = vkAcquireNextImageKHR(dev, swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &currentBackbuffer);
+    res = vkAcquireNextImageKHR(dev, swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &currentBackbuffer);
     switch (res)
     {
         case VK_SUCCESS:

@@ -118,7 +118,9 @@ public:
     /// append a sparse buffer bind timeline operation
     uint64_t AppendSparseBind(CoreGraphics::QueueType type, const VkBuffer buf, const Util::Array<VkSparseMemoryBind>& binds);
     /// Append present signal
-    void AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem);
+    void AppendSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore sem);
+    /// Append present signal
+    void AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem);
     /// Flush submissions
     void FlushSubmissions(VkFence fence);
     /// wait for timeline index

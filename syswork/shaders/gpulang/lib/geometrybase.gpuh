@@ -47,6 +47,7 @@ render_state DefaultState
     DepthWriteEnabled = false;
     DepthTestEnabled = true;
     DepthTestFunction = CompareMode.Equal;
+    Cull = CullFace.Back;
 };
 
 render_state DoubleSidedState
