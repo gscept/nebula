@@ -8,13 +8,13 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-const TINY = 0.0001f;
+const VERY_SMALL = 0.0001f;
 //------------------------------------------------------------------------------
 /**
 */
 perez(cosTheta : f32, gamma : f32, cosGamma : f32, A : f32x3, B : f32x3, C : f32x3, D : f32x3, E : f32x3) f32x3
 {
-	return (1 + A * exp(B / (cosTheta + TINY))) * (1 + C * exp(D * gamma) + E * cosGamma * cosGamma);
+	return (1 + A * exp(B / (cosTheta + VERY_SMALL))) * (1 + C * exp(D * gamma) + E * cosGamma * cosGamma);
 }
 
 //------------------------------------------------------------------------------

@@ -6,7 +6,6 @@
 #include <lib/std.gpuh>
 #include <lib/util.gpuh>
 #include <lib/shared.gpuh>
-#include <lib/shared.gpuh>
 #include <lib/preetham.gpuh>
 #include <lib/mie-rayleigh.gpuh>
 
@@ -15,7 +14,6 @@ struct FinalizeData
     DepthTexture: u32;
     ColorTexture: u32;
     NormalTexture: u32;
-    LuminanceTexture: u32;
     BloomTexture: u32;
 };
 group(BATCH_GROUP) uniform FinalizeUniforms : *FinalizeData;

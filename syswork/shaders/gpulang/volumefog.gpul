@@ -151,9 +151,12 @@ LocalLightsFog(
             const li = LightLists.PointLights[lidx];
             
             const lightDir = (li.position.xyz - viewPos);
-            if dot(lightDir, lightDir) < 0.0001f { continue; }        
+            
             const lightDirLength = length(lightDir) + 0.0001f;
-            const att = InvSquareFalloff(li.range, lightDirLength, lightDir);
+            const d2 = lightDirLength * lightDirLength;
+            const factor = d2 / (li.range * li.range);
+            const sf = saturate(1.0 - factor * factor);
+            const att = (sf * sf) / max(d2, 0.0001);
             light += li.color * att;
         }
     }
