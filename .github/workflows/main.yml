@@ -28,12 +28,14 @@ jobs:
             physx: vc17
             physxkey: vc17
             anyfx: anyfxcompiler-windows
+            gpulang: win64
           - name: ubuntu-22.04
             os: ubuntu-22.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
             anyfx: anyfxcompiler-linux
+            gpulang: linux
           
       # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -115,6 +117,27 @@ jobs:
         run: |
           pushd ../fips-anyfx
           python fips build ${{ matrix.anyfx }}
+          
+      - name: Check GPULang version
+        id: gpulang-rev
+        shell: bash
+        run: |
+          pushd ../fips-gpulang
+          echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          popd
+                    
+      - name: Check for GPULang cached build
+        id: cache-gpulang
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/fips-gpulang
+          key: ${{ runner.os }}-gpulang-${{ steps.gpulang-rev.outputs.gitrev }}
+
+      - name: Build GPULang Compiler
+        if: steps.cache-gpulang.outputs.cache-hit != 'true'
+        run: |
+          pushd ../fips-gpulang
+          python fips build ${{ matrix.gpulang }}
           popd
 
       # Runs a set of commands using the runners shell
