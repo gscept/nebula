@@ -122,7 +122,7 @@ jobs:
         id: gpulang-rev
         shell: bash
         run: |
-          pushd ../fips-gpulang
+          pushd ../gpulang
           echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           popd
                     
@@ -130,13 +130,13 @@ jobs:
         id: cache-gpulang
         uses: actions/cache@v3
         with:
-          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/fips-gpulang
+          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/gpulang
           key: ${{ runner.os }}-gpulang-${{ steps.gpulang-rev.outputs.gitrev }}
 
       - name: Build GPULang Compiler
         if: steps.cache-gpulang.outputs.cache-hit != 'true'
         run: |
-          pushd ../fips-gpulang
+          pushd ../gpulang
           python fips build ${{ matrix.gpulang }}
           popd
 
