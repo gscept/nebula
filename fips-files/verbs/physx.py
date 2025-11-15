@@ -33,7 +33,7 @@ def run(fips_dir, proj_dir, args) :
 
                 vcstring = args[1] + "win64-cpu-only-nebula"
                 physxbuild = os.path.abspath(proj_dir + "/../physx/physx")
-                subprocess.run([physxbuild + "/generate_projects.bat", vcstring] , cwd = physxbuild) #, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.run([physxbuild + "/generate_projects.bat", vcstring] , cwd = physxbuild, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
                 vswhere = os.path.expandvars("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe")
                 # figure out a version number for vswhere
@@ -70,8 +70,8 @@ def run(fips_dir, proj_dir, args) :
                         log.colored(log.RED, "PhysX " + buildconfig + " build failed!")
             else :
                 subprocess.run([proj_dir+"/../physx/physx/generate_projects.sh", "linux-clang-cpu-only-nebula"], cwd=proj_dir + "/../physx/physx/")
-                subprocess.run(["make", "-j", "10"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
-                subprocess.run(["make", "install"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
+                subprocess.run(["make", "-j", "10"], cwd=proj_dir + "/../physx/physx/compiler/linux-clang-cpu-only-nebula-checked")
+                subprocess.run(["make", "install"], cwd=proj_dir + "/../physx/physx/compiler/linux-clang-cpu-only-nebula-checked")
     else:
         help()
         def run(fips_dir,proj_dir,args):
