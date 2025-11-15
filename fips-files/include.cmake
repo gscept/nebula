@@ -109,7 +109,7 @@ find_package(Python 3.7 COMPONENTS Development REQUIRED)
 #physx
 
 SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation)
-SET(PX_LIBRARY_STATIC_NAMES PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK  PhysXVehicle PhysXVehicle2)
+SET(PX_LIBRARY_STATIC_NAMES PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle2)
 SET(PX_LINK_PREFIX _static_64)
 
 macro(find_physx_libraries build_dir target_variable)
