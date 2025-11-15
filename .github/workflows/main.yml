@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-22.04]
+        name: [windows-latest, ubuntu-24.04]
         include:
           - name: windows-latest
             os: windows-latest
@@ -29,8 +29,8 @@ jobs:
             physxkey: vc17
             anyfx: anyfxcompiler-windows
             gpulang: win64
-          - name: ubuntu-22.04
-            os: ubuntu-22.04
+          - name: ubuntu-24.04
+            os: ubuntu-24.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
