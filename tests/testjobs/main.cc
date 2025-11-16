@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
-//  testmem/main.cc
+//  testjobs/main.cc
 //  (C) 2006 Radon Labs GmbH
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "system/appentry.h"
