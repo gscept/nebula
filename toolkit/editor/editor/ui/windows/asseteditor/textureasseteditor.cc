@@ -46,6 +46,9 @@ TextureEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         case CoreGraphics::TextureCube:
             ImGui::Text("Texture Cube");
             break;
+        default:
+            n_error("unhandled TextureType");
+            break;
     }
     ImGui::PopFont();
 

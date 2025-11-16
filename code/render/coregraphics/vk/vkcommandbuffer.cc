@@ -743,6 +743,7 @@ CmdBarrier(
         case AccelerationStructureBarrierInfo::TlasBarrier:
             vkBar.buffer = Vulkan::TlasGetVkBuffer(nebBar.tlas);
             break;
+        default: break;
         }
         vkBar.offset = 0;
         vkBar.size = VK_WHOLE_SIZE;

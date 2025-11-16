@@ -5,7 +5,7 @@
     
     Entry point for asset batcher
     
-    (C) 2012-2020 Individual contributors, see AUTHORS file
+    (C) Individual contributors, see AUTHORS file
 */
 #include "toolkit-common/distributedtools/distributedtoolkitapp.h"
 #include "toolkit-common/toolkitconsolehandler.h"

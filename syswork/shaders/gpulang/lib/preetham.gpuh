@@ -1,0 +1,54 @@
+//------------------------------------------------------------------------------
+//  preetham.gpuh
+//
+//	Common functions used to calculate a Preetham sky scattering
+//
+//	Source: http://www.cs.utah.edu/~shirley/papers/sunsky/sunsky.pdf
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+const VERY_SMALL = 0.0001f;
+//------------------------------------------------------------------------------
+/**
+*/
+perez(cosTheta : f32, gamma : f32, cosGamma : f32, A : f32x3, B : f32x3, C : f32x3, D : f32x3, E : f32x3) f32x3
+{
+	return (1 + A * exp(B / (cosTheta + VERY_SMALL))) * (1 + C * exp(D * gamma) + E * cosGamma * cosGamma);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+YxyToXYZ(Yxy : f32x3) f32x3
+{
+	const Y = Yxy.r;
+	const x = Yxy.g;
+	const y = Yxy.b;
+
+	const X = x * ( Y / y );
+	const Z = ( 1.0 - x - y ) * ( Y / y );
+
+	return f32x3(X,Y,Z);
+}
+
+//------------------------------------------------------------------------------
+/**
+	@param sphereDir The direction from the surface to the sky dome.
+	@param lightDir The direction of the global light (sky light) in world space (so multiply by InvView).
+*/
+Preetham(sphereDir : f32x3, lightDir : f32x3, A : f32x4, B : f32x4, C : f32x4, D : f32x4, E : f32x4, Z : f32x4) f32x3
+{
+	
+	const cosThetaSun = saturate(dot(lightDir, f32x3(0, 1, 0)));
+	const cosTheta = saturate(dot(sphereDir, f32x3(0, 1, 0)));
+	const cosGamma = saturate(dot(sphereDir, lightDir.xyz));
+	const thetaSun = acos(cosThetaSun);
+	const gamma = acos(cosGamma);
+	const r_xyY = Z.xyz * (perez(cosTheta, gamma, cosGamma, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz));
+	const zeroThetaS = perez(0.0, thetaSun, cosThetaSun, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz);
+
+	const r_XYZ = YxyToXYZ(r_xyY / zeroThetaS);
+	const ret = XYZToRGB(r_XYZ);
+	return ret * ONE_OVER_PI;
+}

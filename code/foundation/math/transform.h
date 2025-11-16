@@ -45,8 +45,8 @@ inline transform::transform() : position(0.0f), scale(1.0f)
 /**
 */
 inline transform::transform(const Math::vec3& pos, const Math::quat& rot, const Math::vec3& inScale) :
-    rotation(rot),
     position(pos),
+    rotation(rot),
     scale(inScale)
 {
     // empty

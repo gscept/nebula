@@ -288,8 +288,11 @@ AssetBatcherApp::DoWork()
                 exporter->UpdateSource();
                 exporter->SetProgressMinMax(0, files * PRECISION);
                 exporter->ExportDir(dir);
-                break;
             }
+            break;
+            case ExporterBase::File:
+            n_error("Wrong export type, file");
+            break;
         }
     }
     

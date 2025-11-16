@@ -12,7 +12,9 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/texture.h"
 #include <array>
-#include <system_shaders/lights_cluster.h>
+//#include <render/system_shaders/lights_cluster.h>
+#include "gpulang/render/system_shaders/lights_cluster.h"
+
 
 namespace Frame
 {
@@ -152,7 +154,7 @@ public:
     /// get light lists buffer
     static const CoreGraphics::BufferId GetLightsBuffer();
     /// get light uniforms
-    static const LightsCluster::LightUniforms& GetLightUniforms();
+    static const LightsCluster::LightUniforms::STRUCT& GetLightUniforms();
     
 private:
 

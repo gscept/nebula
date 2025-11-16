@@ -99,7 +99,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         , this->ent.count
         , 1024
         , counters
-        , { &this->obs.completionCounters[i] }
+        , &this->obs.completionCounters[i] 
         , nullptr);
     }
 }

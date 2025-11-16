@@ -66,13 +66,6 @@
                 "type": "Texture2D"
             },
             {
-                "name": "AverageLumBuffer",
-                "format": "R16F",
-                "usage": "Render|TransferSource",
-                "fixedSize": [ 1.0, 1.0 ],
-                "type": "Texture2D"
-            },
-            {
                 "name": "SSAOBuffer",
                 "format": "R16F",
                 "usage": "ReadWrite",
@@ -648,10 +641,6 @@
                                             "stage": "PixelShaderRead"
                                         },
                                         {
-                                            "name": "AverageLumBuffer",
-                                            "stage": "PixelShaderRead"
-                                        },
-                                        {
                                             "name": "LightBuffer",
                                             "stage": "PixelShaderRead"
                                         },
@@ -668,13 +657,8 @@
                                                 "shader": "system_shaders/finalize",
                                                 "mask": "Alt0",
                                                 "namespace": "Finalize",
-                                                "constantBlockName": "FinalizeBlock",
+                                                "constantBlockName": "FinalizeUniforms",
                                                 "variables": [
-                                                    {
-                                                        "semantic": "LuminanceTexture",
-                                                        "value": "AverageLumBuffer",
-                                                        "type": "textureHandle"
-                                                    },
                                                     {
                                                         "semantic": "DepthTexture",
                                                         "value": "Depth",

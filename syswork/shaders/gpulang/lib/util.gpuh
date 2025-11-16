@@ -1,0 +1,676 @@
+//------------------------------------------------------------------------------
+//  util.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "lib/std.gpuh"
+
+const depthScale : f32 = 100.0f;
+
+
+//------------------------------------------------------------------------------
+/**
+    Unpack signed short UVs to float
+*/
+UnpackUV(packedUv : i32x2) f32x2
+{
+    return packedUv * 1.0f / 1000.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Encode 2 values in the range 0..1 into a 4-channel vector. Used
+    for encoding PSSM-depth values into a 32-bit-rgba value.
+*/
+Encode2(inVals : f32x2) f32x4
+{
+    return f32x4(inVals.x, fract(inVals.x * 256.0), inVals.y, fract(inVals.y * 256.0));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Decode 2 values encoded by Encode2().
+*/
+Decode2(inVals : f32x4) f32x2
+{
+    return f32x2(inVals.x + (inVals.y / 256.0), inVals.z + (inVals.w / 256.0));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Extract the 3x3 rotational part of a 4x4 matrix
+*/
+GetRotation(transform : f32x4x4) f32x3x3
+{
+    return f32x3x3(transform[0].xyz,
+                transform[1].xyz,
+                transform[2].xyz);  
+}
+
+//------------------------------------------------------------------------------
+/**
+    Unpack a UB4N packedData normal.
+*/
+UnpackNormal(packedDataNormal : f32x3) f32x3
+{
+    return (packedDataNormal * 2.0) - 1.0;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Unpack a packedData vertex normal.
+*/
+UnpackNormal4(packedDataNormal : f32x4) f32x4
+{
+    return f32x4((packedDataNormal.xyz * 2.0) - 1.0, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Unpack a 4.12 packedData texture coord.
+*/
+UnpackUv(packedDataUv : f32x2) f32x2
+{
+    return (packedDataUv / 8192.0);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Unpack a skin weight vertex component. Since the packing looses some
+    precision we need to re-normalize the weights.
+*/
+UnpackWeights(weights : f32x4) f32x4
+{
+    return (weights / dot(weights, f32x4(1.0, 1.0, 1.0, 1.0)));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculate cubic weights
+*/
+CubicWeights(v : f32) f32x4
+{
+    const n = f32x4(1, 2, 3, 4) - v;
+    const s = n * n * n;
+    const x : f32 = s.x;
+    const y : f32 = s.y - 4 * s.x;
+    const z : f32 = s.z - 4 * s.y + 6 * s.x;
+    const w : f32 = 6 - x - y - z;
+    return f32x4(x, y, z, w) / 6.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Sample texture using bicubic sampling
+*/
+SampleCubic(uniform tex : *texture2D, uniform samp : *sampler, res : f32x4, pixel : f32x2, mip : u32) f32x3
+{
+    var coords : f32x2 = pixel * res.xy - 0.5f;
+    const fxy : f32x2 = fract(coords);
+    coords -= fxy;
+
+    const xcubic : f32x4 = CubicWeights(fxy.x);
+    const ycubic : f32x4 = CubicWeights(fxy.y);
+
+    const c : f32x4 = coords.xxyy + f32x2(-0.5f, 1.5f).xyxy;
+    const s : f32x4 = f32x4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+    var offset : f32x4 = min(max(f32x4(0.0f), c + f32x4(xcubic.yw, ycubic.yw) / s), res.xxyy);
+
+    offset *= res.zzww;
+    const sample0 : f32x3 = textureSampleLod(tex, samp, offset.xz, mip).xyz;
+    const sample1 : f32x3 = textureSampleLod(tex, samp, offset.yz, mip).xyz;
+    const sample2 : f32x3 = textureSampleLod(tex, samp, offset.xw, mip).xyz;
+    const sample3 : f32x3 = textureSampleLod(tex, samp, offset.yw, mip).xyz;
+    const sx : f32 = s.x / (s.x + s.y);
+    const sy : f32 = s.z / (s.z + s.w);
+    return lerp(lerp(sample3, sample2, sx), lerp(sample1, sample0, sx), sy);
+}
+
+const USE_SRGB = 1;
+generate
+{
+    if declared<USE_SRGB>
+    {
+        EncodeHDR(rgba : f32x4) f32x4 { return rgba; }
+        EncodeHDR4(rgba : f32x4) f32x4 { return rgba; }
+        DecodeHDR(rgba : f32x4) f32x4 { return rgba; }
+        DecodeHDR4(rgba : f32x4) f32x4 { return rgba; }
+    }
+    else
+    {
+        // If not using SRGB natively, decode and encode from and to SRGB values
+        EncodeHDR(rgba : f32x4) f32x4 { return rgba * f32x4(0.5, 0.5, 0.5, 1.0); }
+        EncodeHDR4(rgba : f32x4) f32x4 { return rgba * f32x4(0.5, 0.5, 0.5, 0.5); }
+        DecodeHDR(rgba : f32x4) f32x4 { return rgba * f32x4(2.0f, 2.0f, 2.0f, 1.0f); }
+        DecodeHDR4(rgba : f32x4) f32x4 { return rgba * f32x4(2.0f, 2.0f, 2.0f, 2.0f); }
+    }
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+RGBToXYZ(rgb : f32x3) f32x3
+{
+    const RGB_2_XYZ = f32x3x3(
+        0.4124564, 0.2126729, 0.0193339,
+        0.3575761, 0.7151522, 0.1191920,
+        0.1804375, 0.0721750, 0.9503041
+    );
+    return RGB_2_XYZ * rgb;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+XYZToRGB(xyz : f32x3) f32x3
+{
+    const XYZ_2_RGB = f32x3x3(
+        3.2404542, -0.9692660, 0.0556434,
+        -1.5371385, 1.8760108, -0.2040259,
+        -0.4985314, 0.0415560, 1.0572252
+    );
+    return XYZ_2_RGB * xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+RGBToXYY(rgb : f32x3) f32x3
+{
+    const xyz : f32x3 = RGBToXYZ(rgb);
+    const Y : f32 = xyz.y;
+    const x : f32 = xyz.x / (xyz.x + xyz.y + xyz.z);
+    const y : f32 = xyz.y / (xyz.x + xyz.y + xyz.z);
+    return f32x3(x, y, Y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+XYYToRGB(xyY : f32x3) f32x3
+{
+    const y : f32 = xyY.z;
+    const x : f32 = y * xyY.x / xyY.y;
+    const z : f32 = y * (1.0f - xyY.x - xyY.y) / xyY.y;
+    return XYZToRGB(f32x3(x, y, z));
+}
+
+const MiddleGrey = 0.5f;
+const Key = 0.3f;
+const Luminance = f32x3(0.2126f, 0.7152f, 0.0722f);
+//const vec4 Luminance = vec4(0.299f, 0.587f, 0.114f, 0.0f);
+
+//------------------------------------------------------------------------------
+/**
+*/
+Greyscale(color : f32x4) f32
+{
+    return dot(color.xyz, f32x3(0.299, 0.587, 0.114));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculates HDR tone mapping
+*/
+ToneMap(xyY : f32x3, lp : f32, maxLum : f32) f32x3
+{
+    const WhitePoint = 4.0;
+
+    // apply reinhard2 tonemapping
+    xyY.z = (lp * (1.0f + lp / (WhitePoint * WhitePoint))) / (1.0f + lp);
+
+    return xyY;
+}
+
+//------------------------------------------------------------------------------
+/**
+    From GPUGems3: "Don't know why this isn't in the standard library..."
+*/
+linstep(min : f32, max : f32, v : f32) f32
+{
+    return clamp((v - min) / (max - min), 0.0f, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+sqr(f : f32) f32
+{
+    return f * f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+unpack_2u16(value : u32) u32x2
+{
+    return u32x2(value & 0xFFFF, (value >> 16) & 0xFFFF);
+}
+
+no_reflect const PI = 3.141592653589793238462643383279502884197169;
+no_reflect const ONE_OVER_PI = 1.0f / PI;
+no_reflect const PI_OVER_TWO = PI / 2.0f;
+no_reflect const PI_OVER_FOUR = PI / 4.0f;
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Logarithmic filtering
+*/
+log_conv(x0 : f32, x : f32, y0 : f32, y : f32) f32
+{
+    return (x + log(x0 + (y0 * exp(y - x))));
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Compute pixel size.
+*/
+GetPixelSize(uniform tex : *texture2D) f32x2
+{
+    var size : f32x2 = textureGetSizeMip(tex, 0u);
+    size = f32x2(1.0f) / size;
+    return size;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Compute pixel size.
+*/
+GetScaledUVs(uvs : f32x2, uniform tex : *texture2D, dimensions : f32x2) f32x2
+{
+    const texSize : f32x2 = textureGetSizeMip(tex, 0u);
+    uvs = uvs * (dimensions / texSize);
+    return uvs;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Compute UV from pixel coordinate and texture
+*/
+GetUV(pixel : i32x2, uniform tex : *texture2D) f32x2
+{
+    var size : f32x2 = textureGetSizeMip(tex, 0u);
+    size = pixel / size;
+    return size;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Compute pixel from UV
+*/
+GetPixel(uv : f32x2, uniform tex : *texture2D) i32x2
+{
+    var size : i32x2 = textureGetSizeMip(tex, 0u);
+    size = i32x2(uv * size);
+    return size;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Compute texture ratio to current pixel size
+*/
+GetTextureRatio(uniform tex : *texture2D, pixelSize : f32x2) f32x2
+{
+    const size : i32x2 = textureGetSizeMip(tex, 0u);
+    const currentTextureSize : f32x2 = f32x2(1.0f) / size;
+    return size / currentTextureSize;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Flips y in vec2, useful for opengl conversion of uv corods
+*/
+FlipY(uv : f32x2) f32x2
+{
+    return f32x2(uv.x, 1.0f - uv.y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PlaneTBN(normal : f32x3) f32x3x3
+{
+    var tangent : f32x3 = cross(normal.xyz, f32x3(0, 0, 1));
+    tangent = normalize(cross(normal.xyz, tangent));
+    const binormal : f32x3 = normalize(cross(normal.xyz, tangent));
+    return f32x3x3(tangent, binormal, normal.xyz);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TangentSpace(tangent : f32x3, normal : f32x3, sign : f32) f32x3x3
+{
+    const tan : f32x3 = normalize(tangent);
+    const norm : f32x3 = normalize(normal);
+    const bin : f32x3 = cross(norm, tan) * sign;
+    return f32x3x3(tan, bin, norm);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackBC5Normal(normalMapComponents : f32x2) f32x3
+{
+    var normal = f32x3(0, 0, 0);
+    normal.xy = (normalMapComponents * 2.0f) - 1.0f;
+    normal.z = saturate(sqrt(1.0f - dot(normal.xy, normal.xy)));
+    return normal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TangentSpaceNormal(normalMapComponents : f32x2, tbn : f32x3x3) f32x3
+{
+    return tbn * UnpackBC5Normal(normalMapComponents);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+*/
+LinearizeDepth(depth : f32, focalLength : f32x2) f32
+{
+    return (focalLength.x * focalLength.y) / (depth * (focalLength.x - focalLength.y) + focalLength.y);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+*/
+DelinearizeDepth(depth : f32, focalLength : f32x2) f32
+{
+    return -((focalLength.x + focalLength.y) * depth - (2 * focalLength.x)) / ((focalLength.x - focalLength.y) * depth);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Convert pixel to normalized [0,1] space
+*/
+PixelToNormalized(screenCoord : f32x2, pixelSize : f32x2) f32x2
+{
+    return screenCoord.xy * pixelSize.xy;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Convert pixel to projection space
+*/
+PixelToProjection(screenCoord : f32x2, depth : f32) f32x4
+{
+    // we use DX depth range [0,1], for GL where depth is [-1,1], we would need depth * 2 - 1 too
+    return f32x4(screenCoord * 2.0f - 1.0f, depth, 1.0f);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Convert pixel to view space
+*/
+PixelToView(screenCoord : f32x2, depth : f32, invProjection : f32x4x4) f32x4
+{
+    const projectionSpace : f32x4 = PixelToProjection(screenCoord, depth);
+    var viewSpace : f32x4 = invProjection * projectionSpace;
+    viewSpace /= viewSpace.w;
+    return viewSpace;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Convert pixel to view space
+*/
+PixelToWorld(screenCoord : f32x2, depth : f32, invView : f32x4x4, invProjection : f32x4x4) f32x4
+{
+    const viewSpace : f32x4 = PixelToView(screenCoord, depth, invProjection);
+    return invView * viewSpace;
+}
+
+//-------------------------------------------------------------------------------------------------------------
+/**
+    Convert view space to world space
+*/
+ViewToWorld(viewSpace : f32x4, invView : f32x4x4) f32x4
+{
+    return invView * viewSpace;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Get position element from matrix
+*/
+GetPosition(transform : f32x4x4) f32x3
+{
+    return transform[2].xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Unpack a 1D index into a 3D index
+*/
+Unpack1DTo3D(index1D : u32, width : u32, height : u32) u32x3
+{
+    const i : u32 = index1D % width;
+    const j : u32 = index1D % (width * height) / width;
+    const k : u32 = index1D / (width * height);
+
+    return u32x3(i, j, k);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Pack a 3D index into a 1D array index
+*/
+Pack3DTo1D(index3D : u32x3, width : u32, height : u32) u32
+{
+    return index3D.x + (width * (index3D.y + height * index3D.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Converts a linear sequence to a morton curve 8x8 access pattern
+*/
+MortonCurve8x8(idx : u32) u32x2
+{
+    // yeah... don't ask
+    var x : u32 = bitExtract(idx, 2u, 3u);
+    x = bitInsert(x, idx, 0u, 1u);
+
+    var y : u32 = bitExtract(idx, 3u, 3u);
+    const a : u32 = bitExtract(idx, 1u, 2u);
+    y = bitInsert(y, a, 0u, 2u);
+
+    return u32x2(x, y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct IntersectionResult
+{
+    point : f32x3;
+    intersects : b8;
+};
+IntersectLineWithPlane(lineStart : f32x3, lineEnd : f32x3, plane : f32x4) IntersectionResult
+{
+    var ret : IntersectionResult;
+    const ab : f32x3 = lineEnd - lineStart;
+    const t : f32 = (plane.w - dot(plane.xyz, lineStart)) / dot(plane.xyz, ab);
+    ret.intersects = (t >= 0.0f && t <= 1.0f);
+    ret.point = f32x3(0, 0, 0);
+    if (ret.intersects)
+    {
+        ret.point = lineStart + t * ab;
+    }
+
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+    note: from https://www.shadertoy.com/view/4djSRW
+    This set suits the coords of of 0-1.0 ranges..
+*/
+
+const MOD3 = f32x3(443.8975, 397.2973, 491.1871);
+
+//------------------------------------------------------------------------------
+/**
+*/
+hash11(p : f32) f32
+{
+    var p3 : f32x3 = fract(f32x3(p) * MOD3);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+hash12(p : f32x2) f32
+{
+    var p3 : f32x3 = fract(f32x3(p.xyx) * MOD3);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+hash32(p : f32x2) f32x3
+{
+    var p3 : f32x3 = fract(f32x3(p.xyx) * MOD3);
+    p3 += dot(p3, p3.yxz + 19.19);
+    return fract(f32x3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
+}
+
+const m = 1540483477;
+//------------------------------------------------------------------------------
+/**
+    Murmur hash function
+*/
+murmur(k : i32) f32
+{
+    var h : i32 = k ^ 1;
+
+    k *= m;
+    k ^= k >> 24;
+    k *= m;
+
+    h *= m;
+    h ^= k;
+
+    return f32(h);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Discontinuous pseudorandom uniformly distributed in [-0.5, +0.5]^3
+*/
+random3(c : f32x3) f32x3 
+{
+    var r : f32x3;
+    const c1 : f32 = dot(c, f32x3(17.0f, 59.4f, 15.0f));
+    r.x = fract(murmur(i32(c.x * c1)) / 512.0f);
+    r.y = fract(murmur(i32(c.y * c1)) / 512.0f);
+    r.z = fract(murmur(i32(c.z * c1)) / 512.0f);
+    return r - 0.5f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Source: https://www.shadertoy.com/view/XsX3zB
+
+    With modifications to the random3 function using a murmur hash instead of trigonometry
+*/
+
+const F3 = 0.3333333f;
+const G3 = 0.1666667f;
+simplex3D(p : f32x3) f32
+{
+    /* 1. find current tetrahedron T and it's four vertices */
+    /* s, s+i1, s+i2, s+1.0 - absolute skewed (integer) coordinates of T vertices */
+    /* x, x1, x2, x3 - unskewed coordinates of p relative to each of T vertices*/
+
+    /* calculate s and x */
+    const s : f32x3 = floor(p + dot(p, f32x3(F3)));
+    const x : f32x3 = p - s + dot(s, f32x3(G3));
+
+    /* calculate i1 and i2 */
+    const e : f32x3 = step(f32x3(0.0f), x - x.yzx);
+    const i1 : f32x3 = e * (1.0f - e.zxy);
+    const i2 : f32x3 = 1.0f - e.zxy * (1.0f - e);
+
+    /* x1, x2, x3 */
+    const x1 : f32x3 = x - i1 + G3;
+    const x2 : f32x3 = x - i2 + 2.0f * G3;
+    const x3 : f32x3 = x - 1.0f + 3.0f * G3;
+
+    /* 2. find four surflets and store them in d */
+    var w, d : f32x4;
+
+    /* calculate surflet weights */
+    w.x = dot(x, x);
+    w.y = dot(x1, x1);
+    w.z = dot(x2, x2);
+    w.w = dot(x3, x3);
+
+    /* w fades from 0.6 at the center of the surflet to 0.0 at the margin */
+    w = max(0.6f - w, 0.0f);
+
+    /* calculate surflet components */
+    d.x = dot(random3(s), x);
+    d.y = dot(random3(s + i1), x1);
+    d.z = dot(random3(s + i2), x2);
+    d.w = dot(random3(s + 1.0f), x3);
+
+    /* multiply d by w^4 */
+    w *= w;
+    w *= w;
+    d *= w;
+
+    /* 3. return the sum of the four surflets */
+    return dot(d, f32x4(52.0f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const rot1 = f32x3x3(-0.37, 0.36, 0.85, -0.14, -0.93, 0.34, 0.92, 0.01, 0.4);
+const rot2 = f32x3x3(-0.55, -0.39, 0.74, 0.33, -0.91, -0.24, 0.77, 0.12, 0.63);
+const rot3 = f32x3x3(-0.71, 0.52, -0.47, -0.08, -0.72, -0.68, -0.7, -0.45, 0.56);
+simplex3D_fractal(m : f32x3) f32
+{
+    return  0.5333333f * simplex3D(m * rot1)
+        + 0.2666667f * simplex3D(2.0f * m * rot2)
+        + 0.1333333f * simplex3D(4.0f * m * rot3)
+        + 0.0666667f * simplex3D(8.0f * m);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Source: https://www.shadertoy.com/view/Msf3WH
+*/
+hash(p : f32x2) f32x2
+{
+    p = f32x2(dot(p, f32x2(127.1, 311.7)), dot(p, f32x2(269.5, 183.3)));
+    return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Source: https://www.shadertoy.com/view/Msf3WH
+*/
+noise(p : f32x2) f32
+{
+    const K1 : f32 = 0.366025404; // (sqrt(3)-1)/2;
+    const K2 : f32 = 0.211324865; // (3-sqrt(3))/6;
+
+    const i : f32x2 = floor(p + (p.x + p.y) * K1);
+    const a : f32x2 = p - i + (i.x + i.y) * K2;
+    const m : f32 = step(a.y, a.x);
+    const o : f32x2 = f32x2(m, 1.0 - m);
+    const b : f32x2 = a - o + K2;
+    const c : f32x2 = a - 1.0 + 2.0 * K2;
+    const h : f32x3 = max(0.5 - f32x3(dot(a, a), dot(b, b), dot(c, c)), 0.0);
+    const n : f32x3 = h * h * h * h * f32x3(dot(a, hash(i + 0.0)), dot(b, hash(i + o)), dot(c, hash(i + 1.0)));
+    return dot(n, f32x3(70.0));
+}
+
+//------------------------------------------------------------------------------

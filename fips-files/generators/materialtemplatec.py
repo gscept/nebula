@@ -60,6 +60,10 @@ def TypeToString(type, edit, val):
         typeStr = 'Scalar'
         accessorStr = 'f'
         valueStr = '{}'.format(val)
+    elif type == "int":
+        typeStr = 'Int'
+        accessorStr = 'i'
+        valueStr = '{}'.format(val)    
     elif type == "bool":
         typeStr = 'Bool'
         accessorStr = 'b'
@@ -151,6 +155,8 @@ class MaterialTemplateDefinition:
                 # Validate default value
                 if varType == "float":
                     Assert(type(varDef) is float, self.name, "Variable '{}' is of type 'float' but initialized as '{}'".format(varName, type(varDef)))
+                elif varType == "int":
+                    Assert(type(varDef) is int, self.name, "Variable '{}' is of type 'int' but initialized as '{}'".format(varName, type(varDef)))
                 elif varType == "vec2":
                     Assert(len(varDef) == 2, self.name, "Type 'vec2' requires 2 values")
                     for v in varDef:
@@ -246,7 +252,7 @@ class MaterialTemplateDefinition:
                 table = ''
                 
                 lookup = 0
-                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2" or var.type == "float" or var.type == "bool":
+                if var.type == "vec4" or var.type == "vec3" or var.type == "vec2" or var.type == "float" or var.type == "bool" or var.type == "int":
                     lookup = constLookup
                     constLookup += 1
                     numConstants += 1
@@ -485,7 +491,7 @@ class MaterialTemplateGenerator:
                 for p in mat.passes:
                     setupStr += '\tConfigs[(uint)MaterialTemplates::BatchGroup::{}].Append(&__{}.entry);\n'.format(p.batch, mat.name)
                 setupStr += '\n'
-                f.WriteLine('struct {}::{} {}::__{};'.format(self.name, mat.name, self.name, mat.name))
+                f.WriteLine('struct {}::{} __{};'.format(self.name, mat.name, mat.name))
         f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates()\n{{\n{}}}\n'.format(setupStr))
 
         f.WriteLine('}} // namespace {}\n'.format(self.name))
@@ -495,7 +501,6 @@ class MaterialTemplateGenerator:
     #  
     def BeginSource(self, f):
         f.WriteLine("// Material Template #version:{}#".format(self.version))
-        f.WriteLine("#pragma once")
         f.WriteLine("//------------------------------------------------------------------------------")
         f.WriteLine("/**")
         f.IncreaseIndent()

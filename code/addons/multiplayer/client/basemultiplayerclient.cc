@@ -40,8 +40,8 @@ SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_
 /**
 */
 BaseMultiplayerClient::BaseMultiplayerClient()
-    : isOpen(false),
-    hostIp(N_IP_ADDR(127, 0, 0, 1))
+    : hostIp(N_IP_ADDR(127, 0, 0, 1)),
+    isOpen(false)
 {
     // empty
 }
@@ -322,9 +322,10 @@ BaseMultiplayerClient::PollIncomingMessages()
         n_error("Error checking for messages");
     }
 
-    n_assert(numMsgs <= MaxMessagesPerFrame && incomingMsg);
+    n_assert(numMsgs <= MaxMessagesPerFrame);
     for (int i = 0; i < numMsgs; i++)
     {
+        n_assert(incomingMsg[i] != nullptr);
         void* data = incomingMsg[i]->m_pData;
         int bytes = incomingMsg[i]->m_cbSize;
         double recvTime = incomingMsg[i]->m_usecTimeReceived;

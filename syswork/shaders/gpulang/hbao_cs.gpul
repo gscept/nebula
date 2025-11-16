@@ -1,0 +1,268 @@
+//------------------------------------------------------------------------------
+//  hbao_cs.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+
+struct HBAOData
+{
+    UVToViewA : f32x2;
+    UVToViewB : f32x2;
+    AOResolution : f32x2;
+    InvAOResolution : f32x2;
+    TanAngleBias : f32;
+    Strength : f32;
+    R2 : f32;
+};
+group(BATCH_GROUP) uniform HBAOParams : *HBAOData;
+
+// Step size in number of pixels
+const STEP_SIZE = 8;
+
+// Number of shared-memory samples per direction
+const NUM_STEPS = 8;
+
+//sampler2D RandomMap;
+group(BATCH_GROUP) uniform HBAO0 : *mutable rg16f texture2D;
+group(BATCH_GROUP) uniform HBAO1 : *mutable rg16f texture2D;
+
+sampler_state ClampSampler
+{
+    //Samplers = { DepthBuffer };
+    Filter = FilterMode.Point;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+};
+
+// Maximum kernel radius in number of pixels
+const KERNEL_RADIUS = NUM_STEPS * STEP_SIZE;
+
+// The last sample has weight = exp(-KERNEL_FALLOFF)
+const KERNEL_FALLOFF = 3.0f;
+
+// Must match the HBAO_TILE_WIDTH value from AOAlgorithm
+const HBAO_TILE_WIDTH = 256;
+
+const SHARED_MEM_SIZE = KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS;
+workgroup SharedMemory : [SHARED_MEM_SIZE]f32x2;
+
+//----------------------------------------------------------------------------------
+Tangent(V : f32x2) f32
+{
+    // Add an epsilon to avoid any division by zero.
+    return V.y / (abs(V.x) + 1.e-6f);
+}
+
+//----------------------------------------------------------------------------------
+TanToSin(x : f32) f32
+{
+    return x * invSqrt(x*x + 1.0f);
+}
+
+//----------------------------------------------------------------------------------
+Falloff(sampleId : f32) f32
+{
+    // Pre-computed by fxc.
+    const r = sampleId / (NUM_STEPS-1);
+    return exp(-KERNEL_FALLOFF*r*r);
+}
+
+//----------------------------------------------------------------------------------
+MinDiff(P: f32x2, Pr: f32x2, Pl: f32x2) f32x2
+{
+    const V1 = Pr - P;
+    const V2 = P - Pl;
+    return (dot(V1,V1) < dot(V2,V2)) ? V1 : V2;
+}
+
+//----------------------------------------------------------------------------------
+// Load (X,Z) view-space coordinates from shared memory.
+// On Fermi, such strided 64-bit accesses should not have any bank conflicts.
+//----------------------------------------------------------------------------------
+SharedMemoryLoad(centerId : i32, x : i32) f32x2
+{
+    return SharedMemory[centerId + x];
+}
+
+//----------------------------------------------------------------------------------
+// Compute (X,Z) view-space coordinates from the depth texture.
+//----------------------------------------------------------------------------------
+LoadXZFromTexture(x : u32, y : u32) f32x2
+{ 
+    const uv = (f32x2(x, y) + 0.5f) * HBAOParams.InvAOResolution;
+    const z_eye = fetch2D(PerTickParams.DepthBuffer, i32x2(x, y), 0).r;
+    const viewSpace = PixelToView(uv, z_eye, ViewConstants.InvProjection);
+    return f32x2(viewSpace.x, viewSpace.z);
+}
+
+//----------------------------------------------------------------------------------
+// Compute (Y,Z) view-space coordinates from the depth texture.
+//----------------------------------------------------------------------------------
+LoadYZFromTexture(x : u32, y : u32) f32x2
+{
+    const uv = (f32x2(x, y) + 0.5f) * HBAOParams.InvAOResolution;
+    const z_eye = fetch2D(PerTickParams.DepthBuffer, i32x2(x, y), 0).r;
+    const viewSpace = PixelToView(uv, z_eye, ViewConstants.InvProjection);
+    return f32x2(viewSpace.y, viewSpace.z);
+}
+
+//----------------------------------------------------------------------------------
+// Compute the HBAO contribution in a given direction on screen by fetching 2D 
+// view-space coordinates available in shared memory:
+// - (X,Z) for the horizontal directions (approximating Y by a constant).
+// - (Y,Z) for the vertical directions (approximating X by a constant).
+//----------------------------------------------------------------------------------
+IntegrateDirection(
+    iAO : f32
+    , P : f32x2
+    , tanT : f32
+    , threadId : i32
+    , X0 : i32
+    , deltaX : i32
+) f32
+{
+    var tanH = tanT;
+    var sinH = TanToSin(tanH);
+    const sinT = TanToSin(tanT);
+    var ao = iAO;
+
+    // TODO: add unroll
+    for (var sampleId : i32 = 0; sampleId < NUM_STEPS; ++sampleId)
+    {
+        const S = SharedMemoryLoad(threadId, sampleId * deltaX + X0);
+        const V = S - P;
+        const tanS = Tangent(V);
+        const d2 = dot(V, V);
+        
+        if ((d2 < HBAOParams.R2) && (tanS > tanH))
+        {
+            // Accumulate AO between the horizon and the sample
+            const sinS = TanToSin(tanS);
+            ao += Falloff(sampleId) * (sinS - sinH);
+            
+            // Update the current horizon angle
+            tanH = tanS;
+            sinH = sinS;
+        }
+    }
+    return ao;
+}
+
+//----------------------------------------------------------------------------------
+// Bias tangent angle and compute HBAO in the +X/-X or +Y/-Y directions.
+//----------------------------------------------------------------------------------
+ComputeHBAO(P : f32x2, T : f32x2, centerId : i32) f32
+{
+    var ao = 0.0f;
+    const tanT = Tangent(T);
+    ao = IntegrateDirection(ao, P,  tanT + HBAOParams.TanAngleBias, centerId,  STEP_SIZE,  STEP_SIZE);
+    ao = IntegrateDirection(ao, P, -tanT + HBAOParams.TanAngleBias, centerId, -STEP_SIZE, -STEP_SIZE);
+    return ao;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(HBAO_TILE_WIDTH)
+entry_point
+csMainX() void
+{
+    const         tileStart = u32(computeGetWorkgroupIndices().x) * HBAO_TILE_WIDTH;
+    const           tileEnd = tileStart + HBAO_TILE_WIDTH;
+    const        apronStart = tileStart - KERNEL_RADIUS;
+    const          apronEnd = tileEnd   + KERNEL_RADIUS;
+
+    const x = apronStart + u32(computeGetLocalThreadIndices().x);
+    const y = u32(computeGetWorkgroupIndices().y);
+
+    // Load f32x2 samples into shared memory
+    SharedMemory[computeGetLocalThreadIndices().x] = LoadXZFromTexture(x,y);
+    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
+    memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+
+    const writePos = tileStart + u32(computeGetLocalThreadIndices().x);
+    const tileEndClamped = min(tileEnd, u32(HBAOParams.AOResolution.x));
+    
+    if (writePos < tileEndClamped)
+    {
+        const centerId = i32(computeGetLocalThreadIndices().x) + KERNEL_RADIUS;
+        const ox = writePos; 
+        const oy = computeGetWorkgroupIndices().y;
+
+        // Fetch the 2D coordinates of the center point and its nearest neighbors
+        const P =  SharedMemoryLoad(centerId, 0);
+        const Pr = SharedMemoryLoad(centerId, 1);
+        const Pl = SharedMemoryLoad(centerId, -1);
+        
+        // Compute tangent vector using central differences
+        const T = MinDiff(P, Pr, Pl);
+
+        const ao = ComputeHBAO(P, T, centerId);
+        textureStore(HBAO0, i32x2(ox, oy), f32x4(ao, 0, 0, 0));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(HBAO_TILE_WIDTH)
+entry_point
+csMainY() void
+{
+    const         tileStart = u32(computeGetWorkgroupIndices().x) * HBAO_TILE_WIDTH;
+    const           tileEnd = tileStart + HBAO_TILE_WIDTH;
+    const        apronStart = tileStart - KERNEL_RADIUS;
+    const          apronEnd = tileEnd   + KERNEL_RADIUS;
+
+    const x = u32(computeGetWorkgroupIndices().y);
+    const y = apronStart + u32(computeGetLocalThreadIndices().x);
+
+    // Load vec2 samples into shared memory
+    SharedMemory[computeGetLocalThreadIndices().x] = LoadYZFromTexture(x,y);
+    SharedMemory[min(2 * KERNEL_RADIUS + i32(computeGetLocalThreadIndices().x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
+    memoryBarrierWorkgroup();
+    executionBarrierWorkgroup();
+
+    const writePos = tileStart + computeGetLocalThreadIndices().x;
+    const tileEndClamped = min(tileEnd, u32(HBAOParams.AOResolution.y));
+    
+    if (writePos < tileEndClamped)
+    {
+        const centerId = i32(computeGetLocalThreadIndices().x) + KERNEL_RADIUS;
+        const ox = computeGetWorkgroupIndices().y;
+        const oy = writePos;
+
+        // Fetch the 2D coordinates of the center point and its nearest neighbors
+        const P =  SharedMemoryLoad(centerId, 0);
+        const Pt = SharedMemoryLoad(centerId, 1);
+        const Pb = SharedMemoryLoad(centerId, -1);
+
+        // Compute tangent vector using central differences
+        const T = MinDiff(P, Pt, Pb);
+
+        const aoy = ComputeHBAO(P, T, centerId);
+        const aox = textureLoad(HBAO0, i32x2(computeGetWorkgroupIndices().y, writePos)).x;
+        var ao = (aox + aoy) * 0.5f;
+        memoryBarrierWorkgroup();
+        ao = saturate(ao * HBAOParams.Strength);
+        textureStore(HBAO1, i32x2(ox, oy), f32x4(ao, P.y, 0, 0));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program HBAOX
+{
+    ComputeShader = csMainX;
+};
+
+@Mask("Alt1")
+program HBAOY
+{
+    ComputeShader = csMainY;
+};

@@ -448,6 +448,15 @@ GetRenderingSemaphore()
 //------------------------------------------------------------------------------
 /**
 */
+VkSemaphore
+GetBackbufferSemaphore()
+{
+    return SemaphoreGetVk(state.backbufferFinishedSemaphores[state.currentBufferedFrameIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 VkFence
 GetPresentFence()
 {
@@ -1252,10 +1261,16 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     state.presentFences.Resize(info.numBufferedFrames);
     state.renderingFinishedSemaphores.Resize(info.numBufferedFrames);
+    state.backbufferFinishedSemaphores.Resize(info.numBufferedFrames);
     for (i = 0; i < info.numBufferedFrames; i++)
     {
         state.presentFences[i] = CreateFence({true});
         state.renderingFinishedSemaphores[i] = CreateSemaphore({
+#if NEBULA_GRAPHICS_DEBUG
+            .name = "Present",
+#endif
+            .type = SemaphoreType::Binary });
+        state.backbufferFinishedSemaphores[i] = CreateSemaphore({
 #if NEBULA_GRAPHICS_DEBUG
             .name = "Present",
 #endif
@@ -1467,6 +1482,7 @@ DestroyGraphicsDevice()
         FenceWait(state.presentFences[i], UINT64_MAX);
         DestroyFence(state.presentFences[i]);
         DestroySemaphore(state.renderingFinishedSemaphores[i]);
+        DestroySemaphore(state.backbufferFinishedSemaphores[i]);
     }
 
 #if NEBULA_VULKAN_DEBUG
@@ -1886,6 +1902,7 @@ ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro)
 void
 FinishFrame(IndexT frameIndex)
 {
+    VkFence fence = GetPresentFence();
     if (state.currentFrameIndex != frameIndex)
     {
         _end_counter(state.GraphicsDeviceNumComputes);
@@ -1894,9 +1911,14 @@ FinishFrame(IndexT frameIndex)
         state.currentFrameIndex = frameIndex;
     }
 
+    state.queueHandler.AppendWaitSemaphore(
+        GraphicsQueueType,
+        SemaphoreGetVk(state.backbufferFinishedSemaphores[state.currentBufferedFrameIndex])
+    );
+
     // Signal rendering finished semaphore just before submitting graphics queue
-    state.queueHandler.AppendPresentSignal(
-        ComputeQueueType,
+    state.queueHandler.AppendSignalSemaphore(
+        GraphicsQueueType,
         SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
     );
 
@@ -1921,6 +1943,8 @@ FinishFrame(IndexT frameIndex)
         state.sparseBufferBinds.Clear();
         state.sparseImageBinds.Clear();
     }
+
+    state.queueHandler.InsertFence(CoreGraphics::QueueType::GraphicsQueueType, fence);
 }
 
 //------------------------------------------------------------------------------

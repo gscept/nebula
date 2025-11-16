@@ -1,0 +1,222 @@
+//------------------------------------------------------------------------------
+//  im3d.gpul
+//
+//  Shader for Im3d rendering
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+
+render_state Im3dState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = false;
+    Cull = CullFace.None;
+    ScissorEnabled = false;
+};
+
+render_state Im3dDepthState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = true;
+    Cull = CullFace.None;
+    ScissorEnabled = false;
+};
+
+const Antialiasing = 2.0f;
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMainLines(
+    binding(0) in position_size : f32x4,
+    binding(1) in color : f32x4,    
+    out size : f32,
+    out Color : f32x4
+) void
+{
+    Color = color.abgr;
+    Color.a *= smoothstep(0.0, 1.0, position_size.w / Antialiasing);    
+    size = max(position_size.w, Antialiasing);  
+    vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(position_size.xyz, 1.0));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMainPoints(
+    binding(0) in position_size : f32x4,
+    binding(1) in color : f32x4,    
+    out size : f32,
+    out Color : f32x4
+) void
+{    
+    Color = color.abgr;
+    Color.a *= smoothstep(0.0, 1.0, position_size.w / Antialiasing);    
+    size = max(position_size.w, Antialiasing);
+    vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(position_size.xyz, 1.0));
+    vertexSetPointSize(size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMainTriangles(
+    binding(0) in position_size : f32x4,
+    binding(1) in color : f32x4,    
+    out size : f32,
+    out Color : f32x4
+) void
+{
+    Color = color.abgr;
+    size = max(position_size.w, Antialiasing);
+    vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(position_size.xyz, 1.0));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+input_topology(InputTopology.Lines)
+output_topology(OutputTopology.Triangles)
+max_output_vertices(4)
+entry_point
+gsMain(     
+    in size : [2]f32,
+    in color : [2]f32x4,        
+    out EdgeDistance : f32,
+    out Size : f32,
+    out Color : f32x4
+) void
+{
+    const line = geometryGetLine();
+    const pos0 = line.position[0].xy / line.position[0].w;
+    const pos1 = line.position[1].xy / line.position[1].w;
+        
+    var dir = pos0 - pos1;
+    dir = normalize(f32x2(dir.x, dir.y * PassUniforms.RenderTargets[0].Dimensions.y * PassUniforms.RenderTargets[0].Dimensions.z)); // correct for aspect ratio
+    var tng0 = f32x2(-dir.y, dir.x);
+    const tng1 = tng0 * size[1] * PassUniforms.RenderTargets[0].Dimensions.zw;
+    tng0 = tng0 * size[0] * PassUniforms.RenderTargets[0].Dimensions.zw;
+        
+    // line start
+    EdgeDistance = -size[0];
+    Size = size[0];
+    Color = color[0];
+    geometryExportVertex(f32x4((pos0 - tng0) * line.position[0].w, line.position[0].zw));
+        
+    EdgeDistance = size[0];
+    Size = size[0];
+    Color = color[0];
+    geometryExportVertex(f32x4((pos0 + tng0) * line.position[0].w, line.position[0].zw));
+        
+    // line end
+    EdgeDistance = -size[1];
+    Size = size[1];
+    Color = color[1];
+    geometryExportVertex(f32x4((pos1 - tng1) * line.position[1].w, line.position[1].zw));
+        
+    EdgeDistance = size[1];
+    Size = size[1];
+    Color = color[1];
+    geometryExportVertex(f32x4((pos1 + tng1) * line.position[1].w, line.position[1].zw));
+    geometryExportPrimitive();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMainTriangles(    
+    in no_perspective size : f32,
+    in color : f32x4,  
+) void
+{
+    pixelExportColor(color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMainLines(
+    in no_perspective edgeDistance : f32,
+    in no_perspective size : f32,
+    in color : f32x4,
+) void
+{
+    var finalColor = color;
+    var d = abs(edgeDistance) / size;
+    d = smoothstep(1.0, 1.0 - (Antialiasing / size), d);
+    finalColor.a *= d;
+    pixelExportColor(finalColor, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psMainPoints(    
+    in no_perspective size : f32,
+    in color : f32x4,
+) void
+{
+    var finalColor = color;
+    var d = length(pixelGetSubpixelPosition().xy - f32x2(0.5));
+    d = smoothstep(0.5, 0.5 - (Antialiasing / size), d);    
+    finalColor.a *= d;
+    pixelExportColor(finalColor, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static|Lines")
+program Lines
+{
+    VertexShader = vsMainLines;
+    GeometryShader = gsMain;
+    PixelShader = psMainLines;
+    RenderState = Im3dState;
+};
+
+@Mask("StaticDepth|Lines")
+program LinesDepth
+{
+    VertexShader = vsMainLines;
+    GeometryShader = gsMain;
+    PixelShader = psMainLines;
+    RenderState = Im3dDepthState;
+};
+
+@Mask("StaticDepth|Triangles")
+program TrianglesDepth
+{
+    VertexShader = vsMainTriangles;
+    PixelShader = psMainTriangles;
+    RenderState = Im3dDepthState;
+};
+
+@Mask("Static|Points")
+program Points
+{
+    VertexShader = vsMainPoints;
+    PixelShader = psMainPoints;
+    RenderState = Im3dState;
+};
+
+@Mask("Static|Triangles")
+program Triangles
+{
+    VertexShader = vsMainTriangles;
+    PixelShader = psMainTriangles;
+    RenderState = Im3dState;
+};

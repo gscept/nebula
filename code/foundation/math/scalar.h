@@ -403,6 +403,16 @@ min(TYPE a, TYPE b)
 
 //------------------------------------------------------------------------------
 /**
+*/
+template<typename TYPEA, typename TYPEB>
+__forceinline TYPEA
+min(TYPEA a, TYPEB b)
+{
+    return (a < b) ? a : b;
+}
+
+//------------------------------------------------------------------------------
+/**
     branchless min for uints
 */
 template<>

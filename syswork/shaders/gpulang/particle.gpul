@@ -1,0 +1,356 @@
+//------------------------------------------------------------------------------
+//  particle.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/particles.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/objects_shared.gpuh"
+#include "lib/util.gpuh"
+#include "lib/defaultsamplers.gpuh"
+#include "lib/clustering.gpuh"
+#include "lib/lighting_functions.gpuh"
+
+#include <material_interfaces.gpul>
+
+// samplers
+sampler_state ParticleSampler
+{
+    Filter = Filter.MinMagMipLinear;
+    AddressU = AddressMode.Repeat;
+    AddressV = AddressMode.Repeat;
+};
+
+sampler_state LayerSampler
+{
+    AddressU = AddressMode.Mirror;
+    AddressV = AddressMode.Mirror;
+};
+
+render_state LitParticleState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    Cull = CullFace.None;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Less;
+};
+
+render_state UnlitParticleState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+
+    Cull = CullFace.None;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Less;
+};
+
+render_state UnlitAdditiveParticleState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.One;
+
+    Cull = CullFace.None;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Less;
+};
+
+render_state UnlitParticleStateBlendAdd
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.One;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+
+    Cull = CullFace.None;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Less;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+const stippleMasks : [4]f32x2 = [
+        f32x2(0,0), 
+        f32x2(1,0), 
+        f32x2(0,1),
+        f32x2(1,1)
+        ];
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsUnlit(
+    binding(0) in corner : f32x2,
+    binding(1) in position : f32x4,
+    binding(2) in stretchPos : f32x4,
+    binding(3) in color : f32x4,
+    binding(4) in uvMinMax : f32x4,
+    binding(5) in rotSize : f32x4,
+    out ViewSpacePos : f32x4,
+    out Color : f32x4,
+    out UV : f32x2) void
+{
+    const cornerVert = ComputeCornerVertex(
+                                        corner,
+                                        position,
+                                        stretchPos,
+                                        uvMinMax,
+                                        f32x2(rotSize.x, rotSize.y),
+                                        rotSize.z);
+                                        
+    UV = cornerVert.UV;
+    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
+    Color = color;
+    vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsLit(
+    binding(0) in corner: f32x2,
+    binding(1) in position : f32x4,
+    binding(2) in stretchPos : f32x4,
+    binding(3) in color : f32x4,
+    binding(4) in uvMinMax : f32x4,
+    binding(5) in rotSize : f32x4,
+    out ViewSpacePos : f32x4,
+    out Normal : f32x3,
+    out Tangent : f32x3,
+    out WorldEyeVec : f32x3,
+    out Color : f32x4,
+    out UV : f32x2) void
+{
+    const cornerVert = ComputeCornerVertex(
+                                        corner,
+                                        position,
+                                        stretchPos,
+                                        uvMinMax,
+                                        f32x2(rotSize.x, rotSize.y),
+                                        rotSize.z);
+                                        
+    Normal = cornerVert.worldNormal;
+    Tangent = cornerVert.worldTangent;
+    UV = cornerVert.UV;
+    WorldEyeVec = normalize(ViewConstants.EyePos - cornerVert.worldPos).xyz;
+    ViewSpacePos = ViewConstants.View * cornerVert.worldPos;
+    Color = color;
+    vertexExportCoordinates(ViewConstants.ViewProjection * cornerVert.worldPos);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+
+psUnlit(in ViewSpacePosition : f32x4,
+    in Color : f32x4,
+    in UV : f32x2) void
+{
+    const pixelCoord = pixelGetCoordinates();
+    const pixelSize = PassUniforms.RenderTargets[0].Dimensions.zw;
+    const screenUV = PixelToNormalized(pixelCoord.xy, pixelSize.xy);
+    const diffColor = sample2D(UnlitConstants.AlbedoMap, ParticleSampler, UV);
+    
+    var color = diffColor * f32x4(Color.rgb, 0);
+    const depth = sample2DLod(PerTickParams.DepthBufferCopy, ParticleSampler, screenUV, 0).r;
+    const AlphaMod = saturate(abs(depth - pixelCoord.z) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
+    color.a = diffColor.a * Color.a * AlphaMod;
+
+    pixelExportColor(color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psUnlit2Layers(in ViewSpacePosition : f32x4,
+    in Color : f32x4,
+    in UV : f32x2) void
+{
+    const pixelCoord = pixelGetCoordinates();
+    const pixelSize = PassUniforms.RenderTargets[0].Dimensions.zw;
+    const screenUV = PixelToNormalized(pixelCoord.xy, pixelSize.xy);
+    const layer1 = sample2D(BlendAddConstants.AlbedoMap, LayerSampler, UV + BlendAddConstants.UVAnim1 * ViewConstants.Time_Random_Luminance_X.x);
+    const layer2 = sample2D(BlendAddConstants.Layer2, LayerSampler, UV + BlendAddConstants.UVAnim2 * ViewConstants.Time_Random_Luminance_X.x);
+    
+    var color = layer1 * layer2 * 2;
+    const depth = sample2DLod(PerTickParams.DepthBufferCopy, ParticleSampler, screenUV, 0).r;
+    const AlphaMod = saturate(abs(depth - pixelCoord.z) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
+    color.a = saturate(color.a);
+    color.rgb += Color.rgb * color.a;
+    color *= Color.a * AlphaMod;
+    pixelExportColor(color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psUnlit3Layers(in ViewSpacePosition : f32x4,
+    in Color : f32x4,
+    in UV : f32x2) void
+{
+    const pixelCoord = pixelGetCoordinates();
+    const pixelSize = PassUniforms.RenderTargets[0].Dimensions.zw;
+    const screenUV = PixelToNormalized(pixelCoord.xy, pixelSize.xy);
+    const layer1 = sample2D(BlendAddConstants.AlbedoMap, LayerSampler, UV + BlendAddConstants.UVAnim1 * ViewConstants.Time_Random_Luminance_X.x);
+    const layer2 = sample2D(BlendAddConstants.Layer2, LayerSampler, UV + BlendAddConstants.UVAnim2 * ViewConstants.Time_Random_Luminance_X.x);
+    const layer3 = sample2D(BlendAddConstants.Layer3, LayerSampler, UV + BlendAddConstants.UVAnim3 * ViewConstants.Time_Random_Luminance_X.x);
+
+    var color = ((layer1 * layer2 * 2) * layer3 * 2);
+    const depth = sample2DLod(PerTickParams.DepthBufferCopy, ParticleSampler, screenUV, 0).r;
+    const AlphaMod = saturate(abs(depth - pixelCoord.z) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
+    color.a = saturate(color.a);
+    color.rgb += Color.rgb * color.a;
+    color *= Color.a * AlphaMod;
+    pixelExportColor(color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psUnlit4Layers(in ViewSpacePosition : f32x4,
+    in Color : f32x4,
+    in UV : f32x2) void
+{
+    const pixelCoord = pixelGetCoordinates();
+    const pixelSize = PassUniforms.RenderTargets[0].Dimensions.zw;
+    const screenUV = PixelToNormalized(pixelCoord.xy, pixelSize.xy);
+    const layer1 = sample2D(BlendAddConstants.AlbedoMap, LayerSampler, UV + BlendAddConstants.UVAnim1 * ViewConstants.Time_Random_Luminance_X.x);
+    const layer2 = sample2D(BlendAddConstants.Layer2, LayerSampler, UV + BlendAddConstants.UVAnim2 * ViewConstants.Time_Random_Luminance_X.x);
+    const layer3 = sample2D(BlendAddConstants.Layer3, LayerSampler, UV + BlendAddConstants.UVAnim3 * ViewConstants.Time_Random_Luminance_X.x);
+    const layer4 = sample2D(BlendAddConstants.Layer4, LayerSampler, UV + BlendAddConstants.UVAnim4 * ViewConstants.Time_Random_Luminance_X.x);
+
+    var color = ((layer1 * layer2 * 2) * layer3 * 2) * layer4;
+    const depth = sample2DLod(PerTickParams.DepthBufferCopy, ParticleSampler, screenUV, 0).r;
+    const AlphaMod = saturate(abs(depth - pixelCoord.z) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
+    color.a = saturate(color.a);
+    color.rgb += Color.rgb * color.a;
+    color *= Color.a * AlphaMod;
+    pixelExportColor(color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psLit(in ViewSpacePosition : f32x4,
+    in Normal : f32x3,
+    in Tangent : f32x3,
+    in WorldEyeVec : f32x3,
+    in Color : f32x4,
+    in UV : f32x2) void
+{   
+    const pixelCoord = pixelGetCoordinates();
+    const albedo =       sample2D(BSDFConstants.AlbedoMap, ParticleSampler, UV);
+    const material =     sample2D(BSDFConstants.ParameterMap, ParticleSampler, UV);
+
+    const depth = fetch2D(PerTickParams.DepthBufferCopy, i32x2(pixelCoord.xy), 0).r;
+    const particleDepth = pixelCoord.z;
+    const AlphaMod = saturate(abs(depth - particleDepth) * (ViewConstants.FocalLengthNearFar.w - ViewConstants.FocalLengthNearFar.z));
+    const finalAlpha = albedo.a * Color.a * AlphaMod;
+    if (finalAlpha < 0.001f) { discard; }
+
+    var tNormal = f32x3(0,0,0);
+    tNormal.xy = (sample2D(BSDFConstants.NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;
+    tNormal.z = saturate(sqrt(1.0 - dot(tNormal.xy, tNormal.xy)));
+    const binormal = cross(Normal.xyz, Tangent.xyz);
+
+    if (!pixelGetFrontFacing())
+    {
+        // flip tangent space if backface, and transform normal
+        tNormal = f32x3x3(Tangent.xyz, binormal.xyz, -Normal.xyz) * tNormal;
+    }
+    else
+    {
+        // transform normal to tangent space
+        tNormal = f32x3x3(Tangent.xyz, binormal.xyz, Normal.xyz) * tNormal;
+    }
+
+    // calculate cluster index
+    const index3D = CalculateClusterIndex(pixelCoord.xy / ClusterUniforms.BlockSize, ViewSpacePosition.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    var light = f32x3(0, 0, 0);
+
+    // add light
+    light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition.xyz, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, BSDFConstants.Transmission);
+    const viewVec = -normalize(ViewSpacePosition.xyz);
+    const viewNormal = (ViewConstants.View * f32x4(tNormal.xyz, 0)).xyz;
+    light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, BSDFConstants.Transmission);
+    
+    pixelExportColor(f32x4(light, finalAlpha), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Unlit")
+program Unlit 
+{
+    VertexShader = vsUnlit;
+    PixelShader = psUnlit;
+    RenderState = UnlitParticleState;
+};
+
+@Mask("Unlit|Alt0")
+program UnlitAdditive
+{
+    VertexShader = vsUnlit;
+    PixelShader = psUnlit;
+    RenderState = UnlitAdditiveParticleState;
+};
+
+@Mask("Unlit|Alt1")
+program UnlitBlendAdd
+{
+    VertexShader = vsUnlit;
+    PixelShader = psUnlit;
+    RenderState = UnlitParticleStateBlendAdd;
+};
+
+@Mask("Unlit|Alt2")
+program UnlitBlendAdd2Layers
+{
+    VertexShader = vsUnlit;
+    PixelShader = psUnlit2Layers;
+    RenderState = UnlitParticleStateBlendAdd;
+};
+
+@Mask("Unlit|Alt3")
+program UnlitBlendAdd3Layers
+{
+    VertexShader = vsUnlit;
+    PixelShader = psUnlit3Layers;
+    RenderState = UnlitParticleStateBlendAdd;
+};
+
+@Mask("Unlit|Alt4")
+program UnlitBlendAdd4Layers
+{
+    VertexShader = vsUnlit;
+    PixelShader = psUnlit4Layers;
+    RenderState = UnlitParticleStateBlendAdd;
+};
+
+@Mask("Static")
+program Lit
+{
+    VertexShader = vsLit;
+    PixelShader = psLit;
+    RenderState = LitParticleState;
+};

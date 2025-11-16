@@ -39,10 +39,10 @@ using namespace Debug;
 /**
 */
 GameApplication::GameApplication() :
-    exitHandler(this)
 #if __NEBULA_HTTP__
-    ,defaultTcpPort(2100)
+    defaultTcpPort(2100),
 #endif
+    exitHandler(this)
 {
     __ConstructSingleton;
 }

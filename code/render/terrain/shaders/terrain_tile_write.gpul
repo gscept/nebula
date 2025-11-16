@@ -1,0 +1,338 @@
+//------------------------------------------------------------------------------
+//  @file terrain_tile_write.fx
+//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+Foo(bar : *u32) void
+{
+    *bar += 1;
+}
+#include "terrain_include.gpuh"
+#include "lib/compression/bccompression.gpuh"
+
+workgroup AlbedoCacheResult : [8][8]f32x3;
+workgroup NormalCacheResult : [8][8]f32x2;
+workgroup MaterialCacheResult : [8][8]f32x4;
+
+//------------------------------------------------------------------------------
+/**
+*/
+BlockCompressAlbedo(blockStart : u32x2) u32x4
+{
+    var blockRGB : [16]f32x3;
+    var blockA : [16]f32 = [1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f];
+
+    blockRGB[0] = AlbedoCacheResult[blockStart.x][blockStart.y];
+    blockRGB[1] = AlbedoCacheResult[blockStart.x + 1][blockStart.y];
+    blockRGB[2] = AlbedoCacheResult[blockStart.x + 2][blockStart.y];
+    blockRGB[3] = AlbedoCacheResult[blockStart.x + 3][blockStart.y];
+
+    blockRGB[4] = AlbedoCacheResult[blockStart.x][blockStart.y + 1];
+    blockRGB[5] = AlbedoCacheResult[blockStart.x + 1][blockStart.y + 1];
+    blockRGB[6] = AlbedoCacheResult[blockStart.x + 2][blockStart.y + 1];
+    blockRGB[7] = AlbedoCacheResult[blockStart.x + 3][blockStart.y + 1];
+
+    blockRGB[8] = AlbedoCacheResult[blockStart.x][blockStart.y + 2];
+    blockRGB[9] = AlbedoCacheResult[blockStart.x + 1][blockStart.y + 2];
+    blockRGB[10] = AlbedoCacheResult[blockStart.x + 2][blockStart.y + 2];
+    blockRGB[11] = AlbedoCacheResult[blockStart.x + 3][blockStart.y + 2];
+
+    blockRGB[12] = AlbedoCacheResult[blockStart.x][blockStart.y + 3];
+    blockRGB[13] = AlbedoCacheResult[blockStart.x + 1][blockStart.y + 3];
+    blockRGB[14] = AlbedoCacheResult[blockStart.x + 2][blockStart.y + 3];
+    blockRGB[15] = AlbedoCacheResult[blockStart.x + 3][blockStart.y + 3];
+
+    return CompressBC3Block(blockRGB, blockA, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BlockCompressNormals(blockStart : u32x2) u32x4
+{
+    var blockU, blockV : [16]f32;
+    blockU[0] = NormalCacheResult[blockStart.x][blockStart.y].x;
+    blockU[1] = NormalCacheResult[blockStart.x + 1][blockStart.y].x;
+    blockU[2] = NormalCacheResult[blockStart.x + 2][blockStart.y].x;
+    blockU[3] = NormalCacheResult[blockStart.x + 3][blockStart.y].x;
+    blockV[0] = NormalCacheResult[blockStart.x][blockStart.y].y;
+    blockV[1] = NormalCacheResult[blockStart.x + 1][blockStart.y].y;
+    blockV[2] = NormalCacheResult[blockStart.x + 2][blockStart.y].y;
+    blockV[3] = NormalCacheResult[blockStart.x + 3][blockStart.y].y;
+
+    blockU[4] = NormalCacheResult[blockStart.x][blockStart.y + 1].x;
+    blockU[5] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1].x;
+    blockU[6] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1].x;
+    blockU[7] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1].x;
+    blockV[4] = NormalCacheResult[blockStart.x][blockStart.y + 1].y;
+    blockV[5] = NormalCacheResult[blockStart.x + 1][blockStart.y + 1].y;
+    blockV[6] = NormalCacheResult[blockStart.x + 2][blockStart.y + 1].y;
+    blockV[7] = NormalCacheResult[blockStart.x + 3][blockStart.y + 1].y;
+
+    blockU[8] = NormalCacheResult[blockStart.x][blockStart.y + 2].x;
+    blockU[9] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2].x;
+    blockU[10] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2].x;
+    blockU[11] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2].x;
+    blockV[8] = NormalCacheResult[blockStart.x][blockStart.y + 2].y;
+    blockV[9] = NormalCacheResult[blockStart.x + 1][blockStart.y + 2].y;
+    blockV[10] = NormalCacheResult[blockStart.x + 2][blockStart.y + 2].y;
+    blockV[11] = NormalCacheResult[blockStart.x + 3][blockStart.y + 2].y;
+
+    blockU[12] = NormalCacheResult[blockStart.x][blockStart.y + 3].x;
+    blockU[13] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3].x;
+    blockU[14] = NormalCacheResult[blockStart.x + 2][blockStart.y + 3].x;
+    blockU[15] = NormalCacheResult[blockStart.x + 3][blockStart.y + 3].x;
+    blockV[12] = NormalCacheResult[blockStart.x][blockStart.y + 3].y;
+    blockV[13] = NormalCacheResult[blockStart.x + 1][blockStart.y + 3].y;
+    blockV[14] = NormalCacheResult[blockStart.x + 2][blockStart.y + 3].y;
+    blockV[15] = NormalCacheResult[blockStart.x + 3][blockStart.y + 3].y;
+
+    return CompressBC5Block(blockU, blockV, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BlockCompressMaterials(blockStart : u32x2) u32x4
+{
+    var blockRGB : [16]f32x3;
+    var blockA : [16]f32;
+
+    blockRGB[0] = MaterialCacheResult[blockStart.x][blockStart.y].rgb;
+    blockA[0] = MaterialCacheResult[blockStart.x][blockStart.y].a;
+    blockRGB[1] = MaterialCacheResult[blockStart.x + 1][blockStart.y].rgb;
+    blockA[1] = MaterialCacheResult[blockStart.x + 1][blockStart.y].a;
+    blockRGB[2] = MaterialCacheResult[blockStart.x + 2][blockStart.y].rgb;
+    blockA[2] = MaterialCacheResult[blockStart.x + 2][blockStart.y].a;
+    blockRGB[3] = MaterialCacheResult[blockStart.x + 3][blockStart.y].rgb;
+    blockA[3] = MaterialCacheResult[blockStart.x + 3][blockStart.y].a;
+
+    blockRGB[4] = MaterialCacheResult[blockStart.x][blockStart.y + 1].rgb;
+    blockA[4] = MaterialCacheResult[blockStart.x][blockStart.y + 1].a;
+    blockRGB[5] = MaterialCacheResult[blockStart.x + 1][blockStart.y + 1].rgb;
+    blockA[5] = MaterialCacheResult[blockStart.x + 1][blockStart.y + 1].a;
+    blockRGB[6] = MaterialCacheResult[blockStart.x + 2][blockStart.y + 1].rgb;
+    blockA[6] = MaterialCacheResult[blockStart.x + 2][blockStart.y + 1].a;
+    blockRGB[7] = MaterialCacheResult[blockStart.x + 3][blockStart.y + 1].rgb;
+    blockA[7] = MaterialCacheResult[blockStart.x + 3][blockStart.y + 1].a;
+
+    blockRGB[8] = MaterialCacheResult[blockStart.x][blockStart.y + 2].rgb;
+    blockA[8] = MaterialCacheResult[blockStart.x][blockStart.y + 2].a;
+    blockRGB[9] = MaterialCacheResult[blockStart.x + 1][blockStart.y + 2].rgb;
+    blockA[9] = MaterialCacheResult[blockStart.x + 1][blockStart.y + 2].a;
+    blockRGB[10] = MaterialCacheResult[blockStart.x + 2][blockStart.y + 2].rgb;
+    blockA[10] = MaterialCacheResult[blockStart.x + 2][blockStart.y + 2].a;
+    blockRGB[11] = MaterialCacheResult[blockStart.x + 3][blockStart.y + 2].rgb;
+    blockA[11] = MaterialCacheResult[blockStart.x + 3][blockStart.y + 2].a;
+
+    blockRGB[12] = MaterialCacheResult[blockStart.x][blockStart.y + 3].rgb;
+    blockA[12] = MaterialCacheResult[blockStart.x][blockStart.y + 3].a;
+    blockRGB[13] = MaterialCacheResult[blockStart.x + 1][blockStart.y + 3].rgb;
+    blockA[13] = MaterialCacheResult[blockStart.x + 1][blockStart.y + 3].a;
+    blockRGB[14] = MaterialCacheResult[blockStart.x + 2][blockStart.y + 3].rgb;
+    blockA[14] = MaterialCacheResult[blockStart.x + 2][blockStart.y + 3].a;
+    blockRGB[15] = MaterialCacheResult[blockStart.x + 3][blockStart.y + 3].rgb;
+    blockA[15] = MaterialCacheResult[blockStart.x + 3][blockStart.y + 3].a;
+
+    return CompressBC3Block(blockRGB, blockA, 1.0f);
+}
+
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(8)
+threads_y(8)
+entry_point
+csWriteTile() void
+{
+    var blorf = 1u;
+    Foo(&blorf);
+    // calculate 
+    const threadIndices = computeGetGlobalThreadIndices();
+    const location = i32x2(threadIndices.xy);
+    if location.x >= TerrainInstanceUniforms.PhysicalTilePaddedSize || location.y >= TerrainInstanceUniforms.PhysicalTilePaddedSize { return; }
+
+    const tileWrite = bufferLoad(TileWrites, threadIndices.z);
+    const writeOffset = i32x2(unpack_2u16(tileWrite.WriteOffset_MetersPerTile.x));
+    const metersPerTile = castToF32(tileWrite.WriteOffset_MetersPerTile.y);
+    const UV = (f32x2(location) + f32x2(0.5f)) / f32x2(TerrainInstanceUniforms.PhysicalTilePaddedSize, TerrainInstanceUniforms.PhysicalTilePaddedSize);
+    const worldSize = f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ);
+    const invWorldSize = 1.0f / worldSize;
+    const worldPos2D = f32x2(tileWrite.WorldOffset + UV * metersPerTile) + worldSize * 0.5f;
+    const inputUv = worldPos2D;
+
+    //vec3 normal = sample2DLod(NormalLowresBuffer, TextureSampler, inputUv * invWorldSize, 0).xyz;
+    const heightValue = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
+    const height = TerrainInstanceUniforms.MinHeight + heightValue * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
+
+    const worldPos = f32x3(worldPos2D.x, height, worldPos2D.y);
+
+    // calculate normals by grabbing pixels around our UV
+    const offset = i32x3(-1, 1, 0.0f);
+    const normal = CalculateNormalFromHeight(inputUv, offset, invWorldSize);
+
+    // setup the TBN
+    const tbn = PlaneTBN(normal);
+
+    // calculate weights for triplanar mapping
+    var triplanarWeights = abs(normal.xyz);
+    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
+
+    var totalAlbedo = f32x3(0, 0, 0);
+    var totalMaterial = f32x4(0, 0, 0, 0);
+    var totalNormal = f32x3(0, 0, 0);
+
+    for (var i = 0u; i < TerrainSystemUniforms.NumBiomes; i++)
+    {
+        // get biome data
+        const mask = SampleBiomeMaskLod(i, TextureSampler, inputUv * invWorldSize, 0).r;
+        const rules = TerrainSystemUniforms.BiomeRules[i];
+
+        // calculate rules
+        const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
+        const heightCutoff = saturate(max(0.0f, height - rules.y) / 25.0f);
+
+        const tilingFactor = f32x2(rules.z);
+
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, &totalAlbedo, &totalMaterial, &totalNormal);
+    }
+
+    const localThreads = computeGetLocalThreadIndices();
+
+    // Prepare for BC compression
+    AlbedoCacheResult[localThreads.x][localThreads.y] = totalAlbedo;
+    NormalCacheResult[localThreads.x][localThreads.y] = (totalNormal.xy + f32x2(1, 1)) * f32x2(0.5f);
+    MaterialCacheResult[localThreads.x][localThreads.y] = totalMaterial;
+    memoryBarrierWorkgroup();
+
+    // only perform write for each invocation in a 8x8 work group
+    if (localThreads.x < 2 && localThreads.y < 2)
+    {
+        const blockStart = localThreads.xy * 4;
+        const workgroupIndices = computeGetWorkgroupIndices();
+        const albedoRes = BlockCompressAlbedo(blockStart);
+        const materialRes = BlockCompressMaterials(blockStart);
+        const normalRes = BlockCompressNormals(blockStart);
+        
+        // Since we work in 4x4 tiles, the offset to the 264 tile is 66
+        const bcTileOffset = writeOffset / 4;
+        // Since each thread samples 4x4, we have 2x2 threads that write, so localThreads.xy will be [0..1]
+        const bcTileLocalOffset = i32x2(localThreads.xy);
+        // And since each work group is responsible for writing 2x2 pixels BC compressed, the work group o
+        const bcTileWorkgroupOffset = i32x2(workgroupIndices.xy * 2);
+
+        // The offset within the workgroup should just be invocation id which ranges between 0..1
+        const workgroupOffset = i32x2(localThreads.xy);
+        textureStore(AlbedoCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, castToF32(albedoRes));
+        textureStore(MaterialCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, castToF32(materialRes));
+        textureStore(NormalCacheOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, castToF32(normalRes));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(8)
+threads_y(8)
+entry_point
+csWriteLowres() void
+{
+    // calculate 
+    const worldSize = f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ);
+    const invWorldSize = 1.0f / worldSize;
+
+    const numWorkgroups = computeGetNumWorkgroups();
+    const workgroupSize = u32x2(8, 8);
+    const threadIndices = computeGetGlobalThreadIndices();
+
+    const texelSize = 1 / f32x2(numWorkgroups.xy * workgroupSize.xy);
+    const pixel = f32x2(threadIndices.xy);
+    const uv = (pixel + f32x2(0.5f)) * texelSize;
+    const pixelToWorldScale = worldSize * texelSize;
+
+    const heightValue = sample2DLod(TerrainInstanceUniforms.HeightMap, TextureSampler, uv, 0).r;
+    const height = TerrainInstanceUniforms.MinHeight + heightValue * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
+
+    const worldPos = f32x3(pixel.x * pixelToWorldScale.x, height, pixel.y * pixelToWorldScale.y);
+
+    // calculate normals by grabbing pixels around our UV
+    const offset = i32x3(-1, 1, 0.0f);
+    const normal = CalculateNormalFromHeight(worldPos.xz, offset, invWorldSize);
+
+    // setup the TBN
+    var tangent = cross(normal.xyz, f32x3(0, 0, 1));
+    tangent = normalize(cross(normal.xyz, tangent));
+    const binormal = normalize(cross(normal.xyz, tangent));
+    const tbn = f32x3x3(tangent, binormal, normal.xyz);
+
+    // calculate weights for triplanar mapping
+    var triplanarWeights = abs(normal.xyz);
+    triplanarWeights /= (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
+
+    var totalAlbedo = f32x3(0, 0, 0);
+    var totalMaterial = f32x4(0, 0, 0, 0);
+    var totalNormal = f32x3(0, 0, 0);
+
+    for (var i = 0u; i < TerrainSystemUniforms.NumBiomes; i++)
+    {
+        // get biome data
+        const mask = SampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
+        const rules = TerrainSystemUniforms.BiomeRules[i];
+
+        // calculate rules
+        const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
+        const heightCutoff = saturate(max(0.0f, height - rules.y) / 25.0f);
+
+        const tilingFactor = f32x2(rules.z);
+
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, &totalAlbedo, &totalMaterial, &totalNormal);
+    }
+
+    textureStore(AlbedoLowresOutput, i32x2(pixel), f32x4(totalAlbedo, 0));
+    textureStore(NormalLowresOutput, i32x2(pixel), f32x4(totalNormal, 0));
+    textureStore(MaterialLowresOutput, i32x2(pixel), totalMaterial);
+
+    /* Enable when we can figure out how to mipmap BC textures easily
+    // Prepare for BC compression
+    AlbedoCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = totalAlbedo;
+    NormalCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = (totalNormal.xy + vec2(1, 1)) * vec2(0.5f);
+    MaterialCacheResult[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = totalMaterial;
+    memoryBarrierWorkgroup();
+
+    // only perform write for each invocation in a 8x8 work group
+    if (gl_LocalInvocationID.x < 2 && gl_LocalInvocationID.y < 2)
+    {
+        uvec2 blockStart = gl_LocalInvocationID.xy * 4;
+
+        uint4 albedoRes = BlockCompressAlbedo(blockStart);
+        uint4 materialRes = BlockCompressMaterials(blockStart);
+        uint4 normalRes = BlockCompressNormals(blockStart);
+
+        // Since we work in 4x4 tiles, the offset to the 264 tile is 66
+        ivec2 bcTileOffset = writeOffset / 4;
+        // Since each thread samples 4x4, we have 2x2 threads that write, so gl_LocalInvocationID.xy will be [0..1]
+        ivec2 bcTileLocalOffset = ivec2(gl_LocalInvocationID.xy);
+        // And since each work group is responsible for writing 2x2 pixels BC compressed, the work group o
+        ivec2 bcTileWorkgroupOffset = ivec2(gl_WorkGroupID.xy * 2);
+
+        // The offset within the workgroup should just be invocation id which ranges between 0..1
+        ivec2 workgroupOffset = ivec2(gl_LocalInvocationID.xy);
+        imageStore(AlbedoLowresOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, uintBitsToFloat(albedoRes));
+        imageStore(MaterialLowresOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, uintBitsToFloat(materialRes));
+        imageStore(NormalLowresOutputBC, bcTileOffset + bcTileWorkgroupOffset + bcTileLocalOffset, uintBitsToFloat(normalRes));
+    }
+    */
+}
+
+@Mask("TerrainTileWrite")
+program TerrainTileWrite
+{
+    ComputeShader = csWriteTile;
+};
+
+@Mask("TerrainLowresWrite")
+program TerrailLowresWrite
+{
+    ComputeShader = csWriteLowres;
+};

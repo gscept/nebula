@@ -1,0 +1,54 @@
+//------------------------------------------------------------------------------
+//  emissive.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/geometrybase.gpuh>
+
+struct EmissiveData
+{
+    EmissiveColor: f32x4;
+};
+uniform EmissiveParams : *EmissiveData;
+
+render_state EmissiveState
+{
+    DepthWriteEnabled = true;
+    DepthTestEnabled = true; 
+    Cull = CullFace.None;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsEmissive(
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2
+    ) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
+    UV          = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psEmissive(in uv : f32x2) void
+{
+    pixelExportColor(EmissiveParams.EmissiveColor, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Static
+{
+    VertexShader = vsEmissive;
+    PixelShader = psEmissive;
+    RenderState = EmissiveState;
+}; 

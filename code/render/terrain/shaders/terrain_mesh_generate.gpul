@@ -1,0 +1,157 @@
+//------------------------------------------------------------------------------
+//  @file terrain_mesh_generate.gpul  
+//  @copyright (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+
+struct IndexInputData
+{
+    index : u32;
+};
+group(BATCH_GROUP) uniform IndexInput: *[] mutable IndexInputData;
+
+struct InputVertex
+{
+    position : f32x3;
+    uv : i32;
+};
+group(BATCH_GROUP) uniform VertexInput: *[] mutable InputVertex;
+
+struct OutputVertex
+{
+    position : f32x3;
+    uv : i32;
+};
+group(BATCH_GROUP) uniform VertexOutput: *[] mutable OutputVertex;
+
+struct GenerationUniformData
+{
+    Transform : f32x4x4;
+    WorldSize : f32x2;
+    MinHeight : f32;
+    MaxHeight : f32;
+
+    VerticesPerPatch : u32;
+    //uint NumSubdivisions;
+    HeightMap : u32;
+};
+group(BATCH_GROUP) uniform GenerationUniforms: *GenerationUniformData;
+
+struct TerrainPatch
+{
+    PosOffset : f32x2;
+    UvOffset : f32x2;
+};
+@Visibility("CS")
+group(BATCH_GROUP) uniform TerrainPatches: *[] mutable TerrainPatch;
+
+//------------------------------------------------------------------------------
+/**
+*/
+CompressUV(uv : f32x2) i32
+{
+    const x = i32(uv.x * 1000);
+    const y = i32(uv.y * 1000);
+    return (x & 0xFFFF) | ((y & 0xFFFF) << 16);
+}
+
+//------------------------------------------------------------------------------
+/**
+Subdivide(tri : Triangle, counter : u32) void
+{
+    const v1 = bufferLoad(VertexInput, tri.indices.x);
+    const v2 = bufferLoad(VertexInput, tri.indices.y);
+    const v3 = bufferLoad(VertexInput, tri.indices.z);
+
+    const edge = (v3.position - v2.position) * 0.5f;
+    const uv = (v3.uv - v2.uv) * 0.5f;
+    const newVert = atomicAdd(&VertexCounter, 1, MemorySemantics.Acquire);
+    var vert : OutputVertex;
+    vert.position = edge;
+    vert.uv = CompressUV(uv);
+    bufferStore(VertexOutput, newVert, vert);
+
+    var t1, t2 : Triangle;
+
+    t1.indices.x = newVert;
+    t1.indices.y = tri.indices.x;
+    t1.indices.z = tri.indices.y;
+
+    t2.indices.x = newVert;
+    t2.indices.y = tri.indices.z;
+    t2.indices.z = tri.indices.x;
+
+    uint offset = atomicAdd(&IndexCounter, 2, MemorySemantics.Acquire);
+    bufferStore(IndexOutput, offset, t1.indices);
+    bufferStore(IndexOutput, offset + 1, t2.indices);
+}
+*/
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(64)
+entry_point
+csMeshGenerate() void
+{
+    const workgroupIndices = computeGetWorkgroupIndices();
+    const threadIndices = computeGetGlobalThreadIndices();
+    const terrainPatch = bufferLoad(TerrainPatches, workgroupIndices.y);
+
+    const indices = u32x3(
+        bufferLoad(IndexInput, threadIndices.x * 3).index
+        , bufferLoad(IndexInput, threadIndices.x * 3 + 1).index
+        , bufferLoad(IndexInput, threadIndices.x * 3 + 2).index
+
+    );
+    const v1 = bufferLoad(VertexInput, indices.x);
+    const v2 = bufferLoad(VertexInput, indices.y);
+    const v3 = bufferLoad(VertexInput, indices.z);
+
+    var P1 = (GenerationUniforms.Transform * f32x4(v1.position, 1)).xyz;
+    var P2 = (GenerationUniforms.Transform * f32x4(v2.position, 1)).xyz;
+    var P3 = (GenerationUniforms.Transform * f32x4(v3.position, 1)).xyz;
+    const UV1 = (terrainPatch.PosOffset + P1.xz) / GenerationUniforms.WorldSize + 0.5f;
+    const UV2 = (terrainPatch.PosOffset + P2.xz) / GenerationUniforms.WorldSize + 0.5f;
+    const UV3 = (terrainPatch.PosOffset + P3.xz) / GenerationUniforms.WorldSize + 0.5f;
+
+    var pixelSize = i32x2(textureGetSizeMip(Textures2D[GenerationUniforms.HeightMap], 0));
+    pixelSize = i32x2(f32x2(1.0f) / pixelSize);
+
+    const offset = f32x3(-pixelSize.x, pixelSize.x, 0.0f);
+    //Normal = CalculateNormalFromHeight(UV, offset);
+
+    const h1 = sample2DLod(GenerationUniforms.HeightMap, Basic2DSampler, UV1, 0).r;
+    const h2 = sample2DLod(GenerationUniforms.HeightMap, Basic2DSampler, UV2, 0).r;
+    const h3 = sample2DLod(GenerationUniforms.HeightMap, Basic2DSampler, UV3, 0).r;
+    P1.y = GenerationUniforms.MinHeight + h1 * (GenerationUniforms.MaxHeight - GenerationUniforms.MinHeight);
+    P2.y = GenerationUniforms.MinHeight + h2 * (GenerationUniforms.MaxHeight - GenerationUniforms.MinHeight);
+    P3.y = GenerationUniforms.MinHeight + h3 * (GenerationUniforms.MaxHeight - GenerationUniforms.MinHeight);
+
+    // First output base vertices
+    var o1, o2, o3 : OutputVertex;
+    o1.position = P1;
+    o1.uv = CompressUV(UV1);
+    o2.position = P2;
+    o2.uv = CompressUV(UV2);
+    o3.position = P3;
+    o3.uv = CompressUV(UV3);
+    bufferStore(VertexOutput, workgroupIndices.y * GenerationUniforms.VerticesPerPatch + indices.x, o1);
+    bufferStore(VertexOutput, workgroupIndices.y * GenerationUniforms.VerticesPerPatch + indices.y, o2);
+    bufferStore(VertexOutput, workgroupIndices.y * GenerationUniforms.VerticesPerPatch + indices.z, o3);
+
+    // Then subdivide, which will output indices
+    //Subdivide(tri, 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Main")
+program Main
+{
+    ComputeShader = csMeshGenerate;
+};

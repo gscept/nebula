@@ -1,0 +1,347 @@
+//------------------------------------------------------------------------------
+//  volumefog.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/clustering.gpuh"
+#include "lib/lighting_functions.gpuh"
+#include "lib/mie-rayleigh.gpuh"
+
+const VOLUME_FOG_STEPS = 32u;
+
+uniform Lighting : *mutable rgba16f texture2D;
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(64)
+entry_point
+csCull() void 
+{
+    
+
+    const index1D = computeGetGlobalThreadIndices().x;
+
+    if index1D > VolumeFogUniforms.NumVolumeFogClusters { return; }
+
+    const aabb = bufferLoad(ClusterAABBs, index1D);
+
+    var flags = 0u;
+
+    // update fog spheres
+    var numFogs = 0u;
+    for (var i = 0u; i < VolumeFogUniforms.NumFogSpheres; i++)
+    {
+        const fog = FogLists.FogSpheres[i];
+        if (TestAABBSphere(aabb, fog.position, fog.radius))
+        {
+            FogIndexLists.FogSphereIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
+            numFogs++;
+        }
+    }
+    FogIndexLists.FogSphereCountList[index1D] = numFogs;
+
+    // update feature flags if we have any lights
+    if numFogs > 0 { flags |= CLUSTER_FOG_SPHERE_BIT; }
+        
+    // update fog boxes
+    numFogs = 0u;
+    for (var i = 0u; i < VolumeFogUniforms.NumFogBoxes; i++)
+    {
+        const fog = FogLists.FogBoxes[i];
+        if (TestAABBAABB(aabb, fog.bboxMin, fog.bboxMax))
+        {
+            FogIndexLists.FogBoxIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
+            numFogs++;
+        }
+    }
+    FogIndexLists.FogBoxCountList[index1D] = numFogs;
+
+    // update feature flags if we have any lights
+    if numFogs > 0 { flags |= CLUSTER_FOG_BOX_BIT; }
+        
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+LocalFogVolumes(
+    idx : u32
+    , viewPos : f32x3
+    , density : *f32
+    , absorption : *f32x3
+) void
+{
+    var totalDensity = *density;
+    var totalAbsorption = *absorption;
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
+    if (CheckFlags(flag, CLUSTER_FOG_SPHERE_BIT))
+    {
+        // add turbidity for local fogs
+        const count = FogIndexLists.FogSphereCountList[idx];
+        for (var i = 0u; i < count; i++)
+        {
+            const lidx = FogIndexLists.FogSphereIndexList[idx * MAX_FOGS_PER_CLUSTER + i];
+            const fog = FogLists.FogSpheres[lidx];
+
+            const pos = fog.position - viewPos;
+            const sd = (length(pos) - fog.radius);
+            const falloff = pow(1.0f - sd, fog.falloff);
+
+            if (falloff > fog.falloff)
+            {
+                totalDensity += fog.turbidity;
+                totalAbsorption *= fog.absorption;
+            }
+        }
+    }
+
+    if (CheckFlags(flag, CLUSTER_FOG_BOX_BIT))
+    {
+        // add turbidity for local fogs
+        const count = FogIndexLists.FogBoxCountList[idx];
+        for (var i = 0u; i < count; i++)
+        {
+            const lidx = FogIndexLists.FogBoxIndexList[idx * MAX_FOGS_PER_CLUSTER + i];
+            const fog = FogLists.FogBoxes[lidx];
+
+            const localPos = (fog.invTransform * f32x4(viewPos, 1.0f)).xyz;
+            const dist = f32x3(0.5f) - abs(localPos.xyz);
+            if (all(dist > f32x3(0)))
+            {
+                const q = abs(localPos) - f32x3(1.0f);
+                const sd = length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
+                const falloff = pow(1.0f - sd, fog.falloff);
+
+                // todo, calculate distance field
+                if (falloff > fog.falloff)
+                {
+                    totalDensity += fog.turbidity;
+                    totalAbsorption *= fog.absorption;
+                }
+            }
+        }
+    }
+    *density = totalDensity;
+    *absorption = totalAbsorption;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+LocalLightsFog(
+    idx : u32,
+    viewPos : f32x3,
+    viewVec : f32x3
+) f32x3
+{
+    var light = f32x3(0, 0, 0);
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
+    {
+        // shade point lights
+        const count = LightIndexLists.PointLightCountList[idx];
+        for (var i = 0u; i < count; i++)
+        {
+            const lidx = LightIndexLists.PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+            const li = LightLists.PointLights[lidx];
+            
+            const lightDir = (li.position.xyz - viewPos);
+            
+            const lightDirLength = length(lightDir) + 0.0001f;
+            const d2 = lightDirLength * lightDirLength;
+            const factor = d2 / (li.range * li.range);
+            const sf = saturate(1.0 - factor * factor);
+            const att = (sf * sf) / max(d2, 0.0001);
+            light += li.color * att;
+        }
+    }
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
+    {
+        const count = LightIndexLists.SpotLightCountList[idx];
+        for (var i = 0u; i < count; i++)
+        {
+            const lidx = LightIndexLists.SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+            var shadowExt : SpotLightShadowExtension;
+            const li = LightLists.SpotLights[lidx];
+
+            if li.shadowExtension != -1 
+            {
+                shadowExt = LightLists.SpotLightShadow[li.shadowExtension];
+            }
+
+            // calculate attentuation and angle falloff, and just multiply by color
+            var lightDir = (li.position.xyz - viewPos);
+            if dot(lightDir, lightDir) < 0.0001f { continue; }        
+            const lightDirLen = length(lightDir) + 0.0001f;
+            const att = InvSquareFalloff(li.range, lightDirLen, lightDir);
+            lightDir = lightDir * (1 / lightDirLen);
+
+            const theta = dot(li.forward.xyz, lightDir);
+            const intensity = saturate((theta - li.angleSinCos.y) * li.angleFade);
+
+            var shadowFactor = 1.0f;
+            if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
+            {
+                // shadows
+                var shadowProjLightPos = shadowExt.projection * f32x4(viewPos, 1.0f);
+                shadowProjLightPos.xyz /= shadowProjLightPos.www;
+                var shadowLookup = shadowProjLightPos.xy * f32x2(0.5f, -0.5f) + 0.5f;
+                shadowLookup.y = 1 - shadowLookup.y;
+                const receiverDepth = shadowProjLightPos.z;
+                shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, u32(li.shadowExtension), shadowExt.shadowMap);
+                shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
+            }
+
+            light += intensity * att * li.color * shadowFactor;
+        }
+    }
+    return light;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+GlobalLightFog(viewPos : f32x3) f32x3
+{
+    var shadowFactor = 1.0f;
+    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
+    {
+        const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(viewPos, 1); // csm contains inversed view + csm transform
+        shadowFactor = CSMPS(shadowPos, PerTickParams.GlobalLightShadowBuffer);
+        shadowFactor = lerp(1.0f, shadowFactor, 1);
+    }
+
+    // calculate 'global' fog
+    //vec3 atmo = Preetham(normalize(viewPos), PerTickParams.GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
+    const atmo = CalculateAtmosphericScattering(normalize(viewPos), PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
+    return atmo * shadowFactor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(64)
+entry_point
+csRender() void
+{
+    const coord = f32x2(computeGetGlobalThreadIndices().xy);
+    const upscaleCoord = i32x2(computeGetGlobalThreadIndices().xy * VolumeFogUniforms.DownscaleFog);
+    var depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], upscaleCoord, 0).r;
+    const seed = coord * (ClusterUniforms.InvFramebufferDimensions);
+
+    if depth == 1 { depth = 0.999998f; }
+
+    // find last point to march
+    const viewPos = PixelToView(seed, depth, ViewConstants.InvProjection);
+    const eye = f32x3(0, 0, 0);
+
+    // construct a ray, beginning at eye and going from eye through worldPoint
+    const rayStart = eye;
+    const viewVec = eye - viewPos.xyz;
+    const rayDirection = normalize(viewVec);
+
+    //light.rgb = lerp(fogColor, light.rgb, fogIntensity);
+
+    const oneDivFogSteps = 1 / f32(VOLUME_FOG_STEPS);
+
+    // ray march!
+    var light = f32x3(0, 0, 0);
+    const numSteps = 0u;
+    const rnd = f32x3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+    const stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y)) * oneDivFogSteps;
+    var stepLen = stepSize;
+    var rayOffset = rayDirection;
+
+    // calculate global fog, which should be a factor of the distance and the global turbidity
+    const fogModulate = ((ViewConstants.FocalLengthNearFar.w + 0.001f) - length(viewVec)) / ViewConstants.FocalLengthNearFar.w;
+    const globalParticleDensity = VolumeFogUniforms.GlobalTurbidity * (1.0f - fogModulate);
+    var totalParticleDensity = 0.0f;
+
+    /*
+        Single scattering equation as presented here:
+
+        - Li is the light, 
+        - Tr is the transmission
+        - Ls is the light at the surface
+        - Lscat is the scattered light
+        - S is the sample count
+        - x is the camera point
+        - xs is the sample point on the surface (at viewPos)
+        - xt is the sample point when ray marching (at samplePos)
+        - w0 is the incident angle at the surface point
+        - wi is the incident angle for the sample point
+        - ot(x) is the particle density function at point x
+
+        Li(x, wi) = Tr(x, xs) * Ls(xs, w0) + integral[0..S]{ Tr(x, xt) * ot(x) * Lscat(xt, wi) dt
+
+        Tr(x, xs) = exp(- integral[0..S]{ ot(x)dt })
+        Lscat is just a normal light function but for albedo surfaces in our case, also samples shadows
+
+        The loop approximates the integral in the first expression, the integration with the surface Li happens in combine.fx
+    */
+
+    for (var i = 0u; i < VOLUME_FOG_STEPS; i++)
+    {
+        // construct sample position
+        const samplePos = rayStart + stepLen * rayDirection;
+
+        // offset ray offset with some noise
+        stepLen += stepSize;
+        
+        // break if we went too far
+        if (samplePos.z < viewPos.z)
+        {
+            break;
+        }
+
+        // calculate cluster index
+        const index3D = CalculateClusterIndex(upscaleCoord / ClusterUniforms.BlockSize, samplePos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+        const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+        // sample local fog volumes
+        var localParticleDensity = 0.0f;
+        var localAbsorption = VolumeFogUniforms.GlobalAbsorption;
+        LocalFogVolumes(idx, samplePos, &localParticleDensity, &localAbsorption);
+
+        // local particle density is the result of our volumes + global particle density increment
+        localParticleDensity = (localParticleDensity + globalParticleDensity) * oneDivFogSteps;
+
+        // calculate the total particle density, required for Tr(x, xt)
+        totalParticleDensity += localParticleDensity;
+
+        // equation tells us Tr(x, xt) * ot(x) is the weight used for each scattered light sample
+        const weight = exp(-totalParticleDensity) * localParticleDensity;
+
+        // this is the Lscat calculation
+        light += GlobalLightFog(samplePos) * weight * localAbsorption;
+        light += LocalLightsFog(idx, samplePos, rayDirection) * weight * localAbsorption;
+    }
+    const weight = (exp(-totalParticleDensity));
+
+    // pass weight to combine pass so we can handle the Tr(x, xs) * Ls(xs, w0) 
+    // part of the equation (how much of the surface is visible)
+    textureStore(Lighting, i32x2(coord), f32x4(light.xyz, weight));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Cull")
+program Cull
+{
+    ComputeShader = csCull;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Render")
+program Render
+{
+    ComputeShader = csRender;
+};

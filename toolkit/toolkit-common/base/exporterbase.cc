@@ -185,6 +185,9 @@ ExporterBase::CountExports(const Util::String& dir, const Util::String& ext)
 			count += files.Size();
 			break;
 		}
+        case File:
+        n_error("used file as directory");
+        break;
 	}
 	return count;
 }

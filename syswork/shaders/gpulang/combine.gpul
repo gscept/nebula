@@ -1,0 +1,48 @@
+//------------------------------------------------------------------------------
+//  combine.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+
+
+uniform Fog : *texture2D;
+uniform Reflections : *texture2D;
+uniform AO : *texture2D;
+uniform Lighting : *mutable rgba16f texture2D;
+
+struct CombineData
+{
+    LowresResolution : f32x2;
+};
+group(BATCH_GROUP) uniform CombineUniforms: *CombineData;
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(64)
+entry_point
+csCombine() void
+{
+    const coord = f32x2(computeGetGlobalThreadIndices().xy) * CombineUniforms.LowresResolution;
+    const fullscaleCoord = i32x2(computeGetGlobalThreadIndices().xy);
+    const fog = textureSampleLod(Fog, LinearSampler, coord, 0);
+    const reflections = textureSampleLod(Reflections, LinearSampler, coord, 0);
+    const ao = textureSampleLod(AO, LinearSampler, coord, 0).r;
+    const light = textureLoad(Lighting, fullscaleCoord);
+
+    const res = light.rgb * (1 - (ao)) * fog.a
+        //+ reflections.rgb * fog.a 
+        + fog.rgb;
+    textureStore(Lighting, fullscaleCoord, f32x4(res, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Combine")
+program Combine
+{
+    ComputeShader = csCombine;
+};

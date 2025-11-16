@@ -78,7 +78,7 @@
 #define NEBULA_SEMANTIC_AORESOLUTION               "AOResolution"
 #define NEBULA_SEMANTIC_INVAORESOLUTION            "InvAOResolution"
 #define NEBULA_SEMANTIC_MAXRADIUSPIXELS            "MaxRadiusPixels"
-#define NEBULA_SEMANTIC_STRENGHT                   "Strength"
+#define NEBULA_SEMANTIC_STRENGTH                   "Strength"
 #define NEBULA_SEMANTIC_TANANGLEBIAS               "TanAngleBias"
 #define NEBULA_SEMANTIC_POWEREXPONENT              "PowerExponent"
 #define NEBULA_SEMANTIC_FALLOFF                    "BlurFalloff"

@@ -1,0 +1,91 @@
+//------------------------------------------------------------------------------
+//  histogram_cs.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+struct HistogramParams
+{
+    WindowOffset: i32x2;
+    TextureSize: i32x2;
+    Mip: i32;
+    InvLogLuminanceRange: f32;
+    MinLogLuminance: f32;
+};
+uniform HistogramConstants : *HistogramParams;
+
+workgroup LocalHistogram : [256] u32;
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+
+uniform ColorSource : *texture2D;
+
+struct HistogramData
+{
+    Histogram: [256] u32;
+};
+uniform HistogramBuffer : *mutable HistogramData;
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(256)
+entry_point
+csClear() void
+{
+    atomicStore(&LocalHistogram[computeGetIndexInWorkgroup()], 0u, MemorySemantics.Release);
+    //HistogramBuffer.Histogram[computeGetIndexInWorkgroup()] = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(256)
+entry_point
+csMain() void
+{
+    const histogramIndex = computeGetIndexInWorkgroup();
+    var pixel = i32x2(computeGetGlobalThreadIndices().xy);
+    pixel += HistogramConstants.WindowOffset;
+
+    // clear LDS histogram chunk, since we will execute 256 threads per workgroup, each thread could clear one value
+    atomicStore(&LocalHistogram[histogramIndex], 0u, MemorySemantics.Release);
+    memoryBarrierWorkgroup();
+
+    // don't sample from outside the texture
+    if (all(pixel < HistogramConstants.TextureSize))
+    {
+        const color = textureFetch(ColorSource, pixel, HistogramConstants.Mip);
+        const luminance = dot(color.rgb, Luminance);
+
+        var logLuminance = 0.0f;
+        if (luminance >= 1.0f)
+        {
+            logLuminance = clamp(((log2(luminance) - HistogramConstants.MinLogLuminance) * HistogramConstants.InvLogLuminanceRange), 0.0f, 1.0f);
+        }
+
+        // floor the value of luminance scaled to ubyte to find which bucket it belongs in
+        const bucket = i32(floor(logLuminance * 255.0f));
+        atomicAdd(&LocalHistogram[bucket], 1u, MemorySemantics.Release);
+    }
+
+    // synchronize and add to global atomic
+    memoryBarrierWorkgroup();
+
+    // same as with clear, each thread will contribute exactly one bucket to the global histogram
+    atomicAdd(&HistogramBuffer.Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.Release);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("HistogramCategorize")
+program HistogramCategorize
+{
+    ComputeShader = csMain;
+};
+
+@Mask("HistogramClear")
+program HistogramClear
+{
+    ComputeShader = csClear;
+};

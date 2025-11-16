@@ -1,0 +1,260 @@
+//------------------------------------------------------------------------------
+/**
+    blur_cs.gpuh
+
+    Blurring kernel used for 2D and 2D array textures. Implements a double pass X-Y blur with a defined kernel size.
+    First pass samples from a render-able texture (Alt0) and works in the X-axis.
+    The second pass resamples from the same texture and blurs in the Y-axis.
+
+    Include this header and then define if you want an RGBA16F, RG16F or RG32F image as input.
+
+  (C) 2025 Individual contributors, see AUTHORS file
+*/
+#include <lib/shared.gpuh>
+#include <blur_include.gpuh>
+
+generate
+{
+    // Configure some defaults
+    if !declared<BlurKernel>
+    { 
+        const BlurKernel = BlurKernelSize.Size8;
+    }
+    if !declared<ImageFormatType>
+    {
+        const ImageFormatType = ImageFormat.Rgba16f;
+    }
+    if !declared<ImageIsArray>
+    {
+        const ImageIsArray : b8 = false;
+    }
+
+    if BlurKernel == BlurKernelSize.Size8
+    {
+        const KernelRadius = 8;
+        const weights : []f32 = [
+            0.000229	,0.005977	,0.060598	,0.241732	
+            ,0.382928	,0.241732	,0.060598	,0.005977	,0.000229
+        ];
+    }
+    else if BlurKernel == BlurKernelSize.Size16
+    {
+        const KernelRadius = 16;
+        const weights : []f32 = [
+            0.014076	,0.022439	,0.033613	,0.047318	
+           ,0.062595	,0.077812	,0.090898	,0.099783	
+           ,0.102934	,0.099783	,0.090898	,0.077812	
+           ,0.062595	,0.047318	,0.033613	,0.022439	,0.014076
+        ];
+    }
+    else if BlurKernel == BlurKernelSize.Size32
+    {
+        const KernelRadius = 32;
+        const weights : []f32 = [
+            0.000485	,0.000899	,0.001603	,0.002745	
+           ,0.004519	,0.007147	,0.010863	,0.015864	
+           ,0.022263	,0.030022	,0.038903	,0.048441	
+           ,0.05796     ,0.066638	,0.073622	,0.078159	
+           ,0.079733	,0.078159	,0.073622	,0.066638	
+           ,0.05796	    ,0.048441	,0.038903	,0.030022	
+           ,0.022263	,0.015864	,0.010863	,0.007147	
+           ,0.004519	,0.002745	,0.001603	,0.000899	,0.000485
+        ];
+    }
+    else if BlurKernel == BlurKernelSize.Size64
+    {
+        const KernelRadius = 64;
+        const weights : []f32 = [
+            0.00024		,0.000328	,0.000445	,0.000598	,0.000795	
+           ,0.001046	,0.001363	,0.001759	,0.002246	,0.002841	
+           ,0.003557	,0.00441	,0.005412	,0.006576	,0.007912	
+           ,0.009423	,0.011112	,0.012973	,0.014996	,0.017162	
+           ,0.019445	,0.021812	,0.024225	,0.026637	,0.028998	
+           ,0.031255	,0.033352	,0.035236	,0.036857	,0.038168	
+           ,0.039134	,0.039725	,0.039924	,0.039725	,0.039134	
+           ,0.038168	,0.036857	,0.035236	,0.033352	,0.031255	
+           ,0.028998	,0.026637	,0.024225	,0.021812	,0.019445	
+           ,0.017162	,0.014996	,0.012973	,0.011112	,0.009423	
+           ,0.007912	,0.006576	,0.005412	,0.00441	,0.003557	
+           ,0.002841	,0.002246	,0.001759	,0.001363	,0.001046	
+           ,0.000795	,0.000598	,0.000445	,0.000328	,0.00024
+        ];
+    }
+
+    const BlurTileWidth = 64 - KernelRadius * 2;
+    const SharedMemSize = KernelRadius + BlurTileWidth + KernelRadius;
+
+    if ImageIsArray
+    {
+        alias textureType as texture2DArray;
+        alias coordType as i32x3;
+        Coord(x : i32, y : i32, z : i32) i32x3 { return i32x3(x, y, z); }
+    }
+    else
+    {
+        alias textureType as texture2D;
+        alias coordType as i32x2;
+        Coord(x : i32, y : i32, z : i32) i32x2 { return i32x2(x, y); }
+    }
+
+    if ImageFormatType == ImageFormat.Rgba16f
+    {
+        uniform BlurImageX : *mutable rgba16f textureType;
+        uniform BlurImageY : *mutable rgba16f textureType;
+        Swizzle(val : f32x4) f32x4 { return val; }
+        Expand(val : f32x4) f32x4 { return val; }
+        Empty() f32x4 { return f32x4(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
+        workgroup SharedMemory : [SharedMemSize]f32x4;
+    }
+    else if ImageFormatType == ImageFormat.Rgb16f
+    {
+        uniform BlurImageX : *mutable rgba16f textureType;
+        uniform BlurImageY : *mutable rgba16f textureType;
+        Swizzle(val : f32x4) f32x3 { return val.xyz; }
+        Expand(val : f32x3) f32x4 { return f32x4(val, 0); }
+        Empty() f32x3 { return f32x3(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rgba16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
+        workgroup SharedMemory : [SharedMemSize]f32x3;
+    }
+    else if ImageFormatType == ImageFormat.Rg16f
+    {
+        uniform BlurImageX : *mutable rg16f textureType;
+        uniform BlurImageY : *mutable rg16f textureType;
+        Swizzle(val : f32x4) f32x2 { return val.xy; }
+        Expand(val : f32x2) f32x4 { return f32x4(val, 0, 0); }
+        Empty() f32x2 { return f32x2(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rg16f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
+        workgroup SharedMemory : [SharedMemSize]f32x2;
+    }
+    else if ImageFormatType == ImageFormat.Rg32f
+    {
+        uniform BlurImageX : *mutable rg32f textureType;
+        uniform BlurImageY : *mutable rg32f textureType;
+        Swizzle(val : f32x4) f32x2 { return val.xy; }
+        Expand(val : f32x2) f32x4 { return f32x4(val, 0, 0); }
+        Empty() f32x2 { return f32x2(0); }
+        Sample(uniform image : *textureType, coords : coordType, lod : u32) f32x4 { return textureFetch(image, coords, 0); }
+        Store(uniform image : *mutable rg32f textureType, coord : coordType, value : f32x4) void { textureStore(image, coord, value); }
+        workgroup SharedMemory : [SharedMemSize]f32x2;
+    }
+};
+
+sampler_state InputSampler
+{
+    Filter = FilterMode.Point;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+};
+
+struct BlurData
+{
+    Viewport : i32x2;
+};
+uniform BlurUniforms : *BlurData;
+
+uniform InputImageX : *textureType;
+uniform InputImageY : *textureType;
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(SharedMemSize)
+entry_point
+csMainX() void
+{
+    // get full resolution and inverse full resolution
+    const size = BlurUniforms.Viewport;
+
+    // calculate offsets
+    const  tileStart = i32(computeGetWorkgroupIndices().x) * BlurTileWidth;
+    const    tileEnd = tileStart + BlurTileWidth;
+    const apronStart = i32(tileStart) - KernelRadius;
+    const   apronEnd = tileEnd + KernelRadius;
+
+    const x = max(0, min(apronStart + i32(computeGetLocalThreadIndices().x), size.x - 1));
+    const y = i32(computeGetWorkgroupIndices().y);
+    const z = computeGetWorkgroupIndices().z;
+
+    if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
+    {
+        SharedMemory[computeGetLocalThreadIndices().x] = Empty();
+    }
+    else
+    {
+        // load into workgroup saved memory, this allows us to use the original pixel even though
+        // we might have replaced it with the result from this thread!
+        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageX, Coord(x,y,z), 0u));
+    }
+    memoryBarrierWorkgroup();
+    executionBarrier();
+
+    const writePos = tileStart + computeGetLocalThreadIndices().x;
+    const tileEndClamped = min(tileEnd, size.x);
+
+    if (writePos < tileEndClamped)
+    {
+        var blurTotal = Empty();
+
+        for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
+        {
+            const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
+            blurTotal += weights[i] * SharedMemory[j];
+        }
+
+        Store(BlurImageX, Coord(writePos, y, z), Expand(blurTotal));
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(SharedMemSize)
+entry_point
+csMainY() void
+{
+    // get full resolution and inverse full resolution
+    const size = BlurUniforms.Viewport;
+
+    // calculate offsets
+    const  tileStart = i32(computeGetWorkgroupIndices().x) * BlurTileWidth;
+    const    tileEnd = tileStart + BlurTileWidth;
+    const apronStart = i32(tileStart) - KernelRadius;
+    const   apronEnd = tileEnd + KernelRadius;
+
+    const x = i32(computeGetWorkgroupIndices().y);
+    const y = max(0, min(apronStart + i32(computeGetLocalThreadIndices().x), size.y - 1));
+    const z = computeGetWorkgroupIndices().z;
+
+    if (x >= BlurUniforms.Viewport.x || y >= BlurUniforms.Viewport.y)
+    {
+        SharedMemory[computeGetLocalThreadIndices().x] = Empty();
+    }
+    else
+    {
+        // load into workgroup saved memory, this allows us to use the original pixel even though
+        // we might have replaced it with the result from this thread!
+        SharedMemory[computeGetLocalThreadIndices().x] = Swizzle(Sample(InputImageY, Coord(x,y,z), 0));
+    }
+    memoryBarrierWorkgroup();
+    executionBarrier();
+
+    const writePos = tileStart + computeGetLocalThreadIndices().x;
+    const tileEndClamped = min(tileEnd, size.y);
+
+    if (writePos < tileEndClamped)
+    {
+        var blurTotal = Empty();
+
+        for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
+        {
+            const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
+            blurTotal += weights[i] * SharedMemory[j];
+        }
+
+        Store(BlurImageY, Coord(x, writePos, z), Expand(blurTotal));
+	}
+}

@@ -1,0 +1,20 @@
+//------------------------------------------------------------------------------
+/**
+    downsample_include.gpuh
+    (C) 2025 Individual contributors, see AUTHORS file
+
+    Include this file at the top of all other downsample shaders. 
+    This file contains the types needed to configure the shader output for a downsample shader
+*/
+enum KernelMethod
+{
+    Min,
+    Max,
+    Avg
+};
+
+enum ImageFormat
+{
+    R11g11b10f,
+    R32f
+};

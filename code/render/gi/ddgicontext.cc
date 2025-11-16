@@ -19,16 +19,16 @@
 #include "coregraphics/shaperenderer.h"
 
 
-#include "gi/shaders/probe_update.h"
-#include "gi/shaders/probe_finalize.h"
-#include "gi/shaders/gi_volume_cull.h"
-#include "gi/shaders/probe_relocate_and_classify.h"
+#include "render/gi/shaders/probe_update.h"
+#include "render/gi/shaders/probe_finalize.h"
+#include "render/gi/shaders/gi_volume_cull.h"
+#include "render/gi/shaders/probe_relocate_and_classify.h"
 #include "graphics/globalconstants.h"
 
 #ifndef PUBLIC_BUILD
-#include "gi/shaders/probe_debug.h"
+#include "render/gi/shaders/probe_debug.h"
 #endif
-#include <raytracing/shaders/raytracetest.h>
+#include <render/raytracing/shaders/raytracetest.h>
 
 #include "options.h"
 #include "core/cvar.h"
@@ -200,9 +200,9 @@ DDGIContext::Create()
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeIndexLists, Shared::Table_Frame::GIIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeList, Shared::Table_Frame::GIVolumeLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::Table_Frame::GIVolumeUniforms_SLOT, 0, sizeof(ProbeFinalize::GIVolumeUniforms), 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeIndexLists, Shared::GIIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterGIVolumeList, Shared::GIVolumeLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(i), Shared::GIVolumeUniforms::BINDING, 0, sizeof(ProbeFinalize::GIVolumeUniforms), 0 });
         ResourceTableCommitChanges(frameResourceTable);
     }
 
@@ -213,7 +213,7 @@ DDGIContext::Create()
         CoreGraphics::BufferCopy from, to;
         from.offset = 0;
         to.offset = 0;
-        CmdCopy(cmdBuf, state.stagingClusterGIVolumeList.buffers[bufferIndex], { from }, state.clusterGIVolumeList, { to }, sizeof(Shared::GIVolumeLists));
+        CmdCopy(cmdBuf, state.stagingClusterGIVolumeList.buffers[bufferIndex], { from }, state.clusterGIVolumeList, { to }, sizeof(Shared::GIVolumeLists::STRUCT));
     }, {
         { FrameScript_default::BufferIndex::ClusterGIList, CoreGraphics::PipelineStage::TransferWrite }
     });
@@ -782,7 +782,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     }
 
     // Update shared GI data
-    Shared::GIVolumeUniforms giVolumeUniforms;
+    Shared::GIVolumeUniforms::STRUCT giVolumeUniforms;
     giVolumeUniforms.NumGIVolumes = volumeCount;
     giVolumeUniforms.NumGIVolumeClusters = Clustering::ClusterContext::GetNumClusters();
 
@@ -791,7 +791,7 @@ DDGIContext::UpdateActiveVolumes(const Ptr<Graphics::View>& view, const Graphics
     CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(bufferIndex);
 
     uint64_t offset = CoreGraphics::SetConstants(giVolumeUniforms);
-    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::Table_Frame::GIVolumeUniforms_SLOT, 0, sizeof(Shared::GIVolumeUniforms), offset });
+    ResourceTableSetConstantBuffer(frameResourceTable, { CoreGraphics::GetConstantBuffer(bufferIndex), Shared::GIVolumeUniforms::BINDING, 0, sizeof(Shared::GIVolumeUniforms::STRUCT), offset });
     ResourceTableCommitChanges(frameResourceTable);
 
     if (volumeCount > 0)

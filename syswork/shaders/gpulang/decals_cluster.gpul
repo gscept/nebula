@@ -1,0 +1,368 @@
+//------------------------------------------------------------------------------
+//  decals_cluster.gpul
+//  (C) 2019 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/clustering.gpuh>
+#include <lib/pbr.gpuh>
+#include <lib/stencil.gpuh>
+#include <lib/decals.gpuh>
+
+sampler_state ScreenspaceSampler
+{
+    Filter = FilterMode.MinMagMipPoint;
+};
+
+// only enable blend for the albedo and material output
+render_state PBRState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    BlendEnabled[1] = true;
+    SourceBlend[1] = BlendFactor.One;
+    DestinationBlend[1] = BlendFactor.Zero;
+    BlendEnabled[2] = true;
+    SourceBlend[2] = BlendFactor.One;
+    DestinationBlend[2] = BlendFactor.Zero;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = false;
+};
+
+// only enable blend for the albedo and material output
+render_state EmissiveState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.One;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = false;
+};
+
+//write rgba16f image2D Decals;
+uniform DebugOutput : *mutable rgba16f texture2D;
+//write rgba16f image2D DebugOutput;
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(64, 1, 1))
+entry_point
+csCull() void
+{
+    const index1D = computeGetGlobalThreadIndices().x;
+
+    if (index1D > DecalUniforms.NumDecalClusters) { return; }
+
+    const aabb = bufferLoad(ClusterAABBs, index1D);
+
+    var flags : u32 = 0;
+
+    // update PBR decals
+    var numDecals : u32 = 0;
+    for (var i : u32 = 0; i < DecalUniforms.NumPBRDecals; i++)
+    {
+        const decal = DecalLists.PBRDecals[i];
+        if (TestAABBAABB(aabb, decal.bboxMin.xyz, decal.bboxMax.xyz))
+        {
+            DecalIndexLists.PBRDecalIndexList[index1D * MAX_DECALS_PER_CLUSTER + numDecals] = i;
+            numDecals++;
+        }
+    }
+    DecalIndexLists.PBRDecalCountList[index1D] = numDecals;
+
+    // update feature flags if we have any decals
+    if (numDecals > 0) { flags |= CLUSTER_PBR_DECAL_BIT; }
+
+    // update emissive decals
+    numDecals = 0u;
+    for (var i : u32 = 0; i < DecalUniforms.NumEmissiveDecals; i++)
+    {
+        const decal = DecalLists.EmissiveDecals[i];
+        if (TestAABBAABB(aabb, decal.bboxMin.xyz, decal.bboxMax.xyz))
+        {
+            DecalIndexLists.EmissiveDecalIndexList[index1D * MAX_DECALS_PER_CLUSTER + numDecals] = i;
+            numDecals++;
+        }       
+    }
+    DecalIndexLists.EmissiveDecalCountList[index1D] = numDecals;
+
+    // update feature flags if we have any decals
+    if (numDecals > 0) { flags |= CLUSTER_EMISSIVE_DECAL_BIT; }
+
+    // This is a shorthand for the above
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size(u32x3(64, 1, 1))
+entry_point
+csDebug() void
+{
+    const coord = i32x2(computeGetGlobalThreadIndices().xy);
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+
+    // convert screen coord to view-space position
+    const worldPos = PixelToWorld(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+
+    const viewDepth = CalculateViewDepth(ViewConstants.View, worldPos.xyz);
+
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags; // add 0 so we can read the value
+    var color = f32x4(0);
+    if (CheckFlags(flag, CLUSTER_PBR_DECAL_BIT))
+    {
+        const count = DecalIndexLists.PBRDecalCountList[idx];
+        color.r = count / f32(DecalUniforms.NumPBRDecals);
+    }
+    if (CheckFlags(flag, CLUSTER_EMISSIVE_DECAL_BIT))
+    {
+        const count = DecalIndexLists.EmissiveDecalCountList[idx];
+        color.g = count / f32(DecalUniforms.NumEmissiveDecals);
+    }
+    
+    textureStore(DebugOutput, i32x2(coord), color);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsRender(
+    binding(0) in position : f32x3,
+    binding(2) in uv : f32x2,
+    out UV : f32x2) void
+{
+    vertexExportCoordinates(f32x4(position, 1));
+    UV = uv;
+}
+
+
+enum PBRDecalOutputs : i32
+{
+    Albedo,
+    Normal, 
+    Material
+};
+
+//------------------------------------------------------------------------------
+/**
+    Update GBuffers
+*/
+entry_point
+psRenderPBR(in UV : f32x2) void
+{
+    const coord = i32x2(pixelGetCoordinates().xy);
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+    const stencil = fetchStencil(DecalUniforms.StencilBuffer, coord, 0);
+    const normal = fetch2D(DecalUniforms.NormalBufferCopy, coord, 0).rgb;
+
+    if (CheckFlags(stencil, STENCIL_BIT_CHARACTER)) { discard; }
+
+    // convert screen coord to view-space position
+    const viewPos = PixelToView(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvProjection);
+    const worldPos = ViewToWorld(viewPos, ViewConstants.InvView);
+    const worldViewVec = normalize(ViewConstants.EyePos.xyz - worldPos.xyz);
+    const viewVec = -normalize(viewPos.xyz);
+    const viewNormal = (ViewConstants.View * f32x4(normal, 0)).xyz;
+
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    var totAlbedo = f32x3(0);
+    var totNormal = f32x3(0);
+    var totMaterial = f32x4(0);
+    var totWeight = 0.0f; 
+
+    // calculate custom derivatives for the decal sampling method
+    var viewPosDerivativeX = ddx(viewPos.xy) * ViewConstants.FocalLengthNearFar.z * 2.0f;
+    var viewPosDerivativeY = ddy(viewPos.xy) * ViewConstants.FocalLengthNearFar.z * 2.0f;
+
+    // adjust gradient based on dFdx in depth, if the distance is too big, clip the gradient
+    const dFdDepth = fwidth(depth);
+    if (dFdDepth > 0.001f)
+    {
+        viewPosDerivativeX = f32x2(0.0f);
+        viewPosDerivativeY = f32x2(0.0f);
+    }
+
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
+    if (CheckFlags(flag, CLUSTER_PBR_DECAL_BIT))
+    {
+        const count = DecalIndexLists.PBRDecalCountList[idx];
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const didx = DecalIndexLists.PBRDecalIndexList[idx * MAX_DECALS_PER_CLUSTER + i];
+            const decal = DecalLists.PBRDecals[didx];
+            const localPos = decal.invModel * worldPos;
+
+            // check if pixel is inside the bounding box
+            const dist = f32x3(0.5f) - abs(localPos.xyz);
+            if (all(dist > f32x3(0)))
+            {
+                // assume the XY are the texture coordinates
+                const uv = localPos.xy + f32x2(0.5f);
+
+                // calculate a weight which serves as a smooth blend off the normal
+                var weight = saturate(dot(decal.direction, -normal.xyz));
+                const d_albedo = sample2DGrad(decal.albedo, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
+                const d_normal = sample2DGrad(decal.normal, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
+                const d_material = sample2DGrad(decal.material, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
+                weight *= d_albedo.a;
+
+                if (weight > 0.0f)
+                {
+                    // calculate tbn
+                    const d_tangent = decal.tangent;
+                    const binormal = cross(d_tangent, normal);
+                    const tangent = cross(binormal, normal);
+                    const tbn = f32x3x3(tangent, binormal, normal);
+
+                    // calculate normal map in TBN space
+                    var tNormal = f32x3(0, 0, 0);
+                    tNormal.xy = (d_normal.ag * 2.0f) - 1.0f;
+                    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
+                    tNormal = tbn * tNormal;
+
+                    totAlbedo += d_albedo.xyz * weight;
+                    totNormal += tNormal * weight;
+                    totMaterial += d_material * weight;
+                    totWeight += weight;
+                }
+            }
+
+            // no need to go on if the pixel is saturated with decals
+            if (totWeight >= 1.0f) { break; }
+        }
+    }
+
+    if (totWeight == 0)
+    {
+        discard;
+    }
+
+    // normalize the normal
+    totNormal = normalize(totNormal);
+
+    // write outputs, make sure to include the total weight so we can do a proper blending
+    pixelExportColor(f32x4(totAlbedo, totWeight), PBRDecalOutputs.Albedo);
+    pixelExportColor(totNormal, PBRDecalOutputs.Normal);
+    pixelExportColor(f32x4(totMaterial.xyz, totWeight), PBRDecalOutputs.Material);
+}
+
+
+enum EmissiveDecalOutputs : i32
+{
+    Emissive
+};
+
+//------------------------------------------------------------------------------
+/**
+    Render emissive
+*/
+entry_point
+psRenderEmissive(in UV : f32x2) void
+{
+    const coord = f32x2(UV.xy * ClusterUniforms.FramebufferDimensions);
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
+    const material = fetch2D(PerTickParams.SpecularBuffer, coord, 0).rgba;
+
+    // convert screen coord to view-space position
+    const viewPos = PixelToView(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvProjection);
+    const worldPos = ViewToWorld(viewPos, ViewConstants.InvView);
+    const worldViewVec = normalize(ViewConstants.EyePos.xyz - worldPos.xyz);
+    const viewVec = -normalize(viewPos.xyz);
+
+    const viewPos_ddx = ddx(viewPos.xyz);
+    const viewPos_ddy = ddy(viewPos.xyz);
+
+    // calculate the normal using derivatives of the world position
+    const viewNormal = normalize(cross(viewPos_ddx, viewPos_ddy));
+    const normal = (ViewConstants.InvView * f32x4(viewNormal.xyz, 0)).xyz;
+
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    var totEmissive = f32x4(0);
+    var totWeight = 0.0f;
+
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
+    if (CheckFlags(flag, CLUSTER_EMISSIVE_DECAL_BIT))
+    {
+        const count = DecalIndexLists.EmissiveDecalCountList[idx];
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const didx = DecalIndexLists.EmissiveDecalIndexList[idx * MAX_DECALS_PER_CLUSTER + i];
+            const decal = DecalLists.EmissiveDecals[didx];
+
+            // transform world position to the local space of the 
+            const localPos = decal.invModel * worldPos;
+            const dist = f32x3(0.5f) - abs(localPos.xyz);
+
+            // check if pixel is inside the bounding box
+            if (all(dist > f32x3(0)))
+            {
+                // assume the XY are the texture coordinates
+                const uv = localPos.xy;
+                var weight = dot(decal.direction, normal.xyz);
+                const emissive = sample2D(decal.emissive, DecalSampler, uv);
+
+                weight = min(max(weight, 0.0f), 1.0f);
+                totEmissive += emissive * weight;
+                totWeight += weight;
+            }
+
+            // no need to go on if the pixel is saturated with decals
+            if (totWeight >= 1.0f)  { break; }
+        }
+    }
+
+    // write emissive
+    pixelExportColor(totEmissive * f32x4(1,1,1,totWeight), EmissiveDecalOutputs.Emissive);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("RenderPBR")
+program RenderPBRDecals
+{
+    VertexShader = vsRender;
+    PixelShader = psRenderPBR;
+    RenderState = PBRState;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Debug")
+program ClusterDebug
+{
+    ComputeShader = csDebug;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Cull")
+program CullDecals
+{
+    ComputeShader = csCull;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("RenderEmissive")
+program RenderEmissiveDecals
+{
+    VertexShader = vsRender;
+    PixelShader = psRenderEmissive;
+    RenderState = EmissiveState;
+};

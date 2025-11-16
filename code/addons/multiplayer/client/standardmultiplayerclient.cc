@@ -153,6 +153,8 @@ StandardMultiplayerClient::OnMessageReceived(SteamNetworkingMessage_t* msg)
             n_printf("eid = %i, netid = %i\n", ent.HashCode(), netId.identifier);
             break;
         }
+        default:
+            break;
     }
 }
 

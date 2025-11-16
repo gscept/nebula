@@ -1,0 +1,173 @@
+//------------------------------------------------------------------------------
+//  static.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/geometrybase.gpuh"
+#include "lib/standard_shading.gpuh"
+
+//------------------------------------------------------------------------------
+//  Depth prepass methods
+//------------------------------------------------------------------------------
+@Mask("Static|Depth")
+program StaticDepth 
+{
+    VertexShader = vsDepthStatic;
+    PixelShader = psDepthOnly;
+    RenderState = DepthState;
+};
+
+@Mask("Static|Depth|DoubleSided")
+program StaticDepthDoubleSided 
+{
+    VertexShader = vsDepthStatic;
+    PixelShader = psDepthOnly;
+    RenderState = DepthStateDoubleSided;
+};
+
+@Mask("Static|Depth|AlphaMask")
+program StaticDepthAlphaMask 
+{
+    VertexShader = vsDepthStaticAlphaMask;
+    PixelShader = psDepthOnlyAlphaMask;
+    RenderState = DepthState;
+};
+
+@Mask("Static|Depth|AlphaMask|DoubleSided")
+program StaticDepthAlphaMaskDoubleSided 
+{
+    VertexShader = vsDepthStaticAlphaMask;
+    PixelShader = psDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+};
+
+//------------------------------------------------------------------------------
+//  Standard methods
+//------------------------------------------------------------------------------
+@Mask("Static")
+program Static
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ReflectionMethod = ReflectionMethods.NoBakedIllumination;
+};
+
+@Mask("Static|AlphaMask")
+program StaticAlphaMask
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.NoBakedIllumination;
+};
+
+@Mask("Static|Instanced")
+program StaticInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ReflectionMethod = ReflectionMethods.NoBakedIllumination;
+};
+
+@Mask("Static|AlphaMask|Instanced")
+program StaticInstancedAlphaMask
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.NoBakedIllumination;
+};
+
+//------------------------------------------------------------------------------
+//  IBL + PBR methods
+//------------------------------------------------------------------------------
+
+@Mask("Static|Environment")
+program StaticEnvironment
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+
+@Mask("Static|AlphaMask|Environment")
+program StaticEnvironmentAlphaMask
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+
+@Mask("Static|Instanced|Environment")
+program StaticEnvironmentInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+
+@Mask("Static|AlphaMask|Instanced|Environment")
+program StaticEnvironmentInstancedAlphaMask
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = DefaultState;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+};
+    
+//------------------------------------------------------------------------------
+//  Alpha methods
+//------------------------------------------------------------------------------
+
+
+@Mask("Static|Environment")
+program StaticAlpha
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};
+
+@Mask("Static|AlphaMask|Environment")
+program StaticAlphaEnvironment
+{
+    VertexShader = vsStatic;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};
+
+@Mask("Static|Instanced|Environment")
+program StaticAlphaInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};
+
+@Mask("Static|AlphaMask|Instanced|Environment")
+program StaticAlphaEnvironmentInstanced
+{
+    VertexShader = vsStaticInstanced;
+    PixelShader = psStandard;
+    RenderState = AlphaState;
+    ColorMaskMode = ColorMaskModes.AlphaMasked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Transparent;
+};

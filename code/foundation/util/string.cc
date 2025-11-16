@@ -148,16 +148,6 @@ String::Set(const char* str, SizeT length)
 /**
 */
 void
-String::Set(const char* str, size_t length)
-{
-    n_assert(length < INT_MAX);
-    this->Set(str, (SizeT)length);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 String::AppendRange(const char* append, SizeT length)
 {
     n_assert(append);

@@ -7,12 +7,18 @@ FIND_PROGRAM(SHADERC
        PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
        NO_DEFAULT_PATH
        )
+       
+FIND_PROGRAM(GPULANGC
+    NAMES gpulangc.exe gpulangc
+    PATHS ${FIPS_DEPLOY_DIR}/gpulang/win64 ${FIPS_DEPLOY_DIR}/gpulang/linux
+    NO_DEFAULT_PATH
+)
 
 nebula_begin_module(render)
     add_nebula_shaders()
     set(target_has_shaders 1)
     target_include_directories(render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons ${CODE_ROOT}/render)
-    fips_deps(foundation input resource anyfx imgui options)
+    fips_deps(foundation input resource anyfx gpulang_reflection imgui options)
     if (TARGET system_resources-res)
         target_link_libraries(render $<TARGET_OBJECTS:system_resources-res>)
     endif()
@@ -141,6 +147,8 @@ ENDIF()
                 event.h
                 fence.h
                 graphicsdevice.h
+                gpulangshaderloader.cc
+                gpulangshaderloader.h
                 image.cc
                 image.h
                 imagefileformat.cc
@@ -632,6 +640,7 @@ ENDIF()
             add_shaders(
                 terrain_include.fxh terrain.fx terrain_tile_write.fx terrain_mesh_generate.fx
             )
+            compile_gpulang(terrain_include.gpuh terrain.gpul terrain_tile_write.gpul terrain_mesh_generate.gpul)
 
         fips_dir(vegetation)
             fips_files(

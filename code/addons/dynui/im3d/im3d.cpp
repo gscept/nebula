@@ -1893,7 +1893,7 @@ Context::Context()
  // init cull frustum to INF effectively disables culling
 	for (int i = 0; i < FrustumPlane_Count; ++i)
 	{
-		m_appData.m_cullFrustum[i] = Vec4(INFINITY);
+		m_appData.m_cullFrustum[i] = Vec4(FLT_MAX);
 	}
 
 	pushMatrix(Mat4(1.0f));

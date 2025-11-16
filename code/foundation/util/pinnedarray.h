@@ -721,7 +721,7 @@ PinnedArray<MAX_ALLOCS, TYPE>::GrowTo(SizeT newCapacity)
 #if NEBULA_DEBUG
     if (totalBytesNeeded > MAX_ALLOCS * sizeof(TYPE))
     {
-        n_printf("[PinnedArray] MAX_ALLOCS '%d' and item size '%d' will waste '%d' byte(s) due to alignment of page size '%d'", MAX_ALLOCS, sizeof(TYPE), totalBytesNeeded - MAX_ALLOCS * sizeof(TYPE), pageSize);
+        n_printf("[PinnedArray] MAX_ALLOCS '%d' and item size '%lu' will waste '%lu' byte(s) due to alignment of page size '%d'", MAX_ALLOCS, sizeof(TYPE), totalBytesNeeded - MAX_ALLOCS * sizeof(TYPE), pageSize);
     }
 #endif
     SizeT roundedUpNewCapacity = totalBytesNeeded / sizeof(TYPE);

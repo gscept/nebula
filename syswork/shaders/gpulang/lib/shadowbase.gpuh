@@ -1,0 +1,456 @@
+//------------------------------------------------------------------------------
+//  shadowbase.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/defaultsamplers.gpuh>
+#include <lib/skinning.gpuh>
+#include <material_interfaces.gpul>
+
+const DepthScaling = 5.0f;
+const DarkeningFactor = 1.0f;
+const ShadowConstant = 100.0f;
+
+render_state ShadowState
+{
+	Cull = CullFace.Back;
+	DepthClampEnabled = false;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = true;
+    DepthBiasEnabled = true;
+    DepthBiasFactor = 1.8f;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticShadow(
+	binding(0) in position : f32x3,
+	binding(2) in uv : i32x2,
+	out UV : f32x2,
+	out ProjPos : f32x4
+) void
+{
+	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsSkinnedShadow(
+	binding(0) in position : f32x3,
+	binding(2) in uv : i32x2,
+	binding(7) in weights : f32x4,
+	binding(8) in indices : u32x4,
+	out UV : f32x2,
+	out ProjPos : f32x4
+) void
+{
+	const skinnedPos = SkinnedPosition(position, weights, indices);
+    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
+    UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticInst(
+	binding(0) in position : f32x3,
+	binding(2) in uv : i32x2,
+	out UV : f32x2,
+	out ProjPos : f32x4
+) void
+{
+	const viewStride = vertexGetInstanceIndex() % 16;
+	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(viewStride);
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticCSM(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out UV : f32x2,
+    out ProjPos : f32x4
+) void
+{
+	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(vertexGetInstanceIndex());
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsSkinnedCSM(
+	binding(0) in position : f32x3,
+	binding(2) in uv : i32x2,
+	binding(7) in weights : f32x4,
+	binding(8) in indices : u32x4,
+	out UV : f32x2,
+	out ProjPos : f32x4
+) void
+{
+	const skinnedPos = SkinnedPosition(position, weights, indices);
+	ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(vertexGetInstanceIndex());
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticInstCSM(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out UV : f32x2,
+    out ProjPos : f32x4
+) void
+{
+	const viewStride = vertexGetInstanceIndex() % 4;
+    const instanceStride = vertexGetInstanceIndex() / 4;
+	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[instanceStride] * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(viewStride);
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticPoint(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out UV : f32x2,
+    out ProjPos : f32x4
+) void
+{
+    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsSkinnedPoint(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(7) in weights : f32x4,
+    binding(8) in indices : u32x4,
+    out UV : f32x2,
+    out ProjPos : f32x4
+) void
+{
+	const skinnedPos = SkinnedPosition(position, weights, indices);
+    ProjPos = ShadowViewConstants.LightViewMatrix[vertexGetInstanceIndex()] * ObjectUniforms.Model * skinnedPos;
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(u32(ShadowViewConstants.ShadowTiles[vertexGetInstanceIndex() / 4][vertexGetInstanceIndex() % 4]));
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsStaticInstPoint(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out UV : f32x2,
+    out ProjPos : f32x4
+) void
+{
+	const viewStride = vertexGetInstanceIndex() % 6;
+	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
+    vertexExportCoordinates(ProjPos);
+    vertexSetOutputLayer(viewStride);
+	UV = UnpackUV(uv);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+early_depth
+entry_point
+psShadow(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psShadowAlpha(
+    in UV : f32x2,
+    in ProjPos : f32x4
+)
+ void
+{
+	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+early_depth
+entry_point
+psESM(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{
+	pixelExportColor((ProjPos.z/ProjPos.w) * DepthScaling, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psESMAlpha(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{
+	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
+    pixelExportColor((ProjPos.z / ProjPos.w) * DepthScaling, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+early_depth
+entry_point
+psVSM(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{
+	const depth = ProjPos.z / ProjPos.w;
+	const moment1 = depth;
+	const moment2 = depth * depth;
+
+	// Adjusting moments (this is sort of bias per pixel) using derivative
+	//float dx = dFdx(depth);
+	//float dy = dFdy(depth);
+	//moment2 += 0.25f*(dx*dx+dy*dy);
+    pixelExportColor(f32x2(moment1, moment2), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psVSMAlpha(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{
+	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
+
+	const depth = ProjPos.z / ProjPos.w;
+	const moment1 = depth;
+	const moment2 = depth * depth;
+
+	// Adjusting moments (this is sort of bias per pixel) using derivative
+	//float dx = dFdx(depth);
+	//float dy = dFdy(depth);
+	//moment2 += 0.25f*(dx*dx+dy*dy);
+    pixelExportColor(f32x2(moment1, moment2), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+early_depth
+entry_point
+psVSMPoint(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{
+	const depth = ProjPos.z / ProjPos.w;
+	const moment1 = depth;
+	const moment2 = depth * depth;
+
+	// Adjusting moments (this is sort of bias per pixel) using derivative
+	//float dx = dFdx(depth);
+	//float dy = dFdy(depth);
+	//moment2 += 0.25f*(dx*dx+dy*dy);
+
+    pixelExportColor(f32x2(moment1, moment2), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psVSMAlphaPoint(
+    in UV : f32x2,
+    in ProjPos : f32x4
+) void
+{
+	const alpha = sample2D(BasicConstants.AlbedoMap, ShadowSampler, UV).a;
+	if (alpha < BasicConstants.AlphaSensitivity) { discard; }
+
+	const depth = ProjPos.z / ProjPos.w;
+	const moment1 = depth;
+	const moment2 = depth * depth;
+
+	// Adjusting moments (this is sort of bias per pixel) using derivative
+	//float dx = dFdx(depth);
+	//float dy = dFdy(depth);
+	//moment2 += 0.25f*(dx*dx+dy*dy);
+
+    pixelExportColor(f32x2(moment1, moment2), 0);
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+/**
+*/
+Variance(
+    shadowSample : f32x2
+	, lightSpaceDepth : f32
+	, tolerance : f32
+) f32
+{
+	// get average and average squared
+	const avgZ = shadowSample.x;
+	const avgZ2 = shadowSample.y;
+
+	// assume that if the projected depth is less than the average in the pixel, the pixel must be lit
+	if (lightSpaceDepth <= avgZ)
+	{
+		return 1.0f;
+	}
+	else
+	{
+		var variance 	= (avgZ2) - (avgZ * avgZ);
+		variance 		= min(1.0f, max(0.0f, variance + tolerance));
+
+		const mean 		= avgZ;
+		const d			= lightSpaceDepth - mean;
+		const p_max		= variance / (variance + d*d);
+
+		// to avoid light bleeding, change this constant
+		return max(p_max, f32(lightSpaceDepth <= avgZ));
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+	Calculates Chebyshevs upper bound for use with VSM shadow mapping with local lights
+*/
+ChebyshevUpperBound(moments : f32x2, t : f32, tolerance : f32) f32
+{
+	// One-tailed inequality valid if t > Moments.x
+	if (t <= moments.x) { return 1.0f; }
+
+	// Compute variance.
+	var variance = moments.y - (moments.x* moments.x);
+    variance = max(variance, tolerance);
+
+	// Compute probabilistic upper bound.
+	const d = t - moments.x;
+	const p_max = variance / (variance + d*d);
+
+	return p_max;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ExponentialShadowSample(mapDepth : f32, depth : f32, bias : f32) f32
+{
+	const receiverDepth = DepthScaling * depth - bias;
+    const occluderReceiverDistance = mapDepth - receiverDepth;
+	const occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));
+    //float occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));
+    return occlusion;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PCFShadow(shadowMap : u32, uv : f32x2, texelSize : f32x2) f32
+{
+    const shadow = 0.0f;
+    const offsets = f32x3(-2, 2, 0) * texelSize.xyx;
+    
+    const samp0 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.xz, 0).r;
+    const samp1 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.yz, 0).r;
+    const samp2 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zx, 0).r;
+    const samp3 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zy, 0).r;
+    const samp4 = sample2DLod(shadowMap, ShadowSampler, uv, 0).r;
+    return (samp0 + samp1 + samp2 + samp3 + samp4) * 0.2f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TerrainShadows(shadowMap : u32, uv : f32x2, texelSize : f32x2) f32x2
+{
+    const shadow = f32x2(0.0f);
+    const offsets = f32x3(-2, 2, 0) * texelSize.xyx;
+
+    const samp0 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.xz, 0).rg;
+    const samp1 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.yz, 0).rg;
+    const samp2 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zx, 0).rg;
+    const samp3 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zy, 0).rg;
+    const samp4 = sample2DLod(shadowMap, ShadowSampler, uv, 0).rg;
+    return (samp0 + samp1 + samp2 + samp3 + samp4) * 0.2f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PCFShadowArray(shadowMap : u32, depth : f32, uv : f32x2, idx : f32, texelSize : f32x2) f32
+{
+    const shadow = 0.0f;
+    const offsets = f32x3(-2.5f, 2.5f, 0) * texelSize.xyx;
+
+    const NumSamples = 2;
+    const Weight = 1 / pow(NumSamples*2.0f, 2.0f);
+    var totalShadow = 0.0f;
+    for (var i : i32 = -NumSamples; i < NumSamples; i++)
+    {
+        for (var j : i32 = -NumSamples; j < NumSamples; j++)
+        {
+			if (gplIsComputeShader)
+            {
+				totalShadow += sample2DArrayShadowLod(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx, 0);
+            }
+			else
+            {
+				totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + f32x2(i, j) * texelSize.xy, depth - PerTickParams.GlobalLightShadowBias * exp2(idx), idx);
+            }
+        }
+    }
+    totalShadow *= Weight;
+    return totalShadow;
+}

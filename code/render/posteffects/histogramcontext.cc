@@ -11,8 +11,7 @@
 
 #include "graphics/globalconstants.h"
 
-#include "system_shaders/histogram_cs.h"
-#include "system_shaders/shared.h"
+#include "gpulang/render/system_shaders/histogram_cs.h"
 #include "core/cvar.h"
 
 #include "frame/default.h"
@@ -70,11 +69,11 @@ HistogramContext::Create()
 
     histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "r_min_luminance", "0.1", "Minimum luminance, used for auto exposure");
     
-    histogramState.histogramShader = CoreGraphics::ShaderGet("shd:system_shaders/histogram_cs.fxb");
+    histogramState.histogramShader = CoreGraphics::ShaderGet("shd:system_shaders/histogram_cs.gplb");
     histogramState.histogramCategorizeProgram = CoreGraphics::ShaderGetProgram(histogramState.histogramShader, CoreGraphics::ShaderFeatureMask("HistogramCategorize"));
 
     CoreGraphics::BufferCreateInfo bufInfo;
-    bufInfo.elementSize = sizeof(HistogramCs::HistogramBuffer);
+    bufInfo.elementSize = sizeof(HistogramCs::HistogramBuffer::STRUCT);
     bufInfo.size = 1;
     bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
     bufInfo.mode = CoreGraphics::DeviceLocal;
@@ -95,7 +94,7 @@ HistogramContext::Create()
     bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
     histogramState.histogramReadbackBuffers = CoreGraphics::BufferSet(bufInfo);
 
-    bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants);
+    bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants::STRUCT);
     bufInfo.mode = CoreGraphics::DeviceAndHost;
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     bufInfo.data = nullptr;
@@ -105,14 +104,14 @@ HistogramContext::Create()
     histogramState.histogramResourceTable = CoreGraphics::ShaderCreateResourceTable(histogramState.histogramShader, NEBULA_BATCH_GROUP);
     CoreGraphics::ResourceTableSetRWBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramCounters,
-        HistogramCs::Table_Batch::HistogramBuffer_SLOT,
+        HistogramCs::HistogramBuffer::BINDING,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
         0
     });
     CoreGraphics::ResourceTableSetConstantBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramConstants,
-        HistogramCs::Table_Batch::HistogramConstants_SLOT,
+        HistogramCs::HistogramConstants::BINDING,
         0,
         CoreGraphics::BufferGetByteSize(histogramState.histogramConstants),
         0
@@ -156,7 +155,7 @@ HistogramContext::Setup()
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
             source,
-            HistogramCs::Table_Batch::ColorSource_SLOT,
+            HistogramCs::ColorSource::BINDING,
             0,
             CoreGraphics::InvalidSamplerId,
             false,
@@ -256,7 +255,7 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
     float lum = histogramState.previousLum + (averageLum - histogramState.previousLum) * time;
     histogramState.previousLum = lum;
 
-    Shared::ViewConstants viewConstants = Graphics::GetViewConstants();
+    Shared::ViewConstants::STRUCT viewConstants = Graphics::GetViewConstants();
     viewConstants.Time_Random_Luminance_X[2] = lum;
     Graphics::UpdateViewConstants(viewConstants);
 }
@@ -271,7 +270,7 @@ HistogramContext::UpdateConstants()
     Core::CVarSetModified(histogramState.minLuminance, false);
 
     histogramState.logMinLuminance = Math::log2(minLuminance);
-    HistogramCs::HistogramConstants constants;
+    HistogramCs::HistogramConstants::STRUCT constants;
     constants.Mip = histogramState.mip;
     constants.WindowOffset[0] = histogramState.offset.x;
     constants.WindowOffset[1] = histogramState.offset.y;
@@ -292,7 +291,7 @@ HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT wid
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
         source,
-        HistogramCs::Table_Batch::ColorSource_SLOT,
+        HistogramCs::ColorSource::BINDING,
         0,
         CoreGraphics::InvalidSamplerId,
         false,

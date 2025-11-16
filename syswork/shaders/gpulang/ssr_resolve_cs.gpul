@@ -1,0 +1,84 @@
+//------------------------------------------------------------------------------
+//  ssr_resolve_cs.fx
+//  (C) 2020 Fredrik Lindahl
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/pbr.gpuh"
+
+//texture2D LightBuffer;
+uniform TraceBuffer : *texture2D;
+uniform ReflectionBuffer : *mutable rgba16f texture2D;
+//read image2D TraceBuffer;
+
+sampler_state LinearState
+{
+    //Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
+    Filter = FilterMode.Linear;
+    Border = Color.Transparent;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+};
+
+sampler_state NoFilterState
+{
+    //Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
+    Filter = FilterMode.Point;
+    Border = Color.Transparent;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(32)
+threads_y(32)
+entry_point
+csMain() void
+{
+    const location = i32x2(computeGetGlobalThreadIndices().xy);
+    const screenSize = textureGetSize(ReflectionBuffer);
+    if location.x >= screenSize.x || location.y > screenSize.y { return; }
+
+    const invScreenSize = f32x2(1.0/screenSize.x, 1.0/screenSize.y);
+
+    const UV = location * invScreenSize;
+
+    const rayResult = textureFetch(TraceBuffer, location / 2, 0).xyz;
+    var color = f32x3(0);//sample2DLod(LightBuffer, LinearState, UV, 0).xyz;
+    if (rayResult.r >= 0.0f)
+    {
+        const albedo = f32x4(0);//sample2DLod(AlbedoBuffer, LinearState, UV, 0);
+        const material = f32x4(0);//sample2DLod(SpecularBuffer, LinearState, UV, 0);
+
+        var F0 = f32x3(0.04);
+        F0 = CalculateF0(albedo.rgb, material[0], F0);
+
+        const F = FresnelSchlickGloss(F0, max(rayResult.b, 0.0), material[1]);
+
+        //vec3 fresnel;
+        //vec3 brdf;
+        //CalculateBRDF(1, cosTheta, cosTheta, 1, material[1], F0, fresnel, brdf);
+
+        const reflection = f32x3(0);//sample2DLod(LightBuffer, LinearState, rayResult.xy, 0).xyz;
+        
+        //vec3 kD = vec3(1.0f) - F;
+        //kD *= 1.0f - material[0];
+        
+        color += (reflection * F) * material[2];
+    }
+    
+    textureStore(ReflectionBuffer, location, color.xyzx);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program SSR
+{
+    ComputeShader = csMain;
+};

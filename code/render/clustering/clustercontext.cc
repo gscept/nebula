@@ -12,6 +12,7 @@
 
 #include "graphics/globalconstants.h"
 #include "frame/default.h"
+#include "gpulang/render/system_shaders/cluster_generate.h"
 
 namespace Clustering
 {
@@ -26,7 +27,7 @@ struct
     CoreGraphics::ShaderProgramId clusterGenerateProgram;
     CoreGraphics::BufferId clusterBuffer;
 
-    ClusterGenerate::ClusterUniforms uniforms;
+    ClusterGenerate::ClusterUniforms::STRUCT uniforms;
     CoreGraphics::BufferId constantBuffer;
 
     CoreGraphics::WindowId window;
@@ -72,7 +73,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;
-    state.clusterShader = ShaderGet("shd:system_shaders/cluster_generate.fxb");
+    state.clusterShader = ShaderGet("shd:system_shaders/cluster_generate.gplb");
     state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureMask("AABBGenerate"));
 
     state.window = window;
@@ -95,7 +96,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     BufferCreateInfo rwb3Info;
     rwb3Info.name = "ClusterAABBBuffer";
     rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
-    rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
+    rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
     rwb3Info.mode = BufferAccessMode::DeviceLocal;
     rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
     rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
@@ -106,8 +107,8 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     {
         CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+        ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(frameResourceTable, { state.constantBuffer, ClusterGenerate::ClusterUniforms::BINDING, 0, sizeof(ClusterGenerate::ClusterUniforms::STRUCT), 0 });
     }
 
     FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);
@@ -212,7 +213,7 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         CoreGraphics::BufferCreateInfo rwb3Info;
         rwb3Info.name = "ClusterAABBBuffer";
         rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
-        rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
+        rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
         rwb3Info.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
         rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
         rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
@@ -224,7 +225,7 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         {
             CoreGraphics::ResourceTableId frameResourceTable = Graphics::GetFrameResourceTable(i);
 
-            ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+            ResourceTableSetRWBuffer(frameResourceTable, { state.clusterBuffer, ClusterGenerate::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
             ResourceTableCommitChanges(frameResourceTable);
         }
     }

@@ -27,10 +27,10 @@ struct MaterialBuffer
     bool dirty;
 
     MaterialBuffer(const char* name)
-        : dirty(false)
+        : hostBufferData(nullptr)
         , hostBuffer(CoreGraphics::InvalidBufferId)
         , deviceBuffer(CoreGraphics::InvalidBufferId)
-        , hostBufferData(nullptr)
+        , dirty(false)
     {
         this->hostBufferCreateInfo.name = Util::String::Sprintf("%s Host Buffer", name);
         this->hostBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
@@ -238,7 +238,7 @@ MaterialLoader::Setup()
     this->failResourceName = "syssur:error.sur";
 
     // Run generated setup code
-    MaterialTemplates::SetupMaterialTemplates();
+    MaterialTemplatesGPULang::SetupMaterialTemplates();
 
     // Create binding buffer
     CoreGraphics::BufferCreateInfo materialBindingInfo;
@@ -363,48 +363,49 @@ MaterialLoader::Setup()
 /**
 */
 void
-LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const MaterialTemplates::Entry* entry, const Materials::MaterialId id, bool immediate)
+LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const MaterialTemplatesGPULang::Entry* entry, const Materials::MaterialId id, bool immediate)
 {
     IndexT valueIndex = entry->valuesByHash.FindIndex(name.StringHashCode());
     IndexT textureIndex = entry->texturesByHash.FindIndex(name.StringHashCode());
     if (valueIndex != InvalidIndex)
     {
-        const MaterialTemplates::MaterialTemplateValue* value = entry->valuesByHash.ValueAtIndex(valueIndex);
+        const MaterialTemplatesGPULang::MaterialTemplateValue* value = entry->valuesByHash.ValueAtIndex(valueIndex);
 
         // Get value from material, if the type doesn't match the template, we'll pick the template value
         switch (value->type)
         {
-            case MaterialTemplates::MaterialTemplateValue::Scalar:
+            case MaterialTemplatesGPULang::MaterialTemplateValue::Scalar:
             {
                 float f = reader->GetOptFloat("value", value->data.f);
                 MaterialSetConstant(id, &f, sizeof(f), value->offset);
                 break;
             }
-            case MaterialTemplates::MaterialTemplateValue::Bool:
+            case MaterialTemplatesGPULang::MaterialTemplateValue::Bool:
             {
                 bool b = reader->GetOptBool("value", value->data.b);
                 MaterialSetConstant(id, &b, sizeof(b), value->offset);
                 break;
             }
-            case MaterialTemplates::MaterialTemplateValue::Vec2:
+            case MaterialTemplatesGPULang::MaterialTemplateValue::Vec2:
             {
                 Math::float2 f2 = reader->GetOptVec2("value", value->data.f2);
                 MaterialSetConstant(id, &f2, sizeof(f2), value->offset);
                 break;
             }
-            case MaterialTemplates::MaterialTemplateValue::Vec3:
-            case MaterialTemplates::MaterialTemplateValue::Vec4:
-            case MaterialTemplates::MaterialTemplateValue::Color:
+            case MaterialTemplatesGPULang::MaterialTemplateValue::Vec3:
+            case MaterialTemplatesGPULang::MaterialTemplateValue::Vec4:
+            case MaterialTemplatesGPULang::MaterialTemplateValue::Color:
             {
                 Math::float4 f4 = reader->GetOptVec4("value", value->data.f4);
                 MaterialSetConstant(id, &f4, sizeof(f4), value->offset);
                 break;
             }
+            default: break;
         }
     }
     if (textureIndex != InvalidIndex)
     {
-        const MaterialTemplates::MaterialTemplateTexture* value = entry->texturesByHash.ValueAtIndex(textureIndex);
+        const MaterialTemplatesGPULang::MaterialTemplateTexture* value = entry->texturesByHash.ValueAtIndex(textureIndex);
 
         Util::String path = reader->GetOptString("value", value->resource);
         Resources::ResourceId tex;
@@ -476,9 +477,9 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
         // Get template
         Util::String templateName = reader->GetString("template");
         uint templateHash = templateName.HashCode();
-        IndexT templateIndex = MaterialTemplates::Lookup.FindIndex(templateHash);
+        IndexT templateIndex = MaterialTemplatesGPULang::Lookup.FindIndex(templateHash);
         n_assert_fmt(templateIndex != InvalidIndex, "Unknown material template '%s'", templateName.AsCharPtr());
-        const MaterialTemplates::Entry* materialTemplate = MaterialTemplates::Lookup.ValueAtIndex(templateIndex);
+        const MaterialTemplatesGPULang::Entry* materialTemplate = MaterialTemplatesGPULang::Lookup.ValueAtIndex(templateIndex);
         MaterialId id = CreateMaterial(materialTemplate);
         ret.id = id;
 
@@ -607,16 +608,17 @@ MaterialLoader::GetMaterialBindingBuffer()
 /**
 */
 CoreGraphics::BufferId
-MaterialLoader::GetMaterialBuffer(const MaterialTemplates::MaterialProperties type)
+MaterialLoader::GetMaterialBuffer(const MaterialTemplatesGPULang::MaterialProperties type)
 {
     switch (type)
     {
 #define X(x) \
-    case MaterialTemplates::MaterialProperties::x:\
+    case MaterialTemplatesGPULang::MaterialProperties::x:\
     return materialLoaderState.x##Materials.deviceBuffer;\
 
     PROPERTIES_LIST
 #undef X
+    default: break;
     }
     return CoreGraphics::InvalidBufferId;
 }

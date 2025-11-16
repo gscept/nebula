@@ -1,0 +1,291 @@
+//------------------------------------------------------------------------------
+//  gltf.gpul
+//  (C) 2025 Individual contributors, See LICENSE file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/geometrybase.gpuh>
+#include <lib/standard_shading.gpuh>
+#include <lib/decals.gpuh>
+
+UnpackGLTFNormal(tangent : f32x3, normal : f32x3, sign : f32, normalMapData : f32x4) f32x3
+{
+    const tan = normalize(tangent);
+    const norm = normalize(normal);
+    const bin = cross(norm, tan) * sign;
+    const tangentViewMatrix = f32x3x3(tan, bin, norm);
+    var tNormal = f32x3(0, 0, 0);
+    tNormal.xy = (normalMapData.xy * 2.0f) - 1.0f;
+    tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
+    return tangentViewMatrix * normalize((tNormal * f32x3(GLTFConstants.normalScale, GLTFConstants.normalScale, 1.0f)));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psGLTFDepthOnlyAlphaMask(in UV : f32x2) void
+{
+    const baseColor = sample2D(GLTFConstants.baseColorTexture, MaterialSampler, UV);
+    if (baseColor.a <= GLTFConstants.alphaCutoff) { discard; }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsGLTFStatic(
+        binding(0) in position : f32x3,
+        binding(1) in normal : f32x3,
+        binding(2) in uv : i32x2,
+        binding(3) in tangent : f32x4,
+        out Tangent : f32x4,
+        out Normal : f32x3,
+        out UV : f32x2,
+        out WorldSpacePos : f32x3
+) void
+{
+    const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
+    vertexExportCoordinates(ViewConstants.ViewProjection* modelSpace);
+    UV = UnpackUV(uv);
+
+    Tangent = f32x4((ObjectUniforms.Model * f32x4(tangent.xyz, 0)).xyz, tangent.w);
+    Normal = (ObjectUniforms.Model * f32x4(normal, 0)).xyz;
+    WorldSpacePos = modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsGLTFSkinned(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x4,
+    binding(7) in weights : f32x4,
+    binding(8) in indices : u32x4,
+    out Tangent : f32x4,
+    out Normal : f32x3,
+    out UV : f32x2,
+    out WorldSpacePos : f32x3
+) void
+{
+    const skinnedPos = SkinnedPosition(position, weights, indices);
+    const skinnedNormal = SkinnedNormal(normal, weights, indices);
+    const skinnedTangent = SkinnedNormal(tangent.xyz, weights, indices);
+
+    const modelSpace = ObjectUniforms.Model * skinnedPos;
+    vertexExportCoordinates(ViewConstants.ViewProjection* modelSpace);
+
+    UV = UnpackUV(uv);
+    Tangent = f32x4(normalize((ObjectUniforms.Model * skinnedTangent).xyz), tangent.w);
+    Normal = normalize((ObjectUniforms.Model * skinnedNormal).xyz);
+    WorldSpacePos = modelSpace.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+early_depth
+entry_point
+psGLTF(
+    in Tangent : f32x4,
+    in Normal : f32x3,
+    in UV : f32x2,
+    in WorldSpacePos : f32x3
+) void
+{
+    const baseColor = MaskColor(sample2D(GLTFConstants.baseColorTexture, MaterialSampler, UV) * GLTFConstants.baseColorFactor, GLTFConstants.alphaCutoff);
+    const metallicRoughness = sample2D(GLTFConstants.metallicRoughnessTexture, MaterialSampler, UV) * f32x4(1.0f, GLTFConstants.roughnessFactor, GLTFConstants.metallicFactor, 1.0f);
+    const emissive = sample2D(GLTFConstants.emissiveTexture, MaterialSampler, UV) * GLTFConstants.emissiveFactor;
+    const occlusion = sample2D(GLTFConstants.occlusionTexture, MaterialSampler, UV);
+    const normals = sample2D(GLTFConstants.normalTexture, NormalSampler, UV) * GLTFConstants.normalScale;
+    var material : f32x4;
+    material[MAT_METALLIC] = metallicRoughness.b;
+    material[MAT_ROUGHNESS] = metallicRoughness.g;
+    material[MAT_CAVITY] = occlusion.r;
+    material[MAT_EMISSIVE] = 0.0f; // TODO: Add support for emissive
+    const N = normalize(UnpackGLTFNormal(Tangent.xyz, Normal, Tangent.w, normals));
+
+    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
+    const F0 = CalculateF0(baseColor.rgb, material[MAT_METALLIC], f32x3(0.04));
+
+    var light = f32x3(0, 0, 0);
+    light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, baseColor.rgb, material, N);
+    //light += calcEnv(baseColor, F0, N, viewVec, material);
+    light += emissive.rgb;
+
+    pixelExportColor(PackColor(light.rgb, baseColor.a), UberShaderOutput.Albedo);
+    pixelExportColor(f32x4(N, 0), UberShaderOutput.Normals);
+    pixelExportColor(f32x4(F0, material[MAT_ROUGHNESS]), UberShaderOutput.Material);
+}
+
+//------------------------------------------------------------------------------
+//  Techniques
+//------------------------------------------------------------------------------
+
+@Mask("Static|Depth|AlphaMask")
+program GLTFStaticDepthAlphaMask
+{
+    VertexShader = vsDepthStaticAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthState;
+};
+
+@Mask("Static|Depth|AlphaMask|DoubleSided")
+program GLTFStaticDepthAlphaMaskDoubleSided
+{
+    VertexShader = vsDepthStaticAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+};
+
+@Mask("Skinned|Depth|AlphaMask")
+program GLTFSkinnedDepthAlphaMask
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthState;
+};
+
+@Mask("Skinned|Depth|AlphaMask|DoubleSided")
+program GLTFSkinnedDepthAlphaMaskDoubleSided
+{
+    VertexShader = vsDepthSkinnedAlphaMask;
+    PixelShader = psGLTFDepthOnlyAlphaMask;
+    RenderState = DepthStateDoubleSided;
+};
+
+@Mask("Static")
+program GLTFStatic
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.None;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DefaultState;
+};
+
+@Mask("Skinned")
+program GLTFSkinned
+{
+    VertexShader = vsGLTFSkinned;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.None;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DefaultState;
+};
+
+@Mask("Static|DoubleSided")
+program GLTFStaticDoubleSided
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.None;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DoubleSidedState;
+};
+
+@Mask("Skinned|DoubleSided")
+program GLTFSkinnedDoubleSided
+{
+    VertexShader = vsGLTFSkinned;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.None;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DoubleSidedState;
+};
+
+@Mask("Static|AlphaMask")
+program GLTFStaticAlphaMask
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DefaultState;
+};
+
+@Mask("Skinned|AlphaMask")
+program GLTFSkinnedAlphaMask
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DefaultState;
+};
+
+
+@Mask("Static|AlphaMask|DoubleSided")
+program GLTFStaticAlphaMaskDoubleSided
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DoubleSidedState;
+};
+
+
+@Mask("Skinned|AlphaMask|DoubleSided")
+program GLTFSkinnedAlphaMaskDoubleSided
+{
+    VertexShader = vsGLTFSkinned;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Masked;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = DoubleSidedState;
+};
+
+@Mask("Static|AlphaBlend")
+program GLTFStaticAlphaBlend
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Alpha;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = AlphaState;
+};
+
+@Mask("Skinned|AlphaBlend")
+program GLTFSkinnedAlphaBlend
+{
+    VertexShader = vsGLTFSkinned;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Alpha;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = AlphaState;
+};
+
+@Mask("Static|AlphaBlend|DoubleSided")
+program GLTFStaticAlphaBlendDoubleSided
+{
+    VertexShader = vsGLTFStatic;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Alpha;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = AlphaDoubleSidedState;
+};
+
+@Mask("Skinned|AlphaBlend|DoubleSided")
+program GLTFSkinnedAlphaBlendDoubleSided
+{
+    VertexShader = vsGLTFSkinned;
+    PixelShader = psGLTF;
+    ColorMaskMode = ColorMaskModes.Alpha;
+    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+    PackColorMethod = PackColorMethods.Solid;
+    RenderState = AlphaDoubleSidedState;
+};

@@ -1,0 +1,323 @@
+//------------------------------------------------------------------------------
+//  @file bccompression.gpuh
+//  @copyright (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+// Code from https://github.com/microsoft/Xbox-ATG-Samples/blob/main/XDKSamples/Graphics/FastBlockCompress/Shaders/BlockCompress.hlsli
+
+//--------------------------------------------------------------------------------------
+// Name: GetMinMaxRGB
+// Desc: Get the min and max of three channels (RGB)
+//--------------------------------------------------------------------------------------
+GetMinMaxRGB(colorBlock : [16]f32x3, minColor : *f32x3, maxColor : *f32x3) void
+{
+    *minColor = colorBlock[0];
+    *maxColor = colorBlock[0];
+
+    for (var i = 1; i < 16; ++i)
+    {
+        *minColor = min(*minColor, colorBlock[i]);
+        *maxColor = max(*maxColor, colorBlock[i]);
+    }
+}
+
+//--------------------------------------------------------------------------------------
+// Name: GetMinMaxChannel
+// Desc: Get the min and max of a single channel
+//--------------------------------------------------------------------------------------
+GetMinMaxChannel(block : [16]f32, minC : *f32, maxC : *f32) void
+{
+    *minC = block[0];
+    *maxC = block[0];
+
+    for (var i = 1; i < 16; ++i)
+    {
+        *minC = min(*minC, block[i]);
+        *maxC = max(*maxC, block[i]);
+    }
+}
+
+//--------------------------------------------------------------------------------------
+// Name: GetMinMaxUV
+// Desc: Get the min and max of two channels (UV)
+//--------------------------------------------------------------------------------------
+GetMinMaxUV(blockU : [16]f32, blockV : [16]f32, minU : *f32, maxU : *f32, minV : *f32, maxV : *f32) void
+{
+    *minU = blockU[0];
+    *maxU = blockU[0];
+    *minV = blockV[0];
+    *maxV = blockV[0];
+
+    for (var i = 1; i < 16; ++i)
+    {
+        *minU = min(*minU, blockU[i]);
+        *maxU = max(*maxU, blockU[i]);
+        *minV = min(*minV, blockV[i]);
+        *maxV = max(*maxV, blockV[i]);
+    }
+}
+
+//--------------------------------------------------------------------------------------
+// Name: InsetMinMaxRGB
+// Desc: Slightly inset the min and max color values to reduce RMS error.
+//      This is recommended by van Waveren & Castano, "Real-Time YCoCg-DXT Compression"
+//      http://www.nvidia.com/object/real-time-ycocg-dxt-compression.html
+//--------------------------------------------------------------------------------------
+InsetMinMaxRGB(minColor : *f32x3, maxColor : *f32x3, colorScale : f32) void
+{
+    // Since we have four points, (1/16) * (max-min) will give us half the distance between
+    //  two points on the line in color space
+    const offset = (1.0f / 16.0f) * (*maxColor - *minColor);
+
+    // After applying the offset, we want to round up or down to the next integral color value (0 to 255)
+    colorScale *= 255.0f;
+    *maxColor = ceil((*maxColor - offset) * colorScale) / colorScale;
+    *minColor = floor((*minColor + offset) * colorScale) / colorScale;
+}
+
+//--------------------------------------------------------------------------------------
+// Name: GetIndicesRGB
+// Desc: Calculate the BC block indices for each color in the block
+//--------------------------------------------------------------------------------------
+GetIndicesRGB(block : [16]f32x3, minColor : f32x3, maxColor : f32x3) u32
+{
+    var indices = 0u;
+
+    // For each input color, we need to select between one of the following output colors:
+    //  0: maxColor
+    //  1: (2/3)*maxColor + (1/3)*minColor
+    //  2: (1/3)*maxColor + (2/3)*minColor
+    //  3: minColor  
+    //
+    // We essentially just project (block[i] - maxColor) onto (minColor - maxColor), but we pull out
+    //  a few constant terms.
+    var diag = minColor - maxColor;
+    const stepInc = 3.0f / dot(diag, diag); // Scale up by 3, because our indices are between 0 and 3
+    diag *= stepInc;
+    const c = stepInc * (dot(maxColor, maxColor) - dot(maxColor, minColor));
+
+    for (var i = 15; i >= 0; --i)
+    {
+        // Compute the index for this block element
+        const index = u32(round(dot(block[i], diag) + c));
+
+        // Now we need to convert our index into the somewhat unintuivive BC1 indexing scheme:
+        //  0: maxColor
+        //  1: minColor
+        //  2: (2/3)*maxColor + (1/3)*minColor
+        //  3: (1/3)*maxColor + (2/3)*minColor
+        //
+        // The mapping is:
+        //  0 -> 0
+        //  1 -> 2
+        //  2 -> 3
+        //  3 -> 1
+        //
+        // We can perform this mapping using bitwise operations, which is faster
+        //  than predication or branching as long as it doesn't increase our register
+        //  count too much. The mapping in binary looks like:
+        //  00 -> 00
+        //  01 -> 10
+        //  10 -> 11
+        //  11 -> 01
+        //
+        // Splitting it up by bit, the output looks like:
+        //  bit1_out = bit0_in XOR bit1_in
+        //  bit0_out = bit1_in 
+        const bit0_in = index & 1;
+        const bit1_in = index >> 1;
+        indices |= ((bit0_in ^ bit1_in) << 1) | bit1_in;
+
+        if (i != 0)
+        {
+            indices <<= 2;
+        }
+    }
+
+    return indices;
+}
+
+//--------------------------------------------------------------------------------------
+// Name: GetIndicesAlpha
+// Desc: Calculate the BC block indices for an alpha channel
+//--------------------------------------------------------------------------------------
+GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, output : *u32x2) void
+{
+    const d = minA - maxA;
+    const stepInc = 7.0f / d;
+    var outputValue = *output;
+
+    // Both packed.x and packed.y contain index values, so we need two loops
+
+    var index = 0u;
+    var shift = 16u;
+    for (var i = 0; i < 6; ++i)
+    {
+        // For each input alpha value, we need to select between one of eight output values
+        //  0: maxA
+        //  1: (6/7)*maxA + (1/7)*minA
+        //  ...
+        //  6: (1/7)*maxA + (6/3)*minA
+        //  7: minA  
+        index = u32(round(stepInc * (block[i] - maxA)));
+
+        // Now we need to convert our index into the BC indexing scheme:
+        //  0: maxA
+        //  1: minA
+        //  2: (6/7)*maxA + (1/7)*minA
+        //  ...
+        //  7: (1/7)*maxA + (6/3)*minA
+        index += u32(index > 0u) - (7u * u32(index == 7u));
+
+        outputValue.x |= (index << shift);
+        shift += 3;
+    }
+
+    // The 6th index straddles the two uints
+    outputValue.y |= (index >> 1);
+
+    shift = 2u;
+    for (var i = 6; i < 16; ++i)
+    {
+        index = u32(round((block[i] - maxA) * stepInc));
+        index += u32(index > 0) - (7 * u32(index == 7));
+
+        outputValue.y |= (index << shift);
+        shift += 3;
+    }
+    *output = outputValue;
+}
+
+//--------------------------------------------------------------------------------------
+// Name: ColorTo565
+// Desc: Pack a 3-component color into a uint
+//--------------------------------------------------------------------------------------
+ColorTo565(color : f32x3) u32
+{
+    const rgb = u32x3(round(color * f32x3(31.0f, 63.0f, 31.0f)));
+    return (rgb.r << 11) | (rgb.g << 5) | rgb.b;
+}
+
+//--------------------------------------------------------------------------------------
+// Name: CompressBC3Block
+// Desc: Compress a BC3 block. valueScale is a scale value to be applied to the input 
+//          values; this used as an optimization when compressing two mips at a time.
+//          When compressing only a single mip, valueScale is always 1.0
+//--------------------------------------------------------------------------------------
+CompressBC3Block(blockRGB : [16]f32x3, blockA : [16]f32, valueScale : f32) u32x4
+{
+    var minColor, maxColor : f32x3;
+    var minA, maxA : f32;
+    GetMinMaxRGB(blockRGB, &minColor, &maxColor);
+    GetMinMaxChannel(blockA, &minA, &maxA);
+
+    // Inset the min and max color values. We don't inset the alpha values
+    //  because, while it may reduce the RMS error, it has a tendency to turn
+    //  fully opaque texels partially transparent, which is probably not desirable.
+    InsetMinMaxRGB(&minColor, &maxColor, valueScale);
+
+    // Pack our colors and alpha values into uints
+    const minColor565 = ColorTo565(valueScale * minColor);
+    const maxColor565 = ColorTo565(valueScale * maxColor);
+    const minAPacked = u32(round(minA * valueScale * 255.0f));
+    const maxAPacked = u32(round(maxA * valueScale * 255.0f));
+
+    var indices = 0u;
+    if minColor565 < maxColor565
+    {
+        indices = GetIndicesRGB(blockRGB, minColor, maxColor);
+    }
+
+    var outA = u32x2((minAPacked << 8) | maxAPacked, 0);
+    if minAPacked < maxAPacked
+    {
+        GetIndicesAlpha(blockA, minA, maxA, &outA);
+    }
+
+    return u32x4(outA.x, outA.y, (minColor565 << 16) | maxColor565, indices);
+}
+
+
+//--------------------------------------------------------------------------------------
+// Name: CompressBC5Block
+// Desc: Compress a BC5 block. valueScale is a scale value to be applied to the input 
+//          values; this used as an optimization when compressing two mips at a time.
+//          When compressing only a single mip, valueScale is always 1.0
+//--------------------------------------------------------------------------------------
+CompressBC5Block(blockU : [16]f32, blockV : [16]f32, valueScale : f32) u32x4
+{
+    var minU, maxU, minV, maxV : f32;
+    GetMinMaxUV(blockU, blockV, &minU, &maxU, &minV, &maxV);
+
+    // Pack our min and max uv values
+    const minUPacked = u32(round(minU * valueScale * 255.0f));
+    const maxUPacked = u32(round(maxU * valueScale * 255.0f));
+    const minVPacked = u32(round(minV * valueScale * 255.0f));
+    const maxVPacked = u32(round(maxV * valueScale * 255.0f));
+
+    var outU = u32x2((minUPacked << 8) | maxUPacked, 0);
+    var outV = u32x2((minVPacked << 8) | maxVPacked, 0);
+
+    if minUPacked < maxUPacked
+    {
+        GetIndicesAlpha(blockU, minU, maxU, &outU);
+    }
+
+    if minVPacked < maxVPacked
+    {
+        GetIndicesAlpha(blockV, minV, maxV, &outV);
+    }
+
+    return u32x4(outU.x, outU.y, outV.x, outV.y);
+}
+
+//--------------------------------------------------------------------------------------
+// Name: TexelToUV
+// Desc: Convert from a texel to the UV coordinates used in a Gather call
+//--------------------------------------------------------------------------------------
+TexelToUV(texel : f32x2, oneOverTextureWidth : f32) f32x2
+{
+    // We Gather from the bottom-right corner of the texel
+    return (texel + 1.0f) * oneOverTextureWidth;
+}
+
+//--------------------------------------------------------------------------------------
+// Name: LoadTexelsRGB
+// Desc: Load the 16 RGB texels that form a block
+//--------------------------------------------------------------------------------------
+LoadTexelsRGB(uniform tex : *texture2D, uniform samp : *sampler, oneOverTextureWidth : f32, threadIDWithinDispatch : u32x2, block : [16]f32x3) void
+{
+    const uv = TexelToUV(f32x2(threadIDWithinDispatch * 4), oneOverTextureWidth);
+
+    var red = textureGatherOffset(tex, samp, uv, 0, i32x2(0 ,0));
+    var green = textureGatherOffset(tex, samp, uv, 1, i32x2(0 ,0));
+    var blue = textureGatherOffset(tex, samp, uv, 2, i32x2(0 ,0));
+    block[0] = f32x3(red[3], green[3], blue[3]);
+    block[1] = f32x3(red[2], green[2], blue[2]);
+    block[4] = f32x3(red[0], green[0], blue[0]);
+    block[5] = f32x3(red[1], green[1], blue[1]);
+
+    red = textureGatherOffset(tex, samp, uv, 0, i32x2(2, 0));
+    green = textureGatherOffset(tex, samp, uv, 1, i32x2(2, 0));
+    blue = textureGatherOffset(tex, samp, uv, 2, i32x2(2, 0));
+    block[2] = f32x3(red[3], green[3], blue[3]);
+    block[3] = f32x3(red[2], green[2], blue[2]);
+    block[6] = f32x3(red[0], green[0], blue[0]);
+    block[7] = f32x3(red[1], green[1], blue[1]);
+
+    red = textureGatherOffset(tex, samp, uv, 0, i32x2(0, 2));
+    green = textureGatherOffset(tex, samp, uv, 1, i32x2(0, 2));
+    blue = textureGatherOffset(tex, samp, uv, 2, i32x2(0, 2));
+    block[8] = f32x3(red[3], green[3], blue[3]);
+    block[9] = f32x3(red[2], green[2], blue[2]);
+    block[12] = f32x3(red[0], green[0], blue[0]);
+    block[13] = f32x3(red[1], green[1], blue[1]);
+
+    red = textureGatherOffset(tex, samp, uv, 0, i32x2(2, 2));
+    green = textureGatherOffset(tex, samp, uv, 1, i32x2(2, 2));
+    blue = textureGatherOffset(tex, samp, uv, 2, i32x2(2, 2));
+    block[10] = f32x3(red[3], green[3], blue[3]);
+    block[11] = f32x3(red[2], green[2], blue[2]);
+    block[14] = f32x3(red[0], green[0], blue[0]);
+    block[15] = f32x3(red[1], green[1], blue[1]);
+}

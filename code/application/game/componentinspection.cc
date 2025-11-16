@@ -137,7 +137,7 @@ ComponentDrawFuncT<Game::Entity>(Game::Entity owner, ComponentId component, void
         //else
         {
             Ids::Id64 id = (Ids::Id64)*entity;
-            ImGui::Text("%u", desc->name.Value(), id);
+            ImGui::Text("%s %lu", desc->name.Value(), id);
             ImGui::SameLine();
             ImGui::TextDisabled("| gen: %i | index: %i", entity->generation, entity->index);
         }

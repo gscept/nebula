@@ -1,0 +1,62 @@
+//------------------------------------------------------------------------------
+//  cluster_generate.gpul
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include <lib/std.gpuh>
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/clustering.gpuh>
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(64)
+entry_point
+csClusterAABB() void
+{
+    const index1D = computeGetGlobalThreadIndices().x;
+    const index3D = Unpack1DTo3D(index1D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    if index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z { return; }
+
+    // Calculate near and far plane in the XY plane, offset at our Z offset
+    const nearPlane  = f32x4(0, 0, 1.0f, -ViewConstants.FocalLengthNearFar.z * pow(ClusterUniforms.ZDistribution, index3D.z / f32(ClusterUniforms.NumCells.z)));
+    const farPlane   = f32x4(0, 0, 1.0f, -ViewConstants.FocalLengthNearFar.z * pow(ClusterUniforms.ZDistribution, (index3D.z + 1) / f32(ClusterUniforms.NumCells.z)));
+
+    // Transform the corners to view space
+    const minCorner = PixelToView(index3D.xy * f32x2(ClusterUniforms.BlockSize) * ClusterUniforms.InvFramebufferDimensions, 1, ViewConstants.InvProjection);
+    const maxCorner = PixelToView((index3D.xy + i32x2(1.0f)) * f32x2(ClusterUniforms.BlockSize) * ClusterUniforms.InvFramebufferDimensions, 1, ViewConstants.InvProjection);
+
+    // Trace a ray from the eye (origin) towards the four corner points
+    const eye = f32x3(0);
+    const intersection0 = IntersectLineWithPlane(eye, minCorner.xyz, nearPlane);
+    const nearMin = intersection0.point;
+    const intersection1 = IntersectLineWithPlane(eye, maxCorner.xyz, nearPlane);
+    const nearMax = intersection1.point;
+    const intersection2 = IntersectLineWithPlane(eye, minCorner.xyz, farPlane);
+    const farMin = intersection2.point;
+    const intersection3 = IntersectLineWithPlane(eye, maxCorner.xyz, farPlane);
+    const farMax = intersection3.point;
+
+    // Calculate AABB using min and max
+    var aabb : ClusterAABB;
+    aabb.minPoint = f32x4(min(nearMin, min(nearMax, min(farMin, farMax))), 1);
+    aabb.maxPoint = f32x4(max(nearMin, max(nearMax, max(farMin, farMax))), 1);
+    const extents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
+    const radius = dot(extents, extents);
+    aabb.featureFlags = 0u;
+    aabb.minPoint.w = radius;
+    aabb.maxPoint.w = sqrt(radius);
+    bufferStore(ClusterAABBs, index1D, aabb);
+    //ClusterAABBs[index1D] = aabb;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("AABBGenerate")
+program AABBGenerate
+{
+    ComputeShader = csClusterAABB;
+};

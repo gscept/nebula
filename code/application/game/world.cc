@@ -1614,7 +1614,7 @@ World::RenderDebug()
                 ImGui::TextColored(
                     {1, 0.3f, 0, 1},
                     "tid:%i, partition: %i, index: %i",
-                    entityMapping.table,
+                    entityMapping.table.id,
                     entityMapping.instance.partition,
                     entityMapping.instance.index
                 );
@@ -1633,11 +1633,11 @@ World::RenderDebug()
                         ownerBuffer = (byte*)ownerBuffer + (row.index * sizeof(Game::Entity));
                         Game::Entity owner = *(Game::Entity*)ownerBuffer;
 
-                        ImGui::TextDisabled("Entity: %llu", (uint64_t)owner);
-                        ImGui::TextDisabled("Entity.world: %llu", (uint64_t)owner.world);
-                        ImGui::TextDisabled("Entity.reserved: %llu", (uint64_t)owner.reserved);
-                        ImGui::TextDisabled("Entity.generation: %llu", (uint64_t)owner.generation);
-                        ImGui::TextDisabled("Entity.index: %llu", (uint64_t)owner.index);
+                        ImGui::TextDisabled("Entity: %" PRIu64, (uint64_t)owner);
+                        ImGui::TextDisabled("Entity.world: %" PRIu64, (uint64_t)owner.world);
+                        ImGui::TextDisabled("Entity.reserved: %" PRIu64, (uint64_t)owner.reserved);
+                        ImGui::TextDisabled("Entity.generation: %" PRIu64, (uint64_t)owner.generation);
+                        ImGui::TextDisabled("Entity.index: %" PRIu64, (uint64_t)owner.index);
 
                         bool prevDebugState = Game::ComponentInspection::Instance()->debug;
                         Game::ComponentInspection::Instance()->debug = true;

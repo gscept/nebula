@@ -1,0 +1,22 @@
+//------------------------------------------------------------------------------
+//  indirectdraw.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+// struct defined by the Vulkan spec
+struct DrawCommand
+{
+    vertexCount : u32;
+    instanceCount : u32;
+    startVertex : u32;
+    startInstance : u32;
+};
+
+struct DrawIndexedCommand
+{
+    indexCount : u32;
+    instanceCount : u32;
+    startIndex : u32;
+    offsetVertex : u32;
+    startInstance : u32;
+};

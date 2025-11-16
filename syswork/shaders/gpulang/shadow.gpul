@@ -1,0 +1,152 @@
+//------------------------------------------------------------------------------
+//  shadow.fx
+//
+//  Defines shadows for standard geometry
+//
+//  (C) 2013 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/skinning.gpuh"
+#include "lib/shadowbase.gpuh"
+#include "lib/util.gpuh"
+
+//------------------------------------------------------------------------------
+/**
+*/
+
+// Spot light methods
+
+@Mask("Spot|Static")
+program Spotlight
+{
+    VertexShader = vsStaticShadow;
+    PixelShader = psShadow;
+    RenderState = ShadowState;
+};
+
+@Mask("Spot|Alpha")
+program SpotlightAlpha
+{
+    VertexShader = vsStaticShadow;
+    PixelShader = psShadowAlpha;
+    RenderState = ShadowState;
+};
+
+@Mask("Spot|Skinned")
+program SpotlightSkinned
+{
+    VertexShader = vsSkinnedShadow;
+    PixelShader = psShadow;
+    RenderState = ShadowState;
+};
+
+@Mask("Spot|Skinned|Alpha")
+program SpotlightSkinnedAlpha
+{
+    VertexShader = vsSkinnedShadow;
+    PixelShader = psShadowAlpha;
+    RenderState = ShadowState;
+};
+
+@Mask("Spot|Static|Instanced")
+program SpotlightInstanced
+{
+    VertexShader = vsStaticInst;
+    PixelShader = psShadow;
+    RenderState = ShadowState;
+};
+
+// Pointlight methods
+
+@Mask("Point|Static")
+program PointlightDefault
+{
+    VertexShader = vsStaticPoint;
+    PixelShader = psVSMPoint;
+    RenderState = ShadowState;
+};
+
+@Mask("Point|Alpha")
+program PointlightAlpha
+{
+    VertexShader = vsStaticPoint;
+    PixelShader = psVSMAlphaPoint;
+    RenderState = ShadowState;
+};
+
+@Mask("Point|Skinned")
+program PointlightSkinned
+{
+    VertexShader = vsSkinnedPoint;
+    PixelShader = psVSMPoint;
+    RenderState = ShadowState;
+};
+
+@Mask("Point|Skinned|Alpha")
+program PointlightSkinnedAlpha
+{
+    VertexShader = vsSkinnedPoint;
+    PixelShader = psVSMAlphaPoint;
+    RenderState = ShadowState;
+};
+
+@Mask("Point|Static|Instanced")
+program PointlightInstanced
+{
+    VertexShader = vsStaticInstPoint;
+    PixelShader = psVSMPoint;
+    RenderState = ShadowState;
+};
+
+
+// CSM methods
+
+@Mask("Global|Static")
+program CSM
+{
+    VertexShader = vsStaticCSM;
+    PixelShader = psShadow;
+    RenderState = ShadowState;
+};
+
+@Mask("Global|Alpha")
+program CSMAlpha
+{
+    VertexShader = vsStaticCSM;
+    PixelShader = psShadowAlpha;
+    RenderState = ShadowState;
+};
+
+@Mask("Global|Static|Instanced")
+program CSMInstanced
+{
+    VertexShader = vsStaticInstCSM;
+    PixelShader = psShadow;
+    RenderState = ShadowState;
+};
+
+@Mask("Global|Alpha|Instanced")
+program CSMInstancedAlpha
+{
+    VertexShader = vsStaticInstCSM;
+    PixelShader = psShadowAlpha;
+    RenderState = ShadowState;
+};
+
+@Mask("Global|Skinned")
+program CSMSkinned
+{
+    VertexShader = vsSkinnedCSM;
+    PixelShader = psShadow;
+    RenderState = ShadowState;
+};
+
+@Mask("Global|Skinned|Alpha")
+program CSMSkinnedAlpha
+{
+    VertexShader = vsSkinnedCSM;
+    PixelShader = psShadowAlpha;
+    RenderState = ShadowState;
+};

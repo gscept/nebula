@@ -130,6 +130,8 @@ GetSpecialKey(Input::Key::Code code)
         return tb::TB_KEY_F11;
     case Input::Key::Code::F12:
         return tb::TB_KEY_F12;
+    default: 
+        break;
     }
 
     return key;

@@ -279,7 +279,7 @@ AssetEditor::Open(const Resources::ResourceName& asset, const AssetType type)
 
     // Otherwise, trigger an async load and setup a new item
     Resources::CreateResource(asset, "editor",
-        [this, asset, type](Resources::ResourceId id)
+        [asset, type](Resources::ResourceId id)
         {
             AssetEditorItem& item = assetEditorState.items.Emplace();
             item.asset.id = id.resourceId;

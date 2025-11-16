@@ -142,7 +142,7 @@ Im3dContext::Create()
     //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
     // allocate im3d shader
-    imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.fxb");
+    imState.im3dShader = CoreGraphics::ShaderGet("shd:im3d/shaders/im3d.gplb");
     imState.lines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Lines"));
     imState.depthLines = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("StaticDepth|Lines"));
     imState.points = CoreGraphics::ShaderGetProgram(imState.im3dShader, CoreGraphics::ShaderFeatureMask("Static|Points"));

@@ -19,7 +19,7 @@ Threading::CriticalSection materialTextureLoadSection;
 /**
 */
 MaterialId
-CreateMaterial(const MaterialTemplates::Entry* entry)
+CreateMaterial(const MaterialTemplatesGPULang::Entry* entry)
 {
     Ids::Id32 id = materialAllocator.Alloc();
 
@@ -168,7 +168,7 @@ DestroyMaterial(const MaterialId id)
 void
 MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, const Resources::ResourceId tex)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
 
 #ifdef WITH_NEBULA_EDITOR
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
@@ -188,7 +188,7 @@ MaterialSetTexture(const MaterialId mat, const ShaderConfigBatchTexture* bind, c
 void
 MaterialSetTexture(const MaterialId mat, uint name, const Resources::ResourceId tex)
 {
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
 
 #ifdef WITH_NEBULA_EDITOR
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
@@ -216,7 +216,7 @@ MaterialSetTextureBindless(const MaterialId mat, uint name, const uint handle, c
 {
 
 #ifdef WITH_NEBULA_EDITOR
-    const MaterialTemplates::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
+    const MaterialTemplatesGPULang::Entry* temp = materialAllocator.Get<Material_Template>(mat.id);
     Util::Array<Resources::ResourceId>& textures = materialAllocator.Get<Material_TextureValues>(mat.id);
     textures[temp->texturesByHash[name]->textureIndex] = tex;
 #endif
@@ -309,7 +309,7 @@ MaterialSetLowestLod(const MaterialId mat, float lod)
 //------------------------------------------------------------------------------
 /**
 */
-const MaterialTemplates::Entry*
+const MaterialTemplatesGPULang::Entry*
 MaterialGetTemplate(const MaterialId mat)
 {
     return materialAllocator.Get<Material_Template>(mat.id);
@@ -319,7 +319,7 @@ MaterialGetTemplate(const MaterialId mat)
 /**
 */
 const Materials::BatchIndex
-MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplates::BatchGroup batch)
+MaterialGetBatchIndex(const MaterialId mat, const MaterialTemplatesGPULang::BatchGroup batch)
 {
     return materialAllocator.Get<Material_Template>(mat.id)->passes[batch]->index;
 }

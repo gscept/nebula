@@ -1,0 +1,858 @@
+//------------------------------------------------------------------------------
+//  lighting_functions.gpuh
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/shadowbase.gpuh>
+#include <lib/pbr.gpuh>
+#include <lib/ltc.gpuh>
+#include <lib/CSM.gpuh>
+#include <lib/clustering.gpuh>
+#include <lib/ddgi.gpuh>
+
+// match these in lightcontext.cc
+const USE_SHADOW_BITFLAG = 0x1u;
+const USE_PROJECTION_TEX_BITFLAG = 0x2u;
+const AREA_LIGHT_SHAPE_RECT = 0x4u;
+const AREA_LIGHT_SHAPE_DISK = 0x8u;
+const AREA_LIGHT_SHAPE_TUBE = 0x10u;
+const AREA_LIGHT_TWOSIDED = 0x20u;
+
+FlagSet(x : u32, flags : u32) b8
+{
+    return (x & flags) == flags;
+}
+
+const SPECULAR_SCALE = 13;
+ROUGHNESS_TO_SPECPOWER(x : f32) f32 { return exp2(SPECULAR_SCALE * x + 1); }
+
+//------------------------------------------------------------------------------
+/**
+    GLTF recommended inverse square falloff
+    https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_lights_punctual/README.md#range-property
+*/
+InvSquareFalloff(maxRange : f32, currentDistance : f32, lightDir : f32x3) f32
+{
+    return max(min(1.0f - pow(currentDistance / maxRange, 4.0f), 1.0f), 0.0f) / pow(currentDistance, 2);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FalloffWindow(radius : f32, lightDir : f32x3) f32
+{
+    const dist2 = dot(lightDir, lightDir);
+    return saturate(1.0f - dist2 / sqr(radius));
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+/**
+*/
+GetInvertedOcclusionSpotLight(
+    receiverDepthInLightSpace : f32,
+    lightSpaceUv : f32x2,
+    Index : u32,
+    Texture : u32
+) f32
+{
+
+    // offset and scale shadow lookup tex coordinates
+    const shadowUv = f32x3(lightSpaceUv, Index);
+
+    // calculate average of 4 closest pixels
+    var shadowSample = f32x2(0.0f);
+    if (gplIsComputeShader)
+    {
+        shadowSample = sample2DArrayLod(Texture, SpotlightTextureSampler, shadowUv, 0).rg;
+    }
+    else
+    {
+        shadowSample = sample2DArray(Texture, SpotlightTextureSampler, shadowUv).rg;
+    }
+
+    // get pixel size of shadow projection texture
+    return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.000001f);
+}
+
+//---------------------------------------------------------------------------------------------------------------------------
+/**
+*/
+GetInvertedOcclusionPointLight(
+    receiverDepthInLightSpace : f32,
+    lightSpaceUv : f32x3,
+    Texture : u32
+) f32
+{
+
+    // offset and scale shadow lookup tex coordinates
+    const shadowUv = lightSpaceUv;
+
+    // get pixel size of shadow projection texture
+    const shadowSample = sampleCube(Texture, PointLightTextureSampler, shadowUv).rg;
+
+    // get pixel size of shadow projection texture
+    return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.00000001f);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculate point light for ambient, specular and shadows
+*/
+CalculatePointLight(
+    light : PointLight,
+    ext : PointLightShadowExtension,
+    pos : f32x3,
+    viewVec : f32x3, 
+    normal : f32x3, 
+    depth : f32, 
+    material : f32x4, 
+    diffuseColor : f32x3,
+    F0 : f32x3
+) f32x3
+{
+    var lightDir = (light.position.xyz - pos);
+    const lightDirLen = length(lightDir);
+
+    const d2 = lightDirLen * lightDirLen;
+    const factor = d2 / (light.range * light.range);
+    const sf = saturate(1.0 - factor * factor);
+    const att = (sf * sf) / max(d2, 0.0001);
+
+    const oneDivLightDirLen = 1.0f / lightDirLen;
+    lightDir = lightDir * oneDivLightDirLen;
+
+    const H = normalize(lightDir.xyz + viewVec);
+    const NL = saturate(dot(lightDir, normal));
+    const NH = saturate(dot(normal, H));
+    const NV = saturate(dot(normal, viewVec));
+    const LH = saturate(dot(H, lightDir.xyz)); 
+
+    const brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
+
+    const radiance = light.color * att;
+    const irradiance = (brdf * radiance) * saturate(NL);
+
+    var shadowFactor = 1.0f;
+    if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
+    {
+        const projDir = (ViewConstants.InvView * f32x4(-lightDir, 0)).xyz;
+        shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
+        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
+    }
+
+    return irradiance * shadowFactor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateSpotLightProjection(
+    light : SpotLight
+    , projExt : SpotLightProjectionExtension
+    , pos : f32x3
+) f32x4
+{
+    var projLightPos = projExt.projection * f32x4(pos, 1.0f);
+    projLightPos.xy /= projLightPos.ww;
+    const lightSpaceUv = projLightPos.xy * f32x2(0.5f, 0.5f) + 0.5f;
+    return sample2DLod(projExt.projectionTexture, SpotlightTextureSampler, lightSpaceUv, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateSpotLightShadow(
+    light : SpotLight
+    , shadowExt : SpotLightShadowExtension
+    , pos : f32x3
+) f32
+{
+    var shadowProjLightPos = shadowExt.projection * f32x4(pos, 1.0f);
+    shadowProjLightPos.xyz /= shadowProjLightPos.www;
+    var shadowLookup = shadowProjLightPos.xy * f32x2(0.5f, -0.5f) + 0.5f;
+    shadowLookup.y = 1 - shadowLookup.y;
+    const receiverDepth = shadowProjLightPos.z;
+    const shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, light.shadowExtension, shadowExt.shadowMap);
+    return saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateSpotLight(
+    light : SpotLight,
+    projection : f32x4,
+    shadow : f32,
+    pos : f32x3,
+    viewVec : f32x3,
+    normal : f32x3,
+    material : f32x4, 
+    diffuseColor : f32x3,
+    F0 : f32x3
+) f32x3
+{
+    var lightDir = (light.position - pos);
+    const lightDirLen = length(lightDir);
+
+    const att = InvSquareFalloff(light.range, lightDirLen, lightDir);
+
+    const oneDivLightDirLen = 1.0f / lightDirLen;
+    lightDir = lightDir * oneDivLightDirLen;
+
+    const theta = dot(light.forward.xyz, lightDir);
+    const intensity = saturate((theta - light.angleSinCos.y) * light.angleFade);
+
+    var lightModColor = f32x3(intensity) * att;
+    lightModColor *= projection.rgb;
+
+    const H = normalize(lightDir.xyz + viewVec);
+    const NL = saturate(dot(lightDir, normal));
+    const NH = saturate(dot(normal, H));
+    const NV = saturate(dot(normal, viewVec));
+    const LH = saturate(dot(H, lightDir.xyz)); 
+    
+    const brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
+
+    const radiance = light.color;
+    const irradiance = (brdf * radiance) * saturate(NL);
+
+    return irradiance * shadow * lightModColor.rgb;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateRectLight(
+    li: AreaLight,
+    pos : f32x3,
+    viewVec : f32x3,
+    normal : f32x3,
+    material : f32x4,
+    albedo : f32x3,
+    twoSided : b8
+) f32x3
+{
+    const lightDir = (li.position.xyz - pos);
+    const attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001) { return f32x3(0); }
+
+    // Calculate LTC LUT uv
+    const NV = saturate(dot(normal, viewVec));
+    const ltcRoughness = sqr(material[MAT_ROUGHNESS]);
+    var uv = f32x2(clamp(0.01, 0.98, ltcRoughness), sqrt(1.0 - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    const t1 = sample2D(PerTickParams.ltcLUT0, LinearSampler, uv);
+
+    // Transform 4 rect points to light
+    var points : [4]f32x3;
+    const dx = li.xAxis * li.width;
+    const dy = li.yAxis * li.height;
+
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx - dy;
+    points[2] = li.position + dx + dy;
+    points[3] = li.position - dx + dy;
+
+    // Construct linear cosine transform
+    const minv = f32x3x3(
+        f32x3(t1.x, 0, t1.y),
+        f32x3(0, 1, 0),
+        f32x3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    const spec = f32x3(LtcRectIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
+
+    // Integrate diffuse
+    const diff = f32x3(LtcRectIntegrate(normal, viewVec, pos, f32x3x3(), points, false, twoSided)) * albedo;
+
+    return li.color * (spec + diff) * attenuation;
+}
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateDiskLight(
+    li: AreaLight,
+    pos : f32x3,
+    viewVec : f32x3,
+    normal : f32x3,
+    material : f32x4,
+    albedo : f32x3,
+    twoSided : b8
+) f32x3
+{
+    const lightDir = (li.position.xyz - pos);
+    const attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001) { return f32x3(0); }
+        
+
+    // Calculate LTC LUT uv
+    const NV = saturate(dot(normal, viewVec));
+    const ltcRoughness = sqr(material[MAT_ROUGHNESS]);
+    var uv = f32x2(clamp(0.01, 0.98, ltcRoughness), sqrt(1.0 - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    const t1 = sample2DLod(PerTickParams.ltcLUT0, LinearSampler, uv, 0);
+
+    // Transform 3 points to define a disk
+    var points : [3]f32x3;
+
+    // Because of some numerical instability, we slightly increase the size in Y for the disk
+    const dx = li.xAxis * li.width;
+    const dy = li.yAxis * li.height;
+    points[0] = li.position + dx - dy;
+    points[1] = li.position - dx - dy;
+    points[2] = li.position - dx + dy;
+
+    // Construct linear cosine transform
+    const minv = f32x3x3(
+        f32x3(t1.x, 0, t1.y),
+        f32x3(0, 1, 0),
+        f32x3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    const spec = f32x3(LtcDiskIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
+
+    // Integrate diffuse
+    const diff = f32x3(LtcDiskIntegrate(normal, viewVec, pos, f32x3x3(), points, false, twoSided)) * albedo;
+
+    return li.color * (diff + spec) * attenuation;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateTubeLight(
+    li: AreaLight,
+    pos: f32x3,
+    viewVec: f32x3,
+    normal: f32x3,
+    material: f32x4,
+    albedo: f32x3,
+    twoSided: b8
+) f32x3
+{
+    const lightDir = (li.position.xyz - pos);
+    const attenuation = FalloffWindow(li.range, lightDir);
+    if (attenuation < 0.0001) { return f32x3(0); }
+
+    // Calculate LTC LUT uv
+    const NV = saturate(dot(normal, viewVec));
+    const ltcRoughness = sqr(material[MAT_ROUGHNESS]);
+    var uv = f32x2(clamp(0.01, 0.98, ltcRoughness), sqrt(1.0 - NV));
+    uv = uv * LUT_SCALE + LUT_BIAS;
+
+    // Sample LTC LUTs
+    const t1 = sample2DLod(PerTickParams.ltcLUT0, LinearSampler, uv, 0);
+
+    // Define tube endpoints
+    var points: [2]f32x3;
+    const dx = li.xAxis * li.width;
+    const dy = li.yAxis * li.height;
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx + dy;
+
+    // Construct linear cosine transform
+    const minv = f32x3x3(
+        f32x3(t1.x, 0, t1.y),
+        f32x3(0, 1, 0),
+        f32x3(t1.z, 0, t1.w)
+    );
+
+    // Integrate specular
+    const spec = f32x3(LtcLineIntegrate(normal, viewVec, pos, li.radius, minv, points));
+
+    // Integrate diffuse
+    const diff = f32x3(LtcLineIntegrate(normal, viewVec, pos, li.radius, f32x3x3(), points)) * albedo;
+
+    return li.color * (spec + diff) * (1.0 / (2 * PI)) * attenuation;
+}
+
+//------------------------------------------------------------------------------
+/**
+    @param diffuseColor		Material's diffuse reflectance color
+    @param material			Material parameters (metallic, roughness, cavity)
+    @param F0				Fresnel reflectance at 0 degree incidence angle
+    @param viewVec			Unit vector from cameras worldspace position to fragments world space position.
+    @param viewSpacePos		Fragments position in viewspace; used for shadowing.
+*/
+CalculateGlobalLight(
+    diffuseColor : f32x3
+    , material : f32x4
+    , F0 : f32x3
+    , viewVec : f32x3
+    , worldSpaceNormal : f32x3
+    , worldSpacePosition : f32x3
+) f32x3
+{
+    const NL = saturate(dot(PerTickParams.GlobalLightDirWorldspace.xyz, worldSpaceNormal));
+    if (NL <= 0) { return f32x3(0); }
+
+
+    var shadowFactor = 1.0f;
+    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
+    {
+        // CSM transform takes us from world space to light view space
+        const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(worldSpacePosition, 1);
+        shadowFactor = CSMPS(shadowPos,	PerTickParams.GlobalLightShadowBuffer);
+
+        if (PerTickParams.EnableTerrainShadows == 1)
+        {
+            const terrainUv = mad(worldSpacePosition.xz, PerTickParams.InvTerrainSize, f32x2(0.5f));
+            //shadowFactor *= sample2DLod(PerTickParams.TerrainShadowBuffer, CSMTextureSampler, terrainUv, 0).r;
+            const terrainShadow = TerrainShadows(PerTickParams.TerrainShadowBuffer, terrainUv, PerTickParams.TerrainShadowMapPixelSize);
+            const blend = abs(worldSpacePosition.y - terrainShadow.y * 0.8f) / (terrainShadow.y - terrainShadow.y * 0.8f);
+            shadowFactor *= terrainShadow.x * blend;
+        }
+        
+        //shadowFactor *= terrainShadow.x < 1.0f ?  * terrainShadow.x : 1.0f;
+        //shadowFactor *= lerp(1.0f, terrainShadow.x, smoothstep(terrainShadow.y * 0.8f, terrainShadow.y, worldSpacePosition.y));
+
+        shadowFactor = lerp(1.0f, shadowFactor, PerTickParams.GlobalLightShadowIntensity);
+    }
+
+    const H = normalize(PerTickParams.GlobalLightDirWorldspace.xyz + viewVec);
+    const NV = saturate(dot(worldSpaceNormal, viewVec));
+    const NH = saturate(dot(worldSpaceNormal, H));
+    const LH = saturate(dot(H, PerTickParams.GlobalLightDirWorldspace.xyz));
+
+    const  brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
+
+    const radiance = PerTickParams.GlobalLightColor.xyz;
+    var irradiance = (brdf * radiance) * saturate(NL) + PerTickParams.GlobalAmbientLightColor.xyz;
+
+    return irradiance * shadowFactor;
+}
+
+//------------------------------------------------------------------------------
+/**
+    @param clusterIndex		The 1D cluster/bucket index to evaluate
+    @param diffuseColor		Material's diffuse reflectance color
+    @param material			Material parameters (metallic, roughness, cavity)
+    @param F0				Fresnel reflectance at 0 degree incidence angle
+    @param viewPos			The fragments position in view space
+    @param normal       	The fragments normal
+    @param depth			The fragments depth (gl_FragCoord.z)
+*/
+LocalLights(
+    clusterIndex : u32
+    , viewVec : f32x3
+    , diffuseColor : f32x3
+    , material : f32x4
+    , F0 : f32x3
+    , pos : f32x3
+    , normal : f32x3
+    , depth : f32
+) f32x3
+{
+    var light = f32x3(0, 0, 0);
+    const aabb = bufferLoad(ClusterAABBs, clusterIndex);
+    const flag = aabb.featureFlags;
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
+    {
+        // shade point lights
+        const count = LightIndexLists.PointLightCountList[clusterIndex];
+        var ext : PointLightShadowExtension;
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const lidx = LightIndexLists.PointLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
+            const li = LightLists.PointLights[lidx];
+            light += CalculatePointLight(
+                li,
+                ext,
+                pos,
+                viewVec,
+                normal,
+                depth,
+                material,
+                diffuseColor,
+                F0
+            );
+        }
+    }
+    if CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT)
+    {
+        const count = LightIndexLists.SpotLightCountList[clusterIndex];
+        var shadowExt : SpotLightShadowExtension;
+        var projExt : SpotLightProjectionExtension;
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const lidx = LightIndexLists.SpotLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
+            const li = LightLists.SpotLights[lidx];
+            var projection = f32x4(1.0f);
+            var shadow = 1.0f;
+
+            // if we have extensions, load them from their respective buffers
+            if (li.shadowExtension != -1)
+            {
+                shadow = CalculateSpotLightShadow(li, LightLists.SpotLightShadow[li.shadowExtension], pos);
+            }
+            if (li.projectionExtension != -1)  
+            {
+                projection = CalculateSpotLightProjection(li, LightLists.SpotLightProjection[li.projectionExtension], pos);
+            }
+
+            light += CalculateSpotLight(
+                li,
+                projection,
+                shadow,
+                pos,
+                viewVec,
+                normal,
+                material,
+                diffuseColor,
+                F0
+            );
+        }
+    }
+
+    if (CheckFlags(flag, CLUSTER_AREALIGHT_BIT))
+    {
+        const count = LightIndexLists.AreaLightCountList[clusterIndex];
+        var shadowExt : AreaLightShadowExtension;
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const lidx = LightIndexLists.AreaLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
+            const li = LightLists.AreaLights[lidx];
+
+            if (li.shadowExtension != -1)
+            {
+                shadowExt = LightLists.AreaLightShadow[li.shadowExtension];
+            }
+
+            if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_RECT))
+            {
+                light += CalculateRectLight(
+                    li
+                    , pos
+                    , viewVec
+                    , normal
+                    , material
+                    , diffuseColor
+                    , CheckFlags(li.flags, AREA_LIGHT_TWOSIDED)
+                );
+            }
+            else if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_DISK))
+            {
+                light += CalculateDiskLight(
+                    li
+                    , pos
+                    , viewVec
+                    , normal
+                    , material
+                    , diffuseColor
+                    , CheckFlags(li.flags, AREA_LIGHT_TWOSIDED)
+                );
+            }
+            else if (CheckFlags(li.flags, AREA_LIGHT_SHAPE_TUBE))
+            {
+                light += CalculateTubeLight(
+                    li
+                    , pos
+                    , viewVec
+                    , normal
+                    , material
+                    , diffuseColor
+                    , CheckFlags(li.flags, AREA_LIGHT_TWOSIDED)
+                );
+            }
+        }
+    }
+    return light;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+GI(
+    clusterIndex : u32
+    , viewVec : f32x3
+    , pos : f32x3
+    , normal : f32x3
+    , albedo : f32x3
+) f32x3
+{
+    var accumulatedGi = f32x3(0, 0, 0);
+    const aabb = bufferLoad(ClusterAABBs, clusterIndex);
+    const flag = aabb.featureFlags;
+    if (CheckFlags(flag, CLUSTER_GI_VOLUME_BIT))
+    {
+        const count = GIIndexLists.GIVolumeCountList[clusterIndex];
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const lidx = GIIndexLists.GIVolumeIndexLists[clusterIndex * MAX_GI_VOLUMES_PER_CLUSTER + i];
+            const gi = GIVolumeLists.GIVolumes[lidx];
+            const relativePosition = pos - gi.Offset;
+            /// TODO: Rotate
+            if relativePosition.x > gi.Size.x || relativePosition.y > gi.Size.y || relativePosition.z > gi.Size.z { continue; }
+                
+            const edgeDistance = gi.Size - abs(relativePosition);
+            const edgeMinDistance = min(min(edgeDistance.x, edgeDistance.y), edgeDistance.z);
+            var weight = 0.0f;
+            if (gi.Blend == 0.0f)
+            {
+                weight = (edgeMinDistance < gi.BlendCutoff) ? 0.0f : 1.0f;
+            }
+            else   
+            {
+                weight = clamp((edgeMinDistance - gi.BlendCutoff) / gi.Blend, 0.0f, 1.0f);
+            }
+            
+            const surfaceBias = DDGISurfaceBias(normal, viewVec, gi.NormalBias, gi.ViewBias);
+            //light += vec3(1,0,0);
+            const volumeGI = max(f32x3(0), EvaluateDDGIIrradiance(pos, surfaceBias, normal, gi, gi.Options) * (albedo / PI) / gi.IrradianceScale);
+            accumulatedGi = lerp(accumulatedGi, volumeGI, f32x3(weight));
+        }
+    }
+    return accumulatedGi;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+
+CalculatePointLightAmbientTransmission(
+    light : PointLight,
+    ext : PointLightShadowExtension,
+    pos : f32x3,
+    viewVec : f32x3,
+    normal : f32x3,
+    depth : f32,
+    material : f32x4,
+    albedo : f32x4,
+    transmission : f32
+) f32x3
+{
+    var lightDir = (light.position.xyz - pos);
+    const lightDirLen = length(lightDir);
+
+    const d2 = lightDirLen * lightDirLen;
+    const factor = d2 / (light.range * light.range);
+    const sf = saturate(1.0 - factor * factor);
+    const att = (sf * sf) / max(d2, 0.0001);
+    lightDir = lightDir / lightDirLen;
+
+    const NL = saturate(dot(lightDir, normal));
+    const TNL = saturate(dot(-lightDir, normal)) * transmission;
+    const radiance = light.color * att * saturate(NL + TNL) * albedo.rgb;
+
+    var shadowFactor = 1.0f;
+    if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
+    {
+        // TODO: The View here must be inferred from the view vector instead of relying the camera matrix
+        const projDir = (ViewConstants.InvView * f32x4(-lightDir, 0)).xyz;
+        shadowFactor = GetInvertedOcclusionPointLight(depth, projDir, ext.shadowMap);
+        shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), ext.shadowIntensity));
+    }
+
+    return radiance * shadowFactor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateSpotLightAmbientTransmission(
+    light : SpotLight,
+    projection : f32x4,
+    shadow : f32,
+    viewPos : f32x3,
+    viewVec : f32x3,
+    normal : f32x3,
+    depth : f32,
+    material : f32x4,
+    albedo : f32x4,
+    transmission : f32
+) f32x3
+{
+    var lightDir = (light.position.xyz - viewPos);
+    const lightDirLen = length(lightDir);
+    const att = InvSquareFalloff(light.range, lightDirLen, lightDir);
+    lightDir = lightDir / lightDirLen;
+
+    const theta = dot(light.forward.xyz, lightDir);
+    const intensity = saturate((theta - light.angleSinCos.y) * light.angleFade);
+
+    const lightModColor = f32x3(intensity) * att * projection.rgb;
+
+    const NL = saturate(dot(lightDir, normal));
+    const TNL = saturate(dot(-lightDir, normal)) * transmission;
+    const radiance = light.color * saturate(NL + TNL) * albedo.rgb;
+
+    return radiance * shadow * lightModColor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateGlobalLightAmbientTransmission(
+    pos : f32x3
+    , viewVec : f32x3
+    , normal : f32x3
+    , depth : f32
+    , material : f32x4
+    , albedo : f32x4
+    , transmission : f32
+) f32x3
+{
+    const NL = saturate(dot(PerTickParams.GlobalLightDirWorldspace.xyz, normal));
+    const TNL = saturate(dot(-PerTickParams.GlobalLightDirWorldspace.xyz, normal)) * transmission;
+
+    if ((NL + TNL) <= 0) { return f32x3(0); }
+
+
+    var shadowFactor = 1.0f;
+    if (FlagSet(PerTickParams.GlobalLightFlags, USE_SHADOW_BITFLAG))
+    {
+        const shadowPos = PerTickParams.CSMShadowMatrix * f32x4(pos, 1); // csm contains inversed view + csm transform
+        shadowFactor = CSMPS(shadowPos, PerTickParams.GlobalLightShadowBuffer);
+        shadowFactor = lerp(1.0f, shadowFactor, PerTickParams.GlobalLightShadowIntensity);
+    }
+
+    var radiance = PerTickParams.GlobalLightColor.xyz * saturate(NL + TNL);
+    return radiance * shadowFactor * albedo.rgb;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+LocalLightsAmbientTransmission(
+    idx : u32,
+    viewPos : f32x4,
+    viewVec : f32x3,
+    normal : f32x3,
+    depth : f32,
+    material : f32x4,
+    albedo : f32x4,
+    transmission : f32
+) f32x3
+{
+    var light = f32x3(0);
+    const aabb = bufferLoad(ClusterAABBs, idx);
+    const flag = aabb.featureFlags;
+    if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
+    {
+        // shade point lights
+        const count = LightIndexLists.PointLightCountList[idx];
+        var ext : PointLightShadowExtension;
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const lidx = LightIndexLists.PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+            const li = LightLists.PointLights[lidx];
+            light += CalculatePointLightAmbientTransmission(
+                li,
+                ext,
+                viewPos.xyz,
+                viewVec,
+                normal,
+                depth,
+                material,
+                albedo,
+                transmission
+            );
+        }
+    }
+    if (CheckFlags(flag, CLUSTER_SPOTLIGHT_BIT))
+    {
+        const count = LightIndexLists.SpotLightCountList[idx];
+        var shadowExt : SpotLightShadowExtension;
+        var projExt : SpotLightProjectionExtension;
+        for (var i : i32 = 0; i < count; i++)
+        {
+            const lidx = LightIndexLists.SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+            const li = LightLists.SpotLights[lidx];
+
+            // if we have extensions, load them from their respective buffers
+            var projection = f32x4(1.0f);
+            var shadow = 1.0f;
+
+            // if we have extensions, load them from their respective buffers
+            if (li.shadowExtension != -1)
+            {
+                shadow = CalculateSpotLightShadow(li, LightLists.SpotLightShadow[li.shadowExtension], viewPos.xyz);
+            }
+            if (li.projectionExtension != -1)
+            {
+                projection = CalculateSpotLightProjection(li, LightLists.SpotLightProjection[li.projectionExtension], viewPos.xyz);
+            }
+
+            light += CalculateSpotLightAmbientTransmission(
+                li,
+                projection,
+                shadow,
+                viewPos.xyz,
+                viewVec,
+                normal,
+                depth,
+                material,
+                albedo,
+                transmission
+            );
+        }
+    }
+    return light;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateLight(
+    worldSpacePos : f32x3
+    , clipXYZ : f32x3
+    , albedo : f32x3
+    , material : f32x4
+    , normal : f32x3
+) f32x3
+{
+    const viewDepth = CalculateViewDepth(ViewConstants.View, worldSpacePos);
+    const index3D = CalculateClusterIndex(clipXYZ.xy / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    var light = f32x3(0, 0, 0);
+    const viewVec = normalize(ViewConstants.EyePos.xyz - worldSpacePos.xyz);
+    const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
+    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
+
+//#if USE_SCALARIZATION_LOOP
+//    // Get the mask for the invocation
+//    const laneMask = subgroupGetLocalInvocationMask();
+//
+//    // Get the execution mask for the wavefront
+//    var execMask = subgroupBallot(true);
+//    const firstWaveIndex = subgroupRead(idx);
+//
+//    // Check if all waves use the same index and do this super cheaply
+//    if (subgroupBallot(firstWaveIndex == idx) == execMask)
+//    {
+//        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+//        light += GI(firstWaveIndex, viewVec, worldSpacePos, normal, albedo);
+//    }
+//    else
+//    {
+//        // Scalarization loop
+//        while ((laneMask & execMask) != u32x4(0))
+//        {
+//            const scalarIdx = subgroupRead(idx);
+//            const currentMask = subgroupBallot(scalarIdx == idx);
+//            execMask &= ~currentMask;
+//
+//            // If this wave uses the cell we loaded into SGPR, use it
+//            // this will effectively scalarize the light lists
+//            if (scalarIdx == idx)
+//            {
+//                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+//                light += GI(scalarIdx, viewVec, worldSpacePos, normal, albedo);
+//            }
+//        }
+//    }
+//#else
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, clipXYZ.z);
+    light += GI(idx, viewVec, worldSpacePos, normal, albedo);
+//#endif
+
+    //light += IBL(albedo, F0, normal, viewVec, material);
+    light += albedo.rgb * material[MAT_EMISSIVE];
+    return light;
+}

@@ -1,0 +1,292 @@
+//------------------------------------------------------------------------------
+//  ssr_cs.fx
+//  (C) 2015 - 2019 Fredrik Lindahl & Individual contributors, see AUTHORS file
+//
+// TraceScreenSpaceRay is inspired by the work by
+// Morgan McGuire and Michael Mara, Efficient GPU Screen-Space Ray Tracing, Journal of Computer Graphics Techniques (JCGT), vol. 3, no. 4, 73-85, 2014
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+
+uniform TraceBuffer: *mutable rgba16f texture2D;
+
+struct SSRData
+{
+    ViewToTextureSpace : f32x4x4;
+};
+uniform SSRBlock : *SSRData;
+
+const zThickness = 0.35; // How thick is each depth fragment? higher value yields some wierd smudging at edges of reflection, but thinner z means we might miss some geometry. This should essentially be the average thickness of the geometry. to do dynamically would be a nightmare however...
+
+// DDA tracing constants
+const pixelStride = 10; // lets you skip pixels during iteration. Larger stride means longer rays with same number of samples.
+const maxSteps = 100.0f; //Less steps means shorter reflections, but better performance
+const maxDistance = 100.0f; //Not orthogonal to max steps. reflection of surfaces far away in world space are prone to rapid shifts with only a slight change in camera positioning, which can lead to objectionable temporal flicker. Setting this parameter can help mitigate that.
+const jitter = 0.30f; // Number between 0 and 1 for how far to bump the ray in stride units to conceal banding artifacts
+
+// Raymarching constants
+const maxMarchingSteps = 80;
+const maxMarchingDistance = 100.0f;
+const marchingStepSize = 0.10f;
+const rayOffset = 0.5f;
+const distanceCutoff = 200.0f; // Rays won't be evaluated beyond this distance from the camera
+
+sampler_state LinearState
+{
+    //Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
+    Filter = FilterMode.Linear;
+    Border = Color.Transparent;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+};
+
+sampler_state NoFilterState
+{
+    //Samplers = {DepthBuffer, SpecularBuffer, NormalBuffer, AlbedoBuffer};
+    Filter = FilterMode.Point;
+    Border = Color.Transparent;
+    AddressU = AddressMode.Border;
+    AddressV = AddressMode.Border;
+};
+
+DistanceSquared(a : f32x2, b : f32x2) f32
+{
+    a -= b;
+    return dot(a, a);
+}
+
+struct HitResult
+{
+    hit: b8;
+    texcoord: f32x2;
+};
+
+TraceScreenSpaceRay(rayOrigin : f32x3, rayDirection : f32x3) HitResult
+{
+    var ret : HitResult;
+    ret.hit = false;
+    const nearPlane = -ViewConstants.FocalLengthNearFar.z;
+
+    // Clip to the near plane
+    const rayLength = ((rayOrigin.z + rayDirection.z * maxDistance) > nearPlane) ? (nearPlane - rayOrigin.z) / rayDirection.z : maxDistance;
+
+    const rayEnd = rayOrigin + rayDirection * rayLength;
+    
+    // TEMP: the screen-pixel-projection matrix should be precomputed
+    const ScreenSize = textureGetSize(TraceBuffer) * 2;
+    const InvScreenSize = f32x2(1.0f) / ScreenSize;
+
+    const sx = ScreenSize[0] / 2.0f;
+    const sy = ScreenSize[1] / 2.0f;
+
+    const scrScale = f32x4x4(sx,   0.0,  0.0,  0.0,
+                               0.0,  sy,   0.0,  0.0,
+                               0.0,  0.0,  1.0,  0.0,
+                               sx,   sy,   0.0,  1.0 );
+
+    const proj = SSRBlock.ViewToTextureSpace;
+
+    // Project into homogeneous clip space
+    const H0 = proj * f32x4( rayOrigin, 1.0f);
+    const H1 = proj * f32x4( rayEnd, 1.0f);
+    
+    var k0 = 1.0 / H0.w;
+    const k1 = 1.0 / H1.w;
+
+    // The interpolated homogeneous version of the camera-space points
+    var Q0 = rayOrigin * k0;
+    var Q1 = rayEnd * k1;
+
+    // Screen-space endpoints
+    var P0 = (H0.xy * k0);
+    var P1 = (H1.xy * k1);
+
+    // If the line is degenerate, make it cover at least one pixel
+    // to avoid handling zero-pixel extent as a special case later
+    P1 += (DistanceSquared(P0, P1) < 0.0001) ? 0.01 : 0.0;
+
+    var delta = P1 - P0;
+
+    // Permute so that the primary iteration is in x to collapse
+    // all quadrant-specific DDA cases later
+    const permute = abs(delta.x) < abs(delta.y);
+    
+    if (permute)
+    {
+        // This is a more-vertical line
+        delta = delta.yx;
+        P0 = P0.yx;
+        P1 = P1.yx;
+    }
+
+    const stepDir = sign(delta.x);
+    const invdx = stepDir / delta.x;
+
+    // Track the derivatives of Q and k
+    var  dQ = (Q1 - Q0) * invdx;
+    var dk = (k1 - k0) * invdx;
+    var  dP = f32x2(stepDir, delta.y * invdx);
+
+    // Scale derivatives by the desired pixel stride and then
+    // offset the starting values by the jitter fraction
+    const stride = 1.0f + pixelStride;
+    dP *= stride;
+    dQ *= stride;
+    dk *= stride;
+
+    P0 += dP * jitter;
+    Q0 += dQ * jitter;
+    k0 += dk * jitter;
+
+    // Track ray step and derivatives in a vec4 to parallelize
+    var PQk = f32x4( P0.xy, Q0.z, k0);
+    var dPQk = f32x4( dP.xy, dQ.z, dk);
+    
+    const end = P1.x * stepDir;
+    
+    const zBoundsMin = min(rayEnd.z, rayOrigin.z);
+    const zBoundsMax = max(rayEnd.z, rayOrigin.z);
+
+    var i = 0.0f;
+    var prevZMax = (dPQk.z * 0.5 + PQk.z) / (dPQk.w * 0.5 + PQk.w);
+    var zMin = prevZMax;
+    var zMax = prevZMax;
+    var depth = prevZMax + 1e4;
+
+    PQk += dPQk;
+
+    for(;
+        ((PQk.x * stepDir) <= end) &&
+        (i < maxSteps) &&
+        ((zMax < depth - zThickness) || (zMin > depth));
+       i += 1.0f)
+    {
+        PQk += dPQk;
+        
+        zMin = prevZMax;
+        zMax = (dPQk.z * 0.5 + PQk.z) / (dPQk.w * 0.5 + PQk.w);
+        zMax = clamp(zMax, zBoundsMin, zBoundsMax);
+        prevZMax = zMax;
+        if (zMin > zMax)
+        {
+            //Swap
+            const t = zMin;
+            zMin = zMax;
+            zMax = t;
+        }
+
+        ret.texcoord = permute ? PQk.yx : PQk.xy;
+
+        const pixelDepth = textureFetch(Textures2D[PerTickParams.DepthBuffer], i32x2(ret.texcoord), 0).r;
+        depth = -LinearizeDepth(pixelDepth, ViewConstants.FocalLengthNearFar.zw);
+    }
+
+    // viewspace hitpoint
+    // PQk -= dPQk;
+    // i -= 1.0f;
+    // Q0.xy += dQ.xy * i;
+    // Q0.z = PQk.z;
+    // hitPoint = Q0 / PQk.w;
+
+    ret.hit = (i < maxSteps) && (zMax >= depth - zThickness) && (zMin < depth);
+    return ret;
+}
+
+RaymarchScreenSpace(rayOrigin : f32x3, rayDirection : f32x3) HitResult
+{
+    var ret : HitResult;
+    ret.hit = false;
+    if (rayOrigin.z < -distanceCutoff) { return ret; }
+
+    var reflection = (rayDirection * rayOffset) + rayOrigin;
+    var rayLength = length(((rayDirection * marchingStepSize) * maxMarchingSteps) + reflection);
+
+    const ScreenSize = textureGetSize(TraceBuffer) * 2;
+
+    // calculate amount of steps to take
+    var numSteps = f32(maxMarchingSteps);
+    if( rayLength > maxMarchingDistance)
+    {
+        const ratio = min(rayLength, maxMarchingDistance) / maxMarchingDistance;
+        numSteps *= ratio; // No need to floor!
+    }
+    
+    var clip : f32x4;
+    var projCoord : f32x2;
+    var bufferDepth = 0.0f;
+    var reflectionDepth = 0.0f;
+
+    for (var i = 0; i < numSteps; i++)
+    {
+        reflection += rayDirection * marchingStepSize;
+        clip = ViewConstants.Projection * f32x4(reflection, 1);
+        clip /= clip.w;
+        projCoord = (clip.xy + 1.0) / 2.0;
+        bufferDepth = LinearizeDepth(fetch2D(PerTickParams.DepthBuffer, i32x2(projCoord * ScreenSize), 0).r, ViewConstants.FocalLengthNearFar.zw);
+        reflectionDepth = -reflection.z;
+
+
+        if (bufferDepth < reflectionDepth - zThickness)
+        {
+            const delta = reflectionDepth - bufferDepth;
+            if (delta < length(rayDirection))
+            {
+                ret.texcoord =projCoord * ScreenSize;
+                ret.hit = true;
+                return ret;
+            }
+        }
+    }
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(32)
+threads_y(32)
+entry_point
+csMain() void
+{
+    const relativeResolution = 0.5f;
+    const location = i32x2(computeGetGlobalThreadIndices().xy);
+    const screenSize = textureGetSize(TraceBuffer);
+    if location.x >= screenSize.x || location.y > screenSize.y { return; }
+
+    const invScreenSize = f32x2(1.0f/screenSize.x, 1.0f/screenSize.y);
+
+    const UV = location * invScreenSize;
+
+    const N = textureSampleLod(Textures2D[PerTickParams.NormalBuffer], LinearState, UV, 0);
+    const material = textureSampleLod(Textures2D[PerTickParams.SpecularBuffer], LinearState, UV, 0);
+    const viewSpaceNormal = normalize((transpose(inverse(GetRotation(ViewConstants.View))) * normalize(N.xyz)).xyz);
+    const pixelDepth = textureFetch(Textures2D[PerTickParams.DepthBuffer], location * 2, 0).r;
+    
+    const rayOrigin = PixelToView(UV, pixelDepth, ViewConstants.InvProjection).xyz;
+
+    const viewDir = normalize(rayOrigin);
+    const reflectionDir = (reflect(viewDir, viewSpaceNormal));
+
+    // initialize off screen
+    var reflectionColor = f32x4(-1.0, -1.0, 0, 0);
+    const res = TraceScreenSpaceRay(rayOrigin, reflectionDir);
+    if (res.hit)
+    {
+        const cosTheta = dot(viewSpaceNormal, reflectionDir);
+        // xy is screen uvs of hit and NdotL
+        reflectionColor = f32x4((res.texcoord * invScreenSize) * relativeResolution, cosTheta, 0);
+    }
+    
+    textureStore(TraceBuffer, location, reflectionColor);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Alt0")
+program SSR
+{
+    ComputeShader = csMain;
+};

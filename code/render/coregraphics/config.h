@@ -146,6 +146,7 @@ ShaderVisibilityFromString(const Util::String& str)
     return ret;
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -304,6 +305,9 @@ PipelineStageWrites(const PipelineStage stage)
         case PipelineStage::MemoryWrite:
         case PipelineStage::TransferWrite:
             return true;
+        default:
+            n_error("Unhandled PipelineStage type");
+            return false;
     }
     return false;
 }
@@ -338,6 +342,9 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
                 return PipelineStage::TransferRead;
+            default:
+                n_error("Unhandled QueueType");
+                return PipelineStage::InvalidStage;
         }
     case PipelineStage::ColorRead:
     case PipelineStage::DepthStencilRead:
@@ -357,6 +364,9 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
                 return PipelineStage::TransferRead;
+            default:
+                n_error("Unhandled QueueType");
+                return PipelineStage::InvalidStage;
         }
     case PipelineStage::AccelerationStructureRead:
     case PipelineStage::AccelerationStructureWrite:
@@ -368,7 +378,13 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
             case CoreGraphics::QueueType::TransferQueueType:
             case CoreGraphics::QueueType::SparseQueueType:
                 return PipelineStage::TransferRead;
+            default:
+                n_error("Unhandled QueueType");
+                return PipelineStage::InvalidStage;
         }
+    default:
+        n_error("Unhandled PipelineStage");
+        return PipelineStage::InvalidStage;
     }
 
     return sourceStage;

@@ -1,0 +1,162 @@
+//------------------------------------------------------------------------------
+//  bloom.gpul
+//
+//  (C) 2025 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include <lib/shared.gpuh>
+
+const KernelSize = 16;
+sampler_state InputSampler
+{
+    Filter = FilterMode.Linear;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+};
+
+struct BloomData
+{
+    Mips : i32;
+    Resolutions : [14]f32x4;
+};
+uniform BloomUniforms : *BloomData;
+
+render_state PostEffectState
+{
+    Cull = CullFace.Back;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+};
+
+uniform Input : *texture2D;
+uniform BloomOutput : *mutable rgba16f texture2D;
+uniform Intermediate : *texture2D;
+uniform BloomIntermediate : [14]*mutable rgba16f texture2D;
+
+workgroup SampleLookup : [KernelSize][KernelSize]f32x3;
+
+//------------------------------------------------------------------------------
+/**
+*/
+LoadLDS(pixel : i32x2) f32x3
+{
+    return SampleLookup[pixel.x][pixel.y];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SampleTentUpscale(center : i32x2) f32x3
+{
+    const a = LoadLDS(center + i32x2(-1, 1));
+    const b = LoadLDS(center + i32x2(0, 1));
+    const c = LoadLDS(center + i32x2(1, 1));
+
+    const d = LoadLDS(center + i32x2(-1, 0));
+    const e = LoadLDS(center + i32x2(0, 0));
+    const f = LoadLDS(center + i32x2(1, 0));
+
+    const g = LoadLDS(center + i32x2(-1, -1));
+    const h = LoadLDS(center + i32x2(0, -1));
+    const i = LoadLDS(center + i32x2(1, -1));
+
+    var res = e * 4.0f;
+    res += (b + d + f + h) * 2.0f;
+    res += (a + c + g + i);
+    return res / 16.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(KernelSize)
+local_size_y(KernelSize)
+local_size_z(1)
+entry_point
+csUpscale() void
+{
+    const threadIndex = computeGetLocalThreadIndices().xy;
+    const groupIndex = computeGetWorkgroupIndices();
+    
+    // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
+    const tileStart = groupIndex.xy * (KernelSize - 2);
+    const tileEnd = tileStart + u32x2(KernelSize - 2);
+
+    // The apron defines which pixels we will sample and load into LDS
+    const apronStart = tileStart - u32x2(1);
+    const apronEnd = tileEnd + u32x2(1);
+    const sampleCoord = apronStart + threadIndex;
+
+    const outputPixel = tileStart + threadIndex;
+
+    const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[groupIndex.z].xy));
+
+    // Only run waves on pixels within the target resolution
+    const pixelOutputMask = all(outputPixel < tileEndClamped);
+    const mippedDimensions = BloomUniforms.Resolutions[groupIndex.z].xy;
+    const sampleUV = (f32x2(sampleCoord) + f32x2(0.5f)) / mippedDimensions;
+
+    // All waves load into LDS
+    SampleLookup[threadIndex.x][threadIndex.y] = SampleCubic(Input, InputSampler, BloomUniforms.Resolutions[groupIndex.z], sampleUV, groupIndex.z);
+    executionBarrierWorkgroup();
+    
+    const weights : [14] f32 = [ 0.3465, 0.138, 0.1176, 0.066, 0.066, 0.061, 0.061, 0.055, 0.055, 0.050, 0.050, 0.045, 0.045, 0.040 ];
+
+    // Only the 14x14 kernel inside the padded one runs the tent filter
+    if (pixelOutputMask)
+    {
+        const sum = SampleTentUpscale(i32x2(threadIndex) + i32x2(1)) * weights[groupIndex.z];
+        textureStore(BloomIntermediate[groupIndex.z], i32x2(outputPixel.x, outputPixel.y), f32x4(sum, 0));
+    }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+local_size_x(256)
+entry_point
+csMerge() void
+{
+    const threadIndex = computeGetLocalThreadIndices().xy;
+    const groupIndex = computeGetWorkgroupIndices();
+    
+    // Running a 16x16 kernel with a 3x3 kernel means we need a 1x1 extra radius
+    const tileStart = u32x2(groupIndex.x * 256, groupIndex.y);
+    const tileEnd = tileStart + u32x2(256, 1);
+
+    const outputPixel = tileStart + threadIndex.xy;
+
+    const tileEndClamped = min(tileEnd, u32x2(BloomUniforms.Resolutions[0].xy));
+
+    // Only run waves on pixels within the target resolution
+    var sum = f32x3(0);
+    const pixelOutputMask = all(outputPixel < tileEndClamped);
+    const uv = (f32x2(outputPixel) + f32x2(0.5f)) / BloomUniforms.Resolutions[0].xy;
+    for (var i : i32 = 0; i < BloomUniforms.Mips; i++)
+    {
+        const inputPixel = i32x2(outputPixel) >> i;
+        sum += textureSampleLod(Intermediate, InputSampler, uv, i).rgb;
+        //sum += imageLoad(BloomIntermediate[i], inputPixel).rgb;
+    }
+    
+    if (pixelOutputMask)
+    {
+        const weight = sum / BloomUniforms.Mips;
+        textureStore(BloomOutput, i32x2(outputPixel.x, outputPixel.y), f32x4(sum, saturate(dot(weight, weight)) * PerTickParams.BloomIntensity));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Intermediate")
+program Bloom
+{
+    ComputeShader = csUpscale;
+};
+
+@Mask("Merge")
+program BloomMerge
+{
+    ComputeShader = csMerge;
+};

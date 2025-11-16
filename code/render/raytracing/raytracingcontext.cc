@@ -13,12 +13,12 @@
 #include "materials/shaderconfig.h"
 #include "materials/materialloader.h"
 
-#include "raytracing/shaders/raytracetest.h"
-#include "raytracing/shaders/brdfhit.h"
-#include "raytracing/shaders/bsdfhit.h"
-#include "raytracing/shaders/gltfhit.h"
+#include "render/raytracing/shaders/raytracetest.h"
+#include "render/raytracing/shaders/brdfhit.h"
+#include "render/raytracing/shaders/bsdfhit.h"
+#include "render/raytracing/shaders/gltfhit.h"
 
-#include "raytracing/shaders/light_grid_cs.h"
+#include "render/raytracing/shaders/light_grid_cs.h"
 
 #include "frame/default.h"
 #include "lighting/lightcontext.h"
@@ -407,7 +407,7 @@ RaytracingContext::SetupModel(const Graphics::GraphicsEntityId id, CoreGraphics:
 
             // Setup material
             Materials::MaterialId mat = pNode->GetMaterial();
-            const MaterialTemplates::Entry* temp = Materials::MaterialGetTemplate(mat);
+            const MaterialTemplatesGPULang::Entry* temp = Materials::MaterialGetTemplate(mat);
             IndexT bufferBinding = Materials::MaterialGetBufferBinding(mat);
 
             // Create Blas if we haven't registered it yet
@@ -779,18 +779,18 @@ RaytracingContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
     if (!CoreGraphics::RayTracingSupported)
         return;
 
-    LightsCluster::LightUniforms uniforms = Lighting::LightContext::GetLightUniforms();
+    LightsCluster::LightUniforms::STRUCT uniforms = Lighting::LightContext::GetLightUniforms();
     uniforms.NumLightClusters = NUM_GRID_CELLS*NUM_GRID_CELLS*NUM_GRID_CELLS;
     uint64_t offset = CoreGraphics::SetConstants(uniforms);
     uint64_t tickCbo, viewCbo, shadowCbo;
     Graphics::GetOffsets(tickCbo, viewCbo, shadowCbo);
-    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::ViewConstants_SLOT, 0, sizeof(Shared::ViewConstants), viewCbo });
-    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::ShadowViewConstants_SLOT, 0, sizeof(Shared::ShadowViewConstants), shadowCbo });
-    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.gridBuffer, Shared::Table_Frame::ClusterAABBs_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGridIndexLists, Shared::Table_Frame::LightIndexLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { Lighting::LightContext::GetLightsBuffer(), Shared::Table_Frame::LightLists_SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGridConstants, Shared::Table_Frame::ClusterUniforms_SLOT, 0, sizeof(Shared::ClusterUniforms), 0 });
-    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::Table_Frame::LightUniforms_SLOT, 0, sizeof(Shared::LightUniforms), offset });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::ViewConstants::BINDING, 0, sizeof(Shared::ViewConstants), viewCbo });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::ShadowViewConstants::BINDING, 0, sizeof(Shared::ShadowViewConstants), shadowCbo });
+    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.gridBuffer, Shared::ClusterAABBs::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGridIndexLists, Shared::LightIndexLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { Lighting::LightContext::GetLightsBuffer(), Shared::LightLists::BINDING, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { state.lightGridConstants, Shared::ClusterUniforms::BINDING, 0, sizeof(Shared::ClusterUniforms), 0 });
+    ResourceTableSetConstantBuffer(state.lightGridResourceTables.tables[ctx.bufferIndex], { CoreGraphics::GetConstantBuffer(ctx.bufferIndex), Shared::LightUniforms::BINDING, 0, sizeof(Shared::LightUniforms), offset });
     ResourceTableCommitChanges(state.lightGridResourceTables.tables[ctx.bufferIndex]);
 }
 

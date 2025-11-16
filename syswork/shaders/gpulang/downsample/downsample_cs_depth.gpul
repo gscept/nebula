@@ -1,0 +1,10 @@
+//------------------------------------------------------------------------------
+//  downsample_cs_depth.fx
+//  Downsample compute shader for light buffer
+//  (C) 2021 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "downsample_include.gpuh"
+const Kernel = KernelMethod.Avg;
+const ImageFormatType = ImageFormat.R32f;
+#include "downsample_cs.gpuh"

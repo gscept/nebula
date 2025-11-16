@@ -85,7 +85,7 @@ protected:
     class GameAppExitHandler : public Core::ExitHandler
     {
     public:
-        GameAppExitHandler(GameApplication* app) : app(app), Core::ExitHandler()
+        GameAppExitHandler(GameApplication* app) : Core::ExitHandler(), app(app)
         {
         }
     private:

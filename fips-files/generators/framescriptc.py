@@ -394,7 +394,7 @@ class BatchDefinition:
         pass
 
     def FormatSource(self, file):
-        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplates::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
+        file.WriteLine("Frame::DrawBatch(cmdBuf, MaterialTemplatesGPULang::BatchGroup::{}, view->GetCamera(), bufferIndex);".format(self.name))    
     
     def FormatSetup(self, file):
         pass
@@ -423,7 +423,7 @@ class FullscreenEffectDefinition:
 
     def FormatExtern(self, file, parser):
         file.WriteLine("")
-        file.WriteLine('#include "{}.h"'.format(self.shader))
+        file.WriteLine('#include "gpulang/render/{}.h"'.format(self.shader))
         file.WriteLine("CoreGraphics::PipelineId FullScreenEffect_{}_Pipeline;".format(self.name))
         file.WriteLine("CoreGraphics::BufferId FullScreenEffect_{}_Constants;".format(self.name))
         file.WriteLine("CoreGraphics::ResourceTableId FullScreenEffect_{}_ResourceTable;".format(self.name))
@@ -435,29 +435,29 @@ class FullscreenEffectDefinition:
         file.WriteLine("{")
         file.IncreaseIndent()
 
-        file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.fxb");'.format(self.shader))
+        file.WriteLine('CoreGraphics::ShaderId shad = CoreGraphics::ShaderGet("shd:{}.gplb");'.format(self.shader))
         file.WriteLine('CoreGraphics::ShaderProgramId prog = CoreGraphics::ShaderGetProgram(shad, CoreGraphics::ShaderFeatureMask("{}"));'.format(self.mask))
         file.WriteLine("FullScreenEffect_{}_Pipeline = CoreGraphics::CreateGraphicsPipeline({{prog, Pass_{}, 0, CoreGraphics::InputAssemblyKey{{ CoreGraphics::PrimitiveTopology::TriangleList, false}} }});".format(self.name, self.p.name))
         file.WriteLine('FullScreenEffect_{}_ResourceTable = CoreGraphics::ShaderCreateResourceTable(shad, NEBULA_BATCH_GROUP, 1);'.format(self.name))
-        file.WriteLine('{}::{} state;'.format(self.namespace, self.constantBlockName))
+        file.WriteLine('{}::{}::STRUCT state;'.format(self.namespace, self.constantBlockName))
         for var in self.variables:
             type = var['type']
             if type == "textureHandle":
                 file.WriteLine('state.{} = CoreGraphics::TextureGetBindlessHandle(Textures[(uint)TextureIndex::{}]);'.format(var['name'], var['value']))
             elif type == "texture":
-                file.WriteLine('CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{}], {}::Table_Batch::{}_SLOT));'.format(var['value'], self.namespace, var['name']))
+                file.WriteLine('CoreGraphics::ResourceTableSetTexture(FullScreenEffect_Finalize_ResourceTable, CoreGraphics::ResourceTableTexture(Textures[(uint)TextureIndex::{}], {}::{}::BINDING));'.format(var['value'], self.namespace, var['name']))
             else:
                 file.WriteLine('state.{} = {};'.format(var['name'], var['value']))
         file.WriteLine('CoreGraphics::BufferCreateInfo bufInfo;')
         file.WriteLine('bufInfo.name = "FullscreenEffect_{}_Constants";'.format(self.name))
-        file.WriteLine('bufInfo.byteSize = sizeof({}::{});'.format(self.namespace, self.constantBlockName))
+        file.WriteLine('bufInfo.byteSize = sizeof({}::{}::STRUCT);'.format(self.namespace, self.constantBlockName))
         file.WriteLine('bufInfo.data = &state;')
         file.WriteLine('bufInfo.dataSize = bufInfo.byteSize;')
         file.WriteLine('bufInfo.mode = CoreGraphics::HostLocal;')
         file.WriteLine('bufInfo.usageFlags = CoreGraphics::ConstantBuffer;')
         file.WriteLine('bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;')
         file.WriteLine('FullScreenEffect_{}_Constants = CoreGraphics::CreateBuffer(bufInfo);'.format(self.name))
-        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, Finalize::Table_Batch::{}_SLOT));'.format(self.name, self.name, self.constantBlockName))
+        file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, Finalize::{}::BINDING));'.format(self.name, self.name, self.constantBlockName))
         file.WriteLine('CoreGraphics::ResourceTableCommitChanges(FullScreenEffect_{}_ResourceTable);'.format(self.name))
         file.DecreaseIndent()
         file.WriteLine("}")
@@ -1244,7 +1244,6 @@ class FrameScriptGenerator:
         file.WriteLine('#include "coregraphics/buffer.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
         file.WriteLine('#include "coregraphics/pipeline.h"')
-        file.WriteLine('#include "system_shaders/shared.h"')
 
         file.WriteLine("namespace FrameScript_{}".format(self.name))
         file.WriteLine("{")
@@ -1321,7 +1320,6 @@ class FrameScriptGenerator:
     #
     def FormatSource(self, file):
         file.WriteLine("// Frame Script #version:{}#".format(self.version))
-        file.WriteLine("#pragma once")
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.IncreaseIndent()
@@ -1331,7 +1329,7 @@ class FrameScriptGenerator:
         file.WriteLine("*/")
         file.WriteLine("")
         file.WriteLine('#include "{}.h"'.format(self.name))
-        file.WriteLine('#include "materials/materialtemplates.h"')
+        file.WriteLine('#include "materials/gpulang/materialtemplatesgpulang.h"')
         file.WriteLine('#include "materials/materialloader.h"')
         file.WriteLine('#include "graphics/globalconstants.h"')
         file.WriteLine('#include "coregraphics/graphicsdevice.h"')
@@ -1375,7 +1373,7 @@ class FrameScriptGenerator:
         file.WriteLine("static CoreGraphics::BarrierScope scope; scope.Init(name, buf);")
 
         if len(self.importTextures + self.localTextures) > 0:
-            file.WriteLine("for (const auto [index, stage] : textureDeps)")
+            file.WriteLine("for (const auto & [index, stage] : textureDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(TextureCurrentStage[(uint)index], queue);")
@@ -1391,7 +1389,7 @@ class FrameScriptGenerator:
             file.WriteLine("}")
 
         if len(self.importBuffers) > 0:
-            file.WriteLine("for (const auto [index, stage] : bufferDeps)")
+            file.WriteLine("for (const auto & [index, stage] : bufferDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(BufferCurrentStage[(uint)index], queue);")

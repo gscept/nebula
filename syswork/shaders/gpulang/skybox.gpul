@@ -1,0 +1,87 @@
+//------------------------------------------------------------------------------
+//  skybox.gpul
+//  (C) 2012-2021 Individual contributors, See LICENSE file
+//------------------------------------------------------------------------------
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/objects_shared.gpuh>
+#include <lib/util.gpuh>
+#include <lib/preetham.gpuh>
+#include <lib/mie-rayleigh.gpuh>
+
+#include <material_interfaces.gpul>
+
+sampler_state SkySampler
+{
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
+    AddressW = AddressMode.Clamp;
+    Filter = FilterMode.MinMagLinearMipPoint;
+};
+
+render_state SkyboxState
+{
+    Cull = CullFace.Front;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.Equal;
+};
+
+//------------------------------------------------------------------------------
+/**
+    Sky box vertex shader
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    binding(1) in normal : f32x3,
+    binding(3) in tangent : f32x3,
+    out UV : f32x3,
+    out Direction : f32x3) void
+{
+    const tempPos = normalize(position);
+    const animationSpeed = 0.0f;//ViewConstants.Time_Random_Luminance_X.x * SkyBlock.SkyRotationFactor;
+    const rotMat = f32x3x3( cos(animationSpeed), 0, sin(animationSpeed),
+                        0, 1, 0,
+                        -sin(animationSpeed), 0, cos(animationSpeed));
+
+    const viewSample = (ViewConstants.InvView * f32x4(tempPos, 0)).xyz;
+    Direction = viewSample;
+    UV = viewSample;
+    vertexExportCoordinates(ViewConstants.Projection * f32x4(tempPos, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Skybox pixel shader
+*/
+entry_point
+psMain(in UV : f32x3,
+    in Direction : f32x3) void
+{
+    const dir = normalize(Direction);
+    const atmo = CalculateAtmosphericScattering(dir, PerTickParams.GlobalLightDirWorldspace.xyz) * PerTickParams.GlobalLightColor.rgb;
+    // rotate uvs around center with constant speed
+    /*
+    vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;
+    vec3 blendColor = sampleCubeLod(SkyLayer2, SkySampler, UV, 0).rgb;
+    vec3 color = mix(baseColor, blendColor, SkyBlendFactor);
+    color = ((color - 0.5f) * Contrast) + 0.5f;
+    color *= Brightness;
+    */
+
+    pixelExportColor(f32x4(atmo, 1), 0);
+    pixelSetDepth(1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Default
+{
+    VertexShader = vsMain;
+    PixelShader = psMain;
+    RenderState = SkyboxState;
+};

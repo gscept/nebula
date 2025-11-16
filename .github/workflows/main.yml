@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-22.04]
+        name: [windows-latest, ubuntu-24.04]
         include:
           - name: windows-latest
             os: windows-latest
@@ -28,12 +28,14 @@ jobs:
             physx: vc17
             physxkey: vc17
             anyfx: anyfxcompiler-windows
-          - name: ubuntu-22.04
-            os: ubuntu-22.04
+            gpulang: win64
+          - name: ubuntu-24.04
+            os: ubuntu-24.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
             anyfx: anyfxcompiler-linux
+            gpulang: linux
           
       # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -58,8 +60,8 @@ jobs:
       - name: Fix clang version
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          echo "CC=clang-14" >> $GITHUB_ENV
-          echo "CXX=clang++-14" >> $GITHUB_ENV
+          echo "CC=clang-16" >> $GITHUB_ENV
+          echo "CXX=clang++-16" >> $GITHUB_ENV
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
@@ -115,6 +117,27 @@ jobs:
         run: |
           pushd ../fips-anyfx
           python fips build ${{ matrix.anyfx }}
+          
+      - name: Check GPULang version
+        id: gpulang-rev
+        shell: bash
+        run: |
+          pushd ../gpulang
+          echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          popd
+                    
+      - name: Check for GPULang cached build
+        id: cache-gpulang
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/gpulang
+          key: ${{ runner.os }}-gpulang-${{ steps.gpulang-rev.outputs.gitrev }}
+
+      - name: Build GPULang Compiler
+        if: steps.cache-gpulang.outputs.cache-hit != 'true'
+        run: |
+          pushd ../gpulang
+          python fips build ${{ matrix.gpulang }}
           popd
 
       # Runs a set of commands using the runners shell

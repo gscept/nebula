@@ -25,7 +25,7 @@ imports:
         group: misc
     physx:
         git: https://github.com/gscept/PhysX.git
-        branch: nebula
+        branch: nebula-5.6.1
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
     gliml:
@@ -43,6 +43,10 @@ imports:
     #    git: https://github.com/gscept/fips-ultralight.git
     fips-turbobadger:
         git: https://github.com/gscept/fips-turbobadger.git
+    gpulang:
+        git: https://github.com/gscept/GPULang.git
+        group: gpulang
+        
 exports:
     header-dirs :
         - .

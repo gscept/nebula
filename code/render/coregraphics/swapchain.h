@@ -21,7 +21,7 @@ struct SwapchainCreateInfo
     CoreGraphics::DisplayMode displayMode;
     bool vsync;
     GLFWwindow* window;
-    CoreGraphics::QueueType preferredQueue = CoreGraphics::ComputeQueueType;
+    CoreGraphics::QueueType preferredQueue = CoreGraphics::GraphicsQueueType;
 };
 
 /// Create swapchain

@@ -31,7 +31,7 @@ def run(fips_dir, proj_dir, args) :
                 if args[1] not in vcversions :
                     log.error("unknown vc version configuration, should be vc15, vc16 or vc17")
 
-                vcstring = args[1] + "win64"
+                vcstring = args[1] + "win64-cpu-only-nebula"
                 physxbuild = os.path.abspath(proj_dir + "/../physx/physx")
                 subprocess.run([physxbuild + "/generate_projects.bat", vcstring] , cwd = physxbuild, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -69,9 +69,9 @@ def run(fips_dir, proj_dir, args) :
                     else:
                         log.colored(log.RED, "PhysX " + buildconfig + " build failed!")
             else :
-                subprocess.run([proj_dir+"/../physx/physx/generate_projects.sh", "linux"], cwd=proj_dir + "/../physx/physx/")
-                subprocess.run(["make", "-j", "10"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
-                subprocess.run(["make", "install"], cwd=proj_dir + "/../physx/physx/compiler/linux-checked")
+                subprocess.run([proj_dir+"/../physx/physx/generate_projects.sh", "linux-clang-cpu-only-nebula"], cwd=proj_dir + "/../physx/physx/")
+                subprocess.run(["make", "-j", "10"], cwd=proj_dir + "/../physx/physx/compiler/linux-clang-cpu-only-nebula-checked")
+                subprocess.run(["make", "install"], cwd=proj_dir + "/../physx/physx/compiler/linux-clang-cpu-only-nebula-checked")
     else:
         help()
         def run(fips_dir,proj_dir,args):
