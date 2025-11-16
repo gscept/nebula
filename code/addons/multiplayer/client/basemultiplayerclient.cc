@@ -40,8 +40,8 @@ SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusChangedCallback_
 /**
 */
 BaseMultiplayerClient::BaseMultiplayerClient()
-    : isOpen(false),
-    hostIp(N_IP_ADDR(127, 0, 0, 1))
+    : hostIp(N_IP_ADDR(127, 0, 0, 1)),
+    isOpen(false)
 {
     // empty
 }
