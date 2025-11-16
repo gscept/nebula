@@ -244,8 +244,10 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         memcpy(imguiState, currentState, materialTemplate->bufferSize);
 
         // FIXME remove when done with gpulang transition
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wenum-compare-switch"
+#endif
         switch (value->type)
         {
             case MaterialTemplates::MaterialTemplateValue::Type::Bool:
@@ -282,7 +284,9 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 // TODO: Implement all types
                 break;
         }
-#pragma clang diagnostic pop
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 
         // Issue command
         if (ImGui::IsItemDeactivatedAfterEdit())
