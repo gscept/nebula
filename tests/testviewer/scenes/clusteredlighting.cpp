@@ -244,7 +244,7 @@ void OpenScene()
             const float timeOffset = Math::rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, entityIndex, modelIndex, i, j, skeletonRes, animationRes]()
+            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, i, j, skeletonRes, animationRes]()
                 {
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
 

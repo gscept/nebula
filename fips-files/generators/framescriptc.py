@@ -1320,7 +1320,6 @@ class FrameScriptGenerator:
     #
     def FormatSource(self, file):
         file.WriteLine("// Frame Script #version:{}#".format(self.version))
-        file.WriteLine("#pragma once")
         file.WriteLine("//------------------------------------------------------------------------------")
         file.WriteLine("/**")
         file.IncreaseIndent()
@@ -1374,7 +1373,7 @@ class FrameScriptGenerator:
         file.WriteLine("static CoreGraphics::BarrierScope scope; scope.Init(name, buf);")
 
         if len(self.importTextures + self.localTextures) > 0:
-            file.WriteLine("for (const auto [index, stage] : textureDeps)")
+            file.WriteLine("for (const auto & [index, stage] : textureDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(TextureCurrentStage[(uint)index], queue);")
@@ -1390,7 +1389,7 @@ class FrameScriptGenerator:
             file.WriteLine("}")
 
         if len(self.importBuffers) > 0:
-            file.WriteLine("for (const auto [index, stage] : bufferDeps)")
+            file.WriteLine("for (const auto & [index, stage] : bufferDeps)")
             file.WriteLine("{")
             file.IncreaseIndent()
             file.WriteLine("CoreGraphics::PipelineStage lastStage = ConvertToQueue(BufferCurrentStage[(uint)index], queue);")

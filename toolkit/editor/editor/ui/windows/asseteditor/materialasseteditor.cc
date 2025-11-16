@@ -243,6 +243,9 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
         ubyte* currentState = Materials::MaterialGetConstants(item->asset.material);
         memcpy(imguiState, currentState, materialTemplate->bufferSize);
 
+        // FIXME remove when done with gpulang transition
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wenum-compare-switch"
         switch (value->type)
         {
             case MaterialTemplates::MaterialTemplateValue::Type::Bool:
@@ -279,6 +282,7 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
                 // TODO: Implement all types
                 break;
         }
+#pragma clang diagnostic pop
 
         // Issue command
         if (ImGui::IsItemDeactivatedAfterEdit())
@@ -431,6 +435,9 @@ MaterialSave(AssetEditor* assetEditor, AssetEditorItem* item)
                             writer->SetString("value", Util::String::FromFloat4(*(Math::float4*)(currentState + value->offset)));
                             break;
                         }
+                        default:
+                            n_warning("unhandled material template type");
+                            break;
                     }
                     writer->EndNode();
                 }

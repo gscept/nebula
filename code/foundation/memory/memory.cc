@@ -10,8 +10,8 @@ thread_local ThreadLocalMiniHeap N_ThreadLocalMiniHeap;
 */
 ThreadLocalMiniHeap::ThreadLocalMiniHeap() :
     heap(nullptr),
-    capacity(0),
-    iterator(0)
+    iterator(0),
+    capacity(0)
 {
     this->Realloc(16_KB);
 }

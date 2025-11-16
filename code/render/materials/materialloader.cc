@@ -27,10 +27,10 @@ struct MaterialBuffer
     bool dirty;
 
     MaterialBuffer(const char* name)
-        : dirty(false)
+        : hostBufferData(nullptr)
         , hostBuffer(CoreGraphics::InvalidBufferId)
         , deviceBuffer(CoreGraphics::InvalidBufferId)
-        , hostBufferData(nullptr)
+        , dirty(false)
     {
         this->hostBufferCreateInfo.name = Util::String::Sprintf("%s Host Buffer", name);
         this->hostBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
@@ -400,6 +400,7 @@ LoadMaterialParameter(Ptr<IO::BXmlReader> reader, Util::StringAtom name, const M
                 MaterialSetConstant(id, &f4, sizeof(f4), value->offset);
                 break;
             }
+            default: break;
         }
     }
     if (textureIndex != InvalidIndex)
@@ -617,6 +618,7 @@ MaterialLoader::GetMaterialBuffer(const MaterialTemplatesGPULang::MaterialProper
 
     PROPERTIES_LIST
 #undef X
+    default: break;
     }
     return CoreGraphics::InvalidBufferId;
 }

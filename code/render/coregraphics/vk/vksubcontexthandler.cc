@@ -393,6 +393,9 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
             case CoreGraphics::SparseQueueType:
                 CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_TRANSFER, "Sparse");
                 break;
+            default:
+                n_error("Unhandled queue type");
+                break;
         }
         VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
         if (res == VK_ERROR_DEVICE_LOST)

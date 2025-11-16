@@ -17,10 +17,10 @@ using namespace System;
 /**
 */
 BinaryReader::BinaryReader() :
-    enableMapping(false),
-    isMapped(false),
     mapCursor(0),
-    mapEnd(0)
+    mapEnd(0),
+    enableMapping(false),
+    isMapped(false)
 {
     // empty
 }

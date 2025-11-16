@@ -766,8 +766,6 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         [
             nodeInstanceTransformRanges = nodeInstanceTransformRanges.ConstBegin()
             , nodeInstanceStateRanges = nodeInstanceStateRanges.ConstBegin()
-            , cameraTransform
-            , defaultJointsOffset
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
     {

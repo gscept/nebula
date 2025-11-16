@@ -178,8 +178,8 @@ public:
     void SetCharPtr(const char* s);
     /// set as char ptr, with explicit length
     void Set(const char* ptr, SizeT length);
-    /// set as char ptr, with explicit length. will assert if size_t exceeds 2^32
-    void Set(const char* ptr, size_t length);
+    ///// set as char ptr, with explicit length. will assert if size_t exceeds 2^32
+    //void Set(const char* ptr, size_t length);
     /// set as byte value
     void SetByte(byte val);
     /// set as ubyte value

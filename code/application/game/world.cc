@@ -1608,17 +1608,21 @@ World::RenderDebug()
                 if (!listInactive && (entityMapping.table == MemDb::InvalidTableId || entityMapping.instance == MemDb::InvalidRow))
                     continue;
 
-                ImGui::BeginGroup();
-                ImGui::Text("[%i] ", entityIndex);
-                ImGui::SameLine();
-                ImGui::TextColored(
-                    {1, 0.3f, 0, 1},
-                    "tid:%i, partition: %i, index: %i",
-                    entityMapping.table,
-                    entityMapping.instance.partition,
-                    entityMapping.instance.index
-                );
-                if (entityMapping.table != MemDb::TableId::Invalid())
+            ImGui::BeginGroup();
+            ImGui::Text("[%i] ", entityIndex);
+            ImGui::SameLine();
+            ImGui::TextColored(
+                {1, 0.3f, 0, 1},
+                "tid:%i, partition: %i, index: %i",
+                entityMapping.table.id,
+                entityMapping.instance.partition,
+                entityMapping.instance.index
+            );
+            if (entityMapping.table != MemDb::TableId::Invalid())
+            {
+                ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
+                ImGui::EndGroup();
+                if (ImGui::IsItemHovered())
                 {
                     ImGui::TextDisabled("- %s", this->db->GetTable(entityMapping.table).name.Value());
                     ImGui::EndGroup();
@@ -1633,11 +1637,11 @@ World::RenderDebug()
                         ownerBuffer = (byte*)ownerBuffer + (row.index * sizeof(Game::Entity));
                         Game::Entity owner = *(Game::Entity*)ownerBuffer;
 
-                        ImGui::TextDisabled("Entity: %llu", (uint64_t)owner);
-                        ImGui::TextDisabled("Entity.world: %llu", (uint64_t)owner.world);
-                        ImGui::TextDisabled("Entity.reserved: %llu", (uint64_t)owner.reserved);
-                        ImGui::TextDisabled("Entity.generation: %llu", (uint64_t)owner.generation);
-                        ImGui::TextDisabled("Entity.index: %llu", (uint64_t)owner.index);
+                    ImGui::TextDisabled("Entity: %" PRIu64, (uint64_t)owner);
+                    ImGui::TextDisabled("Entity.world: %" PRIu64, (uint64_t)owner.world);
+                    ImGui::TextDisabled("Entity.reserved: %" PRIu64, (uint64_t)owner.reserved);
+                    ImGui::TextDisabled("Entity.generation: %" PRIu64, (uint64_t)owner.generation);
+                    ImGui::TextDisabled("Entity.index: %" PRIu64, (uint64_t)owner.index);
 
                         bool prevDebugState = Game::ComponentInspection::Instance()->debug;
                         Game::ComponentInspection::Instance()->debug = true;

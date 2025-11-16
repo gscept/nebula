@@ -16,6 +16,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <inttypes.h>
+
 // fixing Windows defines...
 #ifdef DeleteFile
 #undef DeleteFile

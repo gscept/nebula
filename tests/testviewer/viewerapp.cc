@@ -378,8 +378,8 @@ SimpleViewerApplication::Run()
 
         if (keyboard->KeyPressed(Input::Key::Escape)) run = false;
 
-        if (keyboard->KeyPressed(Input::Key::LeftMenu) && this->cameraMode == 0
-            || this->cameraMode == 1)
+        if (keyboard->KeyPressed(Input::Key::LeftMenu) && (this->cameraMode == 0
+            || this->cameraMode == 1))
             this->UpdateCamera();
 
         if (keyboard->KeyPressed(Input::Key::F8))

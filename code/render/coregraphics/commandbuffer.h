@@ -110,12 +110,13 @@ struct CmdBufferPoolCreateInfo
     bool shortlived : 1;    // Hint if the buffers allocated from this pool will be short lived
     
     CmdBufferPoolCreateInfo()
-        : queue(CoreGraphics::InvalidQueueType)
-        , resetable(false)
-        , shortlived(false)
-#if NEBULA_GRAPHICS_DEBUG
-        , name(nullptr)
-#endif
+        : 
+        #if NEBULA_GRAPHICS_DEBUG
+        name(nullptr),
+        #endif
+        queue(CoreGraphics::InvalidQueueType),
+        resetable(false),
+        shortlived(false)
     {};
 };
 

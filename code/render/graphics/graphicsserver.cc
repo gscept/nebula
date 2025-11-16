@@ -42,8 +42,8 @@ __ImplementSingleton(Graphics::GraphicsServer);
 /**
 */
 GraphicsServer::GraphicsServer() :
-    isOpen(false)
-    , resizeCall(nullptr)
+    resizeCall(nullptr)
+    ,isOpen(false)
 {
     __ConstructSingleton;
 }

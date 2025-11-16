@@ -23,7 +23,6 @@ public:
     void Run(SaveMode save) override;
 private:
     bool pauseProfiling;
-    bool showFrameProfiler;
     bool profileFixedFps;
     float averageFrameTime;
     float prevAverageFrameTime;

@@ -28,6 +28,8 @@ public:
     virtual bool IsModifying() const = 0;
     /// Override to abort any active actions
     virtual void Abort() {}
+
+    virtual ~ToolInterface() {};
 };
 
 } // namespace Tools

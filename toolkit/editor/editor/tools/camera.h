@@ -75,10 +75,7 @@ private:
 
     CameraMode cameraMode = CameraMode::FREECAM;
     ProjectionMode projectionMode = ProjectionMode::PERSPECTIVE;
-	float zoomIn = 0.0f;
-	float zoomOut = 0.0f;
-	Math::float2 panning{ 0.0f,0.0f };
-	Math::float2 orbiting{ 0.0f,0.0f };
+
 	RenderUtil::MayaCameraUtil mayaCameraUtil;
 	RenderUtil::FreeCameraUtil freeCamUtil;
 	Math::vec3 defaultViewPoint;

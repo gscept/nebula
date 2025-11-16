@@ -491,7 +491,7 @@ class MaterialTemplateGenerator:
                 for p in mat.passes:
                     setupStr += '\tConfigs[(uint)MaterialTemplates::BatchGroup::{}].Append(&__{}.entry);\n'.format(p.batch, mat.name)
                 setupStr += '\n'
-                f.WriteLine('struct {}::{} {}::__{};'.format(self.name, mat.name, self.name, mat.name))
+                f.WriteLine('struct {}::{} __{};'.format(self.name, mat.name, mat.name))
         f.WriteLine('//------------------------------------------------------------------------------\n/**\n*/\nvoid\nSetupMaterialTemplates()\n{{\n{}}}\n'.format(setupStr))
 
         f.WriteLine('}} // namespace {}\n'.format(self.name))
@@ -501,7 +501,6 @@ class MaterialTemplateGenerator:
     #  
     def BeginSource(self, f):
         f.WriteLine("// Material Template #version:{}#".format(self.version))
-        f.WriteLine("#pragma once")
         f.WriteLine("//------------------------------------------------------------------------------")
         f.WriteLine("/**")
         f.IncreaseIndent()

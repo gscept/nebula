@@ -150,7 +150,7 @@ DatasetTest::PopulatePersonsTable(Dataset* t)
     guid.Generate();
     values->SetString(Attr::Name, rowIndex, "Franz August");
     values->SetString(Attr::City, rowIndex, "Berlin");
-    values->SetString(Attr::Street, rowIndex, "Bouchéstrasse");
+    values->SetString(Attr::Street, rowIndex, "BouchÃ©strasse");
     values->SetString(Attr::Phone, rowIndex, "03043423423");
     values->SetGuid(Attr::GUID, rowIndex, guid);
     
