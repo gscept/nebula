@@ -148,7 +148,7 @@ vec3::operator=(const f32x4& rhs)
 __forceinline bool
 vec3::operator==(const vec3& rhs) const
 {
-    return all_u32x3(compare_equal_f32x4(this->vec, rhs.vec));
+    return (((_mm_movemask_ps(_mm_cmpeq_ps(this->vec, rhs.vec)) & 7) == 7) != 0);
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ vec3::operator==(const vec3& rhs) const
 __forceinline bool
 vec3::operator!=(const vec3 &rhs) const
 {
-    return !all_u32x3(compare_equal_f32x4(this->vec, rhs.vec));
+    return !(((_mm_movemask_ps(_mm_cmpeq_ps(this->vec, rhs.vec)) & 7) == 7) != 0);
 }
 
 //------------------------------------------------------------------------------
@@ -547,7 +547,7 @@ angle(const vec3& v0, const vec3& v1)
 __forceinline vec3
 lerp(const vec3& v0, const vec3& v1, scalar s)
 {
-    return fma_f32x4(sub_f32x4(v0.vec, v1.vec), splat_f32x4(s), v0.vec);
+    return fma_f32x4(sub_f32x4(v1.vec, v0.vec), splat_f32x4(s), v0.vec);
 }
 
 //------------------------------------------------------------------------------
@@ -623,7 +623,9 @@ reflect(const vec3& normal, const vec3& incident)
 __forceinline bool
 less_any(const vec3& v0, const vec3& v1)
 {
-    return any_u32x3(compare_less_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res != 0x7;
 }
 
 //------------------------------------------------------------------------------
@@ -632,7 +634,9 @@ less_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 less_all(const vec3& v0, const vec3& v1)
 {
-    return all_u32x3(compare_less_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res == 0;
 }
 
 //------------------------------------------------------------------------------
@@ -641,7 +645,9 @@ less_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 lessequal_any(const vec3& v0, const vec3& v1)
 {
-    return any_u32x3(compare_less_equal_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 7;
+    return res != 0x7;
 }
 
 //------------------------------------------------------------------------------
@@ -650,7 +656,9 @@ lessequal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 lessequal_all(const vec3& v0, const vec3& v1)
 {
-    return all_u32x3(compare_less_equal_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res == 0;
 }
 
 //------------------------------------------------------------------------------
@@ -659,7 +667,9 @@ lessequal_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 greater_any(const vec3& v0, const vec3& v1)
 {
-    return any_u32x3(compare_greater_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res != 0;
 }
 
 //------------------------------------------------------------------------------
@@ -668,7 +678,9 @@ greater_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 greater_all(const vec3& v0, const vec3& v1)
 {
-    return all_u32x3(compare_greater_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpgt_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res == 0x7;
 }
 
 //------------------------------------------------------------------------------
@@ -677,7 +689,9 @@ greater_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 greaterequal_any(const vec3& v0, const vec3& v1)
 {
-    return any_u32x3(compare_greater_equal_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res != 0;
 }
 
 //------------------------------------------------------------------------------
@@ -686,7 +700,9 @@ greaterequal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 greaterequal_all(const vec3& v0, const vec3& v1)
 {
-    return all_u32x3(compare_greater_equal_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpge_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res == 0x7;
 }
 
 //------------------------------------------------------------------------------
@@ -695,7 +711,9 @@ greaterequal_all(const vec3& v0, const vec3& v1)
 __forceinline bool
 equal_any(const vec3& v0, const vec3& v1)
 {
-    return any_u32x3(compare_equal_f32x4(v0.vec, v1.vec));
+    __m128 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
+    int res = _mm_movemask_ps(vTemp) & 0x7;
+    return res != 0;
 }
 
 //------------------------------------------------------------------------------
@@ -704,12 +722,13 @@ equal_any(const vec3& v0, const vec3& v1)
 __forceinline bool
 nearequal(const vec3& v0, const vec3& v1, float epsilon)
 {
-    f32x4 eps = set_f32x4(epsilon, epsilon, epsilon, 0.0f);
-    f32x4 delta = sub_f32x4(v0.vec, v1.vec);
-    f32x4 temp = splat_f32x4(0);
-    temp = sub_f32x4(temp, delta);
-    temp = max_f32x4(temp, delta);
-    return all_u32x3(compare_less_equal_f32x4(temp, eps));
+    __m128 eps = _mm_setr_ps(epsilon, epsilon, epsilon, 0);
+    __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
+    __m128 temp = _mm_setzero_ps();
+    temp = _mm_sub_ps(temp, delta);
+    temp = _mm_max_ps(temp, delta);
+    temp = _mm_cmple_ps(temp, eps);
+    return (_mm_movemask_ps(temp) & 0x7) != 0;
 }
 
 //------------------------------------------------------------------------------
@@ -718,11 +737,13 @@ nearequal(const vec3& v0, const vec3& v1, float epsilon)
 __forceinline bool
 nearequal(const vec3& v0, const vec3& v1, const vec3& epsilon)
 {
-    f32x4 delta = sub_f32x4(v0.vec, v1.vec);
-    f32x4 temp = splat_f32x4(0);
-    temp = sub_f32x4(temp, delta);
-    temp = max_f32x4(temp, delta);
-    return all_u32x3(compare_less_equal_f32x4(temp, epsilon.vec));
+    __m128 delta = _mm_sub_ps(v0.vec, v1.vec);
+    __m128 temp = _mm_setzero_ps();
+    temp = _mm_sub_ps(temp, delta);
+    temp = _mm_max_ps(temp, delta);
+    temp = _mm_cmple_ps(temp, epsilon.vec);
+    auto foo = _mm_movemask_ps(temp) & 0x7;
+    return (_mm_movemask_ps(temp) & 0x7) == 0x7;
 }
 
 //------------------------------------------------------------------------------
@@ -731,7 +752,7 @@ nearequal(const vec3& v0, const vec3& v1, const vec3& epsilon)
 __forceinline vec3
 less(const vec3& v0, const vec3& v1)
 {
-    return min_f32x4(convert_u32x4_to_f32x4(compare_less_f32x4(v0.vec, v1.vec)), _plus1);
+    return _mm_min_ps(_mm_cmplt_ps(v0.vec, v1.vec), _plus1);
 }
 
 //------------------------------------------------------------------------------
@@ -740,7 +761,7 @@ less(const vec3& v0, const vec3& v1)
 __forceinline vec3
 greater(const vec3& v0, const vec3& v1)
 {
-    return min_f32x4(convert_u32x4_to_f32x4(compare_greater_f32x4(v0.vec, v1.vec)), _plus1);
+    return _mm_min_ps(_mm_cmpgt_ps(v0.vec, v1.vec), _plus1);
 }
 
 //------------------------------------------------------------------------------
@@ -749,7 +770,7 @@ greater(const vec3& v0, const vec3& v1)
 __forceinline vec3
 equal(const vec3& v0, const vec3& v1)
 {
-    return min_f32x4(convert_u32x4_to_f32x4(compare_equal_f32x4(v0.vec, v1.vec)), _plus1);
+    return _mm_min_ps(_mm_cmpeq_ps(v0.vec, v1.vec), _plus1);
 }
 
 //------------------------------------------------------------------------------

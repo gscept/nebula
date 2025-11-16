@@ -374,7 +374,7 @@ min_first_f32x4(f32x4 a, f32x4 b)
 //------------------------------------------------------------------------------
 /**
 */
-#define shuffle_f32x4(a, b, a0, a1, b0, b1) (_mm_shuffle_ps(a, b, _MM_SHUFFLE(b1, b0, a1, a0)))
+#define shuffle_f32x4(a, b, a0, a1, b0, b1) (_mm_shuffle_ps(a, b, _MM_SHUFFLE(a0, a1, b0, b1)))
 //__forceinline f32x4
 //shuffle_f32x4(f32x4 a, f32x4 b, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1)
 //{
