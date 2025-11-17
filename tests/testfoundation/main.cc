@@ -89,7 +89,7 @@ __cdecl main()
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());
     // FIXME 
-    // testRunner->AttachTestCase(SizeClassificationAllocatorTest::Create());
+    testRunner->AttachTestCase(SizeClassificationAllocatorTest::Create());
     testRunner->AttachTestCase(MemoryPoolTest::Create());
     testRunner->AttachTestCase(Matrix44Test::Create());
     testRunner->AttachTestCase(Float4Test::Create());

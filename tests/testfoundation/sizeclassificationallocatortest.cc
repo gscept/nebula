@@ -57,11 +57,9 @@ SizeClassificationAllocatorTest::Run()
     alloc3 = allocator.Alloc(64, 128);
     VERIFY(alloc3.offset == 128);
 
-    // One more alloc should fit, the allocation above should be 128 in size due to alignment
+    // The previous insertion actually inserts a 192 byte block due to alignment, so this should fail
     alloc4 = allocator.Alloc(64);
-    VERIFY(alloc4.offset == 64);
-    alloc5 = allocator.Alloc(64);
-    VERIFY(alloc5.offset == alloc5.OOM);
+    VERIFY(alloc4.offset == alloc4.OOM);
 }
 
 }; // namespace Test
