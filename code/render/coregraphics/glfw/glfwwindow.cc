@@ -11,6 +11,10 @@
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
 #include "coregraphics/swapchain.h"
+#include "coregraphics/load/glimltypes.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #if __VULKAN__
 #include "coregraphics/vk/vkgraphicsdevice.h"
@@ -338,6 +342,17 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
         // set user pointer to this window
         glfwSetWindowUserPointer(wnd, ptr);
         glfwSetWindowTitle(wnd, info.title.Value());
+        if (info.icon.IsValid())
+        {
+            int x, y, channels;
+            stbi_uc* icon = stbi_load(info.icon.Value(), &x, &y, &channels, 4);
+            GLFWimage img;
+            img.height = y;
+            img.width = x;
+            img.pixels = icon;
+            glfwSetWindowIcon(wnd, 1, &img);
+            free(icon);
+        }
     }
 
     glfwSwapInterval(info.vsync ? CoreGraphics::GetNumBufferedFrames() : 0);
@@ -441,10 +456,27 @@ WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight)
 /**
 */
 void
-WindowSetTitle(const WindowId id, const Util::String & title)
+WindowSetTitle(const WindowId id, const Util::String& title)
 {
     GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
     glfwSetWindowTitle(wnd, title.AsCharPtr());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowSetIcon(const WindowId id, const Util::String& icon)
+{
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id);
+    int x, y, channels;
+    stbi_uc* iconData = stbi_load(icon.c_str(), &x, &y, &channels, 4);
+    GLFWimage img;
+    img.height = y;
+    img.width = x;
+    img.pixels = iconData;
+    glfwSetWindowIcon(wnd, 1, &img);
+    delete iconData;
 }
 
 //------------------------------------------------------------------------------

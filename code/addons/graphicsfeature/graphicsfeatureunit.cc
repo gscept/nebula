@@ -129,7 +129,7 @@ GraphicsFeatureUnit::OnActivate()
     {
         CoreGraphics::DisplayMode {100, 100, width, height},
         this->title,
-        "",
+        "icon.png",
         CoreGraphics::AntiAliasQuality::None,
         true,
         true,

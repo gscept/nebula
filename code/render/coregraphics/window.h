@@ -50,6 +50,8 @@ void DestroyWindow(const WindowId id);
 void WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight);
 /// set title for window
 void WindowSetTitle(const WindowId id, const Util::String& title);
+/// Set window icon
+void WindowSetIcon(const WindowId id, const Util::String& icon);
 /// make window 'current'
 void WindowMakeCurrent(const WindowId id);
 /// present window

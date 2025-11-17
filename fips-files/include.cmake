@@ -885,6 +885,12 @@ macro(nebula_end_app)
     if(N_DEBUG_SYMBOLS)
         target_compile_options(${curtarget} PRIVATE $<IF:$<CONFIG:Debug>,/Zi,/Z7>)
     endif()
+
+    add_custom_command(TARGET ${curtarget} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_SOURCE_DIR}/icon.png"
+            "$<TARGET_FILE_DIR:${curtarget}>/icon.png"
+    )
 endmacro()
 
 macro(nebula_begin_module name)

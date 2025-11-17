@@ -117,6 +117,10 @@ inline void
 GraphicsFeatureUnit::SetWindowTitle(const Util::StringAtom& title)
 {
     this->title = title;
+    if (this->wnd != CoreGraphics::InvalidWindowId)
+    {
+        CoreGraphics::WindowSetTitle(this->wnd, title.AsString());
+    }
 }
 
 //------------------------------------------------------------------------------
