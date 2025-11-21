@@ -37,7 +37,7 @@ struct ImguiTextureId
     uint green : 1 = 1;
     uint blue : 1 = 1;
     uint alpha : 1 = 1;
-    
+    uint splat : 1 = 0;
 };
 
 class ImguiContext : public Graphics::GraphicsContext

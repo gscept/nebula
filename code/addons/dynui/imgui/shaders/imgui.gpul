@@ -42,21 +42,23 @@ render_state TextState
 //------------------------------------------------------------------------------
 /**
 */ 
-UnpackTexture(val : u32, id : *u32, type : *u32, mip : *u32, layer : *u32, useRange : *u32, useAlpha : *u32) void
+UnpackTexture(val : u32, id : *u32, type : *u32, mip : *u32, layer : *u32, useRange : *u32, useAlpha : *u32, splat : *u32) void
 {
     const TEXTURE_TYPE_MASK = 0xF;
     const TEXTURE_LAYER_MASK = 0xFF;
     const TEXTURE_MIP_MASK = 0xF;
     const TEXTURE_USE_RANGE_MASK = 0x1;
     const TEXTURE_USE_ALPHA_MASK = 0x1;
-    const TEXTURE_ID_MASK = 0xFFF;
+    const TEXTURE_SINGLE_CHANNEL = 0x1;
+    const TEXTURE_ID_MASK = 0x7FF;
 
     *type = val & TEXTURE_TYPE_MASK;
     *layer = (val >> 4) & TEXTURE_LAYER_MASK;
     *mip = (val >> 12) & TEXTURE_MIP_MASK;
     *useRange = (val >> 16) & TEXTURE_USE_RANGE_MASK;
     *useAlpha = (val >> 17) & TEXTURE_USE_ALPHA_MASK;
-    *id = (val >> 18) & TEXTURE_ID_MASK;
+    *splat = (val >> 18) & TEXTURE_SINGLE_CHANNEL;
+    *id = (val >> 19) & TEXTURE_ID_MASK;
 }
 
 //------------------------------------------------------------------------------
@@ -93,8 +95,8 @@ psMain(
     in Color : f32x4) void
 {
     var texColor : f32x4;
-    var id, type, layer, mip, useAlpha, useRange : u32;
-    UnpackTexture(ImGUI.PackedTextureInfo, &id, &type, &mip, &layer, &useRange, &useAlpha);
+    var id, type, layer, mip, useAlpha, useRange, splat : u32;
+    UnpackTexture(ImGUI.PackedTextureInfo, &id, &type, &mip, &layer, &useRange, &useAlpha, &splat);
     if type == 0 { texColor = sample2DLod(id, TextureSampler, UV, mip); }
     else if type == 1 { texColor = sample2DArrayLod(id, TextureSampler, f32x3(UV, layer), mip); }
     else if type == 2
@@ -109,6 +111,7 @@ psMain(
     }
 
     if useAlpha == 0 { texColor.a = 1.0f; }
+    if splat == 1u { texColor.rgba = f32x4(f32x3(texColor.r), 1.0f); }
         
     const mask = UnpackMask(ImGUI.ColorMask);
 

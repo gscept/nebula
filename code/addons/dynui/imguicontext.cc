@@ -134,6 +134,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         uint mip : 4;
         uint useRange : 1;
         uint useAlpha : 1;
+        uint splat : 1;
         uint id : 11;
     };
 
@@ -191,6 +192,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 texInfo.type = 0;
                 texInfo.useRange = tex.useRange;
                 texInfo.useAlpha = tex.useAlpha;
+                texInfo.splat = tex.splat;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
                 CoreGraphics::TextureId texture = tex.nebulaHandle;
