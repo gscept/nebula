@@ -476,7 +476,7 @@ WindowSetIcon(const WindowId id, const Util::String& icon)
     img.width = x;
     img.pixels = iconData;
     glfwSetWindowIcon(wnd, 1, &img);
-    delete iconData;
+    free(iconData);
 }
 
 //------------------------------------------------------------------------------
