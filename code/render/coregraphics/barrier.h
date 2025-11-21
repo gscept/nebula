@@ -42,17 +42,17 @@ struct TextureSubresourceInfo
         layerCount(layerCount)
     {}
 
-    static TextureSubresourceInfo Texture(CoreGraphics::ImageBits bits, TextureId tex)
+    static TextureSubresourceInfo Texture(CoreGraphics::ImageBits bits)
     {
         return TextureSubresourceInfo(bits, 0, NEBULA_ALL_MIPS, 0, NEBULA_ALL_LAYERS);
     }
 
-    static TextureSubresourceInfo Color(TextureId tex)
+    static TextureSubresourceInfo Color()
     {
         return TextureSubresourceInfo(ImageBits::ColorBits, 0, NEBULA_ALL_MIPS, 0, NEBULA_ALL_LAYERS);
     }
 
-    static TextureSubresourceInfo DepthStencil(TextureId tex)
+    static TextureSubresourceInfo DepthStencil()
     {
         return TextureSubresourceInfo(ImageBits::DepthBits | ImageBits::StencilBits, 0, NEBULA_ALL_MIPS, 0, NEBULA_ALL_LAYERS);
     }
@@ -184,7 +184,7 @@ struct BarrierScope
             this->fromStage = fromStage;
             this->toStage = toStage;
         }
-        TextureBarrierInfo info = { .tex = tex, .subres = TextureSubresourceInfo::Texture(bits, tex) };
+        TextureBarrierInfo info = { .tex = tex, .subres = TextureSubresourceInfo::Texture(bits) };
         textures.Append(info);
     }
 
@@ -221,6 +221,93 @@ struct BarrierScope
 
 private:
 
+};
+
+struct BarrierContext
+{
+    BarrierContext()
+    {
+        this->fromStage = CoreGraphics::PipelineStage::InvalidStage;
+        this->toStage = CoreGraphics::PipelineStage::InvalidStage;
+    }
+
+    uint32_t RegisterTexture(CoreGraphics::PipelineStage initialStage)
+    {
+        this->textureCurrentStages.Append(initialStage);
+        return this->textureCurrentStages.Size() - 1;
+    }
+    uint32_t RegisterBuffer(CoreGraphics::PipelineStage initialStage)
+    {
+        this->bufferCurrentStages.Append(initialStage);
+        return this->bufferCurrentStages.Size() - 1;
+    }
+
+    void Start(const char* name, const CoreGraphics::CmdBufferId cmdBuf)
+    {
+        this->name = name;
+        this->cmdBuf = cmdBuf;
+    }
+
+    void SyncTexture(uint32_t index, CoreGraphics::ImageBits bits, CoreGraphics::TextureId tex, CoreGraphics::PipelineStage stage)
+    {
+        if (this->textureCurrentStages[index] != this->fromStage || stage != this->toStage)
+        {
+            this->Flush();
+            this->fromStage = this->textureCurrentStages[index];
+            this->toStage = stage;
+        }
+        
+        if (this->textureCurrentStages[index] != stage)
+        {
+            TextureBarrierInfo info = { .tex = tex, .subres = TextureSubresourceInfo::Texture(bits) };
+            this->textureBarriers.Append(info);
+        }
+        this->textureCurrentStages[index] = stage;
+    }
+    void SyncBuffer(uint32_t index, CoreGraphics::BufferId buf, CoreGraphics::PipelineStage stage)
+    {
+        if (this->bufferCurrentStages[index] != this->fromStage || stage != this->toStage)
+        {
+            this->Flush();
+            this->fromStage = this->bufferCurrentStages[index];
+            this->toStage = stage;
+        }
+
+        if (this->bufferCurrentStages[index] != stage)
+        {
+            BufferBarrierInfo info = { .buf = buf, .subres = CoreGraphics::BufferSubresourceInfo() };
+            this->bufferBarriers.Append(info);
+        }
+        this->fromStage = this->bufferCurrentStages[index];
+        this->toStage = stage;
+        this->bufferCurrentStages[index] = stage;
+    }
+
+    void Flush()
+    {
+        if (!this->textureBarriers.IsEmpty())
+            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, std::move(this->textureBarriers), InvalidIndex, InvalidIndex, this->name);
+        if (!this->bufferBarriers.IsEmpty())
+            CoreGraphics::CmdBarrier(this->cmdBuf, this->fromStage, this->toStage, CoreGraphics::BarrierDomain::Global, std::move(this->bufferBarriers), InvalidIndex, InvalidIndex, this->name);
+        this->bufferBarriers.Clear();
+        this->textureBarriers.Clear();
+    }
+
+    void Synchronize()
+    {
+        this->Flush();
+        this->cmdBuf = InvalidCmdBufferId;
+        this->fromStage = CoreGraphics::PipelineStage::InvalidStage;
+        this->toStage = CoreGraphics::PipelineStage::InvalidStage;
+    }
+
+    const char* name;
+    CmdBufferId cmdBuf;
+    CoreGraphics::PipelineStage fromStage, toStage;
+    Util::Array<TextureBarrierInfo> textureBarriers;
+    Util::Array<BufferBarrierInfo> bufferBarriers;
+    Util::Array<CoreGraphics::PipelineStage> textureCurrentStages;
+    Util::Array<CoreGraphics::PipelineStage> bufferCurrentStages;
 };
 
 struct BarrierCreateInfo
