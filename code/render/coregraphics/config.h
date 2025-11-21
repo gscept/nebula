@@ -383,8 +383,7 @@ ConvertToQueue(const CoreGraphics::PipelineStage sourceStage, const CoreGraphics
                 return PipelineStage::InvalidStage;
         }
     default:
-        n_error("Unhandled PipelineStage");
-        return PipelineStage::InvalidStage;
+        return sourceStage;
     }
 
     return sourceStage;
