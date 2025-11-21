@@ -48,12 +48,12 @@ PinnedBuffer<STORAGE>::PinnedBuffer(const BufferCreateInfo& createInfo)
     n_assert(createInfo.sparse == true);
     BufferCreateInfo hostBufferInfo = createInfo;
     hostBufferInfo.mode = CoreGraphics::HostLocal;
-    hostBufferInfo.usageFlags |= CoreGraphics::TransferBufferSource;
+    hostBufferInfo.usageFlags |= CoreGraphics::TransferSource;
 
-    this->hostBuffers = BufferSet(hostBufferInfo);
+    this->hostBuffers.Create(hostBufferInfo);
     BufferCreateInfo deviceBufferInfo = createInfo;
     deviceBufferInfo.mode = CoreGraphics::DeviceLocal;
-    deviceBufferInfo.usageFlags |= CoreGraphics::TransferBufferDestination;
+    deviceBufferInfo.usageFlags |= CoreGraphics::TransferDestination;
     this->deviceBuffer = CoreGraphics::CreateBuffer(deviceBufferInfo);
 }
 

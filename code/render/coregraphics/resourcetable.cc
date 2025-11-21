@@ -10,7 +10,8 @@ namespace CoreGraphics
 //------------------------------------------------------------------------------
 /**
 */
-ResourceTableSet::ResourceTableSet(const ResourceTableCreateInfo& createInfo)
+void
+ResourceTableSet::Create(const ResourceTableCreateInfo& createInfo)
 {
     const SizeT numTables = CoreGraphics::GetNumBufferedFrames();
     this->tables.Resize(numTables);
@@ -26,25 +27,8 @@ ResourceTableSet::ResourceTableSet(const ResourceTableCreateInfo& createInfo)
 //------------------------------------------------------------------------------
 /**
 */
-ResourceTableSet::ResourceTableSet(ResourceTableSet&& rhs)
-{
-    this->tables = rhs.tables;
-    rhs.tables.Clear();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-ResourceTableSet::~ResourceTableSet()
-{
-    this->Discard();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-ResourceTableSet::Discard()
+ResourceTableSet::Destroy()
 {
     for (IndexT i = 0; i < this->tables.Size(); i++)
     {
@@ -63,16 +47,6 @@ ResourceTableSet::ForEach(std::function<void(const ResourceTableId, const IndexT
     {
         func(this->tables[i], i);
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSet::operator=(ResourceTableSet&& rhs)
-{
-    this->tables = rhs.tables;
-    rhs.tables.Clear();
 }
 
 //------------------------------------------------------------------------------

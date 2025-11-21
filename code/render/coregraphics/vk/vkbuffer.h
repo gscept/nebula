@@ -29,7 +29,7 @@ struct VkBufferLoadInfo
 struct VkBufferRuntimeInfo
 {
     VkBuffer buf;
-    CoreGraphics::BufferUsageFlags usageFlags;
+    CoreGraphics::BufferUsage usageFlags;
 };
 
 struct VkBufferMapInfo

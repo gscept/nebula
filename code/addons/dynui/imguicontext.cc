@@ -79,7 +79,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(ImguiContext::state.vlo);
         vboInfo.mode = CoreGraphics::HostCached;
-        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
         ImguiContext::state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
@@ -96,7 +96,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
         iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
         iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
         iboInfo.mode = CoreGraphics::HostCached;
-        iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+        iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
         iboInfo.data = nullptr;
         iboInfo.dataSize = 0;
         ImguiContext::state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
@@ -199,7 +199,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
                 CoreGraphics::TextureIdLock _0(texture);
                 CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
                 auto usage = CoreGraphics::TextureGetUsage(texture);
-                if (usage & CoreGraphics::TextureUsage::RenderTexture || usage & CoreGraphics::TextureUsage::ReadWriteTexture)
+                if (HasFlags(usage, CoreGraphics::TextureUsage::Render) || HasFlags(usage, CoreGraphics::TextureUsage::ReadWrite))
                 {
                     texInfo.useAlpha = false;
                 }
@@ -433,7 +433,7 @@ ImguiContext::Create()
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
     vboInfo.mode = CoreGraphics::HostCached;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
     state.vbos.Resize(numBuffers);
@@ -448,7 +448,7 @@ ImguiContext::Create()
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
     iboInfo.mode = CoreGraphics::HostCached;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = nullptr;
     iboInfo.dataSize = 0;
     state.ibos.Resize(numBuffers);
@@ -618,7 +618,7 @@ ImguiContext::Create()
 
     CoreGraphics::TextureCreateInfo texInfo;
     texInfo.name = "imgui_font_tex"_atm;
-    texInfo.usage = TextureUsage::SampleTexture;
+    texInfo.usage = TextureUsage::Sample;
     texInfo.tag = "system"_atm;
     texInfo.data = buffer;
     texInfo.dataSize = width * height * bytesPerPixel;

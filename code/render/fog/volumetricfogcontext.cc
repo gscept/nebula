@@ -91,7 +91,7 @@ VolumetricFogContext::Create()
     rwbInfo.size = 1;
     rwbInfo.elementSize = sizeof(Volumefog::FogIndexLists::STRUCT);
     rwbInfo.mode = BufferAccessMode::DeviceLocal;
-    rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     fogState.clusterFogIndexLists = CreateBuffer(rwbInfo);
 
@@ -101,8 +101,8 @@ VolumetricFogContext::Create()
 
     rwbInfo.name = "FogListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
-    rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    fogState.stagingClusterFogLists = BufferSet(rwbInfo);
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+    fogState.stagingClusterFogLists.Create(rwbInfo);
 
     fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, CoreGraphics::ShaderFeatureMask("Cull"));
     fogState.renderProgram = ShaderGetProgram(fogState.classificationShader, CoreGraphics::ShaderFeatureMask("Render"));
@@ -131,7 +131,7 @@ VolumetricFogContext::Create()
 
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.byteSize = sizeof(Blur2dRgba16fCs::BlurUniforms::STRUCT);
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     bufInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     blurState.blurConstants = CoreGraphics::CreateBuffer(bufInfo);
 

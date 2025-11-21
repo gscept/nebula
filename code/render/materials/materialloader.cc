@@ -33,12 +33,12 @@ struct MaterialBuffer
         , dirty(false)
     {
         this->hostBufferCreateInfo.name = Util::String::Sprintf("%s Host Buffer", name);
-        this->hostBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+        this->hostBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
         this->hostBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
         this->hostBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
 
         this->deviceBufferCreateInfo.name = Util::String::Sprintf("%s Device Buffer", name);
-        this->deviceBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferDestination | CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+        this->deviceBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination | CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite;
         this->deviceBufferCreateInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
         this->deviceBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     }
@@ -245,9 +245,9 @@ MaterialLoader::Setup()
     materialBindingInfo.name = "Material Binding Buffer";
     materialBindingInfo.byteSize = sizeof(MaterialInterfaces::MaterialBindings);
     materialBindingInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    materialBindingInfo.usageFlags = CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    materialBindingInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     materialBindingInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
-    materialLoaderState.materialBindingBuffer = CoreGraphics::BufferWithStaging(materialBindingInfo);
+    materialLoaderState.materialBindingBuffer.Create(materialBindingInfo);
 
 #define ALLOC_MATERIAL(x) \
     Ids::Id32 id = materialLoaderState.x##s.Alloc();\

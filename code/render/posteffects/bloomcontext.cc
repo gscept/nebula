@@ -67,7 +67,7 @@ BloomContext::Setup()
 
     BufferCreateInfo bufInfo;
     bufInfo.byteSize = sizeof(Bloom::BloomUniforms::STRUCT);
-    bufInfo.usageFlags = ConstantBuffer;
+    bufInfo.usageFlags = BufferUsage::ConstantBuffer;
     bufInfo.mode = DeviceAndHost;
     bufInfo.queueSupport = ComputeQueueSupport;
     bloomState.constants = CreateBuffer(bufInfo);
@@ -88,7 +88,7 @@ BloomContext::Setup()
     intermediateTextureInfo.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
     intermediateTextureInfo.width = dims.width;
     intermediateTextureInfo.height = dims.height;
-    intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     intermediateTextureInfo.mips = CoreGraphics::TextureAutoMips;
     bloomState.intermediateBloomTexture = CoreGraphics::CreateTexture(intermediateTextureInfo);
     bloomState.intermediateBloomBufferViews.Resize(mips);
@@ -189,7 +189,7 @@ BloomContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
     intermediateTextureInfo.format = TextureGetPixelFormat(FrameScript_default::Texture_LightBuffer());
     intermediateTextureInfo.width = dims.width;
     intermediateTextureInfo.height = dims.height;
-    intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    intermediateTextureInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     intermediateTextureInfo.mips = CoreGraphics::TextureAutoMips;
     bloomState.intermediateBloomTexture = CoreGraphics::CreateTexture(intermediateTextureInfo);
     bloomState.intermediateBloomBufferViews.Resize(mips);

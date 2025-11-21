@@ -165,7 +165,7 @@ DownsamplingContext::Setup()
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.elementSize = sizeof(uint);
     bufInfo.size = 6;
-    bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     bufInfo.mode = CoreGraphics::DeviceLocal;
     bufInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
     uint initData[6] = { 0 };
@@ -176,7 +176,7 @@ DownsamplingContext::Setup()
 
     bufInfo.elementSize = sizeof(DownsampleCsDepth::DownsampleUniforms::STRUCT);
     bufInfo.mode = CoreGraphics::DeviceAndHost;
-    bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
     state.colorBufferConstants = CoreGraphics::CreateBuffer(bufInfo);

@@ -115,7 +115,7 @@ SSAOContext::Setup()
     tinfo.type = Texture2D;
     tinfo.format = PixelFormat::R16G16F;
     tinfo.windowRelative = true;
-    tinfo.usage = TextureUsage::ReadWriteTexture;
+    tinfo.usage = TextureUsage::ReadWrite;
 
     ssaoState.internalTargets[0] = CreateTexture(tinfo);
     tinfo.name = "HBAO-Internal1";

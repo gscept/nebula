@@ -37,7 +37,7 @@ CreateMaterial(const MaterialTemplatesGPULang::Entry* entry)
 
     // Create material buffer
     CoreGraphics::BufferCreateInfo bufInfo;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     bufInfo.byteSize = entry->bufferSize;
     bufInfo.mode = CoreGraphics::BufferAccessMode::HostCached;
     bufInfo.name = entry->bufferName;

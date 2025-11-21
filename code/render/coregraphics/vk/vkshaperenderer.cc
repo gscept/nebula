@@ -469,7 +469,7 @@ VkShapeRenderer::GrowIndexBuffer()
     iboInfo.size = this->numIndicesThisFrame;
     iboInfo.elementSize = IndexType::SizeOf(IndexType::Index32);
     iboInfo.mode = CoreGraphics::HostCached;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = nullptr;
     iboInfo.dataSize = 0;
 
@@ -501,7 +501,7 @@ VkShapeRenderer::GrowVertexBuffer()
     vboInfo.size = this->numVerticesThisFrame;
     vboInfo.elementSize = VertexLayoutGetSize(this->vertexLayout);
     vboInfo.mode = CoreGraphics::HostCached;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
 

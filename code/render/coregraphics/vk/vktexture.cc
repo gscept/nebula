@@ -264,9 +264,9 @@ SetupTexture(const TextureId id)
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         0x0 // Device exclusive?
     };
-    VkImageUsageFlags usage = Util::BitmaskConvert(loadInfo.usage, Lookup);
+    VkImageUsageFlags usage = Util::BitmaskConvert(uint(loadInfo.usage), Lookup);
 
-    if (loadInfo.usage & TextureUsage::RenderTexture)
+    if (HasFlags(loadInfo.usage, TextureUsage::Render))
         usage |= (AnyBits(bits, ImageBits::DepthBits | ImageBits::StencilBits) ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
     VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
@@ -274,7 +274,7 @@ SetupTexture(const TextureId id)
     VkImageType type = VkTypes::AsVkImageType(runtimeInfo.type);
 
     // if read-write, we will almost definitely use this texture on multiple queues
-    VkSharingMode sharingMode = (loadInfo.usage & TextureUsage::ReadWriteTexture) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    VkSharingMode sharingMode = (HasFlags(loadInfo.usage, TextureUsage::ReadWrite)) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
     const Util::Set<uint32_t>& queues = CoreGraphics::GetQueueIndices();
 
     if (queues.Size() <= 1)
@@ -505,7 +505,7 @@ SetupTexture(const TextureId id)
         , viewRange.layerCount);
 
     // If render target or texture has clear, transition to write and clear it
-    if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::RenderTexture))
+    if (loadInfo.clear || AnyBits(loadInfo.usage, TextureUsage::Render))
     {
         // The first barrier is to transition from the initial layout to transfer for clear
         CoreGraphics::CmdBarrier(cmdBuf,
@@ -561,7 +561,7 @@ SetupTexture(const TextureId id)
                 });
         }
     }
-    else if (AnyBits(loadInfo.usage, DeviceExclusive | ReadWriteTexture))
+    else if (AnyBits(loadInfo.usage, TextureUsage::DeviceExclusive | TextureUsage::ReadWrite))
     {
         // Transition device-only textures to read state
         CoreGraphics::CmdBarrier(cmdBuf,

@@ -294,7 +294,7 @@ TBUIContext::Create()
             vboInfo.size = 1;
             vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vertexLayout);
             vboInfo.mode = CoreGraphics::HostCached;
-            vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+            vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
             vboInfo.data = nullptr;
             vboInfo.dataSize = 0;
             state.vbos.Resize(numBuffers);
@@ -544,7 +544,7 @@ TBUIContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangl
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(TBUIContext::state.vertexLayout);
         vboInfo.byteSize = requiredVertexBufferSize;
         vboInfo.mode = CoreGraphics::HostCached;
-        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
         TBUIContext::state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);

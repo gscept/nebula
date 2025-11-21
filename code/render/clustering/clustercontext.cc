@@ -98,7 +98,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
     rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
     rwb3Info.mode = BufferAccessMode::DeviceLocal;
-    rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
+    rwb3Info.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.clusterBuffer = CreateBuffer(rwb3Info);
     state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms", CoreGraphics::DeviceAndHost);
@@ -215,7 +215,7 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
         rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABBs::STRUCT);
         rwb3Info.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-        rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
+        rwb3Info.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
         rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         state.clusterBuffer = CreateBuffer(rwb3Info);
         FrameScript_default::Bind_ClusterBuffer(state.clusterBuffer);

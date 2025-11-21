@@ -141,7 +141,7 @@ GraphicsServer::Open()
         const unsigned char white[6] = {0xFF};
         const unsigned char black[6] = {0x00};
         CoreGraphics::TextureCreateInfo texInfo;
-        texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+        texInfo.usage = CoreGraphics::TextureUsage::Sample;
 
         texInfo.tag = "system";
         texInfo.format = CoreGraphics::PixelFormat::R8;

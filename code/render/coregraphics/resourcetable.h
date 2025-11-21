@@ -377,21 +377,14 @@ struct ResourceTableSet
 {
     /// Default constructor
     ResourceTableSet() {};
-    /// Constructor
-    ResourceTableSet(const ResourceTableCreateInfo& createInfo);
-    /// Move constructor
-    ResourceTableSet(ResourceTableSet&& rhs);
-    /// Destructor
-    ~ResourceTableSet();
 
-    ///
-    void Discard();
+    /// Create
+    void Create(const ResourceTableCreateInfo& createInfo);
+    /// Destroy
+    void Destroy();
 
     /// Run a for each function per table
     void ForEach(std::function<void(const ResourceTableId, const IndexT)> func);
-
-    /// Move assignment
-    void operator=(ResourceTableSet&& rhs);
 
     /// Get buffer for this frame
     const CoreGraphics::ResourceTableId Get();

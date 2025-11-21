@@ -75,7 +75,7 @@ HistogramContext::Create()
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.elementSize = sizeof(HistogramCs::HistogramBuffer::STRUCT);
     bufInfo.size = 1;
-    bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferSource;
     bufInfo.mode = CoreGraphics::DeviceLocal;
     bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
     uint initDatas[256] = { 0 };
@@ -84,19 +84,19 @@ HistogramContext::Create()
     histogramState.histogramCounters = CoreGraphics::CreateBuffer(bufInfo);
 
     // create clear buffer
-    bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     histogramState.histogramClearCountersBuffer = CoreGraphics::CreateBuffer(bufInfo);
 
     // setup readback buffers
     bufInfo.mode = CoreGraphics::HostCached;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
-    bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
-    histogramState.histogramReadbackBuffers = CoreGraphics::BufferSet(bufInfo);
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination;
+    histogramState.histogramReadbackBuffers.Create(bufInfo);
 
     bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants::STRUCT);
     bufInfo.mode = CoreGraphics::DeviceAndHost;
-    bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
     histogramState.histogramConstants = CoreGraphics::CreateBuffer(bufInfo);

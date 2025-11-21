@@ -74,12 +74,12 @@ CreateBuffer(const BufferCreateInfo& info)
     }
     else
     {
-        if (info.usageFlags & CoreGraphics::TransferBufferSource)
+        if (HasFlags(info.usageFlags, CoreGraphics::BufferUsage::TransferSource))
         {
             queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
             queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
         }
-        if (info.usageFlags & CoreGraphics::TransferBufferDestination)
+        if (HasFlags(info.usageFlags, CoreGraphics::BufferUsage::TransferDestination))
         {
             queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
             queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
@@ -105,7 +105,7 @@ CreateBuffer(const BufferCreateInfo& info)
         VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR
     };
 
-    flags = Util::BitmaskConvert(info.usageFlags, UsageLookup);
+    flags = Util::BitmaskConvert(uint(info.usageFlags), UsageLookup);
     VkBufferCreateFlags createFlags = 0x0;
 
     // force add destination bit if we have data to be uploaded
@@ -152,9 +152,9 @@ CreateBuffer(const BufferCreateInfo& info)
     vkGetBufferMemoryRequirements(loadInfo.dev, runtimeInfo.buf, &memoryReqs);
 
     uint baseAlignment = memoryReqs.alignment;
-    if (AllBits(info.usageFlags, CoreGraphics::AccelerationStructureInstances))
+    if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::AccelerationStructureInstances))
         baseAlignment = 16;
-    if (AllBits(info.usageFlags, CoreGraphics::ShaderTable))
+    if (AllBits(info.usageFlags, CoreGraphics::BufferUsage::ShaderTable))
         baseAlignment = Math::max(baseAlignment, CoreGraphics::ShaderGroupAlignment);
 
     if (info.sparse)
@@ -292,7 +292,7 @@ DestroyBuffer(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-const BufferUsageFlags
+const BufferUsage
 BufferGetType(const BufferId id)
 {
     return bufferAllocator.ConstGet<Buffer_RuntimeInfo>(id.id).usageFlags;
@@ -566,7 +566,7 @@ BufferCopyWithStaging(const CoreGraphics::BufferId dest, const uint offset, cons
     // Create buffer to copy from
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.byteSize = size;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
     bufInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
     bufInfo.data = data;

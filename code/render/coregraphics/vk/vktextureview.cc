@@ -87,7 +87,7 @@ CreateTextureView(const TextureViewCreateInfo& info)
         VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         0x0 // Device exclusive?
     };
-    VkImageUsageFlags usage = Util::BitmaskConvert(info.usage, Lookup);
+    VkImageUsageFlags usage = Util::BitmaskConvert(uint(info.usage), Lookup);
 
     VkImageViewUsageCreateInfo usageInfo;
     usageInfo.pNext = nullptr;
@@ -97,7 +97,7 @@ CreateTextureView(const TextureViewCreateInfo& info)
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        info.usage != 0x0 ? &usageInfo : nullptr,
+        uint(info.usage) != 0x0 ? &usageInfo : nullptr,
         0,
         img,
         type,

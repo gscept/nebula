@@ -157,7 +157,7 @@ LightContext::Create()
     rwbInfo.name = "LightIndexListsBuffer";
     rwbInfo.byteSize = sizeof(LightsCluster::LightIndexLists::STRUCT);
     rwbInfo.mode = BufferAccessMode::DeviceLocal;
-    rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     clusterState.clusterLightIndexLists = CreateBuffer(rwbInfo);
 
@@ -167,8 +167,8 @@ LightContext::Create()
 
     rwbInfo.name = "LightListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostCached;
-    rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    clusterState.stagingClusterLightsList = BufferSet(rwbInfo);
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+    clusterState.stagingClusterLightsList.Create(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
@@ -522,6 +522,7 @@ LightContext::SetupAreaLight(
 
     MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
     (color * intensity).store(data->EmissiveColor);
+    data->EmissiveColor[3] = 1.0f;
     Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
     ArrayFreeStack(1, data);
 
@@ -541,19 +542,19 @@ LightContext::SetupAreaLight(
 
     if (renderMesh)
     {
-            Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
-            Math::bbox box;
-            Models::ModelContext::Setup(
-                id
-                , Math::mat4()
-                , box
-                , material
-                , mesh
-                , 0
-            );
-            Models::ModelContext::SetTransform(id, Math::mat4());
-
-            Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
+        Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
+        Math::bbox box;
+        Models::ModelContext::Setup(
+            id
+            , Math::mat4()
+            , box
+            , material
+            , mesh
+            , 0
+        );
+        Models::ModelContext::SetTransform(id, Math::mat4());
+        //auto instance = Models::ModelContext::SetupMaterialInstanceContext(id, MaterialTemplatesGPULang::BatchGroup::LightMeshes);
+        Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
     }
 }
 
@@ -1217,8 +1218,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 Math::vec3 scale = trans.getscale();
                 float width = scale.x;
                 float height = shape == AreaLightShape::Tube ? 1.0f : scale.y;
-                trans.setscale(Math::vector(width * range[i], height * range[i], twoSided ? range[i] * 2 : -range[i]));
-                trans.setposition(trans.getposition() + Math::vector(0, 0, twoSided ? 0 : -range[i] / 2));
+                trans.setscale(Math::vector(width * range[i], height * range[i], twoSided ? range[i] * 2 : range[i]));
+                trans.setposition(trans.getposition() + Math::vector(0, 0, 0));
 
                 trans.getmatrix().position.store3(areaLight.position);
                 Math::bbox box = trans.getmatrix();
@@ -1364,8 +1365,16 @@ LightContext::Dealloc(Graphics::ContextEntityId id)
         spotLightAllocator.Dealloc(lightId);
         break;
     case LightType::AreaLightType:
+    {
+        auto renderMesh = areaLightAllocator.Get<AreaLight_RenderMesh>(lightId);
+        auto id = areaLightAllocator.Get<AreaLight_Observer>(lightId);
+        if (renderMesh)
+        {
+            Graphics::DeregisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
+        }
         areaLightAllocator.Dealloc(lightId);
         break;
+    }
     }
 
     genericLightAllocator.Dealloc(id.id);

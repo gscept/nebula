@@ -71,7 +71,7 @@ VkTextRenderer::Open()
     vboInfo.size = MaxNumChars * 6;
     vboInfo.elementSize = VertexLayoutGetSize(this->layout);
     vboInfo.mode = CoreGraphics::HostCached;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
     this->vbo = CreateBuffer(vboInfo);
@@ -128,7 +128,7 @@ VkTextRenderer::Open()
     // setup random texture
     TextureCreateInfo texInfo;
     texInfo.name = "GlyphTexture"_atm;
-    texInfo.usage = TextureUsage::SampleTexture;
+    texInfo.usage = TextureUsage::Sample;
     texInfo.tag = "render_system"_atm;
     texInfo.data = bitmap;
     texInfo.dataSize = sizeof(unsigned char) * GLYPH_TEXTURE_SIZE * GLYPH_TEXTURE_SIZE;

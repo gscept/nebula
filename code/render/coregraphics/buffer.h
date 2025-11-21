@@ -31,18 +31,18 @@ enum BufferAccessMode
     DeviceAndHost		// Buffer memory lives on both CPU and GPU and requires a flush/invalidate like HostCached
 };
 
-enum BufferUsageFlag
+enum class BufferUsage
 {
     InvalidBufferUsage              = 0x0,
-    TransferBufferSource            = 0x1,
-    TransferBufferDestination       = 0x2,
+    TransferSource                  = 0x1,
+    TransferDestination             = 0x2,
     ConstantBuffer                  = 0x4,
     ConstantTexelBuffer             = 0x8,
-    ReadWriteBuffer                 = 0x10,
+    ReadWrite                       = 0x10,
     ReadWriteTexelBuffer            = 0x20,
-    VertexBuffer                    = 0x40,
-    IndexBuffer                     = 0x80,
-    IndirectBuffer                  = 0x100,
+    Vertex                          = 0x40,
+    Index                           = 0x80,
+    IndirectDraw                    = 0x100,
     ShaderAddress                   = 0x200,
     AccelerationStructureData       = 0x400,    // The buffer holding acceleration structures
     AccelerationStructureScratch    = 0x800,    // Scratch buffer for building and updating acceleration structures
@@ -50,7 +50,7 @@ enum BufferUsageFlag
     AccelerationStructureInstances  = 0x2000,   // Acceleration structure instances buffer
     ShaderTable                     = 0x4000
 };
-typedef uint BufferUsageFlags;
+__ImplementEnumBitOperators(CoreGraphics::BufferUsage);
 
 enum BufferQueueSupport
 {
@@ -69,7 +69,7 @@ struct BufferCreateInfo
         , elementSize(1)
         , byteSize(0)
         , mode(DeviceLocal)
-        , usageFlags(InvalidBufferUsage)
+        , usageFlags(CoreGraphics::BufferUsage::InvalidBufferUsage)
         , queueSupport(AutomaticQueueSupport)
         , sparse(false)
         , data(nullptr)
@@ -79,9 +79,9 @@ struct BufferCreateInfo
     Util::StringAtom name;
     SizeT size;                 // this should be the number of items, for vertex buffers, this is vertex count
     SizeT elementSize;          // this should be the size of each item, for vertex buffers, this is the vertex byte size as received from the vertex layout
-    SizeT byteSize;             // if set, uses this for size, otherwise calculates the size from size and elementSize
+    SizeT byteSize;             // if not zero, this is a precomputed version of size * elementSize, and will be used instead
     BufferAccessMode mode;
-    BufferUsageFlags usageFlags;
+    BufferUsage usageFlags;
     BufferQueueSupportFlags queueSupport;
     bool sparse;
     const void* data;
@@ -101,7 +101,7 @@ const BufferId CreateBuffer(const BufferCreateInfo& info);
 void DestroyBuffer(const BufferId id);
 
 /// get type of buffer
-const BufferUsageFlags BufferGetType(const BufferId id);
+const BufferUsage BufferGetType(const BufferId id);
 /// get buffer size, which is the number of elements
 const uint64_t BufferGetSize(const BufferId id);
 /// get buffer element size, this is the size of a single element, like a vertex or index, and is multiplied with the size
@@ -225,19 +225,15 @@ struct BufferSet
 {
     /// Default constructor
     BufferSet() {};
-    /// Constructor
-    BufferSet(const BufferCreateInfo& createInfo);
-    /// Move constructor
-    BufferSet(BufferSet&& rhs);
-    /// Move assignment
-    void operator=(BufferSet&& rhs);
+
+    /// Setup set
+    void Create(const BufferCreateInfo& createInfo);
+    /// Destroy
+    void Destroy();
 
     /// Get current buffer
     const CoreGraphics::BufferId Buffer();
     
-    /// Destructor
-    ~BufferSet();
-
     Util::FixedArray<CoreGraphics::BufferId> buffers;
 };
 
@@ -248,12 +244,11 @@ struct BufferWithStaging
 {
     /// Default constructor
     BufferWithStaging() {};
-    /// Constructor
-    BufferWithStaging(const BufferCreateInfo& createInfo);
-    /// Move constructor
-    BufferWithStaging(BufferWithStaging&& rhs);
-    /// Move assignment
-    void operator=(BufferWithStaging&& rhs);
+
+    /// Setup set
+    void Create(const BufferCreateInfo& createInfo);
+    /// Destroy
+    void Destroy();
 
     /// Get device buffer
     const CoreGraphics::BufferId DeviceBuffer();
@@ -263,9 +258,6 @@ struct BufferWithStaging
     /// Flush changes on staging buffer to device
     void Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes);
     
-    /// Destructor
-    ~BufferWithStaging();
-
     CoreGraphics::BufferId deviceBuffer;
     BufferSet hostBuffers;
 };

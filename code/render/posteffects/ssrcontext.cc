@@ -11,8 +11,8 @@
 #include "graphics/view.h"
 #include "ssrcontext.h"
 
-#include "render/system_shaders/ssr_cs.h"
-#include "render/system_shaders/ssr_resolve_cs.h"
+#include "gpulang/render/system_shaders/ssr_cs.h"
+#include "gpulang/render/system_shaders/ssr_resolve_cs.h"
 
 #include "frame/default.h"
 
@@ -118,25 +118,25 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssrState.traceBuffer = CoreGraphics::White2D; // script->GetTexture("SSRTraceBuffer");
 
     // create trace shader
-    ssrState.traceShader = ShaderGet("shd:ssr_cs.fxb");
+    ssrState.traceShader = ShaderGet("shd:ssr_cs.gplb");
 
     ssrState.ssrTraceTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
     {
         ssrState.ssrTraceTables[i] = ShaderCreateResourceTable(ssrState.traceShader, NEBULA_BATCH_GROUP, numFrames);
-        ResourceTableSetRWTexture(ssrState.ssrTraceTables[i], { ssrState.traceBuffer, SsrCs::Table_Batch::TraceBuffer_SLOT, 0, InvalidSamplerId });
+        ResourceTableSetRWTexture(ssrState.ssrTraceTables[i], { ssrState.traceBuffer, SsrCs::TraceBuffer::BINDING, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrTraceTables[i]);
     }
 
     //create resolve shader
-    ssrState.resolveShader = ShaderGet("shd:ssr_resolve_cs.fxb");
+    ssrState.resolveShader = ShaderGet("shd:ssr_resolve_cs.gplb");
 
     ssrState.ssrResolveTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
     {
         ssrState.ssrResolveTables[i] = ShaderCreateResourceTable(ssrState.resolveShader, NEBULA_BATCH_GROUP, numFrames);
-        ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { FrameScript_default::Texture_ReflectionBuffer(), SsrResolveCs::Table_Batch::ReflectionBuffer_SLOT, 0, InvalidSamplerId });
-        ResourceTableSetTexture(ssrState.ssrResolveTables[i], { ssrState.traceBuffer, SsrResolveCs::Table_Batch::TraceBuffer_SLOT, 0, InvalidSamplerId });
+        ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { FrameScript_default::Texture_ReflectionBuffer(), SsrResolveCs::ReflectionBuffer::BINDING, 0, InvalidSamplerId });
+        ResourceTableSetTexture(ssrState.ssrResolveTables[i], { ssrState.traceBuffer, SsrResolveCs::TraceBuffer::BINDING, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrResolveTables[i]);
     }
 
@@ -171,13 +171,13 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     Math::mat4 viewToTextureSpaceMatrix = scrScale * conv;
 
-    SsrCs::SSRBlock ssrBlock;
-    viewToTextureSpaceMatrix.store(ssrBlock.ViewToTextureSpace);
+    SsrCs::SSRBlock::STRUCT ssrBlock;
+    viewToTextureSpaceMatrix.store(&ssrBlock.ViewToTextureSpace[0][0]);
     uint64_t ssrOffset = CoreGraphics::SetConstants(ssrBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::Table_Batch::SSRBlock_SLOT, 0, sizeof(SsrCs::SSRBlock), ssrOffset });
+    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { CoreGraphics::GetConstantBuffer(bufferIndex), SsrCs::SSRBlock::BINDING, 0, sizeof(SsrCs::SSRBlock::STRUCT), ssrOffset });
     ResourceTableCommitChanges(ssrState.ssrTraceTables[bufferIndex]);
 }
 

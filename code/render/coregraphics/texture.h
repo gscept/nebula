@@ -52,14 +52,14 @@ enum TextureCubeFace
 };
 
 /// type of texture usage
-enum TextureUsage
+enum class TextureUsage
 {
     InvalidTextureUsage         = 0x0,      // Invalid usage
-    SampleTexture               = 0x1,      // Texture is a shader sampleable 1D, 2D, 3D or Cube texture
-    RenderTexture               = 0x2,      // Texture supports to be rendered to as an attachment, also supports sampling
-    ReadWriteTexture            = 0x4,      // Texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan), also supports sampling
-    TransferSourceTexture       = 0x8,      // Texture supports being a copy source
-    TransferDestinationTexture  = 0x10,     // Texture supports being a copy destination
+    Sample                      = 0x1,      // Texture is a shader sampleable 1D, 2D, 3D or Cube texture
+    Render                      = 0x2,      // Texture supports to be rendered to as an attachment, also supports sampling
+    ReadWrite                   = 0x4,      // Texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan), also supports sampling
+    TransferSource              = 0x8,      // Texture supports being a copy source
+    TransferDestination         = 0x10,     // Texture supports being a copy destination
     DeviceExclusive             = 0x20      // Texture will be managed entirely by the device (copy target, RW target, etc)
 };
 __ImplementEnumBitOperators(CoreGraphics::TextureUsage);
@@ -106,7 +106,7 @@ struct TextureCreateInfo
 {
     TextureCreateInfo()
         : name(""_atm)
-        , usage(CoreGraphics::TextureUsage::SampleTexture)
+        , usage(CoreGraphics::TextureUsage::Sample)
         , tag(""_atm)
         , data(nullptr)
         , dataSize(0)
@@ -292,11 +292,11 @@ TextureUsageFromString(const Util::String& string)
 
     for (IndexT i = 0; i < comps.Size(); i++)
     {
-        if      (comps[i] == "Sample") usage |= SampleTexture;
-        else if (comps[i] == "Render") usage |= RenderTexture;
-        else if (comps[i] == "ReadWrite") usage |= ReadWriteTexture;
-        else if (comps[i] == "TransferSource") usage |= TransferSourceTexture;
-        else if (comps[i] == "TransferDestination") usage |= TransferDestinationTexture;        
+        if      (comps[i] == "Sample") usage |= CoreGraphics::TextureUsage::Sample;
+        else if (comps[i] == "Render") usage |= CoreGraphics::TextureUsage::Render;
+        else if (comps[i] == "ReadWrite") usage |= CoreGraphics::TextureUsage::ReadWrite;
+        else if (comps[i] == "TransferSource") usage |= CoreGraphics::TextureUsage::TransferSource;
+        else if (comps[i] == "TransferDestination") usage |= CoreGraphics::TextureUsage::TransferDestination;
     }
 
     return usage;

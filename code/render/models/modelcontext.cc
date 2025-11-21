@@ -711,8 +711,8 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     //n_printf("Area: %f\n", screenArea);
 
                 Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
-                NodeInstances.renderable.nodeMeshes[j] = primitiveNode->GetMesh();
-                NodeInstances.renderable.nodePrimitiveGroup[j] = primitiveNode->GetPrimitiveGroup();
+                NodeInstances.renderable.nodeMeshes[j] = NodeInstances.renderable.nodeMeshes[j];
+                NodeInstances.renderable.nodePrimitiveGroup[j] = NodeInstances.renderable.nodePrimitiveGroup[j];
 
                 // calculate view vector to calculate LOD
                 Math::vec4 viewVector = cameraTransform.position - transform.position;

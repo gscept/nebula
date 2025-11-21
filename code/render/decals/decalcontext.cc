@@ -85,7 +85,7 @@ DecalContext::Create()
     rwbInfo.size = 1;
     rwbInfo.elementSize = sizeof(DecalsCluster::DecalIndexLists::STRUCT);
     rwbInfo.mode = BufferAccessMode::DeviceLocal;
-    rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     decalState.clusterDecalIndexLists = CreateBuffer(rwbInfo);
 
@@ -95,8 +95,8 @@ DecalContext::Create()
 
     rwbInfo.name = "DecalListsStagingBuffer";
     rwbInfo.mode = BufferAccessMode::HostLocal;
-    rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    decalState.stagingClusterDecalsList = BufferSet(rwbInfo);
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+    decalState.stagingClusterDecalsList.Create(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {

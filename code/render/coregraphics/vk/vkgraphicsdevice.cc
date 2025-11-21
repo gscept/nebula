@@ -1243,7 +1243,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     cboInfo.name = "Global Constant Buffer";
     cboInfo.byteSize = info.globalConstantBufferMemorySize;
     cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
-    cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
+    cboInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer | CoreGraphics::BufferUsage::TransferDestination;
     state.globalConstantBuffer.Resize(info.numBufferedFrames);
     for (IndexT i = 0; i < info.numBufferedFrames; i++)
     {
@@ -1351,7 +1351,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             bufInfo.byteSize = byteSize;
             bufInfo.mode = CoreGraphics::HostLocal;
             bufInfo.queueSupport = GraphicsQueueSupport | ComputeQueueSupport;
-            bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
+            bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination;
             queries.queryBuffer[i] = CoreGraphics::CreateBuffer(bufInfo);
         }
     }
@@ -1364,11 +1364,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     vboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     vboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     vboInfo.usageFlags =
-        CoreGraphics::BufferUsageFlag::VertexBuffer
-        | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
-        | CoreGraphics::BufferUsageFlag::ShaderAddress
-        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
+        CoreGraphics::BufferUsage::Vertex
+        | CoreGraphics::BufferUsage::TransferDestination
+        | CoreGraphics::BufferUsage::ReadWrite
+        | CoreGraphics::BufferUsage::ShaderAddress
+        | CoreGraphics::BufferUsage::AccelerationStructureInput;
     state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
     state.vertexAllocator = Memory::RangeAllocator(info.globalVertexBufferMemorySize, 2048);
 
@@ -1378,11 +1378,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     iboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
     iboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
     iboInfo.usageFlags =
-        CoreGraphics::BufferUsageFlag::IndexBuffer
-        | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer
-        | CoreGraphics::BufferUsageFlag::ShaderAddress
-        | CoreGraphics::BufferUsageFlag::AccelerationStructureInput;
+        CoreGraphics::BufferUsage::Index
+        | CoreGraphics::BufferUsage::TransferDestination
+        | CoreGraphics::BufferUsage::ReadWrite
+        | CoreGraphics::BufferUsage::ShaderAddress
+        | CoreGraphics::BufferUsage::AccelerationStructureInput;
     state.indexBuffer = CoreGraphics::CreateBuffer(iboInfo);
     state.indexAllocator = Memory::RangeAllocator(info.globalIndexBufferMemorySize, 2048);
 
@@ -1391,7 +1391,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     uploadInfo.byteSize = Math::align(info.globalUploadMemorySize, CoreGraphics::MemoryRangeGranularity);
     uploadInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
     uploadInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::TransferQueueSupport;
-    uploadInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource;
+    uploadInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
 
     state.uploadAllocationsToFree.Resize(info.numBufferedFrames);
     state.uploadBuffer = CoreGraphics::CreateBuffer(uploadInfo);

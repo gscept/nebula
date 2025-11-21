@@ -117,7 +117,7 @@ ParticleContext::Create()
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
     vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.data = vertex;
     vboInfo.dataSize = sizeof(vertex);
     CoreGraphics::BufferId vbo = CoreGraphics::CreateBuffer(vboInfo);
@@ -128,7 +128,7 @@ ParticleContext::Create()
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
     iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
     CoreGraphics::BufferId ibo = CoreGraphics::CreateBuffer(iboInfo);
@@ -162,7 +162,7 @@ ParticleContext::Create()
     vboInfo.size = 4;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(cornerLayout);
     vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
     vboInfo.dataSize = sizeof(cornerVertexData);
     vboInfo.data = cornerVertexData;
     state.geometryVbo = CoreGraphics::CreateBuffer(vboInfo);
@@ -173,7 +173,7 @@ ParticleContext::Create()
     iboInfo.size = 6;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index16);
     iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::BufferUsage::Index;
     iboInfo.data = cornerIndexData;
     iboInfo.dataSize = sizeof(cornerIndexData);
     state.geometryIbo = CoreGraphics::CreateBuffer(iboInfo);
@@ -546,7 +546,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         vboInfo.size = state.numParticlesThisFrame;
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.layout);
         vboInfo.mode = CoreGraphics::HostCached;
-        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.usageFlags = CoreGraphics::BufferUsage::Vertex;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
 

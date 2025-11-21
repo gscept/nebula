@@ -373,7 +373,7 @@ CreateRaytracingPipeline(const Util::Array<CoreGraphics::ShaderProgramId> progra
         // Create buffers for the different shader groups
         CoreGraphics::BufferCreateInfo tableInfo;
         tableInfo.byteSize = data.Size();
-        tableInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderTable | CoreGraphics::BufferUsageFlag::ShaderAddress;
+        tableInfo.usageFlags = CoreGraphics::BufferUsage::ShaderTable | CoreGraphics::BufferUsage::ShaderAddress;
         tableInfo.queueSupport = queueType == CoreGraphics::ComputeQueueType ? CoreGraphics::BufferQueueSupport::ComputeQueueSupport : CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
         tableInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
         tableInfo.data = data.Begin();

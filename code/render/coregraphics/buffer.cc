@@ -11,7 +11,8 @@ namespace CoreGraphics
 //------------------------------------------------------------------------------
 /**
 */
-BufferSet::BufferSet(const BufferCreateInfo& createInfo)
+void
+BufferSet::Create(const BufferCreateInfo& createInfo)
 {
     const SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
     this->buffers.Resize(numBuffers);
@@ -24,28 +25,14 @@ BufferSet::BufferSet(const BufferCreateInfo& createInfo)
 //------------------------------------------------------------------------------
 /**
 */
-BufferSet::BufferSet(BufferSet&& rhs)
-{
-    for (IndexT i = 0; i < this->buffers.Size(); i++)
-    {
-        CoreGraphics::DestroyBuffer(this->buffers[i]);
-    }
-    this->buffers = rhs.buffers;
-    rhs.buffers.Clear();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-BufferSet::operator=(BufferSet&& rhs)
+BufferSet::Destroy()
 {
     for (IndexT i = 0; i < this->buffers.Size(); i++)
     {
         CoreGraphics::DestroyBuffer(this->buffers[i]);
     }
-    this->buffers = rhs.buffers;
-    rhs.buffers.Clear();
+    this->buffers.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -60,57 +47,30 @@ BufferSet::Buffer()
 //------------------------------------------------------------------------------
 /**
 */
-BufferSet::~BufferSet()
-{
-    for (IndexT i = 0; i < this->buffers.Size(); i++)
-    {
-        CoreGraphics::DestroyBuffer(this->buffers[i]);
-    }
-    this->buffers.Clear();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-BufferWithStaging::BufferWithStaging(const BufferCreateInfo& createInfo)
+void
+BufferWithStaging::Create(const BufferCreateInfo& createInfo)
 {
     BufferCreateInfo bufferInfo = createInfo;
     bufferInfo.name = Util::String::Sprintf("%s Host Buffer", createInfo.name.Value());
     bufferInfo.mode = CoreGraphics::HostLocal;
-    bufferInfo.usageFlags |= CoreGraphics::TransferBufferSource;
-    this->hostBuffers = BufferSet(bufferInfo);
+    bufferInfo.usageFlags |= CoreGraphics::BufferUsage::TransferSource;
+    this->hostBuffers.Create(bufferInfo);
 
     bufferInfo.name = Util::String::Sprintf("%s Device Buffer", createInfo.name.Value());
     bufferInfo.mode = CoreGraphics::DeviceLocal;
-    bufferInfo.usageFlags |= CoreGraphics::TransferBufferDestination;
+    bufferInfo.usageFlags |= CoreGraphics::BufferUsage::TransferDestination;
     this->deviceBuffer = CoreGraphics::CreateBuffer(bufferInfo);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-BufferWithStaging::BufferWithStaging(BufferWithStaging&& rhs)
-{
-    this->hostBuffers = std::move(rhs.hostBuffers);
-    if (this->deviceBuffer != InvalidBufferId)
-        DestroyBuffer(this->deviceBuffer);
-    this->deviceBuffer = std::move(rhs.deviceBuffer);
-    rhs.deviceBuffer = CoreGraphics::InvalidBufferId;
-    rhs.hostBuffers.buffers.Clear();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-BufferWithStaging::operator=(BufferWithStaging&& rhs)
+BufferWithStaging::Destroy()
 {
-    this->hostBuffers = std::move(rhs.hostBuffers);
+    this->hostBuffers.Destroy();
     if (this->deviceBuffer != InvalidBufferId)
         DestroyBuffer(this->deviceBuffer);
-    this->deviceBuffer = std::move(rhs.deviceBuffer);
-    rhs.deviceBuffer = CoreGraphics::InvalidBufferId;
-    rhs.hostBuffers.buffers.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -141,15 +101,6 @@ BufferWithStaging::Flush(const CoreGraphics::CmdBufferId cmdBuf, SizeT numBytes)
     CoreGraphics::BufferCopy copy;
     copy.offset = 0;
     CoreGraphics::CmdCopy(cmdBuf, this->hostBuffers.Buffer(), {copy}, this->deviceBuffer, {copy}, numBytes);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-BufferWithStaging::~BufferWithStaging()
-{
-    if (this->deviceBuffer != InvalidBufferId)
-        DestroyBuffer(this->deviceBuffer);
 }
 
 } // namespace CoreGraphics

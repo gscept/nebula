@@ -145,7 +145,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     CoreGraphics::BufferCreateInfo geometryBindingBufferCreateInfo;
     geometryBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::Geometry);
     geometryBindingBufferCreateInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    geometryBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    geometryBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite;
     geometryBindingBufferCreateInfo.data = &geometryBindings;
     geometryBindingBufferCreateInfo.dataSize = sizeof(Raytracetest::Geometry);
     state.geometryBindingBuffer = CoreGraphics::CreateBuffer(geometryBindingBufferCreateInfo);
@@ -155,7 +155,7 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     gridBufferInfo.size = NUM_GRID_CELLS * NUM_GRID_CELLS * NUM_GRID_CELLS;
     gridBufferInfo.elementSize = sizeof(LightGridCs::ClusterAABB);
     gridBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    gridBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
+    gridBufferInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     gridBufferInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.gridBuffer = CoreGraphics::CreateBuffer(gridBufferInfo);
 
@@ -163,14 +163,14 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     indexListInfo.name = "RaytracingLightIndexListsBuffer";
     indexListInfo.byteSize = sizeof(LightGridCs::LightIndexLists);
     indexListInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    indexListInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
+    indexListInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
     indexListInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.lightGridIndexLists = CoreGraphics::CreateBuffer(indexListInfo);
 
     CoreGraphics::BufferCreateInfo lightGridConstantsInfo;
     lightGridConstantsInfo.byteSize = sizeof(LightGridCs::ClusterUniforms);
     lightGridConstantsInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
-    lightGridConstantsInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    lightGridConstantsInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     lightGridConstantsInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
     state.lightGridConstants = CoreGraphics::CreateBuffer(lightGridConstantsInfo);
 
@@ -190,15 +190,15 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
     bufInfo.elementSize = CoreGraphics::BlasInstanceGetSize();
     bufInfo.size = settings.maxNumAllowedInstances;  // This is a virtual max-size, as this buffer is virtual memory managed
     bufInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport | CoreGraphics::BufferQueueSupport::GraphicsQueueSupport;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::AccelerationStructureInstances;
-    state.blasInstanceBuffer = CoreGraphics::BufferWithStaging(bufInfo);
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::AccelerationStructureInstances;
+    state.blasInstanceBuffer.Create(bufInfo);
 
     CoreGraphics::BufferCreateInfo objectBindingBufferCreateInfo;
     objectBindingBufferCreateInfo.name = "Raytracing Object Binding Buffer";
     objectBindingBufferCreateInfo.byteSize = sizeof(Raytracetest::Object) * settings.maxNumAllowedInstances;
-    objectBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsageFlag::ShaderAddress | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
+    objectBindingBufferCreateInfo.usageFlags = CoreGraphics::BufferUsage::ShaderAddress | CoreGraphics::BufferUsage::ReadWrite;
     objectBindingBufferCreateInfo.queueSupport = CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
-    state.objectBindingBuffer = CoreGraphics::BufferWithStaging(objectBindingBufferCreateInfo);
+    state.objectBindingBuffer.Create(objectBindingBufferCreateInfo);
 
     FrameScript_default::Bind_RayTracingObjectBindings(state.objectBindingBuffer.DeviceBuffer());
     FrameScript_default::Bind_GridBuffer(state.gridBuffer);
@@ -370,8 +370,8 @@ RaytracingContext::Create(const RaytracingSetupSettings& settings)
 void
 RaytracingContext::Discard()
 {
-    state.raytracingTables.Discard();
-    state.lightGridResourceTables.Discard();
+    state.raytracingTables.Destroy();
+    state.lightGridResourceTables.Destroy();
 }
 
 //------------------------------------------------------------------------------

@@ -183,7 +183,7 @@ DDGIContext::Create()
     rwbInfo.size = 1;
     rwbInfo.elementSize = sizeof(GiVolumeCull::GIIndexLists);
     rwbInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.clusterGIVolumeIndexLists = CreateBuffer(rwbInfo);
 
@@ -193,8 +193,8 @@ DDGIContext::Create()
 
     rwbInfo.name = "GIVolumeListsStagingBuffer";
     rwbInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
-    rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    state.stagingClusterGIVolumeList = CoreGraphics::BufferSet(rwbInfo);
+    rwbInfo.usageFlags = CoreGraphics::BufferUsage::TransferSource;
+    state.stagingClusterGIVolumeList.Create(rwbInfo);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
@@ -481,7 +481,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     radianceCreateInfo.width = volume.numRaysPerProbe;
     radianceCreateInfo.height = setup.numProbesX * setup.numProbesY * setup.numProbesZ;
     radianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
-    radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    radianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
 
     volume.radiance = CoreGraphics::CreateTexture(radianceCreateInfo);
 
@@ -492,7 +492,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     irradianceCreateInfo.width = setup.numProbesY * setup.numProbesZ * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_IRRADIANCE_TEXELS_PER_PROBE + 2);
     irradianceCreateInfo.format = CoreGraphics::PixelFormat::R32G32B32A32F;
-    irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    irradianceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     volume.irradiance = CoreGraphics::CreateTexture(irradianceCreateInfo);
 
     CoreGraphics::TextureCreateInfo distanceCreateInfo;
@@ -502,7 +502,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     distanceCreateInfo.width = setup.numProbesY * setup.numProbesZ * (ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE + 2);
     distanceCreateInfo.height = setup.numProbesX * (ProbeUpdate::NUM_DISTANCE_TEXELS_PER_PROBE + 2);
     distanceCreateInfo.format = CoreGraphics::PixelFormat::R16G16F;
-    distanceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    distanceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     volume.distance = CoreGraphics::CreateTexture(distanceCreateInfo);
 
     CoreGraphics::TextureCreateInfo offsetCreateInfo;
@@ -512,7 +512,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     offsetCreateInfo.width = setup.numProbesY * setup.numProbesZ;
     offsetCreateInfo.height = setup.numProbesX;
     offsetCreateInfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
-    offsetCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    offsetCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     volume.offsets = CoreGraphics::CreateTexture(offsetCreateInfo);
 
     CoreGraphics::TextureCreateInfo statesCreateInfo;
@@ -522,7 +522,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     statesCreateInfo.width = setup.numProbesY * setup.numProbesZ;
     statesCreateInfo.height = setup.numProbesX;
     statesCreateInfo.format = CoreGraphics::PixelFormat::R8;
-    statesCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    statesCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     volume.states = CoreGraphics::CreateTexture(statesCreateInfo);
 
     CoreGraphics::TextureCreateInfo scrollSpaceCreateInfo;
@@ -532,7 +532,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     scrollSpaceCreateInfo.width = setup.numProbesY * setup.numProbesZ;
     scrollSpaceCreateInfo.height = setup.numProbesX;
     scrollSpaceCreateInfo.format = CoreGraphics::PixelFormat::R8;
-    scrollSpaceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+    scrollSpaceCreateInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
     volume.scrollSpace = CoreGraphics::CreateTexture(scrollSpaceCreateInfo);
 
     for (uint rayIndex = 0; rayIndex < volume.numRaysPerProbe; rayIndex++)
@@ -564,7 +564,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
     probeVolumeUpdateBufferInfo.name = Util::String::Sprintf("%s Volume Update Constants", volumeName.c_str());
 #endif
     probeVolumeUpdateBufferInfo.byteSize = sizeof(ProbeUpdate::VolumeConstants);
-    probeVolumeUpdateBufferInfo.usageFlags = CoreGraphics::BufferUsageFlag::ConstantBuffer;
+    probeVolumeUpdateBufferInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     probeVolumeUpdateBufferInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
     volume.volumeConstantBuffer = CoreGraphics::CreateBuffer(probeVolumeUpdateBufferInfo);
 

@@ -370,7 +370,7 @@ GetSubpassInfo(
     {
         TextureId tex = TextureViewGetTexture(loadInfo.attachments[i]);
         TextureUsage usage = TextureGetUsage(tex);
-        n_assert(AllBits(usage, RenderTexture));
+        n_assert(AllBits(usage, TextureUsage::Render));
 
         VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         VkAttachmentDescription& attachment = outAttachments[i];

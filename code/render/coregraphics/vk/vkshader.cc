@@ -673,7 +673,7 @@ ShaderSetup(
 
             ResourceTableLayoutSampler sampBinding;
             sampBinding.slot = sampler->binding;
-            sampBinding.visibility = ShaderVisibilityFromGPULang(sampler->visibility) | annotationBits;
+            sampBinding.visibility = ShaderVisibilityFromGPULang(sampler->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             sampBinding.sampler = samp;
 
             if (sampler->binding != 0xFFFFFFFF)
@@ -725,7 +725,7 @@ ShaderSetup(
             cbo.num = 1;
             if (variable->arraySizeCount > 0)
                 cbo.num = variable->arraySizes[0];
-            cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            cbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -771,7 +771,7 @@ ShaderSetup(
             rwbo.num = 1;
             if (variable->arraySizeCount > 0)
                 rwbo.num = variable->arraySizes[0];
-            rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            rwbo.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
             {
@@ -802,7 +802,7 @@ ShaderSetup(
         {
             ResourceTableLayoutSampler samp;
             samp.slot = variable->binding;
-            samp.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            samp.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             samp.sampler = CoreGraphics::InvalidSamplerId;
             bool slotUsed = false;
             if (variable->binding != 0xFFFFFFFF)
@@ -824,7 +824,7 @@ ShaderSetup(
         {
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
-            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             tex.num = 1;
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
@@ -851,7 +851,7 @@ ShaderSetup(
         {
             ResourceTableLayoutTexture tex;
             tex.slot = variable->binding;
-            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            tex.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             tex.num = 1;
             if (variable->arraySizeCount > 0)
                 tex.num = variable->arraySizes[0];
@@ -902,7 +902,7 @@ ShaderSetup(
         {
             ResourceTableLayoutAccelerationStructure bvh;
             bvh.slot = variable->binding;
-            bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility) | annotationBits;
+            bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
             bvh.num = variable->arraySizes[0];
             bool slotUsed = false;
 
@@ -1472,7 +1472,9 @@ ShaderCreateResourceTableSet(const ShaderId id, const IndexT group, const uint o
             .layout = Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)]),
             .overallocationSize = overallocationSize
         };
-        return CoreGraphics::ResourceTableSet(crInfo);
+        CoreGraphics::ResourceTableSet ret;
+        ret.Create(crInfo);
+        return ret;
     }
 }
 
@@ -1505,7 +1507,7 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAt
         info.name = name;
         info.mode = mode;
         info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-        info.usageFlags = CoreGraphics::ConstantBuffer;
+        info.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
 
         // Initialize data to zeroes
         Util::FixedArray<byte> data(buffer.byteSize, 0x0);
@@ -1532,7 +1534,7 @@ ShaderCreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex
         info.byteSize = buffer.byteSize;
         info.name = buffer.name;
         info.mode = mode;
-        info.usageFlags = CoreGraphics::ConstantBuffer;
+        info.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
 
         // Initialize data to zeroes
         Util::FixedArray<byte> data(buffer.byteSize, 0x0);
@@ -1558,7 +1560,7 @@ ShaderCreateConstantBuffer(const ShaderId id, const IndexT group, const IndexT c
         info.byteSize = buffer.byteSize;
         info.name = buffer.name;
         info.mode = mode;
-        info.usageFlags = CoreGraphics::ConstantBuffer;
+        info.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
 
         // Initialize data to zeroes
         Util::FixedArray<byte> data(buffer.byteSize, 0x0);
