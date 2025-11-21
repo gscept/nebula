@@ -17,9 +17,10 @@ fips_dir(components)
 	nebula_idl_compile(
 		camera.json
 		decal.json
+		gi.json
 		lighting.json
 		model.json
-		gi.json
+        terrain.json
 	)
 nebula_end_module()
 

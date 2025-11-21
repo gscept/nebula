@@ -107,6 +107,12 @@ fips_dir(editor)
                 inspector.cc
                 inspector.h
             )
+        fips_dir(editor/ui/windows/terraineditor)
+            compile_gpulang(terrainbrush.gpul)
+            fips_files(
+                terraineditor.cc
+                terraineditor.h
+            )
         fips_dir(editor/ui/windows/asseteditor)
             fips_files(
                 animationasseteditor.cc

@@ -21,6 +21,7 @@
 #include "components/lighting.h"
 #include "components/model.h"
 #include "components/gi.h"
+#include "components/terrain.h"
 
 namespace GraphicsFeature
 {
@@ -50,6 +51,8 @@ public:
     static void InitDecal(Game::World* world, Game::Entity entity, Decal* decal);
     /// called automatically when a ddgi volume needs to be initialized
     static void InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVolume* volume);
+    /// Called automatically when a terrain needs to be initialized
+    static void InitTerrain(Game::World* world, Game::Entity entity, Terrain* terrain);
 
 private:
     void InitUpdateModelTransformProcessor();

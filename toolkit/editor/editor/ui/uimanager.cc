@@ -20,6 +20,7 @@
 #include "windows/physics.h"
 #include "windows/settings.h"
 #include "windows/profiler.h"
+#include "windows/terraineditor/terraineditor.h"
 #include "coregraphics/texture.h"
 #include "resources/resourceserver.h"
 #include "editor/commandmanager.h"
@@ -107,7 +108,8 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     windowServer->RegisterWindow("Presentation::Physics", "Physics");
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
-    
+    windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
+
     UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
     UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");
     UI::Icons::stop          = NLoadIcon("systex:icon_stop.dds");

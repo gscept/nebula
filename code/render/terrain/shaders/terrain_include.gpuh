@@ -153,11 +153,15 @@ group(SYSTEM_GROUP) uniform TerrainPatches : *[]mutable TerrainPatchData;
 group(SYSTEM_GROUP) sampler_state TextureSampler
 {
     Filter = FilterMode.Linear;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
 };
 
 group(SYSTEM_GROUP) sampler_state AnisoSampler
 {
     Filter = FilterMode.Linear;
+    AddressU = AddressMode.Clamp;
+    AddressV = AddressMode.Clamp;
     MaxAnisotropy = 4u;
 };
 

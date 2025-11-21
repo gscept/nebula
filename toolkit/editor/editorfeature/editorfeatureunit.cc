@@ -9,6 +9,7 @@
 #include "editor/components/editorcomponents.h"
 #include "editor/bindings/editorbindings.h"
 
+#include "graphicsfeature/graphicsfeatureunit.h"
 #include "graphicsfeature/components/model.h"
 #include "graphicsfeature/components/decal.h"
 #include "graphicsfeature/components/lighting.h"
@@ -68,6 +69,7 @@ EditorFeatureUnit::OnActivate()
     {
         Editor::Create();
 
+        GraphicsFeature::GraphicsFeatureUnit::Instance()->SetWindowTitle("Nebula Editor");
         this->AttachManager(Editor::UIManager::Create());
 
         Im3d::Im3dContext::SetGridStatus(true);

@@ -39,6 +39,7 @@
 #include "components/decal.h"
 #include "components/lighting.h"
 #include "components/model.h"
+#include "components/terrain.h"
 
 #include "scripting/deargui.h"
 
@@ -91,6 +92,7 @@ GraphicsFeatureUnit::OnAttach()
     this->RegisterComponentType<DDGIVolume>({.decay = true, .OnInit = &GraphicsManager::InitDDGIVolume});
     this->RegisterComponentType<Model>({.decay = true, .OnInit = &GraphicsManager::InitModel });
     this->RegisterComponentType<Decal>({.decay = true, .OnInit = &GraphicsManager::InitDecal});
+    this->RegisterComponentType<Terrain>({ .decay = true, .OnInit = &GraphicsManager::InitTerrain });
     this->RegisterComponentType<Camera>();
     Scripting::RegisterDearguiModule();
 }
@@ -170,83 +172,12 @@ GraphicsFeatureUnit::OnActivate()
     Raytracing::RaytracingContext::Create(raytracingSettings);
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
 
-    if (terrainSettings && terrainSettings->config && terrainSettings->config->use)
-    {
-        Terrain::TerrainSetupSettings settings {
-            terrainSettings->config->min_height,
-            terrainSettings->config->max_height, // Min/max height
-            terrainSettings->config->world_size_width,
-            terrainSettings->config->world_size_height, // World size in meters
-            terrainSettings->config->tile_size_width,
-            terrainSettings->config->tile_size_height, // Tile size in meters
-            terrainSettings->config->quads_per_tile_width,
-            terrainSettings->config->quads_per_tile_height, // Amount of quads per tile
-        };
-        Terrain::TerrainContext::Create(settings);
-        Terrain::TerrainContext::SetSun(this->globalLight);
-
-        this->terrain.entity = Graphics::CreateEntity();
-        Graphics::RegisterEntity<Terrain::TerrainContext>(this->terrain.entity);
-        Terrain::TerrainContext::SetupTerrain(this->terrain.entity, terrainSettings->instance->height, terrainSettings->instance->decision, terrainSettings->config->raytracing);
-
-        for (IndexT i = 0; i < terrainSettings->biomes.size(); i++)
-        {
-            const std::unique_ptr<App::TerrainBiomeSettingsT>& settings = terrainSettings->biomes[i];
-
-            Terrain::BiomeParameters biomeParams =
-            {
-                .slopeThreshold = settings->parameters->slope_threshold,
-                .heightThreshold = settings->parameters->height_threshold,
-                .uvScaleFactor = settings->parameters->uv_scale_factor
-            };
-            Terrain::BiomeSettings biomeSettings = Terrain::BiomeSettingsBuilder()
-                .Parameters(biomeParams)
-                .FlatMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->flat_material->albedo)
-                    .Normal(settings->flat_material->normal)
-                    .Material(settings->flat_material->material)
-                    .Finish()
-                )
-                .SlopeMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->slope_material->albedo)
-                    .Normal(settings->slope_material->normal)
-                    .Material(settings->slope_material->material)
-                    .Finish()
-                )
-                .HeightMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->height_material->albedo)
-                    .Normal(settings->height_material->normal)
-                    .Material(settings->height_material->material)
-                    .Finish()
-                )
-                .HeightSlopeMaterial(Terrain::BiomeMaterialBuilder()
-                    .Albedo(settings->height_slope_material->albedo)
-                    .Normal(settings->height_slope_material->normal)
-                    .Material(settings->height_slope_material->material)
-                    .Finish()
-                )
-                .Mask(settings->mask)
-                .Finish();
-
-            Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome(biomeSettings);
-            this->terrain.biomes.Append(biome);
-        }
-
-        if (vegetationSettings && vegetationSettings->use)
-        {
-            Vegetation::VegetationSetupSettings vegSettings {
-                terrainSettings->config->min_height,
-                terrainSettings->config->max_height, // min/max height
-                Math::vec2 {terrainSettings->config->world_size_width, terrainSettings->config->world_size_height}};
-            Vegetation::VegetationContext::Create(vegSettings);
-        }
-    }
-
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
     Fog::VolumetricFogContext::Create();
     GI::DDGIContext::Create();
+    ::Terrain::TerrainContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
@@ -297,6 +228,7 @@ GraphicsFeatureUnit::OnActivate()
         EnvironmentContext::RenderUI,
         Raytracing::RaytracingContext::ReconstructTopLevelAcceleration,
         Particles::ParticleContext::UpdateParticles,
+        ::Terrain::TerrainContext::RenderUI
     };
 
     Util::Array<Graphics::ViewDependentCall> preLogicViewCalls =
@@ -311,6 +243,7 @@ GraphicsFeatureUnit::OnActivate()
         Lighting::LightContext::UpdateViewDependentResources,
         Raytracing::RaytracingContext::UpdateViewResources,
         GI::DDGIContext::UpdateActiveVolumes,
+        ::Terrain::TerrainContext::CullPatches
     };
 
     Util::Array<Graphics::ViewIndependentCall> postLogicCalls =
@@ -331,19 +264,8 @@ GraphicsFeatureUnit::OnActivate()
 
     Util::Array<Graphics::ViewDependentCall> postLogicViewCalls =
     {
+        ::Terrain::TerrainContext::UpdateLOD
     };
-
-    if (terrainSettings->config && terrainSettings->config->use)
-    {
-        preLogicCalls.Append(Terrain::TerrainContext::RenderUI);
-        preLogicViewCalls.Append(Terrain::TerrainContext::CullPatches);
-        postLogicViewCalls.Append(Terrain::TerrainContext::UpdateLOD);
-
-        if (vegetationSettings->use)
-        {
-            postLogicViewCalls.Append(Vegetation::VegetationContext::UpdateViewResources);
-        }
-    }
 
     this->gfxServer->SetupPreLogicCalls(preLogicCalls);
     this->gfxServer->SetupPreLogicViewCalls(preLogicViewCalls);

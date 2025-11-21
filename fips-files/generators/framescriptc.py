@@ -206,7 +206,7 @@ class LocalTextureDefinition:
         usageBits = self.usage.split("|")
         self.usage = ""
         for bit in usageBits:
-            self.usage += "CoreGraphics::TextureUsage::{}Texture".format(bit)
+            self.usage += "CoreGraphics::TextureUsage::{}".format(bit)
             if bit != usageBits[-1]:
                 self.usage += " | "
 
@@ -321,7 +321,8 @@ class SubgraphDefinition:
             file.WriteLine("bool SubgraphEnabled_{};".format(self.name))
         file.WriteLine('Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> SubgraphTextureDependencies_{};'.format(self.name))
         file.WriteLine('Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> SubgraphBufferDependencies_{};'.format(self.name))
-        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);\n".format(self.name))
+        file.WriteLine("void (*Subgraph_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
+        file.WriteLine("void (*Subgraph_Sync_{})(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT);".format(self.name))
         file.WriteLine("void (*SubgraphPipelines_{})(const CoreGraphics::PassId, const uint);\n".format(self.name))
 
         file.WriteLine("//------------------------------------------------------------------------------")
@@ -335,7 +336,18 @@ class SubgraphDefinition:
         file.WriteLine("SubgraphTextureDependencies_{} = textureDeps;".format(self.name))
         file.WriteLine("SubgraphBufferDependencies_{} = bufferDeps;".format(self.name))
         file.DecreaseIndent()
-        file.WriteLine("}")
+        file.WriteLine("}\n")
+
+        file.WriteLine("//------------------------------------------------------------------------------")
+        file.WriteLine("/**")
+        file.WriteLine("*/")
+        file.WriteLine('void')
+        file.WriteLine('RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT))'.format(self.name))
+        file.WriteLine("{")
+        file.IncreaseIndent()
+        file.WriteLine("Subgraph_Sync_{} = func;".format(self.name))
+        file.DecreaseIndent()
+        file.WriteLine("}\n")
 
         if self.p is not None and self.subp is not None:
             file.WriteLine("//------------------------------------------------------------------------------")
@@ -365,6 +377,7 @@ class SubgraphDefinition:
         if self.p is not None and self.subp is not None:
             file.WriteLine('void RegisterSubgraphPipelines_{}(void(*func)(const CoreGraphics::PassId, const uint));'.format(self.name))
         file.WriteLine('void RegisterSubgraph_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT), Util::Array<Util::Pair<BufferIndex, CoreGraphics::PipelineStage>, 8> bufferDeps = nullptr, Util::Array<Util::Pair<TextureIndex, CoreGraphics::PipelineStage>, 8> textureDeps = nullptr);'.format(self.name))
+        file.WriteLine('void RegisterSubgraphSync_{}(void(*func)(const CoreGraphics::CmdBufferId, const Math::rectangle<int>& viewport, const IndexT, const IndexT));'.format(self.name))
     
     def FormatSource(self, file):
         file.WriteLine("")
@@ -454,7 +467,7 @@ class FullscreenEffectDefinition:
         file.WriteLine('bufInfo.data = &state;')
         file.WriteLine('bufInfo.dataSize = bufInfo.byteSize;')
         file.WriteLine('bufInfo.mode = CoreGraphics::HostLocal;')
-        file.WriteLine('bufInfo.usageFlags = CoreGraphics::ConstantBuffer;')
+        file.WriteLine('bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;')
         file.WriteLine('bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;')
         file.WriteLine('FullScreenEffect_{}_Constants = CoreGraphics::CreateBuffer(bufInfo);'.format(self.name))
         file.WriteLine('CoreGraphics::ResourceTableSetConstantBuffer(FullScreenEffect_{}_ResourceTable, CoreGraphics::ResourceTableBuffer(FullScreenEffect_{}_Constants, Finalize::{}::BINDING));'.format(self.name, self.name, self.constantBlockName))
@@ -981,6 +994,10 @@ class PassDefinition:
             for op in subpass.ops:
                 if type(op) == SubgraphDefinition:
                     file.WriteLine('Synchronize("Subgraph_{}_Sync", cmdBuf, CoreGraphics::{}QueueType, SubgraphTextureDependencies_{}, SubgraphBufferDependencies_{});'.format(op.name, self.queue, op.name, op.name))
+                    file.WriteLine('if (Subgraph_Sync_{} != nullptr)'.format(op.name))
+                    file.WriteLine('{')
+                    file.WriteLine('    Subgraph_Sync_{}(cmdBuf, viewport, frameIndex, bufferIndex);'.format(op.name))
+                    file.WriteLine('}')
 
         for attachment in self.attachments: 
             file.WriteLine('Pass_{}_RenderTargetDimensions[Pass_{}_Attachment_{}] = Shared::RenderTargetParameters{{ {{ viewport.width() * {}f, viewport.height() * {}f, 1 / float(viewport.width()) * {}f, 1 / float(viewport.height()) * {}f }}, {{ viewport.width() / TextureRelativeSize[(uint)TextureIndex::{}].first, viewport.height() / TextureRelativeSize[(uint)TextureIndex::{}].second }} }};'.format(self.name, self.name, attachment.name, attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.relativeSize[0], attachment.ref.relativeSize[1], attachment.ref.name, attachment.ref.name))

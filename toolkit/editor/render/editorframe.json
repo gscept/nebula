@@ -18,9 +18,21 @@
             }
         ],
         "ExportTextures": [
-            "EditorBuffer",
+            "EditorBuffer"
         ],
         "Submissions": [
+            {
+                "name": "Editor Tools",
+                "queue": "Graphics",
+                "_comment": "Editor Tools",
+                "ops": [
+                    {
+                        "subgraph": {
+                            "name": "TerrainTool"
+                        }
+                    }
+                ]
+            },
             {
                 "name": "Editor UI",
                 "queue": "Graphics",

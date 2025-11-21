@@ -1,0 +1,217 @@
+
+#include <lib/util.gpuh>
+#include <lib/shared.gpuh>
+enum BrushMode
+{
+    Raise,
+    Lower,
+    Flatten,
+    Smooth
+};
+struct BrushData
+{
+    cursor : i32x2;
+    size : i32x2;
+    viewport : i32x2;
+    invViewport : f32x2;
+    hardness : f32;
+    strength : f32;
+    heightmapSize : i32x2;
+    minHeight : f32;
+    maxHeight : f32;
+    brushTextureSize : i32x2;
+    mode : BrushMode;
+};
+uniform BrushUniforms : *BrushData;
+
+
+enum BrushGenerationShape
+{
+    Circle,
+    Rectangle
+};
+struct BrushGenerationData
+{
+    size : i32x2;
+    hardness : f32;
+    angle: f32;
+    shape : BrushGenerationShape;
+};
+uniform BrushGenerationUniforms : *BrushGenerationData;
+
+uniform Brush : *texture2D;
+uniform Output : *mutable r16f texture2D;
+uniform BrushOutput : *mutable r16f texture2D;
+
+render_state BrushRenderState
+{
+    Cull = CullFace.Front;
+    BlendEnabled[0] = true;
+    DepthTestEnabled = false;
+    DepthWriteEnabled = false;
+    DepthTestFunction = CompareMode.GreaterEqual;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsBrushPreview(
+    binding(0) in position : f32x3,
+    binding(2) in uv : i32x2,
+    out WorldOffset : f32x3
+) void
+{
+    const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], BrushUniforms.cursor, 0).r;
+    const seed = f32x2(BrushUniforms.cursor) * BrushUniforms.invViewport;
+
+    // Get world space position of cursor
+    const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+    const extrude = worldPos.xz + position.xz * 0.5f * f32x2(BrushUniforms.size.x);
+    const vertPos = f32x3(extrude.x, BrushUniforms.minHeight + BrushUniforms.maxHeight * position.y, extrude.y);
+    vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(vertPos, 1));
+    WorldOffset = worldPos.xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+psBrushPreview(
+    in worldOffset : f32x3
+) void
+{
+    const pixelPos = pixelGetCoordinates();
+    const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], i32x2(pixelPos.xy), 0).r;
+    if depth == 1.0f { discard; }
+    const worldPos = PixelToWorld(pixelPos.xy * BrushUniforms.invViewport, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+    const localPos = (worldPos.xz - worldOffset.xz) / f32x2(BrushUniforms.size.x * 0.5f);
+    if any(abs(localPos) > f32x2(0.5f)) { discard; }
+    const color = f32x4(textureSampleLod(Brush, LinearSampler, localPos + f32x2(0.5f), 0).r);
+    pixelExportColor(color, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(8)
+threads_y(8)
+entry_point
+csBrush() void
+{
+    const thread = computeGetGlobalThreadIndices().xy;
+
+    // Get depth where the cursor is
+    const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], BrushUniforms.cursor, 0).r;
+    const seed = BrushUniforms.cursor * BrushUniforms.invViewport;
+
+    if depth == 1.0f { return; }
+
+    // Get world space position of cursor
+    const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+    const coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f) - f32x2(BrushUniforms.size) * 0.5f + f32x2(thread);
+    const uvRatio = f32x2(BrushUniforms.brushTextureSize) / f32x2(BrushUniforms.size);
+    const weight = textureFetch(Brush, i32x2(thread * uvRatio), 0).r;
+
+    // The brush coordinates should be the xz coordinates of the world space screen position
+
+    // If outside, skip brush
+    if any(coordinate > BrushUniforms.heightmapSize) { return; }
+
+    var oldValue = textureLoad(Output, coordinate).x;
+
+    if BrushUniforms.mode == BrushMode.Raise
+    {
+        const intensity = saturate(BrushUniforms.strength * weight - oldValue) * 0.001f;
+        oldValue = min(BrushUniforms.strength, oldValue + intensity);
+    }
+    else if BrushUniforms.mode == BrushMode.Lower
+    {
+        const intensity = saturate(BrushUniforms.strength * weight - oldValue) * 0.001f;
+        oldValue = min(BrushUniforms.strength, oldValue - intensity);
+    }
+    else if BrushUniforms.mode == BrushMode.Flatten
+    {
+        const targetHeight = worldPos.y;
+        const intensity = saturate(targetHeight - oldValue) * 0.001f;
+        oldValue = min(BrushUniforms.strength, oldValue + intensity);
+    }
+    else if BrushUniforms.mode == BrushMode.Smooth
+    {
+        var sum = 0.0f;
+        var count = 0.0f;
+        // Average surrounding pixels
+        for (var y = -1; y <= 1; y = y + 1)
+        {
+            for (var x = -1; x <= 1; x = x + 1)
+            {
+                const sampleCoord = coordinate + i32x2(x, y);
+                if all(sampleCoord >= i32x2(0)) && all(sampleCoord < BrushUniforms.heightmapSize)
+                {
+                    sum = sum + textureLoad(Output, sampleCoord).x;
+                    count = count + 1.0f;
+                }
+            }
+        }
+        const average = sum / count;
+        oldValue = lerp(oldValue, average, BrushUniforms.strength * weight);
+    }
+
+    oldValue = clamp(oldValue, BrushUniforms.minHeight, BrushUniforms.maxHeight);
+
+    textureStore(Output, coordinate, f32x4(oldValue, 0, 0, 1));
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(8)
+threads_y(8)
+entry_point
+csBrushGenerate() void
+{
+    const thread = computeGetGlobalThreadIndices().xy;
+    var dist = 0.0f;
+    if BrushGenerationUniforms.shape == BrushGenerationShape.Rectangle
+    {
+        const localPos = thread - f32x2(BrushGenerationUniforms.size) * 0.5f;
+        dist = max(abs(localPos.x), abs(localPos.y));
+    }
+    else if BrushGenerationUniforms.shape == BrushGenerationShape.Circle
+    {
+        dist = length(thread - f32x2(BrushGenerationUniforms.size) * 0.5f);
+    }
+
+    const strength = smoothstep(BrushGenerationUniforms.size.x * 0.5f, BrushGenerationUniforms.size.x * 0.5f * BrushGenerationUniforms.hardness, dist);
+    textureStore(BrushOutput, thread, f32x4(strength, 0, 0, 0));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("BrushGenerate")
+program BrushGenerateProgram
+{
+    ComputeShader = csBrushGenerate;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Preview")
+program BrushPreviewProgram
+{
+    VertexShader = vsBrushPreview;
+    PixelShader = psBrushPreview;
+    RenderState = BrushRenderState;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Brush")
+program BrushProgram
+{
+    ComputeShader = csBrush;
+};

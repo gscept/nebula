@@ -71,9 +71,6 @@ public:
     /// set framescript. must be done before OnActivate!
     void SetFrameScript(IO::URI const& uri);
 
-    /// Setup terrain biome, run before OnActivate
-    void SetupTerrainBiome(const Terrain::BiomeSettings& biomeParameters);
-
 
     Graphics::GraphicsEntityId globalLight;
 
@@ -90,11 +87,6 @@ private:
     Ptr<Game::Manager> graphicsManager;
     Ptr<Game::Manager> cameraManager;
 
-    struct TerrainInstance
-    {
-        Graphics::GraphicsEntityId entity;
-        Util::Array<Terrain::TerrainBiomeId> biomes;
-    } terrain;
     ViewHandle defaultViewHandle;
 
     Core::CVar* r_debug;

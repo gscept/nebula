@@ -39,3 +39,5 @@ imgui.ini
 /tests/export
 /intermediate/*
 .DS_Store
+.vs/nebula/v17
+.vs

@@ -1,0 +1,56 @@
+{
+    "namespace": "GraphicsFeature",
+    "components": {
+        "Terrain": {
+            "graphicsEntityId": {
+                "type": "uint",
+                "default": -1,
+                "hideInInspector": true
+            },
+            "minHeight": {
+                "type": "float",
+                "default": 0.0
+            },
+            "maxHeight": {
+                "type": "float",
+                "default": 128.0
+            },
+            "worldSizeX": {
+                "type": "float",
+                "default": 1024.0
+            },
+            "worldSizeZ": {
+                "type": "float",
+                "default": 1024.0
+            },
+            "tileWidth": {
+                "type": "float",
+                "default": 64
+            },
+            "tileHeight": {
+                "type": "float",
+                "default": 64
+            },
+            "quadsPerTileX": {
+                "type": "float",
+                "default": 16
+            },
+            "quadsPerTileZ": {
+                "type": "float",
+                "default": 16
+            },
+            "heightMap": {
+                "type": "resource",
+                "default": "systex:black.dds"
+            },
+            "decisionMap": {
+                "type": "resource",
+                "default": "systex:white.dds"
+            },
+            "enableRaytracing": {
+                "type": "bool",
+                "default": false
+            }
+        }
+    }
+}

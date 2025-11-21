@@ -84,8 +84,8 @@ ResourceBrowser::Run(SaveMode save)
                 }
                 ImGui::EndTable();
             }
+            ImGui::EndChild();
         }
-        ImGui::EndChild();
         ImGui::TableNextColumn();
 
         if (current != -1)

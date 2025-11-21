@@ -22,9 +22,6 @@
             "GridFogIndexLists",
             "RayTracingObjectBindings",
             "HistogramCounters",
-            "TerrainVirtualPageStatuses",
-            "TerrainSubTextures",
-            "TerrainUpdateList",
             "VegetationDrawCountBuffer",
             "VegetationGrassDrawsBuffer",
             "VegetationGrassArgumentsBuffer",
@@ -35,11 +32,6 @@
             "HBAOInternal0",
             "HBAOInternal1",
             "BloomIntermediate",
-            "TerrainIndirection",
-            "TerrainIndirectionCopy",
-            "TerrainAlbedoCache",
-            "TerrainMaterialCache",
-            "TerrainNormalCache",
             "SunShadowDepth"
         ],
         "LocalTextures": [
@@ -694,7 +686,7 @@
                                     "resource_dependencies": [
                                         {
                                             "name": "Depth",
-                                            "stage": "PixelShaderRead"
+                                            "stage": "VertexShaderRead"
                                         }
                                     ],
 
@@ -712,6 +704,11 @@
                                         {
                                             "batch": {
                                                 "name": "ParticleLit"
+                                            }
+                                        },
+                                        {
+                                            "subgraph": {
+                                                "name": "TerrainEditorBrush"
                                             }
                                         },
                                         {

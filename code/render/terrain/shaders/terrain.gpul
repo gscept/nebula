@@ -3,10 +3,6 @@
 //  (C) 2025 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-Foo(test : *u32x2, foo: u32, bar: u32) void
-{
-    *test = u32x2(foo, bar);
-}
 #include "terrain_include.gpuh"
 
 
@@ -24,10 +20,6 @@ vsTerrain(
     , out Tessellation : f32
 ) void
 {
-    var blorf = u32x2(0);
-    const smorf = 0u;
-    const lerf = 1u;
-    Foo(&blorf, smorf, lerf);
     const terrainPatch = bufferLoad(TerrainPatches, vertexGetInstanceIndex());
     const offsetPos = position + f32x3(terrainPatch.PosOffset.x, 0, terrainPatch.PosOffset.y);
     const modelSpace = TerrainInstanceUniforms.Transform * f32x4(offsetPos, 1);
@@ -38,8 +30,6 @@ vsTerrain(
     const factor = 1.0f - saturate((TerrainSystemUniforms.MinLODDistance - vertexDistance) / (TerrainSystemUniforms.MinLODDistance - TerrainSystemUniforms.MaxLODDistance));
     const decision = 1.0f - sample2DLod(TerrainInstanceUniforms.DecisionMap, TextureSampler, UV, 0).r;
     Tessellation = TerrainSystemUniforms.MinTessellation + factor * (TerrainSystemUniforms.MaxTessellation - TerrainSystemUniforms.MinTessellation) * decision;
-
-    const sampleUV = (Position.xz / f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ)) - 0.5f;
 
     vertexExportCoordinates(modelSpace);
 }
@@ -111,7 +101,7 @@ hsTerrain(
         EdgeTessFactors.w = TessellationFactorScreenSpace(position[3], position[2]);
 
         hullExportOuterTessellationLevels(EdgeTessFactors.x, EdgeTessFactors.y, EdgeTessFactors.z, EdgeTessFactors.w);
-        hullExportInnerTessellationLevels(0.5f * (EdgeTessFactors.x + EdgeTessFactors.w), 0.5f * (EdgeTessFactors.z + EdgeTessFactors.y));
+        hullExportInnerTessellationLevels(lerp(EdgeTessFactors.x, EdgeTessFactors.w, 0.5f), lerp(EdgeTessFactors.z, EdgeTessFactors.y, 0.5f));
     }
 }
 
@@ -144,9 +134,8 @@ dsTerrain(
         tessCoords.y);
         */
         
-    UV = (Position.xz / f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ)) - 0.5f;
+    UV = (Position.xz / f32x2(TerrainInstanceUniforms.WorldSizeX, TerrainInstanceUniforms.WorldSizeZ)) + f32x2(0.5f);
 
-    
     var pixelSize = i32x2(textureGetSizeMip(Textures2D[TerrainInstanceUniforms.HeightMap], 0));
     pixelSize = i32x2(f32x2(1.0f) / pixelSize);
 
@@ -170,13 +159,13 @@ csTerrainPageClearUpdateBuffer() void
     if PageUpdateList.NumEntries == 0 { return; }
 
     // Decrement the entries list
-    const numLeft = atomicAdd(PageUpdateList.&NumEntries, -1, MemorySemantics.Acquire);
+    const numLeft = atomicAdd(PageUpdateList.&NumEntries, -1, MemorySemantics.AcquireRelease);
 
     // If we get 0 or lower, it means the last item was dealt with already
     if numLeft > 0 { bufferPtr(PageStatuses, PageUpdateList.PageStatuses[numLeft-1]).bits = 0x0u; }
 
     // Ensure we can't get negative NumEntries
-    atomicMax(PageUpdateList.&NumEntries, 0u, MemorySemantics.Acquire);
+    atomicMax(PageUpdateList.&NumEntries, 0u, MemorySemantics.AcquireRelease);
 }
 
 //------------------------------------------------------------------------------
@@ -543,18 +532,15 @@ csTerrainShadows() void
 render_state TerrainState
 {
     Cull = CullFace.Back;
+    DepthTestEnabled = true;
+    DepthWriteEnabled = true;
 };
 
 render_state ResolveState
 {
     DepthTestEnabled = true;
-    DepthTestFunction = CompareMode.Equal;
-};
-
-render_state FinalState
-{
     DepthWriteEnabled = false;
-    DepthTestEnabled = false;
+    DepthTestFunction = CompareMode.Equal;
 };
 
 @Mask("TerrainPrepass")

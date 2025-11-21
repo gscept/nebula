@@ -21,6 +21,7 @@
 #include "game/componentinspection.h"
 #include "decals/decalcontext.h"
 #include "gi/ddgicontext.h"
+#include "terrain/terraincontext.h"
 
 namespace GraphicsFeature
 {
@@ -495,6 +496,29 @@ GraphicsManager::InitDDGIVolume(Game::World* world, Game::Entity entity, DDGIVol
     setup.options.flags.classify = volume->classify;
 
     GI::DDGIContext::SetupVolume(volume->graphicsEntityId, setup);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsManager::InitTerrain(Game::World* world, Game::Entity entity, Terrain* terrain)
+{
+    terrain->graphicsEntityId = Graphics::CreateEntity().id;
+    ::Terrain::TerrainContext::RegisterEntity(terrain->graphicsEntityId);
+    ::Terrain::TerrainCreateInfo createInfo;
+    createInfo.minHeight = terrain->minHeight;
+    createInfo.maxHeight = terrain->maxHeight;
+    createInfo.quadsPerTileX = terrain->quadsPerTileX;
+    createInfo.quadsPerTileY = terrain->quadsPerTileZ;
+    createInfo.tileWidth = terrain->tileWidth;
+    createInfo.tileHeight = terrain->tileHeight;
+    createInfo.width = terrain->worldSizeX;
+    createInfo.height = terrain->worldSizeZ;
+    createInfo.heightMap = terrain->heightMap;
+    createInfo.decisionMap = terrain->decisionMap;
+    createInfo.enableRayTracing = terrain->enableRaytracing;
+    ::Terrain::TerrainContext::SetupTerrain(terrain->graphicsEntityId, createInfo);
 }
 
 //------------------------------------------------------------------------------

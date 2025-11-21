@@ -180,6 +180,14 @@ Viewport::Render()
             ImGui::EndMenu();
         }
 
+        const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position;
+        Util::String cameraPosStr = Util::String::Sprintf("Camera Position x: %.3f, y: %.3f, z: %.3f", cameraPos.x, cameraPos.y, cameraPos.z);
+
+        ImVec2 textSize = ImGui::CalcTextSize(cameraPosStr.AsCharPtr());
+        ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - textSize.x - 15, 0));
+
+        ImGui::Text(cameraPosStr.AsCharPtr());
+
         ImGui::EndMenuBar();
     }
 

@@ -11,6 +11,8 @@
 #include "math/scalar.h"
 #include "util/fixedarray.h"
 #include "memory/arenaallocator.h"
+#include "imgui.h"
+
 namespace Terrain   
 {
 
