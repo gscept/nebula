@@ -269,6 +269,7 @@ CalculateRectLight(
 
     return li.color * (spec + diff) * attenuation;
 }
+
 //------------------------------------------------------------------------------
 /**
 */

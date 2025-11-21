@@ -30,7 +30,7 @@ vsEmissive(
 {
     const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);
-    UV          = uv;
+    UV = uv;
 }
 
 //------------------------------------------------------------------------------
