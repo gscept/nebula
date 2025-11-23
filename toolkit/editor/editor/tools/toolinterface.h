@@ -8,6 +8,8 @@
 */
 //------------------------------------------------------------------------------
 #include "editor/editor.h"
+#include "editor/ui/modules/viewport.h"
+
 
 namespace Editor
 {
@@ -21,9 +23,9 @@ class ToolInterface
 {
 public:
     /// Call before Update
-    virtual void Render(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera) = 0;
+    virtual void Render(Presentation::Modules::Viewport* viewport) = 0;
     /// Call after render.
-    virtual void Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera) = 0;
+    virtual void Update(Presentation::Modules::Viewport* viewport) = 0;
     /// Override to return true if the tool is currently modifying something (transforming, etc.)
     virtual bool IsModifying() const = 0;
     /// Override to abort any active actions

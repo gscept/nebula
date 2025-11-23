@@ -41,7 +41,8 @@ public:
         TOOL_SELECTION,
         TOOL_TRANSLATE,
         TOOL_ROTATE,
-        TOOL_SCALE
+        TOOL_SCALE,
+        TOOL_TERRAIN
     };
 
     void SetTool(ToolType type);
@@ -50,7 +51,7 @@ private:
 
     Tools::ToolInterface* currentTool;
 
-    Tools::ToolInterface* allTools[4];
+    Tools::ToolInterface* allTools[5];
 };
 
 __RegisterClass(Scene)

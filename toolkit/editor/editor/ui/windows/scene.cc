@@ -14,6 +14,7 @@
 #include "basegamefeature/components/position.h"
 #include "graphicsfeature/components/model.h"
 #include "graphicsfeature/components/lighting.h"
+#include "graphicsfeature/components/terrain.h"
 #include "models/modelcontext.h"
 #include "dynui/im3d/im3dcontext.h"
 
@@ -21,6 +22,7 @@
 #include "editor/tools/translatetool.h"
 #include "editor/tools/rotatetool.h"
 #include "editor/tools/scaletool.h"
+#include "editor/ui/windows/terraineditor/terraineditor.h"
 
 #include "input/keyboard.h"
 #include "input/mouse.h"
@@ -41,6 +43,7 @@ Scene::Scene()
     allTools[1] = new Tools::TranslateTool();
     allTools[2] = new Tools::RotateTool();
     allTools[3] = new Tools::ScaleTool();
+    allTools[4] = new Tools::TerrainEditorTool();
 
     currentTool = allTools[0];
 
@@ -66,6 +69,7 @@ Scene::~Scene()
     delete allTools[1];
     delete allTools[2];
     delete allTools[3];
+    delete allTools[4];
     currentTool = nullptr;
 }
 
@@ -92,7 +96,7 @@ Scene::Run(SaveMode save)
     if (this->currentTool != nullptr)
     {
         this->currentTool->Render(
-            this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera
+            &this->viewPort
         );
     }
 
@@ -103,7 +107,7 @@ Scene::Run(SaveMode save)
         if (this->currentTool != nullptr)
         {
             this->currentTool->Update(
-                this->viewPort.lastViewportImagePosition, this->viewPort.lastViewportImageSize, &this->viewPort.camera
+                &this->viewPort
             );
 
             if (!this->currentTool->IsModifying() && keyboard->KeyDown(Input::Key::Escape))
@@ -126,6 +130,17 @@ Scene::Run(SaveMode save)
         else if (keyboard->KeyDown(Input::Key::R))
         {
             this->currentTool = this->allTools[TOOL_SCALE];
+        }
+    }
+
+    auto const& selection = Tools::SelectionContext::Selection();
+    for (auto const editorEntity : selection)
+    {
+        Game::Entity const gameEntity = Editor::state.editables[editorEntity.index].gameEntity;
+        Game::World* defaultWorld = Game::GetWorld(gameEntity.world);
+        if (defaultWorld->HasComponent<GraphicsFeature::Terrain>(gameEntity))
+        {
+            this->currentTool = this->allTools[TOOL_TERRAIN];
         }
     }
 }
@@ -178,6 +193,9 @@ Scene::DrawOutlines()
                 Math::mat4 const transform = Models::ModelContext::GetTransform(gfxEntity);
                 Im3d::Im3dContext::DrawOrientedBox(Math::mat4::identity, bbox, {1.0f, 0.30f, 0.0f, 1.0f});
             }
+        }
+        else if (defaultWorld->HasComponent<GraphicsFeature::Terrain>(gameEntity))
+        {
         }
         else
         {

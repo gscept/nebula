@@ -34,7 +34,7 @@ namespace Tools
 /**
 */
 void
-ScaleTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
+ScaleTool::Update(Presentation::Modules::Viewport* viewport)
 {
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
@@ -47,7 +47,7 @@ ScaleTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPort
 
     if (mouse->ButtonUp(Input::MouseButton::Code::LeftButton))
     {
-        Tools::SelectionContext::PerformPicking(viewPortPosition, viewPortSize, camera);
+        Tools::SelectionContext::PerformPicking(viewport->lastViewportImagePosition, viewport->lastViewportImageSize, &viewport->camera);
     }
 }
 
@@ -55,7 +55,7 @@ ScaleTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPort
 /**
 */
 void
-ScaleTool::Render(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
+ScaleTool::Render(Presentation::Modules::Viewport* viewport)
 {
     SelectionContext::ValidateSelection();
 
@@ -66,7 +66,7 @@ ScaleTool::Render(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPort
 
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Im3d::Im3dContext::SetViewportRect(viewPortPosition, viewPortSize);
+    Im3d::Im3dContext::SetViewportRect(viewport->lastViewportImagePosition, viewport->lastViewportImageSize);
 
     if (!this->translation.isDirty)
     {

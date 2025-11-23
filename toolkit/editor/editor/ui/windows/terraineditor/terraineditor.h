@@ -9,6 +9,7 @@
 #include "core/refcounted.h"
 #include "editor/ui/window.h"
 #include "editor/ui/modules/viewport.h"
+#include "editor/tools/toolinterface.h"
 
 namespace Presentation
 {
@@ -25,6 +26,21 @@ public:
 private:
 };
 __RegisterClass(TerrainEditor)
-
 } // namespace Presentation
 
+
+namespace Tools
+{
+
+class TerrainEditorTool : public ToolInterface
+{
+public:
+    /// Call before Update
+    void Render(Presentation::Modules::Viewport* viewport) override;
+    /// Call after render
+    void Update(Presentation::Modules::Viewport* viewport) override;
+
+    bool IsModifying() const override;
+};
+
+} // namespace Tools

@@ -51,6 +51,8 @@ public:
     const Ptr<Graphics::View> GetView() const;
 
     Editor::Camera camera;
+    Math::vec2 lastViewportImagePositionAbsolute;
+    Math::vec2 lastViewportImageSizeAbsolute;
     /// the latest actual position of the viewport. This is in normalized space (0...1)
     Math::vec2 lastViewportImagePosition;
     /// the latest actual size of the viewport. This is in normalized space (0...1)

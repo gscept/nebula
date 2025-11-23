@@ -27,9 +27,9 @@ class ScaleTool : public ToolInterface
 {
 public:
     /// Call before Update
-    void Render(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera) override;
+    void Render(Presentation::Modules::Viewport* viewport) override;
     /// Call after render
-    void Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera) override;
+    void Update(Presentation::Modules::Viewport* viewport) override;
     
     bool IsModifying() const override;
 

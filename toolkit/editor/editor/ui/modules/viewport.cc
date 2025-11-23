@@ -221,6 +221,8 @@ Viewport::Render()
 
     ImVec2 imagePosition = { cursorPos.x + windowPos.x, cursorPos.y + windowPos.y };
     
+    this->lastViewportImagePositionAbsolute = { imagePosition.x, imagePosition.y };
+    this->lastViewportImageSizeAbsolute = { imageSize.x, imageSize.y };
     this->lastViewportImagePosition = { imagePosition.x / dims.width, imagePosition.y / dims.height };
     this->lastViewportImageSize = { imageSize.x / dims.width, imageSize.y / dims.height };
 

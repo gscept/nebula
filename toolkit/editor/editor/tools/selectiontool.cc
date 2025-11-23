@@ -32,7 +32,7 @@ namespace Tools
 /**
 */
 void
-SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
+SelectionTool::Update(Presentation::Modules::Viewport* viewport)
 {
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
@@ -45,7 +45,7 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 
     if (mouse->ButtonUp(Input::MouseButton::Code::LeftButton))
     {
-        Tools::SelectionContext::PerformPicking(viewPortPosition, viewPortSize, camera);
+        Tools::SelectionContext::PerformPicking(viewport->lastViewportImagePosition, viewport->lastViewportImageSize, &viewport->camera);
     }
 }
 
@@ -53,7 +53,7 @@ SelectionTool::Update(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 /**
 */
 void
-SelectionTool::Render(Math::vec2 const& viewPortPosition, Math::vec2 const& viewPortSize, Editor::Camera const* camera)
+SelectionTool::Render(Presentation::Modules::Viewport* viewport)
 {
     SelectionContext::ValidateSelection();
 
@@ -64,7 +64,7 @@ SelectionTool::Render(Math::vec2 const& viewPortPosition, Math::vec2 const& view
 
     Game::World* defaultWorld = Game::GetWorld(WORLD_DEFAULT);
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Im3d::Im3dContext::SetViewportRect(viewPortPosition, viewPortSize);
+    Im3d::Im3dContext::SetViewportRect(viewport->lastViewportImagePosition, viewport->lastViewportImageSize);
 
     Ptr<Input::Keyboard> keyboard = Input::InputServer::Instance()->GetDefaultKeyboard();
 
@@ -93,17 +93,17 @@ SelectionTool::Render(Math::vec2 const& viewPortPosition, Math::vec2 const& view
     }
 
     Math::vec2 mousePos = mouse->GetScreenPosition();
-    mousePos -= viewPortPosition;
-    mousePos = { mousePos.x / viewPortSize.x, mousePos.y / viewPortSize.y };
+    mousePos -= viewport->lastViewportImagePosition;
+    mousePos = { mousePos.x / viewport->lastViewportImageSize.x, mousePos.y / viewport->lastViewportImageSize.y };
 
-    Math::mat4 const camTransform = Math::inverse(camera->GetViewTransform());
-    Math::mat4 const invProj = Math::inverse(camera->GetProjectionTransform());
+    Math::mat4 const camTransform = Math::inverse(viewport->camera.GetViewTransform());
+    Math::mat4 const invProj = Math::inverse(viewport->camera.GetProjectionTransform());
 
     Math::line ray = RenderUtil::MouseRayUtil::ComputeWorldMouseRay(mousePos, 10000, camTransform, invProj, 0.01f);
 
     if (this->translation.dragTimer.Running() && !this->translation.isDirty)
     {
-        this->translation.originEntity = SelectionContext::GetSelectedEntityUnderMouse(viewPortPosition, viewPortSize, camera);
+        this->translation.originEntity = SelectionContext::GetSelectedEntityUnderMouse(viewport->lastViewportImagePosition, viewport->lastViewportImageSize, &viewport->camera);
         if (this->translation.originEntity == Editor::Entity::Invalid())
         {
             // failed to find entity. Cancel translation attempt

@@ -33,11 +33,6 @@
 
 using namespace Editor;
 
-namespace Presentation
-{
-__ImplementClass(Presentation::TerrainEditor, 'TrEd', Presentation::BaseWindow);
-
-static CoreGraphics::TextureId heightmapTex = CoreGraphics::InvalidTextureId;
 
 struct
 {
@@ -47,6 +42,7 @@ struct
 
     bool invalidateBrush = false;
     bool paint = false;
+    bool drawBrushPreview = true;
     Terrainbrush::BrushGenerationShape brushShape = Terrainbrush::Circle;
 
     Terrainbrush::BrushUniforms::STRUCT brushUniforms;
@@ -67,6 +63,12 @@ struct
     Terrainbrush::BrushGenerationUniforms::STRUCT brushGenerationUniforms;
     CoreGraphics::BufferId brushGenerationUniformBuffer;
 } terrainEditorState;
+
+namespace Presentation
+{
+__ImplementClass(Presentation::TerrainEditor, 'TrEd', Presentation::BaseWindow);
+
+static CoreGraphics::TextureId heightmapTex = CoreGraphics::InvalidTextureId;
 //------------------------------------------------------------------------------
 /**
 */
@@ -150,6 +152,8 @@ TerrainEditor::TerrainEditor()
     FrameScript_default::SetupPipelines();
     FrameScript_default::RegisterSubgraph_TerrainEditorBrush_Pass([](const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<int>& viewport, const IndexT frame, const IndexT bufferIndex)
     {
+        if (!terrainEditorState.drawBrushPreview)
+            return;
         terrainEditorState.brushUniforms.viewport[0] = viewport.width();
         terrainEditorState.brushUniforms.viewport[1] = viewport.height();
         terrainEditorState.brushUniforms.invViewport[0] = 1.0f / viewport.width();
@@ -197,14 +201,11 @@ TerrainEditor::Run(SaveMode save)
 
     Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
     Math::vec2 mousePos = mouse->GetPixelPosition();
-    terrainEditorState.brushUniforms.cursor[0] = mousePos.x;
-    terrainEditorState.brushUniforms.cursor[1] = mousePos.y;
     terrainEditorState.brushUniforms.size[0] = terrainEditorState.brushSize;
     terrainEditorState.brushUniforms.size[1] = terrainEditorState.brushSize;
     CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
 
     terrainEditorState.paint = mouse->ButtonPressed(Input::MouseButton::LeftButton);
-
     auto terrainComponent = Game::GetComponentId<GraphicsFeature::Terrain>();
     for (int i = 0; i < components.Size(); i++)
     {
@@ -398,6 +399,43 @@ TerrainEditor::Run(SaveMode save)
             }
         }
     }
+}
+
+} // namespace Presentation
+
+namespace Tools
+{
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainEditorTool::Render(Presentation::Modules::Viewport* viewport)
+{
+    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
+    Math::vec2 mousePos = mouse->GetPixelPosition();
+    terrainEditorState.brushUniforms.cursor[0] = mousePos.x - viewport->lastViewportImagePositionAbsolute.x;
+    terrainEditorState.brushUniforms.cursor[1] = mousePos.y - viewport->lastViewportImagePositionAbsolute.y;
+    CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
+    terrainEditorState.drawBrushPreview = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainEditorTool::Update(Presentation::Modules::Viewport* viewport)
+{
+    terrainEditorState.drawBrushPreview = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+TerrainEditorTool::IsModifying() const
+{
+    return terrainEditorState.paint;
 }
 
 }
