@@ -458,7 +458,6 @@ PosixFSWrapper::ListDirectories(const String& dirPath, const String& pattern)
     DIR * dir = opendir(dirPath.AsCharPtr());
     if (0 != dir)
     {
-        
         struct dirent *result = nullptr;
         do
         {
