@@ -62,11 +62,7 @@ ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf, const Math::rectangle<
     //CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
-#if __VULKAN__
-    mat4 proj = orthooffcenterrh(0.0f, viewport.width(), viewport.height(), 0.0f, -1.0f, +1.0f);
-#else
-    mat4 proj = orthooffcenterrh(0.0f, viewport.width(), 0.0f, viewport.height(), -1.0f, +1.0f);
-#endif
+    mat4 proj = orthorh(viewport.width(), viewport.height(), -1.0f, +1.0f);
 
     // if buffers are too small, create new buffers
     if (data->TotalVtxCount > CoreGraphics::BufferGetSize(ImguiContext::state.vbos[currentBuffer]))
