@@ -437,6 +437,7 @@ PosixFSWrapper::ListFiles(const String& dirPath, const String& pattern)
                 fileList.Append(result->d_name);
             }
         } while (result != nullptr);
+        closedir(dir);
     }
     return fileList;
 }
