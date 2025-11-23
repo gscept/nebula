@@ -217,15 +217,7 @@ TerrainContext::Create()
     biomeBufferInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     terrainState.biomeBuffer = CoreGraphics::CreateBuffer(biomeBufferInfo);
 
-    CoreGraphics::TextureCreateInfo shadowMapInfo;
-    shadowMapInfo.name = "TerrainShadowMap"_atm;
-    shadowMapInfo.width = TerrainShadowMapSize;
-    shadowMapInfo.height = TerrainShadowMapSize;
-    shadowMapInfo.format = CoreGraphics::PixelFormat::R16G16F;
-    shadowMapInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
-    terrainState.terrainShadowMap = CoreGraphics::CreateTexture(shadowMapInfo);
 
-    //Lighting::LightContext::SetupTerrainShadows(terrainState.terrainShadowMap, settings.worldSizeX);
 
     //------------------------------------------------------------------------------
     /**
@@ -903,7 +895,6 @@ TerrainContext::SetupTerrain(
     SizeT vertDistanceX = createInfo.tileWidth  / createInfo.quadsPerTileX;
     SizeT vertDistanceY = createInfo.tileHeight / createInfo.quadsPerTileY;
 
-
     CoreGraphics::BufferCreateInfo sysBufInfo;
     sysBufInfo.name = "VirtualSystemBuffer"_atm;
     sysBufInfo.size = 1;
@@ -1120,6 +1111,15 @@ TerrainContext::SetupTerrain(
     lowResMaterialInfo.usage = CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::TransferDestination | CoreGraphics::TextureUsage::TransferSource;
     instanceInfo.lowresMaterial = CoreGraphics::CreateTexture(lowResMaterialInfo);
 
+    CoreGraphics::TextureCreateInfo shadowMapInfo;
+    shadowMapInfo.name = "TerrainShadowMap"_atm;
+    shadowMapInfo.width = TerrainShadowMapSize;
+    shadowMapInfo.height = TerrainShadowMapSize;
+    shadowMapInfo.format = CoreGraphics::PixelFormat::R16G16F;
+    shadowMapInfo.usage = CoreGraphics::TextureUsage::ReadWrite;
+    instanceInfo.shadowMap = CoreGraphics::CreateTexture(shadowMapInfo);
+    Lighting::LightContext::SetupTerrainShadows(instanceInfo.shadowMap, createInfo.width);
+
     // setup virtual sub textures buffer
     instanceInfo.subTextures.Resize(subTextureCount);
     instanceInfo.gpuSubTextures.Resize(subTextureCount);
@@ -1166,6 +1166,12 @@ TerrainContext::SetupTerrain(
                 NEBULA_WHOLE_BUFFER_SIZE,
             }
             );
+
+        ResourceTableSetRWTexture(table,
+            {
+                instanceInfo.shadowMap,
+                Terrain::TerrainShadowMap::BINDING,
+            });
 
         ResourceTableSetConstantBuffer(table,
             {
@@ -2653,6 +2659,7 @@ TerrainContext::InvalidateTerrain(Graphics::GraphicsEntityId entity)
     Graphics::ContextEntityId id = GetContextId(entity);
     TerrainInstanceInfo& rt = terrainAllocator.Get<Terrain_InstanceInfo>(id.id);
     rt.updateLowres = true;
+    terrainState.shadowMapInvalid = true;
 }
 
 //------------------------------------------------------------------------------

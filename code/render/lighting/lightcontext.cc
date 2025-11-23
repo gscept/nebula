@@ -1067,7 +1067,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
     {
         params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMap);
-        params.EnableTerrainShadows = lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId ? 1 : 0;
+        params.EnableTerrainShadows = (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId) ? 0 : 1;
         params.TerrainShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.terrainShadowMap);
         params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
         params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / Math::max(1u, lightServerState.terrainSize);

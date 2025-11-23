@@ -408,6 +408,8 @@ public:
         Util::Array<CoreGraphics::TextureCopy, 4>                       indirectionTextureClearsThisFrame;
         uint numPixels;
 
+        CoreGraphics::TextureId shadowMap;
+
         TerrainCreateInfo                                               createInfo;
 
         Threading::Event                                                *subtexturesFinishedEvent, *sectionCullFinishedEvent;
