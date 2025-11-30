@@ -67,6 +67,9 @@ CreateGraphicsPipeline(const PipelineCreateInfo& info)
     shaderInfo.layout = programInfo.layout;
     shaderInfo.stageCount = programInfo.stageCount;
     shaderInfo.pStages = programInfo.graphicsShaderInfos;
+    shaderInfo.pVertexInputState = nullptr;
+    shaderInfo.pInputAssemblyState = nullptr;
+    shaderInfo.pViewportState = nullptr;
 
     // Since this is the public facing API, we have to convert the primitive type as it's expected to be in CoreGraphics
     InputAssemblyKey translatedKey;
