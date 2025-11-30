@@ -2815,11 +2815,10 @@ TerrainContext::InvalidateTerrain(Graphics::GraphicsEntityId entity)
     terrainState.shadowMapInvalid = true;
     //terrainState.invalidationFrame = CoreGraphics::GetNumBufferedFrames();
 
-    //instance.indirectionOccupancy.Clear();
-    instance.physicalTextureTileOccupancy.Clear();
-    //instance.indirectionBuffer.Fill(IndirectionEntry{ 0xF, 0x3FFF, 0x3FFF });
+    instance.indirectionOccupancy.Clear();
+    instance.indirectionBuffer.Fill(IndirectionEntry{ 0xF, 0x3FFF, 0x3FFF });
+    instance.physicalTextureTileCache.Reset();
 
-    /*
     for (int i = 0; i < instance.subTextures.Size(); i++)
     {
         instance.subTextures[i].numTiles = 0;
@@ -2829,7 +2828,6 @@ TerrainContext::InvalidateTerrain(Graphics::GraphicsEntityId entity)
         instance.subTextures[i].mipBias = 0;
         PackSubTexture(instance.subTextures[i], instance.gpuSubTextures[i]);
     }
-    */
 }
 #endif 
 

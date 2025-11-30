@@ -223,8 +223,6 @@ OccupancyQuadTree::RecursiveDeallocate(Node* node, Math::uint2 coord, uint size)
     {
         if (node->x == coord.x && node->y == coord.y)
         {
-            n_assert(node->occupancyCounter == 0);
-            n_assert(node->occupied == true);
             node->occupied = false;
             return true;
         }

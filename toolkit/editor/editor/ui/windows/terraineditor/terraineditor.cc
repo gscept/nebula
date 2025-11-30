@@ -597,15 +597,19 @@ TerrainEditor::Run(SaveMode save)
                         ImGui::EndGroup();
                     }
 
+                    bool applyRules = false;
                     ImGui::BeginGroup();
                         ImGui::Text("Rules");
-                        ImGui::SliderFloat("Slope Threshold", &biomeSettings.biomeParameters.slopeThreshold, 0.0f, 1.0f);
-                        ImGui::SliderFloat("Height Threshold", &biomeSettings.biomeParameters.heightThreshold, 0.0f, 1.0f);
-                        ImGui::SliderFloat("UV Scale Factor", &biomeSettings.biomeParameters.uvScaleFactor, 1.0f, 256.0f);
+                        applyRules |= ImGui::SliderFloat("Slope Threshold", &biomeSettings.biomeParameters.slopeThreshold, 0.0f, 1.0f);
+                        applyRules |= ImGui::SliderFloat("Height Threshold", &biomeSettings.biomeParameters.heightThreshold, 0.0f, 1.0f);
+                        applyRules |= ImGui::SliderFloat("UV Scale Factor", &biomeSettings.biomeParameters.uvScaleFactor, 1.0f, 256.0f);
                     ImGui::EndGroup();
 
-                    Terrain::TerrainContext::SetBiomeRules(biomeId, biomeSettings.biomeParameters.slopeThreshold, biomeSettings.biomeParameters.heightThreshold, biomeSettings.biomeParameters.uvScaleFactor);
-                    Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+                    if (applyRules)
+                    {
+                        Terrain::TerrainContext::SetBiomeRules(biomeId, biomeSettings.biomeParameters.slopeThreshold, biomeSettings.biomeParameters.heightThreshold, biomeSettings.biomeParameters.uvScaleFactor);
+                        Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+                    }
                 }
             }
         }
