@@ -466,7 +466,7 @@ class FullscreenEffectDefinition:
         file.WriteLine('bufInfo.byteSize = sizeof({}::{}::STRUCT);'.format(self.namespace, self.constantBlockName))
         file.WriteLine('bufInfo.data = &state;')
         file.WriteLine('bufInfo.dataSize = bufInfo.byteSize;')
-        file.WriteLine('bufInfo.mode = CoreGraphics::HostLocal;')
+        file.WriteLine('bufInfo.mode = CoreGraphics::DeviceLocal;')
         file.WriteLine('bufInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;')
         file.WriteLine('bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;')
         file.WriteLine('FullScreenEffect_{}_Constants = CoreGraphics::CreateBuffer(bufInfo);'.format(self.name))
