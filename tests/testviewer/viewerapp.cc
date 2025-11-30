@@ -151,15 +151,7 @@ SimpleViewerApplication::Open()
         CameraContext::SetLODCamera(this->cam);
 
         Dynui::ImguiContext::Create();
-
-        Terrain::TerrainSetupSettings terSettings{
-            .minHeight = 0, .maxHeight = 1024.0f,      // min/max height 
-            //0, 0,
-            .worldSizeX = 8192, .worldSizeZ = 8192,   // world size in meters
-            .tileWidth = 256, .tileHeight = 256,     // tile size in meters
-            .quadsPerTileX = 16, .quadsPerTileY = 16        // 1 vertex every X meters
-        };
-        Terrain::TerrainContext::Create(terSettings);
+        Terrain::TerrainContext::Create();
 
         // setup vegetation
         //Vegetation::VegetationSetupSettings vegSettings{

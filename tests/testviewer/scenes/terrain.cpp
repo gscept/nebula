@@ -59,10 +59,19 @@ void OpenScene()
     terrain = Graphics::CreateEntity();
     Terrain::TerrainContext::RegisterEntity(terrain);
 
-    Terrain::TerrainContext::SetupTerrain(terrain,
-        "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
-        "systex:black.dds",
-        false);
+    Terrain::TerrainCreateInfo terrainInfo;
+    terrainInfo.heightMap = "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds";
+    terrainInfo.decisionMap = "systex:black.dds";
+    terrainInfo.enableRayTracing = false;
+    terrainInfo.minHeight = 0.0f;
+    terrainInfo.maxHeight = 1024.0f;
+    terrainInfo.width = 8192.0f;
+    terrainInfo.height = 8192.0f;
+    terrainInfo.tileWidth = 256.0f;
+    terrainInfo.tileHeight = 256.0f;
+    terrainInfo.quadsPerTileX = 16.0f;
+    terrainInfo.quadsPerTileY = 16.0f;
+    Terrain::TerrainContext::SetupTerrain(terrain, terrainInfo);
 
     Terrain::BiomeParameters biomeParams =
     {
