@@ -2776,11 +2776,6 @@ TerrainContext::SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMateri
         terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::MaterialLoaded;
     }, nullptr, false, false);
 
-    const auto& instances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
-    for (auto& instance : instances)
-    {
-        instance.updateLowres = true;
-    }
     terrainState.biomeLowresGenerated[biomeId.id] = false;
 }
 
@@ -2795,11 +2790,6 @@ TerrainContext::SetBiomeRules(TerrainBiomeId biomeId, float slopeThreshold, floa
     params.slopeThreshold = slopeThreshold;
     params.heightThreshold = heightThreshold;
     params.uvScaleFactor = uvScalingFactor;
-    const auto& instances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
-    for (auto& instance : instances)
-    {
-        instance.updateLowres = true;
-    }
 }
 
 //------------------------------------------------------------------------------
