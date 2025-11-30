@@ -60,6 +60,7 @@ _DEC_VK(vkGetPhysicalDeviceSurfaceFormatsKHR);
 _DEC_VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
 _DEC_VK(vkGetPhysicalDeviceSurfacePresentModesKHR);
 _DEC_VK(vkGetPhysicalDeviceSurfaceSupportKHR);
+_DEC_VK(vkGetPhysicalDeviceImageFormatProperties2);
 _DEC_VK(vkCreateSwapchainKHR);
 _DEC_VK(vkGetSwapchainImagesKHR);
 _DEC_VK(vkAcquireNextImageKHR);
