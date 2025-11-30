@@ -32,6 +32,8 @@ public:
     bool Deallocate(const Math::uint2 coord, uint size);
     /// check if region is alloced
     bool IsOccupied(const Math::uint2 coord, uint size);
+    /// Clear the tree
+    void Clear();
 
     /// debug render
     void DebugRender(ImDrawList* drawList, ImVec2 offset, float scale);
@@ -111,6 +113,11 @@ OccupancyQuadTree::Setup(uint worldSize, uint maxSize, uint minSize)
             this->topLevelNodes[x][y].y = y * maxSize;
             this->topLevelNodes[x][y].size = maxSize;
             this->topLevelNodes[x][y].occupied = false;
+            this->topLevelNodes[x][y].occupancyCounter = 0;
+            this->topLevelNodes[x][y].topLeft = nullptr;
+            this->topLevelNodes[x][y].topRight = nullptr;
+            this->topLevelNodes[x][y].bottomLeft = nullptr;
+            this->topLevelNodes[x][y].bottomRight = nullptr;
         }
     }
 }
@@ -312,6 +319,27 @@ OccupancyQuadTree::RecursiveSearch(Node* node, Math::uint2 coord, uint size)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+OccupancyQuadTree::Clear()
+{
+    this->allocator.Release();
+    for (uint x = 0; x < this->topLevelNodes.Size(); x++)
+    {
+        for (uint y = 0; y < this->topLevelNodes[x].Size(); y++)
+        {
+            this->topLevelNodes[x][y].topLeft = nullptr;
+            this->topLevelNodes[x][y].topRight = nullptr;
+            this->topLevelNodes[x][y].bottomLeft = nullptr;
+            this->topLevelNodes[x][y].bottomRight = nullptr;
+            this->topLevelNodes[x][y].occupied = false;
+            this->topLevelNodes[x][y].occupancyCounter = 0;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

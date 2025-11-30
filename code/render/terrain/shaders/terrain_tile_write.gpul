@@ -2,10 +2,6 @@
 //  @file terrain_tile_write.fx
 //  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-Foo(bar : *u32) void
-{
-    *bar += 1;
-}
 #include "terrain_include.gpuh"
 #include "lib/compression/bccompression.gpuh"
 
@@ -136,8 +132,6 @@ BlockCompressMaterials(blockStart : u32x2) u32x4
     return CompressBC3Block(blockRGB, blockA, 1.0f);
 }
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -146,8 +140,6 @@ threads_y(8)
 entry_point
 csWriteTile() void
 {
-    var blorf = 1u;
-    Foo(&blorf);
     // calculate 
     const threadIndices = computeGetGlobalThreadIndices();
     const location = i32x2(threadIndices.xy);
@@ -188,10 +180,11 @@ csWriteTile() void
         // get biome data
         const mask = SampleBiomeMaskLod(i, TextureSampler, inputUv * invWorldSize, 0).r;
         const rules = TerrainSystemUniforms.BiomeRules[i];
+        const heightThreshold = TerrainInstanceUniforms.MinHeight + rules.y * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
 
         // calculate rules
         const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
-        const heightCutoff = saturate(max(0.0f, height - rules.y) / 25.0f);
+        const heightCutoff = saturate(max(0.0f, height - heightThreshold) / 25.0f);
 
         const tilingFactor = f32x2(rules.z);
 
@@ -279,10 +272,11 @@ csWriteLowres() void
         // get biome data
         const mask = SampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
         const rules = TerrainSystemUniforms.BiomeRules[i];
+        const heightThreshold = TerrainInstanceUniforms.MinHeight + rules.y * (TerrainInstanceUniforms.MaxHeight - TerrainInstanceUniforms.MinHeight);
 
         // calculate rules
         const angle = saturate((1.0f - dot(normal, f32x3(0, 1, 0))) / 0.5f);
-        const heightCutoff = saturate(max(0.0f, height - rules.y) / 25.0f);
+        const heightCutoff = saturate(max(0.0f, height - heightThreshold) / 25.0f);
 
         const tilingFactor = f32x2(rules.z);
 

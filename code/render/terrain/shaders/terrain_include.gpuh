@@ -137,10 +137,12 @@ struct PageUpdateListData
 @Visibility("PS|CS")
 group(SYSTEM_GROUP) uniform PageUpdateList : *mutable PageUpdateListData;
 
+packed
 struct PageStatus
 {
     bits : u32;
 };
+@Visibility("PS|CS")
 group(SYSTEM_GROUP) uniform PageStatuses : *[] mutable PageStatus;
 
 struct TerrainPatchData
@@ -160,8 +162,8 @@ group(SYSTEM_GROUP) sampler_state TextureSampler
 group(SYSTEM_GROUP) sampler_state AnisoSampler
 {
     Filter = FilterMode.Linear;
-    AddressU = AddressMode.Clamp;
-    AddressV = AddressMode.Clamp;
+    AddressU = AddressMode.Repeat;
+    AddressV = AddressMode.Repeat;
     MaxAnisotropy = 4u;
 };
 

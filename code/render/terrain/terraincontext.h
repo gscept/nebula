@@ -52,18 +52,21 @@ struct TerrainCreateInfo
 
 struct BiomeParameters
 {
-    float slopeThreshold;
-    float heightThreshold;
-    float uvScaleFactor;
-    bool useMaterialWeights;
+    float slopeThreshold = 0.5f;
+    float heightThreshold = 0.5f;
+    float uvScaleFactor = 1.0f;
+    bool useMaterialWeights = false;
     Resources::ResourceName weights;
 };
 
 struct BiomeMaterial
 {
     Resources::ResourceName albedo = "systex:white.dds";
+    Resources::ResourceId albedoRes;
     Resources::ResourceName normal = "systex:nobump.dds";
+    Resources::ResourceId normalRes;
     Resources::ResourceName material = "systex:default_material.dds";
+    Resources::ResourceId materialRes;
 };
 
 struct BiomeMaterialBuilder
@@ -299,6 +302,9 @@ public:
 #ifdef WITH_NEBULA_EDITOR
     /// Set heightmap to a system controller texture instead of a resource
     static void SetHeightmap(Graphics::GraphicsEntityId entity, CoreGraphics::TextureId heightmap);
+    static void SetBiomeMask(TerrainBiomeId biomeId, CoreGraphics::TextureId biomemask); 
+    static void SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const Resources::ResourceName& albedo, const Resources::ResourceName& normal, const Resources::ResourceName& material);
+    static void SetBiomeRules(TerrainBiomeId biomeId, float slopeThreshold, float heightThreshold, float uvScalingFactor);
     static void InvalidateTerrain(Graphics::GraphicsEntityId entity);
 #endif
 

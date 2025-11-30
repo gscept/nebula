@@ -29,10 +29,39 @@
 #include "input/inputserver.h"
 #include "input/mouse.h"
 
+#include "tinyfiledialogs.h"
+
 #include "gpulang/editor/editor/ui/windows/terraineditor/terrainbrush.h"
 
 using namespace Editor;
 
+struct BiomeTextures
+{
+    Dynui::ImguiTextureId mask;
+    CoreGraphics::TextureId maskTex;
+    Util::FixedArray<Resources::ResourceName> albedoPaths;
+    Util::FixedArray<Resources::ResourceId> albedoResources;
+    Util::FixedArray<Dynui::ImguiTextureId> albedo;
+    Util::FixedArray<Resources::ResourceName> normalsPaths;
+    Util::FixedArray<Resources::ResourceId> normalsResources;
+    Util::FixedArray<Dynui::ImguiTextureId> normals;
+    Util::FixedArray<Resources::ResourceName> materialPaths;
+    Util::FixedArray<Resources::ResourceId> materialResources;
+    Util::FixedArray<Dynui::ImguiTextureId> material;
+
+    BiomeTextures()
+    {
+        this->albedoPaths.Resize(4);
+        this->albedoResources.Resize(4);
+        this->albedo.Resize(4);
+        this->normals.Resize(4);
+        this->normalsResources.Resize(4);
+        this->normalsPaths.Resize(4);
+        this->material.Resize(4);
+        this->materialResources.Resize(4);
+        this->materialPaths.Resize(4);
+    }
+};
 
 struct
 {
@@ -50,7 +79,7 @@ struct
     CoreGraphics::BufferId brushUniformBuffer;
 
     CoreGraphics::ShaderId brushShader;
-    CoreGraphics::ShaderProgramId brushShaderProgram;
+    CoreGraphics::ShaderProgramId brushHeightShaderProgram, brushMaskShaderProgram;
 
     CoreGraphics::ShaderProgramId brushPreviewProgram;
     CoreGraphics::PipelineId brushPreviewPipeline;
@@ -62,20 +91,28 @@ struct
     CoreGraphics::TextureId brushTexture;
     Terrainbrush::BrushGenerationUniforms::STRUCT brushGenerationUniforms;
     CoreGraphics::BufferId brushGenerationUniformBuffer;
+
+    Util::Array<Util::String> biomeNames;
+    Util::Array<Terrain::TerrainBiomeId> biomes;
+    Util::Array<BiomeTextures> biomeTextures;
+    Util::Array<Terrain::BiomeSettings> biomeSettings;
+
+    CoreGraphics::TextureId activeHeightMap, activeBiomeMask;
 } terrainEditorState;
 
 namespace Presentation
 {
 __ImplementClass(Presentation::TerrainEditor, 'TrEd', Presentation::BaseWindow);
 
-static CoreGraphics::TextureId heightmapTex = CoreGraphics::InvalidTextureId;
 //------------------------------------------------------------------------------
 /**
 */
 TerrainEditor::TerrainEditor()
 {
     terrainEditorState.brushShader = CoreGraphics::ShaderGet("shd:editor/ui/windows/terraineditor/terrainbrush.gplb");
-    terrainEditorState.brushShaderProgram = CoreGraphics::ShaderGetProgram(terrainEditorState.brushShader, CoreGraphics::ShaderFeatureMask("Brush"));
+    terrainEditorState.brushHeightShaderProgram = CoreGraphics::ShaderGetProgram(terrainEditorState.brushShader, CoreGraphics::ShaderFeatureMask("BrushHeight"));
+    terrainEditorState.brushMaskShaderProgram = CoreGraphics::ShaderGetProgram(terrainEditorState.brushShader, CoreGraphics::ShaderFeatureMask("BrushMask"));
+
     terrainEditorState.brushGenerationProgram = CoreGraphics::ShaderGetProgram(terrainEditorState.brushShader, CoreGraphics::ShaderFeatureMask("BrushGenerate"));
     terrainEditorState.brushPreviewProgram = CoreGraphics::ShaderGetProgram(terrainEditorState.brushShader, CoreGraphics::ShaderFeatureMask("Preview"));
     terrainEditorState.brushResourceTable = CoreGraphics::ShaderCreateResourceTable(terrainEditorState.brushShader, NEBULA_BATCH_GROUP);
@@ -128,7 +165,11 @@ TerrainEditor::TerrainEditor()
 
         if (terrainEditorState.paint)
         {
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushShaderProgram);
+            if (terrainEditorState.brushUniforms.mode == Terrainbrush::Biome)
+                CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushMaskShaderProgram);
+            else
+                CoreGraphics::CmdSetShaderProgram(cmdBuf, terrainEditorState.brushHeightShaderProgram);
+
             CoreGraphics::CmdSetResourceTable(cmdBuf, terrainEditorState.brushResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
             CoreGraphics::CmdDispatch(cmdBuf, Math::divandroundup(terrainEditorState.brushSize, 8), Math::divandroundup(terrainEditorState.brushSize, 8), 1);
             terrainEditorState.paint = false;
@@ -168,8 +209,6 @@ TerrainEditor::TerrainEditor()
 
     terrainEditorState.brushMeshResource = Resources::CreateResource("sysmsh:cube.nvx", "system", nullptr, nullptr, true, false);
     terrainEditorState.brushMesh = CoreGraphics::MeshResourceId(terrainEditorState.brushMeshResource);
-
-    Terrain::TerrainContext::CreateBiome({});
 }
 
 //------------------------------------------------------------------------------
@@ -179,6 +218,25 @@ TerrainEditor::~TerrainEditor()
 {
     // empty
 }
+
+// Create radio button effect with visual feedback
+auto drawModeButton = [](const char* label, auto currentMode, auto buttonMode) -> bool
+{
+    bool isActive = currentMode == buttonMode;
+    if (isActive)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+    }
+
+    bool clicked = ImGui::Button(label);
+
+    if (isActive)
+    {
+        ImGui::PopStyleColor();
+    }
+
+    return clicked;
+};
 
 //------------------------------------------------------------------------------
 /**
@@ -265,10 +323,10 @@ TerrainEditor::Run(SaveMode save)
         }
         if (ImGui::CollapsingHeader("Heightmap", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            if (heightmapTex != CoreGraphics::InvalidTextureId)
+            if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
             {
                 static Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = heightmapTex;
+                textureInfo.nebulaHandle = terrainEditorState.activeHeightMap;
                 textureInfo.mip = 0;
                 textureInfo.layer = 0;
                 textureInfo.rangeMin = terrain.minHeight;
@@ -282,10 +340,10 @@ TerrainEditor::Run(SaveMode save)
 
             if (ImGui::Button("New Heightmap"))
             {
-                if (heightmapTex != CoreGraphics::InvalidTextureId)
+                if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
                 {
-                    CoreGraphics::DestroyTexture(heightmapTex);
-                    heightmapTex = CoreGraphics::InvalidTextureId;
+                    CoreGraphics::DestroyTexture(terrainEditorState.activeHeightMap);
+                    terrainEditorState.activeHeightMap = CoreGraphics::InvalidTextureId;
                 }
 
                 CoreGraphics::TextureCreateInfo texInfo;
@@ -294,41 +352,21 @@ TerrainEditor::Run(SaveMode save)
                 texInfo.height = terrain.worldSizeZ;
                 texInfo.format = CoreGraphics::PixelFormat::R16F;
                 texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferSource;
-                heightmapTex = CoreGraphics::CreateTexture(texInfo);
-                Terrain::TerrainContext::SetHeightmap(terrain.graphicsEntityId, heightmapTex);
+                terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
+                Terrain::TerrainContext::SetHeightmap(terrain.graphicsEntityId, terrainEditorState.activeHeightMap);
 
                 terrainEditorState.brushUniforms.heightmapSize[0] = terrain.worldSizeX;
                 terrainEditorState.brushUniforms.heightmapSize[1] = terrain.worldSizeZ;
 
                 CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
-                    heightmapTex, Terrainbrush::Output::BINDING
+                    terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
                 });
 
                 CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
             }
 
-            if (heightmapTex != CoreGraphics::InvalidTextureId)
+            if (terrainEditorState.activeHeightMap != CoreGraphics::InvalidTextureId)
             {
-
-                // Create radio button effect with visual feedback
-                auto drawModeButton = [](const char* label, auto currentMode, auto buttonMode) -> bool
-                {
-                    bool isActive = currentMode == buttonMode;
-                    if (isActive)
-                    {
-                        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-                    }
-
-                    bool clicked = ImGui::Button(label);
-
-                    if (isActive)
-                    {
-                        ImGui::PopStyleColor();
-                    }
-
-                    return clicked;
-                };
-
                 if (drawModeButton("Raise", terrainEditorState.brushUniforms.mode, Terrainbrush::Raise))
                 {
                     terrainEditorState.brushUniforms.mode = Terrainbrush::Raise;
@@ -397,6 +435,179 @@ TerrainEditor::Run(SaveMode save)
             {
                 Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
             }
+
+            if (ImGui::CollapsingHeader("Biomes"))
+            {
+                if (ImGui::Button("New Biome"))
+                {
+                    Terrain::TerrainBiomeId biome = Terrain::TerrainContext::CreateBiome({});
+                    terrainEditorState.biomes.Append(biome);
+                    terrainEditorState.biomeSettings.Append({});
+                    terrainEditorState.biomeTextures.Append(BiomeTextures());
+                    BiomeTextures& textures = terrainEditorState.biomeTextures.Back();
+
+                    // Create new mask
+                    CoreGraphics::TextureCreateInfo maskTexInfo;
+                    maskTexInfo.name = "Biome Mask Texture";
+                    maskTexInfo.width = terrain.worldSizeX;
+                    maskTexInfo.height = terrain.worldSizeZ;
+                    maskTexInfo.format = CoreGraphics::PixelFormat::R8;
+                    maskTexInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
+                    textures.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
+                    textures.mask.nebulaHandle = textures.maskTex;
+                    textures.mask.splat = 1;
+
+                    terrainEditorState.activeBiomeMask = textures.maskTex;
+
+
+                    Terrain::TerrainContext::SetBiomeMask(biome, textures.maskTex);
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Dynui::ImguiTextureId& alb = textures.albedo[i];
+                        textures.albedoPaths[i] = "systex:white.dds";
+                        textures.albedoResources[i] = Resources::CreateResource(textures.albedoPaths[i], "editor", nullptr, nullptr, true, false);
+                        alb.nebulaHandle = textures.albedoResources[i];
+
+                        Dynui::ImguiTextureId& nor = textures.normals[i];
+                        textures.normalsPaths[i] = "systex:nobump.dds";
+                        textures.normalsResources[i] = Resources::CreateResource(textures.normalsPaths[i], "editor", nullptr, nullptr, true, false);
+                        nor.nebulaHandle = textures.normalsResources[i];
+
+                        Dynui::ImguiTextureId& mat = textures.material[i];
+                        textures.materialPaths[i] = "systex:default_material.dds";
+                        textures.materialResources[i] = Resources::CreateResource(textures.materialPaths[i], "editor", nullptr, nullptr, true, false);
+                        mat.nebulaHandle = textures.materialResources[i];
+                    }
+                    terrainEditorState.biomeNames.Append(Util::String::Sprintf("Biome %d", terrainEditorState.biomes.Size() - 1));
+                }
+
+                static int selectedBiome = -1;
+                if (ImGui::BeginListBox("###BiomeList"))
+                {
+                    for (int i = 0; i < terrainEditorState.biomes.Size(); i++)
+                    {
+                        if (ImGui::Selectable(terrainEditorState.biomeNames[i].AsCharPtr()))
+                        {
+                            selectedBiome = i;
+                        }
+                    }
+                    ImGui::EndListBox();
+                }
+
+                if (selectedBiome != -1)
+                {
+
+                    auto biomeId = terrainEditorState.biomes[selectedBiome];
+                    auto& biomeSettings = terrainEditorState.biomeSettings[selectedBiome];
+                    terrainEditorState.activeBiomeMask = terrainEditorState.biomeTextures[selectedBiome].maskTex;
+                    CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
+                        terrainEditorState.activeBiomeMask, Terrainbrush::OutputMask::BINDING
+                    });
+                    CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
+
+                    ImGui::Text("Mask");
+                    ImGui::Image(&terrainEditorState.biomeTextures[selectedBiome].mask, ImVec2(128, 128));
+                    ImGui::SameLine();
+                    if (drawModeButton("Paint", terrainEditorState.brushUniforms.mode, Terrainbrush::Biome))
+                    {
+                        terrainEditorState.brushUniforms.mode = Terrainbrush::Biome;
+                    }
+
+                    const char* labels[4] = { "Flat", "Slope", "Height", "Height slope" };
+                    const char* textures[3] = { "Albedo", "Normals", "Material" };
+
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        ImGui::BeginGroup();
+                        ImGui::Text(labels[i]);
+                        for (int j = 0; j < 3; j++)
+                        {
+                            bool pressed = false;
+
+                            Dynui::ImguiTextureId* tex = nullptr;
+                            const char* path = nullptr;
+                            switch (j)
+                            {
+                            case 0:
+                                tex = &terrainEditorState.biomeTextures[selectedBiome].albedo[i];
+                                path = terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i].Value();
+                                break;
+                            case 1:
+                                tex = &terrainEditorState.biomeTextures[selectedBiome].normals[i];
+                                path = terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i].Value();
+                                break;
+                            case 2:
+                                tex = &terrainEditorState.biomeTextures[selectedBiome].material[i];
+                                path = terrainEditorState.biomeTextures[selectedBiome].materialPaths[i].Value();
+                                break;
+                            default:
+                                n_error("Can't happen");
+                                break;
+                            }
+                            pressed |= ImGui::ImageButton(textures[j], tex, ImVec2(64, 64));
+                            ImGui::SameLine(); 
+                            ImGui::BeginGroup();
+                                ImGui::Text(textures[j]);
+                                pressed |= ImGui::Button(path);
+                            ImGui::EndGroup();
+
+                            if (pressed)
+                            {
+                                // TODO: Replace file dialog with asset browser view/instance
+                                const char* patterns[] = { "*.dds" };
+                                const char* filePath = tinyfd_openFileDialog(textures[j], IO::URI(path).LocalPath().AsCharPtr(), 1, patterns, "Texture files (DDS)", false);
+
+                                if (filePath != nullptr)
+                                {
+                                    switch (j)
+                                    {
+                                        case 0:
+                                            terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i] = filePath;
+                                            terrainEditorState.biomeTextures[selectedBiome].albedoResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
+                                            terrainEditorState.biomeTextures[selectedBiome].albedo[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].albedoResources[i];
+                                            break;
+                                        case 1:
+                                            terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i] = filePath;
+                                            terrainEditorState.biomeTextures[selectedBiome].normalsResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
+                                            terrainEditorState.biomeTextures[selectedBiome].normals[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].normalsResources[i];
+                                            break;
+                                        case 2:
+                                            terrainEditorState.biomeTextures[selectedBiome].materialPaths[i] = filePath;
+                                            terrainEditorState.biomeTextures[selectedBiome].materialResources[i] = Resources::CreateResource(filePath, "terrain", nullptr, nullptr, true, false);
+                                            terrainEditorState.biomeTextures[selectedBiome].material[i].nebulaHandle = terrainEditorState.biomeTextures[selectedBiome].materialResources[i];
+                                            break;
+                                        default:
+                                            n_error("Can't happen");
+                                            break;
+                                    }
+                                }
+
+                                // Update biome in terrain system
+                                Terrain::TerrainContext::SetBiomeLayer(selectedBiome, Terrain::BiomeSettings::BiomeMaterialLayer(i),
+                                    terrainEditorState.biomeTextures[selectedBiome].albedoPaths[i],
+                                    terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i],
+                                    terrainEditorState.biomeTextures[selectedBiome].materialPaths[i]
+                                );
+                                Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+
+                            }
+                        }
+                        ImGui::EndGroup();
+                    }
+
+                    ImGui::BeginGroup();
+                        ImGui::Text("Rules");
+                        ImGui::SliderFloat("Slope Threshold", &biomeSettings.biomeParameters.slopeThreshold, 0.0f, 1.0f);
+                        ImGui::SliderFloat("Height Threshold", &biomeSettings.biomeParameters.heightThreshold, 0.0f, 1.0f);
+                        ImGui::SliderFloat("UV Scale Factor", &biomeSettings.biomeParameters.uvScaleFactor, 1.0f, 256.0f);
+                    ImGui::EndGroup();
+
+                    Terrain::TerrainContext::SetBiomeRules(biomeId, biomeSettings.biomeParameters.slopeThreshold, biomeSettings.biomeParameters.heightThreshold, biomeSettings.biomeParameters.uvScaleFactor);
+                    Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+                }
+            }
         }
     }
 }
@@ -412,12 +623,8 @@ namespace Tools
 void
 TerrainEditorTool::Render(Presentation::Modules::Viewport* viewport)
 {
-    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Math::vec2 mousePos = mouse->GetPixelPosition();
-    terrainEditorState.brushUniforms.cursor[0] = mousePos.x - viewport->lastViewportImagePositionAbsolute.x;
-    terrainEditorState.brushUniforms.cursor[1] = mousePos.y - viewport->lastViewportImagePositionAbsolute.y;
-    CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
-    terrainEditorState.drawBrushPreview = true;
+
+    terrainEditorState.drawBrushPreview = false;
 }
 
 //------------------------------------------------------------------------------
@@ -426,7 +633,12 @@ TerrainEditorTool::Render(Presentation::Modules::Viewport* viewport)
 void
 TerrainEditorTool::Update(Presentation::Modules::Viewport* viewport)
 {
-    terrainEditorState.drawBrushPreview = false;
+    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
+    Math::vec2 mousePos = mouse->GetPixelPosition();
+    terrainEditorState.brushUniforms.cursor[0] = mousePos.x - viewport->lastViewportImagePositionAbsolute.x;
+    terrainEditorState.brushUniforms.cursor[1] = mousePos.y - viewport->lastViewportImagePositionAbsolute.y;
+    CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
+    terrainEditorState.drawBrushPreview = true;
 }
 
 //------------------------------------------------------------------------------

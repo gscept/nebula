@@ -66,6 +66,8 @@ struct
     CoreGraphics::BufferId biomeBuffer;
     Terrain::MaterialLayers::STRUCT biomeMaterials;
     Util::Array<CoreGraphics::TextureId> biomeTextures;
+
+    BiomeMaterial biomeResources[Terrain::MAX_BIOMES][BiomeSettings::BiomeMaterialLayer::NumLayers];
     CoreGraphics::TextureId biomeMasks[Terrain::MAX_BIOMES];
     CoreGraphics::TextureId biomeWeights[Terrain::MAX_BIOMES];
     Threading::AtomicCounter biomeLoaded[Terrain::MAX_BIOMES][4];
@@ -74,7 +76,6 @@ struct
 
     Graphics::GraphicsEntityId sun;
 
-    CoreGraphics::TextureId terrainShadowMap;
     Math::vec4 cachedSunDirection;
     bool shadowMapInvalid;
     bool updateShadowMap;
@@ -294,7 +295,7 @@ TerrainContext::Create()
                         PipelineStage::TransferRead,
                         BarrierDomain::Global,
                         {
-                                BufferBarrierInfo
+                            BufferBarrierInfo
                             {
                                 terrainInstance.indirectionUploadBuffers.buffers[bufferIndex],
                                     CoreGraphics::BufferSubresourceInfo()
@@ -336,7 +337,7 @@ TerrainContext::Create()
                         PipelineStage::TransferRead,
                         BarrierDomain::Global,
                         {
-                                BufferBarrierInfo
+                            BufferBarrierInfo
                             {
                                     terrainInstance.indirectionUploadBuffers.buffers[bufferIndex],
                                     CoreGraphics::BufferSubresourceInfo()
@@ -382,7 +383,7 @@ TerrainContext::Create()
                     PipelineStage::TransferRead,
                     BarrierDomain::Global,
                     {
-                            BufferBarrierInfo
+                        BufferBarrierInfo
                         {
                             terrainInstance.subtextureStagingBuffers.buffers[bufferIndex],
                                 CoreGraphics::BufferSubresourceInfo()
@@ -402,7 +403,7 @@ TerrainContext::Create()
                     PipelineStage::HostWrite,
                     BarrierDomain::Global,
                     {
-                            BufferBarrierInfo
+                        BufferBarrierInfo
                         {
                             terrainInstance.subtextureStagingBuffers.buffers[bufferIndex],
                                 CoreGraphics::BufferSubresourceInfo()
@@ -467,8 +468,8 @@ TerrainContext::Create()
         {
             TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
             terrainInstance.barrierContext.Start("Terrain Prepass Pass Sync", cmdBuf);
-            terrainInstance.barrierContext.SyncBuffer(terrainInstance.pageStatusBufferBarrierIndex, terrainInstance.pageStatusBuffer, CoreGraphics::PipelineStage::VertexShaderRead);
-            terrainInstance.barrierContext.SyncBuffer(terrainInstance.pageUpdateListBarrierIndex, terrainInstance.pageUpdateListBuffer, CoreGraphics::PipelineStage::VertexShaderWrite);
+            terrainInstance.barrierContext.SyncBuffer(terrainInstance.pageStatusBufferBarrierIndex, terrainInstance.pageStatusBuffer, CoreGraphics::PipelineStage::PixelShaderWrite);
+            terrainInstance.barrierContext.SyncBuffer(terrainInstance.pageUpdateListBarrierIndex, terrainInstance.pageUpdateListBuffer, CoreGraphics::PipelineStage::PixelShaderWrite);
             terrainInstance.barrierContext.Synchronize();
         }
     });
@@ -841,7 +842,6 @@ TerrainContext::Discard()
         terrainInstance.indirectionBufferClearsThisFrame.Clear();
         terrainInstance.indirectionTextureClearsThisFrame.Clear();
     }
-    
 }
 
 //------------------------------------------------------------------------------
@@ -999,23 +999,29 @@ TerrainContext::SetupTerrain(
 
 
     // clear the buffer, the subsequent fills are to clear the buffers
+    Util::FixedArray<Terrain::PageStatuses::STRUCT> pageStatusInit(offset);
+    Memory::Clear(pageStatusInit.Begin(), pageStatusInit.ByteSize());
 
     bufInfo.name = "TerrainPageStatusBuffer"_atm;
-    bufInfo.elementSize = sizeof(uint);
+    bufInfo.elementSize = sizeof(Terrain::PageStatuses::STRUCT);
     bufInfo.size = offset;
     bufInfo.mode = BufferAccessMode::DeviceLocal;
     bufInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferDestination;
-    bufInfo.data = nullptr;
-    bufInfo.dataSize = 0;
+    bufInfo.data = pageStatusInit.Begin();
+    bufInfo.dataSize = pageStatusInit.ByteSize();
     instanceInfo.pageStatusBuffer = CoreGraphics::CreateBuffer(bufInfo);
+
+
+    Util::FixedArray<Terrain::PageUpdateList::STRUCT> pageUpdateInit(1);
+    Memory::Clear(pageUpdateInit.Begin(), pageUpdateInit.ByteSize());
 
     bufInfo.name = "TerrainPageUpdateListBuffer"_atm;
     bufInfo.elementSize = sizeof(Terrain::PageUpdateList::STRUCT);
     bufInfo.size = 1;
     bufInfo.mode = BufferAccessMode::DeviceLocal;
     bufInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferSource;
-    bufInfo.data = nullptr;
-    bufInfo.dataSize = 0;
+    bufInfo.data = pageUpdateInit.Begin();
+    bufInfo.dataSize = pageUpdateInit.ByteSize();
     instanceInfo.pageUpdateListBuffer = CoreGraphics::CreateBuffer(bufInfo);
 
     bufInfo.name = "TerrainPageUpdateReadbackBuffer"_atm;
@@ -1588,19 +1594,16 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
     Ids::Id32 ret = terrainBiomeAllocator.Alloc();
     terrainBiomeAllocator.Set<TerrainBiome_Settings>(ret, settings);
 
-    Util::Array<BiomeMaterial> mats =
-    {
-        settings.materials[BiomeSettings::BiomeMaterialLayer::Flat],
-        settings.materials[BiomeSettings::BiomeMaterialLayer::Slope],
-        settings.materials[BiomeSettings::BiomeMaterialLayer::Height],
-        settings.materials[BiomeSettings::BiomeMaterialLayer::HeightSlope]
-    };
     IndexT biomeIndex = terrainState.biomeCounter;
-    for (int i = 0; i < mats.Size(); i++)
+    terrainState.biomeResources[biomeIndex][BiomeSettings::BiomeMaterialLayer::Flat] = settings.materials[BiomeSettings::BiomeMaterialLayer::Flat];
+    terrainState.biomeResources[biomeIndex][BiomeSettings::BiomeMaterialLayer::Slope] = settings.materials[BiomeSettings::BiomeMaterialLayer::Slope];
+    terrainState.biomeResources[biomeIndex][BiomeSettings::BiomeMaterialLayer::Height] = settings.materials[BiomeSettings::BiomeMaterialLayer::Height];
+    terrainState.biomeResources[biomeIndex][BiomeSettings::BiomeMaterialLayer::HeightSlope] = settings.materials[BiomeSettings::BiomeMaterialLayer::HeightSlope];
+    for (int i = 0; i < BiomeSettings::BiomeMaterialLayer::NumLayers; i++)
     {
         terrainState.biomeLoaded[biomeIndex][i] = 0x0;
         terrainState.biomeLowresGenerated[i] = false;
-        Resources::CreateResource(mats[i].albedo.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
+        terrainState.biomeResources[biomeIndex][i].albedoRes = Resources::CreateResource(terrainState.biomeResources[biomeIndex][i].albedo.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
             Threading::CriticalScope scope(&terrainState.syncPoint);
             CoreGraphics::TextureIdLock _0(id);
@@ -1610,7 +1613,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
             terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::AlbedoLoaded;
         }, nullptr, false, false);
 
-        Resources::CreateResource(mats[i].normal.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
+        terrainState.biomeResources[biomeIndex][i].normalRes = Resources::CreateResource(terrainState.biomeResources[biomeIndex][i].normal.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
             Threading::CriticalScope scope(&terrainState.syncPoint);
             CoreGraphics::TextureIdLock _0(id);
@@ -1620,7 +1623,7 @@ TerrainContext::CreateBiome(const BiomeSettings& settings)
             terrainState.biomeLoaded[biomeIndex][i] |= BiomeLoadBits::NormalLoaded;
         }, nullptr, false, false);
 
-        Resources::CreateResource(mats[i].material.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
+        terrainState.biomeResources[biomeIndex][i].materialRes = Resources::CreateResource(terrainState.biomeResources[biomeIndex][i].material.Value(), "terrain", [i, biomeIndex](Resources::ResourceId id)
         {
             Threading::CriticalScope scope(&terrainState.syncPoint);
             CoreGraphics::TextureIdLock _0(id);
@@ -2165,6 +2168,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     Util::Array<TerrainInstanceInfo>& terrainInstances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
+
     for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
     {
         TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
@@ -2506,17 +2510,27 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 
             if (ImGui::BeginTable("Terrain Instances", 2, ImGuiTableFlags_Resizable))
             {
+                ImGui::TableNextColumn();
+
                 static int current = -1;
-                for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
+                if (ImGui::BeginListBox("###TerrainInstances"))
                 {
-                    TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
-                    ImGui::TableNextColumn();
-                    ImGui::Text("Instance %d", instanceIndex);
+                    for (IndexT instanceIndex = 0; instanceIndex < terrainInstances.Size(); instanceIndex++)
+                    {
+                        TerrainInstanceInfo& terrainInstance = terrainInstances[instanceIndex];
+                        if (ImGui::Selectable(Util::String::Sprintf("Instance %d", instanceIndex).AsCharPtr()))
+                        {
+                            current = instanceIndex;
+                        }
+                    }
+
+                    ImGui::EndListBox();
                 }
+                ImGui::TableNextColumn();
                 if (current != -1)
                 {
                     TerrainInstanceInfo& terrainInstance = terrainInstances[current];
-                    ImGui::LabelText("Updates", "Number of updates %d", terrainInstance.numPixels);
+                    ImGui::LabelText("###Updates", "Number of updates %d", terrainInstance.numPixels);
                     {
                         ImGui::Text("Indirection texture occupancy quadtree");
                         ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -2557,6 +2571,27 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 
                         ImGui::NewLine();
                         ImGui::Separator();
+                        ImGui::Text("Physical Albedo Cache");
+                        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainInstance.physicalAlbedoCacheBC);
+
+                        ImVec2 imageSize = { (float)dims.width, (float)dims.height };
+
+                        static Dynui::ImguiTextureId textureInfo;
+                        textureInfo.nebulaHandle = terrainInstance.physicalAlbedoCacheBC;
+                        textureInfo.mip = 0;
+                        textureInfo.layer = 0;
+
+                        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+                        float ratio = (float)dims.height / (float)dims.width;
+                        imageSize.y = imageSize.x * ratio;
+
+                        ImGui::Image((void*)&textureInfo, imageSize);
+                    }
+
+                    {
+
+                        ImGui::NewLine();
+                        ImGui::Separator();
                         ImGui::Text("Physical Normal Cache");
                         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainInstance.physicalNormalCacheBC);
 
@@ -2575,6 +2610,26 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                     }
 
                     {
+                        ImGui::NewLine();
+                        ImGui::Separator();
+                        ImGui::Text("Physical Normal Cache");
+                        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainInstance.physicalMaterialCacheBC);
+
+                        ImVec2 imageSize = { (float)dims.width, (float)dims.height };
+
+                        static Dynui::ImguiTextureId textureInfo;
+                        textureInfo.nebulaHandle = terrainInstance.physicalMaterialCacheBC;
+                        textureInfo.mip = 0;
+                        textureInfo.layer = 0;
+
+                        imageSize.x = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+                        float ratio = (float)dims.height / (float)dims.width;
+                        imageSize.y = imageSize.x * ratio;
+
+                        ImGui::Image((void*)&textureInfo, imageSize);
+                    }
+
+                    {
 
                         ImGui::NewLine();
                         ImGui::Separator();
@@ -2582,12 +2637,12 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                         static int mip = 0;
                         ImGui::InputInt("Mip", &mip, 1, 1);
 
-                        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainState.terrainShadowMap);
+                        CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainInstance.shadowMap);
 
                         ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
                         static Dynui::ImguiTextureId textureInfo;
-                        textureInfo.nebulaHandle = terrainState.terrainShadowMap;
+                        textureInfo.nebulaHandle = terrainInstance.shadowMap;
                         textureInfo.mip = mip;
                         textureInfo.layer = 0;
 
@@ -2598,10 +2653,11 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                         ImGui::Image((void*)&textureInfo, imageSize);
                     }
                 }
+                ImGui::EndTable();
             }
-        }
+            ImGui::End();
 
-        ImGui::End();
+        }
     }
 }
 
@@ -2639,6 +2695,7 @@ TerrainContext::OnRenderDebug(uint32_t flags)
     }
 }
 
+#if WITH_NEBULA_EDITOR
 //------------------------------------------------------------------------------
 /**
 */
@@ -2654,13 +2711,127 @@ TerrainContext::SetHeightmap(Graphics::GraphicsEntityId entity, CoreGraphics::Te
 /**
 */
 void
+TerrainContext::SetBiomeMask(TerrainBiomeId biomeId, CoreGraphics::TextureId biomemask)
+{
+    terrainState.biomeMasks[biomeId.id] = biomemask;
+    terrainState.biomeMaterials.MaterialMasks[biomeId.id / 4][biomeId.id % 4] = CoreGraphics::TextureGetBindlessHandle(biomemask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainContext::SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const Resources::ResourceName& albedo, const Resources::ResourceName& normal, const Resources::ResourceName& material)
+{
+    terrainState.biomeResources[biomeId.id][layer].albedo = albedo;
+    terrainState.biomeResources[biomeId.id][layer].normal = normal;
+    terrainState.biomeResources[biomeId.id][layer].material = material;
+
+    if (terrainState.biomeResources[biomeId.id][layer].albedoRes != Resources::InvalidResourceId)
+    {
+        Resources::DiscardResource(terrainState.biomeResources[biomeId.id][layer].albedoRes);
+        terrainState.biomeResources[biomeId.id][layer].albedoRes = Resources::InvalidResourceId;
+    }
+
+    if (terrainState.biomeResources[biomeId.id][layer].normalRes != Resources::InvalidResourceId)
+    {
+        Resources::DiscardResource(terrainState.biomeResources[biomeId.id][layer].normalRes);
+        terrainState.biomeResources[biomeId.id][layer].normalRes = Resources::InvalidResourceId;
+    }
+
+    if (terrainState.biomeResources[biomeId.id][layer].materialRes != Resources::InvalidResourceId)
+    {
+        Resources::DiscardResource(terrainState.biomeResources[biomeId.id][layer].materialRes);
+        terrainState.biomeResources[biomeId.id][layer].materialRes = Resources::InvalidResourceId;
+    }
+
+    terrainState.biomeLoaded[biomeId.id][layer] &= ~(BiomeLoadBits::AlbedoLoaded | BiomeLoadBits::NormalLoaded | BiomeLoadBits::MaterialLoaded);
+    terrainState.biomeResources[biomeId.id][layer].albedoRes = Resources::CreateResource(terrainState.biomeResources[biomeId.id][layer].albedo.Value(), "terrain", [layer, i = biomeId.id](Resources::ResourceId id)
+    {
+        Threading::CriticalScope scope(&terrainState.syncPoint);
+        CoreGraphics::TextureIdLock _0(id);
+        terrainState.biomeMaterials.MaterialAlbedos[i][layer] = CoreGraphics::TextureGetBindlessHandle(id);
+        terrainState.biomeTextures.Append(id);
+        terrainState.biomeLowresGenerated[i] = false;
+        terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::AlbedoLoaded;
+    }, nullptr, false, false);
+
+    terrainState.biomeResources[biomeId.id][layer].normalRes = Resources::CreateResource(terrainState.biomeResources[biomeId.id][layer].normal.Value(), "terrain", [layer, i = biomeId.id](Resources::ResourceId id)
+    {
+        Threading::CriticalScope scope(&terrainState.syncPoint);
+        CoreGraphics::TextureIdLock _0(id);
+        terrainState.biomeMaterials.MaterialNormals[i][layer] = CoreGraphics::TextureGetBindlessHandle(id);
+        terrainState.biomeTextures.Append(id);
+        terrainState.biomeLowresGenerated[i] = false;
+        terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::NormalLoaded;
+    }, nullptr, false, false);
+
+    terrainState.biomeResources[biomeId.id][layer].materialRes = Resources::CreateResource(terrainState.biomeResources[biomeId.id][layer].material.Value(), "terrain", [layer, i = biomeId.id](Resources::ResourceId id)
+    {
+        Threading::CriticalScope scope(&terrainState.syncPoint);
+        CoreGraphics::TextureIdLock _0(id);
+        terrainState.biomeMaterials.MaterialPBRs[i][layer] = CoreGraphics::TextureGetBindlessHandle(id);
+        terrainState.biomeTextures.Append(id);
+        terrainState.biomeLowresGenerated[i] = false;
+        terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::MaterialLoaded;
+    }, nullptr, false, false);
+
+    const auto& instances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
+    for (auto& instance : instances)
+    {
+        instance.updateLowres = true;
+    }
+    terrainState.biomeLowresGenerated[biomeId.id] = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainContext::SetBiomeRules(TerrainBiomeId biomeId, float slopeThreshold, float heightThreshold, float uvScalingFactor)
+{
+    Threading::CriticalScope scope(&terrainState.syncPoint);
+    BiomeParameters& params = terrainBiomeAllocator.Get<TerrainBiome_Settings>(biomeId.id).biomeParameters;
+    params.slopeThreshold = slopeThreshold;
+    params.heightThreshold = heightThreshold;
+    params.uvScaleFactor = uvScalingFactor;
+    const auto& instances = terrainAllocator.GetArray<Terrain_InstanceInfo>();
+    for (auto& instance : instances)
+    {
+        instance.updateLowres = true;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 TerrainContext::InvalidateTerrain(Graphics::GraphicsEntityId entity)
 {
+    Threading::CriticalScope scope(&terrainState.syncPoint);
     Graphics::ContextEntityId id = GetContextId(entity);
-    TerrainInstanceInfo& rt = terrainAllocator.Get<Terrain_InstanceInfo>(id.id);
-    rt.updateLowres = true;
+    TerrainInstanceInfo& instance = terrainAllocator.Get<Terrain_InstanceInfo>(id.id);
+    instance.updateLowres = true;
     terrainState.shadowMapInvalid = true;
+    //terrainState.invalidationFrame = CoreGraphics::GetNumBufferedFrames();
+
+    //instance.indirectionOccupancy.Clear();
+    instance.physicalTextureTileOccupancy.Clear();
+    //instance.indirectionBuffer.Fill(IndirectionEntry{ 0xF, 0x3FFF, 0x3FFF });
+
+    /*
+    for (int i = 0; i < instance.subTextures.Size(); i++)
+    {
+        instance.subTextures[i].numTiles = 0;
+        instance.subTextures[i].maxMip = 0;
+        instance.subTextures[i].indirectionOffset.x = UINT32_MAX;
+        instance.subTextures[i].indirectionOffset.y = UINT32_MAX;
+        instance.subTextures[i].mipBias = 0;
+        PackSubTexture(instance.subTextures[i], instance.gpuSubTextures[i]);
+    }
+    */
 }
+#endif 
 
 //------------------------------------------------------------------------------
 /**

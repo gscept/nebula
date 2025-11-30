@@ -159,13 +159,13 @@ csTerrainPageClearUpdateBuffer() void
     if PageUpdateList.NumEntries == 0 { return; }
 
     // Decrement the entries list
-    const numLeft = atomicAdd(PageUpdateList.&NumEntries, -1, MemorySemantics.AcquireRelease);
+    const numLeft = atomicSubtract(PageUpdateList.&NumEntries, 1, MemorySemantics.Relaxed);
 
     // If we get 0 or lower, it means the last item was dealt with already
-    if numLeft > 0 { bufferPtr(PageStatuses, PageUpdateList.PageStatuses[numLeft-1]).bits = 0x0u; }
+    if numLeft > 0 { bufferPtr(PageStatuses, PageUpdateList.PageStatuses[numLeft-1]).bits = 0u; }
 
     // Ensure we can't get negative NumEntries
-    atomicMax(PageUpdateList.&NumEntries, 0u, MemorySemantics.AcquireRelease);
+    atomicMax(PageUpdateList.&NumEntries, 0, MemorySemantics.Relaxed);
 }
 
 //------------------------------------------------------------------------------
@@ -227,12 +227,12 @@ psTerrainPrepass(
         var mipSize = TerrainInstanceUniforms.VirtualPageBufferMipSizes[lowerMip / 4][lowerMip % 4];
 
         var index = mipOffset + pageCoord.x + pageCoord.y * mipSize;
-        const status = atomicExchange(bufferPtr(PageStatuses, index).&bits, 1u, MemorySemantics.Acquire);
-        if status == 0x0
+        const status = atomicExchange(bufferPtr(PageStatuses, index).&bits, 1u, MemorySemantics.Relaxed);
+        if status == 0u
         {
             const entry = PackPageDataEntry(1u, subTextureIndex, lowerMip, maxMip, subTextureTile.x, subTextureTile.y);
 
-            const entryIndex = atomicAdd(PageUpdateList.&NumEntries, 1, MemorySemantics.Acquire);
+            const entryIndex = atomicAdd(PageUpdateList.&NumEntries, 1, MemorySemantics.Relaxed);
             PageUpdateList.Entry[entryIndex] = entry;
             PageUpdateList.PageStatuses[entryIndex] = index;
         }
@@ -256,16 +256,17 @@ psTerrainPrepass(
             mipSize = TerrainInstanceUniforms.VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
 
             index = mipOffset + pageCoord.x + pageCoord.y * mipSize;
-            const status = atomicExchange(bufferPtr(PageStatuses, index).&bits, 1u, MemorySemantics.Acquire);
-            if (status == 0x0)
+            const status = atomicExchange(bufferPtr(PageStatuses, index).&bits, 1u, MemorySemantics.Relaxed);
+            if status == 0u
             {
                 const entry = PackPageDataEntry(1u, subTextureIndex, upperMip, maxMip, subTextureTile.x, subTextureTile.y);
 
-                const entryIndex = atomicAdd(PageUpdateList.&NumEntries, 1, MemorySemantics.Acquire);
+                const entryIndex = atomicAdd(PageUpdateList.&NumEntries, 1, MemorySemantics.Relaxed);
                 PageUpdateList.Entry[entryIndex] = entry;
                 PageUpdateList.PageStatuses[entryIndex] = index;
             }
         }
+
 
         // if the position has w == 1, it means we found a page
         Pos.x = lod + mipBias;

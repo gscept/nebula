@@ -6,7 +6,8 @@ enum BrushMode
     Raise,
     Lower,
     Flatten,
-    Smooth
+    Smooth,
+    Biome
 };
 struct BrushData
 {
@@ -40,7 +41,8 @@ struct BrushGenerationData
 uniform BrushGenerationUniforms : *BrushGenerationData;
 
 uniform Brush : *texture2D;
-uniform Output : *mutable r16f texture2D;
+uniform OutputHeight : *mutable r16f texture2D;
+uniform OutputMask : *mutable r8 texture2D;
 uniform BrushOutput : *mutable r16f texture2D;
 
 render_state BrushRenderState
@@ -67,7 +69,7 @@ vsBrushPreview(
 
     // Get world space position of cursor
     const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
-    const extrude = worldPos.xz + position.xz * 0.5f * f32x2(BrushUniforms.size.x);
+    const extrude = worldPos.xz + position.xz * f32x2(BrushUniforms.size.x);
     const vertPos = f32x3(extrude.x, BrushUniforms.minHeight + BrushUniforms.maxHeight * position.y, extrude.y);
     vertexExportCoordinates(ViewConstants.ViewProjection * f32x4(vertPos, 1));
     WorldOffset = worldPos.xyz;
@@ -97,7 +99,7 @@ psBrushPreview(
 threads_x(8)
 threads_y(8)
 entry_point
-csBrush() void
+csBrushMask() void
 {
     const thread = computeGetGlobalThreadIndices().xy;
 
@@ -118,7 +120,41 @@ csBrush() void
     // If outside, skip brush
     if any(coordinate > BrushUniforms.heightmapSize) { return; }
 
-    var oldValue = textureLoad(Output, coordinate).x;
+    var oldValue = textureLoad(OutputMask, coordinate).x;
+
+    oldValue = lerp(oldValue, 1.0f, BrushUniforms.strength * weight);
+
+    textureStore(OutputMask, coordinate, f32x4(oldValue, 0, 0, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+threads_x(8)
+threads_y(8)
+entry_point
+csBrushHeight() void
+{
+    const thread = computeGetGlobalThreadIndices().xy;
+
+    // Get depth where the cursor is
+    const depth = textureFetch(Textures2D[PerTickParams.DepthBuffer], BrushUniforms.cursor, 0).r;
+    const seed = BrushUniforms.cursor * BrushUniforms.invViewport;
+
+    if depth == 1.0f { return; }
+
+    // Get world space position of cursor
+    const worldPos = PixelToWorld(seed, depth, ViewConstants.InvView, ViewConstants.InvProjection);
+    const coordinate = (worldPos.xz + f32x2(BrushUniforms.heightmapSize) * 0.5f) - f32x2(BrushUniforms.size) * 0.5f + f32x2(thread);
+    const uvRatio = f32x2(BrushUniforms.brushTextureSize) / f32x2(BrushUniforms.size);
+    const weight = textureFetch(Brush, i32x2(thread * uvRatio), 0).r;
+
+    // The brush coordinates should be the xz coordinates of the world space screen position
+
+    // If outside, skip brush
+    if any(coordinate > BrushUniforms.heightmapSize) { return; }
+
+    var oldValue = textureLoad(OutputHeight, coordinate).x;
 
     if BrushUniforms.mode == BrushMode.Raise
     {
@@ -148,7 +184,7 @@ csBrush() void
                 const sampleCoord = coordinate + i32x2(x, y);
                 if all(sampleCoord >= i32x2(0)) && all(sampleCoord < BrushUniforms.heightmapSize)
                 {
-                    sum = sum + textureLoad(Output, sampleCoord).x;
+                    sum = sum + textureLoad(OutputHeight, sampleCoord).x;
                     count = count + 1.0f;
                 }
             }
@@ -159,9 +195,8 @@ csBrush() void
 
     oldValue = clamp(oldValue, BrushUniforms.minHeight, BrushUniforms.maxHeight);
 
-    textureStore(Output, coordinate, f32x4(oldValue, 0, 0, 1));
+    textureStore(OutputHeight, coordinate, f32x4(oldValue, 0, 0, 1));
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -210,8 +245,17 @@ program BrushPreviewProgram
 //------------------------------------------------------------------------------
 /**
 */
-@Mask("Brush")
-program BrushProgram
+@Mask("BrushHeight")
+program BrushHeightProgram
 {
-    ComputeShader = csBrush;
+    ComputeShader = csBrushHeight;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("BrushMask")
+program BrushMaskProgram
+{
+    ComputeShader = csBrushMask;
 };
