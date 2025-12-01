@@ -2754,7 +2754,7 @@ TerrainContext::SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMateri
         terrainState.biomeTextures.Append(id);
         terrainState.biomeLowresGenerated[i] = false;
         terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::AlbedoLoaded;
-    }, nullptr, false, false);
+    }, nullptr, true, false);
 
     terrainState.biomeResources[biomeId.id][layer].normalRes = Resources::CreateResource(terrainState.biomeResources[biomeId.id][layer].normal.Value(), "terrain", [layer, i = biomeId.id](Resources::ResourceId id)
     {
@@ -2764,7 +2764,7 @@ TerrainContext::SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMateri
         terrainState.biomeTextures.Append(id);
         terrainState.biomeLowresGenerated[i] = false;
         terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::NormalLoaded;
-    }, nullptr, false, false);
+    }, nullptr, true, false);
 
     terrainState.biomeResources[biomeId.id][layer].materialRes = Resources::CreateResource(terrainState.biomeResources[biomeId.id][layer].material.Value(), "terrain", [layer, i = biomeId.id](Resources::ResourceId id)
     {
@@ -2774,7 +2774,7 @@ TerrainContext::SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMateri
         terrainState.biomeTextures.Append(id);
         terrainState.biomeLowresGenerated[i] = false;
         terrainState.biomeLoaded[i][layer] |= BiomeLoadBits::MaterialLoaded;
-    }, nullptr, false, false);
+    }, nullptr, true, false);
 
     terrainState.biomeLowresGenerated[biomeId.id] = false;
 }
