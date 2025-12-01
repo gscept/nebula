@@ -43,7 +43,6 @@ GPULangShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO
 
     GPULang::Loader* loader = new GPULang::Loader;
 
-    // catch any potential error coming from AnyFX
     if (!loader->Load((const char*)srcData, srcDataSize))
     {
         ret.id = CoreGraphics::InvalidShaderId;
@@ -63,6 +62,7 @@ GPULangShaderLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO
 Resources::Resource::State
 GPULangShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
 {
+    /*
     void* srcData = stream->Map();
     uint srcDataSize = stream->GetSize();
 
@@ -79,7 +79,8 @@ GPULangShaderLoader::ReloadFromStream(const Resources::ResourceId id, const Ptr<
 
     ShaderId shader = id.resource;
     ReloadShader(shader, effect);
-    return Resources::Resource::Loaded;
+    */
+    return Resources::Resource::Failed;
 }
 
 //------------------------------------------------------------------------------
