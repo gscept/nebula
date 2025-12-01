@@ -242,7 +242,7 @@ macro(compile_gpulang_intern)
 
         # first calculate dependencies
         file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${foldername})
-        set(depoutput ${CMAKE_BINARY_DIR}/shaders/gpulang/${CurTargetName}/${foldername}${basename}_gpulang.dep)
+        set(depoutput ${CMAKE_BINARY_DIR}/shader_dependencies/gpulang/${CurTargetName}/${foldername}${basename}_gpulang.dep)
         # create it the first time by force, after that with dependencies
         # since custom command does not want to play ball atm, we just generate it every time
         if(NOT EXISTS ${depoutput} OR ${shd} IS_NEWER_THAN ${depoutput})
@@ -250,13 +250,13 @@ macro(compile_gpulang_intern)
         endif()
 
         # sadly this doesnt work for some reason
-        add_custom_command(OUTPUT ${depoutput}
-            COMMAND ${GPULANGC} ${shd} -M -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${CMAKE_BINARY_DIR}
-            DEPENDS ${GPULANGC} ${shd}
-            WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-            COMMENT ""
-            VERBATIM
-        )
+        # add_custom_command(OUTPUT ${depoutput}
+        #     COMMAND ${GPULANGC} ${shd} -M -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${CMAKE_BINARY_DIR}
+        #     DEPENDS ${GPULANGC} ${shd}
+        #     WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+        #     COMMENT ""
+        #     VERBATIM
+        # )
         if(EXISTS ${depoutput})
             file(READ ${depoutput} deps)
         endif()
