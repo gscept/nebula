@@ -8,432 +8,89 @@
 #include "io/stream.h"
 #include "image.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 namespace CoreGraphics
 {
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+ImageChannelPrimitive
+ToImagePrimitive(CoreGraphics::PixelFormat::Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::R8:
+        case PixelFormat::R8G8B8:
+        case PixelFormat::R8G8B8X8:
+        case PixelFormat::R8G8B8A8:
+        case PixelFormat::B8G8R8A8:
+            return ImageChannelPrimitive::Bit8UInt;
+        case PixelFormat::R16F:
+        case PixelFormat::R16G16F:
+        case PixelFormat::R16G16B16A16F:
+            return ImageChannelPrimitive::Bit16Float;
+        case PixelFormat::R16:
+        case PixelFormat::R16G16:
+        case PixelFormat::R16G16B16A16:
+            return ImageChannelPrimitive::Bit16UInt;
+        case PixelFormat::R32F:
+        case PixelFormat::R32G32F:
+        case PixelFormat::R32G32B32F:
+        case PixelFormat::R32G32B32A32F:
+            return ImageChannelPrimitive::Bit32Float;
+        case PixelFormat::R32:
+        case PixelFormat::R32G32:
+        case PixelFormat::R32G32B32:
+        case PixelFormat::R32G32B32A32:
+            return ImageChannelPrimitive::Bit32UInt;
+        default:
+            n_error("Unsupported PixelFormat for Image");
+            return ImageChannelPrimitive::Bit8UInt;
+    }
+}
+
+CmdBufferPoolId cmdPool = CmdBufferPoolId::Invalid();
 ImageAllocator imageAllocator;
 //------------------------------------------------------------------------------
 /**
 */
-ImageId CreateImage(const ImageCreateInfoFile& info)
+ImageId
+CreateImage(const ImageCreateInfoFile& info)
 {
-    // FIXME use something else, stb_image maybe?
-    n_error("CoreGraphics::CreateImage() Not implemented!");
-#if 0
-    // open file, yes, synced
-    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(info.path);
-    stream->SetAccessMode(IO::Stream::ReadAccess);
-    if (stream->Open())
+    Ids::Id32 image = imageAllocator.Alloc();
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(image);
+    stbi_uc* data = nullptr;
+    if (stbi_is_16_bit(info.path.LocalPath().AsCharPtr()))
     {
-        void* srcData = stream->Map();
-        uint srcDataSize = stream->GetSize();
-
-        Ids::Id32 id = imageAllocator.Alloc();
-        ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id);
-
-        // create IL image
-        ILuint image = ilGenImage();
-        ilBindImage(image);
-
-        Util::String ext = info.path.AsString().GetFileExtension();
-
-        // use extension to figure out what image we should open
-        if (ext == "dds")
-        {
-            // loading a dds will automatically decompress it
-            ilSetInteger(IL_DXTC_NO_DECOMPRESS, IL_FALSE);
-            ilLoadL(IL_DDS, srcData, srcDataSize);
-            loadInfo.container = DDS;
-        }
-        else if (ext == "png")
-        {
-            ilLoadL(IL_PNG, srcData, srcDataSize);
-            loadInfo.container = PNG;
-        }
-        else if (ext == "jpg" || ext == "jpeg")
-        {
-            ilLoadL(IL_JPG, srcData, srcDataSize);
-            loadInfo.container = JPEG;
-        }
-
-        if (info.convertTo32Bit)
-            ilConvertImage(ilGetInteger(IL_PIXEL_FORMAT), IL_UNSIGNED_INT);
-
-        ILuint width = ilGetInteger(IL_IMAGE_WIDTH);
-        ILuint height = ilGetInteger(IL_IMAGE_HEIGHT);
-        ILuint depth = ilGetInteger(IL_IMAGE_DEPTH);
-        ILuint bpp = ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL);
-        ILuint channels = ilGetInteger(IL_IMAGE_CHANNELS);
-        ILenum format = ilGetInteger(IL_PIXEL_FORMAT);
-
-        PixelFormat::Code fmt = PixelFormat::InvalidPixelFormat;
-        switch (format)
-        {
-        case PF_RGBA:               
-        { 
-            fmt = PixelFormat::R8G8B8A8; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = 3;
-            loadInfo.primitive = Bit8Uint;
-            break;
-        }
-        case PF_RGB:                
-        { 
-            fmt = PixelFormat::R8G8B8; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        case PF_BGR:
-        {
-            fmt = PixelFormat::R8G8B8;
-            loadInfo.blueOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.redOffset = 2;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit8Uint;
-            break;
-        }
-        case PF_BGRA:
-        {
-            fmt = PixelFormat::R8G8B8A8;
-            loadInfo.blueOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.redOffset = 2;
-            loadInfo.alphaOffset = 3;
-            loadInfo.primitive = Bit8Uint;
-            break;
-        }
-        case PF_DXT1:               
-        { 
-            fmt = PixelFormat::DXT1; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        case PF_DXT3:               
-        { 
-            fmt = PixelFormat::DXT3; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = 3;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        case PF_DXT5:               
-        { 
-            fmt = PixelFormat::DXT5; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = 3;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        // case PF_BC7:             { fmt = PixelFormat::BC7; break; } not supported
-        case PF_DXT1_sRGB:          
-        { 
-            fmt = PixelFormat::DXT1sRGB; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        case PF_DXT3_sRGB:          
-        { 
-            fmt = PixelFormat::DXT3sRGB; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = 3;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        case PF_DXT5_sRGB:          
-        { 
-            fmt = PixelFormat::DXT5sRGB; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 1;
-            loadInfo.blueOffset = 2;
-            loadInfo.alphaOffset = 3;
-            loadInfo.primitive = Bit8Uint;
-            break; 
-        }
-        // case PF_BC7_sRGB:            { fmt = PixelFormat::BC7sRGB; break; } not supported
-        // case PF_3DC:             { fmt = PixelFormat::BC; break; } // not supported
-
-        case PF_R8:
-        {
-            fmt = PixelFormat::R8;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = -1;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit8Uint;
-            break;
-        }
-        case PF_R16:
-        {
-            fmt = PixelFormat::R16;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = -1;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit16Uint;
-            break;
-        }
-        case PF_R16F:
-        {
-            fmt = PixelFormat::R16F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = -1;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit16Float;
-            break;
-        }
-        case PF_R32:
-        {
-            fmt = PixelFormat::R32;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = -1;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit32Uint;
-            break;
-        }
-        case PF_R32F:
-        {
-            fmt = PixelFormat::R32F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = -1;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit32Float;
-            break;
-        }
-        case PF_R16G16:
-        {
-            fmt = PixelFormat::R16G16;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 2;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit16Uint;
-            break;
-        }
-        case PF_R16G16F:
-        {
-            fmt = PixelFormat::R16G16F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 2;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit16Float;
-            break;
-        }
-        case PF_R32G32:
-        {
-            fmt = PixelFormat::R32G32;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 4;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit32Float;
-            break;
-        }
-        case PF_R32G32F:
-        {
-            fmt = PixelFormat::R32G32F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 4;
-            loadInfo.blueOffset = -1;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit32Float;
-            break;
-        }
-        case PF_R16G16B16A16:       
-        { 
-            fmt = PixelFormat::R16G16B16A16; 
-            loadInfo.redOffset = 0; 
-            loadInfo.greenOffset = 2;
-            loadInfo.blueOffset = 4;
-            loadInfo.alphaOffset = 6;
-            loadInfo.primitive = Bit16Uint;
-            break; 
-        }
-        case PF_R16G16B16A16F:      
-        { 
-            fmt = PixelFormat::R16G16B16A16F; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 2;
-            loadInfo.blueOffset = 4;
-            loadInfo.alphaOffset = 6;
-            loadInfo.primitive = Bit16Float;
-            break; 
-        }
-        case PF_R32G32B32:
-        {
-            fmt = PixelFormat::R32G32B32F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 4;
-            loadInfo.blueOffset = 8;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit32Float;
-            break;
-        }
-        case PF_R32G32B32F:
-        {
-            fmt = PixelFormat::R32G32B32F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 4;
-            loadInfo.blueOffset = 8;
-            loadInfo.alphaOffset = -1;
-            loadInfo.primitive = Bit32Float;
-            break;
-        }
-        case PF_R32G32B32A32:
-        {
-            fmt = PixelFormat::R32G32B32A32F;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 4;
-            loadInfo.blueOffset = 8;
-            loadInfo.alphaOffset = 12;
-            loadInfo.primitive = Bit32Float;
-            break;
-        }
-        case PF_R32G32B32A32F:      
-        { 
-            fmt = PixelFormat::R32G32B32A32F; 
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = 4;
-            loadInfo.blueOffset = 8;
-            loadInfo.alphaOffset = 12;
-            loadInfo.primitive = Bit32Float;
-            break; 
-        }
-
-        case PF_UNKNOWN:            { fmt = PixelFormat::InvalidPixelFormat; break; }
-        }
-
-        // if the pixelformat is invalid, figure out based on channels and bpp
-        if (fmt == PixelFormat::InvalidPixelFormat)
-        {
-            ILuint bpc = bpp / channels;
-            loadInfo.redOffset = 0;
-            loadInfo.greenOffset = bpc;
-            loadInfo.blueOffset = bpc*2;
-            loadInfo.alphaOffset = bpc*3;
-            switch (channels)
-            {
-            case 1:
-                switch (bpp)
-                {
-                case 1:
-                    fmt = PixelFormat::R8;
-                    loadInfo.primitive = Bit8Uint;
-                    break;
-                case 2:
-                    fmt = PixelFormat::R16;
-                    loadInfo.primitive = Bit16Uint;
-                    break;
-                case 4:
-                    fmt = PixelFormat::R32;
-                    loadInfo.primitive = Bit32Uint;
-                    break;
-                }
-                break;
-            case 2:
-                switch (bpp)
-                {
-                case 1:
-                    fmt = PixelFormat::InvalidPixelFormat;
-                    break;
-                case 2:
-                    fmt = PixelFormat::R16G16;
-                    loadInfo.primitive = Bit16Uint;
-                    break;
-                case 4:
-                    fmt = PixelFormat::R32G32;
-                    loadInfo.primitive = Bit32Uint;
-                    break;
-                }
-                break;
-            case 3:
-                switch (bpp)
-                {
-                case 1:
-                    fmt = PixelFormat::R8G8B8;
-                    loadInfo.primitive = Bit8Uint;
-                    break;
-                case 2:
-                    fmt = PixelFormat::InvalidPixelFormat;
-                    break;
-                case 4:
-                    fmt = PixelFormat::InvalidPixelFormat;
-                    break;
-                }
-                break;
-            case 4:
-                switch (bpp)
-                {
-                case 1:
-                    fmt = PixelFormat::R8G8B8A8;
-                    loadInfo.primitive = Bit8Uint;
-                    break;
-                case 2:
-                    fmt = PixelFormat::R16G16B16A16;
-                    loadInfo.primitive = Bit16Uint;
-                    break;
-                case 4:
-                    fmt = PixelFormat::R32G32B32A32;
-                    loadInfo.primitive = Bit32Uint;
-                    break;
-                }
-                break;
-            }
-        }
-
-        n_assert2(fmt != PixelFormat::InvalidPixelFormat, "Pixel format could not be deduced");
-
-        loadInfo.width = width;
-        loadInfo.height = height;
-        loadInfo.depth = depth;
-        loadInfo.format = fmt;
-
-        // make copy of buffer
-        ILuint size = ilGetInteger(IL_IMAGE_SIZE_OF_DATA);
-        ILubyte* buf = ilGetData();
-        loadInfo.buffer = (byte*)Memory::Alloc(Memory::ResourceHeap, size);
-        memcpy(loadInfo.buffer, buf, size);
-
-        ilDeleteImage(image);
-
-        stream->Unmap();
-        stream->Close();
-
-        ImageId ret = id;
-        return ret;
+        loadInfo.data.stbiData16 = stbi_load_16(info.path.AsString().AsCharPtr(), &loadInfo.width, &loadInfo.height, &loadInfo.channels, STBI_rgb_alpha);
+        loadInfo.primitive = Bit16UInt;
     }
-#endif
-    return ImageId::Invalid();
+    else if (stbi_is_hdr(info.path.LocalPath().AsCharPtr()))
+    {
+        loadInfo.data.stbiDataFloat = stbi_loadf(info.path.AsString().AsCharPtr(), &loadInfo.width, &loadInfo.height, &loadInfo.channels, STBI_rgb_alpha);
+        loadInfo.primitive = Bit32Float;
+    }
+    else
+    {
+        loadInfo.data.stbiData8 = stbi_load(info.path.AsString().AsCharPtr(), &loadInfo.width, &loadInfo.height, &loadInfo.channels, STBI_rgb_alpha);
+        loadInfo.primitive = Bit8UInt;
+    }
+
+    return ImageId(image);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-ImageId CreateImage(const ImageCreateInfoData& info)
+ImageId
+CreateImage(const ImageCreateInfoData& info)
 {
     return ImageId();
 }
@@ -441,69 +98,114 @@ ImageId CreateImage(const ImageCreateInfoData& info)
 //------------------------------------------------------------------------------
 /**
 */
-void DestroyImage(const ImageId id)
+ImageId
+CreateImage(const CoreGraphics::TextureId tex, CoreGraphics::PipelineStage stage)
 {
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    Memory::Free(Memory::ResourceHeap, loadInfo.buffer);
+    if (cmdPool == CmdBufferPoolId::Invalid())
+    {
+        CmdBufferPoolCreateInfo cmdPoolInfo;
+        cmdPoolInfo.name = "ImageLoaderCmdPool";
+        cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
+        cmdPoolInfo.resetable = false;
+        cmdPoolInfo.shortlived = true;
+        cmdPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+    }
+
+    CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
+    CoreGraphics::PixelFormat::Code format = TextureGetPixelFormat(tex);
+    CoreGraphics::CmdBufferCreateInfo cmdBufInfo;
+    cmdBufInfo.pool = cmdPool;
+    cmdBufInfo.usage = CoreGraphics::QueueType::GraphicsQueueType;
+    cmdBufInfo.name = "ImageCreateTextureRead";
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdBufInfo);
+    CoreGraphics::CmdBufferBeginInfo beginInfo;
+    beginInfo.resubmittable = false;
+    beginInfo.submitDuringPass = false;
+    beginInfo.submitOnce = true;
+    CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+
+    CoreGraphics::TextureCopy texCopy;
+    texCopy.bits = ImageBits::ColorBits;
+    texCopy.layer = 0;
+    texCopy.mip = 0;
+    texCopy.region = Math::rectangle<SizeT>(0, 0, dims.width, dims.height);
+
+    CoreGraphics::BufferCopy bufCopy;
+    bufCopy.imageHeight = 0;
+    bufCopy.offset = 0;
+    bufCopy.rowLength = 0;
+    CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.byteSize = dims.width * dims.height * CoreGraphics::PixelFormat::ToSize(format);
+    bufInfo.usageFlags = CoreGraphics::BufferUsage::TransferDestination;
+    bufInfo.mode = CoreGraphics::BufferAccessMode::HostCached;
+    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
+
+    // Perform the copy immediately on the GPU
+    CoreGraphics::CmdBarrier(cmdBuf, stage, CoreGraphics::PipelineStage::TransferRead, 
+        CoreGraphics::BarrierDomain::Global, 
+        {
+            CoreGraphics::TextureBarrierInfo{ tex, TextureSubresourceInfo() }
+        }
+    );
+    CoreGraphics::CmdCopy(cmdBuf, tex, { texCopy }, buf, { bufCopy });
+    CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferRead, stage,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            CoreGraphics::TextureBarrierInfo{ tex, TextureSubresourceInfo() }
+        }
+    );
+    CoreGraphics::FenceId fence = CoreGraphics::CreateFence({false});
+    CoreGraphics::CmdEndRecord(cmdBuf);
+    CoreGraphics::SubmitCommandBufferImmediate(cmdBuf, CoreGraphics::QueueType::GraphicsQueueType, fence);
+    CoreGraphics::FenceWait(fence, FENCE_WAIT_FOREVER);
+
+    CoreGraphics::DestroyCmdBuffer(cmdBuf);
+
+    Ids::Id32 image = imageAllocator.Alloc();
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(image);
+    loadInfo.width = dims.width;
+    loadInfo.height = dims.height;
+    loadInfo.format = format;
+    loadInfo.channels = CoreGraphics::PixelFormat::ToChannels(format);
+    loadInfo.primitive = ToImagePrimitive(format);
+    void* data = Memory::Alloc(Memory::ResourceHeap, bufInfo.byteSize);
+    void* bufData = CoreGraphics::BufferMap(buf);
+    memcpy(data, bufData, bufInfo.byteSize);
+    loadInfo.data.stbiData8 = (unsigned char*)data;
+    CoreGraphics::BufferUnmap(buf);
+    CoreGraphics::DestroyBuffer(buf);
+
+    return ImageId(image);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-ImageDimensions ImageGetDimensions(const ImageId id)
+void
+DestroyImage(const ImageId id)
 {
     ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    return ImageDimensions{ loadInfo.width, loadInfo.height, loadInfo.depth };
+    Memory::Free(Memory::ResourceHeap, loadInfo.data.stbiData8);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const byte* 
+ImageDimensions
+ImageGetDimensions(const ImageId id)
+{
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
+    return ImageDimensions{ loadInfo.width, loadInfo.height };
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const ubyte* 
 ImageGetBuffer(const ImageId id)
 {
     ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    return loadInfo.buffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const byte* 
-ImageGetRedPtr(const ImageId id)
-{
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    return &loadInfo.buffer[loadInfo.redOffset];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const byte* 
-ImageGetGreenPtr(const ImageId id)
-{
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    return &loadInfo.buffer[loadInfo.greenOffset];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const byte* 
-ImageGetBluePtr(const ImageId id)
-{
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    return &loadInfo.buffer[loadInfo.blueOffset];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const byte* 
-ImageGetAlphaPtr(const ImageId id)
-{
-    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    return &loadInfo.buffer[loadInfo.alphaOffset];
+    return loadInfo.data.stbiData8;
 }
 
 //------------------------------------------------------------------------------
@@ -514,6 +216,198 @@ ImageGetPixelStride(const ImageId id)
 {
     ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
     return CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+const SizeT
+ImageGetChannelStride(const ImageId id)
+{
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
+    return CoreGraphics::PixelFormat::ToSize(loadInfo.format) / loadInfo.channels;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+half_to_float(uint16_t h)
+{
+    uint16_t h_exp = (h & 0x7C00u);
+    uint32_t f_sgn = (uint32_t)(h & 0x8000u) << 16;
+    uint32_t f_exp, f_sig;
+
+    if (h_exp == 0) {
+        // Zero or subnormal
+        if ((h & 0x7FFFu) == 0) {
+            // ±0
+            uint32_t f = f_sgn;
+            float out;
+            memcpy(&out, &f, sizeof(f));
+            return out;
+        }
+
+        // Normalize subnormal half
+        uint16_t mant = (h & 0x03FFu);
+        int shift = 10;
+        while ((mant & 0x0400u) == 0) {
+            mant <<= 1;
+            shift--;
+        }
+        mant &= 0x03FFu;
+
+        f_exp = (127 - 15 - (10 - shift)) << 23;
+        f_sig = ((uint32_t)mant) << 13;
+    }
+    else if (h_exp == 0x7C00u) {
+        // Inf or NaN
+        f_exp = 0xFFu << 23;
+        f_sig = ((uint32_t)(h & 0x03FFu)) << 13;
+    }
+    else {
+        // Normalized
+        f_exp = ((uint32_t)((h_exp >> 10) + (127 - 15))) << 23;
+        f_sig = ((uint32_t)(h & 0x03FFu)) << 13;
+    }
+
+    uint32_t f = f_sgn | f_exp | f_sig;
+    float out;
+    memcpy(&out, &f, sizeof(f));
+    return out;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImageConvertPrimitive(const ImageId id, const ImageChannelPrimitive primitive, bool denormalize)
+{
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
+    switch (loadInfo.primitive)
+    {
+        case Bit16Float:
+        {
+            switch (primitive)
+            {
+                case Bit16UInt:
+                {
+                    SizeT pixelSize = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+                    SizeT newSize = loadInfo.width * loadInfo.height * pixelSize;
+                    unsigned short* newData = (unsigned short*)Memory::Alloc(Memory::ResourceHeap, newSize);
+                    for (SizeT i = 0; i < loadInfo.width * loadInfo.height * loadInfo.channels; i++)
+                    {
+                        float value = half_to_float(loadInfo.data.stbiData16[i]);
+                        if (denormalize)
+                            value *= 65535 + 0.5f;
+                        uint16_t pixel = (uint16_t)(value);
+                        newData[i] = pixel;
+                    }
+                    Memory::Free(Memory::ResourceHeap, loadInfo.data.stbiDataFloat);
+                    loadInfo.data.stbiData16 = newData;
+                    break;
+                }
+                case Bit8UInt:
+                {
+                    SizeT pixelSize = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+                    SizeT newSize = loadInfo.width * loadInfo.height * pixelSize / 2;
+                    unsigned char* newData = (unsigned char*)Memory::Alloc(Memory::ResourceHeap, newSize);
+                    for (SizeT i = 0; i < loadInfo.width * loadInfo.height * loadInfo.channels; i++)
+                    {
+                        float value = half_to_float(loadInfo.data.stbiData16[i]);
+                        if (denormalize)
+                            value *= 255.0f + 0.5f;
+                        uint8_t pixel = (uint8_t)(value);
+                        newData[i] = pixel;
+                    }
+                    Memory::Free(Memory::ResourceHeap, loadInfo.data.stbiDataFloat);
+                    loadInfo.data.stbiData8 = newData;
+                    break;
+                }
+                default:
+                    n_error("Unsupported image primitive conversion!");
+                    break;
+            }
+            break;
+        }
+        case Bit32UInt: // When converting from 32 bit uint, the best we can do is to truncate
+        {
+            switch (primitive)
+            {
+                case Bit8UInt:
+                {
+                    SizeT pixelSize = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+                    SizeT newSize = loadInfo.width * loadInfo.height * pixelSize / 4;
+                    unsigned char* newData = (unsigned char*)Memory::Alloc(Memory::ResourceHeap, newSize);
+                    for (SizeT i = 0; i < loadInfo.width * loadInfo.height * loadInfo.channels; i++)
+                    {
+                        uint32_t value = loadInfo.data.stbiData32[i];
+                        uint8_t pixel = (uint8_t)(value);
+                        newData[i] = pixel;
+                    }
+                    Memory::Free(Memory::ResourceHeap, loadInfo.data.stbiData32);
+                    loadInfo.data.stbiData8 = newData;
+                    break;
+                }
+                case Bit16UInt:
+                {
+                    SizeT pixelSize = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+                    SizeT newSize = loadInfo.width * loadInfo.height * pixelSize / 2;
+                    unsigned short* newData = (unsigned short*)Memory::Alloc(Memory::ResourceHeap, newSize);
+                    for (SizeT i = 0; i < loadInfo.width * loadInfo.height * loadInfo.channels; i++)
+                    {
+                        uint32_t value = loadInfo.data.stbiData32[i];
+                        uint16_t pixel = (uint16_t)(value);
+                        newData[i] = pixel;
+                    }
+                    Memory::Free(Memory::ResourceHeap, loadInfo.data.stbiData32);
+                    loadInfo.data.stbiData16 = newData;
+                    break;
+                }
+                default:
+                    n_error("Unsupported image primitive conversion!");
+                    break;
+            }
+            break;
+        }
+    }
+    loadInfo.primitive = primitive;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+ImageSaveToFile(const ImageId id, const ImageContainer container, const IO::URI& path)
+{
+    ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
+    SizeT stride = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+
+    int res = 0;
+    switch (container)
+    {
+        case ImageContainer::PNG:
+            n_assert_msg(loadInfo.primitive == Bit8UInt || loadInfo.primitive == Bit16UInt, "PNG only allows 8/16bit integer images");
+            if (loadInfo.primitive == Bit16UInt)
+                res = stbi_write_png16(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData16, stride);
+            else
+                res = stbi_write_png(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData8, stride);
+            break;
+        case ImageContainer::TGA:
+            n_assert_msg(loadInfo.primitive == Bit8UInt, "TGA only supports 8 bit integer images");
+            res = stbi_write_tga(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData8);
+            break;
+        case ImageContainer::JPEG:
+            n_assert_msg(loadInfo.primitive == Bit8UInt, "JPG only supports 8 bit integer images");
+            res = stbi_write_jpg(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData8, 100);
+            break;
+        case ImageContainer::HDR:
+            n_assert_msg(loadInfo.primitive == Bit32Float, "HDR only supports 32 bit float images");
+            res = stbi_write_hdr(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiDataFloat);
+            break;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------

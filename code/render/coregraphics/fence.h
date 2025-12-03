@@ -17,6 +17,8 @@ namespace CoreGraphics
 
 ID_24_8_TYPE(FenceId);
 
+static const uint64_t FENCE_WAIT_FOREVER = UINT64_MAX;
+
 struct FenceCreateInfo
 {
     bool createSignaled : 1;
