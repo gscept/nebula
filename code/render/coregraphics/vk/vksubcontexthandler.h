@@ -123,6 +123,8 @@ public:
     void AppendWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore sem);
     /// Flush submissions
     void FlushSubmissions(VkFence fence);
+    /// Submit a single command buffer immediately on the queue. Use with utmost care!
+    void SubmitImmediate(CoreGraphics::QueueType type, VkCommandBuffer cmdBuf, VkFence fence = VK_NULL_HANDLE);
     /// wait for timeline index
     void Wait(CoreGraphics::QueueType type, uint64_t index);
     /// check to see if timeline index has passed

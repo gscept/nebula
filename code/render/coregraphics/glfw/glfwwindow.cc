@@ -13,8 +13,8 @@
 #include "coregraphics/swapchain.h"
 #include "coregraphics/load/glimltypes.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
 
 #if __VULKAN__
 #include "coregraphics/vk/vkgraphicsdevice.h"
