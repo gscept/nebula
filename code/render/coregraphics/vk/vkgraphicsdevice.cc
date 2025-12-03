@@ -1746,6 +1746,16 @@ SubmitCommandBuffers(
 /**
 */
 void
+SubmitCommandBufferImmediate(CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::QueueType type, CoreGraphics::FenceId event)
+{
+    VkFence fence = CoreGraphics::FenceGetVk(event);
+    state.queueHandler.SubmitImmediate(type, CmdBufferGetVk(cmdBuf), fence);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 SubmitImmediateCommandBuffers()
 {
     CoreGraphics::SubmissionWaitEvent handoverWait, graphicsWait, uploadWait;

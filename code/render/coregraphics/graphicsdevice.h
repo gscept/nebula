@@ -222,6 +222,12 @@ SubmissionWaitEvent SubmitCommandBuffers(
     , const char* name = nullptr
 #endif
 );
+/// Submits a command buffer immediately
+void SubmitCommandBufferImmediate(
+    CoreGraphics::CmdBufferId cmdBuf
+    , CoreGraphics::QueueType type
+    , CoreGraphics::FenceId event = CoreGraphics::InvalidFenceId
+);
 
 /// Submit immediate command buffers
 void SubmitImmediateCommandBuffers();

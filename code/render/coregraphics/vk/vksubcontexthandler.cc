@@ -411,6 +411,50 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
 /**
 */
 void
+VkSubContextHandler::SubmitImmediate(CoreGraphics::QueueType type, VkCommandBuffer cmdBuf, VkFence fence)
+{
+    VkQueue queue = this->GetQueue(type);
+    switch (type)
+    {
+        case CoreGraphics::ComputeQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_COMPUTE, "Compute");
+            break;
+        case CoreGraphics::GraphicsQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_GRAPHICS, "Graphics");
+            break;
+        case CoreGraphics::TransferQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_TRANSFER, "Transfer");
+            break;
+        case CoreGraphics::SparseQueueType:
+            CoreGraphics::QueueBeginMarker(type, NEBULA_MARKER_TRANSFER, "Sparse");
+            break;
+        default:
+            n_error("Unhandled queue type");
+            break;
+    }
+
+    VkSubmitInfo submit =
+    {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = nullptr,
+        .pWaitDstStageMask = nullptr,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmdBuf,
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores = nullptr
+    };
+    VkResult res = vkQueueSubmit(queue, 1, &submit, fence);
+    if (res == VK_ERROR_DEVICE_LOST)
+        Vulkan::DeviceLost();
+    n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64_t index)
 {
     // we can't really signal index UINT64_MAX, so skip it
