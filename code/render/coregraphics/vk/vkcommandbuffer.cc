@@ -1278,14 +1278,14 @@ CmdCopy(
         copy.bufferRowLength = to[i].rowLength;
         copy.imageExtent = { (uint32_t)from[i].region.width(), (uint32_t)from[i].region.height(), 1 };
         copy.imageOffset = { (int32_t)from[i].region.left, (int32_t)from[i].region.top, 0 };
-        copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+        copy.imageSubresource = { VkTypes::AsVkImageAspectFlags(from[i].bits), (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
     }
 
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id);
     vkCmdCopyImageToBuffer(
         cmdBuf
         , TextureGetVkImage(fromTexture)
-        , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        , VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
         , BufferGetVk(toBuffer)
         , copies.Size()
         , copies.Begin());
