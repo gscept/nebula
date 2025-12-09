@@ -78,7 +78,7 @@ MiscTest::Run()
     static const uint NumWork = 5;
     static const uint WorkSize = 512;
 
-    std::thread th([&alloc, &events, buffer]()
+    std::thread th([&events, buffer]()
     {
         // create buffer for data which we will copy to
         while (true)
