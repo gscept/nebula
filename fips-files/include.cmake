@@ -201,8 +201,8 @@ macro(nebula_flatc root)
         set(fbs ${datadir}${fb})
         set(output ${abs_output_folder}/${out_header})
         add_custom_command(OUTPUT ${output}
-                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
-                PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${fbs}
+                COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
+                COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/syswork/data/flatbuffer/" --schema ${fbs}
                 MAIN_DEPENDENCY "${fbs}"
                 DEPENDS ${FLATC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -249,14 +249,6 @@ macro(compile_gpulang_intern)
             execute_process(COMMAND ${GPULANGC} ${shd} -M -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${depoutput})
         endif()
 
-        # sadly this doesnt work for some reason
-        # add_custom_command(OUTPUT ${depoutput}
-        #     COMMAND ${GPULANGC} ${shd} -M -I ${NROOT}/syswork/shaders/gpulang -I ${foldername} -I ${CMAKE_BINARY_DIR}/material_templates/render/materials/gpulang -o ${CMAKE_BINARY_DIR}
-        #     DEPENDS ${GPULANGC} ${shd}
-        #     WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-        #     COMMENT ""
-        #     VERBATIM
-        # )
         if(EXISTS ${depoutput})
             file(READ ${depoutput} deps)
         endif()
@@ -370,11 +362,11 @@ macro(nebula_idl_compile)
         STRING(SUBSTRING "${CMAKE_CURRENT_SOURCE_DIR}" ${last}+1 -1 folder)
         set(abs_output_folder "${CMAKE_BINARY_DIR}/nidl/${CurTargetName}/${CurDir}")
         add_custom_command(OUTPUT "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
-            PRE_BUILD COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
+            COMMAND ${PYTHON} ${NROOT}/fips-files/generators/NIDL.py "${f_abs}" "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}"
             WORKING_DIRECTORY "${NROOT}"
             MAIN_DEPENDENCY "${f_abs}"
             DEPENDS ${NROOT}/fips-files/generators/NIDL.py
-            VERBATIM PRE_BUILD)
+            VERBATIM)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
         target_sources(${CurTargetName} PRIVATE "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")

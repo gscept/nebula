@@ -56,10 +56,12 @@ extern bool IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const uns
 */
 struct TotalMemoryStatus
 {
-    unsigned int totalPhysical;
-    unsigned int availPhysical;
-    unsigned int totalVirtual;
-    unsigned int availVirtual;
+    unsigned long long totalPhysical;
+    unsigned long long availPhysical;
+    unsigned long long totalPageFile;
+    unsigned long long availPageFile;
+    unsigned long long totalVirtual;
+    unsigned long long availVirtual;
 };
 
 extern TotalMemoryStatus GetTotalMemoryStatus();

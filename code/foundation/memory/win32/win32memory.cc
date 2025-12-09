@@ -131,7 +131,7 @@ char*
 DuplicateCString(const char* from)
 {
     n_assert(0 != from);
-    size_t len = (unsigned int) strlen(from) + 1;
+    size_t len = strlen(from) + 1;
     char* to = (char*) Memory::Alloc(Memory::StringDataHeap, len);
     Memory::Copy((void*)from, to, len);
     return to;
@@ -165,13 +165,16 @@ IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const unsigned char* 
 TotalMemoryStatus
 GetTotalMemoryStatus()
 {
-    MEMORYSTATUS stats = { NULL };
-    GlobalMemoryStatus(&stats);
+    MEMORYSTATUSEX stats;
+    stats.dwLength = sizeof(MEMORYSTATUSEX);
+    GlobalMemoryStatusEx(&stats);
     TotalMemoryStatus result;
-    result.totalPhysical = (unsigned int) stats.dwTotalPhys;
-    result.availPhysical = (unsigned int) stats.dwAvailPhys;
-    result.totalVirtual  = (unsigned int) stats.dwTotalVirtual;
-    result.availVirtual  = (unsigned int) stats.dwAvailVirtual;
+    result.totalPhysical = stats.ullTotalPhys;
+    result.availPhysical = stats.ullAvailPhys;
+    result.totalPageFile = stats.ullTotalPageFile;
+    result.availPageFile = stats.ullAvailPageFile;
+    result.totalVirtual  = stats.ullTotalVirtual;
+    result.availVirtual  = stats.ullAvailVirtual;
     return result;
 }
 
@@ -182,7 +185,11 @@ GetTotalMemoryStatus()
 void
 DumpTotalMemoryStatus()
 {
-    n_printf("DumpTotalMemoryStatus() not implemented yet in N3.\n");   
+    TotalMemoryStatus stats = GetTotalMemoryStatus();
+    n_printf("Memory Status:\n");
+    n_printf("Physical memory (avail/total): %*I64d / %*I64d", stats.availPhysical, stats.totalPhysical);
+    n_printf("Page file (avail/total): %*I64d / %*I64d", stats.availPageFile, stats.totalPageFile);
+    n_printf("Virtual memory (avail/total): %*I64d / %*I64d", stats.availVirtual, stats.totalVirtual);
 }
 
 #if NEBULA_MEMORY_STATS

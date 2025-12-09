@@ -252,6 +252,7 @@ Win32IpAddress::GetHostByName(const Util::String& hostName, in_addr& outAddr)
                 }
             }
         }
+        n_assert(inAddr != nullptr);
         outAddr = *inAddr;
         return true;
     }

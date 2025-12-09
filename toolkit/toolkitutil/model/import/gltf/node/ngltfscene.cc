@@ -21,7 +21,7 @@ namespace ToolkitUtil
 //------------------------------------------------------------------------------
 /**
 */
-CoreAnimation::CurveType::Code
+static CoreAnimation::CurveType::Code
 GltfPathToCurveType(Util::String const& path)
 {
     if (path == "translation")
@@ -40,13 +40,15 @@ GltfPathToCurveType(Util::String const& path)
     {
         n_error("Morph targets are currently not supported!\n");
     }
+    n_error("Unknown curve type: %s\n", path.AsCharPtr());
+    return CoreAnimation::CurveType::InvalidCurveType;
 }
 
 //------------------------------------------------------------------------------
 /**
     returns value, increments bytesRead by the amount of bytes read
 */
-float
+static float
 ReadCurveValue(byte const* const data, Gltf::Accessor::ComponentType componentType, uint64_t& bytesRead)
 {
     switch (componentType)
@@ -146,7 +148,7 @@ NglTFScene::Setup(Gltf::Document* scene
 
     for (size_t i = 0; i < numRootNodes; i++)
     {
-        Gltf::Node* rootNode = &(scene->nodes[scene->scenes[scene->scene].nodes[i]]);
+        Gltf::Node* rootNode = &(scene->nodes[scene->scenes[scene->scene].nodes[static_cast<IndexT>(i)]]);
         ParseNodeHierarchy(scene, rootNode, nullptr, nodeLookup, this->nodes);
     }
     
@@ -155,7 +157,7 @@ NglTFScene::Setup(Gltf::Document* scene
 
     for (size_t i = 0; i < scene->skins.Size(); i++)
     {
-        Gltf::Skin const& skin = scene->skins[i];
+        Gltf::Skin const& skin = scene->skins[static_cast<IndexT>(i)];
         n_assert2(skin.inverseBindMatrices != -1, "Support for gltfs without inverse bind matrices not yet implemented!\n");
 
         // An accessor referenced by inverseBindMatrices MUST have floating-point components of
@@ -176,7 +178,7 @@ NglTFScene::Setup(Gltf::Document* scene
             node->anim.animIndex = 0; // default to anim 0
             node->skeleton.bindMatrix = inverseBindMatrix;
             node->skeleton.jointIndex = jointIndex;
-            node->skeleton.skeletonIndex = i;
+            node->skeleton.skeletonIndex = static_cast<IndexT>(i);
         }
     }
 
@@ -184,7 +186,7 @@ NglTFScene::Setup(Gltf::Document* scene
     // which we can't do in the above loop because all joints haven't been marked as joints yet.
     for (size_t i = 0; i < scene->skins.Size(); i++)
     {
-        Gltf::Skin const& skin = scene->skins[i];
+        Gltf::Skin const& skin = scene->skins[static_cast<IndexT>(i)];
         for (auto jointNodeIndex : skin.joints)
         {
             Gltf::Node* gltfJointNode = &scene->nodes[jointNodeIndex];
@@ -322,8 +324,8 @@ NglTFScene::Setup(Gltf::Document* scene
                 int jointNode = channel.target.node;
 
                 curve.curveType = GltfPathToCurveType(channel.target.path);
-                curve.firstKeyOffset = animBuilder.keys.size();
-                curve.firstTimeOffset = animBuilder.keyTimes.size();
+                curve.firstKeyOffset = static_cast<uint>(animBuilder.keys.size());
+                curve.firstTimeOffset = static_cast<uint>(animBuilder.keyTimes.size());
 
                 if (curve.curveType == CoreAnimation::CurveType::Code::Translation)
                 {
@@ -445,7 +447,7 @@ NglTFScene::ParseNodeHierarchy(
     size_t numChildren = gltfNode->children.Size();
     for (size_t i = 0; i < numChildren; i++)
     {
-        Gltf::Node* child = &scene->nodes[gltfNode->children[i]];
+        Gltf::Node* child = &scene->nodes[gltfNode->children[static_cast<IndexT>(i)]];
         ParseNodeHierarchy(scene, child, &node, lookup, nodes);
     }
 }

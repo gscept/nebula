@@ -1,4 +1,5 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+fips_ide_group(Addons)
 add_subdirectory(attr)
 add_subdirectory(audiofeature)
 add_subdirectory(db)

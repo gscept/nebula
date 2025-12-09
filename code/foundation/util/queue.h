@@ -375,6 +375,7 @@ Queue<TYPE>::Reserve(SizeT num)
                 for (IndexT i = 0; i < this->size; i++)
                 {
                     IndexT idx = this->MapIndex(i);
+                    n_assert(idx < this->size);
                     newdata[i] = std::move(this->data[idx]);
                     this->DestroyElement<TYPE>(idx);
                 }

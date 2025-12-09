@@ -38,7 +38,7 @@ const char* FontModeStrings[] =
 */
 Text::Text(const char* string, size_t size)
 {
-    this->string.Set(string, size);
+    this->string.Set(string, static_cast<SizeT>(size));
 }
 
 //------------------------------------------------------------------------------

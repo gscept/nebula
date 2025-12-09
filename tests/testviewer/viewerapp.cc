@@ -34,7 +34,7 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
-int currentScene = ClusteredSceneId;
+int currentScene = TerrainSceneId;
 
 namespace Tests
 {

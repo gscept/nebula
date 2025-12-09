@@ -14,7 +14,7 @@ endif()
 
 nebula_begin_module(foundation)
     
-    target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h)
+    target_precompile_headers(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/foundation/stdneb.h ${CMAKE_CURRENT_SOURCE_DIR}/core/ptr.h ${CMAKE_CURRENT_SOURCE_DIR}/core/rtti.h ${CMAKE_CURRENT_SOURCE_DIR}/core/refcounted.h ${CMAKE_CURRENT_SOURCE_DIR}/math/mat4.h ${CMAKE_CURRENT_SOURCE_DIR}/io/binaryreader.h)
     if(FIPS_LINUX)
         fips_libs(uuid stdc++fs)
     endif()

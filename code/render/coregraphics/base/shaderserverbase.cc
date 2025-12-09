@@ -11,8 +11,6 @@
 #include "io/textreader.h"
 #include "io/filewatcher.h"
 #include "io/memorystream.h"
-#include "io/textreader.h"
-#include "resources/resourceserver.h"
 #include "system/process.h"
 #include "system/nebulasettings.h"
 
