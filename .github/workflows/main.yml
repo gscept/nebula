@@ -152,9 +152,12 @@ jobs:
         run: |
           python fips build
 
-      - name: Run Tests
+      - name: Run Testmath
         run: |
            python fips run testmath
+
+      - name: Run Testfoundation
+        run: |
            python fips run testfoundation
            
   Notify:
