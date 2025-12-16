@@ -91,7 +91,7 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->gltfExporter->SetTextureConverter(&this->textureExporter);
         this->gltfExporter->Open();
         this->gltfExporter->SetForce(this->force || (this->mode & ExportModes::ForceGLTF) != 0);
-        this->gltfExporter->SetCategory(category);
+        this->gltfExporter->SetCategory(this->category);
         this->gltfExporter->SetLogger(this->logger);
         this->gltfExporter->SetFile(fileName);
         this->gltfExporter->ExportFile(file);
@@ -103,7 +103,7 @@ AssetExporter::ExportFile(const IO::URI& file)
         this->fbxExporter = ToolkitUtil::NFbxExporter::Create();
         this->fbxExporter->Open();
         this->fbxExporter->SetForce(this->force || (this->mode & ExportModes::ForceFBX) != 0);
-        this->fbxExporter->SetCategory(category);
+        this->fbxExporter->SetCategory(this->category);
         this->fbxExporter->SetLogger(this->logger);
         this->fbxExporter->SetFile(fileName);
         this->fbxExporter->ExportFile(file);

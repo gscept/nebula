@@ -19,8 +19,11 @@
 #include "editor/components/editorcomponents.h"
 #include "tools/pathconverter.h"
 #include "io/assignregistry.h"
+#include "tools/livebatcher.h"
 
 #include "game/editorstate.h"
+
+#include "toolkit-common/projectinfo.h"
 
 namespace Editor
 {
@@ -43,6 +46,12 @@ Create()
     Game::TimeSourceCreateInfo editorTimeSourceInfo;
     editorTimeSourceInfo.hash = TIMESOURCE_EDITOR;
     Game::Time::CreateTimeSource(editorTimeSourceInfo);
+
+    ToolkitUtil::ProjectInfo projectInfo;
+    ToolkitUtil::ProjectInfo::Result res = projectInfo.Setup();
+    n_assert(res == ToolkitUtil::ProjectInfo::Success);
+
+    LiveBatcher::Setup();
 
     Game::TimeSource* gameTimeSource = Game::Time::GetTimeSource(TIMESOURCE_GAMEPLAY);
     gameTimeSource->timeFactor = 0.0f;

@@ -55,6 +55,8 @@ def GetCppTypeString(attrType):
         return "Game::Entity"
     elif (T == "color"):
         return "Util::Color"
+    elif (T.startswith("[") and T.endswith("]")):
+        return "Util::Array<{}>".format(GetCppTypeString(attrType[1:-1]))
     else:
         return attrType
 
@@ -113,6 +115,8 @@ def GetCsTypeString(attrType):
         return "EntityId"
     elif (T == "color"):
         return "Mathf.Vector4" # XNA Mathf.Color is a packed uint, while Util::Color is a vec4. We need to reflect the native type in C#
+    elif (T.startswith("[") and T.endswith("]")):
+        return "[{}]".format(GetCppTypeString(attrType[1:-1]))
     else:
         return attrType
 
@@ -174,6 +178,8 @@ def GetArgumentType(attrType):
         return "Util::Color const&"
     elif (T == "entity"):
         return "Game::Entity"
+    elif (T.startswith("[") and T.endswith("]")):
+        return "Util::Array<{}>".format(GetCppTypeString(attrType[1:-1]))
     else:
         return attrType
 

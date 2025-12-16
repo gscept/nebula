@@ -14,6 +14,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#define STB_IMAGE_WRITE_16_IMPLEMENTATION
+#include "coregraphics/stb/stb_image_write_16bit.h"
+
 namespace CoreGraphics
 {
 
@@ -382,7 +385,8 @@ bool
 ImageSaveToFile(const ImageId id, const ImageContainer container, const IO::URI& path)
 {
     ImageLoadInfo& loadInfo = imageAllocator.Get<0>(id.id);
-    SizeT stride = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+    SizeT pixelStride = CoreGraphics::PixelFormat::ToSize(loadInfo.format);
+    SizeT rowStride = loadInfo.width * pixelStride;  // ? Bytes per row
 
     int res = 0;
     switch (container)
@@ -390,9 +394,9 @@ ImageSaveToFile(const ImageId id, const ImageContainer container, const IO::URI&
         case ImageContainer::PNG:
             n_assert_msg(loadInfo.primitive == Bit8UInt || loadInfo.primitive == Bit16UInt, "PNG only allows 8/16bit integer images");
             if (loadInfo.primitive == Bit16UInt)
-                res = stbi_write_png16(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData16, stride);
+                res = stbi_write_png16(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData16, rowStride);
             else
-                res = stbi_write_png(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData8, stride);
+                res = stbi_write_png(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiData8, rowStride);
             break;
         case ImageContainer::TGA:
             n_assert_msg(loadInfo.primitive == Bit8UInt, "TGA only supports 8 bit integer images");
@@ -407,7 +411,7 @@ ImageSaveToFile(const ImageId id, const ImageContainer container, const IO::URI&
             res = stbi_write_hdr(path.LocalPath().AsCharPtr(), loadInfo.width, loadInfo.height, loadInfo.channels, loadInfo.data.stbiDataFloat);
             break;
     }
-    return false;
+    return res == 1;
 }
 
 //------------------------------------------------------------------------------

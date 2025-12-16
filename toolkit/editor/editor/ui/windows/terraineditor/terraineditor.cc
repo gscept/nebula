@@ -15,9 +15,13 @@
 #include "terrain/terraincontext.h"
 #include "graphicsfeature/components/terrain.h"
 #include "editor/tools/pathconverter.h"
+#include "editor/tools/livebatcher.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/meshresource.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
+
+#include "toolkitutil/texutil/textureattrtable.h"
+#include "toolkitutil/texutil/textureattrs.h"
 
 #include "coregraphics/pipeline.h"
 
@@ -28,6 +32,8 @@
 
 #include "input/inputserver.h"
 #include "input/mouse.h"
+
+#include "coregraphics/image.h"
 
 #include "tinyfiledialogs.h"
 
@@ -98,7 +104,12 @@ struct
     Util::Array<Terrain::BiomeSettings> biomeSettings;
 
     CoreGraphics::TextureId activeHeightMap, activeBiomeMask;
+
+    CoreGraphics::CmdBufferPoolId cmdPool;
 } terrainEditorState;
+
+const char* baseTerrainAssetPath = "work:assets/level_%s/";
+const char* baseTerrainExportPath = "export:textures/level_%s/";
 
 namespace Presentation
 {
@@ -125,6 +136,16 @@ TerrainEditor::TerrainEditor()
 
     bufInfo.elementSize = sizeof(Terrainbrush::BrushGenerationUniforms::STRUCT);
     terrainEditorState.brushGenerationUniformBuffer = CoreGraphics::CreateBuffer(bufInfo);
+
+    CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
+#if NEBULA_GRAPHICS_DEBUG
+    cmdPoolInfo.name = "TerrainEditorCmdPool";
+#endif
+    cmdPoolInfo.queue = CoreGraphics::QueueType::GraphicsQueueType;
+    cmdPoolInfo.resetable = true;
+    cmdPoolInfo.shortlived = true;
+
+    terrainEditorState.cmdPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
 
     CoreGraphics::TextureCreateInfo brushTexInfo;
     brushTexInfo.width = 512;
@@ -257,56 +278,195 @@ TerrainEditor::Run(SaveMode save)
     Game::EntityMapping entityMapping = world->GetEntityMapping(ent);
     auto const& components = world->GetDatabase()->GetTable(entityMapping.table).GetAttributes();
 
-    Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
-    Math::vec2 mousePos = mouse->GetPixelPosition();
-    terrainEditorState.brushUniforms.size[0] = terrainEditorState.brushSize;
-    terrainEditorState.brushUniforms.size[1] = terrainEditorState.brushSize;
-    CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
-
-    terrainEditorState.paint = mouse->ButtonPressed(Input::MouseButton::LeftButton);
-    auto terrainComponent = Game::GetComponentId<GraphicsFeature::Terrain>();
+    auto terrainComponentId = Game::GetComponentId<GraphicsFeature::Terrain>();
+    static GraphicsFeature::Terrain terrainComponent;
+    bool isTerrain = false;
     for (int i = 0; i < components.Size(); i++)
     {
         auto component = components[i];
 
-        if (component != terrainComponent)
+        if (component == terrainComponentId)
         {
-            continue;
+            terrainComponent = world->GetComponent<GraphicsFeature::Terrain>(ent);
+            isTerrain = true;
+            break;
+        }
+    }
+
+    if (isTerrain)
+    {
+        Ptr<Input::Mouse> mouse = Input::InputServer::Instance()->GetDefaultMouse();
+        Math::vec2 mousePos = mouse->GetPixelPosition();
+        terrainEditorState.brushUniforms.size[0] = terrainEditorState.brushSize;
+        terrainEditorState.brushUniforms.size[1] = terrainEditorState.brushSize;
+        CoreGraphics::BufferUpdate(terrainEditorState.brushUniformBuffer, terrainEditorState.brushUniforms);
+
+        terrainEditorState.paint = mouse->ButtonPressed(Input::MouseButton::LeftButton);
+
+        if (save == SaveMode::SaveActive || save == SaveMode::SaveAll)
+        {
+            Util::String heightmapName = Util::String::Sprintf("height_%s", Editor::state.editables[entity.index].guid.AsString().AsCharPtr());
+            Util::String basePath = Util::String::Sprintf(baseTerrainAssetPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
+            IO::IoServer::Instance()->CreateDirectory(IO::URI(basePath));
+
+            CoreGraphics::ImageId image = CoreGraphics::CreateImage(terrainEditorState.activeHeightMap, CoreGraphics::PipelineStage::AllShadersRead);
+            CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit16UInt, true);
+            CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(basePath + heightmapName + ".png"));
+            CoreGraphics::DestroyImage(image);
+
+            terrainComponent.biomes.Reserve(terrainEditorState.biomes.Size());
+            for (uint i = 0; i < terrainEditorState.biomes.Size(); i++)
+            {
+                Util::String maskName = Util::String::Sprintf("biomemask_%s_%d", Editor::state.editables[entity.index].guid.AsString().AsCharPtr(), i);
+                image = CoreGraphics::CreateImage(terrainEditorState.biomeTextures[i].maskTex, CoreGraphics::PipelineStage::AllShadersRead);
+                CoreGraphics::ImageConvertPrimitive(image, CoreGraphics::ImageChannelPrimitive::Bit8UInt, true);
+                CoreGraphics::ImageSaveToFile(image, CoreGraphics::ImageContainer::PNG, IO::URI(basePath + maskName + ".png"));
+                CoreGraphics::DestroyImage(image);
+                GraphicsFeature::BiomeMaterial flatMaterial, slopeMaterial, heightMaterial, heightSlopeMaterial;
+                flatMaterial.albedo = terrainEditorState.biomeTextures[i].albedoPaths[0];
+                flatMaterial.normals = terrainEditorState.biomeTextures[i].normalsPaths[0];
+                flatMaterial.material = terrainEditorState.biomeTextures[i].materialPaths[0];
+                slopeMaterial.albedo = terrainEditorState.biomeTextures[i].albedoPaths[1];
+                slopeMaterial.normals = terrainEditorState.biomeTextures[i].normalsPaths[1];
+                slopeMaterial.material = terrainEditorState.biomeTextures[i].materialPaths[1];
+                heightMaterial.albedo = terrainEditorState.biomeTextures[i].albedoPaths[2];
+                heightMaterial.normals = terrainEditorState.biomeTextures[i].normalsPaths[2];
+                heightMaterial.material = terrainEditorState.biomeTextures[i].materialPaths[2];
+                heightSlopeMaterial.albedo = terrainEditorState.biomeTextures[i].albedoPaths[3];
+                heightSlopeMaterial.normals = terrainEditorState.biomeTextures[i].normalsPaths[3];
+                heightSlopeMaterial.material = terrainEditorState.biomeTextures[i].materialPaths[3];
+                terrainComponent.biomes.Append(GraphicsFeature::Biome{
+                    .mask = IO::URI(basePath + maskName + ".dds").LocalPath(),
+                    .flat = flatMaterial,
+                    .slope = slopeMaterial,
+                    .height = heightMaterial,
+                    .heightSlope = heightSlopeMaterial
+                });
+            }
+            
+            Util::String baseExportPath = Util::String::Sprintf(baseTerrainExportPath, Util::String::FromInt(world->GetWorldHash().id).AsCharPtr());
+            IO::URI heightMapPath = IO::URI(baseExportPath + heightmapName + ".dds");
+            terrainComponent.heightMap = heightMapPath.LocalPath();
+            Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
+
+            ToolkitUtil::TextureAttrTable table;
+            ToolkitUtil::TextureAttrs attrs;
+            attrs.SetPixelFormat(ToolkitUtil::TextureAttrs::R16F);
+            attrs.SetGenMipMaps(false);
+            attrs.SetColorSpace(ToolkitUtil::TextureAttrs::ColorSpace::Linear);
+            table.SetEntry(heightMapPath.LocalPath(), attrs);
+            table.Save(IO::URI(baseExportPath + heightmapName + ".xml").LocalPath());
+
+            Editor::LiveBatcher::BatchFile(IO::URI(basePath + heightmapName + ".png"));
+
         }
 
-        auto terrain = world->GetComponent<GraphicsFeature::Terrain>(ent);
+        // Setup initial state
+        if (terrainEditorState.activeHeightMap == CoreGraphics::InvalidTextureId)
+        {
+            CoreGraphics::TextureCreateInfo texInfo;
+            texInfo.name = "Editor Height Map";
+            texInfo.width = terrainComponent.worldSizeX;
+            texInfo.height = terrainComponent.worldSizeZ;
+            texInfo.format = CoreGraphics::PixelFormat::R16F;
+            texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferDestination;
+            terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
+
+            terrainEditorState.brushUniforms.heightmapSize[0] = terrainComponent.worldSizeX;
+            terrainEditorState.brushUniforms.heightmapSize[1] = terrainComponent.worldSizeZ;
+
+            CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
+                terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
+            });
+
+            CoreGraphics::ResourceTableCommitChanges(terrainEditorState.brushResourceTable);
+
+            // Load heightmap for copying to our editable resource
+            Resources::ResourceId heightMapRes = Resources::CreateResource(terrainComponent.heightMap, "editor", [](const Resources::ResourceId id)
+            {
+                // Copy over data from resource to our editable texture
+                CoreGraphics::TextureId source = id;
+                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(source);
+                CoreGraphics::TextureCopy from, to;
+                from.layer = 0;
+                from.mip = 0;
+                from.region = Math::rectangle<SizeT>(0, 0, dims.width, dims.height);
+                from.bits = CoreGraphics::ImageBits::ColorBits;
+                to.layer = 0;
+                to.mip = 0;
+                to.region = Math::rectangle<SizeT>(0, 0, terrainComponent.worldSizeX, terrainComponent.worldSizeZ);
+                to.bits = CoreGraphics::ImageBits::ColorBits;
+
+                CoreGraphics::CmdBufferCreateInfo cmdBufInfo;
+                cmdBufInfo.pool = terrainEditorState.cmdPool;
+                cmdBufInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::NoQueries;
+                CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::CreateCmdBuffer(cmdBufInfo);
+
+                CoreGraphics::CmdBufferBeginInfo beginInfo;
+                beginInfo.submitOnce = true;
+                beginInfo.submitDuringPass = false;
+                beginInfo.resubmittable = false;
+                CoreGraphics::CmdBeginRecord(cmdBuf, beginInfo);
+                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::BarrierDomain::Global,
+                                        {
+                                            CoreGraphics::TextureBarrierInfo{.tex = source, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                        });
+                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ImageInitial, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+                                        {
+                                            CoreGraphics::TextureBarrierInfo{.tex = terrainEditorState.activeHeightMap, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                        });
+                CoreGraphics::CmdBlit(cmdBuf, source, from, terrainEditorState.activeHeightMap, to);
+                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                                        {
+                                            CoreGraphics::TextureBarrierInfo{.tex = terrainEditorState.activeHeightMap, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                        });
+                CoreGraphics::CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::TransferRead, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                                        {
+                                            CoreGraphics::TextureBarrierInfo{.tex = source, .subres = CoreGraphics::TextureSubresourceInfo()}
+                                        });
+                CoreGraphics::CmdEndRecord(cmdBuf);
+
+
+                CoreGraphics::SubmitCommandBufferImmediate(cmdBuf, CoreGraphics::GraphicsQueueType);
+
+
+            }, nullptr, true, false);
+        }
+
+        Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
+
         if (ImGui::CollapsingHeader("Terrain Generation"))
         {
-            ImGui::SliderFloat("Min Height", &terrain.minHeight, 0.0f, 1024.0f);
-            ImGui::SliderFloat("Max Height", &terrain.maxHeight, 0.0f, 1024.0f);
-            ImGui::SliderFloat("Quads Per Tile Horizontal", &terrain.quadsPerTileX, 16, 512);
-            ImGui::SliderFloat("Quads Per Tile Vertical", &terrain.quadsPerTileZ, 16, 512);
-            ImGui::SliderFloat("Tile Height", &terrain.tileHeight, 16, 512);
-            ImGui::SliderFloat("Tile Width", &terrain.tileWidth, 16, 512);
-            ImGui::SliderFloat("World Width", &terrain.worldSizeX, 1024, 16384);
-            ImGui::SliderFloat("World Height", &terrain.worldSizeZ, 1024, 16384);
-            Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrain);
+            ImGui::SliderFloat("Min Height", &terrainComponent.minHeight, 0.0f, 1024.0f);
+            ImGui::SliderFloat("Max Height", &terrainComponent.maxHeight, 0.0f, 1024.0f);
+            ImGui::SliderFloat("Quads Per Tile Horizontal", &terrainComponent.quadsPerTileX, 16, 512);
+            ImGui::SliderFloat("Quads Per Tile Vertical", &terrainComponent.quadsPerTileZ, 16, 512);
+            ImGui::SliderFloat("Tile Height", &terrainComponent.tileHeight, 16, 512);
+            ImGui::SliderFloat("Tile Width", &terrainComponent.tileWidth, 16, 512);
+            ImGui::SliderFloat("World Width", &terrainComponent.worldSizeX, 1024, 16384);
+            ImGui::SliderFloat("World Height", &terrainComponent.worldSizeZ, 1024, 16384);
+            Editor::state.editorWorld->SetComponent<GraphicsFeature::Terrain>(entity, terrainComponent);
             Editor::state.editorWorld->MarkAsModified(entity);
 
             ImGui::NewLine();
             if (ImGui::Button("Generate Terrain"))
             {
                 Terrain::TerrainCreateInfo info;
-                info.minHeight = terrain.minHeight;
-                info.maxHeight = terrain.maxHeight;
-                info.quadsPerTileX = terrain.quadsPerTileX;
-                info.quadsPerTileY = terrain.quadsPerTileZ;
-                info.tileWidth = terrain.tileWidth;
-                info.tileHeight = terrain.tileHeight;
-                info.width = terrain.worldSizeX;
-                info.height = terrain.worldSizeZ;
+                info.minHeight = terrainComponent.minHeight;
+                info.maxHeight = terrainComponent.maxHeight;
+                info.quadsPerTileX = terrainComponent.quadsPerTileX;
+                info.quadsPerTileY = terrainComponent.quadsPerTileZ;
+                info.tileWidth = terrainComponent.tileWidth;
+                info.tileHeight = terrainComponent.tileHeight;
+                info.width = terrainComponent.worldSizeX;
+                info.height = terrainComponent.worldSizeZ;
                 
-                Terrain::TerrainContext::SetupTerrain(terrain.graphicsEntityId, info);
+                Terrain::TerrainContext::SetupTerrain(terrainComponent.graphicsEntityId, info);
             }
         }
 
-        terrainEditorState.brushUniforms.minHeight = terrain.minHeight;
-        terrainEditorState.brushUniforms.maxHeight = terrain.maxHeight;
+        terrainEditorState.brushUniforms.minHeight = terrainComponent.minHeight;
+        terrainEditorState.brushUniforms.maxHeight = terrainComponent.maxHeight;
         terrainEditorState.invalidateBrush = true;
         CoreGraphics::TextureDimensions brushDims = CoreGraphics::TextureGetDimensions(terrainEditorState.brushTexture);
 
@@ -329,8 +489,8 @@ TerrainEditor::Run(SaveMode save)
                 textureInfo.nebulaHandle = terrainEditorState.activeHeightMap;
                 textureInfo.mip = 0;
                 textureInfo.layer = 0;
-                textureInfo.rangeMin = terrain.minHeight;
-                textureInfo.rangeMax = terrain.maxHeight;
+                textureInfo.rangeMin = terrainComponent.minHeight;
+                textureInfo.rangeMax = terrainComponent.maxHeight;
                 textureInfo.splat = 1;
 
                 ImVec2 imageSize = { 128.0f, 128.0f };
@@ -348,15 +508,15 @@ TerrainEditor::Run(SaveMode save)
 
                 CoreGraphics::TextureCreateInfo texInfo;
                 texInfo.name = "Editor Height Map";
-                texInfo.width = terrain.worldSizeX;
-                texInfo.height = terrain.worldSizeZ;
+                texInfo.width = terrainComponent.worldSizeX;
+                texInfo.height = terrainComponent.worldSizeZ;
                 texInfo.format = CoreGraphics::PixelFormat::R16F;
                 texInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite | CoreGraphics::TextureUsage::TransferSource;
                 terrainEditorState.activeHeightMap = CoreGraphics::CreateTexture(texInfo);
-                Terrain::TerrainContext::SetHeightmap(terrain.graphicsEntityId, terrainEditorState.activeHeightMap);
+                Terrain::TerrainContext::SetHeightmap(terrainComponent.graphicsEntityId, terrainEditorState.activeHeightMap);
 
-                terrainEditorState.brushUniforms.heightmapSize[0] = terrain.worldSizeX;
-                terrainEditorState.brushUniforms.heightmapSize[1] = terrain.worldSizeZ;
+                terrainEditorState.brushUniforms.heightmapSize[0] = terrainComponent.worldSizeX;
+                terrainEditorState.brushUniforms.heightmapSize[1] = terrainComponent.worldSizeZ;
 
                 CoreGraphics::ResourceTableSetRWTexture(terrainEditorState.brushResourceTable, {
                     terrainEditorState.activeHeightMap, Terrainbrush::OutputHeight::BINDING
@@ -389,7 +549,6 @@ TerrainEditor::Run(SaveMode save)
                 {
                     terrainEditorState.brushUniforms.mode = Terrainbrush::Smooth;
                 }
-
             }
 
             if (ImGui::CollapsingHeader("Brush"))
@@ -400,7 +559,6 @@ TerrainEditor::Run(SaveMode save)
                 textureInfo.layer = 0;
                 textureInfo.splat = 1;
                 
-
                 ImVec2 imageSize = { 64.0f, 64.0f };
                 ImGui::Image((void*)&textureInfo, imageSize);
                 ImGui::SameLine();
@@ -424,16 +582,15 @@ TerrainEditor::Run(SaveMode save)
                     ImGui::SliderFloat("Hardness", &terrainEditorState.brushHardness, 0.0f, 0.999f);
                     ImGui::SliderFloat("Falloff", &terrainEditorState.brushFalloff, 0.0f, 1.0f);
                     ImGui::SliderFloat("Size", &terrainEditorState.brushSize, 1.0f, 512.0f);
-                    ImGui::SliderFloat("Strength", &terrainEditorState.brushUniforms.strength, 0.001f, 1.0f);
+                    ImGui::SliderFloat("Strength", &terrainEditorState.brushUniforms.strength, 0.1f, 1.0f);
                 }
                 ImGui::EndGroup();
-
-
             }
 
             if (terrainEditorState.paint)
             {
-                Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+                Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
+                Editor::state.editorWorld->MarkAsModified(entity);
             }
 
             if (ImGui::CollapsingHeader("Biomes"))
@@ -449,8 +606,8 @@ TerrainEditor::Run(SaveMode save)
                     // Create new mask
                     CoreGraphics::TextureCreateInfo maskTexInfo;
                     maskTexInfo.name = "Biome Mask Texture";
-                    maskTexInfo.width = terrain.worldSizeX;
-                    maskTexInfo.height = terrain.worldSizeZ;
+                    maskTexInfo.width = terrainComponent.worldSizeX;
+                    maskTexInfo.height = terrainComponent.worldSizeZ;
                     maskTexInfo.format = CoreGraphics::PixelFormat::R8;
                     maskTexInfo.usage = CoreGraphics::TextureUsage::Sample | CoreGraphics::TextureUsage::ReadWrite;
                     textures.maskTex = CoreGraphics::CreateTexture(maskTexInfo);
@@ -497,7 +654,6 @@ TerrainEditor::Run(SaveMode save)
 
                 if (selectedBiome != -1)
                 {
-
                     auto biomeId = terrainEditorState.biomes[selectedBiome];
                     auto& biomeSettings = terrainEditorState.biomeSettings[selectedBiome];
                     terrainEditorState.activeBiomeMask = terrainEditorState.biomeTextures[selectedBiome].maskTex;
@@ -521,7 +677,9 @@ TerrainEditor::Run(SaveMode save)
                     for (int i = 0; i < 4; i++)
                     {
                         ImGui::BeginGroup();
+                        ImGui::PushFont(Dynui::ImguiContext::state.boldFont);
                         ImGui::Text(labels[i]);
+                        ImGui::PopFont();
                         for (int j = 0; j < 3; j++)
                         {
                             bool pressed = false;
@@ -590,7 +748,7 @@ TerrainEditor::Run(SaveMode save)
                                     terrainEditorState.biomeTextures[selectedBiome].normalsPaths[i],
                                     terrainEditorState.biomeTextures[selectedBiome].materialPaths[i]
                                 );
-                                Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+                                Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
 
                             }
                         }
@@ -608,11 +766,16 @@ TerrainEditor::Run(SaveMode save)
                     if (applyRules)
                     {
                         Terrain::TerrainContext::SetBiomeRules(biomeId, biomeSettings.biomeParameters.slopeThreshold, biomeSettings.biomeParameters.heightThreshold, biomeSettings.biomeParameters.uvScaleFactor);
-                        Terrain::TerrainContext::InvalidateTerrain(terrain.graphicsEntityId);
+                        Terrain::TerrainContext::InvalidateTerrain(terrainComponent.graphicsEntityId);
                     }
                 }
             }
         }
+    }
+    else
+    {
+        terrainEditorState.activeBiomeMask = CoreGraphics::InvalidTextureId;
+        terrainEditorState.activeHeightMap = CoreGraphics::InvalidTextureId;
     }
 }
 
@@ -627,7 +790,6 @@ namespace Tools
 void
 TerrainEditorTool::Render(Presentation::Modules::Viewport* viewport)
 {
-
     terrainEditorState.drawBrushPreview = false;
 }
 

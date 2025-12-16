@@ -383,6 +383,8 @@ public:
     String ExtractDirName() const;
     /// extract path until last slash
     String ExtractToLastSlash() const;
+    /// strip subpath
+    String StripSubpath(const String& subpath) const;
     /// replace illegal filename characters
     void ReplaceIllegalFilenameChars(char replacement);
 
@@ -787,6 +789,26 @@ String::ExtractToLastSlash() const
         pathString = "";
     }
     return pathString;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String
+String::StripSubpath(const String& subpath) const
+{
+    String copy = *this;
+    copy.ConvertBackslashes();
+    IndexT it = 0;
+    while (it < copy.strLen && it < subpath.strLen)
+    {
+        if (subpath[it] != copy[it])
+            break;
+        it++;
+    }
+    while (copy[it] == '/')
+        it++;
+    return copy.ExtractToEnd(it);
 }
 
 //------------------------------------------------------------------------------

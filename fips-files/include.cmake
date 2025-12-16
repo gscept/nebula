@@ -41,6 +41,8 @@ if (N_SHADER_VALIDATION)
     set(shader_compiler_args ${shader_compiler_args} "-v")
 endif()
 
+add_definitions(-DNEBULA_BINARY_FOLDER=\"${FIPS_PROJECT_DEPLOY_DIR}\")
+
 include(create_resource)
 include(CMakeDependentOption)
 

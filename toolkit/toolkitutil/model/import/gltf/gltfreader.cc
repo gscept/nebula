@@ -247,6 +247,7 @@ IO::JsonReader::GetOpt<Gltf::Animation::Sampler::Type>(Gltf::Animation::Sampler:
     }
     return true;
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -269,8 +270,6 @@ IO::JsonReader::Get<Util::Array<Gltf::Animation::Sampler>>(Util::Array<Gltf::Ani
     } while (this->SetToNextChild());
     this->SetToParent();
 }
-
-
 
 //------------------------------------------------------------------------------
 /**
