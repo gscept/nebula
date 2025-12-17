@@ -8,7 +8,7 @@
 #include "DetourNavMeshBuilder.h"
 #include "memory/memory.h"
 #include "coregraphics/mesh.h"
-#include "coregraphics/legacy/nvx2streamreader.h"
+#include "coregraphics/nvx3fileformatstructs.h"
 #include "coregraphics/primitivegroup.h"
 #include "io/ioserver.h"
 
@@ -19,24 +19,6 @@ namespace Navigation
 {
 namespace Recast
 {
-
-//------------------------------------------------------------------------------
-/**
-
-RecastUtil::RecastUtil():
-	maxEdgeLength(12),
-	cellHeight(0.2f),
-	cellSize(0.3f),
-	maxEdgeError(1.3f),
-	regionMinSize(8),
-	regionMergeSize(20),
-	detailSampleDist(6),
-	detailSampleMaxError(1.0f),
-	maxSlope(45.0f),
-    config(0)
-*/
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -109,49 +91,92 @@ GenerateNavMesh(NavMeshT const& data, Util::Blob& meshData)
         IO::URI meshFile = entry->resource;
         const Math::mat4& transform = entry->transform;
 		Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(meshFile);
-		Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
-		nvx2Reader->SetStream(stream);
-		nvx2Reader->SetUsage(CoreGraphics::GpuBufferTypes::UsageImmutable);
-		nvx2Reader->SetAccess(CoreGraphics::GpuBufferTypes::AccessNone);
-		nvx2Reader->SetRawMode(true);
+		stream->SetAccessMode(IO::Stream::ReadAccess);
 
-		if (nvx2Reader->Open(nullptr))
-		{
+		Ptr<IO::StreamReader> nvx3Reader = IO::StreamReader::Create();
+		nvx3Reader->SetStream(stream);
+
+		if (nvx3Reader->Open())
+		{	
+			n_assert(stream->CanBeMapped());
+
+			void* mapPtr = nullptr;
+			n_assert(nullptr == mapPtr);
+			// map the stream to memory
+			mapPtr = stream->MemoryMap();
+			n_assert(nullptr != mapPtr);
+			char* basePtr = (char*)mapPtr;
+
+			auto header = (CoreGraphics::Nvx3Header*)mapPtr;
+
+			n_assert(header != nullptr);
+
+			if (header->magic != NEBULA_NVX_MAGICNUMBER)
+			{
+				// not a nvx3 file, break hard
+				n_error("MeshLoader: '%s' is not a nvx file!", stream->GetURI().AsString().AsCharPtr());
+			}
+
+			n_assert(header->numMeshes > 0);
+
+			CoreGraphics::Nvx3Elements elements;
+			CoreGraphics::Nvx3::FillNvx3Elements((char*)mapPtr, header, elements);
+
+			const uint vertexStride = sizeof(CoreGraphics::BaseVertex);
+			const CoreGraphics::Nvx3Group* groups = (CoreGraphics::Nvx3Group*)(basePtr + elements.ranges[0].firstGroupOffset);
+			const ubyte* groupVertexBase = elements.vertexData + elements.ranges[0].baseVertexByteOffset;
+			CoreGraphics::BaseVertex* vertexBuffer = (CoreGraphics::BaseVertex*)groupVertexBase;
+			const uint vertexCount = (elements.ranges[0].attributesVertexByteOffset - elements.ranges[0].baseVertexByteOffset) / vertexStride;
+
+			CoreGraphics::IndexType::SizeOf(elements.ranges[0].indexType);
 			
-			const Util::Array<CoreGraphics::PrimitiveGroup>& groups = nvx2Reader->GetPrimitiveGroups();		
-
-			float *vertexData = nvx2Reader->GetVertexData();
-			unsigned int *indexData = (unsigned int*)nvx2Reader->GetIndexData();
-            float* transformedData = (float*)Memory::Alloc(Memory::ScratchHeap, nvx2Reader->GetNumVertices() * 3 * sizeof(float));
+            float* transformedData = (float*)Memory::Alloc(Memory::ScratchHeap, vertexCount * 3 * sizeof(float));
 			IndexT count = 0;
- 			for(int i = 0, k = nvx2Reader->GetNumVertices(); i < k ; ++i)
+ 			for(int i = 0, k = vertexCount; i < k ; ++i)
  			{
- 				unsigned int offset = i * nvx2Reader->GetVertexWidth();
- 				vec4 v(vertexData[offset],vertexData[offset+1],vertexData[offset+2],1);
+				CoreGraphics::BaseVertex const& pos = vertexBuffer[i];
+ 				vec4 v(pos.position[0], pos.position[1], pos.position[2], 1);
                 vec4 trans = transform * v;
  				for(int j = 0; j < 3 ; j++)
  				{
                     transformedData[i * 3 + j] = trans[j];
  				}
  			}
-  			for(int i=0;i < groups.Size();i++)
+  			for(int i=0;i < elements.ranges[0].numGroups; i++)
 			{
-				int ntris = groups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
-                int startingVertex = groups[i].GetBaseVertex() / nvx2Reader->GetVertexWidth();
-                float* verts = &(transformedData[startingVertex]);
-				int nverts = groups[i].GetNumVertices();
-				int* tris = (int*) & (indexData[groups[i].GetBaseIndex()]);
+				int ntris = groups[i].numIndices / 3;
+                //int startingVertex = groups[i].
+                float* verts = transformedData;
+				//int nverts = groups[i].GetNumVertices();
+				
+				int* idxs = (int*)Memory::Alloc(Memory::ScratchHeap, groups[i].numIndices * sizeof(int));
+				
+				for (int j = 0; j < groups[i].numIndices; j++)
+				{
+					int n = 0;
+					elements.indexData;
+					switch (elements.ranges[0].indexType)
+					{
+						case CoreGraphics::IndexType::Index16:
+							n = ((uint16_t*)(elements.indexData))[groups[i].firstIndex + j]; break;
+						case CoreGraphics::IndexType::Index32:
+							n = ((uint32_t*)(elements.indexData))[groups[i].firstIndex + j]; break;
+						default: n_error("unhandled enum");
+					}
+					idxs[j] = n;
+				}
 				
 				//n_assert2(groups[i].GetPrimitiveTopology() == CoreGraphics::PrimitiveTopology::TriangleList,"Only triangle lists are supported");
 				
-				m_triareas = (unsigned char*)Memory::Alloc(Memory::ScratchHeap, groups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList));
+				m_triareas = (unsigned char*)Memory::Alloc(Memory::ScratchHeap, ntris);
 				Memory::Clear(m_triareas,ntris * sizeof(unsigned char));		
 
-				rcMarkWalkableTriangles(&m_ctx, config.walkableSlopeAngle, verts, nverts, tris, ntris, m_triareas);
-				rcRasterizeTriangles(&m_ctx, verts, nverts, tris, m_triareas, ntris, *m_solid, config.walkableClimb);								
+				rcMarkWalkableTriangles(&m_ctx, config.walkableSlopeAngle, verts, vertexCount, idxs, ntris, m_triareas);
+				rcRasterizeTriangles(&m_ctx, verts, vertexCount, idxs, m_triareas, ntris, *m_solid, config.walkableClimb);
 				Memory::Free(Memory::ScratchHeap, m_triareas);
+				Memory::Free(Memory::ScratchHeap, idxs);
 			}		
-			nvx2Reader->Close();
+			nvx3Reader->Close();
 
             Memory::Free(Memory::ScratchHeap, (void*)transformedData);
 		}				

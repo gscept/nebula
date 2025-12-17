@@ -12,7 +12,7 @@ namespace Navigation
 /**
 */
 
-DebugDraw::DebugDraw() : flag(CoreGraphics::RenderShape::Wireframe)
+DebugDraw::DebugDraw() : current(duDebugDrawPrimitives::DU_DRAW_POINTS), flag(CoreGraphics::RenderShape::Wireframe)
 {
 	// empty
 }
@@ -80,6 +80,7 @@ DebugDraw::vertex(const float x, const float y, const float z, unsigned int colo
 	points.Append(vert);
 }
 
+#define USE_IM3D_FOR_DEBUGDRAW 1
 void 
 DebugDraw::end()
 {
@@ -91,28 +92,64 @@ DebugDraw::end()
 	{
 		case DU_DRAW_POINTS:
 		{
+#ifndef USE_IM3D_FOR_DEBUGDRAW
             CoreGraphics::RenderShape shape;
 			shape.SetupPrimitives(points, CoreGraphics::PrimitiveTopology::PointList, this->flag);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+#else
+			for (int i = 0, k = points.Size(); i < k; i++)
+			{
+				auto col = points[i].color;
+                Im3d::Im3dContext::DrawPoint(points[i].pos, 15.0f, col, this->flag);
+			}
+#endif
 		}
 		break;
 		case DU_DRAW_LINES:
 		{
+#ifndef USE_IM3D_FOR_DEBUGDRAW
             CoreGraphics::RenderShape shape;
             shape.SetupPrimitives(points, CoreGraphics::PrimitiveTopology::LineList, this->flag);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+#else
+            for (int i = 0, k = points.Size(); i<k; i+=2)
+			{
+		        auto col = points[i].color;
+		        Math::line dline(points[i].pos, points[i + 1].pos);
+		        Im3d::Im3dContext::DrawLine(dline, 5.0f, col, Im3d::RenderFlag::AlwaysOnTop);
+            }
+#endif       
 		}
 		break;
 		case DU_DRAW_TRIS:
         {
+#ifdef USE_IM3D_FOR_DEBUGDRAW
+			for (int i = 0, k = points.Size(); i < k; i+=3)
+            {
+                    auto col = points[i].color;
+                    Math::line line1(points[i].pos, points[i + 1].pos);
+                    Math::line line2(points[i+1].pos, points[i + 2].pos);
+                    Math::line line3(points[i+2].pos, points[i].pos);
+                    Im3d::Im3dContext::DrawLine(line1, 5.0f, col, Im3d::RenderFlag::AlwaysOnTop);
+                    Im3d::Im3dContext::DrawLine(line2, 5.0f, col, Im3d::RenderFlag::AlwaysOnTop);
+                    Im3d::Im3dContext::DrawLine(line3, 5.0f, col, Im3d::RenderFlag::AlwaysOnTop);
+            }
+#else
             CoreGraphics::RenderShape shape;
             shape.SetupPrimitives(points, CoreGraphics::PrimitiveTopology::TriangleList, CoreGraphics::RenderShape::Wireframe);// this->flag);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+#endif
 		}
 		break;
 		case DU_DRAW_QUADS:
 		{
-			n_assert(false);
+#ifdef USE_IM3D_FOR_DEBUGDRAW
+			for (int i = 0, k = points.Size(); i < k; i += 4)
+			{
+				auto col = points[i].color;
+				Im3d::Im3dContext::DrawQuad(points[i].pos, points[i + 1].pos, points[i + 2].pos, points[i + 3].pos, col, this->flag);
+			}
+#endif
 		}
 		break;			
 	}

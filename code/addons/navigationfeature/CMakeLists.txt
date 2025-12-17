@@ -1,6 +1,6 @@
 nebula_begin_module(navigationfeature)
 fips_deps(Detour DetourCrowd Recast DetourTileCache DebugUtils application render)
-fips_include_directories(${CODE_ROOT}/foundation)
+target_include_directories(navigationfeature PRIVATE ${CODE_ROOT}/foundation)
 fips_files(
 		navigationfeatureunit.h
 		navigationfeatureunit.cc
