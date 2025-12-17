@@ -97,13 +97,7 @@ STBIW16DEF unsigned char* stbi_write_png16_to_mem(const unsigned short* pixels, 
     int j, zlen;
     int bytes_per_pixel = comp * 2;
 
-    /* Normalize stride_bytes:
-       API expects stride = bytes from row start to next row start.
-       Many callers pass per-pixel bytes (pixel_stride) instead of row stride;
-       that causes src indexing to step incorrectly and overwrite memory.
-       Accept pixel_stride as a convenience: if stride_bytes equals bytes_per_pixel,
-       treat it as tightly-packed rows (x * bytes_per_pixel).
-    */
+    /* Normalize stride_bytes to row stride in bytes */
     if (stride_bytes == 0)
         stride_bytes = x * bytes_per_pixel;
 
@@ -115,14 +109,13 @@ STBIW16DEF unsigned char* stbi_write_png16_to_mem(const unsigned short* pixels, 
     pixels8 = (unsigned char*)STBIW_MALLOC((size_t)y * stride_bytes);
     if (!pixels8) return 0;
     {
-        int src_row_shorts = stride_bytes / 2;
-        int r;
-        for (r = 0; r < y; ++r) {
-            const unsigned short* src = pixels + (size_t)r * src_row_shorts;
+        /* ? FIX: Treat stride_bytes as BYTE offset, cast pixels to byte pointer */
+        for (int r = 0; r < y; ++r) {
+            const unsigned char* src_bytes = (const unsigned char*)pixels + (size_t)r * stride_bytes;
+            const unsigned short* src = (const unsigned short*)src_bytes;
             unsigned char* dst = pixels8 + (size_t)r * stride_bytes;
-            int i, c;
-            for (i = 0; i < x; ++i) {
-                for (c = 0; c < comp; ++c) {
+            for (int i = 0; i < x; ++i) {
+                for (int c = 0; c < comp; ++c) {
                     unsigned short v = src[i * comp + c];
                     /* PNG requires big-endian sample bytes */
                     dst[(i * bytes_per_pixel) + c * 2 + 0] = STBIW_UCHAR(v >> 8);
