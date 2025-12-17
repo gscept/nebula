@@ -249,6 +249,25 @@ Im3dContext::DrawLine(const Math::line& line, const float size, const Math::vec4
 //------------------------------------------------------------------------------
 /**
 */
+void
+Im3dContext::DrawQuad(const Math::point& a, const Math::point& b, const Math::point& c, const Math::point& d, const Math::vec4 color, uint32_t renderFlags)
+{
+    if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::SetColor(Im3d::Vec4(color));
+    if (renderFlags & Wireframe) 
+    {
+        Im3d::DrawQuad(Im3d::Vec3(a), Im3d::Vec3(b), Im3d::Vec3(c), Im3d::Vec3(d));
+    }
+    else
+    {
+        Im3d::DrawQuadFilled(Im3d::Vec3(a), Im3d::Vec3(b), Im3d::Vec3(c), Im3d::Vec3(d));
+    }
+    if (renderFlags & CheckDepth) Im3d::PopLayerId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 Im3dContext::DrawBox(const Math::bbox & box, const Math::vec4 & color, uint32_t depthFlag)
 {
@@ -368,7 +387,34 @@ Im3dContext::DrawSphere(const Math::point& pos, float radius, const Math::vec4& 
     Im3d::PopDrawState();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void Im3dContext::DrawCylinder(const Math::point& start, const Math::point& end, float radius, const Math::vec4& color)
+{
+    Im3d::PushDrawState();
+    
+    Im3d::SetSize(2.0f);
+    Im3d::SetColor(Im3d::Vec4(color));
+    Im3d::DrawCylinder(Vec3(start), Vec3(end), radius, 16);
+    
+    Im3d::PopDrawState();
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Im3dContext::DrawCone(const Math::point& start, const Math::point& end, float startRadius, float endRadius, const Math::vec4& color, uint32_t renderFlags)
+{
+    Im3d::PushDrawState();
+
+    Im3d::SetSize(2.0f);
+    Im3d::SetColor(Im3d::Vec4(color));
+    Im3d::DrawCone2(Vec3(start), Vec3(end), startRadius, endRadius, 16);
+
+    Im3d::PopDrawState();
+}
 //------------------------------------------------------------------------------
 /**
 */

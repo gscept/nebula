@@ -45,6 +45,8 @@ public:
 
     static void DrawLine(const Math::line& line, const float size = 1.0f, const Math::vec4 color = {1.0f, 0.0f, 0.0f, 1.0f}, uint32_t renderFlags = CheckDepth);
 
+    static void DrawQuad(const Math::point& a, const Math::point& b, const Math::point& c, const Math::point& d, const Math::vec4 color = {1.0f, 0.0f, 0.0f, 1.0f}, uint32_t renderFlags = CheckDepth);
+
     static void DrawBox(const Math::bbox& box, const Math::vec4& color, uint32_t renderFlags = CheckDepth|Wireframe);
 
     static void DrawOrientedBox(const Math::mat4& transform, const Math::bbox& box, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
@@ -55,9 +57,9 @@ public:
     /// draw a sphere
     static void DrawSphere(const Math::point& pos, float radius, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a cylinder
-    static void DrawCylinder(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
+    static void DrawCylinder(const Math::point& start, const Math::point& end, float radius, const Math::vec4& color);
     /// draw a cone
-    static void DrawCone(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
+    static void DrawCone(const Math::point& start, const Math::point& end, float startRadius, float endRadius, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
 
     /// called before frame
     static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
