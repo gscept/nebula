@@ -14,6 +14,8 @@
 
 #include "frame/default.h"
 
+#include "gpulang/render/system_shaders/shapes.h"
+
 using namespace Base;
 using namespace Threading;
 using namespace Math;
@@ -97,9 +99,9 @@ VkShapeRenderer::Open()
     }
 
     // lookup ModelViewProjection shader variable
-    this->model = ShaderGetConstantBinding(shapesShader, "ShapeModel");
-    this->diffuseColor = ShaderGetConstantBinding(shapesShader, "ShapeColor");
-    this->lineWidth = ShaderGetConstantBinding(shapesShader, "LineWidth");
+    this->model = offsetof(Shapes::ShapeConstants, ShapeModel);
+    this->diffuseColor = offsetof(Shapes::ShapeConstants, ShapeColor);
+    this->lineWidth = offsetof(Shapes::ShapeConstants, LineWidth);
 
     this->programs[ShaderTypes::Primitives] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives"));
     this->programs[ShaderTypes::PrimitivesNoDepth] = ShaderGetProgram(shapesShader, CoreGraphics::ShaderFeatureMask("Primitives|NoDepth"));
@@ -178,7 +180,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
 
     if (this->numIndicesThisFrame > this->indexBufferCapacity)
         this->GrowIndexBuffer();
-    if (this->numVerticesThisFrame > this->vertexBufferCapacity)
+    if (this->numVerticesThisFrame > this->vertexBufferCapacity[this->vertexBufferActiveIndex])
         this->GrowVertexBuffer();
 
     for (int shaderType = 0; shaderType < ShaderTypes::NumShaders; shaderType++)
@@ -514,7 +516,7 @@ VkShapeRenderer::GrowVertexBuffer()
     if (this->vbos[this->vertexBufferActiveIndex] != InvalidBufferId)
         DestroyBuffer(this->vbos[this->vertexBufferActiveIndex]);
 
-    this->vertexBufferCapacity = this->numVerticesThisFrame;
+    this->vertexBufferCapacity[this->vertexBufferActiveIndex] = this->numVerticesThisFrame;
 
     // finally allocate new buffer
     this->vbos[this->vertexBufferActiveIndex] = CreateBuffer(vboInfo);

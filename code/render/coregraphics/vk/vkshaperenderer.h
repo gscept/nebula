@@ -72,7 +72,7 @@ private:
     byte* indexBufferPtr;
     IndexT indexBufferActiveIndex;
     IndexT vertexBufferActiveIndex;
-    SizeT vertexBufferCapacity;
+    SizeT vertexBufferCapacity[MaxVertexIndexBuffers];
     SizeT indexBufferCapacity;
 
     CoreGraphics::VertexLayoutId vertexLayout;

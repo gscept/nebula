@@ -79,10 +79,9 @@ vsPrimitives(
 //------------------------------------------------------------------------------
 /**
 */
-
 input_topology(InputTopology.Lines)
 output_topology(OutputTopology.Triangles)
-max_output_vertices(3)
+max_output_vertices(4)
 entry_point
 gsLines(
     in colors : [2]f32x4,
@@ -148,7 +147,6 @@ gsTriangles(
     Distance = f32x3(0, 0, 1);
     geometryExportVertex(tri.position[2]);
     geometryExportPrimitive();
-    
 }
 
 //------------------------------------------------------------------------------
