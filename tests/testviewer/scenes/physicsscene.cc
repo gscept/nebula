@@ -218,7 +218,7 @@ void OpenScene()
 
     mesh.agent_kind = std::make_unique<Navigation::AgentT>(agent);
     auto source = std::make_unique<Navigation::GeometryEntryT>();
-    source->resource = "msh:test/groundplane.nvx2";
+    source->resource = "msh:test/groundplane.nvx";
     mesh.sources.push_back(std::move(source));
     mesh.name = "test";
     mesh.file = "nav:test.navmesh";
@@ -228,9 +228,12 @@ void OpenScene()
     mesh.navmesh_settings = std::make_unique<Navigation::NavMeshSettingsT>();
 
     Navigation::Recast::GenerateNavMesh(mesh, navmesh);
-    dt = dtAllocNavMesh();
-    dt->init((unsigned char*)navmesh.GetPtr(), (int)navmesh.Size(), 0);
-    v = 0.0f;
+    if (navmesh.IsValid())
+    {
+        dt = dtAllocNavMesh();
+        dt->init((unsigned char*)navmesh.GetPtr(), (int)navmesh.Size(), 0);
+        v = 0.0f;
+    }
 };
 
 static void RemoveEntity(Graphics::GraphicsEntityId Id)
