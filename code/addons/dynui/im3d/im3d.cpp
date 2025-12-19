@@ -1,5 +1,9 @@
 /*	CHANGE LOG
 	==========
+	2025-09-14 (v1.18) - Improved DrawCone() and DrawConeFilled(); API matches other high order shape functions. Old behvaior is still enabled by default, see IM3D_USE_DEPRECATED_DRAW_CONE in im3d_config.h.
+	2025-05-05 (v1.17) - IM3D_GIZMO_LAYER_ID forces all gizmos to be drawn to a layer when defined.
+	                   - Fix for snapping with a non-empty matrix stack.
+	                   - DrawCone()/DrawConeFilled().
 	2020-05-17 (v1.16) - Text API.
 	                   - Flip gizmo axes when viewed from behind (AppData::m_flipGizmoWhenBehind).
 	                   - Minor gizmo rendering improvements.
@@ -352,13 +356,13 @@ void Im3d::DrawSphereFilled(const Vec3& _origin, float _radius, int _detail)
 				float z = sinf(x);
 				x = cosf(x);
 
-				ctx.vertex(Vec3(xp * rp, yp, zp * rp));
-				ctx.vertex(Vec3(xp * r,  y,  zp * r));
-				ctx.vertex(Vec3(x  * r,  y,  z  * r));
+				ctx.vertex(Vec3(xp * rp + _origin.x, yp + _origin.y, zp * rp + _origin.z));
+				ctx.vertex(Vec3(xp * r  + _origin.x, y  + _origin.y, zp * r  + _origin.z));
+				ctx.vertex(Vec3(x  * r  + _origin.x, y  + _origin.y, z  * r  + _origin.z));
 
-				ctx.vertex(Vec3(xp * rp, yp, zp * rp));
-				ctx.vertex(Vec3(x  * r,  y,  z  * r));
-				ctx.vertex(Vec3(x  * rp, yp, z  * rp));
+				ctx.vertex(Vec3(xp * rp + _origin.x, yp + _origin.y, zp * rp + _origin.z));
+				ctx.vertex(Vec3(x  * r  + _origin.x, y  + _origin.y, z  * r  + _origin.z));
+				ctx.vertex(Vec3(x  * rp + _origin.x, yp + _origin.y, z  * rp + _origin.z));
 
 				xp = x;
 				zp = z;
@@ -458,46 +462,11 @@ void Im3d::DrawAlignedBoxFilled(const Vec3& _min, const Vec3& _max)
 }
 void Im3d::DrawCylinder(const Vec3& _start, const Vec3& _end, float _radius, int _detail)
 {
-	Context& ctx = GetContext();
-	#if IM3D_CULL_PRIMITIVES
-		if (!ctx.isVisible((_start + _end) * 0.5f, Max(Length2(_start - _end), _radius)))
-		{
-			return;
-		}
-	#endif
-
-	Vec3 org  = _start + (_end - _start) * 0.5f;
-	if (_detail < 0)
-	{
-		_detail = ctx.estimateLevelOfDetail(org, _radius, 16, 24);
-	}
-	_detail = Max(_detail, 3);
-
-	float ln  = Length(_end - _start) * 0.5f;
-	ctx.pushMatrix(ctx.getMatrix() * LookAt(org, _end, ctx.getAppData().m_worldUp));
-	ctx.begin(PrimitiveMode_LineLoop);
-		for (int i = 0; i <= _detail; ++i)
-		{
-			float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
-			ctx.vertex(Vec3(0.0f, 0.0f, -ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radius);
-		}
-	ctx.end();
-	ctx.begin(PrimitiveMode_LineLoop);
-		for (int i = 0; i <= _detail; ++i)
-		{
-			float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
-			ctx.vertex(Vec3(0.0f, 0.0f, ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radius);
-		}
-	ctx.end();
-	ctx.begin(PrimitiveMode_Lines);
-		for (int i = 0; i <= 6; ++i)
-		{
-			float rad = TwoPi * ((float)i / 6.0f) - HalfPi;
-			ctx.vertex(Vec3(0.0f, 0.0f, -ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radius);
-			ctx.vertex(Vec3(0.0f, 0.0f,  ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radius);
-		}
-	ctx.end();
-	ctx.popMatrix();
+	DrawCone2(_start, _end, _radius, _radius, _detail);
+}
+void Im3d::DrawCylinderFilled(const Vec3& _start, const Vec3& _end, float _radius, bool _drawCapStart, bool _drawCapEnd, int _detail)
+{
+	DrawConeFilled2(_start, _end, _radius, _radius, _drawCapStart, _drawCapEnd, _detail);
 }
 void Im3d::DrawCapsule(const Vec3& _start, const Vec3& _end, float _radius, int _detail)
 {
@@ -618,7 +587,207 @@ void Im3d::DrawArrow(const Vec3& _start, const Vec3& _end, float _headLength, fl
 		ctx.vertex(_end, 2.0f, ctx.getColor()); // \hack \todo 2.0f here compensates for the shader antialiasing (which reduces alpha when size < 2)
 	ctx.end();
 }
+void Im3d::DrawCone2(const Vec3& _start, const Vec3& _end, float _radiusStart, float _radiusEnd, int _detail)
+{
+	Context& ctx = GetContext();
+	const float maxRadius = Max(_radiusStart, _radiusEnd);
+	#if IM3D_CULL_PRIMITIVES
+		if (!ctx.isVisible((_start + _end) * 0.5f, Max(Length2(_start - _end), maxRadius)))
+		{
+			return;
+		}
+	#endif
 
+	const Vec3 org  = _start + (_end - _start) * 0.5f;
+	if (_detail < 0)
+	{
+		_detail = ctx.estimateLevelOfDetail(org, maxRadius, 16, 24);
+	}
+	_detail = Max(_detail, 3);
+
+	const float ln  = Length(_end - _start) * 0.5f;
+	ctx.pushMatrix(ctx.getMatrix() * LookAt(org, _end, ctx.getAppData().m_worldUp));
+
+	// Start cap.
+	if (_radiusStart > 0.0f)
+	{
+		ctx.begin(PrimitiveMode_LineLoop);
+			for (int i = 0; i <= _detail; ++i)
+			{
+				const float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
+				ctx.vertex(Vec3(0.0f, 0.0f, -ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusStart);
+			}
+		ctx.end();
+	}
+
+	// End cap.
+	if (_radiusEnd > 0.0f)
+	{
+		ctx.begin(PrimitiveMode_LineLoop);
+			for (int i = 0; i <= _detail; ++i)
+			{
+				const float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
+				ctx.vertex(Vec3(0.0f, 0.0f, ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusEnd);
+			}
+		ctx.end();
+	}
+
+	// Sides.
+	ctx.begin(PrimitiveMode_Lines);
+		for (int i = 0; i <= _detail; ++i)
+		{
+			const float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
+			ctx.vertex(Vec3(0.0f, 0.0f, -ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusStart);
+			ctx.vertex(Vec3(0.0f, 0.0f,  ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusEnd);
+		}
+	ctx.end();
+
+	ctx.popMatrix();
+}
+void Im3d::DrawConeFilled2(const Vec3& _start, const Vec3& _end, float _radiusStart, float _radiusEnd, bool _drawCapStart, bool _drawCapEnd, int _detail)
+{
+	Context& ctx = GetContext();
+	const float maxRadius = Max(_radiusStart, _radiusEnd);
+	#if IM3D_CULL_PRIMITIVES
+		if (!ctx.isVisible((_start + _end) * 0.5f, Max(Length2(_start - _end), maxRadius)))
+		{
+			return;
+		}
+	#endif
+
+
+	const Vec3 org  = _start + (_end - _start) * 0.5f;
+	if (_detail < 0)
+	{
+		_detail = ctx.estimateLevelOfDetail(org, maxRadius, 16, 24);
+	}
+	_detail = Max(_detail, 3);
+
+	const float ln  = Length(_end - _start) * 0.5f;
+	ctx.pushMatrix(ctx.getMatrix() * LookAt(org, _end, ctx.getAppData().m_worldUp));
+	ctx.pushEnableSorting(true);
+
+	
+	// Start cap.
+	if (_drawCapStart && _radiusStart > 0.0f)
+	{
+		ctx.begin(PrimitiveMode_TriangleStrip);
+			for (int i = 0; i <= _detail; ++i)
+			{
+				const float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
+				ctx.vertex(Vec3(0.0f, 0.0f, -ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusStart);
+				ctx.vertex(Vec3(0.0f, 0.0f, -ln));
+			}
+		ctx.end();
+	}
+
+	// End cap.
+	if (_drawCapEnd && _radiusEnd > 0.0f)
+	{
+		ctx.begin(PrimitiveMode_TriangleStrip);
+			for (int i = 0; i <= _detail; ++i)
+			{
+				const float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
+				ctx.vertex(Vec3(0.0f, 0.0f, ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusEnd);
+				ctx.vertex(Vec3(0.0f, 0.0f, ln));
+			}
+		ctx.end();
+	}
+
+	// Sides.
+	ctx.begin(PrimitiveMode_TriangleStrip);
+		for (int i = 0; i <= _detail; ++i)
+		{
+			const float rad = TwoPi * ((float)i / (float)_detail) - HalfPi;
+			ctx.vertex(Vec3(0.0f, 0.0f, -ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusStart);
+			ctx.vertex(Vec3(0.0f, 0.0f,  ln) + Vec3(cosf(rad), sinf(rad), 0.0f) * _radiusEnd);
+		}
+	ctx.end();
+
+	ctx.popEnableSorting();
+	ctx.popMatrix();
+}
+
+#if IM3D_USE_DEPRECATED_DRAW_CONE
+void Im3d::DrawCone(const Vec3& _origin, const Vec3& _normal, float height, float _radius, int _detail){
+
+    Context& ctx = GetContext();
+    #if IM3D_CULL_PRIMITIVES
+        if (!ctx.isVisible(_origin + _normal * height / 2, height / 2))
+        {
+            return;
+        }
+    #endif
+
+
+    if (_detail < 0)
+    {
+        _detail = ctx.estimateLevelOfDetail(_origin + _normal * height / 2, height / 2, 8, 48);
+    }
+    _detail = Max(_detail, 3);
+
+    //cone bottom face
+    DrawCircle(_origin,_normal,_radius,_detail);
+
+    //cone side face
+    ctx.pushMatrix(ctx.getMatrix() * LookAt(_origin, _origin + _normal, ctx.getAppData().m_worldUp));
+    ctx.begin(PrimitiveMode_LineLoop);
+        float cp = _radius;
+        float sp = 0.0f;
+        for (int i = 1; i <= _detail; ++i)
+        {
+            ctx.vertex(Vec3(0,0,1)*height);
+            ctx.vertex(Vec3(cp, sp, 0.0f));
+            float rad = TwoPi * ((float)i / (float)_detail);
+            float c = cosf(rad) * _radius;
+            float s = sinf(rad) * _radius;
+            ctx.vertex(Vec3(c, s, 0.0f));
+            cp = c;
+            sp = s;
+        }
+    ctx.end();
+    ctx.popMatrix();
+}
+void Im3d::DrawConeFilled(const Vec3& _origin, const Vec3& _normal, float height, float _radius, int _detail){
+
+    Context& ctx = GetContext();
+    #if IM3D_CULL_PRIMITIVES
+        if (!ctx.isVisible(_origin + _normal * height / 2, height / 2))
+        {
+            return;
+        }
+    #endif
+
+
+    if (_detail < 0)
+    {
+        _detail = ctx.estimateLevelOfDetail(_origin + _normal * height / 2, height / 2, 8, 48);
+    }
+    _detail = Max(_detail, 3);
+
+    //cone bottom face
+    DrawCircleFilled(_origin,_normal,_radius,_detail);
+
+    //cone side face
+    ctx.pushMatrix(ctx.getMatrix() * LookAt(_origin, _origin + _normal, ctx.getAppData().m_worldUp));
+    ctx.begin(PrimitiveMode_Triangles);
+        float cp = _radius;
+        float sp = 0.0f;
+        for (int i = 1; i <= _detail; ++i)
+        {
+            ctx.vertex(Vec3(0,0,1)*height);
+            ctx.vertex(Vec3(cp, sp, 0.0f));
+            float rad = TwoPi * ((float)i / (float)_detail);
+            float c = cosf(rad) * _radius;
+            float s = sinf(rad) * _radius;
+            ctx.vertex(Vec3(c, s, 0.0f));
+            cp = c;
+            sp = s;
+        }
+    ctx.end();
+    ctx.popMatrix();
+}
+#endif // IM3D_USE_DEPRECATED_DRAW_CONE
 
 void Im3d::Text(const Vec3& _position, U32 _textFlags, const char* _text, ...)
 {
@@ -798,6 +967,9 @@ bool Im3d::GizmoTranslation(Id _id, float _translation_[3], bool _local)
 	bool intersects = ctx.m_appHotId == ctx.m_appId || Intersects(ray, boundingSphere);
 
  // planes
+	#ifdef IM3D_GIZMO_LAYER_ID
+		ctx.pushLayerId(IM3D_GIZMO_LAYER_ID);
+	#endif
  	ctx.pushEnableSorting(true);
 	if (_local)
 	{
@@ -886,6 +1058,9 @@ bool Im3d::GizmoTranslation(Id _id, float _translation_[3], bool _local)
 	}
 	ctx.popMatrix();
 	ctx.popEnableSorting();
+	#ifdef IM3D_GIZMO_LAYER_ID
+		ctx.popLayerId();
+	#endif
 
 	if (_local)
 	{
@@ -952,6 +1127,9 @@ bool Im3d::GizmoRotation(Id _id, float _rotation_[3*3], bool _local)
 		}
 	}
 
+	#ifdef IM3D_GIZMO_LAYER_ID
+		ctx.pushLayerId(IM3D_GIZMO_LAYER_ID);
+	#endif
 	ctx.pushMatrix(Mat4(1.0f));
 	for (int i = 0; i < 3; ++i)
 	{
@@ -988,6 +1166,9 @@ bool Im3d::GizmoRotation(Id _id, float _rotation_[3*3], bool _local)
 		ctx.gizmoAxislAngle_Draw(viewId, origin, viewNormal, worldRadius, angle, viewId == ctx.m_activeId ? Color_GizmoHighlight : Color_White, 1.0f);
 	}
 	ctx.popMatrix();
+	#ifdef IM3D_GIZMO_LAYER_ID
+		ctx.popLayerId();
+	#endif
 
 	if (currentId != ctx.m_activeId)
 	{
@@ -1049,6 +1230,9 @@ bool Im3d::GizmoScale(Id _id, float _scale_[3])
 	Ray ray(appData.m_cursorRayOrigin, appData.m_cursorRayDirection);
 	bool intersects = ctx.m_appHotId == ctx.m_appId || Intersects(ray, boundingSphere);
 
+	#ifdef IM3D_GIZMO_LAYER_ID
+		ctx.pushLayerId(IM3D_GIZMO_LAYER_ID);
+	#endif
  	ctx.pushEnableSorting(true);
 	ctx.pushMatrix(Mat4(1.0f));
 	{ // uniform scale
@@ -1138,6 +1322,9 @@ bool Im3d::GizmoScale(Id _id, float _scale_[3])
 
 	ctx.popMatrix();
 	ctx.popEnableSorting();
+	#ifdef IM3D_GIZMO_LAYER_ID
+		ctx.popLayerId();
+	#endif
 
 	ctx.popId();
 	return ret;
@@ -1723,6 +1910,8 @@ void Context::reset()
 		m_gizmoLocal = !m_gizmoLocal;
 		resetId();
 	}
+
+	m_appIdActivated = Id_Invalid;
 }
 
 void Context::merge(const Context& _src)
@@ -1732,7 +1921,7 @@ void Context::merge(const Context& _src)
  // layer IDs
 	for (Id id : _src.m_layerIdMap)
 	{
-		pushLayerId(id); // add a new layer if id doesn't alrady exist
+		pushLayerId(id); // add a new layer if id doesn't alrady exist 
 		popLayerId();
 	}
 
@@ -2255,10 +2444,17 @@ bool Context::gizmoAxisTranslation_Behavior(Id _id, const Vec3& _origin, const V
 		{
 			float tr, tl;
 			Nearest(ray, axisLine, tr, tl);
+			const Vec3 delta = _axis * tl - storedPosition;
 			#if IM3D_RELATIVE_SNAP
-				*_out_ = *_out_ + Snap(_axis * tl - storedPosition, _snap);
+				const float dist = Dot(delta, _axis);
+				const float snappedDist = Snap(dist, _snap);
+				*_out_ = *_out_ + _axis * snappedDist;
 			#else
-				*_out_ = Snap(*_out_ + _axis * tl - storedPosition, _snap);
+				const Vec3 absPos = *_out_ + delta;
+				const float absDist = Dot(absPos, _axis);
+				const float snappedAbs = Snap(absDist, _snap);
+				const Vec3 perp = *_out_ - _axis * Dot(*_out_, _axis);
+				*_out_ = perp + _axis * snappedAbs;
 			#endif
 
 			return true;
@@ -2715,11 +2911,12 @@ void Context::makeActive(Id _id)
 {
 	m_activeId = _id;
 	m_appActiveId = _id == Id_Invalid ? Id_Invalid : m_appId;
+	m_appIdActivated = m_appActiveId;
 }
 
 void Context::resetId()
 {
-	m_activeId = m_hotId = m_appActiveId = m_appHotId = Id_Invalid;
+	m_activeId = m_hotId = m_appActiveId = m_appHotId = m_appIdActivated = Id_Invalid;
 	m_hotDepth = FLT_MAX;
 }
 
@@ -2862,9 +3059,9 @@ Mat3 Im3d::FromEulerXYZ(Vec3& _euler)
 	float cx = cosf(_euler.x);
 	float sx = sinf(_euler.x);
 	float cy = cosf(_euler.y);
-	float sy = cosf(_euler.y);
+	float sy = sinf(_euler.y);
 	float cz = cosf(_euler.z);
-	float sz = cosf(_euler.z);
+	float sz = sinf(_euler.z);
 	return Mat3(
 		cy * cz, sz * sy * cz - cx * sz, cx * sy * cz + sx * sz,
 		cy * sz, sx * sy * sz + cx * cz, cx * sy * sz - sx * cz,

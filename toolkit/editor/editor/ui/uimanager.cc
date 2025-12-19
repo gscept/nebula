@@ -18,6 +18,7 @@
 #include "windows/asseteditor/asseteditor.h"
 #include "windows/resourcebrowser.h"
 #include "windows/physics.h"
+#include "windows/navigation.h"
 #include "windows/settings.h"
 #include "windows/profiler.h"
 #include "windows/terraineditor/terraineditor.h"
@@ -107,6 +108,7 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::ResourceBrowser", "Resource Browser");
     windowServer->RegisterWindow("Presentation::Profiler", "Profiler");
     windowServer->RegisterWindow("Presentation::Physics", "Physics");
+    windowServer->RegisterWindow("Presentation::Navigation", "Navigation");
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
 

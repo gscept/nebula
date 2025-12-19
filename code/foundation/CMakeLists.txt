@@ -626,7 +626,8 @@ nebula_begin_module(foundation)
             memory/posix/posixmemory.h
             memory/posix/posixmemoryconfig.cc
             memory/posix/posixmemoryconfig.h
-            memory/posix/posixmemorypool.cc
+            memory/base/genericmemorypool.cc
+            memory/base/genericmemorypool.h
             util/posix/posixguid.cc
             util/posix/posixguid.h
             io/posix/posixconsolehandler.cc

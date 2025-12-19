@@ -507,21 +507,21 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
 
                     float radius = collider->data.AsSphereCollider()->radius;
                     physx::PxGeometryHolder geometry = PxSphereGeometry(radius);
-                AddCollider(geometry, material, shape->transform, "Sphere", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                    AddCollider(geometry, material, shape->transform, "Sphere", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
                 }
                 break;
                 case ColliderType_Box:
                 {
                     Math::vector extents = collider->data.AsBoxCollider()->extents;
                     physx::PxGeometryHolder geometry = PxBoxGeometry(Neb2PxVec(extents));
-                AddCollider(geometry, material, shape->transform, "Box", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                    AddCollider(geometry, material, shape->transform, "Box", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
                 }
                 break;
                 case ColliderType_Plane:
                 {
                     // plane is defined via transform of the actor
                     physx::PxGeometryHolder geometry = PxPlaneGeometry();
-                AddCollider(geometry, material, shape->transform, "Plane", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                    AddCollider(geometry, material, shape->transform, "Plane", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
                 }
                 break;
                 case ColliderType_Capsule:
@@ -530,12 +530,12 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
                     float radius = capsule->radius;
                     float halfHeight = capsule->halfheight;
                     physx::PxGeometryHolder geometry = PxCapsuleGeometry(radius, halfHeight);
-                AddCollider(geometry, material, shape->transform, "Capsule", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
+                    AddCollider(geometry, material, shape->transform, "Capsule", collider->name, bodyInfo, job.tag, job.id.loaderInstanceId);
                 }
                 break;
                 case ColliderType_Mesh:
                 {
-                AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
+                    AddMeshColliders(collider->data.AsMeshCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
                     /*
                                     auto mesh = collider->data.AsMeshCollider();
                                     MeshTopology type = mesh->type;
@@ -549,7 +549,7 @@ StreamActorPool::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::St
                 break;
                 case ColliderType_HeightField:
                 {
-                AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
+                    AddHeightField(collider->data.AsHeightFieldCollider(), shape->transform, collider->name, material, job.tag, job.id.loaderInstanceId, bodyInfo);
                 }
                 break;
                 default:

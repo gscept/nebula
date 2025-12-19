@@ -225,7 +225,7 @@ ResourceLoader::Update(IndexT frameIndex)
     }
 
     // Make a copy since ImmediateJob might add jobs to the dependentJobs list
-    Util::FixedArray<ResourceLoadJob, true> dependencyJobs = this->dependentJobs;
+    Util::FixedArray<ResourceLoadJob, false> dependencyJobs = this->dependentJobs;
     this->dependentJobs.Clear();
     for (const auto& job : dependencyJobs)
     {

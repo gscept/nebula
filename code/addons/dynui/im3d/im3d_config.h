@@ -1,6 +1,4 @@
 #pragma once
-#ifndef im3d_config_h
-#define im3d_config_h
 
 #include "render/stdneb.h"
 #include "core/config.h"
@@ -8,6 +6,10 @@
 #include "math/vec4.h"
 #include "math/vec2.h"
 #include "math/mat4.h"
+
+// Deprecated behavior.
+#define IM3D_USE_DEPRECATED_DRAW_CONE 1 // Enable deprecated DrawCone() and DrawConeFilled() API (deprecated v1.18).
+#include "memory/memory.h"
 
 // User-defined assertion handler (default is cassert assert()).
 #define IM3D_ASSERT(e) n_assert(e)
@@ -33,6 +35,9 @@
 // Enable internal culling for gizmos. The application must set a culling frustum via AppData.
 //#define IM3D_CULL_GIZMOS 1
 
+// Set a layer ID for all gizmos to use internally.
+//#define IM3D_GIZMO_LAYER_ID 0xD4A1B5
+
 // Conversion to/from application math types.
 #define IM3D_VEC2_APP \
     Vec2(const Math::vec2& _v)        { x = _v.x; y = _v.y;     } \
@@ -55,7 +60,3 @@
 #define IM3D_MAT4_APP \
     Mat4(const Math::mat4& _m)    { _m.storeu(m);} \
     operator Math::mat4() const   { Math::mat4 ret; ret.loadu(m); return ret; }
-
-
-    
-#endif // im3d_config_h

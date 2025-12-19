@@ -25,6 +25,10 @@
 #include "physics/debugui.h"
 #include "viewerapp.h"
 #include "graphics/cameracontext.h"
+#include "navigationfeature/navigationfeatureunit.h"
+#include "navigationfeature/recast/recastutil.h"
+#include "DetourDebugDraw.h"
+#include "navigationfeature/debug/detourdebug.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -152,6 +156,8 @@ DeleteRandom(int amount)
     }
 }
 
+dtNavMesh* dt;
+Util::Blob navmesh;
 //------------------------------------------------------------------------------
 /**
     Open scene, load resources
@@ -203,7 +209,31 @@ void OpenScene()
 
     gfxServer = Graphics::GraphicsServer::Instance();
     camera = Tests::SimpleViewerApplication::Instance()->GetDefaultCamera();
-    v = 0.0f;
+    Navigation::NavMeshT mesh;
+    Navigation::AgentT agent;
+    agent.agent_height = 2.0f;
+    agent.agent_radius = 0.5f;
+    agent.agent_max_climb = 0.5f;
+    agent.name = "test";
+
+    mesh.agent_kind = std::make_unique<Navigation::AgentT>(agent);
+    auto source = std::make_unique<Navigation::GeometryEntryT>();
+    source->resource = "msh:test/groundplane.nvx";
+    mesh.sources.push_back(std::move(source));
+    mesh.name = "test";
+    mesh.file = "nav:test.navmesh";
+    mesh.bounds_center = Math::vec3(0.0f, 0.0f, 0.0f);
+    mesh.bounds_extents = Math::vec3(400.0f, 50.0f, 400.0f);
+    
+    mesh.navmesh_settings = std::make_unique<Navigation::NavMeshSettingsT>();
+
+    Navigation::Recast::GenerateNavMesh(mesh, navmesh);
+    if (navmesh.IsValid())
+    {
+        dt = dtAllocNavMesh();
+        dt->init((unsigned char*)navmesh.GetPtr(), (int)navmesh.Size(), 0);
+        v = 0.0f;
+    }
 };
 
 static void RemoveEntity(Graphics::GraphicsEntityId Id)
@@ -251,7 +281,8 @@ void StepFrame()
             Shoot(1);
         }
     }
-
+    Navigation::DebugDraw dd;
+    duDebugDrawNavMesh(&dd, *dt, 0);
     
 };
 

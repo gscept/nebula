@@ -94,6 +94,8 @@ fips_dir(editor)
                 outline.h
                 physics.cc
                 physics.h
+                navigation.cc
+                navigation.h
                 profiler.cc
                 profiler.h
                 resourcebrowser.cc
@@ -154,5 +156,5 @@ fips_dir(editor)
             pathconverter.cc
             pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature audio toolkit-common)
+fips_deps(foundation application graphicsfeature physicsfeature navigationfeature audio toolkit-common)
 nebula_end_module()

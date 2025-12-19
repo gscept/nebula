@@ -1,20 +1,19 @@
 //------------------------------------------------------------------------------
-//  win32memorypool.cc
-//  (C) 2009 Radon Labs GmbH
-//  (C) 2013-2020 Individual contributors, see AUTHORS file
+//  genericmemorypool.cc
+//  (C) Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#include "memory/win32/win32memorypool.h"
+#include "memory/base/genericmemorypool.h"
 #include "util/string.h"
 
-namespace Win32
+namespace Base
 {
 using namespace Util;
 
 //------------------------------------------------------------------------------
 /**
 */
-Win32MemoryPool::Win32MemoryPool() :
+GenericMemoryPool::GenericMemoryPool() :
     heapType(Memory::InvalidHeapType),
     blockSize(0),
     alignedBlockSize(0),
@@ -26,19 +25,18 @@ Win32MemoryPool::Win32MemoryPool() :
     #if NEBULA_MEMORY_STATS
     this->allocCount = 0;
     #endif
-    Memory::Clear(&this->listHead, sizeof(this->listHead));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Win32MemoryPool::~Win32MemoryPool()
+GenericMemoryPool::~GenericMemoryPool()
 {
     #if NEBULA_MEMORY_STATS
     if (this->allocCount != 0)
     {
         String str;
-        str.Format("Win32MemoryPool: %d memory leaks in pool '0x%08x'!\n", this->allocCount, (uintptr_t)this);
+        str.Format("GenericMemoryPool: %d memory leaks in pool '0x%08x'!\n", this->allocCount, (uintptr_t)this);
         Core::SysFunc::DebugOut(str.AsCharPtr());
     }
     #endif
@@ -53,7 +51,7 @@ Win32MemoryPool::~Win32MemoryPool()
 /**
 */
 void
-Win32MemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBlocks_)
+GenericMemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBlocks_)
 {
     n_assert(0 == this->poolStart);
     n_assert(0 == this->poolEnd);
@@ -74,15 +72,14 @@ Win32MemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBloc
     // is 16-byte-aligned
     this->poolStart = (ubyte*) Memory::Alloc(this->heapType, this->poolSize);
     this->poolEnd = this->poolStart + this->poolSize;
-    
-    // setup forward-linked free-block-list
-    Memory::Clear(&this->listHead, sizeof(listHead));
-    PSLIST_ENTRY listEntry = (PSLIST_ENTRY) (this->poolStart + (BlockAlign - sizeof(SLIST_ENTRY)));
+
+    this->freeList.SetSignalOnEnqueueEnabled(false);
     uint i;
+    ubyte* blockEntry = this->poolStart;
     for (i = 0; i < this->numBlocks; i++)
     {
-        InterlockedPushEntrySList(&this->listHead, listEntry);
-        listEntry += this->alignedBlockSize / sizeof(SLIST_ENTRY);
+        this->freeList.Enqueue(blockEntry);
+        blockEntry += this->alignedBlockSize; 
     }
 }
 
@@ -90,18 +87,18 @@ Win32MemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBloc
 /**
 */
 void*
-Win32MemoryPool::Alloc()
+GenericMemoryPool::Alloc()
 {
     #if NEBULA_MEMORY_STATS
-    _InterlockedIncrement(&this->allocCount);
+    Threading::Interlocked::Increment(&this->allocCount);
     #endif
     // get the next free block from the free list and fixup the free list
-    PSLIST_ENTRY entry = InterlockedPopEntrySList(&this->listHead);
+    ubyte* entry = this->freeList.DequeueSafe(nullptr);
     if (0 == entry)
     {
         return 0;
     }
-    void* ptr = (void*) (((ubyte*)entry) + sizeof(SLIST_ENTRY));
+    void* ptr = (void*) (entry);
 
     // fill with debug pattern
     #if NEBULA_DEBUG
@@ -115,15 +112,13 @@ Win32MemoryPool::Alloc()
 /**
 */
 void
-Win32MemoryPool::Free(void* ptr)
+GenericMemoryPool::Free(void* ptr)
 {
     #if NEBULA_MEMORY_STATS
     n_assert(this->allocCount > 0);
-    _InterlockedDecrement(&this->allocCount);
+    Threading::Interlocked::Decrement(&this->allocCount);
     #endif
-    // get pointer to header and fixup free list
-    PSLIST_ENTRY entry = (PSLIST_ENTRY) (((ubyte*)ptr) - sizeof(SLIST_ENTRY));
-    InterlockedPushEntrySList(&this->listHead, entry);
+    this->freeList.Enqueue((ubyte*)ptr);
 
     // fill free'd block with debug pattern
     #if NEBULA_DEBUG

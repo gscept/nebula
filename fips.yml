@@ -47,6 +47,10 @@ imports:
         git: https://github.com/gscept/GPULang.git
         group: gpulang
         
+    fips-recast:
+        git: https://github.com/gscept/fips-recast.git
+        group: recastnavigation
+
 exports:
     header-dirs :
         - .
