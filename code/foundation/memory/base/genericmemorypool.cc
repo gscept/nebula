@@ -73,6 +73,7 @@ GenericMemoryPool::Setup(Memory::HeapType heapType_, uint blockSize_, uint numBl
     this->poolStart = (ubyte*) Memory::Alloc(this->heapType, this->poolSize);
     this->poolEnd = this->poolStart + this->poolSize;
 
+    this->freeList.SetSignalOnEnqueueEnabled(false);
     uint i;
     ubyte* blockEntry = this->poolStart;
     for (i = 0; i < this->numBlocks; i++)

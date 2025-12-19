@@ -123,6 +123,17 @@ SafeQueue<TYPE>::SetSignalOnEnqueueEnabled(bool b)
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE> bool
+SafeQueue<TYPE>::IsSignalOnEnqueueEnabled() const
+{
+    this->criticalSection.Enter();
+    return this->signalOnEnqueueEnabled;
+    this->criticalSection.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> void
 SafeQueue<TYPE>::Clear()
 {
