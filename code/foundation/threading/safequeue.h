@@ -50,6 +50,8 @@ public:
     void EnqueueArray(const Util::Array<TYPE>& a);
     /// remove the element from the front of the queue
     TYPE Dequeue();
+    /// remove the element from the front of the queue and returns the failed object if empty
+    TYPE DequeueSafe(const TYPE& failed);
     /// dequeue all events (only requires one lock)
     void DequeueAll(Util::Array<TYPE>& outArray);
     /// Dequeue all events to an array with a stack size
@@ -206,6 +208,22 @@ SafeQueue<TYPE>::Dequeue()
 {
     this->criticalSection.Enter();
     TYPE e = this->queue.Dequeue();    
+    this->criticalSection.Leave();
+    return e;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> TYPE
+SafeQueue<TYPE>::DequeueSafe(const TYPE& failed)
+{
+    this->criticalSection.Enter();
+    TYPE e = failed;
+    if (!this->queue.IsEmpty())
+    {
+        e = this->queue.Dequeue();
+    }
     this->criticalSection.Leave();
     return e;
 }

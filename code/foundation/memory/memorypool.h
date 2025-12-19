@@ -20,10 +20,10 @@ namespace Memory
 typedef Win32::Win32MemoryPool MemoryPool;
 }
 #elif ( __OSX__ || __APPLE__ || __linux__ )
-#include "memory/posix/posixmemorypool.h"
+#include "memory/base/genericmemorypool.h"
 namespace Memory
 {
-typedef Posix::PosixMemoryPool MemoryPool;
+typedef Base::GenericMemoryPool MemoryPool;
 }
 #else
 #error "IMPLEMENT ME!"
