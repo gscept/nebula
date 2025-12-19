@@ -154,7 +154,6 @@ GenerateNavMesh(NavMeshT const& data, Util::Blob& meshData)
 				for (int j = 0; j < groups[i].numIndices; j++)
 				{
 					int n = 0;
-					elements.indexData;
 					switch (elements.ranges[0].indexType)
 					{
 						case CoreGraphics::IndexType::Index16:
