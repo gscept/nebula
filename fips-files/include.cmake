@@ -2,6 +2,8 @@ fips_ide_group(nebula)
 
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.27")
 cmake_policy(SET CMP0147 NEW)
+endif()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "4.0")
 cmake_policy(SET CMP0184 NEW)
 endif()
 cmake_policy(SET CMP0079 NEW)
