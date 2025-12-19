@@ -22,6 +22,7 @@ namespace Test
 
 static const scalar TEST_EPSILON = 0.00001;
 static const vec4 EPSILON4(TEST_EPSILON, TEST_EPSILON, TEST_EPSILON, TEST_EPSILON);
+static const vec3 EPSILON3(TEST_EPSILON, TEST_EPSILON, TEST_EPSILON);
 #define SCALAR_FORMATOR "%f"
 
 //------------------------------------------------------------------------------
