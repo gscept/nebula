@@ -24,7 +24,7 @@
 #define NOMETAFILE
 #define NOOPENFILE
 #define NOSERVICE
-#define NOSOUND
+//#define NOSOUND
 #define NOCOMM
 #define NOKANJI
 #define NOHELP
