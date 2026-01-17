@@ -52,7 +52,7 @@ public:
     /// get pointer to binary data
     SizeT AsBinary(const unsigned char*& outPtr) const;
     /// get a hash code (compatible with Util::HashTable)
-    IndexT HashCode() const;
+    uint32_t HashCode() const;
 
 //private:    
     uint64_t hi;

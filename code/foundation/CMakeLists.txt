@@ -114,6 +114,7 @@ nebula_begin_module(foundation)
             globalstringatomtable.cc
             globalstringatomtable.h
             guid.h
+            hash.h
             hashtable.h
             keyvaluepair.h
             list.h

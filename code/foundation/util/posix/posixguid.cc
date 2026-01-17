@@ -6,6 +6,7 @@
 #include "foundation/stdneb.h"
 #include "util/posix/posixguid.h"
 #include <uuid/uuid.h>
+#include "util/hash.h"
 
 namespace Posix
 {
@@ -171,10 +172,10 @@ PosixGuid::FromBinary(const unsigned char* ptr, SizeT numBytes)
     This method returns a hash code for the uuid, compatible with 
     Util::HashTable.
 */
-IndexT
+uint32_t
 PosixGuid::HashCode() const
 {
-    return (IndexT)(hi ^ lo);
+    return Util::Hash((const unsigned char*)&hi, sizeof(uuid_t));
 }
 
 }; // namespace Posix
