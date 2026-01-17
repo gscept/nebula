@@ -14,7 +14,6 @@
 */
 #include "core/types.h"
 #include "util/string.h"
-#include <uuid/uuid.h>
 
 //------------------------------------------------------------------------------
 namespace Posix
@@ -24,12 +23,8 @@ class PosixGuid
 public:    
     /// constructor
     PosixGuid();
-    /// copy constructor
-    PosixGuid(const PosixGuid& rhs);
     /// construct from raw binary data as returned by AsBinary()
     PosixGuid(const unsigned char* ptr, SizeT size);
-    /// assignement operator
-    void operator=(const PosixGuid& rhs);
     /// assignment operator from string
     void operator=(const Util::String& rhs);
     /// equality operator
@@ -59,8 +54,9 @@ public:
     /// get a hash code (compatible with Util::HashTable)
     IndexT HashCode() const;
 
-private:    
-    uuid_t uuid;
+//private:    
+    uint64_t hi;
+    uint64_t lo;
 };
 
 //------------------------------------------------------------------------------
@@ -69,16 +65,8 @@ private:
 inline
 PosixGuid::PosixGuid()
 {
-    uuid_clear(this->uuid);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-PosixGuid::PosixGuid(const PosixGuid& rhs)
-{
-    uuid_copy(this->uuid, rhs.uuid);
+    hi = 0UL;
+    lo = 0UL;
 }
 
 //------------------------------------------------------------------------------
@@ -87,8 +75,8 @@ PosixGuid::PosixGuid(const PosixGuid& rhs)
 inline
 PosixGuid::PosixGuid(const unsigned char* ptr, SizeT size)
 {
-    n_assert((0 != ptr) && (size == sizeof(uuid_t)));
-    Memory::Copy(ptr, &this->uuid, sizeof(uuid_t));
+    n_assert((0 != ptr) && (size == sizeof(uint64_t) * 2));
+    Memory::Copy(ptr, &this->hi, sizeof(uint64_t) * 2);
 }
 
 }; // namespace Posix

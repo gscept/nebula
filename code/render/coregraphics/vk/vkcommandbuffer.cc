@@ -1696,6 +1696,7 @@ CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 #endif
 }
 
+#endif
 //------------------------------------------------------------------------------
 /**
 */
@@ -1722,7 +1723,6 @@ CmdFinishQueries(const CmdBufferId id)
         }
     }
 }
-#endif
 
 #if NEBULA_ENABLE_PROFILING
 //------------------------------------------------------------------------------

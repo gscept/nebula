@@ -392,6 +392,8 @@ public:
     inline size_t length() const { return this->Length(); }
     ///
     inline bool empty() const { return this->IsEmpty(); }
+    ///
+    inline const char* data() const { return this->AsCharPtr(); }
 
     /// test if provided character is a digit (0..9)
     static bool IsDigit(char c);

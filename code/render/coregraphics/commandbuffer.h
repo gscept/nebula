@@ -147,6 +147,12 @@ struct CmdBufferCreateInfo
     {};
 };
 
+#if NEBULA_GRAPHICS_DEBUG
+#define NEBULA_GRAPHICS_DEBUG_SET_NAME(cmd, x) cmd.name = x
+#else
+#define NEBULA_GRAPHICS_DEBUG_SET_NAME(cmd, x)
+#endif
+
 struct CmdBufferBeginInfo
 {
     bool submitOnce : 1;
@@ -416,6 +422,10 @@ void CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* n
 void CmdEndMarker(const CmdBufferId id);
 /// Insert marker without a beginning and end
 void CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name);
+#else
+inline void CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name){}
+inline void CmdEndMarker(const CmdBufferId id){}
+inline void CmdInsertMarker(const CmdBufferId id, const Math::vec4& color, const char* name){}
 #endif
 
 /// Finish queries

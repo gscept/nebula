@@ -76,7 +76,7 @@ if(FIPS_WINDOWS)
 elseif(FIPS_LINUX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive ${LINUX_SIMD_FLAGS} -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LINUX_SIMD_FLAGS} -march=sandybridge -ffast-math -fPIC -fno-trapping-math -funsafe-math-optimizations -ffinite-math-only -mrecip=all -Wall")
-    set(CXX_WARNING_FLAGS "-Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-copy -Wno-deprecated-volatile -Wno-unused-function -Wno-unknown-pragmas -Wno-ignored-pragmas -Wno-missing-braces -Wno-overloaded-virtual -Wno-unused-variable -Wno-tautological-constant-out-of-range-compare -Wno-unused-but-set-variable -Wno-inconsistent-missing-override -Wno-switch")
+    set(CXX_WARNING_FLAGS "-Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-copy -Wno-deprecated-volatile -Wno-unused-function -Wno-reorder-ctor -Wno-unknown-pragmas -Wno-ignored-pragmas -Wno-missing-braces -Wno-overloaded-virtual -Wno-unused-variable -Wno-tautological-constant-out-of-range-compare -Wno-unused-but-set-variable -Wno-inconsistent-missing-override -Wno-switch -Wno-nontrivial-memcall -Wno-deprecated-literal-operator -Wno-nan-infinity-disabled -Wno-unknown-warning-option")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_WARNING_FLAGS} ")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack")
 

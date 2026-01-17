@@ -18,8 +18,6 @@ using namespace Util;
 void
 GuidTest::Run()
 {
-    // NOTE: generating GUIDs is only supported under Win32 at the moment
-#if __WIN32__
     Guid guid;
     
     // test generation, assignment, conversion from and to string, equality
@@ -52,7 +50,7 @@ GuidTest::Run()
     guids[2].Generate();
     guids[3].Generate();
     guids[4].Generate();
-    HashTable<Guid, String> hashTable;
+    HashTable<Guid, String, 128,1> hashTable;
     hashTable.Add(guids[0], "Guid0");
     hashTable.Add(guids[1], "Guid1");
     hashTable.Add(guids[2], "Guid2");
@@ -63,7 +61,6 @@ GuidTest::Run()
     VERIFY(hashTable[guids[2]] == "Guid2");
     VERIFY(hashTable[guids[3]] == "Guid3");
     VERIFY(hashTable[guids[4]] == "Guid4");
-#endif
 }
 
 }   // namespace Test

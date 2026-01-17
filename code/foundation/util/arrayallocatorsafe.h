@@ -279,7 +279,6 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline const uint32_t
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Size() const
 {
-    n_assert2(this->numReaders > 0, "Size requires a read lock");
     return this->size;
 }
 
@@ -303,10 +302,10 @@ template<uint MAX_ALLOCS, class ...TYPES>
 inline void
 ArrayAllocatorSafe<MAX_ALLOCS, TYPES...>::Clear()
 {
-    this->allocationLock.Enter();
+    this->allocationLock.Lock();
     clear_for_each_in_tuple(this->objects);
     this->size = 0;
-    this->allocationLock.Leave();
+    this->allocationLock.Unlock();
 }
 
 //------------------------------------------------------------------------------

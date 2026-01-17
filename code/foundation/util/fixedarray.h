@@ -746,11 +746,7 @@ FixedArray<TYPE, StackAlloc>::end() const
 template<class TYPE, bool StackAlloc> void
 FixedArray<TYPE, StackAlloc>::resize(size_t s)
 {
-    if (s > this->capacity)
-    {
-        this->GrowTo(s);
-    }
-    this->count = s;
+    n_error("Trying to resize a fixed array");
 }
 
 //------------------------------------------------------------------------------
