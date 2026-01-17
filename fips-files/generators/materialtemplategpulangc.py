@@ -594,6 +594,10 @@ if __name__ == '__main__':
     shaderInclude = sys.argv[-2]
     outDir = sys.argv[-1]
 
+    print(f'{shaderC}\n')
+    print(f'{shaderInclude}\n')
+    print(f'{outDir}\n')
+
     outHeaderPath = '{}/materialtemplatesgpulang.h'.format(outDir)
     outSourcePath = '{}/materialtemplatesgpulang.cc'.format(outDir)
     outShaderPath = '{}/material_interfaces.gpul'.format(outDir)
@@ -691,7 +695,7 @@ if __name__ == '__main__':
         # Finish shader
 
 
-        bindingsContent = "\n".join(["\t{}Materials : *{}Material;".format(i, i) for i in generator.materialLists])
+        bindingsContent = "\n".join(["\t{}Materials : address {}Material;".format(i, i) for i in generator.materialLists])
         shaderF.WriteLine("struct MaterialBinding\n{{\n{}\n}};\n".format(bindingsContent));
         shaderF.WriteLine("group(BATCH_GROUP) binding(MaterialBindingSlot) uniform MaterialPointers : *MaterialBinding;")
         generator.EndShader(shaderF)
