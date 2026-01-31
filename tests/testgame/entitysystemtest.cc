@@ -12,7 +12,7 @@
 #include "game/gameserver.h"
 #include "testcomponents.h"
 
-#include "flatbuffers/idl.h"
+#include "nflatbuffer/flatbufferinterface.h"
 #include "flatbuffers/util.h"
 
 #include "basegamefeature/components/basegamefeature.h"
