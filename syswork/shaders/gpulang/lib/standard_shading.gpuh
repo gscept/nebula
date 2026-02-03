@@ -48,9 +48,6 @@ psStandard(
     material[MAT_EMISSIVE] = 0.0f;
     const N        = normalize(UnpackNormalMap(Tangent, Normal, Sign, sample2D(BRDFConstants.NormalMap, NormalSampler, UV)));
     
-    const viewVec = normalize(ViewConstants.EyePos.xyz - WorldSpacePos.xyz);
-    const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
-
     var light = f32x3(0, 0, 0);
     light += CalculateLight(WorldSpacePos, pixelGetCoordinates().xyz, albedo.rgb, material, N);
     

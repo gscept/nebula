@@ -6,14 +6,13 @@
 #include "materialloader.h"
 #include "io/bxmlreader.h"
 #include "resources/resourceserver.h"
-#include "materials/materialtemplates.h"
 
-#include "materials/material_interfaces.h"
+#include "materials/gpulang/material_interfaces.h"
 namespace Materials
 {
 
 using LoaderFunc = void(*)(Ptr<IO::BXmlReader>, Materials::MaterialId, Util::StringAtom);
-Util::Dictionary<MaterialTemplates::MaterialProperties, LoaderFunc> LoaderMap;
+Util::Dictionary<MaterialTemplatesGPULang::MaterialProperties, LoaderFunc> LoaderMap;
 
 template <typename INTERFACE_TYPE>
 struct MaterialBuffer
@@ -122,7 +121,7 @@ struct
     MATERIAL_LIST
 #undef X
 
-    MaterialInterfaces::MaterialBindings bindings;
+    MaterialInterfaces::MaterialPointers::STRUCT bindings;
     CoreGraphics::BufferWithStaging materialBindingBuffer;
 
     Threading::CriticalSection variantAllocatorLock;
@@ -243,10 +242,10 @@ MaterialLoader::Setup()
     // Create binding buffer
     CoreGraphics::BufferCreateInfo materialBindingInfo;
     materialBindingInfo.name = "Material Binding Buffer";
-    materialBindingInfo.byteSize = sizeof(MaterialInterfaces::MaterialBindings);
-    materialBindingInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    materialBindingInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite;
-    materialBindingInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
+    materialBindingInfo.byteSize = sizeof(MaterialInterfaces::MaterialPointers::STRUCT);
+    materialBindingInfo.mode = CoreGraphics::BufferAccessMode::DeviceAndHost;
+    materialBindingInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
+    materialBindingInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     materialLoaderState.materialBindingBuffer.Create(materialBindingInfo);
 
 #define ALLOC_MATERIAL(x) \
@@ -298,7 +297,7 @@ MaterialLoader::Setup()
         LoadFloat(reader, "normalScale", material.normalScale, 1);
         LoadFloat(reader, "alphaCutoff", material.alphaCutoff, 1);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::GLTF, gltfLoader);
+    LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::GLTF, gltfLoader);
 
     auto brdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(BRDFMaterial);
@@ -312,7 +311,7 @@ MaterialLoader::Setup()
         LoadFloat(reader, "AlphaSensitivity", material.AlphaSensitivity, 1);
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::BRDF, brdfLoader);
+    LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::BRDF, brdfLoader);
 
     auto bsdfLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(BSDFMaterial);
@@ -327,13 +326,13 @@ MaterialLoader::Setup()
         LoadFloat(reader, "AlphaBlendFactor", material.AlphaBlendFactor, 0);
         LoadFloat(reader, "Transmission", material.Transmission, 0);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::BSDF, bsdfLoader);
+    LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::BSDF, bsdfLoader);
 
     auto unlitLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(UnlitMaterial);
         LoadTexture(reader, CoreGraphics::White2D, "AlbedoMap", tag.Value(), material.AlbedoMap, materialLoaderState.UnlitMaterials.dirty);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::Unlit, unlitLoader);
+    LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::Unlit, unlitLoader);
 
     auto blendAddLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(BlendAddMaterial);
@@ -342,7 +341,7 @@ MaterialLoader::Setup()
         LoadTexture(reader, CoreGraphics::White2D, "Layer3", tag.Value(), material.Layer3, materialLoaderState.BlendAddMaterials.dirty);
         LoadTexture(reader, CoreGraphics::White2D, "Layer4", tag.Value(), material.Layer4, materialLoaderState.BlendAddMaterials.dirty);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::BlendAdd, blendAddLoader);
+    LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::BlendAdd, blendAddLoader);
 
     auto skyboxLoader = [](Ptr<IO::BXmlReader> reader, Materials::MaterialId mat, Util::StringAtom tag) {
         ALLOC_AND_BIND_MATERIAL(SkyboxMaterial);
@@ -353,7 +352,7 @@ MaterialLoader::Setup()
         LoadFloat(reader, "Contrast", material.Contrast, 1);
         LoadFloat(reader, "Brightness", material.Brightness, 1);
     };
-    LoaderMap.Add(MaterialTemplates::MaterialProperties::Skybox, skyboxLoader);
+    LoaderMap.Add(MaterialTemplatesGPULang::MaterialProperties::Skybox, skyboxLoader);
 
     // never forget to run this
     ResourceLoader::Setup();
@@ -480,19 +479,19 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
         IndexT templateIndex = MaterialTemplatesGPULang::Lookup.FindIndex(templateHash);
         n_assert_fmt(templateIndex != InvalidIndex, "Unknown material template '%s'", templateName.AsCharPtr());
         const MaterialTemplatesGPULang::Entry* materialTemplate = MaterialTemplatesGPULang::Lookup.ValueAtIndex(templateIndex);
-        MaterialId id = CreateMaterial(materialTemplate);
+        MaterialId id = CreateMaterial(materialTemplate, job.name);
         ret.id = id;
+        materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
 
         // New material upload system, the defaults and types can be discarded
         if (reader->SetToFirstChild("Params"))
         {
             // This is the new-new system, using material buffers and is fully raytracing compatible
-            IndexT loaderIndex = LoaderMap.FindIndex((MaterialTemplates::MaterialProperties)materialTemplate->properties);
+            IndexT loaderIndex = LoaderMap.FindIndex((MaterialTemplatesGPULang::MaterialProperties)materialTemplate->properties);
             if (loaderIndex != InvalidIndex)
             {
                 auto loader = LoaderMap.ValueAtIndex(loaderIndex);
                 loader(reader, id, job.tag);
-                materialLoaderState.dirtySet.bits = BindlessBufferDirtyBits::All;
             }
 
             // This is the legacy material system loaded with the new surface format
@@ -505,6 +504,9 @@ MaterialLoader::InitializeResource(const ResourceLoadJob& job, const Ptr<IO::Str
         }
         else
         {
+            // Set invalid buffer binding
+            MaterialSetBufferBinding(id, -1);
+
             // Legacy loading with legacy format where each param is a node called Param
             if (reader->SetToFirstChild("Param")) do
             {
@@ -586,7 +588,7 @@ MaterialLoader::FlushMaterialBuffers(const CoreGraphics::CmdBufferId cmdBuf, con
 
         if (materialLoaderState.dirtySet.bits & bits)
         {
-            materialLoaderState.materialBindingBuffer.Flush(cmdBuf, sizeof(MaterialInterfaces::MaterialBindings));
+            materialLoaderState.materialBindingBuffer.Flush(cmdBuf, sizeof(MaterialInterfaces::MaterialPointers::STRUCT));
             materialLoaderState.dirtySet.bits &= ~bits;
         }
 

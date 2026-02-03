@@ -60,7 +60,7 @@ GetInvertedOcclusionSpotLight(
 
     // calculate average of 4 closest pixels
     var shadowSample = f32x2(0.0f);
-    if (gplIsComputeShader)
+    if (!gplIsPixelShader)
     {
         shadowSample = sample2DArrayLod(Texture, SpotlightTextureSampler, shadowUv, 0).rg;
     }
@@ -87,7 +87,15 @@ GetInvertedOcclusionPointLight(
     const shadowUv = lightSpaceUv;
 
     // get pixel size of shadow projection texture
-    const shadowSample = sampleCube(Texture, PointLightTextureSampler, shadowUv).rg;
+	var shadowSample = f32x2(0);
+	if (!gplIsPixelShader)
+	{
+	    shadowSample = sampleCubeLod(Texture, PointLightTextureSampler, shadowUv, 0).rg;
+	}
+	else
+	{
+		shadowSample = sampleCube(Texture, PointLightTextureSampler, shadowUv).rg;
+	}
 
     // get pixel size of shadow projection texture
     return ChebyshevUpperBound(shadowSample, receiverDepthInLightSpace, 0.00000001f);
@@ -242,7 +250,7 @@ CalculateRectLight(
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
-    const t1 = sample2D(PerTickParams.ltcLUT0, LinearSampler, uv);
+    const t1 = sample2DLod(PerTickParams.ltcLUT0, LinearSampler, uv, 0);
 
     // Transform 4 rect points to light
     var points : [4]f32x3;

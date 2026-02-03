@@ -427,6 +427,7 @@ ENDIF()
             )
         fips_dir(gi/shaders)
             add_shaders(probe_shared.fxh probe_update.fx probe_finalize.fx probe_debug.fx gi_volume_cull.fx probe_relocate_and_classify.fx)
+			compile_gpulang(probe_shared.gpuh probe_update.gpul probe_finalize.gpul probe_debug.gpul gi_volume_cull.gpul probe_relocate_and_classify.gpul)
         fips_dir(graphics) 
             fips_files(
 				bindlessregistry.cc

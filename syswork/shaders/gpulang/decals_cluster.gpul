@@ -93,7 +93,7 @@ csCull() void
     if (numDecals > 0) { flags |= CLUSTER_EMISSIVE_DECAL_BIT; }
 
     // This is a shorthand for the above
-    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
+    atomicOr(bufferPtr(ClusterAABBs, index1D).&featureFlags, flags, MemorySemantics.Release);
 }
 
 //------------------------------------------------------------------------------

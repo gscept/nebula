@@ -1,91 +1,91 @@
 //------------------------------------------------------------------------------
-//  givolumecull.fx
-//  (C) 2019 Individual contributors, see AUTHORS file
+//  givolumecull.gpul
+//  (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/shared.fxh"
-#include "lib/clustering.fxh"
+#include "lib/std.gpuh"
+#include "lib/util.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/clustering.gpuh"
 
-write rgba16f image2D DebugOutput;
+uniform DebugOutput : *mutable rgba16f texture2D;
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
-shader 
-void csCull()
+local_size_x(64)
+entry_point
+csCull() void 
 {
-    uint index1D = gl_GlobalInvocationID.x;
+    const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > NumGIVolumeClusters)
-        return;
+    if (index1D > GIVolumeUniforms.NumGIVolumeClusters) { return ; }
 
-    ClusterAABB aabb = AABBs[index1D];
+    const aabb = bufferLoad(ClusterAABBs, index1D);
 
-    uint flags = 0;
+    var flags = 0u;
 
     // update PBR decals
-    uint numVolumes = 0;
-    for (uint i = 0; i < NumGIVolumes; i++)
+    var numVolumes = 0u;
+    for (var i = 0u; i < GIVolumeUniforms.NumGIVolumes; i++)
     {
-        const GIVolume volume = GIVolumes[i];
+        const volume = GIVolumeLists.GIVolumes[i];
         if (TestAABBAABB(aabb, volume.bboxMin.xyz, volume.bboxMax.xyz))
         {
-            GIVolumeIndexLists[index1D * MAX_GI_VOLUMES_PER_CLUSTER + numVolumes] = i;
+            GIIndexLists.GIVolumeIndexLists[index1D * MAX_GI_VOLUMES_PER_CLUSTER + numVolumes] = i;
             numVolumes++;
         }
     }
-    GIVolumeCountList[index1D] = numVolumes;
+    GIIndexLists.GIVolumeCountList[index1D] = numVolumes;
 
     // update feature flags if we have any decals
-    if (numVolumes > 0)
-        flags |= CLUSTER_GI_VOLUME_BIT;
+    if (numVolumes > 0) { flags |= CLUSTER_GI_VOLUME_BIT; }
 
-    atomicOr(AABBs[index1D].featureFlags, flags);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Acquire);
 }
 
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
-shader
-void csDebug()
+local_size_x(64)
+entry_point
+csDebug() void
 {
-    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-    float depth = fetch2D(DepthBuffer, PointSampler, coord, 0).r;
+    const coord = i32x2(computeGetGlobalThreadIndices().xy);
+    const depth = fetch2D(PerTickParams.DepthBuffer, coord, 0).r;
 
     // convert screen coord to view-space position
-    vec4 worldPos = PixelToWorld(coord * InvFramebufferDimensions, depth, InvView, InvProjection);
+    const worldPos = PixelToWorld(coord * ClusterUniforms.InvFramebufferDimensions, depth, ViewConstants.InvView, ViewConstants.InvProjection);
 
-    float viewDepth = CalculateViewDepth(View, worldPos.xyz);
+    const viewDepth = CalculateViewDepth(ViewConstants.View, worldPos.xyz);
 
-    uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewDepth, InvZScale, InvZBias);
-    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
+    const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, viewDepth, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
-    uint flag = AABBs[idx].featureFlags; // add 0 so we can read the value
-    vec4 color = vec4(0, 0, 0, 0);
-    if (CHECK_FLAG(flag, CLUSTER_GI_VOLUME_BIT))
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
+    var color = f32x4(0, 0, 0, 0);
+    if (CheckFlags(flag, CLUSTER_GI_VOLUME_BIT))
     {
-        uint count = GIVolumeCountList[idx];
-        color.r = count / float(NumGIVolumes);
+        const count = GIIndexLists.GIVolumeCountList[idx];
+        color.r = count / f32(GIVolumeUniforms.NumGIVolumes);
     }
     
-    imageStore(DebugOutput, int2(coord), color);
+    textureStore(DebugOutput, i32x2(coord), color);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-program CullGIVolumes [ string Mask = "Cull"; ]
+@Mask("Cull")
+program CullGIVolumes
 {
-    ComputeShader = csCull();
+    ComputeShader = csCull;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-program ClusterDebug [ string Mask = "Debug"; ]
+@Mask("Debug")
+program ClusterDebug
 {
-    ComputeShader = csDebug();
+    ComputeShader = csDebug;
 };

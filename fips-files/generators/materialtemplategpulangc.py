@@ -211,7 +211,7 @@ class MaterialTemplateDefinition:
                             .hashedName = "{}"_hash,
                             .textureIndex = {}
                 #endif
-                        }};\n'''.format(v.name, 'MaterialInterfaces::{}Material_{}_Offset'.format(self.interface.name, v.name) if v.type == 'textureHandle' else '0xFFFFFFFF', v.default, 'nullptr' if len(v.desc) == 0 else '"{}"'.format(v.desc), v.name, texCounter)
+                        }};\n'''.format(v.name, 'offsetof(MaterialInterfaces::{}Material, {})'.format(self.interface.name, v.name) if v.type == 'textureHandle' else '0xFFFFFFFF', v.default, 'nullptr' if len(v.desc) == 0 else '"{}"'.format(v.desc), v.name, texCounter)
                     texCounter += 1
                 else:
                     typeStr, accessorStr, varStr = TypeToString(v.type, v.edit, v.default)
@@ -219,7 +219,7 @@ class MaterialTemplateDefinition:
                         MaterialTemplateValue{{
                             .type = MaterialTemplateValue::Type::{}, 
                             .data = {{.{} = {}}},
-                            .offset = MaterialInterfaces::{}Material_{}_Offset
+                            .offset = offsetof(MaterialInterfaces::{}Material, {})
                 #ifdef WITH_NEBULA_EDITOR
                             , .desc = {}
                 #endif
@@ -462,7 +462,7 @@ class MaterialTemplateGenerator:
         f.WriteLine('#include "util/tupleutility.h"')
         f.WriteLine('#include "coregraphics/vertexlayout.h"')
         f.WriteLine('#include "materials/materialtemplatetypes.h"')
-        f.WriteLine('#include "materials/material_interfaces.h"')
+        f.WriteLine('#include "materials/gpulang/material_interfaces.h"')
         f.WriteLine('#include "materials/shaderconfig.h"')
         f.WriteLine('#include "coregraphics/shader.h"')
         f.WriteLine('#include "math/scalar.h"')

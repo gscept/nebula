@@ -903,7 +903,7 @@ ShaderSetup(
             ResourceTableLayoutAccelerationStructure bvh;
             bvh.slot = variable->binding;
             bvh.visibility = ShaderVisibilityFromGPULang(variable->visibility) | CoreGraphics::ShaderVisibility(annotationBits);
-            bvh.num = variable->arraySizes[0];
+            bvh.num = 1;
             bool slotUsed = false;
 
             if (variable->binding != 0xFFFFFFFF)

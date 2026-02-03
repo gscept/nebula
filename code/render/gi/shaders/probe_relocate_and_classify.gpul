@@ -1,64 +1,64 @@
 //------------------------------------------------------------------------------
-//  @file probe_relocate.fx
-//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//  @file probe_relocate.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include <lib/std.fxh>
-#include <lib/shared.fxh>
-#include <lib/ddgi.fxh>
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <lib/ddgi.gpuh>
 
-group(SYSTEM_GROUP) read_write rgba16f image2D ProbeOffsetsOutput;
-group(SYSTEM_GROUP) write r8 image2D ProbeStateOutput;
+group(SYSTEM_GROUP) uniform ProbeOffsetsOutput : *mutable rgba16f texture2D;
+group(SYSTEM_GROUP) uniform ProbeStateOutput : *mutable r8 texture2D;
 
 
-#include <probe_shared.fxh>
+#include <probe_shared.gpuh>
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 8
-[local_size_y] = 4
-[local_size_z] = 1
-shader void 
-ProbeRelocationAndClassify()
+local_size(u32x3(8,4,1))
+entry_point
+ProbeRelocationAndClassify() void
 {
-    ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
-    int probeIndex = DDGIProbeIndex(texel, ProbeGridDimensions);
+    const texel = i32x2(computeGetGlobalThreadIndices().xy);
+    const probeIndex = DDGIProbeIndex(texel, VolumeConstants.ProbeGridDimensions);
     
-    int numProbes = ProbeGridDimensions.x * ProbeGridDimensions.y * ProbeGridDimensions.z;
-    if (probeIndex >= numProbes)
-        return;
+    const numProbes = VolumeConstants.ProbeGridDimensions.x * VolumeConstants.ProbeGridDimensions.y * VolumeConstants.ProbeGridDimensions.z;
+    if (probeIndex >= numProbes) { return; }
     
-    int probeRRIndex = (probeIndex < ProbeIndexStart) ? probeIndex + numProbes : probeIndex;
-    if (probeRRIndex >= ProbeIndexStart + ProbeIndexCount)
-        return;
+    const probeRRIndex = (probeIndex < VolumeConstants.ProbeIndexStart) ? probeIndex + numProbes : probeIndex;
+    if (probeRRIndex >= VolumeConstants.ProbeIndexStart + VolumeConstants.ProbeIndexCount) { return; }
         
-    int storageProbeIndex;
-    if ((Options & SCROLL_OPTION) != 0)
-        storageProbeIndex = DDGIProbeIndexOffset(probeIndex, ProbeGridDimensions, ProbeScrollOffsets);
+    var storageProbeIndex : i32;
+    if ((VolumeConstants.Options & SCROLL_OPTION) != 0)
+	{
+        storageProbeIndex = DDGIProbeIndexOffset(probeIndex, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeScrollOffsets);
+	}
     else
+	{
         storageProbeIndex = probeIndex;
+	}
     
-    ivec2 offsetTexelPosition = ivec2(DDGIProbeTexelPosition(storageProbeIndex, ProbeGridDimensions));
+    const offsetTexelPosition = i32x2(DDGIProbeTexelPosition(storageProbeIndex, VolumeConstants.ProbeGridDimensions));
     
-    vec3 currentOffset = DDGIDecodeProbeOffsets(offsetTexelPosition, ProbeGridSpacing, ProbeOffsets);
+    var currentOffset = DDGIDecodeProbeOffsets(offsetTexelPosition, VolumeConstants.ProbeGridSpacing, VolumeConstants.ProbeOffsets);
     
-    int closestBackfaceIndex = -1;
-    int closestFrontfaceIndex = -1;
-    int farthestFrontfaceIndex = -1;
-    float closestBackfaceDistance = 1e27f;
-    float closestFrontfaceDistance = 1e27f;
-    float farthestFrontfaceDistance = 0;
-    float backfaceCount = 0;
+    var closestBackfaceIndex = -1;
+    var closestFrontfaceIndex = -1;
+    var farthestFrontfaceIndex = -1;
+    var closestBackfaceDistance = 1e27f;
+    var closestFrontfaceDistance = 1e27f;
+    var farthestFrontfaceDistance = 0.0f;
+    var backfaceCount = 0.0f;
     
-    int numRays = min(int(RaysPerProbe), int(DDGI_NUM_FIXED_RAYS));
+    const numRays = min(i32(VolumeConstants.RaysPerProbe), i32(DDGI_NUM_FIXED_RAYS));
     
-    for (int rayIndex = 0; rayIndex < numRays; rayIndex++)
+    for (var rayIndex = 0; rayIndex < numRays; rayIndex++)
     {
-        ivec2 rayTexCoord = ivec2(rayIndex, probeIndex);
+        const rayTexCoord = i32x2(rayIndex, probeIndex);
         
-        float hitDistance = fetch2D(ProbeRadiance, Basic2DSampler, rayTexCoord, 0).w;
+        var hitDistance = fetch2D(VolumeConstants.ProbeRadiance, rayTexCoord, 0).w;
 
-        if ((Options & RELOCATION_OPTION) != 0)
+        if ((VolumeConstants.Options & RELOCATION_OPTION) != 0)
         {
             if (hitDistance < 0.0f)
             {
@@ -95,52 +95,52 @@ ProbeRelocationAndClassify()
         }
     }
     
-    if ((Options & RELOCATION_OPTION) != 0)
+    if ((VolumeConstants.Options & RELOCATION_OPTION) != 0)
     {
-        vec3 fulloffset = vec3(1e27);
-        if (closestBackfaceIndex != -1 && (float(backfaceCount) / numRays) > BackfaceThreshold)
+        var fulloffset = f32x3(1e27);
+        if (closestBackfaceIndex != -1 && (f32(backfaceCount) / numRays) > VolumeConstants.BackfaceThreshold)
         {
-            vec3 closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, TemporalRotation, Options));
-            fulloffset = currentOffset + closestBackfaceDirection * (ProbeDistanceScale + 1.0f);
+            const closestBackfaceDirection = closestBackfaceDistance * normalize(DDGIGetProbeDirection(closestBackfaceIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options));
+            fulloffset = currentOffset + closestBackfaceDirection * (VolumeConstants.ProbeDistanceScale + 1.0f);
         }
-        else if (closestFrontfaceDistance < MinFrontfaceDistance)
+        else if (closestFrontfaceDistance < VolumeConstants.MinFrontfaceDistance)
         {
-            vec3 closestFrontfaceDirection = DDGIGetProbeDirection(closestFrontfaceIndex, TemporalRotation, Options);
-            vec3 farthestFrontfaceDirection = DDGIGetProbeDirection(farthestFrontfaceIndex, TemporalRotation, Options);
+            const closestFrontfaceDirection = DDGIGetProbeDirection(closestFrontfaceIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options);
+            var farthestFrontfaceDirection = DDGIGetProbeDirection(farthestFrontfaceIndex, VolumeConstants.TemporalRotation, VolumeConstants.Options);
             
             if (dot(closestFrontfaceDirection, farthestFrontfaceDirection) <= 0.f)
             {
                 farthestFrontfaceDistance *= min(farthestFrontfaceDistance, 1.0f);
                 
-                fulloffset = currentOffset + farthestFrontfaceDirection * ProbeDistanceScale;
+                fulloffset = currentOffset + farthestFrontfaceDirection * VolumeConstants.ProbeDistanceScale;
             }
         }
-        else if (closestFrontfaceDistance > MinFrontfaceDistance + ProbeDistanceScale)
+        else if (closestFrontfaceDistance > VolumeConstants.MinFrontfaceDistance + VolumeConstants.ProbeDistanceScale)
         {
-            float moveBackMargin = min(closestFrontfaceDistance - MinFrontfaceDistance, length(currentOffset));
-            vec3 moveBackDirection = normalize(-currentOffset);
+            const moveBackMargin = min(closestFrontfaceDistance - VolumeConstants.MinFrontfaceDistance, length(currentOffset));
+            const moveBackDirection = normalize(-currentOffset);
             fulloffset = currentOffset + (moveBackMargin * moveBackDirection);
         }
         
-        vec3 normalizedOffset = fulloffset / ProbeGridSpacing;
+        const normalizedOffset = fulloffset / VolumeConstants.ProbeGridSpacing;
         if (dot(normalizedOffset, normalizedOffset) < 0.2025f)
         {
             currentOffset = fulloffset;
         }
         
-        imageStore(ProbeOffsetsOutput, offsetTexelPosition, vec4(currentOffset / ProbeGridSpacing, 0.0f));
+        textureStore(ProbeOffsetsOutput, offsetTexelPosition, f32x4(currentOffset / VolumeConstants.ProbeGridSpacing, 0.0f));
     }
 
-    if ((Options & CLASSIFICATION_OPTION) != 0)
+    if ((VolumeConstants.Options & CLASSIFICATION_OPTION) != 0)
     {
-        vec3 geometryBounds = ProbeGridSpacing * 2;
-        if (all(lessThanEqual(vec3(closestFrontfaceDistance), geometryBounds)) && (float(backfaceCount) / numRays) < BackfaceThreshold)
+        const geometryBounds = VolumeConstants.ProbeGridSpacing * 2;
+        if (all(f32x3(closestFrontfaceDistance) <= geometryBounds) && (f32(backfaceCount) / numRays) < VolumeConstants.BackfaceThreshold)
         {
-            imageStore(ProbeStateOutput, offsetTexelPosition, vec4(PROBE_STATE_ACTIVE));
+            textureStore(ProbeStateOutput, offsetTexelPosition, f32x4(PROBE_STATE_ACTIVE));
         }
         else
         {
-            imageStore(ProbeStateOutput, offsetTexelPosition, vec4(PROBE_STATE_INACTIVE));
+            textureStore(ProbeStateOutput, offsetTexelPosition, f32x4(PROBE_STATE_INACTIVE));
         }
     }
 }
@@ -148,7 +148,8 @@ ProbeRelocationAndClassify()
 //------------------------------------------------------------------------------
 /**
 */
-program ProbeRelocate[string Mask = "ProbeRelocateAndClassify"; ]
+@Mask("ProbeRelocateAndClassify")
+program ProbeRelocate
 {
-    ComputeShader = ProbeRelocationAndClassify();
+    ComputeShader = ProbeRelocationAndClassify;
 };

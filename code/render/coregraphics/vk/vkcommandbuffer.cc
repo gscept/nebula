@@ -225,6 +225,7 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
 
     pipelineBundle.computeLayout = VK_NULL_HANDLE;
     pipelineBundle.graphicsLayout = VK_NULL_HANDLE;
+    pipelineBundle.raytracingLayout = VK_NULL_HANDLE;
 
     ViewportBundle& viewports = commandBuffers.Get<CmdBuffer_PendingViewports>(id);
     viewports.viewports.Resize(8);
@@ -675,11 +676,10 @@ CmdSetRayTracingPipeline(const CmdBufferId buf, const PipelineId pipeline)
     VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(buf.id);
     VkPipelineBundle& pipelineBundle = commandBuffers.Get<CmdBuffer_VkPipelineBundle>(buf.id);
     Pipeline& pipelineObj = pipelineAllocator.Get<Pipeline_Object>(pipeline.id);
-    pipelineBundle.raytracingLayout = pipelineObj.layout;
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineObj.pipeline);
 
-    bool pipelineChange = pipelineBundle.graphicsLayout != pipelineObj.layout;
-    pipelineBundle.graphicsLayout = pipelineObj.layout;
+    bool pipelineChange = pipelineBundle.raytracingLayout != pipelineObj.layout;
+    pipelineBundle.raytracingLayout = pipelineObj.layout;
     if (pipelineChange)
     {
         IndexT buffer = CoreGraphics::GetBufferedFrameIndex();

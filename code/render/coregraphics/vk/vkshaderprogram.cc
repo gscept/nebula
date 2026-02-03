@@ -106,7 +106,7 @@ VkShaderProgramSetup(
     runtime.layout = ResourcePipelineGetVk(pipelineLayout);
     runtime.pipeline = VK_NULL_HANDLE;
     runtime.uniqueId = UniqueIdCounter++;
-    setup.mask = CoreGraphics::ShaderFeatureMask(mask);
+    setup.mask = CoreGraphics::ShaderFeatureMask(mask.IsEmpty() ? name : mask);
     setup.name = name;
     setup.dev = Vulkan::GetCurrentDevice();
     VkShaderProgramCreateShader(setup.dev, &runtime.vs, &program->shaders[GPULang::Deserialize::Program::ShaderStages::VertexShader]);

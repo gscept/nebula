@@ -1,0 +1,318 @@
+//------------------------------------------------------------------------------
+//  raytracing.gpuh
+//  (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+
+#include <lib/std.gpuh>
+#include <lib/shared.gpuh>
+#include <material_interfaces.gpul>
+#include <lib/pbr.gpuh>
+#include <lib/lighting_functions.gpuh>
+
+group(BATCH_GROUP) uniform TLAS : *accelerationStructure;
+
+const MESH_BINDING = 50;
+const OBJECT_BINDING = 49;
+
+const RAY_MISS_BIT = 0x1u;
+const RAY_BACK_FACE_BIT = 0x2u;
+const RAY_MATERIAL_TWO_SIDED_BIT = 0x4u;
+
+struct LightResponsePayload
+{
+    radiance : f32x3;
+    alpha : f32;
+    
+    normal: f32x3;
+    depth : f32;
+    
+    albedo: f32x3;
+    bits : u32;
+    
+    material: f32x4;
+};
+
+struct HitResult
+{
+    albedo : f32x3;
+    alpha : f32;
+    material : f32x4;
+    normal : f32x3;
+    depth : f32;
+    bits : u32;
+};
+
+// Declare type for vertex positions and uv
+struct VertexPosUv
+{
+    position : f32x3;
+    uv : i32;
+};
+
+alignas(8)
+struct VertexAttributeNormals
+{
+    normal_tangent : i32x2;
+};
+
+alignas(16)
+struct VertexAttributeSecondaryUv
+{
+    normal_tangent : i32x2;
+    uv : u32;
+};
+
+alignas(16)
+struct VertexAttributeColor
+{
+    normal_tangent : i32x2;
+    color : u32;
+};
+
+alignas(16)
+struct VertexAttributeSkin
+{
+    normal_tangent : i32x2;
+    weights : f32x4;
+    indices : u32;
+};
+
+alignas(4)
+struct Indexes32
+{
+    index : u32;
+};
+
+alignas(2)
+struct Indexes16
+{
+    index : u16;
+};
+
+struct TlasInstance
+{
+    PositionsPtr : address void;
+    AttrPtr : address void;
+    IndexPtr : address void;
+	MaterialOffset : u32;
+    AttributeStride : u32;
+    Use16BitIndex : u32;
+    VertexLayout : u32;
+};
+binding(OBJECT_BINDING) uniform TlasInstanceBuffer : *[] mutable TlasInstance;
+
+//------------------------------------------------------------------------------
+/**
+*/
+BaryCentricFloat(f0 : f32, f1: f32, f2: f32, coords : f32x3) f32
+{
+    return f0 * coords.x + f1 * coords.y + f2 * coords.z;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BaryCentricVec2(f0 : f32x2, f1 : f32x2, f2 : f32x2, coords : f32x3) f32x2
+{
+    return f0 * coords.x + f1 * coords.y + f2 * coords.z;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BaryCentricVec3(f0 : f32x3, f1 : f32x3, f2 : f32x3, coords : f32x3) f32x3
+{
+    return f0 * coords.x + f1 * coords.y + f2 * coords.z;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BaryCentricVec4(f0 : f32x4, f1 : f32x4, f2 : f32x4, coords : f32x3) f32x4
+{
+    return f0 * coords.x + f1 * coords.y + f2 * coords.z;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Unpack signed short UVs to float
+*/
+UnpackUV32(packedUv : i32) f32x2
+{
+    const x = packedUv & 0xFFFF;
+    const y = (packedUv >> 16) & 0xFFFF;
+    return f32x2(x, y) * (1.0f / 1000.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackNormal32(packedNormal : i32) f32x3
+{
+    return unpackToSNorm4x8(packedNormal).xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+UnpackSign(packedNormal : i32) f32
+{
+    const sig = (packedNormal >> 24) & 0xFF;
+    return sig == 0x80 ? -1.0f : 1.0f;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SampleTerrain(obj : TlasInstance, prim : u32, baryCoords : f32x3, indices : *u32x3, uv : *f32x2, tbn : *f32x3x3) void
+{
+    if (obj.Use16BitIndex == 1)
+    {
+        const i16Ptr = cast_Indexes16(obj.IndexPtr);
+        *indices = u32x3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+    }
+    else
+    {
+        const i32Ptr = cast_Indexes32(obj.IndexPtr);
+        *indices = u32x3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+    }
+    
+    const positionsPtr = cast_VertexPosUv(obj.PositionsPtr);
+	const readIndices = *indices;
+
+    const uv0 = UnpackUV32((positionsPtr[readIndices.x]).uv);
+    const uv1 = UnpackUV32((positionsPtr[readIndices.y]).uv);
+    const uv2 = UnpackUV32((positionsPtr[readIndices.z]).uv);
+    *uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+
+    *tbn = PlaneTBN(f32x3(0, 1, 0));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SampleGeometry(obj : TlasInstance, prim : u32, baryCoords : f32x3, indices : *u32x3, uv : *f32x2, normal : *f32x3, tangent : *f32x3, sign : *f32) void
+{
+    if (obj.Use16BitIndex == 1)
+    {
+        const i16Ptr = cast_Indexes16(obj.IndexPtr);
+        *indices = u32x3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+    }
+    else
+    {
+        const i32Ptr = cast_Indexes32(obj.IndexPtr);
+        *indices = u32x3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+    }
+    const readIndices = *indices;
+
+    const positionsPtr = cast_VertexPosUv(obj.PositionsPtr);
+
+    const uv0 = UnpackUV32((positionsPtr[readIndices.x]).uv);
+    const uv1 = UnpackUV32((positionsPtr[readIndices.y]).uv);
+    const uv2 = UnpackUV32((positionsPtr[readIndices.z]).uv);
+    *uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+    
+    const attribPtr = obj.AttrPtr;
+    
+    var n1, n2, n3 : f32x3;
+    var t1, t2, t3 : f32x3;
+    switch (obj.VertexLayout)
+    {
+        case 1: // Normal
+        {
+            const attrs1 = cast_VertexAttributeNormals(attribPtr + readIndices.x * obj.AttributeStride);
+            const attrs2 = cast_VertexAttributeNormals(attribPtr + readIndices.y * obj.AttributeStride);
+            const attrs3 = cast_VertexAttributeNormals(attribPtr + readIndices.z * obj.AttributeStride);
+            n1 = UnpackNormal32(attrs1.normal_tangent.x);
+            n2 = UnpackNormal32(attrs2.normal_tangent.x);
+            n3 = UnpackNormal32(attrs3.normal_tangent.x);
+            t1 = UnpackNormal32(attrs1.normal_tangent.y);
+            t2 = UnpackNormal32(attrs2.normal_tangent.y);
+            t3 = UnpackNormal32(attrs3.normal_tangent.y);
+            *sign = UnpackSign(attrs1.normal_tangent.y);
+            break;
+        }
+        case 4: // Skin
+        {
+            const attrs1 = cast_VertexAttributeSkin(attribPtr + readIndices.x * obj.AttributeStride);
+            const attrs2 = cast_VertexAttributeSkin(attribPtr + readIndices.y * obj.AttributeStride);
+            const attrs3 = cast_VertexAttributeSkin(attribPtr + readIndices.z * obj.AttributeStride);
+            n1 = UnpackNormal32(attrs1.normal_tangent.x);
+            n2 = UnpackNormal32(attrs2.normal_tangent.x);
+            n3 = UnpackNormal32(attrs3.normal_tangent.x);
+            t1 = UnpackNormal32(attrs1.normal_tangent.y);
+            t2 = UnpackNormal32(attrs2.normal_tangent.y);
+            t3 = UnpackNormal32(attrs3.normal_tangent.y);
+            *sign = UnpackSign(attrs1.normal_tangent.y);
+            break;
+        }
+    }
+    
+    *normal = BaryCentricVec3(n1, n2, n3, baryCoords);
+    *tangent = BaryCentricVec3(t1, t2, t3, baryCoords);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculate 3D index from screen position and depth
+*/
+CalculateClusterIndexRT(screenPos : f32x2, depth : f32, scale : f32, bias : f32) u32x3
+{
+    const i = u32(screenPos.x);
+    const j = u32(screenPos.y);
+    const k = u32(log2(-depth) * scale + bias);
+
+    return u32x3(i, j, k);
+}
+
+//#define USE_SCALARIZATION_LOOP 0
+//------------------------------------------------------------------------------
+/**
+*/
+CalculateLightRT(worldSpacePos : f32x3, origin : f32x3, depth : f32, albedo : f32x3, material : f32x4, normal : f32x3) f32x3
+{
+    const clusterCenter = worldSpacePos - ViewConstants.EyePos.xyz;
+    const index3D = u32x3((clusterCenter / ClusterUniforms.BlockSize.yyy) + ClusterUniforms.NumCells * 0.5f);
+    const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
+
+    var light = f32x3(0, 0, 0);
+    const viewVec = normalize(origin.xyz - worldSpacePos.xyz);
+    const F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], f32x3(0.04));
+    light += CalculateGlobalLight(albedo, material, F0, viewVec, normal, worldSpacePos);
+
+//#if USE_SCALARIZATION_LOOP
+//    // Get the mask for the invocation
+//    uint4 laneMask = gl_SubgroupEqMask;
+//
+//    // Get the execution mask for the wavefront
+//    uint4 execMask = subgroupBallot(true);
+//    uint firstWaveIndex = subgroupBroadcastFirst(idx);
+//
+//    // Check if all waves use the same index and do this super cheaply
+//    if (subgroupBallot(firstWaveIndex == idx) == execMask)
+//    {
+//        light += LocalLights(firstWaveIndex, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
+//    }
+//    else
+//    {
+//        // Scalarization loop
+//        while ((laneMask & execMask) != uint4(0))
+//        {
+//            uint scalarIdx = subgroupBroadcastFirst(idx);
+//            uint4 currentMask = subgroupBallot(scalarIdx == idx);
+//            execMask &= ~currentMask;
+//
+//            // If this wave uses the cell we loaded into SGPR, use it
+//            // this will effectively scalarize the light lists
+//            if (scalarIdx == idx)
+//            {
+//                light += LocalLights(scalarIdx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
+//            }
+//        }
+//    }
+//#else
+    light += LocalLights(idx, viewVec, albedo, material, F0, worldSpacePos, normal, depth);
+//#endif
+    return light;
+}

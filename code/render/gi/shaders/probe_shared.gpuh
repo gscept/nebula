@@ -1,75 +1,75 @@
 //------------------------------------------------------------------------------
-//  @file probe_shared.fxh
+//  @file probe_shared.gpuh
 //  @copyright (C) 2024 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 
-#ifndef PROBE_SHARED_FXH
-#define PROBE_SHARED_FXH
-#include <lib/std.fxh>
-group(SYSTEM_GROUP) constant VolumeConstants
+#include <lib/std.gpuh>
+#include <lib/ddgi.gpuh>
+struct VolumeData
 {
-    mat4x4 TemporalRotation;
+    TemporalRotation : f32x4x4;
 
-    vec3 Scale;
-    uint Options;
+    Scale : f32x3;
+    Options : u32;
 
-    vec3 Offset;
-    int NumIrradianceTexels;
+    Offset : f32x3;
+    NumIrradianceTexels : i32;
 
-    ivec3 ProbeGridDimensions;
-    int ProbeIndexStart;
+    ProbeGridDimensions : i32x3;
+    ProbeIndexStart : i32;
 
-    ivec3 ProbeScrollOffsets;
-    int ProbeIndexCount;
+    ProbeScrollOffsets : i32x3;
+    ProbeIndexCount : i32;
 
-    vec4 Rotation;
+    Rotation : f32x4;
 
-    vec3 ProbeGridSpacing;
-    int NumDistanceTexels;
+    ProbeGridSpacing : f32x3;
+    NumDistanceTexels : i32;
 
-    vec4 MinimalDirections[32];
-    vec4 ExtraDirections[1024-32];
-    vec4 Directions[1024];
+    MinimalDirections : [32]f32x4;
+    ExtraDirections : [1024-32]f32x4;
+    Directions : [1024]f32x4;
 
-    float InverseGammaEncoding;
-    float Hysteresis;
-    float IrradianceGamma;
-    uint RaysPerProbe;
+    InverseGammaEncoding : f32;
+    Hysteresis : f32;
+    IrradianceGamma : f32;
+    RaysPerProbe : u32;
     
-    float NormalBias;
-    float ViewBias;
-    float IrradianceScale;
-    float DistanceExponent;
+    NormalBias : f32;
+    ViewBias : f32;
+    IrradianceScale : f32;
+    DistanceExponent : f32;
     
-    float ChangeThreshold;
-    float BrightnessThreshold;
-    float BackfaceThreshold;
-    float ProbeDistanceScale;
+    ChangeThreshold : f32;
+    BrightnessThreshold : f32;
+    BackfaceThreshold : f32;
+    ProbeDistanceScale : f32;
 
-    float MinFrontfaceDistance;
-    uint ProbeIrradiance;
-    uint ProbeDistances;
-    uint ProbeOffsets;
+    MinFrontfaceDistance : f32;
+    ProbeIrradiance : u32;
+    ProbeDistances : u32;
+    ProbeOffsets : u32;
 
-    uint ProbeStates;
-    uint ProbeScrollSpace;
-    uint ProbeRadiance;
+    ProbeStates : u32;
+    ProbeScrollSpace : u32;
+    ProbeRadiance : u32;
     
-    float DebugSize;
+    DebugSize : f32;
 };
+
+group(SYSTEM_GROUP) uniform VolumeConstants : *VolumeData;
 
 //------------------------------------------------------------------------------
 /**
 */
-vec3
-DDGIGetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
+DDGIGetProbeDirection(rayIndex : i32, rotation : f32x4x4, options : u32) f32x3
 {
-    vec3 direction;
+    var direction : f32x3;
     if ((options & (RELOCATION_OPTION | CLASSIFICATION_OPTION)) != 0)
     {
-        bool useFixedRays = rayIndex < DDGI_NUM_FIXED_RAYS;
-        uint  adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - DDGI_NUM_FIXED_RAYS;
-        direction = useFixedRays ? MinimalDirections[adjustedRayIndex].xyz : ExtraDirections[adjustedRayIndex].xyz;
+        const useFixedRays = rayIndex < DDGI_NUM_FIXED_RAYS;
+        const adjustedRayIndex = useFixedRays ? rayIndex : rayIndex - DDGI_NUM_FIXED_RAYS;
+        direction = useFixedRays ? VolumeConstants.MinimalDirections[adjustedRayIndex].xyz : VolumeConstants.ExtraDirections[adjustedRayIndex].xyz;
         if (useFixedRays)
         {
             return direction;
@@ -77,27 +77,24 @@ DDGIGetProbeDirection(int rayIndex, mat4x4 rotation, uint options)
     }
     else
     {
-        direction = Directions[rayIndex].xyz;
+        direction = VolumeConstants.Directions[rayIndex].xyz;
     }
-    return normalize((rotation * vec4(direction, 0)).xyz);
+    return normalize((rotation * f32x4(direction, 0)).xyz);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-uvec2
-DDGIThreadBaseCoord(int probeIndex, ivec3 probeGridCounts, int probeNumTexels)
+DDGIThreadBaseCoord(probeIndex : i32, probeGridCounts : i32x3, probeNumTexels : i32) u32x2
 {
-    int probesPerPlane = DDGIProbesPerPlane(probeGridCounts);
-    int planeIndex = probeIndex / probesPerPlane;
-    int probeIndexInPlane = probeIndex % probesPerPlane;
+    const probesPerPlane = DDGIProbesPerPlane(probeGridCounts);
+    const planeIndex = probeIndex / probesPerPlane;
+    const probeIndexInPlane = probeIndex % probesPerPlane;
     
-    int planeWidthInProbes = probeGridCounts.x;
+    const planeWidthInProbes = probeGridCounts.x;
     
-    ivec2 probeCoordInPlane = ivec2(probeIndexInPlane % planeWidthInProbes, probeIndexInPlane / planeWidthInProbes);
-    int baseCoordX = (planeWidthInProbes * planeIndex + probeCoordInPlane.x) * probeNumTexels;
-    int baseCoordY = probeCoordInPlane.y * probeNumTexels;
-    return uvec2(baseCoordX, baseCoordY);
+    const probeCoordInPlane = i32x2(probeIndexInPlane % planeWidthInProbes, probeIndexInPlane / planeWidthInProbes);
+    const baseCoordX = (planeWidthInProbes * planeIndex + probeCoordInPlane.x) * probeNumTexels;
+    const baseCoordY = probeCoordInPlane.y * probeNumTexels;
+    return u32x2(baseCoordX, baseCoordY);
 }
-
-#endif // PROBE_SHARED_FXH

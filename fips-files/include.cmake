@@ -21,6 +21,7 @@ option(N_USE_COMPILETIME_PROJECT_ROOT "Embed the selected work directory into bi
 option(N_SHADER_PROFILE_BUILDS "Profile shader compilation, slows down compilation time" OFF)
 option(N_SHADER_SYMBOLS "Generate debug symbols for shader builds, disables optimizations" OFF)
 option(N_SHADER_VALIDATION "Validate the shader output, slows down cimpilation time" ON)
+option(N_SHADER_DEBUG "Output textual version of shader binary code to binary output folder" OFF)
 option(N_DEBUG_SYMBOLS "Generate debug symbols for release builds" OFF)
 
 if(N_USE_COMPILETIME_PROJECT_ROOT)
@@ -38,6 +39,10 @@ if (N_SHADER_SYMBOLS)
     set(shader_compiler_args ${shader_compiler_args} "-s")
 else()
     set(shader_compiler_args ${shader_compiler_args} "-Ox")
+endif()
+
+if (N_SHADER_DEBUG)
+    set(shader_compiler_args ${shader_compiler_args} "-d")
 endif()
 
 if (N_SHADER_VALIDATION)

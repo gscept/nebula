@@ -1,123 +1,123 @@
 //------------------------------------------------------------------------------
-//  @file light_grid_cs.fx
-//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//  @file light_grid_cs.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include <lib/shared.fxh>
-#include <lib/clustering.fxh>
+#include <lib/shared.gpuh>
+#include <lib/clustering.gpuh>
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
-shader
-void csCull()
+local_size_x(64)
+entry_point
+csCull() void
 {
-    uint index1D = gl_GlobalInvocationID.x;
+    const index1D = computeGetGlobalThreadIndices().x;
 
-    if (index1D > NumLightClusters)
-        return;
+    if (index1D > LightUniforms.NumLightClusters) { return; }
 
-    ClusterAABB aabb = AABBs[index1D];
+    const aabb = bufferLoad(ClusterAABBs, index1D);
 
-    uint flags = 0;
+    var flags = 0u;
 
     // update pointlights
-    uint numLights = 0;
-    for (uint i = 0; i < NumPointLights; i++)
+    var numLights = 0u;
+    for (var i = 0u; i < LightUniforms.NumPointLights; i++)
     {
-        const PointLight light = PointLights[i];
+        const light = LightLists.PointLights[i];
         if (TestAABBSphere(aabb, light.position, light.range))
         {
-            PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+            LightIndexLists.PointLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
         }
     }
-    PointLightCountList[index1D] = numLights;
+    LightIndexLists.PointLightCountList[index1D] = numLights;
 
     // update feature flags if we have any lights
     if (numLights > 0)
+	{
         flags |= CLUSTER_POINTLIGHT_BIT;
+	}
 
     // update spotlights
-    numLights = 0;
-    for (uint i = 0; i < NumSpotLights; i++)
+    numLights = 0u;
+    for (var i = 0u; i < LightUniforms.NumSpotLights; i++)
     {
-        const SpotLight light = SpotLights[i];
+        const light = LightLists.SpotLights[i];
         // first do fast discard sphere test
         if (TestAABBSphere(aabb, light.position, light.range))
         {
             // then do more refined cone test, if previous test passed
             if (TestAABBCone(aabb, light.position, light.forward, light.range, light.angleSinCos))
             {
-                SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+                LightIndexLists.SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
                 numLights++;
             }
         }
     }
-    SpotLightCountList[index1D] = numLights;
+    LightIndexLists.SpotLightCountList[index1D] = numLights;
 
     // update feature flags if we have any lights
-    if (numLights > 0)
-        flags |= CLUSTER_SPOTLIGHT_BIT;
+    if (numLights > 0) { flags |= CLUSTER_SPOTLIGHT_BIT; }
 
-    numLights = 0;
-    for (uint i = 0; i < NumAreaLights; i++)
+    numLights = 0u;
+    for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     {
-        const AreaLight light = AreaLights[i];
-        vec3 worldSpaceMin = light.center - light.extents;
-        vec3 worldSpaceMax = light.center + light.extents;
+        const light = LightLists.AreaLights[i];
+        const worldSpaceMin = light.position - light.bboxMin;
+        const worldSpaceMax = light.position + light.bboxMax;
         if (TestAABBAABB(aabb, worldSpaceMin, worldSpaceMax))
         {
-            AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
+            LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
         }
     }
-    AreaLightCountList[index1D] = numLights;
+    LightIndexLists.AreaLightCountList[index1D] = numLights;
 
-    if (numLights > 0)
-        flags |= CLUSTER_AREALIGHT_BIT;
+    if (numLights > 0) { flags |= CLUSTER_AREALIGHT_BIT; }
 
-    atomicOr(AABBs[index1D].featureFlags, flags);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Acquire);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
-shader
-void csClusterAABB()
+local_size_x(64)
+entry_point
+csClusterAABB() void 
 {
-    uint index1D = gl_GlobalInvocationID.x;
-    uvec3 index3D = Unpack1DTo3D(index1D, NumCells.x, NumCells.y);
+    const index1D = computeGetGlobalThreadIndices().x;
+    const index3D = Unpack1DTo3D(index1D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
-    if (index1D > NumCells.x * NumCells.y * NumCells.z)
-        return;
+    if (index1D > ClusterUniforms.NumCells.x * ClusterUniforms.NumCells.y * ClusterUniforms.NumCells.z) { return; }
 
-    vec3 offsetMin = vec3(index3D.x - NumCells.x * 0.5f, index3D.y - NumCells.y * 0.5f, index3D.z - NumCells.z * 0.5f) * BlockSize.y;
-    vec3 offsetMax = vec3((index3D.x + 1) - NumCells.x * 0.5f, (index3D.y + 1) - NumCells.y * 0.5f, (index3D.z + 1) - NumCells.z * 0.5f) * BlockSize.y;
+    const offsetMin = f32x3(index3D.x - ClusterUniforms.NumCells.x * 0.5f, index3D.y - ClusterUniforms.NumCells.y * 0.5f, index3D.z - ClusterUniforms.NumCells.z * 0.5f) * ClusterUniforms.BlockSize.y;
+    const offsetMax = f32x3((index3D.x + 1) - ClusterUniforms.NumCells.x * 0.5f, (index3D.y + 1) - ClusterUniforms.NumCells.y * 0.5f, (index3D.z + 1) - ClusterUniforms.NumCells.z * 0.5f) * ClusterUniforms.BlockSize.y;
 
     // Calculate AABB using min and max
-    ClusterAABB aabb;
-    vec3 eye = EyePos.xyz;
-    aabb.minPoint = vec4(eye.xyz + offsetMin, 1);
-    aabb.maxPoint = vec4(eye.xyz + offsetMax, 1);
-    vec3 extents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
-    float radius = dot(extents, extents);
-    aabb.featureFlags = 0;
+    var aabb : ClusterAABB;
+    const eye = ViewConstants.EyePos.xyz;
+    aabb.minPoint = f32x4(eye.xyz + offsetMin, 1);
+    aabb.maxPoint = f32x4(eye.xyz + offsetMax, 1);
+    const extents = (aabb.maxPoint.xyz - aabb.minPoint.xyz) * 0.5f;
+    const radius = dot(extents, extents);
+    aabb.featureFlags = 0u;
     aabb.minPoint.w = radius;
     aabb.maxPoint.w = sqrt(radius);
-    AABBs[index1D] = aabb;
+    bufferStore(ClusterAABBs, index1D, aabb);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-program Cull[string Mask = "Cull";]
+@Mask("Cull")
+program Cull
 {
-    ComputeShader = csCull();
+    ComputeShader = csCull;
 };
 
-program AABBGenerate[string Mask = "AABBGenerate";]
+@Mask("AABBGenerate")
+program AABBGenerate
 {
-    ComputeShader = csClusterAABB();
+    ComputeShader = csClusterAABB;
 };

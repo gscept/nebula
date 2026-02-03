@@ -54,7 +54,7 @@ struct MaterialBindlessBufferBinding
 #endif
 
 /// Create material
-MaterialId CreateMaterial(const MaterialTemplatesGPULang::Entry* entry);
+MaterialId CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name);
 /// Destroy material
 void DestroyMaterial(const MaterialId id);
 
@@ -74,6 +74,8 @@ void MaterialSetBufferBinding(const MaterialId id, IndexT index);
 /// Get material GPU buffer binding
 IndexT MaterialGetBufferBinding(const MaterialId id);
 
+/// Get name of material
+const Util::StringAtom& MaterialGetName(const MaterialId id);
 
 /// Add texture to LOD update
 void MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex);
@@ -125,6 +127,7 @@ struct MaterialTexture
 
 enum
 {
+    Material_Name,
     Material_MinLOD,
     Material_LODTextures,
     Material_Table,
@@ -143,6 +146,7 @@ enum
 
 
 typedef Ids::IdAllocator<
+    Util::StringAtom,
     float,
     Util::Array<Resources::ResourceId>,
     Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table

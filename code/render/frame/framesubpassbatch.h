@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 #include "graphics/graphicsentity.h"
 namespace Frame
 {

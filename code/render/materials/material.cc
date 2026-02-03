@@ -6,7 +6,7 @@
 #include "material.h"
 #include "shaderconfig.h"
 #include "resources/resourceserver.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 
 namespace Materials
 {
@@ -19,12 +19,13 @@ Threading::CriticalSection materialTextureLoadSection;
 /**
 */
 MaterialId
-CreateMaterial(const MaterialTemplatesGPULang::Entry* entry)
+CreateMaterial(const MaterialTemplatesGPULang::Entry* entry, const Util::StringAtom& name)
 {
     Ids::Id32 id = materialAllocator.Alloc();
 
     //materialAllocator.Set<Material_ShaderConfig>(id, info.config);
     materialAllocator.Set<Material_MinLOD>(id, 1.0f);
+    materialAllocator.Set<Material_Name>(id, name);
 
     auto& tablesPerPass = materialAllocator.Get<Material_Table>(id);
     auto& instanceTablesPerPass = materialAllocator.Get<Material_InstanceTables>(id);
@@ -271,7 +272,16 @@ MaterialSetBufferBinding(const MaterialId id, IndexT index)
 IndexT
 MaterialGetBufferBinding(const MaterialId id)
 {
-    return Ids::Index(materialAllocator.Get<Material_BufferOffset>(id.id));
+    return materialAllocator.Get<Material_BufferOffset>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::StringAtom&
+MaterialGetName(const MaterialId id)
+{
+    return materialAllocator.Get<Material_Name>(id.id);
 }
 
 //------------------------------------------------------------------------------

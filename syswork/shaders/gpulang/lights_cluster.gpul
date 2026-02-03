@@ -16,7 +16,7 @@ uniform DebugOutput : *mutable rgba16f texture2D;
 */
 local_size_x(64)
 entry_point
-csCull() void 
+csCull() void
 {
     const index1D = computeGetGlobalThreadIndices().x;
 
@@ -104,7 +104,7 @@ csDebug() void
     const index3D = CalculateClusterIndex(coord / ClusterUniforms.BlockSize, worldPos.z, ClusterUniforms.InvZScale, ClusterUniforms.InvZBias);
     const idx = Pack3DTo1D(index3D, ClusterUniforms.NumCells.x, ClusterUniforms.NumCells.y);
 
-    const flag = bufferLoad(ClusterAABBs, idx).featureFlags; // add 0 so we can read the value
+    const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
     var color = f32x4(0, 0, 0, 0);
     if (CheckFlags(flag, CLUSTER_POINTLIGHT_BIT))
     {

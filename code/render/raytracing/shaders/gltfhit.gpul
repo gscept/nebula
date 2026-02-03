@@ -1,69 +1,81 @@
 //------------------------------------------------------------------------------
-//  @file brdfhit.fx
-//  @copyright (C) 2024 Individual contributors, see AUTHORS file
+//  @file gltfhit.gpul
+//  @copyright (C) 2026 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include <lib/raytracing.fxh>
-#include <lib/pbr.fxh>
+#include <lib/raytracing.gpuh>
+#include <lib/pbr.gpuh>
 
 //------------------------------------------------------------------------------
 /**
 */
-shader void
+entry_point
 ClosestHit(
-    [ray_payload] in LightResponsePayload Result,
-    [hit_attribute] in vec2 baryCoords
-)
+    in ray_payload Result : LightResponsePayload,
+    ray_hit_attribute baryCoords : f32x2
+) void
 {
-    Object obj = Objects[gl_InstanceCustomIndexEXT];
-    vec3 barycentricCoords = vec3(1.0f - baryCoords.x - baryCoords.y, baryCoords.x, baryCoords.y);
+    const obj = bufferLoad(TlasInstanceBuffer, tlasGetInstanceCustomIndex());
+    const barycentricCoords = f32x3(1.0f - baryCoords.x - baryCoords.y, baryCoords.x, baryCoords.y);
 
-    uvec3 indices;
-    vec2 uv;
-    vec3 normal, tangent;
-    float sign;
-    SampleGeometry(obj, gl_PrimitiveID, barycentricCoords, indices, uv, normal, tangent, sign);
+    var indices : u32x3;
+    var uv : f32x2;
+    var normal, tangent : f32x3;
+    var sign : f32;
+    SampleGeometry(obj, blasGetPrimitiveIndex(), barycentricCoords, &indices, &uv, &normal, &tangent, &sign);
     
-    normal = gl_ObjectToWorldEXT * vec4(normal, 0);
-    tangent = gl_ObjectToWorldEXT * vec4(tangent, 0);
-    mat3 tbn = TangentSpace(tangent, normal, sign);
+    normal = tlasGetObjectToWorld() * f32x4(normal, 0);
+    tangent = tlasGetObjectToWorld() * f32x4(tangent, 0);
+    const tbn = TangentSpace(tangent, normal, sign);
     
-    float facing = dot(normal, gl_WorldRayDirectionEXT);
-    Result.bits |= facing > 0 ? RAY_BACK_FACE_BIT : 0x0; 
+    const facing = dot(normal, rayGetWorldDirection());
+    Result.bits |= facing > 0 ? RAY_BACK_FACE_BIT : 0x0u;
 
-    GLTFMaterial mat = GLTFMaterials[obj.MaterialOffset];
+    const mat = MaterialPointers.GLTFMaterials[obj.MaterialOffset];
+	//var mat : GLTFMaterial;
+	//mat.baseColorTexture = 0u;
+	//mat.normalTexture = 0u;
+	//mat.metallicRoughnessTexture = 0u;
+	//mat.emissiveTexture = 0u;
+	//mat.occlusionTexture = 0u;
+	//mat.baseColorFactor = f32x4(1.0f);
+	//mat.metallicFactor = 1.0f;
+	//mat.roughnessFactor = 1.0f;
+	//mat.normalScale = 1.0f;
+	//mat.emissiveFactor = f32x4(1.0f);
 
     /* Tangent space normal transform */
-    vec4 normals = sample2DLod(mat.normalTexture, NormalSampler, uv, 0) * mat.normalScale;
-    vec3 tNormal = normalize(TangentSpaceNormal(normals.xy, tbn));
+    const normals = sample2DLod(mat.normalTexture, NormalSampler, uv, 0) * mat.normalScale;
+    const tNormal = normalize(TangentSpaceNormal(normals.xy, tbn));
 
     /* Surface properties */
-    vec4 albedo = sample2DLod(mat.baseColorTexture, Basic2DSampler, uv, 0) * mat.baseColorFactor;
-    vec4 metallicRoughness = sample2DLod(mat.metallicRoughnessTexture, Basic2DSampler, uv, 0) * vec4(1.0f, mat.roughnessFactor, mat.metallicFactor, 1.0f);
-    vec4 emissive = sample2DLod(mat.emissiveTexture, Basic2DSampler, uv, 0) * mat.emissiveFactor;
-    vec4 occlusion = sample2DLod(mat.occlusionTexture, Basic2DSampler, uv, 0);
+    const albedo = sample2DLod(mat.baseColorTexture, Basic2DSampler, uv, 0) * mat.baseColorFactor;
+    const metallicRoughness = sample2DLod(mat.metallicRoughnessTexture, Basic2DSampler, uv, 0) * f32x4(1.0f, mat.roughnessFactor, mat.metallicFactor, 1.0f);
+    const emissive = sample2DLod(mat.emissiveTexture, Basic2DSampler, uv, 0) * mat.emissiveFactor;
+    const occlusion = sample2DLod(mat.occlusionTexture, Basic2DSampler, uv, 0);
 
     /* Convert to material */
-    vec4 material;
+    var material = f32x4(0);
     material[MAT_METALLIC] = metallicRoughness.b;
     material[MAT_ROUGHNESS] = metallicRoughness.g;
     material[MAT_CAVITY] = Greyscale(occlusion);
-    material[MAT_EMISSIVE] = 0; // Emissive isn't used by the light RT
+    material[MAT_EMISSIVE] = 0.0f; // Emissive isn't used by the light RT
 
-    vec3 worldPos = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-    vec3 radiance = CalculateLightRT(worldPos, gl_WorldRayOriginEXT.xyz, gl_HitTEXT / gl_RayTmaxEXT, albedo.rgb, material, tNormal) + emissive.xyz * albedo.a;
+	const worldPos = rayGetWorldOrigin() + rayGetWorldDirection() * rayGetHitDistance();
+    const radiance = CalculateLightRT(worldPos, rayGetWorldOrigin().xyz, rayGetHitDistance() / rayGetTMax(), albedo.rgb, material, tNormal) + albedo.xyz * material[MAT_EMISSIVE] * albedo.a;
         
     Result.alpha = albedo.a;
     Result.albedo = albedo.rgb;
     Result.radiance = radiance;
     Result.normal = tNormal;
     Result.material = material;
-    Result.depth = gl_HitTEXT;
+    Result.depth = rayGetHitDistance();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-program Main[string Mask = "Hit"; ]
+@Mask("Hit")
+program Main
 {
-    RayClosestHitShader = ClosestHit();
+    RayClosestHitShader = ClosestHit;
 };

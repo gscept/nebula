@@ -17,7 +17,7 @@
 #include "debug/framescriptinspector.h"
 #endif
 
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 #include "materials/materialloader.h"
 
 #include "graphics/globalconstants.h"
@@ -515,9 +515,9 @@ LightContext::SetupAreaLight(
 
     // Create material
     MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__AreaLight.entry;
-    Materials::MaterialId material = Materials::CreateMaterial(matTemplate);
+    Materials::MaterialId material = Materials::CreateMaterial(matTemplate, "AreaLight");
 
-    const MaterialTemplates::MaterialTemplateValue& value = MaterialTemplates::base::__AreaLight.__EmissiveColor;
+    const MaterialTemplatesGPULang::MaterialTemplateValue& value = MaterialTemplatesGPULang::base::__AreaLight.__EmissiveColor;
     void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
 
     MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
