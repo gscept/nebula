@@ -128,8 +128,8 @@ ResourceBrowser::Run(SaveMode save)
                 }
                 mip = Math::min(Math::max(0, mip), CoreGraphics::TextureGetNumMips(CoreGraphics::TrackedTextures[current]) - 1);
                 layer = Math::min(Math::max(0, layer), CoreGraphics::TextureGetNumLayers(CoreGraphics::TrackedTextures[current]) - 1);
-                ImGui::EndChild();
             }
+            ImGui::EndChild();
 
             selectedTex.layer = layer;
             selectedTex.mip = mip;
