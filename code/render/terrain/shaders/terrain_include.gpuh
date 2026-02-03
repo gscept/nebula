@@ -304,10 +304,10 @@ PageDataSetStatus(data : u32x4, status : u32) u32x4
 */
 UnpackSubTexture(subTex : TerrainSubTexture, worldOffset : *u32x2, indirectionOffset: *u32x2, mip: *u32, mipBias: *u32, tiles: *u32) void
 {
-    *indirectionOffset = u32x2(subTex.packed0 & 0xFFF, (subTex.packed0 >> 12) & 0xFFF);
-    *mip = (subTex.packed0 >> 24) & 0xF;
-    *mipBias = (subTex.packed0 >> 28) & 0xF;
-    *tiles = 1 << *mip;
+    *indirectionOffset = u32x2(subTex.packed0 & 0xFFFu, (subTex.packed0 >> 12u) & 0xFFFu);
+    *mip = (subTex.packed0 >> 24u) & 0xFu;
+    *mipBias = (subTex.packed0 >> 28u) & 0xFu;
+    *tiles = 1u << *mip;
 }
 
 //------------------------------------------------------------------------------
@@ -361,9 +361,9 @@ UnpackIndirection(indirection : u32) u32x3
         uint physicalOffsetY : 14;
     */
 
-    ret.z = indirection & 0xF;
-    ret.x = (indirection >> 4) & 0x3FFF;
-    ret.y = (indirection >> 18) & 0x3FFF;
+    ret.z = indirection & 0xFu;
+    ret.x = (indirection >> 4u) & 0x3FFFu;
+    ret.y = (indirection >> 18u) & 0x3FFFu;
     return ret;
 }
 

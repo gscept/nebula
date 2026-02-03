@@ -70,7 +70,7 @@ vsStaticInst(
 	out ProjPos : f32x4
 ) void
 {
-	const viewStride = vertexGetInstanceIndex() % 16;
+	const viewStride = vertexGetInstanceIndex() % 16u;
 	ProjPos = ShadowViewConstants.LightViewMatrix[viewStride] * Instances.ModelArray[vertexGetInstanceIndex()] * f32x4(position, 1);
     vertexExportCoordinates(ProjPos);
     vertexSetOutputLayer(viewStride);

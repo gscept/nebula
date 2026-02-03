@@ -117,9 +117,9 @@ Blend(mode : FinalizeMode) void
         const storageProbeIndex = DDGIProbeIndexOffset(probeIndex, VolumeConstants.ProbeGridDimensions, VolumeConstants.ProbeScrollOffsets);
         texelPosition = DDGIProbeTexelPosition(storageProbeIndex, VolumeConstants.ProbeGridDimensions);
         
-        prevProbeSpace.x = castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x01;
-        prevProbeSpace.y = (castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x02) >> 1;
-        prevProbeSpace.z = (castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x01) >> 2;
+        prevProbeSpace.x = castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x01u;
+        prevProbeSpace.y = (castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x02u) >> 1u;
+        prevProbeSpace.z = (castToU32(textureLoad(ScrollSpaceOutput, texelPosition).x) & 0x01u) >> 2u;
         
         const probeGridCoord = DDGIProbeCoords(probeIndex, VolumeConstants.ProbeGridDimensions);
         probeSpace = (probeGridCoord + VolumeConstants.ProbeScrollOffsets) / VolumeConstants.ProbeGridDimensions;
@@ -256,8 +256,8 @@ Blend(mode : FinalizeMode) void
     {
         var probeSpacePacked = 0u;
         probeSpacePacked = u32(probeSpace.x);
-        probeSpacePacked = u32(probeSpace.y) << 1;
-        probeSpacePacked = u32(probeSpace.z) << 2;
+        probeSpacePacked = u32(probeSpace.y) << 1u;
+        probeSpacePacked = u32(probeSpace.z) << 2u;
 		textureStore(ScrollSpaceOutput, texelPosition, f32x4(castToF32(probeSpacePacked), 0, 0, 0));
     }
     

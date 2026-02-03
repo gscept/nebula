@@ -4,18 +4,18 @@
 //------------------------------------------------------------------------------
 #include <lib/shared.gpuh>
 
-const PROBE_STATE_INACTIVE = 0;
-const PROBE_STATE_ACTIVE = 1;
-const DDGI_NUM_FIXED_RAYS = 32;
+const PROBE_STATE_INACTIVE = 0u;
+const PROBE_STATE_ACTIVE = 1u;
+const DDGI_NUM_FIXED_RAYS = 32u;
 
-const NUM_IRRADIANCE_TEXELS_PER_PROBE = 6;
-const NUM_DISTANCE_TEXELS_PER_PROBE = 14;
+const NUM_IRRADIANCE_TEXELS_PER_PROBE = 6u;
+const NUM_DISTANCE_TEXELS_PER_PROBE = 14u;
 
-const RELOCATION_OPTION = 0x1;
-const SCROLL_OPTION = 0x2;
-const CLASSIFICATION_OPTION = 0x4;
-const LOW_PRECISION_IRRADIANCE_OPTION = 0x8;
-const PARTIAL_UPDATE_OPTION = 0x10;
+const RELOCATION_OPTION = 0x1u;
+const SCROLL_OPTION = 0x2u;
+const CLASSIFICATION_OPTION = 0x4u;
+const LOW_PRECISION_IRRADIANCE_OPTION = 0x8u;
+const PARTIAL_UPDATE_OPTION = 0x10u;
 
 //------------------------------------------------------------------------------
 /**
