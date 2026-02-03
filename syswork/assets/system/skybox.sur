@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!--
-	Surface material for the skybox
--->
+<?xml version='1.0' encoding='utf-8'?>
 <Nebula>
-	<Surface template="Skybox">
-		<Param name="SkyLayer1" value="systex:sky_refl"/>
-		<Param name="SkyLayer2" value="systex:placeholder"/>
-		<Param name="SkyBlendFactor" value="0.0f"/>
-		<Param name="Contrast" value="1.0f"/>
-		<Param name="Brightness" value="0.0f"/>
-	</Surface>
+    <Surface template="Skybox">
+        <Params>
+            <SkyLayer1 value="systex:sky_refl" />
+            <SkyLayer2 value="systex:placeholder" />
+            <SkyBlendFactor value="0.0f" />
+            <Contrast value="1.0f" />
+            <Brightness value="0.0f" />
+        </Params>
+    </Surface>
 </Nebula>

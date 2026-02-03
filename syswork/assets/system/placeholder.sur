@@ -1,11 +1,10 @@
-<!--
-	Surface material for the placeholder material
--->
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='utf-8'?>
 <Nebula>
-	<Surface template="Static">
-		<Param name="AlbedoMap" value="systex:white"/>
-		<Param name="NormalMap" value="systex:nobump"/>
-		<Param name="ParameterMap" value="systex:default_material" />
-	</Surface>
+    <Surface template="Static">
+        <Params>
+            <AlbedoMap value="systex:white" />
+            <NormalMap value="systex:nobump" />
+            <ParameterMap value="systex:default_material" />
+        </Params>
+    </Surface>
 </Nebula>

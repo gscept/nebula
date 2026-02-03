@@ -1,11 +1,10 @@
-<!--
-	Surface material for the error material
--->
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version='1.0' encoding='utf-8'?>
 <Nebula>
-	<Surface template="Placeholder">
-		<Param name="AlbedoMap" value="systex:error"/>
-		<Param name="NormalMap" value="systex:nobump"/>
-		<Param name="ParameterMap" value="systex:default_material" />
+    <Surface template="Placeholder">
+        <Params>
+            <AlbedoMap value="systex:error" />
+            <NormalMap value="systex:nobump" />
+            <ParameterMap value="systex:default_material" />
+		</Params>
 	</Surface>
 </Nebula>

@@ -1,8 +1,8 @@
-<!--
-	Surface material for the placeholder material
--->
+<?xml version='1.0' encoding='utf-8'?>
 <Nebula>
-	<Surface template="ParticleUnlit">
-		<Param name="AlbedoMap" value="systex:placeholder"/>
-	</Surface>
+    <Surface template="ParticleUnlit">
+        <Params>
+            <AlbedoMap value="systex:placeholder" />
+        </Params>
+    </Surface>
 </Nebula>
