@@ -8,8 +8,8 @@
     (C) 2024 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include <render/gi/shaders/probe_finalize.h>
-#include <render/gi/shaders/probe_update.h>
+#include "gpulang/render/gi/shaders/probe_finalize.h"
+#include "gpulang/render/gi/shaders/probe_update.h"
 
 #include "graphics/graphicscontext.h"
 namespace GI
@@ -104,7 +104,7 @@ private:
         float blendCutoff = 0.0f;
         float blend = 0.0f;
         
-        ProbeUpdate::VolumeConstants volumeConstants;
+        ProbeUpdate::VolumeConstants::STRUCT volumeConstants;
         DDGIOptions options;
 
 #ifndef PUBLIC_BUILD
