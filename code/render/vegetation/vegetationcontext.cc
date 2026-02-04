@@ -17,7 +17,7 @@
 #include "models/nodes/transformnode.h"
 #include "models/nodes/primitivenode.h"
 
-#include "render/system_shaders/vegetation.h"
+#include "gpulang/render/system_shaders/vegetation.h"
 
 #include "frame/default.h"
 namespace Vegetation
@@ -87,7 +87,7 @@ struct
     CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
     CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];
 
-    Vegetation::VegetationMaterialUniforms materialUniforms;
+    Vegetation::VegetationMaterialUniforms::STRUCT materialUniforms;
     CoreGraphics::BufferId materialUniformsBuffer;
 
 } vegetationState;
@@ -169,7 +169,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     cboInfo.name = "Vegetation System Uniforms";
     cboInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     cboInfo.mode = CoreGraphics::DeviceAndHost;
-    cboInfo.byteSize = sizeof(VegetationGenerateUniforms);
+    cboInfo.byteSize = sizeof(VegetationGenerateUniforms::STRUCT);
     cboInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
     vegetationState.systemUniforms = CoreGraphics::CreateBuffer(cboInfo);
 
@@ -264,7 +264,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     CoreGraphics::BufferCreateInfo indirectCountBufferInfo;
     indirectCountBufferInfo.name = "Vegetation Draw Count Buffer";
     indirectCountBufferInfo.usageFlags = CoreGraphics::BufferUsage::ReadWrite | CoreGraphics::BufferUsage::TransferSource;
-    indirectCountBufferInfo.elementSize = sizeof(Vegetation::DrawCount);
+    indirectCountBufferInfo.elementSize = sizeof(Vegetation::DrawCount::STRUCT);
     indirectCountBufferInfo.mode = CoreGraphics::DeviceLocal;
     indirectCountBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
     vegetationState.drawCountBuffer = CoreGraphics::CreateBuffer(indirectCountBufferInfo);
@@ -280,11 +280,11 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 
     CoreGraphics::BufferCreateInfo materialUniformInfo;
     materialUniformInfo.name = "Vegetation Materials Buffer";
-    materialUniformInfo.elementSize = sizeof(Vegetation::VegetationMaterialUniforms);
+    materialUniformInfo.elementSize = sizeof(Vegetation::VegetationMaterialUniforms::STRUCT);
     materialUniformInfo.usageFlags = CoreGraphics::BufferUsage::ConstantBuffer;
     materialUniformInfo.mode = CoreGraphics::DeviceAndHost;
     vegetationState.materialUniformsBuffer = CoreGraphics::CreateBuffer(materialUniformInfo);
-    memset(&vegetationState.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms));
+    memset(&vegetationState.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms::STRUCT));
 
     vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.gplb");
     vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureMask("VegetationClear"));
@@ -300,7 +300,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.systemUniforms,
-            Vegetation::Table_System::VegetationGenerateUniforms_SLOT,
+            Vegetation::VegetationGenerateUniforms::BINDING,
             0,
             sizeof(Vegetation::VegetationGenerateUniforms),
             0
@@ -309,7 +309,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.materialUniformsBuffer,
-            Vegetation::Table_System::VegetationMaterialUniforms_SLOT,
+            Vegetation::VegetationMaterialUniforms::BINDING,
             0,
             sizeof(Vegetation::VegetationMaterialUniforms),
             0
@@ -319,7 +319,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.meshInfoBuffer,
-            Vegetation::Table_System::MeshInfoUniforms_SLOT,
+            Vegetation::MeshInfos::BINDING,
             0,
             sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
             0
@@ -328,7 +328,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.grassInfoBuffer,
-            Vegetation::Table_System::GrassInfoUniforms_SLOT,
+            Vegetation::GrassInfos::BINDING,
             0,
             sizeof(Vegetation::GrassInfo) * Vegetation::MAX_GRASS_INFOS,
             0
@@ -337,7 +337,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.grassDrawCallsBuffer,
-            Vegetation::Table_System::IndirectGrassDrawBuffer_SLOT,
+            Vegetation::IndirectGrassDrawBuffer::BINDING,
             0,
             BufferGetByteSize(vegetationState.grassDrawCallsBuffer),
             0
@@ -346,7 +346,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.meshDrawCallsBuffer,
-            Vegetation::Table_System::IndirectMeshDrawBuffer_SLOT,
+            Vegetation::IndirectMeshDrawBuffer::BINDING,
             0,
             BufferGetByteSize(vegetationState.meshDrawCallsBuffer),
             0
@@ -355,7 +355,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
         {
             vegetationState.drawCountBuffer,
-            Vegetation::Table_System::DrawCount_SLOT,
+            Vegetation::DrawCount::BINDING,
             0,
             BufferGetByteSize(vegetationState.drawCountBuffer),
             0
@@ -367,7 +367,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.argumentsTable,
         {
             vegetationState.grassArgumentsBuffer,
-            Vegetation::Table_Batch::InstanceGrassArguments_SLOT,
+            Vegetation::InstanceGrassArguments::BINDING,
             0,
             BufferGetByteSize(vegetationState.grassArgumentsBuffer),
             0
@@ -376,7 +376,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     ResourceTableSetRWBuffer(vegetationState.argumentsTable,
         {
             vegetationState.meshArgumentsBuffer,
-            Vegetation::Table_Batch::InstanceMeshArguments_SLOT,
+            Vegetation::InstanceMeshArguments::BINDING,
             0,
             BufferGetByteSize(vegetationState.meshArgumentsBuffer),
             0
@@ -392,7 +392,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         ResourceTableSetRWBuffer(vegetationState.indirectArgumentsTable[i],
             {
                 vegetationState.indirectGrassArgumentBuffer[i],
-                Vegetation::Table_Batch::InstanceGrassArguments_SLOT,
+                Vegetation::InstanceGrassArguments::BINDING,
                 0,
                 BufferGetByteSize(vegetationState.indirectGrassArgumentBuffer[i]),
                 0
@@ -401,7 +401,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         ResourceTableSetRWBuffer(vegetationState.indirectArgumentsTable[i],
             {
                 vegetationState.indirectMeshArgumentsBuffer[i],
-                Vegetation::Table_Batch::InstanceMeshArguments_SLOT,
+                Vegetation::InstanceMeshArguments::BINDING,
                 0,
                 BufferGetByteSize(vegetationState.indirectMeshArgumentsBuffer[i]),
                 0
@@ -909,7 +909,7 @@ VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 {
     Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(view->GetCamera());
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
-    VegetationGenerateUniforms uniforms;
+    VegetationGenerateUniforms::STRUCT uniforms;
     cameraTransform.position.store(uniforms.CameraPosition);
     cameraTransform.z_axis.store(uniforms.CameraForward);
     uniforms.HeightMap = CoreGraphics::TextureGetBindlessHandle(vegetationState.heightMap);
@@ -964,7 +964,7 @@ VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
     CoreGraphics::BufferFlush(vegetationState.grassInfoBuffer);
 
     CoreGraphics::BufferInvalidate(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
-    auto counts = (Vegetation::DrawCount*)CoreGraphics::BufferMap(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
+    auto counts = (Vegetation::DrawCount::STRUCT*)CoreGraphics::BufferMap(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
 
     // update draw counts
     vegetationState.grassDrawsThisFrame = counts->NumGrassDraws;

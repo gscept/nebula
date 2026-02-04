@@ -10,7 +10,6 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/accelerationstructure.h"
 #include "coregraphics/buffer.h"
-#include "render/system_shaders/cluster_generate.h"
 #include "materials/gpulang/materialtemplatesgpulang.h"
 #include "materials/shaderconfig.h"
 

@@ -13,7 +13,7 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 
-#include "render/system_shaders/particle.h"
+#include "gpulang/render/system_shaders/particle.h"
 
 using namespace Graphics;
 using namespace Models;
@@ -491,12 +491,12 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
                         ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
 
-                        alignas (16) ::Particle::ParticleObjectBlock block;
+                        alignas (16) ::Particle::ParticleEmitterData block;
 
                         // update system transform
                         if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
                             system.transform = system.transform * invViewMatrix;
-                        system.transform.store(block.EmitterTransform);
+                        system.transform.store(&block.EmitterTransform[0][0]);
 
                         // update parameters
                         block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);

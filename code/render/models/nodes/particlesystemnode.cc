@@ -12,7 +12,7 @@
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
 
-#include "render/system_shaders/particle.h"
+#include "gpulang/render/system_shaders/particle.h"
 
 static CoreGraphics::ShaderId baseShader = CoreGraphics::InvalidShaderId;
 namespace Models
@@ -116,7 +116,7 @@ ParticleSystemNode::CreateResourceTables()
     {
         BufferId cbo = GetConstantBuffer(i);
         CoreGraphics::ResourceTableId table = ShaderCreateResourceTable(baseShader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::Table_DynamicOffset::ParticleObjectBlock_SLOT, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
+        ResourceTableSetConstantBuffer(table, { cbo, ::Particle::ParticleEmitter::BINDING, 0, sizeof(::Particle::ParticleEmitter::STRUCT), 0, false, true });
         ResourceTableCommitChanges(table);
         ret[i] = table;
     }
