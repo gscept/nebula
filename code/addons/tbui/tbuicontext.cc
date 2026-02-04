@@ -29,6 +29,8 @@
 #include "tb_node_tree.h"
 #include "tb_widgets_reader.h"
 
+#include "gpulang/tbui/tbui.h"
+
 #ifdef TB_FONT_RENDERER_TBBF
 void register_tbbf_font_renderer();
 #endif
@@ -251,13 +253,13 @@ TBUIContext::Create()
         // setup state
         {
             // allocate shader
-            state.shader = CoreGraphics::ShaderGet("shd:tbui.fxb");
+            state.shader = CoreGraphics::ShaderGet("shd:tbui.gplb");
             state.shaderProgram = CoreGraphics::ShaderGetProgram(state.shader, CoreGraphics::ShaderFeatureMask("Static"));
 
             state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.shader, NEBULA_BATCH_GROUP);
 
-            state.textProjectionConstant = CoreGraphics::ShaderGetConstantBinding(state.shader, "TextProjectionModel");
-            state.textureConstant = CoreGraphics::ShaderGetConstantBinding(state.shader, "Texture");
+            state.textProjectionConstant = offsetof(Tbui::TBUIData, TextProjectionModel);
+            state.textureConstant = offsetof(Tbui::TBUIData, Texture);
 
             // create vertex buffer
             Util::Array<CoreGraphics::VertexComponent> components;

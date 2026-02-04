@@ -128,16 +128,10 @@ const ShaderConstantType ShaderGetConstantType(const ShaderId id, const IndexT i
 const ShaderConstantType ShaderGetConstantType(const ShaderId id, const Util::StringAtom& name);
 /// get name of variable by index
 const Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
-/// get constant buffer binding by name
-const IndexT ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name);
-/// get constant buffer binding by index
-const IndexT ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex);
 /// get name of constant buffer wherein constant with name resides
 const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const Util::StringAtom& name);
 /// get name of constant buffer where in constant with index resides
 const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const IndexT cIndex);
-/// get count of constant buffer bindings (for iteration)
-const SizeT ShaderGetConstantBindingsCount(const ShaderId id);
 /// get group to which constant is bound (the constant buffer which it resides in)
 const IndexT ShaderGetConstantGroup(const ShaderId id, const Util::StringAtom& name);
 /// get binding inside group of the constant buffer the constant lies in

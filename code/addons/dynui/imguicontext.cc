@@ -366,11 +366,11 @@ ImguiContext::Create()
 
     state.resourceTable = CoreGraphics::ShaderCreateResourceTable(state.uiShader, NEBULA_BATCH_GROUP);
 
-    state.textProjectionConstant = offsetof(Imgui::ImGuiData, TextProjectionModel); //CoreGraphics::ShaderGetConstantBinding(state.uiShader, "TextProjectionModel");
-    state.packedTextureInfo = offsetof(Imgui::ImGuiData, PackedTextureInfo); // CoreGraphics::ShaderGetConstantBinding(state.uiShader, "PackedTextureInfo");
-    state.rangeMinConstant = offsetof(Imgui::ImGuiData, RangeMin); //CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMin");
-    state.rangeMaxConstant = offsetof(Imgui::ImGuiData, RangeMax); // CoreGraphics::ShaderGetConstantBinding(state.uiShader, "RangeMax");
-    state.colorMaskConstant = offsetof(Imgui::ImGuiData, ColorMask); // CoreGraphics::ShaderGetConstantBinding(state.uiShader, "ColorMask");
+    state.textProjectionConstant = offsetof(Imgui::ImGuiData, TextProjectionModel);
+    state.packedTextureInfo = offsetof(Imgui::ImGuiData, PackedTextureInfo);
+    state.rangeMinConstant = offsetof(Imgui::ImGuiData, RangeMin);
+    state.rangeMaxConstant = offsetof(Imgui::ImGuiData, RangeMax);
+    state.colorMaskConstant = offsetof(Imgui::ImGuiData, ColorMask);
 
     state.inputHandler = ImguiInputHandler::Create();
     Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, state.inputHandler.upcast<Input::InputHandler>());

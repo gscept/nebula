@@ -6,7 +6,7 @@
 #include "materialasseteditor.h"
 #include "editor/commandmanager.h"
 #include "materials/material.h"
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 #include "coregraphics/textureloader.h"
 #include "dynui/imguicontext.h"
 #include "tinyfiledialogs.h"

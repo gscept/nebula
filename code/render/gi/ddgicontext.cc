@@ -158,7 +158,7 @@ DDGIContext::Create()
     // Create pipeline, the order of hit programs must match RaytracingContext::ObjectType
     state.pipeline = CoreGraphics::CreateRaytracingPipeline({ state.probeUpdateProgram, brdfHitProgram, bsdfHitProgram, gltfHitProgram, particleHitProgram }, CoreGraphics::ComputeQueueType);
 
-    state.probeFinalizeShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_finalize.fxb");
+    state.probeFinalizeShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_finalize.gplb");
     state.probeBlendRadianceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeRadiance"));
     state.probeBlendDistanceProgram = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeDistance"));
     state.probeBorderRadianceRowsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderRowsRadiance"));
@@ -166,15 +166,15 @@ DDGIContext::Create()
     state.probeBorderDistanceRowsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderRowsDistance"));
     state.probeBorderDistanceColumnsFixup = CoreGraphics::ShaderGetProgram(state.probeFinalizeShader, CoreGraphics::ShaderFeatureMask("ProbeFinalizeBorderColumnsDistance"));
 
-    state.volumeCullShader = CoreGraphics::ShaderGet("shd:gi/shaders/gi_volume_cull.fxb");
+    state.volumeCullShader = CoreGraphics::ShaderGet("shd:gi/shaders/gi_volume_cull.gplb");
     state.volumeCullProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Cull"));
     state.volumeClusterDebugProgram = CoreGraphics::ShaderGetProgram(state.volumeCullShader, CoreGraphics::ShaderFeatureMask("Debug"));
 
-    state.probesRelocateAndClassifyShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_relocate_and_classify.fxb");
+    state.probesRelocateAndClassifyShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_relocate_and_classify.gplb");
     state.probesRelocateAndClassifyProgram = CoreGraphics::ShaderGetProgram(state.probesRelocateAndClassifyShader, CoreGraphics::ShaderFeatureMask("ProbeRelocateAndClassify"));
 
 #ifndef PUBLIC_BUILD
-    state.debugShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_debug.fxb");
+    state.debugShader = CoreGraphics::ShaderGet("shd:gi/shaders/probe_debug.gplb");
     state.debugProgram = CoreGraphics::ShaderGetProgram(state.debugShader, CoreGraphics::ShaderFeatureMask("Debug"));
 #endif
 

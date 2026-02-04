@@ -31,10 +31,6 @@ struct
     Util::FixedArray<CoreGraphics::ResourceTableId> hbaoTable, blurTableX, blurTableY;
     //CoreGraphics::ResourceTableId hbaoTable, blurTableX, blurTableY;
 
-    IndexT uvToViewAVar, uvToViewBVar, r2Var,
-        aoResolutionVar, invAOResolutionVar, strengthVar, tanAngleBiasVar,
-        powerExponentVar, blurFalloff, blurDepthThreshold;
-
     // read-write textures
     CoreGraphics::TextureId internalTargets[2];
 
@@ -164,20 +160,6 @@ SSAOContext::Setup()
 #define MAX_RADIUS_PIXELS 0.5f
     ssaoState.vars.tanAngleBias = tanf(Math::deg2rad(35.0));
     ssaoState.vars.strength = 1.0f;
-
-    // setup hbao params
-    ssaoState.uvToViewAVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_UVTOVIEWA);
-    ssaoState.uvToViewBVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_UVTOVIEWB);
-    ssaoState.r2Var = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_R2);
-    ssaoState.aoResolutionVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_AORESOLUTION);
-    ssaoState.invAOResolutionVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_INVAORESOLUTION);
-    ssaoState.strengthVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_STRENGTH);
-    ssaoState.tanAngleBiasVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_TANANGLEBIAS);
-
-    // setup blur params
-    ssaoState.powerExponentVar = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_POWEREXPONENT);
-    ssaoState.blurFalloff = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_FALLOFF);
-    ssaoState.blurDepthThreshold = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_DEPTHTHRESHOLD);
 
     FrameScript_default::Bind_HBAOInternal0(Frame::TextureImport(ssaoState.internalTargets[0]));
     FrameScript_default::Bind_HBAOInternal1(Frame::TextureImport(ssaoState.internalTargets[1]));

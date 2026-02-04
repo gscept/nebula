@@ -13,6 +13,8 @@
 #include "coregraphics/shaderserver.h"
 #include "resources/resourceserver.h"
 
+#include "gpulang/render/system_shaders/text.h"
+
 #define FONT_SIZE 32.0f
 #define ONEOVERFONTSIZE 1/32.0f
 #define GLYPH_TEXTURE_SIZE 1024
@@ -147,7 +149,7 @@ VkTextRenderer::Open()
     this->texVar = ShaderGetResourceSlot(shd, "Texture");
     ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::InvalidSamplerId, false});
     ResourceTableCommitChanges(this->textTable);
-    this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
+    this->modelVar = offsetof(Text::TextData, TextProjectionModel);
 
     delete[] bitmap;
     delete[] ttf_buffer;

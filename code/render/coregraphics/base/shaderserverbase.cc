@@ -50,8 +50,7 @@ ShaderServerBase::~ShaderServerBase()
 void
 RecursiveLoadShaders(ShaderServerBase* shaderServer, const Util::String& path)
 {
-    Util::Array<Util::String> files = IoServer::Instance()->ListFiles(path, "*.fxb");
-    files.AppendArray(IoServer::Instance()->ListFiles(path, "*.gplb"));
+    Util::Array<Util::String> files = IoServer::Instance()->ListFiles(path, "*.gplb");
 
     for (IndexT i = 0; i < files.Size(); i++)
     {

@@ -1142,10 +1142,6 @@ CreateShader(const ShaderCreateInfo& info)
             shaderProgramId.program = programId;
             runtimeInfo.programMap.Add(shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(programId).mask, shaderProgramId);
         }
-
-        // set active variation
-        runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
-        runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
     }
 
     // delete the AnyFX effect
@@ -1189,63 +1185,7 @@ CreateShader(const GPULangShaderCreateInfo& info)
         setupInfo.constantBindings
     );
 
-    /*
-    // setup variables
-    const std::vector<AnyFX::VariableBase*> variables = effect->GetVariables();
-    for (size_t i = 0; i < variables.size(); i++)
-    {
-        AnyFX::VariableBase* var = variables[i];
-        VkReflectionInfo::Variable refl;
-        refl.name = var->name.c_str();
-        refl.blockBinding = -1;
-        refl.blockSet = -1;
-        refl.type = var->type;
-        if (var->parentBlock)
-        {
-            refl.blockName = var->parentBlock->name.c_str();
-            refl.blockBinding = var->parentBlock->binding;
-            refl.blockSet = var->parentBlock->set;
-        }
-
-        reflectionInfo.variables.Append(refl);
-        reflectionInfo.variablesByName.Add(refl.name, refl);
-    }
-
-    // setup varblocks (uniform buffers)
-    const std::vector<AnyFX::VarblockBase*> varblocks = effect->GetVarblocks();
-    for (size_t i = 0; i < varblocks.size(); i++)
-    {
-        AnyFX::VarblockBase* var = varblocks[i];
-        VkReflectionInfo::UniformBuffer refl;
-        refl.name = var->name.c_str();
-        refl.binding = var->binding;
-        refl.set = var->set;
-        refl.byteSize = var->alignedSize;
-
-        if (var->binding != 0xFFFFFFFF)
-        {
-            n_assert(var->binding < 64);
-            reflectionInfo.uniformBuffersMask.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersMask.Size()), 0);
-            reflectionInfo.uniformBuffersMask[var->set] |= (1ull << (uint64)var->binding);
-        }
-
-        reflectionInfo.uniformBuffers.Append(refl);
-        reflectionInfo.uniformBuffersByName.Add(refl.name, refl);
-        reflectionInfo.uniformBuffersPerSet.Resize(Math::max(var->set + 1, (uint)reflectionInfo.uniformBuffersPerSet.Size()), nullptr);
-        reflectionInfo.uniformBuffersPerSet[var->set].Append(refl);
-    }
-
-    // Sort uniform buffers by binding
-    for (auto& set : reflectionInfo.uniformBuffersPerSet)
-    {
-        set.SortWithFunc(
-            [](const VkReflectionInfo::UniformBuffer& lhs, const VkReflectionInfo::UniformBuffer& rhs) -> bool
-            {
-                return lhs.binding < rhs.binding;
-            }
-        );
-    }
-    */
+   
     for (auto& [name, object] : info.loader->nameToObject)
     {
         if (object->type == GPULang::Serialize::Type::VariableType)
@@ -1300,10 +1240,6 @@ CreateShader(const GPULangShaderCreateInfo& info)
             }
         );
     }
-
-    // set active variation
-    runtimeInfo.activeMask = runtimeInfo.programMap.KeyAtIndex(0);
-    runtimeInfo.activeShaderProgram = runtimeInfo.programMap.ValueAtIndex(0);
 
     delete info.loader;
 
@@ -1582,38 +1518,6 @@ ShaderCalculateConstantBufferIndex(const uint64_t bindingMask, const IndexT slot
     uint mask = (1 << slot) - 1;
 	uint survivingBits = bindingMask & mask;
 	return Util::PopCnt(survivingBits);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const IndexT
-ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
-{
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
-    IndexT index = info.constantBindings.FindIndex(name.Value());
-    if (index == InvalidIndex)  return INT32_MAX; // invalid binding
-    else                        return info.constantBindings.ValueAtIndex(index);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const IndexT
-ShaderGetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex)
-{
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
-    return info.constantBindings.ValueAtIndex(cIndex);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const SizeT
-ShaderGetConstantBindingsCount(const CoreGraphics::ShaderId id)
-{
-    const VkShaderSetupInfo& info = shaderAlloc.Get<Shader_SetupInfo>(id.id);
-    return info.constantBindings.Size();
 }
 
 //------------------------------------------------------------------------------

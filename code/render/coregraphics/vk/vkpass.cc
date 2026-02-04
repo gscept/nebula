@@ -576,7 +576,7 @@ SetupPass(const PassId pid)
         // setup uniform buffer for render target information
         ShaderId sid = CoreGraphics::ShaderGet("shd:system_shaders/shared.gplb"_atm);
         runtimeInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassUniforms", CoreGraphics::BufferAccessMode::DeviceAndHost);
-        runtimeInfo.renderTargetDimensionsVar = offsetof(Shared::PassUniforms::STRUCT, RenderTargets);// ShaderGetConstantBinding(sid, "RenderTargets");
+        runtimeInfo.renderTargetDimensionsVar = offsetof(Shared::PassUniforms::STRUCT, RenderTargets);
 
         CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
         runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ Util::String::Sprintf("Pass %s Descriptors", loadInfo.name.Value()).AsCharPtr(), tableLayout, 8 });

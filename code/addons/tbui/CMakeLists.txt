@@ -19,7 +19,7 @@ fips_files(
     tbuiview.h
 )
 
-add_shaders(tbui.fx)
+compile_gpulang(tbui.gpul)
 
 fips_dir(backend)
     fips_files(

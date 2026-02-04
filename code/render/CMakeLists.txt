@@ -426,7 +426,6 @@ ENDIF()
                 ddgicontext.h
             )
         fips_dir(gi/shaders)
-            add_shaders(probe_shared.fxh probe_update.fx probe_finalize.fx probe_debug.fx gi_volume_cull.fx probe_relocate_and_classify.fx)
 			compile_gpulang(probe_shared.gpuh probe_update.gpul probe_finalize.gpul probe_debug.gpul gi_volume_cull.gpul probe_relocate_and_classify.gpul)
         fips_dir(graphics) 
             fips_files(
@@ -573,7 +572,7 @@ ENDIF()
             raytracingcontext.h
         )
         fips_dir(raytracing/shaders)
-            add_shaders(raytracetest.fx gltfhit.fx brdfhit.fx bsdfhit.fx particlehit.fx light_grid_cs.fx terrainhit.fx)
+            compile_gpulang(raytracetest.gpul gltfhit.gpul brdfhit.gpul bsdfhit.gpul particlehit.gpul light_grid_cs.gpul terrainhit.gpul)
 
         fips_dir(renderutil)
         fips_files(
@@ -638,9 +637,6 @@ ENDIF()
                 texturetilecache.h
             )
         fips_dir(terrain/shaders)
-            add_shaders(
-                terrain_include.fxh terrain.fx terrain_tile_write.fx terrain_mesh_generate.fx
-            )
             compile_gpulang(terrain_include.gpuh terrain.gpul terrain_tile_write.gpul terrain_mesh_generate.gpul)
 
         fips_dir(vegetation)

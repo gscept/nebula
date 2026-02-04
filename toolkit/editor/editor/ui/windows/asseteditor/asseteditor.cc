@@ -21,7 +21,7 @@
 #include "skeletonasseteditor.h"
 #include "textureasseteditor.h"
 
-#include "materials/material_interfaces.h"
+#include "materials/gpulang/material_interfaces.h"
 
 namespace Presentation
 {

@@ -1,0 +1,80 @@
+//------------------------------------------------------------------------------
+//  tbui.gpul
+//
+//  Shader for Turbobadger rendering
+//
+//  (C) 2026 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+
+#include "lib/std.gpuh"
+#include "lib/shared.gpuh"
+#include "lib/defaultsamplers.gpuh"
+
+
+struct TBUIData
+{
+	TextProjectionModel : f32x4x4;
+	Texture : u32;
+};
+inline TBUI : *TBUIData;
+
+group(BATCH_GROUP) sampler_state TextureSampler
+{
+    Filter = FilterMode.Linear;
+};
+
+render_state TextState
+{
+    BlendEnabled[0] = true;
+    SourceBlend[0] = BlendFactor.SourceAlpha;
+    DestinationBlend[0] = BlendFactor.OneMinusSourceAlpha;
+    DepthWriteEnabled = false;
+    DepthTestEnabled = false;
+    Cull = CullFace.None;
+    ScissorEnabled = true;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+entry_point
+vsMain(
+    binding(0) in position : f32x2,
+    binding(1) in uv : f32x2,
+    binding(2) in color : f32x4, 
+    out UV : f32x2,
+    out Color : f32x4
+) void
+{
+    const pos = f32x4(position, 0, 1);    
+	vertexExportCoordinates(TBUI.TextProjectionModel * pos);
+    Color = color;
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/** 
+*/
+entry_point
+psMain(
+    in UV : f32x2,
+    in Color : f32x4
+) void
+{
+    const texColor = sample2D(TBUI.Texture, TextureSampler, UV);
+
+    // Since we are using sRGB output, remember to degamma
+	pixelExportColor(Color * texColor, 0);
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+@Mask("Static")
+program Default
+{
+	VertexShader = vsMain;
+	PixelShader = psMain;
+	RenderState = TextState;
+};

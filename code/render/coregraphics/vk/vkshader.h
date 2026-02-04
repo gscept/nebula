@@ -85,8 +85,6 @@ typedef Util::Dictionary<uint32_t, Util::Array<CoreGraphics::BufferId>> UniformB
 typedef Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId> ProgramMap;
 struct VkShaderRuntimeInfo
 {
-    CoreGraphics::ShaderFeature::Mask activeMask;
-    CoreGraphics::ShaderProgramId activeShaderProgram;
     ProgramMap programMap;
 };
 
