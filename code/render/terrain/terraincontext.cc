@@ -1534,7 +1534,6 @@ TerrainContext::SetupTerrain(
             , verts.ByteSize()
             , patchTransforms
             , materialOffset
-            , MaterialTemplates::MaterialProperties::Terrain
             , CoreGraphics::VertexLayoutType::Normal);
 
         // Invalidate the BLAS when the compute shader has displaced all terrain patches
