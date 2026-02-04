@@ -26,9 +26,8 @@
 #include "graphics/globalconstants.h"
 
 #ifndef PUBLIC_BUILD
-#include "render/gi/shaders/probe_debug.h"
+#include "gpulang/render/gi/shaders/probe_debug.h"
 #endif
-#include <render/raytracing/shaders/raytracetest.h>
 
 #include "options.h"
 #include "core/cvar.h"
@@ -589,7 +588,7 @@ DDGIContext::SetupVolume(const Graphics::GraphicsEntityId id, const VolumeSetup&
 
 #ifndef PUBLIC_BUILD
     volume.debugResourceTable = CoreGraphics::ShaderCreateResourceTable(state.debugShader, NEBULA_SYSTEM_GROUP, 1);
-    CoreGraphics::ResourceTableSetConstantBuffer(volume.debugResourceTable, CoreGraphics::ResourceTableBuffer(volume.volumeConstantBuffer, ProbeDebug::Table_System::VolumeConstants_SLOT));
+    CoreGraphics::ResourceTableSetConstantBuffer(volume.debugResourceTable, CoreGraphics::ResourceTableBuffer(volume.volumeConstantBuffer, ProbeDebug::VolumeConstants::BINDING));
     CoreGraphics::ResourceTableCommitChanges(volume.debugResourceTable);
 #endif
 }
