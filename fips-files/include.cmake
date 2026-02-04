@@ -49,6 +49,8 @@ if (N_SHADER_VALIDATION)
     set(shader_compiler_args ${shader_compiler_args} "-v")
 endif()
 
+add_definitions(-DNEBULA_BINARY_FOLDER=\"${FIPS_PROJECT_DEPLOY_DIR}\")
+
 include(create_resource)
 include(CMakeDependentOption)
 
@@ -775,8 +777,8 @@ macro(add_nebula_shaders)
     else()
         set_nebula_export_dir()
         
-        add_shaders_recursive("${NROOT}/syswork/shaders/vk" "${NROOT}/syswork/shaders/vk" true)
-        add_shaders_recursive("${workdir}/syswork/shaders/vk" "${workdir}/syswork/shaders/vk" false)
+        #add_shaders_recursive("${NROOT}/syswork/shaders/vk" "${NROOT}/syswork/shaders/vk" true)
+        #add_shaders_recursive("${workdir}/syswork/shaders/vk" "${workdir}/syswork/shaders/vk" false)
         compile_gpulang_recursive("${NROOT}/syswork/shaders/gpulang" "${NROOT}/syswork/shaders/gpulang" true)
         compile_gpulang_recursive("${workdir}/syswork/shaders/gpulang" "${workdir}/syswork/shaders/gpulang" false)
         
