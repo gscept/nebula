@@ -87,7 +87,7 @@ void OpenScene()
         .HeightSlopeMaterial(Terrain::BiomeMaterialBuilder().Finish())
         .Mask("tex:system/white.dds")
         .Finish();
-    Terrain::TerrainContext::CreateBiome(biomeParameters);
+    Terrain::TerrainContext::CreateBiome(terrain, biomeParameters);
 };
 
 //------------------------------------------------------------------------------

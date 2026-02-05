@@ -10,7 +10,7 @@
 #include "particles/particlecontext.h"
 #include "characters/charactercontext.h"
 
-#include "materials/materialtemplates.h"
+#include "materials/gpulang/materialtemplatesgpulang.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -249,7 +249,7 @@ void OpenScene()
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
 
                     uint materialIndex = i + (j + NumModels) * (NumModels * 2);
-                    //entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, MaterialTemplates::BatchGroup::FlatGeometryLit);
+                    //entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, MaterialTemplatesGPULang::BatchGroup::FlatGeometryLit);
 
                     Graphics::RegisterEntity<ObservableContext>(ent);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
