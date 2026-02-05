@@ -165,53 +165,53 @@ UnpackSign(packedNormal : i32) f32
 //------------------------------------------------------------------------------
 /**
 */
-SampleTerrain(obj : TlasInstance, prim : u32, baryCoords : f32x3, indices : *u32x3, uv : *f32x2, tbn : *f32x3x3) void
+SampleTerrain(obj : TlasInstance, prim : u32, baryCoords : f32x3, out indices : u32x3, out uv : f32x2, out tbn : f32x3x3) void
 {
     if (obj.Use16BitIndex == 1)
     {
         const i16Ptr = cast_Indexes16(obj.IndexPtr);
-        *indices = u32x3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+        indices = u32x3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
     }
     else
     {
         const i32Ptr = cast_Indexes32(obj.IndexPtr);
-        *indices = u32x3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+        indices = u32x3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
     }
     
     const positionsPtr = cast_VertexPosUv(obj.PositionsPtr);
-	const readIndices = *indices;
+	const readIndices = indices;
 
     const uv0 = UnpackUV32((positionsPtr[readIndices.x]).uv);
     const uv1 = UnpackUV32((positionsPtr[readIndices.y]).uv);
     const uv2 = UnpackUV32((positionsPtr[readIndices.z]).uv);
-    *uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+    uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
 
-    *tbn = PlaneTBN(f32x3(0, 1, 0));
+    tbn = PlaneTBN(f32x3(0, 1, 0));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SampleGeometry(obj : TlasInstance, prim : u32, baryCoords : f32x3, indices : *u32x3, uv : *f32x2, normal : *f32x3, tangent : *f32x3, sign : *f32) void
+SampleGeometry(obj : TlasInstance, prim : u32, baryCoords : f32x3, out indices : u32x3, out uv : f32x2, out normal : f32x3, out tangent : f32x3, out sign : f32) void
 {
     if (obj.Use16BitIndex == 1)
     {
         const i16Ptr = cast_Indexes16(obj.IndexPtr);
-        *indices = u32x3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
+        indices = u32x3(i16Ptr[prim * 3].index, i16Ptr[prim * 3 + 1].index, i16Ptr[prim * 3 + 2].index);
     }
     else
     {
         const i32Ptr = cast_Indexes32(obj.IndexPtr);
-        *indices = u32x3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
+        indices = u32x3(i32Ptr[prim * 3].index, i32Ptr[prim * 3 + 1].index, i32Ptr[prim * 3 + 2].index);
     }
-    const readIndices = *indices;
+    const readIndices = indices;
 
     const positionsPtr = cast_VertexPosUv(obj.PositionsPtr);
 
     const uv0 = UnpackUV32((positionsPtr[readIndices.x]).uv);
     const uv1 = UnpackUV32((positionsPtr[readIndices.y]).uv);
     const uv2 = UnpackUV32((positionsPtr[readIndices.z]).uv);
-    *uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
+    uv = BaryCentricVec2(uv0, uv1, uv2, baryCoords);
     
     const attribPtr = obj.AttrPtr;
     
@@ -230,7 +230,7 @@ SampleGeometry(obj : TlasInstance, prim : u32, baryCoords : f32x3, indices : *u3
             t1 = UnpackNormal32(attrs1.normal_tangent.y);
             t2 = UnpackNormal32(attrs2.normal_tangent.y);
             t3 = UnpackNormal32(attrs3.normal_tangent.y);
-            *sign = UnpackSign(attrs1.normal_tangent.y);
+            sign = UnpackSign(attrs1.normal_tangent.y);
             break;
         }
         case 4: // Skin
@@ -244,13 +244,13 @@ SampleGeometry(obj : TlasInstance, prim : u32, baryCoords : f32x3, indices : *u3
             t1 = UnpackNormal32(attrs1.normal_tangent.y);
             t2 = UnpackNormal32(attrs2.normal_tangent.y);
             t3 = UnpackNormal32(attrs3.normal_tangent.y);
-            *sign = UnpackSign(attrs1.normal_tangent.y);
+            sign = UnpackSign(attrs1.normal_tangent.y);
             break;
         }
     }
     
-    *normal = BaryCentricVec3(n1, n2, n3, baryCoords);
-    *tangent = BaryCentricVec3(t1, t2, t3, baryCoords);
+    normal = BaryCentricVec3(n1, n2, n3, baryCoords);
+    tangent = BaryCentricVec3(t1, t2, t3, baryCoords);
 }
 
 //------------------------------------------------------------------------------

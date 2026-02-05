@@ -14,7 +14,7 @@ sampler_state DecalSampler
 //------------------------------------------------------------------------------
 /**
 */
-ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : *f32x3, normal : *f32x3, material : *f32x4) void
+ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, out albedo : f32x3, out normal : f32x3, out material : f32x4) void
 {
     var totAlbedo = f32x3(0);
     var totNormal = f32x3(0);
@@ -52,7 +52,7 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
                 const uv = localPos.xy + f32x2(0.5f);
 
                 // calculate a weight which serves as a smooth blend off the normal
-                const norm = *normal;
+                const norm = normal;
                 var weight = saturate(dot(decal.direction, -norm.xyz));
                 const d_albedo = sample2DGrad(decal.albedo, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
                 const d_normal = sample2DGrad(decal.normal, DecalSampler, uv, viewPosDerivativeX, viewPosDerivativeY);
@@ -92,12 +92,12 @@ ApplyDecals(idx : u32, viewPos : f32x4, worldPos : f32x4, depth : f32, albedo : 
 
     // normalize the normal
     totNormal = normalize(totNormal);
-    const alb = *albedo;
-    const mat = *material;
+    const alb = albedo;
+    const mat = material;
     
     // write outputs, make sure to include the total weight so we can do a proper blending
-    *albedo = (1.0f - totWeight) * alb + (totAlbedo * totWeight);
-    *normal = totNormal;
-    *material = (1.0f - totWeight) * mat + totMaterial * totWeight;
+    albedo = (1.0f - totWeight) * alb + (totAlbedo * totWeight);
+    normal = totNormal;
+    material = (1.0f - totWeight) * mat + totMaterial * totWeight;
 }
 

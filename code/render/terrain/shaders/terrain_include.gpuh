@@ -251,9 +251,9 @@ SampleSlopeRule(
     angle : f32,
     mask : f32,
     uv : f32x2,
-    outAlbedo : *f32x3,
-    outMaterial : *f32x4,
-    outNormal : *f32x3
+    out outAlbedo : f32x3,
+    out outMaterial : f32x4,
+    out outNormal : f32x3
 ) void
 {
     /*
@@ -263,12 +263,12 @@ SampleSlopeRule(
         2 - height surface
         3 - height slope surface
     */
-    *outAlbedo = SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
-    *outAlbedo += SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
-    *outMaterial = SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex) * mask * (1.0f - angle);
-    *outMaterial += SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1) * mask * angle;
-    *outNormal = SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
-    *outNormal += SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
+    outAlbedo = SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
+    outAlbedo += SampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
+    outMaterial = SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex) * mask * (1.0f - angle);
+    outMaterial += SampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1) * mask * angle;
+    outNormal = SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
+    outNormal += SampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
 }
 
 //------------------------------------------------------------------------------
@@ -302,12 +302,12 @@ PageDataSetStatus(data : u32x4, status : u32) u32x4
 //------------------------------------------------------------------------------
 /**
 */
-UnpackSubTexture(subTex : TerrainSubTexture, worldOffset : *u32x2, indirectionOffset: *u32x2, mip: *u32, mipBias: *u32, tiles: *u32) void
+UnpackSubTexture(subTex : TerrainSubTexture, out worldOffset : u32x2, out indirectionOffset: u32x2, out mip: u32, out mipBias: u32, out tiles: u32) void
 {
-    *indirectionOffset = u32x2(subTex.packed0 & 0xFFFu, (subTex.packed0 >> 12u) & 0xFFFu);
-    *mip = (subTex.packed0 >> 24u) & 0xFu;
-    *mipBias = (subTex.packed0 >> 28u) & 0xFu;
-    *tiles = 1u << *mip;
+    indirectionOffset = u32x2(subTex.packed0 & 0xFFFu, (subTex.packed0 >> 12u) & 0xFFFu);
+    mip = (subTex.packed0 >> 24u) & 0xFu;
+    mipBias = (subTex.packed0 >> 28u) & 0xFu;
+    tiles = 1u << mip;
 }
 
 //------------------------------------------------------------------------------
@@ -323,19 +323,19 @@ PageDataGetStatus(data : u32x4) u32
 /**
     Calculate the values needed to insert and extract tile data
 */
-CalculateTileCoords(mip : u32, maxTiles : u32, relativePos : f32x2, subTextureIndirectionOffset : u32x2, pageCoord : *u32x2, subTextureTile : *u32x2, tilePosFract : *f32x2) void
+CalculateTileCoords(mip : u32, maxTiles : u32, relativePos : f32x2, subTextureIndirectionOffset : u32x2, out pageCoord : u32x2, out subTextureTile : u32x2, out tilePosFract : f32x2) void
 {
     // calculate the amount of meters a single tile is, this is adjusted by the mip and the number of tiles at max lod
     const metersPerTile : f32x2 = TerrainInstanceUniforms.VirtualTerrainSubTextureSize / f32(maxTiles >> mip);
 
     // calculate subtexture tile index by dividing the relative position by the amount of meters there are per tile
     const tilePos = relativePos / metersPerTile;
-    *tilePosFract = fract(tilePos);
-    *subTextureTile = u32x2(tilePos);
+    tilePosFract = fract(tilePos);
+    subTextureTile = u32x2(tilePos);
 
     // the actual page within that tile is the indirection offset of the whole
     // subtexture, plus the sub texture tile index
-    *pageCoord = (subTextureIndirectionOffset >> mip) + *subTextureTile;
+    pageCoord = (subTextureIndirectionOffset >> mip) + subTextureTile;
 }
 
 
@@ -387,9 +387,9 @@ SampleTerrain(
     , tilingFactor : f32x2
     , worldPos : f32x3
     , triplanarWeights : f32x3
-    , outAlbedo : *f32x3
-    , outMaterial : *f32x4
-    , outNormal : *f32x3
+    , out outAlbedo : f32x3
+    , out outMaterial : f32x4
+    , out outNormal : f32x3
 ) void
 {
     if mask > 0.0f
@@ -403,26 +403,26 @@ SampleTerrain(
             var normal = f32x3(0, 0, 0);
             var material = f32x4(0, 0, 0, 0);
 
-            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.x;
             blendMaterial += material * triplanarWeights.x;
             blendNormal += normal * triplanarWeights.x;
 
-            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.y;
             blendMaterial += material * triplanarWeights.y;
             blendNormal += normal * triplanarWeights.y;
 
-            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.z;
             blendMaterial += material * triplanarWeights.z;
             blendNormal += normal * triplanarWeights.z;
 
             blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
             blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-            *outNormal += (tbn * blendNormal) * mask;
-            *outAlbedo += blendAlbedo * mask;   
-            *outMaterial += blendMaterial * mask;
+            outNormal += (tbn * blendNormal) * mask;
+            outAlbedo += blendAlbedo * mask;   
+            outMaterial += blendMaterial * mask;
         }
         else
         {
@@ -430,32 +430,32 @@ SampleTerrain(
             var normal = f32x3(0, 0, 0);
             var material = f32x4(0, 0, 0, 0);
 
-            SampleSlopeRule(biome, 2, angle, mask, worldPos.yz / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.x * heightCutoff;
             blendMaterial += material * triplanarWeights.x * heightCutoff;
             blendNormal += normal * triplanarWeights.x * heightCutoff;
 
-            SampleSlopeRule(biome, 2, angle, mask, worldPos.xz / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.y * heightCutoff;
             blendMaterial += material * triplanarWeights.y * heightCutoff;
             blendNormal += normal * triplanarWeights.y * heightCutoff;
 
-            SampleSlopeRule(biome, 2, angle, mask, worldPos.xy / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 2, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.z * heightCutoff;
             blendMaterial += material * triplanarWeights.z * heightCutoff;
             blendNormal += normal * triplanarWeights.z * heightCutoff;
 
-            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.x * (1.0f - heightCutoff);
             blendMaterial += material * triplanarWeights.x * (1.0f - heightCutoff);
             blendNormal += normal * triplanarWeights.x * (1.0f - heightCutoff);
 
-            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xz / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.y * (1.0f - heightCutoff);
             blendMaterial += material * triplanarWeights.y * (1.0f - heightCutoff);
             blendNormal += normal * triplanarWeights.y * (1.0f - heightCutoff);
 
-            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, &albedo, &material, &normal);
+            SampleSlopeRule(biome, 0, angle, mask, worldPos.xy / tilingFactor, albedo, material, normal);
             blendAlbedo += albedo * triplanarWeights.z * (1.0f - heightCutoff);
             blendMaterial += material * triplanarWeights.z * (1.0f - heightCutoff);
             blendNormal += normal * triplanarWeights.z * (1.0f - heightCutoff);
@@ -463,9 +463,9 @@ SampleTerrain(
             blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
             blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
 
-            *outNormal += (tbn * blendNormal) * mask;
-            *outAlbedo += blendAlbedo * mask;   
-            *outMaterial += blendMaterial * mask;
+            outNormal += (tbn * blendNormal) * mask;
+            outAlbedo += blendAlbedo * mask;   
+            outMaterial += blendMaterial * mask;
         }
     }
 }

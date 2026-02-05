@@ -22,7 +22,7 @@ BoxHit(
     var sign : f32;
 	var tbn : f32x3x3;
     const mat = MaterialPointers.TerrainMaterials[obj.MaterialOffset];
-    SampleTerrain(obj, blasGetPrimitiveIndex(), barycentricCoords, &indices, &uv, &tbn);
+    SampleTerrain(obj, blasGetPrimitiveIndex(), barycentricCoords, indices, uv, tbn);
 
     const normals = sample2DLod(mat.LowresNormalFallback, NormalSampler, uv, 0);
     const tNormal = TangentSpaceNormal(normals.xy, tbn);

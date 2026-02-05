@@ -71,12 +71,12 @@ csCull() void
 LocalFogVolumes(
     idx : u32
     , viewPos : f32x3
-    , density : *f32
-    , absorption : *f32x3
+    , out density : f32
+    , out absorption : f32x3
 ) void
 {
-    var totalDensity = *density;
-    var totalAbsorption = *absorption;
+    var totalDensity = density;
+    var totalAbsorption = absorption;
     const flag = bufferLoad(ClusterAABBs, idx).featureFlags;
     if (CheckFlags(flag, CLUSTER_FOG_SPHERE_BIT))
     {
@@ -125,8 +125,8 @@ LocalFogVolumes(
             }
         }
     }
-    *density = totalDensity;
-    *absorption = totalAbsorption;
+    density = totalDensity;
+    absorption = totalAbsorption;
 }
 
 
@@ -306,7 +306,7 @@ csRender() void
         // sample local fog volumes
         var localParticleDensity = 0.0f;
         var localAbsorption = VolumeFogUniforms.GlobalAbsorption;
-        LocalFogVolumes(idx, samplePos, &localParticleDensity, &localAbsorption);
+        LocalFogVolumes(idx, samplePos, localParticleDensity, localAbsorption);
 
         // local particle density is the result of our volumes + global particle density increment
         localParticleDensity = (localParticleDensity + globalParticleDensity) * oneDivFogSteps;

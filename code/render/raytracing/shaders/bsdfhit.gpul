@@ -22,7 +22,7 @@ ClosestHit(
     var uv : f32x2;
     var normal, tangent : f32x3;
     var sign : f32;
-    SampleGeometry(obj, blasGetPrimitiveIndex(), barycentricCoords, &indices, &uv, &normal, &tangent, &sign);
+    SampleGeometry(obj, blasGetPrimitiveIndex(), barycentricCoords, indices, uv, normal, tangent, sign);
     
     normal = tlasGetObjectToWorld() * f32x4(normal, 0);
     tangent = tlasGetObjectToWorld() * f32x4(tangent, 0);

@@ -9,15 +9,15 @@
 // Name: GetMinMaxRGB
 // Desc: Get the min and max of three channels (RGB)
 //--------------------------------------------------------------------------------------
-GetMinMaxRGB(colorBlock : [16]f32x3, minColor : *f32x3, maxColor : *f32x3) void
+GetMinMaxRGB(colorBlock : [16]f32x3, out minColor : f32x3, out maxColor : f32x3) void
 {
-    *minColor = colorBlock[0];
-    *maxColor = colorBlock[0];
+    minColor = colorBlock[0];
+    maxColor = colorBlock[0];
 
     for (var i = 1; i < 16; ++i)
     {
-        *minColor = min(*minColor, colorBlock[i]);
-        *maxColor = max(*maxColor, colorBlock[i]);
+        minColor = min(minColor, colorBlock[i]);
+        maxColor = max(maxColor, colorBlock[i]);
     }
 }
 
@@ -25,15 +25,15 @@ GetMinMaxRGB(colorBlock : [16]f32x3, minColor : *f32x3, maxColor : *f32x3) void
 // Name: GetMinMaxChannel
 // Desc: Get the min and max of a single channel
 //--------------------------------------------------------------------------------------
-GetMinMaxChannel(block : [16]f32, minC : *f32, maxC : *f32) void
+GetMinMaxChannel(block : [16]f32, out minC : f32, out maxC : f32) void
 {
-    *minC = block[0];
-    *maxC = block[0];
+    minC = block[0];
+    maxC = block[0];
 
     for (var i = 1; i < 16; ++i)
     {
-        *minC = min(*minC, block[i]);
-        *maxC = max(*maxC, block[i]);
+        minC = min(minC, block[i]);
+        maxC = max(maxC, block[i]);
     }
 }
 
@@ -41,19 +41,19 @@ GetMinMaxChannel(block : [16]f32, minC : *f32, maxC : *f32) void
 // Name: GetMinMaxUV
 // Desc: Get the min and max of two channels (UV)
 //--------------------------------------------------------------------------------------
-GetMinMaxUV(blockU : [16]f32, blockV : [16]f32, minU : *f32, maxU : *f32, minV : *f32, maxV : *f32) void
+GetMinMaxUV(blockU : [16]f32, blockV : [16]f32, out minU : f32, out maxU : f32, out minV : f32, out maxV : f32) void
 {
-    *minU = blockU[0];
-    *maxU = blockU[0];
-    *minV = blockV[0];
-    *maxV = blockV[0];
+    minU = blockU[0];
+    maxU = blockU[0];
+    minV = blockV[0];
+    maxV = blockV[0];
 
     for (var i = 1; i < 16; ++i)
     {
-        *minU = min(*minU, blockU[i]);
-        *maxU = max(*maxU, blockU[i]);
-        *minV = min(*minV, blockV[i]);
-        *maxV = max(*maxV, blockV[i]);
+        minU = min(minU, blockU[i]);
+        maxU = max(maxU, blockU[i]);
+        minV = min(minV, blockV[i]);
+        maxV = max(maxV, blockV[i]);
     }
 }
 
@@ -63,16 +63,16 @@ GetMinMaxUV(blockU : [16]f32, blockV : [16]f32, minU : *f32, maxU : *f32, minV :
 //      This is recommended by van Waveren & Castano, "Real-Time YCoCg-DXT Compression"
 //      http://www.nvidia.com/object/real-time-ycocg-dxt-compression.html
 //--------------------------------------------------------------------------------------
-InsetMinMaxRGB(minColor : *f32x3, maxColor : *f32x3, colorScale : f32) void
+InsetMinMaxRGB(out minColor : f32x3, out maxColor : f32x3, colorScale : f32) void
 {
     // Since we have four points, (1/16) * (max-min) will give us half the distance between
     //  two points on the line in color space
-    const offset = (1.0f / 16.0f) * (*maxColor - *minColor);
+    const offset = (1.0f / 16.0f) * (maxColor - minColor);
 
     // After applying the offset, we want to round up or down to the next integral color value (0 to 255)
     colorScale *= 255.0f;
-    *maxColor = ceil((*maxColor - offset) * colorScale) / colorScale;
-    *minColor = floor((*minColor + offset) * colorScale) / colorScale;
+    maxColor = ceil((maxColor - offset) * colorScale) / colorScale;
+    minColor = floor((minColor + offset) * colorScale) / colorScale;
 }
 
 //--------------------------------------------------------------------------------------
@@ -141,11 +141,11 @@ GetIndicesRGB(block : [16]f32x3, minColor : f32x3, maxColor : f32x3) u32
 // Name: GetIndicesAlpha
 // Desc: Calculate the BC block indices for an alpha channel
 //--------------------------------------------------------------------------------------
-GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, output : *u32x2) void
+GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, out output : u32x2) void
 {
     const d = minA - maxA;
     const stepInc = 7.0f / d;
-    var outputValue = *output;
+    var outputValue = output;
 
     // Both packed.x and packed.y contain index values, so we need two loops
 
@@ -185,7 +185,7 @@ GetIndicesAlpha(block : [16]f32, minA : f32, maxA : f32, output : *u32x2) void
         outputValue.y |= (index << shift);
         shift += 3;
     }
-    *output = outputValue;
+    output = outputValue;
 }
 
 //--------------------------------------------------------------------------------------
@@ -208,13 +208,13 @@ CompressBC3Block(blockRGB : [16]f32x3, blockA : [16]f32, valueScale : f32) u32x4
 {
     var minColor, maxColor : f32x3;
     var minA, maxA : f32;
-    GetMinMaxRGB(blockRGB, &minColor, &maxColor);
-    GetMinMaxChannel(blockA, &minA, &maxA);
+    GetMinMaxRGB(blockRGB, minColor, maxColor);
+    GetMinMaxChannel(blockA, minA, maxA);
 
     // Inset the min and max color values. We don't inset the alpha values
     //  because, while it may reduce the RMS error, it has a tendency to turn
     //  fully opaque texels partially transparent, which is probably not desirable.
-    InsetMinMaxRGB(&minColor, &maxColor, valueScale);
+    InsetMinMaxRGB(minColor, maxColor, valueScale);
 
     // Pack our colors and alpha values into uints
     const minColor565 = ColorTo565(valueScale * minColor);
@@ -231,7 +231,7 @@ CompressBC3Block(blockRGB : [16]f32x3, blockA : [16]f32, valueScale : f32) u32x4
     var outA = u32x2((minAPacked << 8) | maxAPacked, 0);
     if minAPacked < maxAPacked
     {
-        GetIndicesAlpha(blockA, minA, maxA, &outA);
+        GetIndicesAlpha(blockA, minA, maxA, outA);
     }
 
     return u32x4(outA.x, outA.y, (minColor565 << 16) | maxColor565, indices);
@@ -247,7 +247,7 @@ CompressBC3Block(blockRGB : [16]f32x3, blockA : [16]f32, valueScale : f32) u32x4
 CompressBC5Block(blockU : [16]f32, blockV : [16]f32, valueScale : f32) u32x4
 {
     var minU, maxU, minV, maxV : f32;
-    GetMinMaxUV(blockU, blockV, &minU, &maxU, &minV, &maxV);
+    GetMinMaxUV(blockU, blockV, minU, maxU, minV, maxV);
 
     // Pack our min and max uv values
     const minUPacked = u32(round(minU * valueScale * 255.0f));
@@ -260,12 +260,12 @@ CompressBC5Block(blockU : [16]f32, blockV : [16]f32, valueScale : f32) u32x4
 
     if minUPacked < maxUPacked
     {
-        GetIndicesAlpha(blockU, minU, maxU, &outU);
+        GetIndicesAlpha(blockU, minU, maxU, outU);
     }
 
     if minVPacked < maxVPacked
     {
-        GetIndicesAlpha(blockV, minV, maxV, &outV);
+        GetIndicesAlpha(blockV, minV, maxV, outV);
     }
 
     return u32x4(outU.x, outU.y, outV.x, outV.y);

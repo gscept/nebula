@@ -188,7 +188,7 @@ csWriteTile() void
 
         const tilingFactor = f32x2(rules.z);
 
-        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, &totalAlbedo, &totalMaterial, &totalNormal);
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
     }
 
     const localThreads = computeGetLocalThreadIndices();
@@ -280,7 +280,7 @@ csWriteLowres() void
 
         const tilingFactor = f32x2(rules.z);
 
-        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, &totalAlbedo, &totalMaterial, &totalNormal);
+        SampleTerrain(i, tbn, angle, heightCutoff, mask, tilingFactor, worldPos, triplanarWeights, totalAlbedo, totalMaterial, totalNormal);
     }
 
     textureStore(AlbedoLowresOutput, i32x2(pixel), f32x4(totalAlbedo, 0));

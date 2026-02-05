@@ -196,7 +196,7 @@ psTerrainPrepass(
 
     var dummydummy, indirectionOffset : u32x2;
     var maxMip, tiles, mipBias : u32;
-    UnpackSubTexture(subTexture, &dummydummy, &indirectionOffset, &maxMip, &mipBias, &tiles);
+    UnpackSubTexture(subTexture, dummydummy, indirectionOffset, maxMip, mipBias, tiles);
 
     // if this subtexture is bound on the CPU side, use it
     if tiles != 1
@@ -220,7 +220,7 @@ psTerrainPrepass(
         var subTextureTile : u32x2;
         var pageCoord : u32x2;
         var dummy : f32x2;
-        CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, &pageCoord, &subTextureTile, &dummy);
+        CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, pageCoord, subTextureTile, dummy);
 
         // since we have a buffer, we must find the appropriate offset and size into the buffer for this mip
         var mipOffset = TerrainInstanceUniforms.VirtualPageBufferMipOffsets[lowerMip / 4][lowerMip % 4];
@@ -250,7 +250,7 @@ psTerrainPrepass(
             // otherwise, we have to account for both by calculating new tile coords for the upper mip
             var subTextureTile : u32x2;
             var pageCoord : u32x2;
-            CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, &pageCoord, &subTextureTile, &dummy);
+            CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoord, subTextureTile, dummy);
 
             mipOffset = TerrainInstanceUniforms.VirtualPageBufferMipOffsets[upperMip / 4][upperMip % 4];
             mipSize = TerrainInstanceUniforms.VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
@@ -327,7 +327,7 @@ psTerrainResolve(
 
         var dummydummy, indirectionOffset : u32x2;
         var maxMip, tiles, mipBias : u32;
-        UnpackSubTexture(subTexture, &dummydummy, &indirectionOffset, &maxMip, &mipBias, &tiles);
+        UnpackSubTexture(subTexture, dummydummy, indirectionOffset, maxMip, mipBias, tiles);
 
         if tiles != 1
         {
@@ -345,7 +345,7 @@ psTerrainResolve(
             var pageCoordLower : u32x2;
             var dummy : u32x2;
             var subTextureTileFractLower : f32x2;
-            CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, &pageCoordLower, &dummy, &subTextureTileFractLower);
+            CalculateTileCoords(lowerMip, tiles, relativePos, indirectionOffset, pageCoordLower, dummy, subTextureTileFractLower);
 
             // physicalUv represents the pixel offset for this pixel into that page, add padding to account for anisotropy
             const physicalUvLower = subTextureTileFractLower * TerrainInstanceUniforms.PhysicalTileSize + TerrainInstanceUniforms.PhysicalTilePadding;
@@ -360,7 +360,7 @@ psTerrainResolve(
                 var pageCoordUpper : u32x2;
                 var dummy : u32x2;
                 var subTextureTileFractUpper : f32x2; 
-                CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, &pageCoordUpper, &dummy, &subTextureTileFractUpper);
+                CalculateTileCoords(upperMip, tiles, relativePos, indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
                 const physicalUvUpper = subTextureTileFractUpper * (TerrainInstanceUniforms.PhysicalTileSize) + TerrainInstanceUniforms.PhysicalTilePadding;
 
                 // get the indirection coord and normalize it to the physical space
