@@ -19,6 +19,7 @@
 #include "util/stringatom.h"
 #include "util/bitfield.h"
 #include "util/variant.h"
+#include "pjson/pjson.h"
 
 namespace pjson
 {
@@ -225,8 +226,6 @@ JsonReader::Get(Util::BitField<N>& ret, const char* attr)
         ret.SetBit(arr[i]);
     }
 }
-
-
 
 } // namespace IO
 //------------------------------------------------------------------------------

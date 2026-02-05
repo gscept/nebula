@@ -349,6 +349,8 @@ ENDIF()
                 vkvertexlayout.h
             )
     endif()
+        fips_dir(coregraphics/stb)
+            fips_files(stb_image_write_16bit.h)
         fips_dir(debug)
             fips_files(
                 framescriptinspector.cc
@@ -671,6 +673,7 @@ ENDIF()
                 visibilitysystem.h
                 visibilitysystem.cc
             )
+
 
 nebula_end_module()
 

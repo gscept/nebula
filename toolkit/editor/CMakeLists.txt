@@ -141,6 +141,8 @@ fips_dir(editor)
         fips_files(
             camera.cc
             camera.h
+			livebatcher.cc
+			livebatcher.h
             toolinterface.h
             toolinterface.cc
             selectioncontext.h
@@ -156,5 +158,5 @@ fips_dir(editor)
             pathconverter.cc
             pathconverter.h
         )
-fips_deps(foundation application graphicsfeature physicsfeature navigationfeature audio toolkit-common)
+fips_deps(foundation application graphicsfeature physicsfeature navigationfeature audio toolkit-common toolkitutil)
 nebula_end_module()

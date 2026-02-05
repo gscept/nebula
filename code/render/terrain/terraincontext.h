@@ -268,14 +268,14 @@ public:
     );
 
     /// setup a new biome
-    static TerrainBiomeId CreateBiome(const BiomeSettings& settings);
+    static TerrainBiomeId CreateBiome(const Graphics::GraphicsEntityId entity, const BiomeSettings& settings);
     /// Destroy biome
-    static void DestroyBiome(TerrainBiomeId id);
+    static void DestroyBiome(const Graphics::GraphicsEntityId entity, TerrainBiomeId id);
 
     /// set biome slope threshold
-    static void SetBiomeSlopeThreshold(TerrainBiomeId id, float threshold);
+    static void SetBiomeSlopeThreshold(const Graphics::GraphicsEntityId entity, TerrainBiomeId id, float threshold);
     /// set biome height threshold
-    static void SetBiomeHeightThreshold(TerrainBiomeId id, float threshold);
+    static void SetBiomeHeightThreshold(const Graphics::GraphicsEntityId entity, TerrainBiomeId id, float threshold);
 
     /// Set the sun entity for terrain shadows
     static void SetSun(const Graphics::GraphicsEntityId sun);
@@ -302,9 +302,9 @@ public:
 #ifdef WITH_NEBULA_EDITOR
     /// Set heightmap to a system controller texture instead of a resource
     static void SetHeightmap(Graphics::GraphicsEntityId entity, CoreGraphics::TextureId heightmap);
-    static void SetBiomeMask(TerrainBiomeId biomeId, CoreGraphics::TextureId biomemask); 
-    static void SetBiomeLayer(TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const Resources::ResourceName& albedo, const Resources::ResourceName& normal, const Resources::ResourceName& material);
-    static void SetBiomeRules(TerrainBiomeId biomeId, float slopeThreshold, float heightThreshold, float uvScalingFactor);
+    static void SetBiomeMask(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, CoreGraphics::TextureId biomemask);
+    static void SetBiomeLayer(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, BiomeSettings::BiomeMaterialLayer layer, const Resources::ResourceName& albedo, const Resources::ResourceName& normal, const Resources::ResourceName& material);
+    static void SetBiomeRules(Graphics::GraphicsEntityId entity, TerrainBiomeId biomeId, float slopeThreshold, float heightThreshold, float uvScalingFactor);
     static void InvalidateTerrain(Graphics::GraphicsEntityId entity);
 #endif
 
@@ -422,6 +422,16 @@ public:
         Threading::AtomicCounter                                        subtexturesDoneCounter = 0, sectionCullDoneCounter = 0;
         CoreGraphics::BarrierContext                                    barrierContext; 
         uint32_t                                                        pageUpdateListBarrierIndex, pageStatusBufferBarrierIndex, subtextureBufferBarrierIndex, indirectionBarrierIndex, indirectionCopyBarrierIndex, albedoCacheBarrierIndex, materialCacheBarrierIndex, normalCacheBarrierIndex;
+        
+        Util::Array<IndexT>                                             biomes;
+        CoreGraphics::BufferId                                          biomeBuffer;
+        Terrain::MaterialLayers::STRUCT                                 biomeMaterials;
+        Util::Array<CoreGraphics::TextureId>                            biomeTextures;
+        CoreGraphics::TextureId                                         biomeMasks[Terrain::MAX_BIOMES];
+        Threading::AtomicCounter                                        biomeLoaded[Terrain::MAX_BIOMES][4];
+        uint                                                            biomeLowresGenerated[Terrain::MAX_BIOMES];
+        BiomeMaterial                                                   biomeResources[Terrain::MAX_BIOMES][BiomeSettings::BiomeMaterialLayer::NumLayers];
+        CoreGraphics::TextureId                                         biomeWeights[Terrain::MAX_BIOMES];
     };
 private:
 
@@ -442,13 +452,11 @@ private:
     enum
     {
         TerrainBiome_Settings,
-        TerrainBiome_Index,
         TerrainBiome_MaskTexture,
     };
 
     typedef Ids::IdAllocator<
-        BiomeSettings,
-        uint32_t
+        BiomeSettings
     > TerrainBiomeAllocator;
     static TerrainBiomeAllocator terrainBiomeAllocator;
 

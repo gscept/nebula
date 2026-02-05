@@ -1,5 +1,53 @@
 {
     "namespace": "GraphicsFeature",
+    "structs": {
+      "BiomeMaterial": {
+        "albedo": {
+          "type": "resource",
+          "default": "systex:white.dds"
+        },
+        "normals": {
+          "type": "resource",
+          "default": "systex:nobump.dds"
+        },
+        "material": {
+          "type": "resource",
+          "default": "systex:default_material.dds"
+        }
+      },
+      "Biome": {
+        "_allowArray_": true,
+        "mask": {
+          "type": "resource",
+          "default": "systex:white.dds"
+        },
+        "slopeThreshold": {
+          "type": "float",
+          "default": 0.5
+        },
+        "heightThreshold": {
+          "type": "float",
+          "default": 0.5
+        },
+        "uvScaleFactor": {
+          "type": "float",
+          "default": 1.0
+        },
+        "flat": {
+          "type": "GraphicsFeature::BiomeMaterial"
+        },
+        "slope": {
+          "type": "GraphicsFeature::BiomeMaterial"
+        },
+        "height": {
+          "type": "GraphicsFeature::BiomeMaterial"
+        },
+        "heightSlope": {
+          "type": "GraphicsFeature::BiomeMaterial"
+        }
+      }
+    },
+
     "components": {
         "Terrain": {
             "graphicsEntityId": {
@@ -47,10 +95,13 @@
                 "type": "resource",
                 "default": "systex:white.dds"
             },
-            "enableRaytracing": {
-                "type": "bool",
-                "default": false
-            }
+          "enableRaytracing": {
+            "type": "bool",
+            "default": false
+          },
+          "biomes": {
+            "type": "[GraphicsFeature::Biome]"
+          }
         }
     }
 }

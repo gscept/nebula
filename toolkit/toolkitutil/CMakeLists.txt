@@ -8,7 +8,7 @@ fips_begin_lib(toolkitutil)
     fips_deps(foundation render physics application)
 
     if(FIPS_WINDOWS)
-        fips_libs(CMP_Core_MT CMP_Framework_MT)
+        fips_libs(CMP_Core_MD CMP_Framework_MD)
     else()
         fips_libs(xml2 CMP_Framework CMP_Common CMP_Core CMP_Core_SSE CMP_Core_AVX512 CMP_Core_AVX CMP_Compressonator CMP_GpuDecode Image_DDS Image_EXR Image_KTX Image_TGA)
     endif()

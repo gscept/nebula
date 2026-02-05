@@ -111,6 +111,7 @@ UIManager::OnActivate()
     windowServer->RegisterWindow("Presentation::Navigation", "Navigation");
     windowServer->RegisterWindow("Presentation::Settings", "Settings", "Editor");
     windowServer->RegisterWindow("Presentation::TerrainEditor", "Terrain", "Editor");
+    windowServer->RegisterWindow("Presentation::LiveBatcherWindow", "Live Batcher", "Editor");
 
     UI::Icons::play          = NLoadIcon("systex:icon_play.dds");
     UI::Icons::pause         = NLoadIcon("systex:icon_pause.dds");

@@ -204,9 +204,23 @@ AssetBatcherApp::DoWork()
         exportFlag = ExporterBase::Dir;
         dir = this->args.GetString("-asset");
     }
+    if (this->args.HasArg("-dir"))
+    {
+        exportFlag = ExporterBase::Dir;
+        dir = this->args.GetString("-dir");
+    }
+    if (this->args.HasArg("-file"))
+    {
+        exportFlag = ExporterBase::File;
+        file = this->args.GetString("-file");
+    }
     if (this->args.HasArg("-force"))
     {
         force = this->args.GetBoolFlag("-force");
+    }
+    if (this->args.HasArg("-rawlog"))
+    {
+        ToolkitUtil::disableTextColors = true;
     }
 
     Flat::FlatbufferInterface::Init();
@@ -279,8 +293,8 @@ AssetBatcherApp::DoWork()
                     exporter->SetProgressMinMax(0, files * PRECISION);
                     exporter->ExportAll();
                 }
+                break;
             }
-            break;
             case ExporterBase::Dir:
             {
                 IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", sources[source]));
@@ -288,11 +302,18 @@ AssetBatcherApp::DoWork()
                 exporter->UpdateSource();
                 exporter->SetProgressMinMax(0, files * PRECISION);
                 exporter->ExportDir(dir);
+                break;
             }
-            break;
             case ExporterBase::File:
-            n_error("Wrong export type, file");
-            break;
+            {
+                IO::AssignRegistry::Instance()->SetAssign(IO::Assign("src", dir));
+                exporter->UpdateSource();
+                IO::URI basePath("proj:work/assets");
+                exporter->SetCategory(dir.StripSubpath(basePath.LocalPath()));
+                exporter->SetProgressMinMax(0, 1 * PRECISION);
+                exporter->ExportFile("src:" + file);
+                break;
+            }
         }
     }
     
@@ -362,6 +383,7 @@ AssetBatcherApp::ShowHelp()
              "-source      -- select asset source from projectinfo, default all\n"
              "-work        -- batch a non-registered work folder into the project\n"
              "-mode        -- batch only a type of resource, can be: fbx, model, surface, texture, physics, gltf, audio\n"
+             "-rawlog      -- log text is output without ASCII colors or text style\n" 
              "-project     -- projectinfo override\n"
     );
 

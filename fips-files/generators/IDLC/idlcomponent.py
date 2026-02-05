@@ -4,6 +4,7 @@ import IDLC.idldocument as IDLDocument
 
 # Global component list
 components = list()
+structs = list()
 
 #------------------------------------------------------------------------------
 ##
@@ -25,12 +26,12 @@ class VariableDefinition:
         self.name = name
         self.defaultValue = defVal
 
-        
     def AsString(self):
+        typeName = IDLTypes.GetCppTypeString(self.type)
         if self.defaultValue is None:
-            return '{} {};'.format(IDLTypes.GetCppTypeString(self.type), self.name)
+            return '{} {};'.format(typeName, self.name)
         else:
-            return '{} {} = {};'.format(IDLTypes.GetCppTypeString(self.type), self.name, self.defaultValue)
+            return '{} {} = {};'.format(typeName, self.name, self.defaultValue)
     pass
 
     def AsCsString(self):
@@ -47,10 +48,11 @@ class ComponentDefinition:
         self.componentName = componentName
         self.variables = list()
         self.hasResource = False
+        self.allowArray = comp["_allowArray_"] if "_allowArray_" in comp else False
         
         if isinstance(comp, dict):
             for varName, var in comp.items():
-                if varName != "_managed_":
+                if varName != "_managed_" and varName != "_allowArray_":
                     self.variables.append(GetVariableFromEntry(varName, var))
         else:
             util.fmtError('Invalid component {}!\nComponent definition in NIDL must be JSON dict!'.format(self.componentName))
@@ -104,7 +106,10 @@ def GetVariableFromEntry(name, var):
         
         return VariableDefinition(var["type"], name, default, hideInInspector, description)
     else:
-        return VariableDefinition(var, name, IDLTypes.DefaultValue(var), False, "")
+        if hasattr(var, "__len__"):
+            return VariableDefinition(var, name, None, False, "")
+        else:
+            return VariableDefinition(var, name, IDLTypes.DefaultValue(var), False, "")
 
 #------------------------------------------------------------------------------
 ##
@@ -113,6 +118,10 @@ def ParseComponents(document):
     if "components" in document:
         for componentName, comp in document["components"].items():
             components.append(ComponentDefinition(componentName, comp))
+
+    if "structs" in document:
+        for structName, struct in document["structs"].items():
+            structs.append(ComponentDefinition(structName, struct))
 
 #------------------------------------------------------------------------------
 ##
@@ -263,6 +272,74 @@ def WriteEnumJsonSerializers(f, document):
 #
 def WriteStructJsonSerializers(f, document):
     namespace = IDLDocument.GetNamespace(document)
+
+    for struct in structs:
+        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=struct.componentName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=struct.componentName))
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
+        f.WriteLine("if (node->is_object())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        f.WriteLine("this->SetToNode(attr);")
+        for var in struct.variables:
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+        f.WriteLine("this->SetToParent();")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("")
+
+        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=struct.componentName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine("this->BeginObject(attr.AsCharPtr());")
+        for var in struct.variables:
+            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+        f.WriteLine("this->End();")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("")
+
+        if struct.allowArray:
+            f.WriteLine('template<> void JsonReader::Get<Util::Array<{namespace}::{name}>>(Util::Array<{namespace}::{name}>& ret, const char* attr)'.format(namespace=namespace, name=struct.componentName))
+            f.WriteLine('{')
+            f.IncreaseIndent()
+            f.WriteLine('ret = Util::Array<{namespace}::{name}>();'.format(namespace=namespace, name=struct.componentName))
+            f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
+            f.WriteLine("n_assert(node->is_array());")
+            f.WriteLine("unsigned int count = node->size();")
+            f.WriteLine("ret.Reserve(count);")
+            f.WriteLine("for (unsigned int i = 0; i < count; i++)")
+            f.WriteLine("{")
+            f.IncreaseIndent()
+            f.WriteLine('{namespace}::{name} element;'.format(namespace=namespace, name=struct.componentName))
+            f.WriteLine('this->Get<{namespace}::{name}>(element, node->get_key_name_at_index(i));'.format(namespace=namespace, name=struct.componentName))
+            f.WriteLine("ret.Append(element);")
+            f.DecreaseIndent()
+            f.WriteLine("}")
+            f.DecreaseIndent()
+            f.WriteLine("}")
+            f.WriteLine("")
+
+            f.WriteLine('template<> void JsonWriter::Add<Util::Array<{namespace}::{name}>>(Util::Array<{namespace}::{name}> const& values, Util::String const& attr)'.format(namespace=namespace, name=struct.componentName))
+            f.WriteLine('{')
+            f.IncreaseIndent()
+            f.WriteLine("this->BeginArray(attr.AsCharPtr());")
+            f.WriteLine('for (const auto& value : values)')
+            f.WriteLine("{")
+            f.IncreaseIndent()
+            for var in struct.variables:
+                f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=IDLTypes.GetCppTypeString(var.type)))
+            f.DecreaseIndent()
+            f.WriteLine("}")
+            f.WriteLine("this->End();")
+            f.DecreaseIndent()
+            f.WriteLine("}")
+        f.WriteLine("")
+
     for comp in components:
         f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=comp.componentName))
         f.WriteLine('{')
@@ -316,6 +393,22 @@ def WriteEnumeratedCppTypes(f, document):
 #------------------------------------------------------------------------------
 ##
 #
+def WriteStructCppTypes(f, document):
+	if 'structs' in document:
+		for structName, struct in document['structs'].items():
+			f.WriteLine("struct {} \n{{".format(structName))
+			f.IncreaseIndent()
+			for varName, var in struct.items():
+				if varName != '_managed_' and varName != '_allowArray_':
+					varDef = GetVariableFromEntry(varName, var)
+					f.WriteLine(varDef.AsString())
+			f.DecreaseIndent()
+			f.WriteLine("};")
+			f.WriteLine("")
+
+#------------------------------------------------------------------------------
+##
+#
 def WriteEnumeratedCsTypes(f, document):
     if "enums" in document:
         for enumName, enum in document["enums"].items():
@@ -332,6 +425,23 @@ def WriteEnumeratedCsTypes(f, document):
             f.WriteLine("}")
             f.WriteLine("")
 
+
+#------------------------------------------------------------------------------
+##
+#
+def WriteStructCsTypes(f, document):
+	if 'structs' in document:
+		for structName, struct in document['structs'].items():
+			f.WriteLine("[NativeCppClass]")
+			f.WriteLine("[StructLayout(LayoutKind.Sequential)]")
+			f.WriteLine("public struct {} \n{{".format(structName))
+			f.IncreaseIndent()
+			for varName, var in struct.items():
+				varDef = GetVariableFromEntry(varName, var)
+				f.WriteLine("public {};".format(varDef.AsCsString()))
+			f.DecreaseIndent()
+			f.WriteLine("};")
+			f.WriteLine("")
 
 #------------------------------------------------------------------------------
 ##

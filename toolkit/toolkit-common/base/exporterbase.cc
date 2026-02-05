@@ -280,13 +280,13 @@ ExporterBase::RecurseValidateIntermediates(String const& dir)
 
 	for (IndexT i = 0; i < files.Size(); i++)
 	{
-		this->ValidateIntermediateFile(dir + "/" + files[i]);
+		this->ValidateIntermediateFile(dir + files[i]);
 	}
 
 	Util::Array<String> directories = ioServer->ListDirectories(dir, "*");
 	for (IndexT i = 0; i < directories.Size(); i++)
 	{
-		this->RecurseValidateIntermediates(dir + "/" + directories[i]);
+		this->RecurseValidateIntermediates(dir + directories[i] + "/");
 	}
 }
 
