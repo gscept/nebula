@@ -642,15 +642,6 @@ MeshBuilder::CalculateTangents()
         // Normalize tangent
         vertex.attributes.normal.tangent = normalize(vertex.attributes.normal.tangent);
     }
-
-    // finally normalize all of it
-    //for (int vertexIndex = 0; vertexIndex < numVertices; vertexIndex++)
-    //{
-    //    MeshBuilderVertex& vertex = this->VertexAt(vertexIndex);
-    //    vertex.SetComponent(MeshBuilderVertex::NormalB4NIndex, normalize3(vertex.GetComponent(MeshBuilderVertex::NormalB4NIndex)));
-    //    vertex.SetComponent(MeshBuilderVertex::TangentB4NIndex, normalize3(vertex.GetComponent(MeshBuilderVertex::TangentB4NIndex)));
-    //    vertex.SetComponent(MeshBuilderVertex::BinormalB4NIndex, normalize3(vertex.GetComponent(MeshBuilderVertex::BinormalB4NIndex)));
-    //}
     delete[] tangents1;
 }
 
