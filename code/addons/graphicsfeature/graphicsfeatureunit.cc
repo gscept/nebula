@@ -135,7 +135,8 @@ GraphicsFeatureUnit::OnActivate()
         CoreGraphics::AntiAliasQuality::None,
         true,
         true,
-        false
+        false,
+        true
     };
     this->wnd = CreateWindow(wndInfo);
 
