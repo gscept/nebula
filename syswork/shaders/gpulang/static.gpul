@@ -130,44 +130,46 @@ program StaticEnvironmentInstancedAlphaMask
 //------------------------------------------------------------------------------
 
 
-@Mask("Static|Environment")
+@Mask("Static|Alpha")
 program StaticAlpha
 {
     VertexShader = vsStatic;
     PixelShader = psStandard;
     RenderState = AlphaState;
-    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+	ColorMaskMode = ColorMaskModes.Alpha;
+    ReflectionMethod = ReflectionMethods.NoBakedIllumination;
     PackColorMethod = PackColorMethods.Transparent;
 };
 
-@Mask("Static|AlphaMask|Environment")
+@Mask("Static|Alpha|Environment")
 program StaticAlphaEnvironment
 {
     VertexShader = vsStatic;
     PixelShader = psStandard;
     RenderState = AlphaState;
-    ColorMaskMode = ColorMaskModes.AlphaMasked;
+    ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
     PackColorMethod = PackColorMethods.Transparent;
 };
 
-@Mask("Static|Instanced|Environment")
+@Mask("Static|Alpha|Instanced")
 program StaticAlphaInstanced
 {
     VertexShader = vsStaticInstanced;
     PixelShader = psStandard;
     RenderState = AlphaState;
-    ReflectionMethod = ReflectionMethods.ImageBasedLighting;
+	ColorMaskMode = ColorMaskModes.Alpha;
+    ReflectionMethod = ReflectionMethods.NoBakedIllumination;
     PackColorMethod = PackColorMethods.Transparent;
 };
 
-@Mask("Static|AlphaMask|Instanced|Environment")
+@Mask("Static|Alpha|Instanced|Environment")
 program StaticAlphaEnvironmentInstanced
 {
     VertexShader = vsStaticInstanced;
     PixelShader = psStandard;
     RenderState = AlphaState;
-    ColorMaskMode = ColorMaskModes.AlphaMasked;
+    ColorMaskMode = ColorMaskModes.Alpha;
     ReflectionMethod = ReflectionMethods.ImageBasedLighting;
     PackColorMethod = PackColorMethods.Transparent;
 };
