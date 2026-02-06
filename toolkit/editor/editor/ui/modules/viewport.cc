@@ -182,10 +182,14 @@ Viewport::Render()
 
         const Math::vec3 cameraPos = Math::inverse(this->camera.GetViewTransform()).position;
         Util::String cameraPosStr = Util::String::Sprintf("Camera Position x: %.3f, y: %.3f, z: %.3f", cameraPos.x, cameraPos.y, cameraPos.z);
+        Util::String fps = Util::String::Sprintf("FPS: %.2f, ms: %.1f", ImGui::GetIO().Framerate, ImGui::GetIO().DeltaTime * 1000);
+
+        ImVec2 fpsTextSize = ImGui::CalcTextSize(fps.AsCharPtr());
+        ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - fpsTextSize.x - 15, 0));
+        ImGui::Text(fps.AsCharPtr());
 
         ImVec2 textSize = ImGui::CalcTextSize(cameraPosStr.AsCharPtr());
-        ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - textSize.x - 15, 0));
-
+        ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x - textSize.x - fpsTextSize.x - 100, 0));
         ImGui::Text(cameraPosStr.AsCharPtr());
 
         ImGui::EndMenuBar();
