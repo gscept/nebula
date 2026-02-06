@@ -101,7 +101,7 @@ CreateSwapchain(const SwapchainCreateInfo& info)
                 numPresentModes = 0;
                 break;
             case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-                if (!info.vsync)
+                if (info.vsync)
                 {
                     swapchainPresentMode = presentModes[i];
                     numPresentModes = 0;
@@ -115,9 +115,8 @@ CreateSwapchain(const SwapchainCreateInfo& info)
                 }
                 break;
             case VK_PRESENT_MODE_FIFO_KHR:
-                continue;
-            default:
-                n_error("unhandled enum"); break;
+                swapchainPresentMode = presentModes[i];
+                break;
         }
     }
 
