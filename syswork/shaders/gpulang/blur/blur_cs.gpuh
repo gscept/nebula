@@ -199,7 +199,7 @@ csMainX() void
     {
         var blurTotal = Empty();
 
-        for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
+        for (var i : i32 = 0; i <= KernelRadius; ++i)
         {
             const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
@@ -249,7 +249,7 @@ csMainY() void
     {
         var blurTotal = Empty();
 
-        for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
+        for (var i : i32 = 0; i <= KernelRadius; ++i)
         {
             const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];

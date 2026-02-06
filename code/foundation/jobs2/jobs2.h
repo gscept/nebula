@@ -229,7 +229,19 @@ JobDispatch(
     , Threading::Event* signalEvent = nullptr
 )
 {
-    n_assert(numInvocations > 0);
+    if (numInvocations == 0)
+    {
+        if (doneCounter != nullptr)
+        {
+            Threading::Interlocked::Exchange(doneCounter, 0);
+        }
+        // If we have a signal event and no invocations, just signal the event and return
+        if (signalEvent != nullptr)
+        {
+            signalEvent->Signal();
+        }
+        return;
+    }
     n_assert(doneCounter != nullptr ? *doneCounter > 0 : true);
 
     // Calculate the number of actual jobs based on invocations and group size
