@@ -70,11 +70,11 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     { 
         const light = LightLists.AreaLights[i];
-        const viewSpaceCenter = (ViewConstants.View * f32x4(light.position, 1)).xyz;
+        //const viewSpaceCenter = (ViewConstants.View * f32x4(light.position, 1)).xyz;
 
         //vec3 maxExtents = vec3(max(max(viewSpaceExtents.x, viewSpaceExtents.y), viewSpaceExtents.z));
-        const viewSpaceMin = viewSpaceCenter - light.bboxMin;
-        const viewSpaceMax = viewSpaceCenter + light.bboxMax;
+        const viewSpaceMin = (ViewConstants.View * f32x4(light.bboxMin, 1)).xyz;
+        const viewSpaceMax = (ViewConstants.View * f32x4(light.bboxMax, 1)).xyz;
         if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
         {
             LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;

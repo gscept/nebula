@@ -64,8 +64,8 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     {
         const light = LightLists.AreaLights[i];
-        const worldSpaceMin = light.position - light.bboxMin;
-        const worldSpaceMax = light.position + light.bboxMax;
+        const worldSpaceMin = light.bboxMin;
+        const worldSpaceMax = light.bboxMax;
         if (TestAABBAABB(aabb, worldSpaceMin, worldSpaceMax))
         {
             LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
