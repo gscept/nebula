@@ -1898,8 +1898,8 @@ ShaderGetPrograms(const CoreGraphics::ShaderId id)
 //------------------------------------------------------------------------------
 /**
 */
-Util::StringAtom
-ShaderGetProgramName(CoreGraphics::ShaderProgramId id)
+const Util::String&
+ShaderProgramGetName(const ShaderProgramId id)
 {
     return shaderProgramAlloc.Get<ShaderProgram_SetupInfo>(id.programId).name;
 }

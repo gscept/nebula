@@ -163,7 +163,7 @@ const IndexT ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& na
 /// get programs
 const Util::Dictionary<ShaderFeature::Mask, ShaderProgramId>& ShaderGetPrograms(const ShaderId id);
 /// get name of program
-const Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
+const Util::String& ShaderProgramGetName(const ShaderProgramId id);
 
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
 const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask);

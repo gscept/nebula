@@ -412,7 +412,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     ResourceTableCommitChanges(frameResourceTable);
 
     // setup blur tables
-    ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::InputImageX::BINDING, 0, CoreGraphics::InvalidSamplerId, false }); // ping
+    ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::InputImageX::BINDING, 0, CoreGraphics::InvalidSamplerId }); // ping
     ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::BlurImageX::BINDING, 0, CoreGraphics::InvalidSamplerId }); // pong
     ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer1(), Blur2dRgba16fCs::InputImageY::BINDING, 0, CoreGraphics::InvalidSamplerId }); // ping
     ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { FrameScript_default::Texture_VolumetricFogBuffer0(), Blur2dRgba16fCs::BlurImageY::BINDING, 0, CoreGraphics::InvalidSamplerId }); // pong

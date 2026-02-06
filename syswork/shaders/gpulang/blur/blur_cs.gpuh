@@ -31,7 +31,7 @@ generate
 
     if BlurKernel == BlurKernelSize.Size8
     {
-        const KernelRadius = 8;
+        const KernelSize = 8;
         const weights : []f32 = [
             0.000229	,0.005977	,0.060598	,0.241732	
             ,0.382928	,0.241732	,0.060598	,0.005977	,0.000229
@@ -39,7 +39,7 @@ generate
     }
     else if BlurKernel == BlurKernelSize.Size16
     {
-        const KernelRadius = 16;
+        const KernelSize = 16;
         const weights : []f32 = [
             0.014076	,0.022439	,0.033613	,0.047318	
            ,0.062595	,0.077812	,0.090898	,0.099783	
@@ -49,7 +49,7 @@ generate
     }
     else if BlurKernel == BlurKernelSize.Size32
     {
-        const KernelRadius = 32;
+        const KernelSize = 32;
         const weights : []f32 = [
             0.000485	,0.000899	,0.001603	,0.002745	
            ,0.004519	,0.007147	,0.010863	,0.015864	
@@ -63,7 +63,7 @@ generate
     }
     else if BlurKernel == BlurKernelSize.Size64
     {
-        const KernelRadius = 64;
+        const KernelSize = 64;
         const weights : []f32 = [
             0.00024		,0.000328	,0.000445	,0.000598	,0.000795	
            ,0.001046	,0.001363	,0.001759	,0.002246	,0.002841	
@@ -81,6 +81,7 @@ generate
         ];
     }
 
+	const KernelRadius = KernelSize / 2;
     const BlurTileWidth = 64 - KernelRadius * 2;
     const SharedMemSize = KernelRadius + BlurTileWidth + KernelRadius;
 
@@ -143,13 +144,6 @@ generate
     }
 };
 
-sampler_state InputSampler
-{
-    Filter = FilterMode.Point;
-    AddressU = AddressMode.Clamp;
-    AddressV = AddressMode.Clamp;
-};
-
 struct BlurData
 {
     Viewport : i32x2;
@@ -199,7 +193,7 @@ csMainX() void
     {
         var blurTotal = Empty();
 
-        for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
+        for (var i : i32 = 0; i <= KernelSize; ++i)
         {
             const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
@@ -249,7 +243,7 @@ csMainY() void
     {
         var blurTotal = Empty();
 
-        for (var i : i32 = 0; i <= KernelRadius * 2; ++i)
+        for (var i : i32 = 0; i <= KernelSize; ++i)
         {
             const j = max(0, min(i32(computeGetLocalThreadIndices().x) + i, SharedMemSize - 1));
             blurTotal += weights[i] * SharedMemory[j];
