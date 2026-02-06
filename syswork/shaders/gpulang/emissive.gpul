@@ -9,7 +9,7 @@ struct EmissiveData
 {
     EmissiveColor: f32x4;
 };
-uniform EmissiveParams : *EmissiveData;
+binding(MaterialBufferSlot) uniform EmissiveParams : *EmissiveData;
 
 render_state EmissiveState
 {
@@ -26,7 +26,7 @@ vsEmissive(
     binding(0) in position : f32x3,
     binding(2) in uv : f32x2,
     out UV : f32x2
-    ) void
+) void
 {
     const modelSpace = ObjectUniforms.Model * f32x4(position, 1);
     vertexExportCoordinates(ViewConstants.ViewProjection * modelSpace);

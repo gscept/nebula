@@ -512,36 +512,33 @@ LightContext::SetupAreaLight(
     }
 
     // Last step is to create a geometric proxy for the light source
-
-    // Create material
-    MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__AreaLight.entry;
-    Materials::MaterialId material = Materials::CreateMaterial(matTemplate, "AreaLight");
-
-    const MaterialTemplatesGPULang::MaterialTemplateValue& value = MaterialTemplatesGPULang::base::__AreaLight.__EmissiveColor;
-    void* mem = Materials::MaterialLoader::AllocateConstantMemory(value.GetSize());
-
-    MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
-    (color * intensity).store(data->EmissiveColor);
-    data->EmissiveColor[3] = 1.0f;
-    Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
-    ArrayFreeStack(1, data);
-
-    CoreGraphics::MeshId mesh;
-    switch (shape)
-    {
-        case AreaLightShape::Disk:
-            mesh = CoreGraphics::DiskMesh;
-            break;
-        case AreaLightShape::Rectangle:
-            mesh = CoreGraphics::RectangleMesh;
-            break;
-        case AreaLightShape::Tube:
-            mesh = CoreGraphics::RectangleMesh;
-            break;
-    }
-
     if (renderMesh)
     {
+        // Create material
+        MaterialTemplatesGPULang::Entry* matTemplate = &MaterialTemplatesGPULang::base::__AreaLight.entry;
+        Materials::MaterialId material = Materials::CreateMaterial(matTemplate, "AreaLight");
+
+        const MaterialTemplatesGPULang::MaterialTemplateValue& value = MaterialTemplatesGPULang::base::__AreaLight.__EmissiveColor;
+        MaterialInterfaces::ArealightMaterial* data = ArrayAllocStack<MaterialInterfaces::ArealightMaterial>(1);
+        (color * intensity).store(data->EmissiveColor);
+        data->EmissiveColor[3] = 1.0f;
+        Materials::MaterialSetConstants(material, data, sizeof(MaterialInterfaces::ArealightMaterial));
+        ArrayFreeStack(1, data);
+
+        CoreGraphics::MeshId mesh;
+        switch (shape)
+        {
+            case AreaLightShape::Disk:
+                mesh = CoreGraphics::DiskMesh;
+                break;
+            case AreaLightShape::Rectangle:
+                mesh = CoreGraphics::RectangleMesh;
+                break;
+            case AreaLightShape::Tube:
+                mesh = CoreGraphics::RectangleMesh;
+                break;
+        }
+
         Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(id);
         Math::bbox box;
         Models::ModelContext::Setup(
@@ -553,6 +550,7 @@ LightContext::SetupAreaLight(
             , 0
         );
         Models::ModelContext::SetTransform(id, Math::mat4());
+        //Models::ModelContext::SetupMaterialInstanceContext(id, 0, MaterialTemplatesGPULang::BatchGroup::LightMeshes);
         //auto instance = Models::ModelContext::SetupMaterialInstanceContext(id, MaterialTemplatesGPULang::BatchGroup::LightMeshes);
         Visibility::ObservableContext::Setup(id, Visibility::VisibilityEntityType::Model);
     }
