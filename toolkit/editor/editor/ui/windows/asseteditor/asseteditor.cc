@@ -138,7 +138,7 @@ AssetEditor::Run(SaveMode save)
                         func(this, &item);
                 }
 
-                bool open;
+                bool open = true;
                 Util::String assetName = Editor::PathConverter::StripAssetName(item.name.AsString());
                 assetName = BaseWindow::FormatName(Util::Format(Labels[(uint)item.assetType], assetName.AsCharPtr()), item.editCounter);
                 if (ImGui::BeginTabItem(assetName.AsCharPtr(), &open, item.grabFocus ? ImGuiTabItemFlags_SetSelected : 0x0))
