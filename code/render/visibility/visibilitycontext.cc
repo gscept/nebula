@@ -242,7 +242,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
             uint64_t visibleCounter = 0;
             Util::FixedArray<uint64_t, true> indexBuffer(numNodeInstances);
-            Util::FixedArray<Math::ClipStatus::Type, true> clipStatuses(numNodeInstances);
+            Util::FixedArray<Math::ClipStatus::Type, false> clipStatuses(numNodeInstances);
             for (uint32_t i = 0; i < numNodeInstances; i++)
             {
                 // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance

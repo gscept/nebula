@@ -348,7 +348,7 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
         if (submissionsForQueue.IsEmpty())
             continue;
         Util::FixedArray<VkSubmitInfo, true> submitInfos(submissionsForQueue.Size());
-        Util::FixedArray<VkTimelineSemaphoreSubmitInfo, true> timelineInfos(submissionsForQueue.Size());
+        Util::FixedArray<VkTimelineSemaphoreSubmitInfo, false> timelineInfos(submissionsForQueue.Size());
 
         for (int i = 0; i < submissionsForQueue.Size(); i++)
         {

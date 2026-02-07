@@ -90,6 +90,7 @@ Start()
 void
 Destroy()
 {
+    LiveBatcher::Discard();
     Edit::CommandManager::Discard();
     delete Game::EditorState::Singleton;
 }

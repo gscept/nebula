@@ -53,7 +53,7 @@ Toolbar::Run(SaveMode save)
 
     if (ImGui::Button("Save")) 
     {
-        static Util::String localpath = IO::URI("bin:").LocalPath();
+        static Util::String localpath = IO::URI("proj:").LocalPath();
         Util::String path;
         if (IO::FileDialog::SaveFile("Select Nebula Level", localpath, { "*.json" }, path))
             Editor::SaveEntities(path.AsCharPtr());
@@ -61,7 +61,7 @@ Toolbar::Run(SaveMode save)
     ImGui::SameLine();
     if (ImGui::Button("Load"))
     {
-        static Util::String localpath = IO::URI("bin:").LocalPath();
+        static Util::String localpath = IO::URI("proj:").LocalPath();
         Util::String path;
         if (IO::FileDialog::OpenFile("Select Nebula Level", localpath, {"*.json"}, path))
         {

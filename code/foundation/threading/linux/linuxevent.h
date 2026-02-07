@@ -183,11 +183,14 @@ LinuxEvent::WaitTimeout(int ms) const
         }
         else
         {
-            timespec timeSpec;
-            timeSpec.tv_sec = ms / 1000;
-            timeSpec.tv_nsec = (ms - timeSpec.tv_sec * 1000) * 1000000;
+            timespec target;
+            clock_gettime(CLOCK_REALTIME, &target);
+            int secs = ms / 1000;
+            time_t remainder = (ms - secs * 1000L);
+            target.tv_sec += secs;
+            target.tv_nsec += remainder * 1000000L;
         
-            int res = pthread_cond_timedwait(&this->cond, &this->mutex, &timeSpec);
+            int res = pthread_cond_timedwait(&this->cond, &this->mutex, &target);
 
             if (ETIMEDOUT == res)
             {
