@@ -677,6 +677,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             , instanceBoxes = instanceBoxes.Begin()
             , cameraTransform
             , focalLength = settings.GetFov()
+            , viewportHeight = settings.GetFarHeight()
             , viewTransform
         ]
     (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
@@ -695,7 +696,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             {
                 Math::mat4 transform = NodeInstances.transformable.nodeTransforms[transformRange.begin + NodeInstances.renderable.nodeTransformIndex[j]];
                 Math::bbox box = NodeInstances.renderable.origBoundingBoxes[j];
-                float radius = box.diagonal_size();
+                float radius = box.diagonal_size() / 2;
                 box.affine_transform(transform);
                 instanceBoxes[j] = box;
 
@@ -703,30 +704,36 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
                 // https://iquilezles.org/articles/sphereproj/
                 Math::vec4 centerInViewSpace = viewTransform * center;
-                float r2 = radius * radius;
-                float z2 = centerInViewSpace.z * centerInViewSpace.z;
                 float l2 = Math::dot(xyz(centerInViewSpace), xyz(centerInViewSpace));
-                float screenArea = PI * focalLength * focalLength * r2 * Math::sqrt(Math::abs((l2-r2) / (r2-z2))) / (r2-z2);
-                //if (r2 > 3)
-                    //n_printf("Area: %f\n", screenArea);
+                float r2 = radius * radius;
+                
+                float denom = l2 - r2;
+                float projectedArea = 0.0f;
+                if (denom <= 0.0f)
+                    projectedArea = 2.0f; // (viewportWidth * viewportHeight);
+                else
+                {
+                    float f_x = focalLength * (viewportHeight * 0.5f);
+                    projectedArea = PI * r2 * f_x * f_x / denom;
+                    projectedArea = Math::min(2.0f, sqrt(projectedArea / PI) / (0.5f * viewportHeight));
+                }
 
+                float lodScale = log2(2.0f / projectedArea);
                 Models::PrimitiveNode* primitiveNode = static_cast<Models::PrimitiveNode*>(NodeInstances.renderable.nodes[j]);
                 NodeInstances.renderable.nodeMeshes[j] = NodeInstances.renderable.nodeMeshes[j];
                 NodeInstances.renderable.nodePrimitiveGroup[j] = NodeInstances.renderable.nodePrimitiveGroup[j];
+                float textureLod = lodScale;
 
-                // calculate view vector to calculate LOD
-                Math::vec4 viewVector = cameraTransform.position - transform.position;
-                float viewDistance = length(viewVector);
-                float textureLod = Math::max(0.0f, (viewDistance - 10.0f) / 30.5f);
-
-                if (textureLod < NodeInstances.renderable.textureLods[j])
+                if (lodScale < NodeInstances.renderable.textureLods[j])
                 {
                     // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                    Materials::MaterialSetLowestLod(NodeInstances.renderable.nodeMaterials[j], textureLod);
-                    NodeInstances.renderable.textureLods[j] = textureLod;
+                    Materials::MaterialSetLowestLod(NodeInstances.renderable.nodeMaterials[j], lodScale);
+                    NodeInstances.renderable.textureLods[j] = lodScale;
                 }
 
                 Models::NodeInstanceFlags nodeFlag = NodeInstances.renderable.nodeFlags[j];
+                Math::vec4 viewVector = cameraTransform.position - transform.position;
+                float viewDistance = length(viewVector);
 
                 // Calculate if object should be culled due to LOD
                 const auto& [min, max] = NodeInstances.renderable.nodeLodDistances[j];
