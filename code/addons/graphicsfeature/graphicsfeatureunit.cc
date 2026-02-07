@@ -199,6 +199,7 @@ GraphicsFeatureUnit::OnActivate()
     });
     this->gfxServer->SetResizeCall([](const SizeT windowWidth, const SizeT windowHeight) {
         FrameScript_default::Initialize(windowWidth, windowHeight);
+        Graphics::SetupBufferConstants();
         FrameScript_default::SetupPipelines();
 #if WITH_NEBULA_EDITOR
         if (App::GameApplication::IsEditorEnabled())
