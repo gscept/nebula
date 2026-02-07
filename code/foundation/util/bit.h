@@ -202,7 +202,7 @@ LastOne(uint value)
     DWORD count = 0;
     _BitScanReverse(&count, value);
 #else
-    int count = __builtin_clz(value);
+    int count = 31 - __builtin_clz(value);
 #endif
     return count;
 }
@@ -217,7 +217,7 @@ LastOne(uint64_t value)
     DWORD count = 0;
     _BitScanReverse64(&count, value);
 #else
-    int count = __builtin_clz(value);
+    int count = 63 - __builtin_clz(value);
 #endif
     return count;
 }
