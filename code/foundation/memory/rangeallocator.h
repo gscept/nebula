@@ -107,12 +107,15 @@ private:
     /// Get bin from index
     static uint BinFromSize(uint size, uint bucket);
 
+public:
     uint size;
     uint freeStorage;
     uint freeNodeIterator;
+    uint numAllocs;
 
     static constexpr uint NUM_BUCKETS = 0x20;
     static constexpr uint NUM_BINS_PER_BUCKET = 0x10;
+
 
     uint bucketUsageMask;
     uint binMasks[NUM_BUCKETS];
@@ -126,8 +129,8 @@ private:
 /**
 */
 inline 
-RangeAllocator::RangeAllocator() :
-    RangeAllocator(0,0)
+RangeAllocator::RangeAllocator()
+    : RangeAllocator(0,0)
 {
 }
 
@@ -140,6 +143,7 @@ RangeAllocator::RangeAllocator(uint size, SizeT maxNumAllocs)
     this->size = size;
     this->freeNodes.Resize(maxNumAllocs);
     this->nodes.Resize(maxNumAllocs);
+    this->numAllocs = 0;
 
     // Clear the allocator
     this->Clear();
@@ -161,6 +165,7 @@ RangeAllocator::Clear()
 {
     // Reset bit masks
     this->bucketUsageMask = 0x0;
+    this->numAllocs = 0;
     memset(this->binMasks, 0x0, sizeof(this->binMasks));
 
     // Reset bin heads
@@ -172,6 +177,7 @@ RangeAllocator::Clear()
     // Clear nodes
     for (uint i = 0; i < this->nodes.Size(); i++)
     {
+        this->nodes[i] = RangeAllocatorNode();
         this->freeNodes[i] = this->nodes.Size() - i - 1;
     }
     this->freeNodeIterator = this->nodes.Size() - 1;
@@ -245,10 +251,10 @@ RangeAllocator::Alloc(uint size, uint alignment)
     // Save total size of node
     uint totalSize = node.size;
     n_assert(totalSize >= alignedSize);
-    uint oldOffset = node.offset;
     uint alignedOffset = Math::align(node.offset, alignment);
     node.size = alignedSize;
     node.resident = true;
+    this->numAllocs++;
 
     // Bump head of bin to next node
     this->binHeads[binIndex.index] = node.binNext;
@@ -274,7 +280,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
     uint remainder = totalSize - node.size;
     if (remainder > 0)
     {
-        uint newNodeIndex = this->InsertNode(remainder, node.offset + alignedSize);
+        uint newNodeIndex = this->InsertNode(remainder, node.offset + node.size);
         if (newNodeIndex != RangeAllocatorNode::END)
         {
             RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
@@ -284,13 +290,15 @@ RangeAllocator::Alloc(uint size, uint alignment)
             {
                 this->nodes[node.blockNext].blockPrev = newNodeIndex;
             }
+
             newNode.blockPrev = nodeIndex;
             newNode.blockNext = node.blockNext;
             node.blockNext = newNodeIndex;
+            n_assert((this->nodes[nodeIndex].offset + this->nodes[nodeIndex].size) == newNode.offset);
         }
     }
     
-    return RangeAllocation{ .offset = node.offset, .size = alignedSize, .node = nodeIndex };
+    return RangeAllocation{ .offset = alignedOffset, .size = alignedSize, .node = nodeIndex };
 }
 
 //------------------------------------------------------------------------------
@@ -302,7 +310,7 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
     RangeAllocatorNode& node = this->nodes[allocation.node];
     n_assert(node.resident);
     node.resident = false;
-
+    this->numAllocs--;
     uint size = node.size;
     uint offset = node.offset;
 
@@ -316,6 +324,7 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
             size += prev.size;
 
             this->RemoveNode(node.blockPrev);
+            n_assert(prev.blockNext == allocation.node);
             node.blockPrev = prev.blockPrev;
         }
     }
@@ -327,9 +336,11 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
         {
             size += next.size;
             this->RemoveNode(node.blockNext);
+            n_assert(next.blockPrev == allocation.node);
             node.blockNext = next.blockNext;
         }
     }
+
 
     uint leftNode = node.blockPrev;
     uint rightNode = node.blockNext;
@@ -341,14 +352,14 @@ RangeAllocator::Dealloc(const RangeAllocation& allocation)
     // Connect adjacent nodes with newly inserted node
     if (leftNode != RangeAllocatorNode::END)
     {
-        this->nodes[leftNode].blockNext = mergedNode;
         this->nodes[mergedNode].blockPrev = leftNode;
+        this->nodes[leftNode].blockNext = mergedNode;
     }
 
     if (rightNode != RangeAllocatorNode::END)
     {
-        this->nodes[rightNode].blockPrev = mergedNode;
         this->nodes[mergedNode].blockNext = rightNode;
+        this->nodes[rightNode].blockPrev = mergedNode;
     }
 }
 
@@ -374,12 +385,15 @@ RangeAllocator::InsertNode(uint size, uint offset)
     uint headNodeIndex = this->binHeads[index.index];
     uint newNodeIndex = this->freeNodes[this->freeNodeIterator--];
     RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
+    n_assert(!newNode.resident);
 
     // Set the size and offset of the node memory
     newNode.size = size;
     newNode.offset = offset;
     newNode.binNext = headNodeIndex;
     newNode.binPrev = RangeAllocatorNode::END;
+    newNode.blockNext = RangeAllocatorNode::END;
+    newNode.blockPrev = RangeAllocatorNode::END;
     newNode.resident = false;
 
     this->freeStorage += size;
@@ -422,6 +436,7 @@ RangeAllocator::RemoveNode(uint nodeIndex)
 
         if (node.binNext == RangeAllocatorNode::END)
         {
+            n_assert(this->binMasks[index.bucket] != 0x0);
             // If we are deleting the last node, make sure to unmark the bin
             this->binMasks[index.bucket] &= ~(1 << index.bin);
 
