@@ -156,6 +156,9 @@ private:
     Util::FixedArray<Util::Array<TimelineSubmission2, 16>> submissions;
     Util::Array<SparseBindSubmission> sparseBindSubmissions;
     Threading::CriticalSection submissionLock;
+
+    Util::FixedArray<VkSubmitInfo> submitInfos;
+    Util::FixedArray<VkTimelineSemaphoreSubmitInfo> timelineInfos;
 };
 
 } // namespace Vulkan

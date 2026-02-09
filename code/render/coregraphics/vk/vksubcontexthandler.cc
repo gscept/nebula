@@ -347,13 +347,14 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
         Util::Array<TimelineSubmission2, 16>& submissionsForQueue = this->submissions[queueIndex];
         if (submissionsForQueue.IsEmpty())
             continue;
-        Util::FixedArray<VkSubmitInfo, true> submitInfos(submissionsForQueue.Size());
-        Util::FixedArray<VkTimelineSemaphoreSubmitInfo, true> timelineInfos(submissionsForQueue.Size());
+
+        this->submitInfos.Resize(submissionsForQueue.Size());
+        this->timelineInfos.Resize(submissionsForQueue.Size());
 
         for (int i = 0; i < submissionsForQueue.Size(); i++)
         {
             auto& sub = submissionsForQueue[i];
-            timelineInfos[i] =
+            this->timelineInfos[i] =
             {
                 .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
                 .pNext = nullptr,
@@ -363,10 +364,10 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
                 .pSignalSemaphoreValues = sub.signalIndices.Size() > 0 ? sub.signalIndices.Begin() : nullptr
             };
 
-            submitInfos[i] =
+            this->submitInfos[i] =
             {
                 .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .pNext = &timelineInfos[i],
+                .pNext = &this->timelineInfos[i],
                 .waitSemaphoreCount = (uint32_t)sub.waitSemaphores.Size(),
                 .pWaitSemaphores = sub.waitSemaphores.Size() > 0 ? sub.waitSemaphores.Begin() : nullptr,
                 .pWaitDstStageMask = sub.waitFlags.Size() > 0 ? sub.waitFlags.Begin() : nullptr,
@@ -397,11 +398,14 @@ VkSubContextHandler::FlushSubmissions(VkFence fence)
                 n_error("Unhandled queue type");
                 break;
         }
-        VkResult res = vkQueueSubmit(queue, submitInfos.Size(), submitInfos.Begin(), fence);
+        VkResult res = vkQueueSubmit(queue, this->submitInfos.Size(), this->submitInfos.Begin(), fence);
         if (res == VK_ERROR_DEVICE_LOST)
             Vulkan::DeviceLost();
         n_assert(res == VK_SUCCESS);
 
+
+        this->submitInfos.Reset();
+        this->timelineInfos.Reset();
         CoreGraphics::QueueEndMarker(type);
         submissionsForQueue.Clear();
     }

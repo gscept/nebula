@@ -2188,7 +2188,7 @@ AllocateVertices(const SizeT bytes)
     Memory::RangeAllocation alloc = state.vertexAllocator.Alloc(bytes);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, bytes);
-    return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
+    return VertexAlloc{ .size = alloc.size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
@@ -2223,7 +2223,7 @@ AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
     Memory::RangeAllocation alloc = state.indexAllocator.Alloc(size, indexSize);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
-    return VertexAlloc{ .size = size, .offset = alloc.offset, .node = alloc.node };
+    return VertexAlloc{ .size = alloc.size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
@@ -2236,7 +2236,7 @@ AllocateIndices(const SizeT bytes)
     Memory::RangeAllocation alloc = state.indexAllocator.Alloc(bytes, 4);
     n_assert(alloc.offset != alloc.OOM);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, bytes);
-    return VertexAlloc{ .size = (uint)bytes, .offset = alloc.offset, .node = alloc.node };
+    return VertexAlloc{ .size = alloc.size, .offset = alloc.offset, .node = alloc.node };
 }
 
 //------------------------------------------------------------------------------
