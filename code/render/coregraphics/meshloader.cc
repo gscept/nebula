@@ -373,6 +373,8 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
         CoreGraphics::BufferId ibo = CoreGraphics::GetIndexBuffer();
         CoreGraphics::VertexAlloc vertexAllocation, indexAllocation = { .size = 0xFFFFFFFF, .offset = 0xFFFFFFFF, .node = 0xFFFFFFFF };
 
+        n_assert(header->vertexDataSize > 0);
+        n_assert(header->indexDataSize > 0);
         // Upload vertex data
         {
             // Allocate vertices from global repository
@@ -390,7 +392,7 @@ MeshLoader::SetupMeshFromNvx(const Ptr<IO::Stream>& stream, const ResourceLoadJo
             // Allocate vertices from global repository
             indexAllocation = CoreGraphics::AllocateIndices(header->indexDataSize);
             streamData->indexAllocationOffset = indexAllocation;
-            meshResourceAllocator.Set<MeshResource_IndexData>(meshResource.id, vertexAllocation);
+            meshResourceAllocator.Set<MeshResource_IndexData>(meshResource.id, indexAllocation);
             if (job.immediate)
             {
                 BufferCopyWithStaging(CoreGraphics::GetIndexBuffer(), streamData->indexAllocationOffset.offset, indexData, header->indexDataSize);
