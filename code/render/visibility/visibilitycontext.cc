@@ -211,7 +211,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         const VisibilityResultArray& results = observerResults[i];
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
         Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<Observer_DrawListAllocator>(i);
+        Util::FixedArray<uint64_t>& indexBuffer = observerAllocator.Get<Observer_IndexBuffer>(i);
+        Util::FixedArray<Math::ClipStatus::Type>& indexedClipStatuses = observerAllocator.Get<Observer_IndexedClipStatuses>(i);
 
+        indexBuffer.Resize(nodes.Size());
+        indexedClipStatuses.Resize(nodes.Size());
         // Before we create our draws, we have to wait for the constants to be allocated first
         // For particles, that's done before visibility so we can omit it here
         Util::FixedArray<const Threading::AtomicCounter*, true> waitCounters =
@@ -228,6 +232,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 , drawList = &visibilities
                 , allocator = &allocator
                 , renderables = &NodeInstances
+                , indexBuffer
+                , indexedClipStatuses
             ]
         (SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset)
         {
@@ -241,13 +247,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 return;
 
             uint64_t visibleCounter = 0;
-            Util::FixedArray<uint64_t, true> indexBuffer(numNodeInstances);
-            Util::FixedArray<Math::ClipStatus::Type, true> clipStatuses(numNodeInstances);
             for (uint32_t i = 0; i < numNodeInstances; i++)
             {
                 // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
                 n_assert(ids[i] < 0xFFFFFFFF);
-                clipStatuses[visibleCounter] = statuses[i];
+                indexedClipStatuses[visibleCounter] = statuses[i];
                 indexBuffer[visibleCounter] = ids[i];
                 visibleCounter++;
             }
@@ -258,14 +262,14 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             {
                 n_assert(indexBuffer[i] < 0x00000000FFFFFFFF);
                 uint64_t index = indexBuffer[i] & 0x00000000FFFFFFFF;
-                Math::ClipStatus::Type clipStatus = clipStatuses[i];
+                Math::ClipStatus::Type clipStatus = indexedClipStatuses[i];
 
                 // If not visible nor active, erase item from index list
                 if (!AllBits(renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active)
                     || clipStatus == Math::ClipStatus::Outside)
                 {
                     indexBuffer[i] = indexBuffer[visibleCounter - 1];
-                    clipStatuses[i] = clipStatuses[visibleCounter - 1];
+                    indexedClipStatuses[i] = indexedClipStatuses[visibleCounter - 1];
                     visibleCounter--;
                     continue;
                 }

@@ -37,6 +37,8 @@ enum
     Observer_DependencyMode,
     Observer_DrawList,
     Observer_DrawListAllocator,
+    Observer_IndexBuffer,
+    Observer_IndexedClipStatuses
 };
 
 enum
@@ -160,6 +162,8 @@ private:
         , DependencyMode                           // dependency mode
         , VisibilityDrawList                       // draw list
         , Memory::ArenaAllocator<1024>             // memory allocator for draw commands
+        , Util::FixedArray<uint64_t>               // index buffer
+        , Util::FixedArray<Math::ClipStatus::Type> // clip statuses
     > ObserverAllocator;
     static ObserverAllocator observerAllocator;
 
