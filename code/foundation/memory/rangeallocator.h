@@ -244,7 +244,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
 
     // Save total size of node
     uint totalSize = node.size;
-    assert(totalSize >= alignedSize);
+    n_assert(totalSize >= alignedSize);
     uint oldOffset = node.offset;
     uint alignedOffset = Math::align(node.offset, alignment);
     node.size = alignedSize;
