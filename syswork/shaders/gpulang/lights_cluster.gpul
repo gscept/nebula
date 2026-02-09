@@ -50,11 +50,11 @@ csCull() void
         const light = LightLists.SpotLights[i];
         // first do fast discard sphere test
         const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
-        //if (TestAABBSphere(aabb, viewSpacePos, light.range))
+        if (TestAABBSphere(aabb, viewSpacePos, light.range))
         {
             // then do more refined cone test, if previous test passed
             const viewSpaceForward = (ViewConstants.View * f32x4(light.forward, 0)).xyz;
-            //if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
+            if (TestAABBCone(aabb, viewSpacePos, viewSpaceForward, light.range, light.angleSinCos))
             {
                 LightIndexLists.SpotLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
                 numLights++;
@@ -70,13 +70,9 @@ csCull() void
     for (var i = 0u; i < LightUniforms.NumAreaLights; i++)
     { 
         const light = LightLists.AreaLights[i];
-        //const viewSpaceCenter = (ViewConstants.View * f32x4(light.position, 1)).xyz;
-
-        //vec3 maxExtents = vec3(max(max(viewSpaceExtents.x, viewSpaceExtents.y), viewSpaceExtents.z));
-        const viewSpaceMin = (ViewConstants.View * f32x4(light.bboxMin, 1)).xyz;
-        const viewSpaceMax = (ViewConstants.View * f32x4(light.bboxMax, 1)).xyz;
-        if (TestAABBAABB(aabb, viewSpaceMin, viewSpaceMax))
-        {
+        const viewSpacePos = (ViewConstants.View * f32x4(light.position, 1)).xyz;
+        if (TestAABBSphere(aabb, viewSpacePos, light.range))
+		{
             LightIndexLists.AreaLightIndexList[index1D * MAX_LIGHTS_PER_CLUSTER + numLights] = i;
             numLights++;
         }
