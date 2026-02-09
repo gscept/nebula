@@ -7,6 +7,7 @@
 #include "io/ioserver.h"
 #include "resourceserver.h"
 #include "util/bit.h"
+#include "profiling/profiling.h"
 
 using namespace IO;
 namespace Resources
@@ -213,6 +214,8 @@ ResourceLoader::ClearPendingUnloads()
 void
 ResourceLoader::Update(IndexT frameIndex)
 {
+    N_SCOPE(ResourceLoader_Update, Resources);
+
     // Update the state of round trip resources
     this->UpdateLoaderSyncState();
 
