@@ -244,10 +244,11 @@ RangeAllocator::Alloc(uint size, uint alignment)
 
     // Save total size of node
     uint totalSize = node.size;
-    uint baseOffset = node.offset;
+    assert(totalSize >= alignedSize);
+    uint oldOffset = node.offset;
+    uint alignedOffset = Math::align(node.offset, alignment);
     node.size = alignedSize;
     node.resident = true;
-    node.offset = Math::align(node.offset, alignment);
 
     // Bump head of bin to next node
     this->binHeads[binIndex.index] = node.binNext;
@@ -273,7 +274,7 @@ RangeAllocator::Alloc(uint size, uint alignment)
     uint remainder = totalSize - node.size;
     if (remainder > 0)
     {
-        uint newNodeIndex = this->InsertNode(remainder, node.offset + size);
+        uint newNodeIndex = this->InsertNode(remainder, node.offset + alignedSize);
         if (newNodeIndex != RangeAllocatorNode::END)
         {
             RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
@@ -446,21 +447,6 @@ RangeAllocator::RemoveNode(uint nodeIndex)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint
-RangeAllocator::BucketFromSize(uint size)
-{
-#if __WIN32__
-    DWORD count = 0;
-    _BitScanReverse(&count, size);
-#else
-    int count = 31 - __builtin_clz(size);
-#endif
-    return count;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline uint 
 RangeAllocator::BinFromSize(uint size, uint bucket)
 {
@@ -475,13 +461,19 @@ inline RangeAllocator::BinIndex
 RangeAllocator::IndexFromSize(uint size, bool round)
 {
     RangeAllocator::BinIndex ret;
-    ret.bucket = BucketFromSize(size);
+    ret.bucket = Util::LastOne(size);
     ret.bin = BinFromSize(size, ret.bucket);
     if (round)
     {
         uint mask = (1 << ret.bucket) | (ret.bin << (ret.bucket - 4));
         if ((~mask & size) != 0)
+        {
             ret.bin++;
+
+            // If we are on the last bin, move to the next bucket
+            if (ret.bin == 0)
+                ret.bucket++;
+        }
     }
     return ret;
 }
