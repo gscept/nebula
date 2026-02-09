@@ -27,6 +27,8 @@ public:
 
     /// Setup live batcher
     static void Setup();
+    /// Shutdown live batcher
+    static void Discard();
     /// Batches all assets
     static void BatchAssets();
     /// Batch a single asset

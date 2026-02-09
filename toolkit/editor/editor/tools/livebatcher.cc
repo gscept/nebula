@@ -23,9 +23,10 @@ class LiveBatcherThread : public Threading::Thread
     {
         while (!this->ThreadStopRequested())
         {
+            this->jobQueue.WaitTimeout(500);
             this->waitEvent.Reset();
 
-            jobQueue.DequeueAll(this->curWorkRequests);
+            this->jobQueue.DequeueAll(this->curWorkRequests);
             for (const auto& job : this->curWorkRequests)
             {
                 bool res = job.func();
@@ -72,6 +73,17 @@ LiveBatcher::Setup()
 
     livebatcherState.batchThread = LiveBatcherThread::Create();
     livebatcherState.batchThread->Start();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+LiveBatcher::Discard()
+{
+    livebatcherState.batchThread->Stop();
+    livebatcherState.outputStream = nullptr;
+    livebatcherState.batchThread = nullptr;
 }
 
 //------------------------------------------------------------------------------
