@@ -134,7 +134,9 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
     auto header = (Nvx3Header*)streamData->mappedData;
     char* basePtr = (char*)streamData->mappedData;
 
-    uint bitsToLoad = job.loadState.requestedBits & ~(job.loadState.loadedBits | job.loadState.pendingBits);
+    uint loadedBits = job.loadState.loadedBits;
+    uint pendingBits = job.loadState.pendingBits;
+    uint bitsToLoad = job.loadState.requestedBits & ~(pendingBits | loadedBits);
 
     n_assert(header->magic == NEBULA_NVX_MAGICNUMBER);
     n_assert(header->numMeshes > 0);
@@ -185,7 +187,7 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
                 CoreGraphics::CmdCopy(transferCommands, buffer, { from }, vbo, { to }, header->vertexDataSize);
                 BufferIdRelease(vbo);
 
-                ret.pendingBits |= 1 << 0;
+                pendingBits |= 1 << 0;
             }
         }
 
@@ -206,34 +208,35 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
                 CoreGraphics::CmdCopy(transferCommands, buffer, { from }, ibo, { to }, header->indexDataSize);
                 BufferIdRelease(ibo);
 
-                ret.pendingBits |= 1 << 1;
+                pendingBits |= 1 << 1;
             }
         }
 
         CoreGraphics::CmdEndMarker(transferCommands);
         CoreGraphics::CmdEndRecord(transferCommands);
         CoreGraphics::CmdBufferIdRelease(transferCommands);
-    }
 
-    if (ret.pendingBits != 0)
-    {
-        if (job.immediate)
+        if (pendingBits != 0)
         {
-            CoreGraphics::FlushUploads(rangesToFlush);
-            CoreGraphics::SubmissionWaitEvent waitEvent = CoreGraphics::SubmitCommandBuffers({ transferCommands }, CoreGraphics::GraphicsQueueType, nullptr, "Upload meshes");
-            CoreGraphics::DeferredDestroyCmdBuffer(transferCommands);
+            if (job.immediate)
+            {
+                CoreGraphics::FlushUploads(rangesToFlush);
+                CoreGraphics::SubmissionWaitEvent waitEvent = CoreGraphics::SubmitCommandBuffers({ transferCommands }, CoreGraphics::GraphicsQueueType, nullptr, "Upload meshes");
+                CoreGraphics::DeferredDestroyCmdBuffer(transferCommands);
 
-            IndexT index = this->meshesToFinish.FindIndex(job.id);
-            if (index == InvalidIndex)
-                this->meshesToFinish.Add(job.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands } });
+                IndexT index = this->meshesToFinish.FindIndex(job.id);
+                if (index == InvalidIndex)
+                    this->meshesToFinish.Add(job.id, { FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands } });
+                else
+                    this->meshesToFinish.ValueAtIndex(job.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands });
+            }
             else
-                this->meshesToFinish.ValueAtIndex(job.id, index).Append(FinishedMesh{ .submissionId = waitEvent.timelineIndex, .bits = ret.pendingBits, .rangesToFree = rangesToFlush, .cmdBuf = transferCommands });
-        }
-        else
-        {
-            this->meshesToSubmit.Enqueue(MeshesToSubmit{ .id = job.id, .bits = ret.pendingBits, .rangesToFlush = rangesToFlush, .cmdBuf = transferCommands });
+            {
+                this->meshesToSubmit.Enqueue(MeshesToSubmit{ .id = job.id, .bits = pendingBits, .rangesToFlush = rangesToFlush, .cmdBuf = transferCommands });
+            }
         }
     }
+
     if (job.loadState.pendingBits != 0x0)
     {
         this->meshLock.Enter();
@@ -248,8 +251,8 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
                 {
                     CoreGraphics::FreeUploads(mesh.rangesToFree);
                     CoreGraphics::DestroyCmdBuffer(mesh.cmdBuf);
-                    ret.loadedBits |= mesh.bits;
-                    ret.pendingBits &= ~mesh.bits;
+                    loadedBits |= mesh.bits;
+                    pendingBits &= ~mesh.bits;
                     meshes.EraseIndex(i);
                     i--;
                 }
@@ -264,6 +267,8 @@ MeshLoader::StreamResource(const ResourceLoadJob& job)
         n_warning("Resource '%s' is stuck in an infinite state", job.name.AsCharPtr());
     }
 
+    ret.loadedBits = loadedBits;
+    ret.pendingBits = pendingBits;
     return ret;
 }
 
