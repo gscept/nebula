@@ -67,6 +67,8 @@ public:
     bool IsEmpty() const;
     /// clear the array, free elements
     void Clear();
+    /// Reset the size and destroy all elements
+    void Reset();
     /// fill the entire array with a value
     void Fill(const TYPE& val);
     /// fill array range with element
@@ -559,6 +561,30 @@ template<class TYPE, bool StackAlloc> void
 FixedArray<TYPE, StackAlloc>::Clear()
 {
     this->Delete();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, bool StackAlloc>
+inline void FixedArray<TYPE, StackAlloc>::Reset()
+{
+    if (this->count > 0)
+    {
+        if (std::is_trivially_destructible<TYPE>::value)
+        {
+            memset(this->elements, 0, this->count * sizeof(TYPE));
+        }
+        else
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i].~TYPE();
+            }
+        }
+    }
+    this->count = 0;
 }
 
 //------------------------------------------------------------------------------
