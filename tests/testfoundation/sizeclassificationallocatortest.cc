@@ -56,7 +56,9 @@ SizeClassificationAllocatorTest::Run()
     // Allocating with 128 alignment should work, and should be padded enough to hold the value aligned
     alloc3 = allocator.Alloc(64, 128);
     VERIFY(alloc3.offset == 128);
-    VERIFY((alloc3.offset + 64) < alloc3.size);
+
+    // The memory starts at byte 128 and needs to be 64 byte long
+    VERIFY((alloc3.offset + 64 - 1) < alloc3.size);
 
     // The previous insertion actually inserts a 192 byte block due to alignment, so this should fail
     alloc4 = allocator.Alloc(64);
