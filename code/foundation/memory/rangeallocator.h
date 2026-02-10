@@ -89,15 +89,12 @@ private:
         uint blockPrev, blockNext;
     };
 
-    union BinIndex
+    struct BinIndex
     {
-        BinIndex() : index(0) {};
-        struct
-        {
-            uint16_t bin : 4;
-            uint16_t bucket : 12;
-        };
-        uint16_t index;
+        BinIndex() : bin(0), bucket(0) {};
+        uint bin;
+        uint bucket;
+        uint index;
     };
 
     /// Get bin index from size
@@ -113,8 +110,8 @@ public:
     uint freeNodeIterator;
     uint numAllocs;
 
-    static constexpr uint NUM_BUCKETS = 0x20;
-    static constexpr uint NUM_BINS_PER_BUCKET = 0x10;
+    static constexpr uint NUM_BUCKETS = 32u;
+    static constexpr uint NUM_BINS_PER_BUCKET = 8u;
 
 
     uint bucketUsageMask;
@@ -124,6 +121,10 @@ public:
     Util::Array<RangeAllocatorNode> nodes;
     Util::Array<uint> freeNodes;
 };
+
+
+static constexpr uint BUCKET_INDEX_SHIFT = 3u;
+static constexpr uint BIN_INDEX_MASK = 0x7;
 
 //------------------------------------------------------------------------------
 /**
@@ -199,6 +200,19 @@ RangeAllocator::Empty()
 
 //------------------------------------------------------------------------------
 /**
+*/
+inline uint
+FindLowestSetBitAfter(uint bitMask, uint startBitIndex)
+{
+    uint maskBeforeStartIndex = (1 << startBitIndex) - 1;
+    uint maskAfterStartIndex = ~maskBeforeStartIndex;
+    uint bitsAfter = bitMask & maskAfterStartIndex;
+    if (bitsAfter == 0) return RangeAllocation::OOM;
+    return Util::CountTrailingZeroes(bitsAfter);
+}
+
+//------------------------------------------------------------------------------
+/**
    @brief Returns a range using the TLSF method.
 
    @note Note that this doesn't actually allocate any memory, but 
@@ -210,59 +224,60 @@ RangeAllocator::Alloc(uint size, uint alignment)
 {
     // We are not allowed any more allocations
     uint alignedSize = size + alignment - 1;
-    if (this->freeStorage < alignedSize)
+    if (this->freeStorage < alignedSize || this->freeNodeIterator == RangeAllocation::OOM)
     {
         return RangeAllocation{ .offset = RangeAllocation::OOM, .size = 0, .node = RangeAllocatorNode::END };
     }
 
     BinIndex minIndex = IndexFromSize(alignedSize, true);
-    uint bin = 0xFFFFFFFF;
+    uint bin = RangeAllocation::OOM;
     uint bucket = minIndex.bucket;
 
     if (this->bucketUsageMask & (1 << bucket))
     {
-        bin = Util::Lsb(this->binMasks[bucket], minIndex.bin);
+        bin = FindLowestSetBitAfter(this->binMasks[bucket], minIndex.bin);
     }
 
-    if (bin == 0xFFFFFFFF)
+    if (bin == RangeAllocation::OOM)
     {
         // Find next bit set after bucket in the usage mask
-        bucket = Util::Lsb(this->bucketUsageMask, bucket + 1);
+        bucket = FindLowestSetBitAfter(this->bucketUsageMask, bucket + 1);
 
         // If this means we get 32, it means we're out of buckets that fit
-        if (bucket == 0xFFFFFFFF)
+        if (bucket == RangeAllocation::OOM)
         {
             return RangeAllocation{ .offset = RangeAllocation::OOM, .size = 0, .node = RangeAllocatorNode::END };
         }
 
         // Find any bit, since this bucket has to fit
-        bin = Util::FirstOne(this->binMasks[bucket]);
+        bin = Util::CountTrailingZeroes(this->binMasks[bucket]);
     }
 
     BinIndex binIndex;
     binIndex.bucket = bucket;
     binIndex.bin = bin;
+    uint16_t index = (bucket << BUCKET_INDEX_SHIFT) | bin;
 
     // Get linked list head
-    uint nodeIndex = this->binHeads[binIndex.index];
+    uint nodeIndex = this->binHeads[index];
     RangeAllocatorNode& node = this->nodes[nodeIndex];
     n_assert(!node.resident);
 
     // Save total size of node
     uint totalSize = node.size;
-    n_assert(totalSize >= alignedSize);
+    //n_assert(totalSize >= alignedSize);
     uint alignedOffset = Math::align(node.offset, alignment);
     node.size = alignedSize;
     node.resident = true;
     this->numAllocs++;
 
     // Bump head of bin to next node
-    this->binHeads[binIndex.index] = node.binNext;
+    this->binHeads[index] = node.binNext;
     if (node.binNext != RangeAllocatorNode::END)
         this->nodes[node.binNext].binPrev = RangeAllocatorNode::END;
 
     // If bin head is empty after we grab the node, unmark the bin
-    if (this->binHeads[binIndex.index] == RangeAllocatorNode::END)
+    if (this->binHeads[index] == RangeAllocatorNode::END)
     {
         this->binMasks[binIndex.bucket] &= ~(1 << binIndex.bin);
 
@@ -372,17 +387,18 @@ RangeAllocator::InsertNode(uint size, uint offset)
     if (this->freeNodeIterator == 0xFFFFFFFF)
         return RangeAllocatorNode::END;
 
-    BinIndex index = IndexFromSize(size);
+    BinIndex binIndex = IndexFromSize(size);
+    uint16_t index = binIndex.index;
 
-    if (this->binHeads[index.index] == RangeAllocatorNode::END)
+    if (this->binHeads[index] == RangeAllocatorNode::END)
     {
         // Bin isn't used, flip bit for bucket and bin
-        this->binMasks[index.bucket] |= (1 << index.bin);
-        this->bucketUsageMask |= (1 << index.bucket);
+        this->binMasks[binIndex.bucket] |= (1 << binIndex.bin);
+        this->bucketUsageMask |= (1 << binIndex.bucket);
     }
 
     // Get new node
-    uint headNodeIndex = this->binHeads[index.index];
+    uint headNodeIndex = this->binHeads[index];
     uint newNodeIndex = this->freeNodes[this->freeNodeIterator--];
     RangeAllocatorNode& newNode = this->nodes[newNodeIndex];
     n_assert(!newNode.resident);
@@ -405,7 +421,7 @@ RangeAllocator::InsertNode(uint size, uint offset)
         RangeAllocatorNode& headNode = this->nodes[headNodeIndex];
         headNode.binPrev = newNodeIndex;
     }
-    this->binHeads[index.index] = newNodeIndex;
+    this->binHeads[index] = newNodeIndex;
 
     return newNodeIndex;
 }
@@ -425,10 +441,11 @@ RangeAllocator::RemoveNode(uint nodeIndex)
     
     if (node.binPrev == RangeAllocatorNode::END)
     {
-        BinIndex index = IndexFromSize(node.size);
+        BinIndex binIndex = IndexFromSize(node.size);
+        uint16_t index = binIndex.index;
 
         // Point head of 
-        this->binHeads[index.index] = node.binNext;
+        this->binHeads[index] = node.binNext;
         if (node.binNext != RangeAllocatorNode::END)
         {
             this->nodes[node.binNext].binPrev = RangeAllocatorNode::END;
@@ -436,14 +453,14 @@ RangeAllocator::RemoveNode(uint nodeIndex)
 
         if (node.binNext == RangeAllocatorNode::END)
         {
-            n_assert(this->binMasks[index.bucket] != 0x0);
+            n_assert(this->binMasks[binIndex.bucket] != 0x0);
             // If we are deleting the last node, make sure to unmark the bin
-            this->binMasks[index.bucket] &= ~(1 << index.bin);
+            this->binMasks[binIndex.bucket] &= ~(1 << binIndex.bin);
 
-            if (this->binMasks[index.bucket] == 0x0)
+            if (this->binMasks[binIndex.bucket] == 0x0)
             {
                 // If all bins have been cleared, clear the entire bucket
-                this->bucketUsageMask &= ~(1 << index.bucket);
+                this->bucketUsageMask &= ~(1 << binIndex.bucket);
             }
         }
     } 
@@ -459,12 +476,80 @@ RangeAllocator::RemoveNode(uint nodeIndex)
     this->freeNodes[++this->freeNodeIterator] = nodeIndex;
 }
 
+static constexpr uint MANTISSA_BITS = 3;
+static constexpr uint MANTISSA_VALUE = 1 << MANTISSA_BITS;
+static constexpr uint MANTISSA_MASK = MANTISSA_VALUE - 1;
+
+
+//------------------------------------------------------------------------------
+/**
+    Calculate bin mask using 16 bit float distribution
+*/
+inline uint
+BinMaskRoundedUp(uint size)
+{
+    uint exp = 0;
+    uint mantissa = 0;
+
+    if (size < MANTISSA_VALUE)
+    {
+        // Denorm: 0..(MANTISSA_VALUE-1)
+        mantissa = size;
+    }
+    else
+    {
+        // Normalized: Hidden high bit always 1. Not stored. Just like float.
+        uint highestSetBit = Util::LastBitSetIndex(size);
+
+        uint mantissaStartBit = highestSetBit - MANTISSA_BITS;
+        exp = mantissaStartBit + 1;
+        mantissa = (size >> mantissaStartBit) & MANTISSA_MASK;
+
+        uint lowBitsMask = (1 << mantissaStartBit) - 1;
+
+        // Round up!
+        if ((size & lowBitsMask) != 0)
+            mantissa++;
+    }
+
+    return (exp << MANTISSA_BITS) + mantissa; // + allows mantissa->exp overflow for round up
+}
+
+//------------------------------------------------------------------------------
+/**
+    Calculate bin mask using 16 bit float distribution, and round up to highest value
+*/
+inline uint
+BinMask(uint size)
+{
+    uint exp = 0;
+    uint mantissa = 0;
+
+    if (size < MANTISSA_VALUE)
+    {
+        // Denorm: 0..(MANTISSA_VALUE-1)
+        mantissa = size;
+    }
+    else
+    {
+        // Normalized: Hidden high bit always 1. Not stored. Just like float.
+        uint highestSetBit = Util::LastBitSetIndex(size);
+
+        uint mantissaStartBit = highestSetBit - MANTISSA_BITS;
+        exp = mantissaStartBit + 1;
+        mantissa = (size >> mantissaStartBit) & MANTISSA_MASK;
+    }
+
+    return (exp << MANTISSA_BITS) | mantissa;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
 inline uint 
 RangeAllocator::BinFromSize(uint size, uint bucket)
 {
+    n_assert(size < (1 << bucket));
     uint mask = (size >> (bucket - 4)) & (NUM_BINS_PER_BUCKET - 1u);
     return mask;
 }
@@ -476,20 +561,14 @@ inline RangeAllocator::BinIndex
 RangeAllocator::IndexFromSize(uint size, bool round)
 {
     RangeAllocator::BinIndex ret;
-    ret.bucket = Util::LastOne(size);
-    ret.bin = BinFromSize(size, ret.bucket);
+    uint index;
     if (round)
-    {
-        uint mask = (1 << ret.bucket) | (ret.bin << (ret.bucket - 4));
-        if ((~mask & size) != 0)
-        {
-            ret.bin++;
-
-            // If we are on the last bin, move to the next bucket
-            if (ret.bin == 0)
-                ret.bucket++;
-        }
-    }
+        index = BinMaskRoundedUp(size);
+    else
+        index = BinMask(size);
+    ret.bucket = index >> BUCKET_INDEX_SHIFT;
+    ret.bin = index & BIN_INDEX_MASK;
+    ret.index = index;
     return ret;
 }
 

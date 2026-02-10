@@ -166,7 +166,7 @@ PopCnt(uint64_t value)
 /**
 */
 inline uint
-FirstOne(uint value)
+FirstBitSetIndex(uint value)
 {
 #if __WIN32__
     DWORD count = 0;
@@ -181,7 +181,7 @@ FirstOne(uint value)
 /**
 */
 inline uint
-FirstOne(uint64_t value)
+FirstBitSetIndex(uint64_t value)
 {
 #if __WIN32__
     DWORD count = 0;
@@ -196,7 +196,7 @@ FirstOne(uint64_t value)
 /**
 */
 inline uint
-LastOne(uint value)
+LastBitSetIndex(uint value)
 {
 #if __WIN32__
     DWORD count = 0;
@@ -211,13 +211,76 @@ LastOne(uint value)
 /**
 */
 inline uint
-LastOne(uint64_t value)
+LastBitSetIndex(uint64_t value)
 {
 #if __WIN32__
     DWORD count = 0;
     _BitScanReverse64(&count, value);
 #else
     int count = 63 - __builtin_clz(value);
+#endif
+    return count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+CountLeadingZeroes(uint value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanReverse(&count, value);
+    count = 31 - count;
+#else
+    int count = __builtin_clz(value);
+#endif
+    return count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+CountLeadingZeroes(uint64_t value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanReverse64(&count, value);
+    count = 31 - count;
+#else
+    int count = __builtin_clz(value);
+#endif
+    return count;
+} 
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+CountTrailingZeroes(uint value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanForward(&count, value);
+#else
+    int count = __builtin_ctz(value);
+#endif
+    return count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+CountTrailingZeroes(uint64_t value)
+{
+#if __WIN32__
+    DWORD count = 0;
+    _BitScanForward64(&count, value);
+    count = count;
+#else
+    int count = __builtin_ctz(value);
 #endif
     return count;
 }
