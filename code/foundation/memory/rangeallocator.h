@@ -142,8 +142,8 @@ inline
 RangeAllocator::RangeAllocator(uint size, SizeT maxNumAllocs)
 {   
     this->size = size;
-    this->freeNodes.Resize(maxNumAllocs);
-    this->nodes.Resize(maxNumAllocs);
+    this->freeNodes.Resize(maxNumAllocs + 1);
+    this->nodes.Resize(maxNumAllocs + 1);
     this->numAllocs = 0;
 
     // Clear the allocator
