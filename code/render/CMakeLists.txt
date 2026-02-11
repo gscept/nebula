@@ -186,8 +186,6 @@ ENDIF()
                 shaperenderer.cc
                 shaperenderer.h
                 sparsebuffer.h
-                shaderloader.cc
-                shaderloader.h
                 streamtexturesaver.h
                 swapchain.h
                 textelement.cc
