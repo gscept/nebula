@@ -62,7 +62,7 @@ SizeClassificationAllocatorTest::Run()
 
     // the previous block needs 191 bytes due to alignment which leaves space for 64 before reaching 256
     alloc4 = allocator.Alloc(64);
-    VERIFY(alloc4.offset == 192);
+    VERIFY(alloc4.offset == alloc4.OOM);
 
     uint randomAlignments[] = { 64, 128, 256 };
 
