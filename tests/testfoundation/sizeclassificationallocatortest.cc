@@ -60,9 +60,9 @@ SizeClassificationAllocatorTest::Run()
     // The memory starts at byte 128 and needs to be 64 byte long
     VERIFY((alloc3.offset + 64 - 1) <= alloc3.size);
 
-    // The previous insertion actually inserts a 192 byte block due to alignment, so this should fail
+    // the previous block needs 191 bytes due to alignment which leaves space for 64 before reaching 256
     alloc4 = allocator.Alloc(64);
-    VERIFY(alloc4.offset == alloc4.OOM);
+    VERIFY(alloc4.offset == 192);
 
     uint randomAlignments[] = { 64, 128, 256 };
 
