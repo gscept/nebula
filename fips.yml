@@ -3,9 +3,6 @@ imports:
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
         group: gfx
-    fips-anyfx:
-        git: https://github.com/Duttenheim/fips-anyfx.git
-        group: gfx
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"

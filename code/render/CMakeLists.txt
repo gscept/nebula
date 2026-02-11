@@ -1,12 +1,6 @@
 #-------------------------------------------------------------------------------
 # Render
 #-------------------------------------------------------------------------------
-
-FIND_PROGRAM(SHADERC
-       NAMES anyfxcompiler.exe anyfxcompiler
-       PATHS ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-windows ${FIPS_DEPLOY_DIR}/fips-anyfx/anyfxcompiler-linux
-       NO_DEFAULT_PATH
-       )
        
 FIND_PROGRAM(GPULANGC
     NAMES gpulangc.exe gpulangc
