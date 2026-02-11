@@ -34,11 +34,6 @@
 #include "util/dictionary.h"
 #include "api/loader.h"
 
-namespace AnyFX
-{
-class ShaderEffect;
-}
-
 namespace CoreGraphics
 {
 
@@ -53,12 +48,6 @@ RESOURCE_ID_TYPE(ShaderId);
 ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programGeneration, shaderId, shaderGeneration, program, shader);     // 32 bits shader, 24 bits program, 8 bits type
 
 ID_32_TYPE(DerivativeStateId);          // 32 bits derivative state (already created from an ordinary state)
-
-struct ShaderCreateInfo
-{
-    Resources::ResourceName name;
-    AnyFX::ShaderEffect* effect;
-};
 
 struct GPULangShaderCreateInfo
 {
@@ -89,8 +78,6 @@ enum ShaderConstantType
 /// Get constant type as string
 const Util::String ConstantTypeToString(const ShaderConstantType& type);
 
-/// Create new shader
-const ShaderId CreateShader(const ShaderCreateInfo& info);
 /// Create new shader
 const ShaderId CreateShader(const GPULangShaderCreateInfo& info);
 /// Destroy shader
