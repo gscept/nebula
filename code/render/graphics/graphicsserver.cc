@@ -9,7 +9,6 @@
 #include "stage.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/textureloader.h"
-#include "coregraphics/shaderloader.h"
 #include "coregraphics/meshloader.h"
 #include "coregraphics/gpulangshaderloader.h"
 #include "coreanimation/animationloader.h"
@@ -115,7 +114,6 @@ GraphicsServer::Open()
     if (this->graphicsDevice)
     {
         // Setup shader server
-        Resources::ResourceServer::Instance()->RegisterStreamLoader("fxb", CoreGraphics::ShaderLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamLoader("gplb", CoreGraphics::GPULangShaderLoader::RTTI);
         this->shaderServer = CoreGraphics::ShaderServer::Create();
         this->shaderServer->Open();
