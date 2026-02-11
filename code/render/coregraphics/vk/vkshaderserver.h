@@ -12,7 +12,7 @@
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
-#include "effectfactory.h"
+
 
 namespace Graphics
 {
@@ -62,8 +62,6 @@ private:
 
     Threading::SafeQueue<_PendingView> pendingViews;
     Util::Array<_PendingViewDelete> pendingViewDeletes;
-
-    AnyFX::EffectFactory* factory;
 };
 
 } // namespace Vulkan
