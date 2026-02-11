@@ -27,14 +27,12 @@ jobs:
             config: win64-vstudio-debug
             physx: vc17
             physxkey: vc17
-            anyfx: anyfxcompiler-windows
             gpulang: win64
           - name: ubuntu-24.04
             os: ubuntu-24.04
             config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
-            anyfx: anyfxcompiler-linux
             gpulang: linux
           
       # Steps represent a sequence of tasks that will be executed as part of the job
@@ -104,27 +102,6 @@ jobs:
         run: |
           python fips physx build ${{ matrix.physx }} debug
 
-      - name: Check Anyfx version
-        id: anyfx-rev
-        shell: bash
-        run: |
-          pushd ../fips-anyfx
-          echo "gitrev=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          popd
-                    
-      - name: Check for Anyfx cached build
-        id: cache-anyfx
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.deploy.outputs.root_dir }}/fips-deploy/fips-anyfx
-          key: ${{ runner.os }}-anyfx-${{ steps.anyfx-rev.outputs.gitrev }}
-
-      - name: Build AnyfxCompiler
-        if: steps.cache-anyfx.outputs.cache-hit != 'true'
-        run: |
-          pushd ../fips-anyfx
-          python fips build ${{ matrix.anyfx }}
-          
       - name: Check GPULang version
         id: gpulang-rev
         shell: bash
