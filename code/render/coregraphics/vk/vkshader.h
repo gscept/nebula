@@ -14,29 +14,10 @@
 #include "coregraphics/resourcetable.h"
 #include "vkshaderprogram.h"
 
-namespace AnyFX
-{
-class ShaderEffect;
-}
-
 namespace Vulkan
 {
 
 const VkProgramReflectionInfo& ShaderGetProgramReflection(const CoreGraphics::ShaderProgramId shaderProgramId);
-
-/// create descriptor set layout
-void ShaderSetup(
-    VkDevice dev,
-    const Util::StringAtom& name,
-    AnyFX::ShaderEffect* effect,
-    Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
-    Util::Set<CoreGraphics::SamplerId>& immutableSamplers,
-    Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
-    Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
-    CoreGraphics::ResourcePipelineId& pipelineLayout,
-    Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
-    Util::Dictionary<Util::StringAtom, IndexT>& constantBindings
-);
 
 void ShaderSetup(
     VkDevice dev,
@@ -120,7 +101,6 @@ struct VkReflectionInfo
 
     struct Variable
     {
-        AnyFX::VariableType type;
         Util::StringAtom name;
         Util::StringAtom blockName;
         uint32_t blockSet;
