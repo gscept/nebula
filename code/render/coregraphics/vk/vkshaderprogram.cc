@@ -645,7 +645,7 @@ VkShaderProgramSetupAsCompute(VkShaderProgramSetupInfo& setup, VkShaderProgramRu
     VkResult res = vkCreateComputePipelines(setup.dev, Vulkan::GetPipelineCache(), 1, &pInfo, nullptr, &runtime.pipeline);
     n_assert(res == VK_SUCCESS);
     runtime.type = CoreGraphics::ComputePipeline;
-}(
+}
 
 //------------------------------------------------------------------------------
 /**
