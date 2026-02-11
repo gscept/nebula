@@ -1,4 +1,4 @@
-"""Build and deploy anyfxcompiler
+"""Build and deploy gpulang compiler
 setup
 """
 
