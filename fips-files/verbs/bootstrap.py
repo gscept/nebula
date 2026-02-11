@@ -11,9 +11,6 @@ import subprocess
 def run(fips_dir, proj_dir, args) :
     """run the 'bootstrap' verb"""
 
-    log.info("[BOOTSTRAP]: " + log.BLUE + "-- AnyFX --" + log.DEF)
-    subprocess.call(proj_dir + "/fips anyfx setup force quiet", shell=True)
-
     log.info("[BOOTSTRAP]: " + log.BLUE + "-- GPULang --" + log.DEF)
     subprocess.call(proj_dir + "/fips gpulang setup force quiet", shell=True)
 
