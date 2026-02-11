@@ -82,8 +82,6 @@ const Util::String ConstantTypeToString(const ShaderConstantType& type);
 const ShaderId CreateShader(const GPULangShaderCreateInfo& info);
 /// Destroy shader
 void DestroyShader(const ShaderId id);
-/// Reload shader
-void ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect);
 
 /// get shader by name
 const ShaderId ShaderGet(const Resources::ResourceName& name);
