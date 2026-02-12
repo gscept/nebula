@@ -39,7 +39,7 @@ csCull() void
     // update feature flags if we have any decals
     if (numVolumes > 0) { flags |= CLUSTER_GI_VOLUME_BIT; }
 
-    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Acquire);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.AcquireRelease);
 }
 
 

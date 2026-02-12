@@ -74,7 +74,7 @@ csCull() void
 
     if (numLights > 0) { flags |= CLUSTER_AREALIGHT_BIT; }
 
-    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Acquire);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.AcquireRelease);
 }
 
 //------------------------------------------------------------------------------

@@ -61,7 +61,7 @@ csCull() void
     // update feature flags if we have any lights
     if numFogs > 0 { flags |= CLUSTER_FOG_BOX_BIT; }
         
-    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.Release);
+    atomicOr(&bufferPtr(ClusterAABBs, index1D).featureFlags, flags, MemorySemantics.AcquireRelease);
 }
 
 
