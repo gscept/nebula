@@ -245,12 +245,14 @@ CalculateRectLight(
 
     // Calculate LTC LUT uv
     const NV = saturate(dot(normal, viewVec));
-    const ltcRoughness = sqr(material[MAT_ROUGHNESS]);
-    var uv = f32x2(clamp(0.01, 0.98, ltcRoughness), sqrt(1.0 - NV));
+    const ltcRoughness = material[MAT_ROUGHNESS];
+    var uv = f32x2(ltcRoughness, sqrt(1.0 - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
     const t1 = sample2DLod(PerTickParams.ltcLUT0, LinearSampler, uv, 0);
+
+    const t2 = sample2DLod(PerTickParams.ltcLUT1, LinearSampler, uv, 0);
 
     // Transform 4 rect points to light
     var points : [4]f32x3;
@@ -270,10 +272,12 @@ CalculateRectLight(
     );
 
     // Integrate specular
-    const spec = f32x3(LtcRectIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
+    const spec = f32x3(LtcRectIntegrate(normal, viewVec, pos, minv, points, true, twoSided)) * t2.x;
+
+    const diffuseContrib = (albedo * (1.0f - material[MAT_METALLIC]));
 
     // Integrate diffuse
-    const diff = f32x3(LtcRectIntegrate(normal, viewVec, pos, f32x3x3(), points, false, twoSided)) * albedo;
+    const diff = f32x3(LtcRectIntegrate(normal, viewVec, pos, f32x3x3(), points, true, twoSided)) * diffuseContrib;
 
     return li.color * (spec + diff) * attenuation;
 }
@@ -294,16 +298,16 @@ CalculateDiskLight(
     const lightDir = (li.position.xyz - pos);
     const attenuation = FalloffWindow(li.range, lightDir);
     if (attenuation < 0.0001) { return f32x3(0); }
-        
 
     // Calculate LTC LUT uv
     const NV = saturate(dot(normal, viewVec));
-    const ltcRoughness = sqr(material[MAT_ROUGHNESS]);
-    var uv = f32x2(clamp(0.01, 0.98, ltcRoughness), sqrt(1.0 - NV));
+    const ltcRoughness = material[MAT_ROUGHNESS];
+    var uv = f32x2(ltcRoughness, sqrt(1.0 - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
     const t1 = sample2DLod(PerTickParams.ltcLUT0, LinearSampler, uv, 0);
+    const t2 = sample2DLod(PerTickParams.ltcLUT1, LinearSampler, uv, 0);
 
     // Transform 3 points to define a disk
     var points : [3]f32x3;
@@ -311,9 +315,9 @@ CalculateDiskLight(
     // Because of some numerical instability, we slightly increase the size in Y for the disk
     const dx = li.xAxis * li.width;
     const dy = li.yAxis * li.height;
-    points[0] = li.position + dx - dy;
-    points[1] = li.position - dx - dy;
-    points[2] = li.position - dx + dy;
+    points[0] = li.position - dx - dy;
+    points[1] = li.position + dx - dy;
+    points[2] = li.position + dx + dy;
 
     // Construct linear cosine transform
     const minv = f32x3x3(
@@ -323,10 +327,12 @@ CalculateDiskLight(
     );
 
     // Integrate specular
-    const spec = f32x3(LtcDiskIntegrate(normal, viewVec, pos, minv, points, true, twoSided));
+    const spec = f32x3(LtcDiskIntegrate(normal, viewVec, pos, minv, points, true, twoSided)) * t2.x;
+
+    const diffuseContrib = (albedo * (1.0f - material[MAT_METALLIC]));
 
     // Integrate diffuse
-    const diff = f32x3(LtcDiskIntegrate(normal, viewVec, pos, f32x3x3(), points, false, twoSided)) * albedo;
+    const diff = f32x3(LtcDiskIntegrate(normal, viewVec, pos, f32x3x3(), points, false, twoSided)) * diffuseContrib;
 
     return li.color * (diff + spec) * attenuation;
 }
@@ -350,12 +356,13 @@ CalculateTubeLight(
 
     // Calculate LTC LUT uv
     const NV = saturate(dot(normal, viewVec));
-    const ltcRoughness = sqr(material[MAT_ROUGHNESS]);
-    var uv = f32x2(clamp(0.01, 0.98, ltcRoughness), sqrt(1.0 - NV));
+    const ltcRoughness = material[MAT_ROUGHNESS];
+    var uv = f32x2(ltcRoughness, sqrt(1.0 - NV));
     uv = uv * LUT_SCALE + LUT_BIAS;
 
     // Sample LTC LUTs
     const t1 = sample2DLod(PerTickParams.ltcLUT0, LinearSampler, uv, 0);
+    const t2 = sample2DLod(PerTickParams.ltcLUT1, LinearSampler, uv, 0);
 
     // Define tube endpoints
     var points: [2]f32x3;
@@ -372,10 +379,12 @@ CalculateTubeLight(
     );
 
     // Integrate specular
-    const spec = f32x3(LtcLineIntegrate(normal, viewVec, pos, li.radius, minv, points));
+    const spec = f32x3(LtcLineIntegrate(normal, viewVec, pos, li.radius, minv, points)) * t2.x;
+
+    const diffuseContrib = (albedo * (1.0f - material[MAT_METALLIC]));
 
     // Integrate diffuse
-    const diff = f32x3(LtcLineIntegrate(normal, viewVec, pos, li.radius, f32x3x3(), points)) * albedo;
+    const diff = f32x3(LtcLineIntegrate(normal, viewVec, pos, li.radius, f32x3x3(), points)) * diffuseContrib;
 
     return li.color * (spec + diff) * (1.0 / (2 * PI)) * attenuation;
 }
