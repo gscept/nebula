@@ -257,22 +257,22 @@ MaterialEditor(AssetEditor* assetEditor, AssetEditorItem* item)
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Scalar:
             {
-                ImGui::SliderFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
+                ImGui::SliderFloat(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec2:
             {
-                ImGui::SliderFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
+                ImGui::SliderFloat2(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec3:
             {
-                ImGui::SliderFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
+                ImGui::SliderFloat3(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Vec4:
             {
-                ImGui::SliderFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1000.0f);
+                ImGui::SliderFloat4(kvp.Key(), (float*)(imguiState + value->offset), 0.0f, 1.0f);
                 break;
             }
             case MaterialTemplates::MaterialTemplateValue::Type::Color:
