@@ -237,7 +237,7 @@ LtcDiskIntegrate(
     const d22 = dot(v2, v2);
     const d12 = dot(v1, v2);
 
-    if (abs(d12) / sqrt(d11 * d22) > 0.0007f)
+    if (abs(d12) / sqrt(d11 * d22) > 0.0001f)
     {
         const tr = d11 + d22;
         var det = -d12 * d12 + d11 * d22;
