@@ -20,6 +20,7 @@ __ImplementClass(Presentation::Profiler, 'PrBw', Presentation::BaseWindow);
 Profiler::Profiler()
 {
     this->pauseProfiling = false;
+    this->captureWorstFrame = false;
     this->fixedFps = 60.0f;
     this->profileFixedFps = false;
     this->additionalFlags = ImGuiWindowFlags_None;
@@ -155,7 +156,12 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
 void 
 Profiler::Run(SaveMode save)
 {
-    if (!this->pauseProfiling)
+    ImGui::Checkbox("Pause (F3)", &this->pauseProfiling);
+    ImGui::Checkbox("Capture worst frame", &this->captureWorstFrame);
+    if (ImGui::IsKeyPressed((ImGuiKey)Input::Key::F3))
+        this->pauseProfiling = !this->pauseProfiling;
+
+    if (this->captureWorstFrame)
     {
         this->currentFrameTime = Graphics::GraphicsServer::Instance()->GetFrameTime();
         this->averageFrameTime += this->currentFrameTime;
@@ -168,13 +174,27 @@ Profiler::Run(SaveMode save)
             this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
             this->averageFrameTime = 0.0f;
         }
+        if (this->worstFrameTime < this->currentFrameTime)
+        {
+            this->worstFrameTime = this->currentFrameTime;
+            this->ProfilingContexts = Profiling::ProfilingGetContexts();
+            this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+        }
     }
-
-    ImGui::Checkbox("Pause (F3)", &this->pauseProfiling);
-    if (ImGui::IsKeyPressed((ImGuiKey)Input::Key::F3))
-        this->pauseProfiling = !this->pauseProfiling;
-    if (!this->pauseProfiling)
+    else if (!this->pauseProfiling)
     {
+        this->currentFrameTime = Graphics::GraphicsServer::Instance()->GetFrameTime();
+        this->averageFrameTime += this->currentFrameTime;
+        this->frametimeHistory.Append(this->currentFrameTime);
+        if (this->frametimeHistory.Size() > 120)
+            this->frametimeHistory.EraseFront();
+
+        if (Graphics::GraphicsServer::Instance()->GetFrameIndex() % 35 == 0)
+        {
+            this->prevAverageFrameTime = this->averageFrameTime / 35.0f;
+            this->averageFrameTime = 0.0f;
+        }
+
         this->ProfilingContexts = Profiling::ProfilingGetContexts();
         this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
     }

@@ -23,10 +23,12 @@ public:
     void Run(SaveMode save) override;
 private:
     bool pauseProfiling;
+    bool captureWorstFrame;
     bool profileFixedFps;
     float averageFrameTime;
     float prevAverageFrameTime;
     float currentFrameTime;
+    float worstFrameTime;
     int fixedFps;
     Util::Array<float> frametimeHistory;
     Util::Array<Profiling::ProfilingContext> ProfilingContexts;
