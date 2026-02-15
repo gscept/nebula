@@ -457,6 +457,8 @@ csMain() void
 
     executionBarrierWorkgroup();
     if Counter != (DownsampleUniforms.NumGroups - 1) { return; }
+
+	// Since we retain one counter per workgroup and all workgroups are synced with only one surviving, we can safely reset the counter here
     *counterPtr = 0u;
 
     // reduce mips 6 and 7
