@@ -129,7 +129,7 @@ generate
             Sample2x2(texel: i32x2, slice: u32) dataType 
             {
                 var samples: [4]dataType;
-                samples[0] = textureLoad(Input, ).xyz;
+                samples[0] = textureLoad(Input, min(DownsampleUniforms.Dimensions, texel), slice).xyz;
                 samples[1] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 0)), slice)).xyz;
                 samples[2] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(0, 1)), slice)).xyz;
                 samples[3] = textureLoad(Input, i32x3(min(DownsampleUniforms.Dimensions, texel + i32x2(1, 1)), slice)).xyz;
@@ -148,7 +148,7 @@ generate
 
             Save(texel : i32x2, value : dataType, mip : u32, slice : u32) void
             {
-                textureStore(Output[mip], i32x3(min(Dimensions, texel), slice), f32x4(value, 0, 0, 0));
+                textureStore(Output[mip], i32x3(min(Dimensions, texel), slice), f32x4(value, 0));
             }
         }
         else
@@ -436,8 +436,8 @@ csMain() void
     const localIndex = computeGetIndexInWorkgroup();
     const sliceIndex = i32(computeGetWorkgroupIndices().z);
     const gridIndex = MortonCurve8x8(localIndex % 64);
-    const x = gridIndex.x + 8 * ((localIndex >> 6) % 2);
-    const y = gridIndex.y + 8 * (localIndex >> 7);
+    const x = gridIndex.x + 8u * ((localIndex >> 6u) % 2u);
+    const y = gridIndex.y + 8u * (localIndex >> 7u);
 
     // reduce mips 0 and 1
     Mips0_1(x, y, groupId, localIndex, DownsampleUniforms.Mips, sliceIndex);
@@ -452,12 +452,13 @@ csMain() void
     // one work group to do mips 6-11
     uniform counterPtr = bufferPtr(Counters, sliceIndex).&counter;
     if localIndex == 0 {
-        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.Acquire);
+        Counter = atomicAdd(counterPtr, 1u, MemorySemantics.AcquireRelease);
     }
 
     executionBarrierWorkgroup();
     if Counter != (DownsampleUniforms.NumGroups - 1) { return; }
-    *counterPtr = 0u;
+	atomicExchange(counterPtr, 0u, MemorySemantics.AcquireRelease);
+    //*counterPtr = 0u;
 
     // reduce mips 6 and 7
     Mips6_7(x, y, DownsampleUniforms.Mips, sliceIndex);
