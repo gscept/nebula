@@ -457,8 +457,7 @@ csMain() void
 
     executionBarrierWorkgroup();
     if Counter != (DownsampleUniforms.NumGroups - 1) { return; }
-	atomicExchange(counterPtr, 0u, MemorySemantics.AcquireRelease);
-    //*counterPtr = 0u;
+    *counterPtr = 0u;
 
     // reduce mips 6 and 7
     Mips6_7(x, y, DownsampleUniforms.Mips, sliceIndex);
