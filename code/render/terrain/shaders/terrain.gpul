@@ -159,13 +159,13 @@ csTerrainPageClearUpdateBuffer() void
     if PageUpdateList.NumEntries == 0 { return; }
 
     // Decrement the entries list
-    const numLeft = atomicSubtract(PageUpdateList.&NumEntries, 1, MemorySemantics.Relaxed);
+    const numLeft = atomicSubtract(PageUpdateList.&NumEntries, 1, MemorySemantics.AcquireRelease);
 
     // If we get 0 or lower, it means the last item was dealt with already
     if numLeft > 0 { bufferPtr(PageStatuses, PageUpdateList.PageStatuses[numLeft-1]).bits = 0u; }
 
     // Ensure we can't get negative NumEntries
-    atomicMax(PageUpdateList.&NumEntries, 0, MemorySemantics.Relaxed);
+    atomicMax(PageUpdateList.&NumEntries, 0, MemorySemantics.AcquireRelease);
 }
 
 //------------------------------------------------------------------------------

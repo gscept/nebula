@@ -65,14 +65,14 @@ csMain() void
 
         // floor the value of luminance scaled to ubyte to find which bucket it belongs in
         const bucket = i32(floor(logLuminance * 255.0f));
-        atomicAdd(&LocalHistogram[bucket], 1u, MemorySemantics.Release);
+        atomicAdd(&LocalHistogram[bucket], 1u, MemorySemantics.AcquireRelease);
     }
 
     // synchronize and add to global atomic
     memoryBarrierWorkgroup();
 
     // same as with clear, each thread will contribute exactly one bucket to the global histogram
-    atomicAdd(&HistogramBuffer.Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.Release);
+    atomicAdd(&HistogramBuffer.Histogram[histogramIndex], LocalHistogram[histogramIndex], MemorySemantics.AcquireRelease);
 }
 
 //------------------------------------------------------------------------------
